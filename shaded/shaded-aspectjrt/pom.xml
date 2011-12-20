@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+
+  <groupId>org.informantproject.shaded</groupId>
+  <artifactId>shaded-aspectjrt</artifactId>
+  <version>1.6.11-SNAPSHOT</version>
+
+  <name>AspectJ Runtime (Shaded for Runtime Informant)</name>
+  <description>AspectJ Runtime (Shaded for Runtime Informant)</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjrt</artifactId>
+      <version>1.6.11</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <createSourcesJar>true</createSourcesJar>
+          <relocations>
+            <relocation>
+              <pattern>org.aspectj</pattern>
+              <shadedPattern>org.informantproject.shaded.aspectj</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- TODO this wasn't necessary with maven-shade-plugin before -->
+              <pattern>Lorg/aspectj/</pattern>
+              <shadedPattern>Lorg/informantproject/shaded/aspectj/</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
