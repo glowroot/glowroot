@@ -31,7 +31,7 @@ import com.google.inject.Singleton;
 
 /**
  * Owns the thread (via a single threaded scheduled executor) that watches out for stuck traces.
- * When it finds a stuck trace it sends it to {@link TraceCollector#collectStuckTrace(Trace)}. This
+ * When it finds a stuck trace it sends it to {@link TraceRepository#storeStuckTrace(Trace)}. This
  * ensures that a trace that never ends is still captured even though normal collection occurs at
  * the end of a trace.
  * 
@@ -39,30 +39,30 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class StuckTraceBoss implements Runnable {
+public class StuckTraceCollector implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(StuckTraceBoss.class);
-    private static final int BOSS_INTERVAL_MILLIS = 100;
+    private static final Logger logger = LoggerFactory.getLogger(StuckTraceCollector.class);
+    private static final int CHECK_INTERVAL_MILLIS = 100;
 
     private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-StuckTraceBoss");
+            .newSingleThreadScheduledExecutor("Informant-StuckTraceCollector");
 
     private final TraceService traceService;
-    private final TraceCollector traceCollector;
+    private final TraceRepository traceRepository;
     private final ConfigurationService configurationService;
     private final Ticker ticker;
 
     @Inject
-    public StuckTraceBoss(TraceService traceService, TraceCollector traceCollector,
+    public StuckTraceCollector(TraceService traceService, TraceRepository traceRepository,
             ConfigurationService configurationService, Ticker ticker) {
 
         this.traceService = traceService;
-        this.traceCollector = traceCollector;
+        this.traceRepository = traceRepository;
         this.configurationService = configurationService;
         this.ticker = ticker;
-        // wait to schedule the real stuck thread command until it is within
-        // BOSS_INTERVAL_MILLIS from needing to start
-        scheduledExecutor.scheduleWithFixedDelay(this, 0, BOSS_INTERVAL_MILLIS,
+        // wait to schedule the real stuck thread command until it is within CHECK_INTERVAL_MILLIS
+        // from needing to start
+        scheduledExecutor.scheduleWithFixedDelay(this, 0, CHECK_INTERVAL_MILLIS,
                 TimeUnit.MILLISECONDS);
     }
 
@@ -94,9 +94,9 @@ public class StuckTraceBoss implements Runnable {
                 != ImmutableCoreConfiguration.THRESHOLD_DISABLED) {
             // stuck threshold is not disabled
             long stuckMessageThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
-                    configuration.getStuckThresholdMillis() - BOSS_INTERVAL_MILLIS);
+                    configuration.getStuckThresholdMillis() - CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceService.getTraces()) {
-                // if the trace is within BOSS_INTERVAL_MILLIS from hitting the stuck
+                // if the trace is within CHECK_INTERVAL_MILLIS from hitting the stuck
                 // thread threshold and the stuck thread messaging hasn't already been scheduled
                 // then schedule it
                 if (NanoUtils.isLessThan(trace.getStartTime(), stuckMessageThresholdTime)
@@ -104,7 +104,8 @@ public class StuckTraceBoss implements Runnable {
                     // schedule stuck thread message
                     long initialDelayMillis = getMillisUntilTraceReachesThreshold(trace,
                             configuration.getStuckThresholdMillis());
-                    StuckTraceCommand command = new StuckTraceCommand(trace, traceCollector);
+                    CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
+                            traceRepository);
                     ScheduledFuture<?> stuckCommandScheduledFuture = scheduledExecutor.schedule(
                             command, initialDelayMillis, TimeUnit.MILLISECONDS);
                     trace.setStuckCommandScheduledFuture(stuckCommandScheduledFuture);

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.informantproject.metrics.MetricValue;
+import org.informantproject.metric.MetricValue;
 import org.informantproject.util.Clock;
 import org.informantproject.util.JdbcHelper;
 import org.slf4j.Logger;

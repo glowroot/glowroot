@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.metrics;
+package org.informantproject.metric;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -42,23 +42,23 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MetricBoss implements Runnable, CoreConfigurationListener {
+public class MetricCollector implements Runnable, CoreConfigurationListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricBoss.class);
+    private static final Logger logger = LoggerFactory.getLogger(MetricCollector.class);
 
     private final ScheduledExecutorService scheduledExecutor =
-            DaemonExecutors.newSingleThreadScheduledExecutor("Informant-MetricBoss");
+            DaemonExecutors.newSingleThreadScheduledExecutor("Informant-MetricCollector");
 
-    private final MetricsCollector metricsCollector;
+    private final MetricRepository metricRepository;
 
     private volatile Future<?> future;
     private volatile int bossIntervalMillis;
 
     @Inject
-    public MetricBoss(ConfigurationService configurationService,
-            MetricsCollector metricsCollector) {
+    public MetricCollector(ConfigurationService configurationService,
+            MetricRepository metricRepository) {
 
-        this.metricsCollector = metricsCollector;
+        this.metricRepository = metricRepository;
         bossIntervalMillis = configurationService.getCoreConfiguration().getMetricPeriodMillis();
         future = scheduledExecutor.scheduleWithFixedDelay(this, 0, bossIntervalMillis,
                 TimeUnit.MILLISECONDS);
@@ -110,7 +110,7 @@ public class MetricBoss implements Runnable, CoreConfigurationListener {
         // RuntimeMXBean mxbean = ManagementFactory.getRuntimeMXBean();
         List<MetricValue> metricValues = new ArrayList<MetricValue>();
         addMemoryStats(metricValues);
-        metricsCollector.collect(metricValues);
+        metricRepository.store(metricValues);
     }
 
     private static void addMemoryStats(List<MetricValue> metricValues) {

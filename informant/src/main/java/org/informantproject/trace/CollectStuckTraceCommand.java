@@ -25,18 +25,18 @@ import java.lang.ref.WeakReference;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class StuckTraceCommand implements Runnable {
+class CollectStuckTraceCommand implements Runnable {
 
     // since it's possible for this scheduled command to live for a while
     // after the trace has completed, a weak reference is used to make sure
     // it won't prevent the (larger) trace structure from being garbage collected
     private final WeakReference<Trace> traceHolder;
 
-    private final TraceCollector traceCollector;
+    private final TraceRepository traceRepository;
 
-    StuckTraceCommand(Trace trace, TraceCollector traceCollector) {
+    CollectStuckTraceCommand(Trace trace, TraceRepository traceRepository) {
         this.traceHolder = new WeakReference<Trace>(trace);
-        this.traceCollector = traceCollector;
+        this.traceRepository = traceRepository;
     }
 
     public void run() {
@@ -49,6 +49,6 @@ class StuckTraceCommand implements Runnable {
             // already marked as stuck
             return;
         }
-        traceCollector.collectStuckTrace(trace);
+        traceRepository.storeStuckTrace(trace);
     }
 }

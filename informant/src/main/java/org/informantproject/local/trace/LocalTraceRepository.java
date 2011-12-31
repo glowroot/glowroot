@@ -20,7 +20,7 @@ import java.util.Map;
 
 import org.informantproject.trace.Span;
 import org.informantproject.trace.Trace;
-import org.informantproject.trace.TraceCollector;
+import org.informantproject.trace.TraceRepository;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,26 +32,26 @@ import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 
 /**
- * Implementation of TraceCollector for local storage in embedded H2 database. Some day there may be
- * another implementation for remote storage (e.g. central monitoring system).
+ * Implementation of TraceRepository for local storage in embedded H2 database. Some day there may
+ * be another implementation for remote storage (e.g. central monitoring system).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LocalTraceCollector implements TraceCollector {
+public class LocalTraceRepository implements TraceRepository {
 
     private final TraceDao traceDao;
 
     @Inject
-    public LocalTraceCollector(TraceDao traceDao) {
+    public LocalTraceRepository(TraceDao traceDao) {
         this.traceDao = traceDao;
     }
 
-    public void collectCompletedTrace(Trace trace) {
+    public void storeCompletedTrace(Trace trace) {
         traceDao.storeTrace(buildStoredTrace(trace));
     }
 
-    public void collectStuckTrace(Trace trace) {
+    public void storeStuckTrace(Trace trace) {
         traceDao.storeTrace(buildStoredTrace(trace));
     }
 

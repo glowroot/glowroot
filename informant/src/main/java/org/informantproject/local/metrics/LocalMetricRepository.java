@@ -17,28 +17,28 @@ package org.informantproject.local.metrics;
 
 import java.util.List;
 
-import org.informantproject.metrics.MetricValue;
-import org.informantproject.metrics.MetricsCollector;
+import org.informantproject.metric.MetricRepository;
+import org.informantproject.metric.MetricValue;
 
 import com.google.inject.Inject;
 
 /**
- * Implementation of MetricsCollector for local storage in embedded H2 database. Some day there may
+ * Implementation of MetricRepository for local storage in embedded H2 database. Some day there may
  * be another implementation for remote storage (e.g. central monitoring system).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LocalMetricsCollector implements MetricsCollector {
+public class LocalMetricRepository implements MetricRepository {
 
     private final MetricPointDao metricPointDao;
 
     @Inject
-    public LocalMetricsCollector(MetricPointDao metricPointDao) {
+    public LocalMetricRepository(MetricPointDao metricPointDao) {
         this.metricPointDao = metricPointDao;
     }
 
-    public void collect(List<MetricValue> metricValues) {
+    public void store(List<MetricValue> metricValues) {
         metricPointDao.storeMetricValues(metricValues);
     }
 }

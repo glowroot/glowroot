@@ -21,9 +21,9 @@ import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.informantproject.metrics.MetricBoss;
-import org.informantproject.trace.StackSamplingBoss;
-import org.informantproject.trace.StuckTraceBoss;
+import org.informantproject.metric.MetricCollector;
+import org.informantproject.trace.StackCollector;
+import org.informantproject.trace.StuckTraceCollector;
 import org.informantproject.util.Clock;
 import org.informantproject.util.DaemonExecutors;
 import org.slf4j.Logger;
@@ -53,18 +53,18 @@ class InformantModule extends AbstractModule {
 
     public static void start(Injector injector) {
         logger.debug("start()");
-        injector.getInstance(StuckTraceBoss.class);
-        injector.getInstance(StackSamplingBoss.class);
-        injector.getInstance(MetricBoss.class);
+        injector.getInstance(StuckTraceCollector.class);
+        injector.getInstance(StackCollector.class);
+        injector.getInstance(MetricCollector.class);
         LocalModule.start(injector);
     }
 
     public static void shutdown(Injector injector) {
         logger.debug("shutdown()");
         LocalModule.shutdown(injector);
-        injector.getInstance(StuckTraceBoss.class).shutdown();
-        injector.getInstance(StackSamplingBoss.class).shutdown();
-        injector.getInstance(MetricBoss.class).shutdown();
+        injector.getInstance(StuckTraceCollector.class).shutdown();
+        injector.getInstance(StackCollector.class).shutdown();
+        injector.getInstance(MetricCollector.class).shutdown();
         injector.getInstance(ExecutorService.class).shutdownNow();
         injector.getInstance(ScheduledExecutorService.class).shutdownNow();
         try {

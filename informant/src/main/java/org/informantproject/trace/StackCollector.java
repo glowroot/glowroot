@@ -37,28 +37,34 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class StackSamplingBoss implements Runnable {
+public class StackCollector implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(StackSamplingBoss.class);
-    private static final int BOSS_INTERVAL_MILLIS = 100;
+    private static final Logger logger = LoggerFactory.getLogger(StackCollector.class);
+    private static final int CHECK_INTERVAL_MILLIS = 100;
 
     private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-StackSamplingBoss");
+            .newSingleThreadScheduledExecutor("Informant-StackCollector");
 
     private final TraceService traceService;
     private final ConfigurationService configurationService;
     private final Ticker ticker;
 
     @Inject
-    public StackSamplingBoss(TraceService traceService, ConfigurationService configurationService,
+    public StackCollector(TraceService traceService, ConfigurationService configurationService,
             Ticker ticker) {
 
         this.traceService = traceService;
         this.configurationService = configurationService;
         this.ticker = ticker;
-        // wait to schedule the real stack trace command until it is within
-        // BOSS_INTERVAL_MILLIS from needing to start
-        scheduledExecutor.scheduleWithFixedDelay(this, 0, BOSS_INTERVAL_MILLIS,
+        // the main repeating Runnable (this) only runs every CHECK_INTERVAL_MILLIS at which time it
+        // checks to see if there are any traces that may need stack traces scheduled before the
+        // main repeating Runnable runs again (in another CHECK_INTERVAL_MILLIS).
+        // the main repeating Runnable schedules a repeating CollectStackCommand for any trace that
+        // may need a stack trace in the next CHECK_INTERVAL_MILLIS.
+        // since the majority of traces never end up needing stack traces this is much more
+        // efficient than scheduling a repeating CollectStackCommand for every trace (this was
+        // learned the hard way).
+        scheduledExecutor.scheduleWithFixedDelay(this, 0, CHECK_INTERVAL_MILLIS,
                 TimeUnit.MILLISECONDS);
     }
 
@@ -90,18 +96,19 @@ public class StackSamplingBoss implements Runnable {
                 != ImmutableCoreConfiguration.THRESHOLD_DISABLED) {
             // stack trace threshold is not disabled
             long stackTraceThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
-                    configuration.getStackTraceInitialDelayMillis() - BOSS_INTERVAL_MILLIS);
+                    configuration.getStackTraceInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceService.getTraces()) {
-                // if the trace is within BOSS_INTERVAL_MILLIS from hitting
-                // the stack trace initial delay threshold
-                // and the stack trace capture hasn't already been scheduled then schedule it
+                // if the trace will exceed the stack trace initial delay threshold before the next
+                // scheduled execution of this repeating Runnable (in other words, it is within
+                // COMMAND_INTERVAL_MILLIS from exceeding the threshold) and the stack trace capture
+                // hasn't already been scheduled then schedule it
                 if (NanoUtils.isLessThan(trace.getStartTime(), stackTraceThresholdTime)
                         && trace.getCaptureStackTraceScheduledFuture() == null) {
 
                     // schedule stack traces to be taken every X seconds
                     long initialDelayMillis = getMillisUntilTraceReachesThreshold(trace,
                             configuration.getStackTraceInitialDelayMillis());
-                    StackSamplingCommand command = new StackSamplingCommand(trace);
+                    CollectStackCommand command = new CollectStackCommand(trace);
                     ScheduledFuture<?> captureStackTraceScheduledFuture = scheduledExecutor
                             .scheduleWithFixedDelay(command, initialDelayMillis,
                                     configuration.getStackTracePeriodMillis(),

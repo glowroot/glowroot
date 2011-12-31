@@ -48,11 +48,11 @@ public class ImmutableCoreConfiguration {
     // (though stuck threshold can still be used in this case)
     private int thresholdMillis = 30000;
 
-    // minimum is imposed because of StuckTraceBoss#BOSS_INTERVAL_MILLIS
+    // minimum is imposed because of StuckTraceCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stuck messages are gathered, should be minimum 100 milliseconds
     private int stuckThresholdMillis = 600000;
 
-    // minimum is imposed because of TraceSampledStackBoss#BOSS_INTERVAL_MILLIS
+    // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
     private int stackTraceInitialDelayMillis = 5000;
 

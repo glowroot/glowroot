@@ -33,16 +33,16 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class StackSamplingCommand implements Runnable {
+class CollectStackCommand implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(StackSamplingCommand.class);
+    private static final Logger logger = LoggerFactory.getLogger(CollectStackCommand.class);
 
     // since it's possible for this scheduled command to live for a while
     // after the trace has completed, a weak reference is used to make sure
     // it won't prevent the (larger) trace structure from being garbage collected
     private final WeakReference<Trace> traceHolder;
 
-    StackSamplingCommand(Trace trace) {
+    CollectStackCommand(Trace trace) {
         this.traceHolder = new WeakReference<Trace>(trace);
     }
 

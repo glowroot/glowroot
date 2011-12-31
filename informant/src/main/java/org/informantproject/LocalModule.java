@@ -20,14 +20,14 @@ import java.util.Map;
 
 import org.informantproject.local.configuration.ReadConfigurationJsonService;
 import org.informantproject.local.configuration.UpdateConfigurationJsonService;
-import org.informantproject.local.metrics.LocalMetricsCollector;
-import org.informantproject.local.metrics.MetricsJsonService;
-import org.informantproject.local.trace.LocalTraceCollector;
+import org.informantproject.local.metrics.LocalMetricRepository;
+import org.informantproject.local.metrics.MetricJsonService;
+import org.informantproject.local.trace.LocalTraceRepository;
 import org.informantproject.local.trace.TraceJsonService;
 import org.informantproject.local.ui.LocalHttpHandler;
 import org.informantproject.local.ui.LocalHttpHandler.JsonService;
-import org.informantproject.metrics.MetricsCollector;
-import org.informantproject.trace.TraceCollector;
+import org.informantproject.metric.MetricRepository;
+import org.informantproject.trace.TraceRepository;
 import org.informantproject.util.SimpleHttpServer;
 import org.informantproject.util.SimpleHttpServer.HttpHandler;
 import org.slf4j.Logger;
@@ -57,9 +57,6 @@ class LocalModule extends AbstractModule {
 
     static void start(Injector injector) {
         logger.debug("start()");
-        injector.getInstance(MetricsJsonService.class);
-        injector.getInstance(TraceJsonService.class);
-        // start local http service
         injector.getInstance(SimpleHttpServer.class);
     }
 
@@ -72,8 +69,8 @@ class LocalModule extends AbstractModule {
     protected void configure() {
         logger.debug("configure()");
         // singleton: expensive to create
-        bind(TraceCollector.class).to(LocalTraceCollector.class);
-        bind(MetricsCollector.class).to(LocalMetricsCollector.class);
+        bind(TraceRepository.class).to(LocalTraceRepository.class);
+        bind(MetricRepository.class).to(LocalMetricRepository.class);
     }
 
     @Provides
@@ -89,7 +86,7 @@ class LocalModule extends AbstractModule {
         logger.debug("providesHttpHandler()");
         Map<String, JsonService> jsonServiceMap = new HashMap<String, JsonService>();
         jsonServiceMap.put("/traces", injector.getInstance(TraceJsonService.class));
-        jsonServiceMap.put("/metrics", injector.getInstance(MetricsJsonService.class));
+        jsonServiceMap.put("/metrics", injector.getInstance(MetricJsonService.class));
         jsonServiceMap.put("/configuration/read",
                 injector.getInstance(ReadConfigurationJsonService.class));
         jsonServiceMap.put("/configuration/update",

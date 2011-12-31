@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.metrics;
+package org.informantproject.metric;
 
 import com.google.common.base.Objects;
 

@@ -38,9 +38,9 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MetricsJsonService implements JsonService {
+public class MetricJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricsJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(MetricJsonService.class);
 
     private static final int DONT_SEND_END_TIME_IN_RESPONSE = -1;
 
@@ -48,7 +48,7 @@ public class MetricsJsonService implements JsonService {
     private final Clock clock;
 
     @Inject
-    public MetricsJsonService(MetricPointDao metricPointDao, Clock clock) {
+    public MetricJsonService(MetricPointDao metricPointDao, Clock clock) {
         this.metricPointDao = metricPointDao;
         this.clock = clock;
     }

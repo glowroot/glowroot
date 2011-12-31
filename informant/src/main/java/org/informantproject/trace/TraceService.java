@@ -47,17 +47,17 @@ public final class TraceService {
 
     private final TraceRegistry traceRegistry;
     private final ConfigurationService configurationService;
-    private final TraceCollector traceCollector;
+    private final TraceRepository traceRepository;
     private final Clock clock;
     private final Ticker ticker;
 
     @Inject
     public TraceService(TraceRegistry traceRegistry, ConfigurationService configurationService,
-            TraceCollector collectorService, Clock clock, Ticker ticker) {
+            TraceRepository traceRepository, Clock clock, Ticker ticker) {
 
         this.traceRegistry = traceRegistry;
         this.configurationService = configurationService;
-        this.traceCollector = collectorService;
+        this.traceRepository = traceRepository;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -143,7 +143,7 @@ public final class TraceService {
         if ((!thresholdDisabled && durationInNanoseconds >= TimeUnit.MILLISECONDS
                 .toNanos(thresholdMillis)) || completedTrace.isStuck()) {
 
-            traceCollector.collectCompletedTrace(completedTrace);
+            traceRepository.storeCompletedTrace(completedTrace);
         }
     }
 

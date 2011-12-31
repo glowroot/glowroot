@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.trace;
+package org.informantproject.metric;
+
+import java.util.List;
 
 /**
- * Interface for storing traces.
+ * Interface for storing metrics.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface TraceCollector {
-
-    void collectCompletedTrace(Trace trace);
-
-    // implementations must assume another thread is concurrently still writing to trace
-    void collectStuckTrace(Trace trace);
+public interface MetricRepository {
+    void store(List<MetricValue> metricValues);
 }

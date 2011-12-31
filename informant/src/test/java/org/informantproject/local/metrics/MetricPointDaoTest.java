@@ -34,7 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.informantproject.metrics.MetricValue;
+import org.informantproject.metric.MetricValue;
 import org.informantproject.util.Clock;
 import org.informantproject.util.ConnectionTestProvider;
 import org.informantproject.util.JdbcHelper;
