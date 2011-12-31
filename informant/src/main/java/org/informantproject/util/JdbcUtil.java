@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,27 +23,19 @@ import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
-
 /**
- * Convenience method to verify whether a table exists in a database. A little strange maybe that
- * this is so useful.
+ * Convenience method to verify whether a table exists in a database.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class JdbcHelper {
+public final class JdbcUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(JdbcHelper.class);
+    private static final Logger logger = LoggerFactory.getLogger(JdbcUtil.class);
 
-    private final Connection connection;
+    private JdbcUtil() {}
 
-    @Inject
-    JdbcHelper(Connection connection) {
-        this.connection = connection;
-    }
-
-    public boolean tableExists(String tableName) throws SQLException {
+    public static boolean tableExists(String tableName, Connection connection) throws SQLException {
         logger.debug("tableExists(): tableName={}", tableName);
         ResultSet resultSet = connection.getMetaData().getTables(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.informantproject.metric.MetricValue;
 import org.informantproject.util.Clock;
-import org.informantproject.util.JdbcHelper;
+import org.informantproject.util.JdbcUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +59,7 @@ public class MetricPointDao {
     private final boolean valid;
 
     @Inject
-    public MetricPointDao(Connection connection, JdbcHelper jdbcHelper, Clock clock) {
+    public MetricPointDao(Connection connection, Clock clock) {
         this.connection = connection;
         this.clock = clock;
 
@@ -67,7 +67,7 @@ public class MetricPointDao {
         PreparedStatement countPS = null;
         boolean localValid;
         try {
-            if (!jdbcHelper.tableExists("metric_point")) {
+            if (!JdbcUtil.tableExists("metric_point", connection)) {
                 createTable(connection);
             }
             insertPS = connection.prepareStatement("insert into metric_point"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.informantproject.util.JdbcHelper;
+import org.informantproject.util.JdbcUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ class ConfigurationDao {
     private final boolean valid;
 
     @Inject
-    ConfigurationDao(Connection connection, JdbcHelper jdbcHelper) {
+    ConfigurationDao(Connection connection) {
 
         this.connection = connection;
         PreparedStatement localInsertPreparedStatement = null;
@@ -63,7 +63,7 @@ class ConfigurationDao {
         boolean localValid;
 
         try {
-            if (!jdbcHelper.tableExists("configuration")) {
+            if (!JdbcUtil.tableExists("configuration", connection)) {
                 // create table
                 Statement statement = connection.createStatement();
                 statement.execute("create table configuration (id varchar, configuration varchar)");

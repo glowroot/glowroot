@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 import org.informantproject.trace.Trace;
 import org.informantproject.trace.TraceTestData;
 import org.informantproject.util.ConnectionTestProvider;
-import org.informantproject.util.JdbcHelper;
+import org.informantproject.util.JdbcUtil;
 import org.informantproject.util.ThreadChecker;
 
 /**
@@ -54,9 +54,9 @@ public class TraceDaoTest {
     }
 
     @Before
-    public void before(JdbcHelper jdbcHelper, Connection connection) throws SQLException {
+    public void before(Connection connection) throws SQLException {
         preExistingThreads = ThreadChecker.currentThreadList();
-        if (jdbcHelper.tableExists("trace")) {
+        if (JdbcUtil.tableExists("trace", connection)) {
             Statement statement = connection.createStatement();
             statement.execute("drop table trace");
             statement.close();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.informantproject.util.Clock;
-import org.informantproject.util.JdbcHelper;
+import org.informantproject.util.JdbcUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +54,7 @@ class TraceDao {
     private final boolean valid;
 
     @Inject
-    TraceDao(Connection connection, JdbcHelper jdbcHelper, Clock clock) {
+    TraceDao(Connection connection, Clock clock) {
         this.connection = connection;
         this.clock = clock;
         PreparedStatement insertPS = null;
@@ -63,7 +63,7 @@ class TraceDao {
         PreparedStatement countPS = null;
         boolean errorOnInit = false;
         try {
-            if (!jdbcHelper.tableExists("trace")) {
+            if (!JdbcUtil.tableExists("trace", connection)) {
                 createTable(connection);
             }
             insertPS = connection.prepareStatement("insert into trace (id, capturedAt, startAt,"

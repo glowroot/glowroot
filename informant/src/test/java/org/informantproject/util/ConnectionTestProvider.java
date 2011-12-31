@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,13 +37,12 @@ public class ConnectionTestProvider implements Provider<Connection> {
             }
             Connection connection = DriverManager.getConnection("jdbc:h2:informant", "sa", "");
             // cyclic relationship here between connection and jdbc helper
-            JdbcHelper jdbcHelper = new JdbcHelper(connection);
-            if (jdbcHelper.tableExists("trace")) {
+            if (JdbcUtil.tableExists("trace", connection)) {
                 Statement statement = connection.createStatement();
                 statement.execute("drop table trace");
                 statement.close();
             }
-            if (jdbcHelper.tableExists("configuration")) {
+            if (JdbcUtil.tableExists("configuration", connection)) {
                 Statement statement = connection.createStatement();
                 statement.execute("drop table configuration");
                 statement.close();
