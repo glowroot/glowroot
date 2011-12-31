@@ -18,14 +18,11 @@ package org.informantproject;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.informantproject.metric.MetricCollector;
 import org.informantproject.trace.StackCollector;
 import org.informantproject.trace.StuckTraceCollector;
 import org.informantproject.util.Clock;
-import org.informantproject.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,8 +62,6 @@ class InformantModule extends AbstractModule {
         injector.getInstance(StuckTraceCollector.class).shutdown();
         injector.getInstance(StackCollector.class).shutdown();
         injector.getInstance(MetricCollector.class).shutdown();
-        injector.getInstance(ExecutorService.class).shutdownNow();
-        injector.getInstance(ScheduledExecutorService.class).shutdownNow();
         try {
             injector.getInstance(Connection.class).close();
         } catch (SQLException e) {
@@ -108,19 +103,5 @@ class InformantModule extends AbstractModule {
     @Singleton
     protected static Ticker providesTicker() {
         return Ticker.systemTicker();
-    }
-
-    @Provides
-    @Singleton
-    protected static ExecutorService providesExecutorService() {
-        // TODO think about restricting the pool
-        return DaemonExecutors.newCachedThreadPool("Informant-ExecutorPool");
-    }
-
-    @Provides
-    @Singleton
-    protected static ScheduledExecutorService providesScheduledExecutorService() {
-        // TODO think about the pool size
-        return DaemonExecutors.newScheduledThreadPool(10, "Informant-ScheduledExecutorPool");
     }
 }
