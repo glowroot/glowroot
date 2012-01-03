@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.informantproject.local.metrics.MetricPointDao;
-import org.informantproject.local.metrics.Point;
+import org.informantproject.local.metric.MetricDao;
+import org.informantproject.local.metric.Point;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.informantproject.util.Clock;
 import org.slf4j.Logger;
@@ -46,18 +46,18 @@ public class MetricJsonService implements JsonService {
 
     private static final int DONT_SEND_END_TIME_IN_RESPONSE = -1;
 
-    private final MetricPointDao metricPointDao;
+    private final MetricDao metricDao;
     private final Clock clock;
 
     @Inject
-    public MetricJsonService(MetricPointDao metricPointDao, Clock clock) {
-        this.metricPointDao = metricPointDao;
+    public MetricJsonService(MetricDao metricDao, Clock clock) {
+        this.metricDao = metricDao;
         this.clock = clock;
     }
 
     public String handleRequest(String message) throws IOException {
         logger.debug("handleRequest(): message={}", message);
-        ReadMetricsRequest request = new Gson().fromJson(message, ReadMetricsRequest.class);
+        MetricRequest request = new Gson().fromJson(message, MetricRequest.class);
         if (request.getStart() < 0) {
             request.setStart(clock.currentTimeMillis() + request.getStart());
         }
@@ -65,7 +65,7 @@ public class MetricJsonService implements JsonService {
         if (isEndCurrentTime) {
             request.setEnd(clock.currentTimeMillis());
         }
-        Map<String, List<Point>> metricPoints = metricPointDao.readMetricPoints(
+        Map<String, List<Point>> metricPoints = metricDao.readMetricPoints(
                 request.getMetricIds(), request.getStart(), request.getEnd());
         String response;
         if (isEndCurrentTime) {

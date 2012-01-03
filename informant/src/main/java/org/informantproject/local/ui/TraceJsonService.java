@@ -55,7 +55,7 @@ public class TraceJsonService implements JsonService {
 
     public String handleRequest(String message) throws IOException {
         logger.debug("onMessage(): message={}", message);
-        ReadTracesRequest request = new Gson().fromJson(message, ReadTracesRequest.class);
+        TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         if (request.getStart() < 0) {
             request.setStart(clock.currentTimeMillis() + request.getStart());
         }

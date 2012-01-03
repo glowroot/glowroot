@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.metrics;
+package org.informantproject.local.metric;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,15 +37,15 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Data access object for storing and reading metrics data from the embedded H2 database.
+ * Data access object for storing and reading metric data from the embedded H2 database.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class MetricPointDao {
+public class MetricDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricPointDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(MetricDao.class);
 
     private final Connection connection;
     private final Clock clock;
@@ -59,7 +59,7 @@ public class MetricPointDao {
     private final boolean valid;
 
     @Inject
-    public MetricPointDao(Connection connection, Clock clock) {
+    public MetricDao(Connection connection, Clock clock) {
         this.connection = connection;
         this.clock = clock;
 

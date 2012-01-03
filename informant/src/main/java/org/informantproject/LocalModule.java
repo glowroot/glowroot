@@ -15,7 +15,7 @@
  */
 package org.informantproject;
 
-import org.informantproject.local.metrics.MetricSinkLocal;
+import org.informantproject.local.metric.MetricSinkLocal;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer;
 import org.informantproject.local.ui.HttpServer.LocalHttpServerPort;

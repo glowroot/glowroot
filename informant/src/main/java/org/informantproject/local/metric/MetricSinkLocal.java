@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.ui;
+package org.informantproject.local.metric;
+
+import java.util.List;
+
+import org.informantproject.metric.MetricSink;
+import org.informantproject.metric.MetricValue;
+
+import com.google.inject.Inject;
 
 /**
- * Structure used to deserialize request parameters sent to "/traces".
+ * Implementation of MetricSink for local storage in embedded H2 database. Some day there may be
+ * another implementation for remote storage (e.g. central monitoring system).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ReadTracesRequest {
+public class MetricSinkLocal implements MetricSink {
 
-    private long start;
-    private long end;
+    private final MetricDao metricDao;
 
-    public long getStart() {
-        return start;
+    @Inject
+    public MetricSinkLocal(MetricDao metricDao) {
+        this.metricDao = metricDao;
     }
 
-    public void setStart(long start) {
-        this.start = start;
-    }
-
-    public long getEnd() {
-        return end;
-    }
-
-    public void setEnd(long end) {
-        this.end = end;
+    public void onMetricCapture(List<MetricValue> metricValues) {
+        metricDao.storeMetricValues(metricValues);
     }
 }

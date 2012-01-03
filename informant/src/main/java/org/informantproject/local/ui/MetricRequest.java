@@ -23,7 +23,7 @@ import java.util.List;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ReadMetricsRequest {
+class MetricRequest {
 
     private List<String> metricIds;
     private long start;

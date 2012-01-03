@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.metrics;
+package org.informantproject.local.metric;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -34,6 +34,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.informantproject.local.metric.MetricDao;
+import org.informantproject.local.metric.Point;
 import org.informantproject.metric.MetricValue;
 import org.informantproject.util.Clock;
 import org.informantproject.util.ConnectionTestProvider;
@@ -46,7 +48,7 @@ import org.informantproject.util.ThreadChecker;
  * @since 0.5
  */
 @RunWith(JukitoRunner.class)
-public class MetricPointDaoTest {
+public class MetricDaoTest {
 
     private Set<Thread> preExistingThreads;
 
@@ -77,29 +79,29 @@ public class MetricPointDaoTest {
     }
 
     @Test
-    public void shouldReadEmptyMetricPoints(MetricPointDao metricPointDao) {
+    public void shouldReadEmptyMetricPoints(MetricDao metricDao) {
         // given
         List<String> metricIds = Arrays.asList("cpu", "mem", "io");
         // when
-        Map<String, List<Point>> metricPoints = metricPointDao.readMetricPoints(metricIds, 0,
+        Map<String, List<Point>> metricPoints = metricDao.readMetricPoints(metricIds, 0,
                 System.currentTimeMillis());
         // then
         assertThat(metricPoints.size(), is(0));
     }
 
     @Test
-    public void shouldStoreMetricPoints(MetricPointDao metricPointDao, MockClock clock) {
+    public void shouldStoreMetricPoints(MetricDao metricDao, MockClock clock) {
         // given
         MetricValue mv1 = new MetricValue("cpu", 0.5);
         MetricValue mv2 = new MetricValue("mem", 10);
         MetricValue mv3 = new MetricValue("cpu", 0.75);
         // when
         long start = clock.updateTime();
-        metricPointDao.storeMetricValues(Arrays.asList(mv1, mv2));
+        metricDao.storeMetricValues(Arrays.asList(mv1, mv2));
         clock.forwardTime(1000);
-        metricPointDao.storeMetricValue(mv3);
+        metricDao.storeMetricValues(Arrays.asList(mv3));
         // then
-        Map<String, List<Point>> storedMetricPoints = metricPointDao.readMetricPoints(
+        Map<String, List<Point>> storedMetricPoints = metricDao.readMetricPoints(
                 Arrays.asList("cpu", "mem"), start, start + 1000);
         assertThat(storedMetricPoints.get("cpu"),
                 is(Arrays.asList(new Point(start, 0.5), new Point(start + 1000, 0.75))));
@@ -109,7 +111,7 @@ public class MetricPointDaoTest {
     }
 
     @Test
-    public void shouldOnlyReadMetricPointsInGivenTimeBand(MetricPointDao metricPointDao,
+    public void shouldOnlyReadMetricPointsInGivenTimeBand(MetricDao metricDao,
             MockClock clock) {
 
         // given
@@ -118,15 +120,15 @@ public class MetricPointDaoTest {
         MetricValue mv3 = new MetricValue("mem", 10);
         MetricValue mv4 = new MetricValue("mem", 11);
         long start = clock.updateTime();
-        metricPointDao.storeMetricValue(mv1);
+        metricDao.storeMetricValues(Arrays.asList(mv1));
         clock.forwardTime(1);
-        metricPointDao.storeMetricValue(mv2);
+        metricDao.storeMetricValues(Arrays.asList(mv2));
         clock.forwardTime(1000);
-        metricPointDao.storeMetricValue(mv3);
+        metricDao.storeMetricValues(Arrays.asList(mv3));
         clock.forwardTime(1);
-        metricPointDao.storeMetricValue(mv4);
+        metricDao.storeMetricValues(Arrays.asList(mv4));
         // when
-        Map<String, List<Point>> storedMetricPoints = metricPointDao.readMetricPoints(
+        Map<String, List<Point>> storedMetricPoints = metricDao.readMetricPoints(
                 Arrays.asList("cpu", "mem"), start + 1, start + 1001);
         // then
         assertThat(storedMetricPoints.size(), is(2));
@@ -137,7 +139,7 @@ public class MetricPointDaoTest {
     }
 
     @Test
-    public void shouldOnlyReadMetricPointsForGivenMetricIds(MetricPointDao metricPointDao,
+    public void shouldOnlyReadMetricPointsForGivenMetricIds(MetricDao metricDao,
             MockClock clock) {
 
         // given
@@ -147,9 +149,9 @@ public class MetricPointDaoTest {
         MetricValue mv4 = new MetricValue("net", 0.5);
         // when
         long now = clock.updateTime();
-        metricPointDao.storeMetricValues(Arrays.asList(mv1, mv2, mv3, mv4));
+        metricDao.storeMetricValues(Arrays.asList(mv1, mv2, mv3, mv4));
         // then
-        Map<String, List<Point>> storedMetricPoints = metricPointDao.readMetricPoints(
+        Map<String, List<Point>> storedMetricPoints = metricDao.readMetricPoints(
                 Arrays.asList("io", "net"), now, now);
         assertThat(storedMetricPoints.size(), is(2));
         assertThat(storedMetricPoints.get("io"),
