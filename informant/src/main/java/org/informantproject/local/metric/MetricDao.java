@@ -141,10 +141,6 @@ public class MetricDao {
         }
     }
 
-    void storeMetricValue(MetricValue metricValue) {
-        storeMetricValues(Collections.singleton(metricValue));
-    }
-
     // TODO ensure that any call to read end=currentTimeMillis
     // and any subsequent call with start=<previous currentTimeMillis>
     // will not miss any metrics
