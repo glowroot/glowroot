@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.trace;
+package org.informantproject.local.ui;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import org.informantproject.local.metrics.MetricPointDao;
+import org.informantproject.local.metrics.Point;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.informantproject.util.Clock;
 import org.slf4j.Logger;
@@ -30,30 +34,30 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/traces" in LocalModule.
+ * Json service to read metrics data. Bound to url "/metrics" in LocalModule.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class TraceJsonService implements JsonService {
+public class MetricJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(MetricJsonService.class);
 
     private static final int DONT_SEND_END_TIME_IN_RESPONSE = -1;
 
-    private final TraceDao traceDao;
+    private final MetricPointDao metricPointDao;
     private final Clock clock;
 
     @Inject
-    public TraceJsonService(TraceDao traceDao, Clock clock) {
-        this.traceDao = traceDao;
+    public MetricJsonService(MetricPointDao metricPointDao, Clock clock) {
+        this.metricPointDao = metricPointDao;
         this.clock = clock;
     }
 
     public String handleRequest(String message) throws IOException {
-        logger.debug("onMessage(): message={}", message);
-        ReadTracesRequest request = new Gson().fromJson(message, ReadTracesRequest.class);
+        logger.debug("handleRequest(): message={}", message);
+        ReadMetricsRequest request = new Gson().fromJson(message, ReadMetricsRequest.class);
         if (request.getStart() < 0) {
             request.setStart(clock.currentTimeMillis() + request.getStart());
         }
@@ -61,24 +65,25 @@ public class TraceJsonService implements JsonService {
         if (isEndCurrentTime) {
             request.setEnd(clock.currentTimeMillis());
         }
-        List<StoredTrace> traces = traceDao.readStoredTraces(request.getStart(), request.getEnd());
+        Map<String, List<Point>> metricPoints = metricPointDao.readMetricPoints(
+                request.getMetricIds(), request.getStart(), request.getEnd());
         String response;
         if (isEndCurrentTime) {
-            response = writeResponse(traces, request.getStart(), request.getEnd());
+            response = writeResponse(metricPoints, request.getStart(), request.getEnd());
         } else {
-            response = writeResponse(traces, request.getStart());
+            response = writeResponse(metricPoints, request.getStart());
         }
         logger.debug("onMessage(): response={}", response);
         return response;
     }
 
-    private static String writeResponse(List<StoredTrace> storedTraces, long start)
+    private static String writeResponse(Map<String, List<Point>> metricPoints, long start)
             throws IOException {
 
-        return writeResponse(storedTraces, start, DONT_SEND_END_TIME_IN_RESPONSE);
+        return writeResponse(metricPoints, start, DONT_SEND_END_TIME_IN_RESPONSE);
     }
 
-    private static String writeResponse(List<StoredTrace> storedTraces, long start, long end)
+    private static String writeResponse(Map<String, List<Point>> metricPoints, long start, long end)
             throws IOException {
 
         StringWriter sw = new StringWriter();
@@ -88,25 +93,17 @@ public class TraceJsonService implements JsonService {
         if (end != DONT_SEND_END_TIME_IN_RESPONSE) {
             jw.name("end").value(end);
         }
-        jw.name("traces").beginArray();
-        for (StoredTrace storedTrace : storedTraces) {
-            jw.beginObject();
-            jw.name("id").value(storedTrace.getId());
-            jw.name("start").value(storedTrace.getStartAt());
-            jw.name("stuck").value(storedTrace.isStuck());
-            jw.name("uniqueId").value(storedTrace.getId());
-            jw.name("duration").value(storedTrace.getDuration());
-            jw.name("completed").value(storedTrace.isCompleted());
-            // inject raw json into stream
-            sw.write(",\"threadNames\":");
-            sw.write(storedTrace.getThreadNames());
-            jw.name("username").value(storedTrace.getUsername());
-            sw.write(",\"spans\":");
-            sw.write(storedTrace.getSpans());
-            // TODO write metric data, trace and merged stack tree
-            jw.endObject();
+        jw.name("data").beginObject();
+        for (Entry<String, List<Point>> entry : metricPoints.entrySet()) {
+            jw.name(entry.getKey()).beginArray();
+            for (Point point : entry.getValue()) {
+                jw.beginArray();
+                jw.value(point.getCapturedAt() - start);
+                jw.value(point.getValue());
+                jw.endArray();
+            }
+            jw.endArray();
         }
-        jw.endArray();
         jw.endObject();
         jw.close();
         return sw.toString();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.trace;
+package org.informantproject.local.ui;
+
+import java.util.List;
 
 /**
- * Structure used to deserialize request parameters sent to "/traces".
+ * Structure used to deserialize request parameters sent to "/metrics".
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ReadTracesRequest {
+class ReadMetricsRequest {
 
+    private List<String> metricIds;
     private long start;
     private long end;
+
+    public List<String> getMetricIds() {
+        return metricIds;
+    }
+
+    public void setMetricIds(List<String> metricIds) {
+        this.metricIds = metricIds;
+    }
 
     public long getStart() {
         return start;

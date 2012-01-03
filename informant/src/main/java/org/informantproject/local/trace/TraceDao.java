@@ -39,7 +39,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class TraceDao {
+public class TraceDao {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
@@ -112,7 +112,7 @@ class TraceDao {
         }
     }
 
-    List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
+    public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
         if (!valid) {
             return Collections.emptyList();
         }

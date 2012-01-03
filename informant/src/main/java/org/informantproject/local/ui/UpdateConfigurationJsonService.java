@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.configuration;
+package org.informantproject.local.ui;
 
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.ui.HttpServer.JsonService;

@@ -30,10 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.informantproject.local.configuration.ReadConfigurationJsonService;
-import org.informantproject.local.configuration.UpdateConfigurationJsonService;
-import org.informantproject.local.metrics.MetricJsonService;
-import org.informantproject.local.trace.TraceJsonService;
 import org.informantproject.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
