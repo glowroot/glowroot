@@ -71,12 +71,12 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTrace(LocalTraceRepository traceRepository, TraceDao traceDao,
+    public void shouldReadTrace(TraceSinkLocal traceSink, TraceDao traceDao,
             TraceTestData traceTestData) {
 
         // given
         Trace trace = traceTestData.createTrace();
-        traceRepository.storeCompletedTrace(trace);
+        traceSink.storeTrace(trace);
         // when
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
         // then
@@ -94,12 +94,12 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldDeletedTrace(LocalTraceRepository traceRepository, TraceDao traceDao,
+    public void shouldDeletedTrace(TraceSinkLocal traceSink, TraceDao traceDao,
             TraceTestData traceTestData) {
 
         // given
         Trace trace = traceTestData.createTrace();
-        traceRepository.storeCompletedTrace(trace);
+        traceSink.storeTrace(trace);
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
         StoredTrace storedTrace = storedTraces.get(0);
         String traceId = storedTrace.getId();

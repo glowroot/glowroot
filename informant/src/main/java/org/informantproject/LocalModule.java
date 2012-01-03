@@ -15,12 +15,12 @@
  */
 package org.informantproject;
 
-import org.informantproject.local.metrics.LocalMetricRepository;
-import org.informantproject.local.trace.LocalTraceRepository;
+import org.informantproject.local.metrics.MetricSinkLocal;
+import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer;
 import org.informantproject.local.ui.HttpServer.LocalHttpServerPort;
-import org.informantproject.metric.MetricRepository;
-import org.informantproject.trace.TraceRepository;
+import org.informantproject.metric.MetricSink;
+import org.informantproject.trace.TraceSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +47,8 @@ class LocalModule extends AbstractModule {
     @Override
     protected void configure() {
         logger.debug("configure()");
-        bind(TraceRepository.class).to(LocalTraceRepository.class);
-        bind(MetricRepository.class).to(LocalMetricRepository.class);
+        bind(TraceSink.class).to(TraceSinkLocal.class);
+        bind(MetricSink.class).to(MetricSinkLocal.class);
         bindConstant().annotatedWith(LocalHttpServerPort.class).to(httpServerPort);
     }
 

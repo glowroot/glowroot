@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.informantproject.api.SpanDetail;
-import org.informantproject.configuration.ConfigurationService;
-import org.informantproject.configuration.ImmutableCoreConfiguration;
 import org.informantproject.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +43,16 @@ public final class TraceService {
     private static final Logger logger = LoggerFactory.getLogger(TraceService.class);
 
     private final TraceRegistry traceRegistry;
-    private final ConfigurationService configurationService;
-    private final TraceRepository traceRepository;
+    private final TraceSink traceSink;
     private final Clock clock;
     private final Ticker ticker;
 
     @Inject
-    public TraceService(TraceRegistry traceRegistry, ConfigurationService configurationService,
-            TraceRepository traceRepository, Clock clock, Ticker ticker) {
+    public TraceService(TraceRegistry traceRegistry, TraceSink traceSink, Clock clock,
+            Ticker ticker) {
 
         this.traceRegistry = traceRegistry;
-        this.configurationService = configurationService;
-        this.traceRepository = traceRepository;
+        this.traceSink = traceSink;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -90,7 +85,7 @@ public final class TraceService {
             cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
             traceRegistry.setCurrentTrace(null);
             traceRegistry.removeTrace(currentTrace);
-            handleCompletedTrace(currentTrace);
+            traceSink.onCompletedTrace(currentTrace);
         }
     }
 
@@ -128,23 +123,6 @@ public final class TraceService {
     // returns list of traces ordered by start time
     public Collection<Trace> getTraces() {
         return traceRegistry.getTraces();
-    }
-
-    private void handleCompletedTrace(Trace completedTrace) {
-        ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
-        long durationInNanoseconds = completedTrace.getRootSpan().getDuration();
-        // if the completed trace exceeded the given threshold then it is sent to the collector.
-        // the completed trace is also checked in case it was previously collected and marked as
-        // stuck and the threshold was disabled or increased in the meantime in which case the full
-        // completed trace needs to be collected anyways
-        int thresholdMillis = configuration.getThresholdMillis();
-        boolean thresholdDisabled =
-                (thresholdMillis == ImmutableCoreConfiguration.THRESHOLD_DISABLED);
-        if ((!thresholdDisabled && durationInNanoseconds >= TimeUnit.MILLISECONDS
-                .toNanos(thresholdMillis)) || completedTrace.isStuck()) {
-
-            traceRepository.storeCompletedTrace(completedTrace);
-        }
     }
 
     private static void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ package org.informantproject.local.trace;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.trace.Span;
 import org.informantproject.trace.Trace;
-import org.informantproject.trace.TraceRepository;
+import org.informantproject.trace.TraceSink;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,26 +33,23 @@ import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 
 /**
- * Implementation of TraceRepository for local storage in embedded H2 database. Some day there may
- * be another implementation for remote storage (e.g. central monitoring system).
+ * Implementation of TraceSink for local storage in embedded H2 database. Some day there may be
+ * another implementation for remote storage (e.g. central monitoring system).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LocalTraceRepository implements TraceRepository {
+public class TraceSinkLocal extends TraceSink {
 
     private final TraceDao traceDao;
 
     @Inject
-    public LocalTraceRepository(TraceDao traceDao) {
+    public TraceSinkLocal(TraceDao traceDao, ConfigurationService configurationService) {
+        super(configurationService);
         this.traceDao = traceDao;
     }
 
-    public void storeCompletedTrace(Trace trace) {
-        traceDao.storeTrace(buildStoredTrace(trace));
-    }
-
-    public void storeStuckTrace(Trace trace) {
+    protected void storeTrace(Trace trace) {
         traceDao.storeTrace(buildStoredTrace(trace));
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,16 +49,14 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
     private final ScheduledExecutorService scheduledExecutor =
             DaemonExecutors.newSingleThreadScheduledExecutor("Informant-MetricCollector");
 
-    private final MetricRepository metricRepository;
+    private final MetricSink metricSink;
 
     private volatile Future<?> future;
     private volatile int bossIntervalMillis;
 
     @Inject
-    public MetricCollector(ConfigurationService configurationService,
-            MetricRepository metricRepository) {
-
-        this.metricRepository = metricRepository;
+    public MetricCollector(ConfigurationService configurationService, MetricSink metricSink) {
+        this.metricSink = metricSink;
         bossIntervalMillis = configurationService.getCoreConfiguration().getMetricPeriodMillis();
         future = scheduledExecutor.scheduleWithFixedDelay(this, 0, bossIntervalMillis,
                 TimeUnit.MILLISECONDS);
@@ -110,7 +108,7 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
         // RuntimeMXBean mxbean = ManagementFactory.getRuntimeMXBean();
         List<MetricValue> metricValues = new ArrayList<MetricValue>();
         addMemoryStats(metricValues);
-        metricRepository.store(metricValues);
+        metricSink.onMetricCapture(metricValues);
     }
 
     private static void addMemoryStats(List<MetricValue> metricValues) {

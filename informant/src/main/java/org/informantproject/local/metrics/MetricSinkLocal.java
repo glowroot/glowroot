@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,28 @@ package org.informantproject.local.metrics;
 
 import java.util.List;
 
-import org.informantproject.metric.MetricRepository;
+import org.informantproject.metric.MetricSink;
 import org.informantproject.metric.MetricValue;
 
 import com.google.inject.Inject;
 
 /**
- * Implementation of MetricRepository for local storage in embedded H2 database. Some day there may
- * be another implementation for remote storage (e.g. central monitoring system).
+ * Implementation of MetricSink for local storage in embedded H2 database. Some day there may be
+ * another implementation for remote storage (e.g. central monitoring system).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LocalMetricRepository implements MetricRepository {
+public class MetricSinkLocal implements MetricSink {
 
     private final MetricPointDao metricPointDao;
 
     @Inject
-    public LocalMetricRepository(MetricPointDao metricPointDao) {
+    public MetricSinkLocal(MetricPointDao metricPointDao) {
         this.metricPointDao = metricPointDao;
     }
 
-    public void store(List<MetricValue> metricValues) {
+    public void onMetricCapture(List<MetricValue> metricValues) {
         metricPointDao.storeMetricValues(metricValues);
     }
 }

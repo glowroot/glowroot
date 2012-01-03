@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@ import com.google.inject.Singleton;
 
 /**
  * Owns the thread (via a single threaded scheduled executor) that watches out for stuck traces.
- * When it finds a stuck trace it sends it to {@link TraceRepository#storeStuckTrace(Trace)}. This
- * ensures that a trace that never ends is still captured even though normal collection occurs at
- * the end of a trace.
+ * When it finds a stuck trace it sends it to {@link TraceSink#onStuckTrace(Trace)}. This ensures
+ * that a trace that never ends is still captured even though normal collection occurs at the end of
+ * a trace.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -48,16 +48,16 @@ public class StuckTraceCollector implements Runnable {
             .newSingleThreadScheduledExecutor("Informant-StuckTraceCollector");
 
     private final TraceService traceService;
-    private final TraceRepository traceRepository;
+    private final TraceSink traceSink;
     private final ConfigurationService configurationService;
     private final Ticker ticker;
 
     @Inject
-    public StuckTraceCollector(TraceService traceService, TraceRepository traceRepository,
+    public StuckTraceCollector(TraceService traceService, TraceSink traceSink,
             ConfigurationService configurationService, Ticker ticker) {
 
         this.traceService = traceService;
-        this.traceRepository = traceRepository;
+        this.traceSink = traceSink;
         this.configurationService = configurationService;
         this.ticker = ticker;
         // wait to schedule the real stuck thread command until it is within CHECK_INTERVAL_MILLIS
@@ -105,7 +105,7 @@ public class StuckTraceCollector implements Runnable {
                     long initialDelayMillis = getMillisUntilTraceReachesThreshold(trace,
                             configuration.getStuckThresholdMillis());
                     CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
-                            traceRepository);
+                            traceSink);
                     ScheduledFuture<?> stuckCommandScheduledFuture = scheduledExecutor.schedule(
                             command, initialDelayMillis, TimeUnit.MILLISECONDS);
                     trace.setStuckCommandScheduledFuture(stuckCommandScheduledFuture);
