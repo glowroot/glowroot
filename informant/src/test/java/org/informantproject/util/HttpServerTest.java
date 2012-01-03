@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,13 +37,13 @@ public class HttpServerTest {
     private static final int PORT = 8089;
 
     private Set<Thread> preExistingThreads;
-    private SimpleHttpServer httpServer;
+    private HttpServerBase httpServer;
     private AsyncHttpClient asyncHttpClient;
 
     @Before
     public void before() {
         preExistingThreads = ThreadChecker.currentThreadList();
-        httpServer = new SimpleHttpServer(PORT, new EchoHttpHandler(), "");
+        httpServer = new EchoHttpServer(PORT);
         asyncHttpClient = new AsyncHttpClient();
     }
 

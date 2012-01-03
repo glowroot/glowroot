@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,19 +45,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Very simple Netty-based http server.
+ * Base class for a very simple Netty-based http server.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class SimpleHttpServer {
+public abstract class HttpServerBase {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleHttpServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpServerBase.class);
 
     private final ServerBootstrap bootstrap;
     private final ChannelGroup allChannels;
 
-    public SimpleHttpServer(int port, final HttpHandler handler, String threadNamePrefix) {
+    public HttpServerBase(int port, String threadNamePrefix) {
         bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
                 DaemonExecutors.newCachedThreadPool(threadNamePrefix + "HttpServer-Boss"),
                 DaemonExecutors.newCachedThreadPool(threadNamePrefix + "HttpServer-Worker")));
@@ -68,7 +68,7 @@ public class SimpleHttpServer {
                 pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
                 pipeline.addLast("encoder", new HttpResponseEncoder());
                 pipeline.addLast("deflater", new HttpContentCompressor());
-                pipeline.addLast("handler", new SimpleHttpHandlerWrapper(handler));
+                pipeline.addLast("handler", new SimpleHttpHandlerWrapper());
                 return pipeline;
             }
         });
@@ -78,6 +78,9 @@ public class SimpleHttpServer {
         logger.debug("SimpleHttpServer(): http server bound");
     }
 
+    public abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
+            InterruptedException;
+
     public void shutdown() {
         logger.debug("shutdown(): stopping http server");
         allChannels.close().awaitUninterruptibly();
@@ -85,15 +88,7 @@ public class SimpleHttpServer {
         bootstrap.releaseExternalResources();
     }
 
-    public interface HttpHandler {
-        HttpResponse handleRequest(HttpRequest request) throws IOException, InterruptedException;
-    }
-
     private class SimpleHttpHandlerWrapper extends SimpleChannelUpstreamHandler {
-        private final HttpHandler handler;
-        private SimpleHttpHandlerWrapper(HttpHandler handler) {
-            this.handler = handler;
-        }
         @Override
         public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) {
             logger.debug("channelOpen()");
@@ -105,7 +100,7 @@ public class SimpleHttpServer {
 
             HttpRequest request = (HttpRequest) e.getMessage();
             logger.debug("messageReceived(): request.uri={}", request.getUri());
-            HttpResponse response = handler.handleRequest(request);
+            HttpResponse response = handleRequest(request);
             boolean keepAlive = HttpHeaders.isKeepAlive(request);
             if (keepAlive) {
                 // add content-length header only for keep-alive connections

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,26 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.informantproject.local.configuration.ReadConfigurationJsonService;
+import org.informantproject.local.configuration.UpdateConfigurationJsonService;
+import org.informantproject.local.metrics.MetricJsonService;
+import org.informantproject.local.trace.TraceJsonService;
+import org.informantproject.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import org.informantproject.util.SimpleHttpServer.HttpHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +48,9 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.gson.Gson;
+import com.google.inject.BindingAnnotation;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * Handles all http requests for the embedded UI (by default http://localhost:4000).
@@ -47,16 +58,27 @@ import com.google.gson.Gson;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LocalHttpHandler implements HttpHandler {
+@Singleton
+public class HttpServer extends HttpServerBase {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalHttpHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
-    private final Map<String, JsonService> jsonServiceMap;
+    private final Map<String, JsonService> jsonServiceMap = new HashMap<String, JsonService>();
 
-    public LocalHttpHandler(Map<String, JsonService> jsonServiceMap) {
-        this.jsonServiceMap = jsonServiceMap;
+    @Inject
+    public HttpServer(@LocalHttpServerPort int port,
+            ReadConfigurationJsonService readConfigurationJsonService,
+            UpdateConfigurationJsonService updateConfigurationJsonService,
+            TraceJsonService traceJsonService, MetricJsonService metricJsonService) {
+
+        super(port, "Informant-");
+        jsonServiceMap.put("/configuration/read", readConfigurationJsonService);
+        jsonServiceMap.put("/configuration/update", updateConfigurationJsonService);
+        jsonServiceMap.put("/trace", traceJsonService);
+        jsonServiceMap.put("/metric", metricJsonService);
     }
 
+    @Override
     public HttpResponse handleRequest(HttpRequest request) throws IOException {
         logger.debug("messageReceived(): request.uri={}", request.getUri());
         if (request.getUri().equals("/")) {
@@ -93,7 +115,7 @@ public class LocalHttpHandler implements HttpHandler {
     private static HttpResponse getResponseForStaticContent(String resourcePath, String mimeType)
             throws IOException {
 
-        InputStream staticContentStream = LocalHttpHandler.class.getResourceAsStream(resourcePath);
+        InputStream staticContentStream = HttpServer.class.getResourceAsStream(resourcePath);
         byte[] staticContent;
         try {
             staticContent = ByteStreams.toByteArray(staticContentStream);
@@ -129,4 +151,9 @@ public class LocalHttpHandler implements HttpHandler {
     public interface JsonService {
         String handleRequest(String message) throws IOException;
     }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.PARAMETER)
+    @BindingAnnotation
+    public @interface LocalHttpServerPort {}
 }
