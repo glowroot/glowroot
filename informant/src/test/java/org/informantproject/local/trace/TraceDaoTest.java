@@ -24,6 +24,11 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
 
+import org.informantproject.trace.Trace;
+import org.informantproject.trace.TraceTestData;
+import org.informantproject.util.ConnectionTestProvider;
+import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.ThreadChecker;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -31,11 +36,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.informantproject.trace.Trace;
-import org.informantproject.trace.TraceTestData;
-import org.informantproject.util.ConnectionTestProvider;
-import org.informantproject.util.JdbcUtil;
-import org.informantproject.util.ThreadChecker;
 
 /**
  * @author Trask Stalnaker
@@ -71,12 +71,10 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTrace(TraceSinkLocal traceSink, TraceDao traceDao,
-            TraceTestData traceTestData) {
-
+    public void shouldReadTrace(TraceDao traceDao, TraceTestData traceTestData) {
         // given
         Trace trace = traceTestData.createTrace();
-        traceSink.storeTrace(trace);
+        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
         // when
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
         // then
@@ -94,12 +92,10 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldDeletedTrace(TraceSinkLocal traceSink, TraceDao traceDao,
-            TraceTestData traceTestData) {
-
+    public void shouldDeletedTrace(TraceDao traceDao, TraceTestData traceTestData) {
         // given
         Trace trace = traceTestData.createTrace();
-        traceSink.storeTrace(trace);
+        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
         StoredTrace storedTrace = storedTraces.get(0);
         String traceId = storedTrace.getId();
