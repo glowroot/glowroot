@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,15 +45,15 @@ public class StackCollector implements Runnable {
     private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
             .newSingleThreadScheduledExecutor("Informant-StackCollector");
 
-    private final TraceService traceService;
+    private final TraceRegistry traceRegistry;
     private final ConfigurationService configurationService;
     private final Ticker ticker;
 
     @Inject
-    public StackCollector(TraceService traceService, ConfigurationService configurationService,
+    public StackCollector(TraceRegistry traceRegistry, ConfigurationService configurationService,
             Ticker ticker) {
 
-        this.traceService = traceService;
+        this.traceRegistry = traceRegistry;
         this.configurationService = configurationService;
         this.ticker = ticker;
         // the main repeating Runnable (this) only runs every CHECK_INTERVAL_MILLIS at which time it
@@ -97,7 +97,7 @@ public class StackCollector implements Runnable {
             // stack trace threshold is not disabled
             long stackTraceThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
                     configuration.getStackTraceInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
-            for (Trace trace : traceService.getTraces()) {
+            for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace will exceed the stack trace initial delay threshold before the next
                 // scheduled execution of this repeating Runnable (in other words, it is within
                 // COMMAND_INTERVAL_MILLIS from exceeding the threshold) and the stack trace capture

@@ -109,20 +109,16 @@ public final class TraceService {
         traceRegistry.setCurrentRootSpanDisabled(disabled);
     }
 
+    // currently unused, but will be used in the future by the embedded UI
     public Collection<Trace> getTracesExceptCurrent() {
         Trace currentTrace = getCurrentTrace();
         if (currentTrace == null) {
-            return getTraces();
+            return traceRegistry.getTraces();
         } else {
-            List<Trace> tracesExceptCurrent = new ArrayList<Trace>(getTraces());
+            List<Trace> tracesExceptCurrent = new ArrayList<Trace>(traceRegistry.getTraces());
             tracesExceptCurrent.remove(currentTrace);
             return tracesExceptCurrent;
         }
-    }
-
-    // returns list of traces ordered by start time
-    public Collection<Trace> getTraces() {
-        return traceRegistry.getTraces();
     }
 
     private static void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {

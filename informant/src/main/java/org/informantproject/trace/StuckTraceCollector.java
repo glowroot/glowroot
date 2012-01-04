@@ -47,16 +47,16 @@ public class StuckTraceCollector implements Runnable {
     private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
             .newSingleThreadScheduledExecutor("Informant-StuckTraceCollector");
 
-    private final TraceService traceService;
+    private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
     private final ConfigurationService configurationService;
     private final Ticker ticker;
 
     @Inject
-    public StuckTraceCollector(TraceService traceService, TraceSink traceSink,
+    public StuckTraceCollector(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigurationService configurationService, Ticker ticker) {
 
-        this.traceService = traceService;
+        this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configurationService = configurationService;
         this.ticker = ticker;
@@ -95,7 +95,7 @@ public class StuckTraceCollector implements Runnable {
             // stuck threshold is not disabled
             long stuckMessageThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
                     configuration.getStuckThresholdMillis() - CHECK_INTERVAL_MILLIS);
-            for (Trace trace : traceService.getTraces()) {
+            for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace is within CHECK_INTERVAL_MILLIS from hitting the stuck
                 // thread threshold and the stuck thread messaging hasn't already been scheduled
                 // then schedule it
