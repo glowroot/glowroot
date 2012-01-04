@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject;
+package org.informantproject.trace;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
 
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -21,9 +24,7 @@ import org.informantproject.api.SpanDetail;
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.configuration.ImmutableCoreConfiguration;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.trace.Span;
-import org.informantproject.trace.Trace;
-import org.informantproject.trace.TraceService;
+import org.informantproject.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,20 +39,24 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class PluginServicesImpl extends PluginServices {
+public class PluginServicesImpl extends PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
 
-    private final TraceService traceService;
+    private final TraceRegistry traceRegistry;
+    private final TraceSink traceSink;
     private final ConfigurationService configurationService;
+    private final Clock clock;
     private final Ticker ticker;
 
     @Inject
-    PluginServicesImpl(TraceService traceService, ConfigurationService configurationService,
-            Ticker ticker) {
+    PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
+            ConfigurationService configurationService, Clock clock, Ticker ticker) {
 
-        this.traceService = traceService;
+        this.traceRegistry = traceRegistry;
+        this.traceSink = traceSink;
         this.configurationService = configurationService;
+        this.clock = clock;
         this.ticker = ticker;
     }
 
@@ -103,11 +108,11 @@ class PluginServicesImpl extends PluginServices {
             }
             return proceedAndDisableNested(joinPoint);
         }
-        if (traceService.isCurrentRootSpanDisabled()) {
+        if (traceRegistry.isCurrentRootSpanDisabled()) {
             // tracing was enabled after the current trace had started
             return proceedAndRecordMetricData(joinPoint, spanSummaryKey);
         }
-        Trace currentTrace = traceService.getCurrentTrace();
+        Trace currentTrace = traceRegistry.getCurrentTrace();
         // already checked isInTrace() above, so currentTrace != null
         if (configuration.getMaxSpansPerTrace() != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
                 && currentTrace.getRootSpan().getSize() >= configuration.getMaxSpansPerTrace()) {
@@ -128,13 +133,13 @@ class PluginServicesImpl extends PluginServices {
         } finally {
             long endTime = ticker.read();
             // record aggregate timing data
-            traceService.recordSummaryData(spanSummaryKey, endTime - startTime);
+            recordSummaryData(spanSummaryKey, endTime - startTime);
         }
     }
 
     @Override
     public RootSpanDetail getRootSpanDetail() {
-        Trace trace = traceService.getCurrentTrace();
+        Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             return null;
         } else {
@@ -145,7 +150,7 @@ class PluginServicesImpl extends PluginServices {
     @Override
     public boolean isEnabled() {
         boolean enabled = configurationService.getCoreConfiguration().isEnabled()
-                && !traceService.isCurrentRootSpanDisabled();
+                && !traceRegistry.isCurrentRootSpanDisabled();
         logger.debug("isEnabled(): enabled={}", enabled);
         return enabled;
     }
@@ -154,7 +159,7 @@ class PluginServicesImpl extends PluginServices {
             ProceedingJoinPoint joinPoint, String spanSummaryKey) throws Throwable {
 
         // start span
-        Span span = traceService.pushSpan(spanDetail);
+        Span span = pushSpan(spanDetail);
         try {
             return joinPoint.proceed();
         } finally {
@@ -162,26 +167,83 @@ class PluginServicesImpl extends PluginServices {
             long endTime = ticker.read();
             // record aggregate timing data
             if (spanSummaryKey != null) {
-                traceService.recordSummaryData(spanSummaryKey, endTime - span.getStartTime());
+                recordSummaryData(spanSummaryKey, endTime - span.getStartTime());
             }
             // pop span needs to be the last step (at least when this is a root span)
-            traceService.popSpan(span, endTime);
+            popSpan(span, endTime);
         }
     }
 
     private boolean isInTrace() {
-        return traceService.getCurrentTrace() != null;
+        return traceRegistry.getCurrentTrace() != null;
     }
 
     private Object proceedAndDisableNested(ProceedingJoinPoint joinPoint) throws Throwable {
-        boolean previouslyDisabled = traceService.isCurrentRootSpanDisabled();
+        boolean previouslyDisabled = traceRegistry.isCurrentRootSpanDisabled();
         try {
             // disable current trace so that nested spans will not be captured even
             // if tracing is re-enabled mid-trace
-            traceService.setCurrentRootSpanDisabled(true);
+            traceRegistry.setCurrentRootSpanDisabled(true);
             return joinPoint.proceed();
         } finally {
-            traceService.setCurrentRootSpanDisabled(previouslyDisabled);
+            traceRegistry.setCurrentRootSpanDisabled(previouslyDisabled);
+        }
+    }
+
+    // it is very important that calls to pushSpan() are wrapped in try block with
+    // a finally block executing popSpan()
+    private Span pushSpan(SpanDetail spanDetail) {
+        // span limit is handled inside PluginServicesImpl
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace == null) {
+            currentTrace = new Trace(spanDetail, clock, ticker);
+            traceRegistry.setCurrentTrace(currentTrace);
+            traceRegistry.addTrace(currentTrace);
+            return currentTrace.getRootSpan().getRootSpan();
+        } else {
+            return currentTrace.getRootSpan().pushSpan(spanDetail);
+        }
+    }
+
+    // typically pop() methods don't require the span to pop, but for safety,
+    // the span to pop is passed in just to make sure it is the one on top
+    // (and if it is not the one on top, then pop until it is found, preventing
+    // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
+    private void popSpan(Span span, long elementEndTime) {
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        currentTrace.getRootSpan().popSpan(span, elementEndTime);
+        if (currentTrace.isCompleted()) {
+            // the root span has been popped off
+            cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
+            cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
+            traceRegistry.setCurrentTrace(null);
+            traceRegistry.removeTrace(currentTrace);
+            traceSink.onCompletedTrace(currentTrace);
+        }
+    }
+
+    private void recordSummaryData(String spanSummaryKey, long duration) {
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        // aggregate info is only tracked within an active trace
+        if (currentTrace != null) {
+            currentTrace.recordSpanDuration(spanSummaryKey, duration);
+        }
+    }
+
+    private static void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        if (scheduledFuture == null) {
+            return;
+        }
+        boolean success = scheduledFuture.cancel(false);
+        if (!success) {
+            // execution failed due to an error (probably programming error)
+            try {
+                scheduledFuture.get();
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage(), e);
+            } catch (ExecutionException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 }

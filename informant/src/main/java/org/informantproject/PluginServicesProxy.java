@@ -19,6 +19,7 @@ import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
+import org.informantproject.trace.PluginServicesImpl;
 
 /**
  * @author Trask Stalnaker
