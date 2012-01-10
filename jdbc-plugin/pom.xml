@@ -82,20 +82,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <repositories>
-    <!--
-      the parent pom adds this repository, however, the parent pom
-      is *in* this repository, so the repository must be listed here
-      to even be able to find the parent pom
-    -->
-    <repository>
-      <id>sonatype-nexus-snapshots</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
 </project>
