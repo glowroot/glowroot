@@ -48,6 +48,7 @@ public class TraceDao {
 
     private final PreparedStatement insertPreparedStatement;
     private final PreparedStatement selectPreparedStatement;
+    private final PreparedStatement selectSummaryPreparedStatement;
     private final PreparedStatement deletePreparedStatement;
     private final PreparedStatement countPreparedStatement;
 
@@ -59,6 +60,7 @@ public class TraceDao {
         this.clock = clock;
         PreparedStatement insertPS = null;
         PreparedStatement selectPS = null;
+        PreparedStatement selectSummaryPS = null;
         PreparedStatement deletePS = null;
         PreparedStatement countPS = null;
         boolean errorOnInit = false;
@@ -72,6 +74,8 @@ public class TraceDao {
             selectPS = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
                     + " duration, completed, threadNames, username, spans, mergedStackTree"
                     + " from trace where capturedAt >= ? and capturedAt <= ?");
+            selectSummaryPS = connection.prepareStatement("select capturedAt, duration from trace"
+                    + " where capturedAt >= ? and capturedAt <= ?");
             deletePS = connection.prepareStatement("delete from trace where id = ?");
             countPS = connection.prepareStatement("select count(*) from trace");
         } catch (SQLException e) {
@@ -80,6 +84,7 @@ public class TraceDao {
         }
         insertPreparedStatement = insertPS;
         selectPreparedStatement = selectPS;
+        selectSummaryPreparedStatement = selectSummaryPS;
         deletePreparedStatement = deletePS;
         countPreparedStatement = countPS;
         this.valid = !errorOnInit;
@@ -112,7 +117,35 @@ public class TraceDao {
         }
     }
 
+    public List<StoredTraceSummary> readStoredTraceSummaries(long capturedFrom, long capturedTo) {
+        logger.debug("readStoredTraceSummaries(): capturedFrom={}, capturedTo={}", capturedFrom,
+                capturedTo);
+        if (!valid) {
+            return Collections.emptyList();
+        }
+        synchronized (connection) {
+            try {
+                selectSummaryPreparedStatement.setLong(1, capturedFrom);
+                selectSummaryPreparedStatement.setLong(2, capturedTo);
+                ResultSet resultSet = selectSummaryPreparedStatement.executeQuery();
+                try {
+                    List<StoredTraceSummary> traceSummaries = new ArrayList<StoredTraceSummary>();
+                    while (resultSet.next()) {
+                        traceSummaries.add(buildStoredTraceSummaryFromResultSet(resultSet));
+                    }
+                    return traceSummaries;
+                } finally {
+                    resultSet.close();
+                }
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
+                return Collections.emptyList();
+            }
+        }
+    }
+
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
+        logger.debug("readStoredTrace(): capturedFrom={}, capturedTo={}", capturedFrom, capturedTo);
         if (!valid) {
             return Collections.emptyList();
         }
@@ -203,5 +236,14 @@ public class TraceDao {
         storedTrace.setSpans(resultSet.getString(columnIndex++));
         storedTrace.setMergedStackTree(resultSet.getString(columnIndex++));
         return storedTrace;
+    }
+
+    private static StoredTraceSummary buildStoredTraceSummaryFromResultSet(ResultSet resultSet)
+            throws SQLException {
+
+        StoredTraceSummary storedTraceSummary = new StoredTraceSummary();
+        storedTraceSummary.setCapturedAt(resultSet.getLong(1));
+        storedTraceSummary.setDuration(resultSet.getLong(2));
+        return storedTraceSummary;
     }
 }

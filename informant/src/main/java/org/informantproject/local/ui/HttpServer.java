@@ -25,10 +25,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.informantproject.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -59,59 +63,91 @@ public class HttpServer extends HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
-    private final Map<String, JsonService> jsonServiceMap = new HashMap<String, JsonService>();
+    private final Map<Pattern, Object> uriMappings = Collections
+            .synchronizedMap(new LinkedHashMap<Pattern, Object>());
+
+    {
+        uriMappings.put(Pattern.compile("^/resources/jquery/(.*)$"),
+                "org/informantproject/javascript/jquery/$1");
+        uriMappings.put(Pattern.compile("^/resources/jqueryui/(.*)$"),
+                "org/informantproject/javascript/jqueryui/$1");
+        uriMappings.put(Pattern.compile("^/resources/flot/(.*)$"),
+                "org/informantproject/javascript/flot/$1");
+        uriMappings.put(Pattern.compile("^/resources/dynatree/(.*)$"),
+                "org/informantproject/javascript/dynatree/$1");
+        uriMappings.put(Pattern.compile("^/resources/dateformat/(.*)$"),
+                "org/informantproject/javascript/dateformat/$1");
+        uriMappings.put(Pattern.compile("^/resources/handlebars/(.*)$"),
+                "org/informantproject/javascript/handlebars/$1");
+
+        uriMappings.put(Pattern.compile("^/resources/javascript/(.*)$"),
+                "org/informantproject/local/ui/javascript/$1");
+        uriMappings.put(Pattern.compile("^/resources/css/(.*)$"),
+                "org/informantproject/local/ui/css/$1");
+        uriMappings.put(Pattern.compile("^/traces.html$"),
+                "org/informantproject/local/ui/traces.html");
+        uriMappings.put(Pattern.compile("^/metrics.html$"),
+                "org/informantproject/local/ui/metrics.html");
+        uriMappings.put(Pattern.compile("^/configuration.html$"),
+                "org/informantproject/local/ui/configuration.html");
+    }
 
     @Inject
     public HttpServer(@LocalHttpServerPort int port,
             ReadConfigurationJsonService readConfigurationJsonService,
             UpdateConfigurationJsonService updateConfigurationJsonService,
-            TraceJsonService traceJsonService, MetricJsonService metricJsonService) {
+            TraceJsonService traceJsonService, TraceSummaryJsonService traceSummaryJsonService,
+            MetricJsonService metricJsonService) {
 
         super(port, "Informant-");
-        jsonServiceMap.put("/configuration/read", readConfigurationJsonService);
-        jsonServiceMap.put("/configuration/update", updateConfigurationJsonService);
-        jsonServiceMap.put("/trace", traceJsonService);
-        jsonServiceMap.put("/metric", metricJsonService);
+        uriMappings.put(Pattern.compile("^/configuration/read$"), readConfigurationJsonService);
+        uriMappings.put(Pattern.compile("^/configuration/update$"), updateConfigurationJsonService);
+        uriMappings.put(Pattern.compile("^/traces$"), traceJsonService);
+        uriMappings.put(Pattern.compile("^/traceSummaries$"), traceSummaryJsonService);
+        uriMappings.put(Pattern.compile("^/metrics$"), metricJsonService);
     }
 
     @Override
     public HttpResponse handleRequest(HttpRequest request) throws IOException {
-        logger.debug("messageReceived(): request.uri={}", request.getUri());
-        if (request.getUri().equals("/")) {
-            return getResponseForStaticContent("Main.html", "text/html");
-        } else if (request.getUri().startsWith("/js/")) {
-            String path = request.getUri().substring("/js/".length());
-            return getResponseForStaticContent(path, "text/javascript");
-        } else if (request.getUri().startsWith("/css/")) {
-            String path = request.getUri().substring("/css/".length());
-            return getResponseForStaticContent(path, "text/css");
-        }
+        logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
-        logger.debug("messageReceived(): path={}", decoder.getPath());
-        JsonService jsonService = jsonServiceMap.get(decoder.getPath());
-        if (jsonService == null) {
-            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
-            response.setContent(ChannelBuffers.EMPTY_BUFFER);
-            return response;
-        } else {
-            String requestText = getRequestJson(request, decoder);
-            logger.debug("messageReceived(): request.content={}", requestText);
-            String responseText = jsonService.handleRequest(requestText);
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            if (responseText == null) {
-                response.setContent(ChannelBuffers.EMPTY_BUFFER);
-            } else {
-                response.setContent(ChannelBuffers.copiedBuffer(responseText, Charsets.ISO_8859_1));
-                response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        String path = decoder.getPath();
+        logger.debug("handleRequest(): path={}", path);
+        for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
+            Matcher matcher = uriMappingEntry.getKey().matcher(path);
+            if (matcher.matches()) {
+                if (uriMappingEntry.getValue() instanceof JsonService) {
+                    return handleJsonRequest(request, decoder,
+                            (JsonService) uriMappingEntry.getValue());
+                } else {
+                    // only other value type is String
+                    String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
+                    return handleStaticRequest(resourcePath);
+                }
             }
-            return response;
         }
+        logger.warn("Unexpected uri '{}'", request.getUri());
+        return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
-    private static HttpResponse getResponseForStaticContent(String resourcePath, String mimeType)
-            throws IOException {
-
-        InputStream staticContentStream = HttpServer.class.getResourceAsStream(resourcePath);
+    private static HttpResponse handleStaticRequest(String path) throws IOException {
+        int extensionStartIndex = path.lastIndexOf(".");
+        if (extensionStartIndex == -1) {
+            logger.warn("Missing extension '{}'", path);
+            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+        }
+        String extension = path.substring(extensionStartIndex + 1);
+        String mimeType = getMimeType(extension);
+        if (mimeType == null) {
+            logger.warn("Unexpected extension '{}' for path '{}'", extension, path);
+            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+        }
+        InputStream staticContentStream = HttpServer.class.getClassLoader().getResourceAsStream(
+                path);
+        if (staticContentStream == null) {
+            logger.warn("Unexpected path '{}'", path);
+            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+        }
         byte[] staticContent;
         try {
             staticContent = ByteStreams.toByteArray(staticContentStream);
@@ -122,6 +158,36 @@ public class HttpServer extends HttpServerBase {
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType + "; charset=UTF-8");
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
+        return response;
+    }
+
+    private static String getMimeType(String extension) {
+        if (extension.equals("html")) {
+            return "text/html";
+        } else if (extension.equals("js")) {
+            return "text/javascript";
+        } else if (extension.equals("css")) {
+            return "text/css";
+        } else if (extension.equals("png")) {
+            return "image/png";
+        } else {
+            return null;
+        }
+    }
+
+    private static HttpResponse handleJsonRequest(HttpRequest request, QueryStringDecoder decoder,
+            JsonService jsonService) throws IOException {
+
+        String requestText = getRequestJson(request, decoder);
+        logger.debug("handleJsonRequest(): request.content={}", requestText);
+        String responseText = jsonService.handleRequest(requestText);
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        if (responseText == null) {
+            response.setContent(ChannelBuffers.EMPTY_BUFFER);
+        } else {
+            response.setContent(ChannelBuffers.copiedBuffer(responseText, Charsets.ISO_8859_1));
+            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        }
         return response;
     }
 

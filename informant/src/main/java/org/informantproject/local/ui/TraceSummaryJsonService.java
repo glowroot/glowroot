@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 
-import org.informantproject.local.trace.StoredTrace;
+import org.informantproject.local.trace.StoredTraceSummary;
 import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.informantproject.util.Clock;
@@ -32,15 +32,16 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/traces" in LocalModule.
+ * Json service to read trace data. Bound to url "/traceSummaries" in LocalModule.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
+// TODO look at reusable parts between TraceSummaryJsonService and TraceJsonService
 @Singleton
-public class TraceJsonService implements JsonService {
+public class TraceSummaryJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
 
     private static final int DONT_SEND_END_TIME_IN_RESPONSE = -1;
 
@@ -48,7 +49,7 @@ public class TraceJsonService implements JsonService {
     private final Clock clock;
 
     @Inject
-    public TraceJsonService(TraceDao traceDao, Clock clock) {
+    public TraceSummaryJsonService(TraceDao traceDao, Clock clock) {
         this.traceDao = traceDao;
         this.clock = clock;
     }
@@ -63,25 +64,26 @@ public class TraceJsonService implements JsonService {
         if (isEndCurrentTime) {
             request.setTo(clock.currentTimeMillis());
         }
-        List<StoredTrace> traces = traceDao.readStoredTraces(request.getFrom(), request.getTo());
+        List<StoredTraceSummary> traceSummaries = traceDao.readStoredTraceSummaries(
+                request.getFrom(), request.getTo());
         String response;
         if (isEndCurrentTime) {
-            response = writeResponse(traces, request.getFrom(), request.getTo());
+            response = writeResponse(traceSummaries, request.getFrom(), request.getTo());
         } else {
-            response = writeResponse(traces, request.getFrom());
+            response = writeResponse(traceSummaries, request.getFrom());
         }
         logger.debug("onMessage(): response={}", response);
         return response;
     }
 
-    private static String writeResponse(List<StoredTrace> storedTraces, long start)
+    private static String writeResponse(List<StoredTraceSummary> storedTraceSummaries, long start)
             throws IOException {
 
-        return writeResponse(storedTraces, start, DONT_SEND_END_TIME_IN_RESPONSE);
+        return writeResponse(storedTraceSummaries, start, DONT_SEND_END_TIME_IN_RESPONSE);
     }
 
-    private static String writeResponse(List<StoredTrace> storedTraces, long start, long end)
-            throws IOException {
+    private static String writeResponse(List<StoredTraceSummary> storedTraceSummaries, long start,
+            long end) throws IOException {
 
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
@@ -90,23 +92,12 @@ public class TraceJsonService implements JsonService {
         if (end != DONT_SEND_END_TIME_IN_RESPONSE) {
             jw.name("end").value(end);
         }
-        jw.name("traces").beginArray();
-        for (StoredTrace storedTrace : storedTraces) {
-            jw.beginObject();
-            jw.name("id").value(storedTrace.getId());
-            jw.name("start").value(storedTrace.getStartAt());
-            jw.name("stuck").value(storedTrace.isStuck());
-            jw.name("uniqueId").value(storedTrace.getId());
-            jw.name("duration").value(storedTrace.getDuration());
-            jw.name("completed").value(storedTrace.isCompleted());
-            // inject raw json into stream
-            sw.write(",\"threadNames\":");
-            sw.write(storedTrace.getThreadNames());
-            jw.name("username").value(storedTrace.getUsername());
-            sw.write(",\"spans\":");
-            sw.write(storedTrace.getSpans());
-            // TODO write metric data, trace and merged stack tree
-            jw.endObject();
+        jw.name("data").beginArray();
+        for (StoredTraceSummary storedTraceSummary : storedTraceSummaries) {
+            jw.beginArray();
+            jw.value(storedTraceSummary.getCapturedAt());
+            jw.value(storedTraceSummary.getDuration() / 1000000000.0);
+            jw.endArray();
         }
         jw.endArray();
         jw.endObject();

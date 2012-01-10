@@ -16,29 +16,29 @@
 package org.informantproject.local.ui;
 
 /**
- * Structure used to deserialize request parameters sent to "/traces".
+ * Structure used to deserialize json post data sent to "/traces".
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 class TraceRequest {
 
-    private long start;
-    private long end;
+    private long from;
+    private long to;
 
-    public long getStart() {
-        return start;
+    public long getFrom() {
+        return from;
     }
 
-    public void setStart(long start) {
-        this.start = start;
+    public void setFrom(long from) {
+        this.from = from;
     }
 
-    public long getEnd() {
-        return end;
+    public long getTo() {
+        return to;
     }
 
-    public void setEnd(long end) {
-        this.end = end;
+    public void setTo(long to) {
+        this.to = to;
     }
 }

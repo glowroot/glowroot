@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Traces</title>
+<!-- not using CDN hosted js files since the embedded ui is typically for monitoring
+     an application on a local machine / local network so this should be faster -->
+<link rel="stylesheet" href="resources/jqueryui/1.8.16/themes/ui-lightness/jquery.ui.all.css">
+<script type="text/javascript" src="resources/jquery/1.7/jquery.min.js"></script>
+<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.core.min.js"></script>
+<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.widget.min.js"></script>
+<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.button.min.js"></script>
+<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.datepicker.min.js"></script>
+<script type="text/javascript" src="resources/dateformat/1.2.3/date.format.js"></script>
+<script type="text/javascript" src="resources/handlebars/1.0.0.beta.3/handlebars.js"></script>
+<script type="text/javascript" src="resources/flot/0.7/jquery.flot.min.js"></script>
+<script type="text/javascript" src="resources/flot/0.7/jquery.flot.selection.min.js"></script>
+
+<script id="tracestemplate" type="text/x-handlebars-template">
+{{#traces}}
+<div>
+{{#if stuck}}<b>STUCK</b><br>{{/if}}
+{{#unless completed}}NOT COMPLETED<br>{{/unless}}
+start: {{date start}}<br>
+duration: {{nanostomillis duration}} milliseconds<br>
+{{#if username}}username: {{username}}<br>{{/if}}
+threadName(s): {{threadNames}}<br>
+root context:<br>
+{{#first spans}}
+{{#eachentry contextMap}}{{/eachentry}}
+{{/first}}
+spans:<br>
+{{#spans}}
+  &nbsp;&nbsp;+{{nanostomillis offset}}&nbsp;&nbsp;&nbsp;{{nanostomillis duration}}&nbsp;&nbsp;&nbsp;{{description}}<br>
+  {{#if index}}  
+  {{#eachentry contextMap}}{{/eachentry}}
+  {{/if}}
+{{/spans}}
+<br>
+</div>
+{{/traces}}
+</script>
+<script type="text/javascript">
+  Handlebars.registerHelper('date', function(timestamp) {
+    return new Date(timestamp).format("m/d/yy h:MM:ss.l TT (Z)");
+  });
+  Handlebars.registerHelper('nanostomillis', function(nanos) {
+	    return nanos / 1000000;
+	  });
+  Handlebars.registerHelper('first', function(array, fn) {
+	    return fn(array[0]);
+	  });
+  Handlebars.registerHelper('eachentry', function(context, block) {
+    var ret = "";
+    for (var prop in context) {
+      ret = ret + '&nbsp;&nbsp;&nbsp;&nbsp;' + prop + ": " + JSON.stringify(context[prop]) + "<br>";
+    }
+    return ret;
+  });
+  var template;
+  $(function() {
+    template = Handlebars.compile($("#tracestemplate").html());
+    Handlebars.registerPartial("span", $("#span-partial").html());
+ 
+    var options = {
+      legend: { show: false }, 
+      series: {
+        lines: { show: true },
+        points: { show: true }
+      },
+      xaxis: { mode: "time" },
+      yaxis: { ticks: 10 },
+      selection: { mode: "xy" }
+    };
+ 
+    var overviewOptions = {
+      legend: { show: true, container: $("#overviewLegend") },
+      series: {
+        lines: { show: true, lineWidth: 1 },
+        shadowSize: 0
+      },
+      xaxis: { mode: "time", ticks: 1 },
+      yaxis: { ticks: 3},
+      grid: { color: "#999" },
+      selection: { mode: "xy" }
+    };
+    
+    var rangeFrom;
+    var rangeTo;
+
+    function plotFullDate(date) {
+        rangeFrom = date.getTime();
+        rangeTo = rangeFrom + 24 * 60 * 60 * 1000; // rangeFrom + 24 hours
+        gettracesummaries(rangeFrom, rangeTo);
+    }
+    function plott(data) {
+    	plot = $.plot($("#placeholder"), [data], options);
+        overview = $.plot($("#overview"), [data], overviewOptions);
+
+        // now connect the two
+        $("#placeholder").bind("plotselected", function (event, ranges) {
+            // clamp the zooming to prevent eternal zoom
+            // also round xaxis to nearest millisecond
+            ranges.xaxis.from = Math.floor(ranges.xaxis.from);
+            ranges.xaxis.to = Math.ceil(ranges.xaxis.to);
+            if (ranges.yaxis.to - ranges.yaxis.from < 0.00001)
+              ranges.yaxis.to = ranges.yaxis.from + 0.00001;
+
+            rangeFrom = ranges.xaxis.from;
+            rangeTo = ranges.xaxis.to;
+            
+            // do the zooming
+            plot = $.plot($("#placeholder"), [data],
+                          $.extend(true, {}, options, {
+                              xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+                              yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+                          }));
+
+            // don't fire event on the overview to prevent eternal loop
+            overview.setSelection(ranges, true);
+          });
+          $("#overview").bind("plotselected", function (event, ranges) {
+            plot.setSelection(ranges);
+          });
+    }
+
+    function gettracesummaries(from, to, low, high) {
+	    var queryString = 'from=' + from + '&to=' + to;
+	    if (low != undefined) {
+	      queryString += '&low=' + low;
+	    }
+	    if (high != undefined) {
+	      queryString += '&high=' + low;
+	    }
+	    $.getJSON('/traceSummaries?from=' + from + '&to=' + to, function(response) {
+	    	// shift for timezone
+	    	for (var i = 0; i < response.data.length; i++) {
+	    		response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000;
+	    	}
+	    	plott(response.data)
+	      });
+	    $('#traces').html('');
+	  }
+    function gettraces(from, to, low, high) {
+	    var queryString = 'from=' + from + '&to=' + to;
+	    if (low != undefined) {
+	      queryString += '&low=' + low;
+	    }
+	    if (high != undefined) {
+	      queryString += '&high=' + low;
+	    }
+	    from += new Date(from).getTimezoneOffset() * 60 * 1000;
+	    to += new Date(to).getTimezoneOffset() * 60 * 1000;
+	    $.getJSON('/traces?from=' + from + '&to=' + to, function(response) {
+	      $('#traces').html('');
+	      if (response.traces.length) {
+	        var html = template(response);
+	        $(html).appendTo('#traces');
+	        // for debugging:
+	        //$('<div>' + JSON.stringify(response.traces) + '</div>').appendTo('#traces');
+	      } else {
+	        $('#traces').html('no data');
+	      }
+	    });
+	  }
+
+    $("#datepicker").datepicker({
+        onSelect : function(dateText, inst) {
+       	  plotFullDate($(this).datepicker('getDate'));
+        }
+      });
+    $("#showdetails").button();
+    $("#showdetails").click(function() {
+    	gettraces(rangeFrom, rangeTo);
+      });
+
+    var d = new Date();
+    d.setHours(0,0,0,0);
+    $("#datepicker").datepicker("setDate", d);
+    plotFullDate(d);
+  });
+</script>
+</head>
+<body>
+  <h2>Traces</h2>
+  <div>
+    Date: <input type="text" id="datepicker">
+  </div><br>
+  <div style="float: left">
+    <div id="placeholder" style="width: 600px; height: 200px"></div>
+  </div>
+  <div id="miniature" style="float: left; margin-left: 20px">
+    <div id="overview" style="width: 300px; height: 100px"></div>
+    <p id="overviewLegend" style="margin-left: 10px"></p>
+  </div>
+  <div style="clear: left"></div>
+  <button id="showdetails">Show Details</button>
+  <br>
+  <br>
+  <div id="traces"></div>
+</body>
+</html>
