@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Configuration</title>
+<script type="text/javascript" src="resources/jquery/1.7/jquery.min.js"></script>
+<script type="text/javascript" src="resources/handlebars/1.0.0.beta.3/handlebars.js"></script>
+
+<script id="configurationtemplate" type="text/x-handlebars-template">
+<div>
+<form>
+Enabled: {{coreConfiguration.enabled}}<br>
+Threshold: <input type="text" id="thresholdMillis" value="{{coreConfiguration.thresholdMillis}}"> (millis)<br>
+Stuck threshold: <input type="text" id="stuckThresholdMillis" value="{{coreConfiguration.stuckThresholdMillis}}"> (millis)<br>
+Stack trace initial delay: <input type="text" id="stackTraceInitialDelayMillis" value="{{coreConfiguration.stackTraceInitialDelayMillis}}"> (millis)<br>
+Stack trace period: <input type="text" id="stackTracePeriodMillis" value="{{coreConfiguration.stackTracePeriodMillis}}"> (millis)<br>
+Max spans per trace: <input type="text" id="maxSpansPerTrace" value="{{coreConfiguration.maxSpansPerTrace}}"><br>
+<input type="button" value="Update" onclick="updateconfiguration()">
+</form>
+</div>
+</script>
+<script type="text/javascript">
+  var template;
+  $(function() {
+    template = Handlebars.compile($("#configurationtemplate").html());
+    getconfiguration();
+  });
+  function getconfiguration() {
+    $.getJSON('/configuration/read', function(configuration) {
+      $('#configuration').html('');
+      var html = template(configuration);
+      $(html).appendTo('#configuration');
+    });
+  }
+  function updateconfiguration() {
+		$.post('/configuration/update',
+		  JSON.stringify({'coreConfiguration': {
+			'enabled': true,
+			'thresholdMillis': document.forms[0].thresholdMillis.value,
+			'stuckThresholdMillis': document.forms[0].stuckThresholdMillis.value,
+    		'stackTraceInitialDelayMillis': document.forms[0].stackTraceInitialDelayMillis.value,
+		    'stackTracePeriodMillis': document.forms[0].stackTracePeriodMillis.value,
+		    'maxSpansPerTrace': document.forms[0].maxSpansPerTrace.value
+		  }}),
+		  function() {
+	        alert('updated!');
+		  });
+	  }
+</script>
+</head>
+<body>
+  <h1>Configuration</h1>
+  <div style="clear: left" id="configuration"></div>
+</body>
+</html>
