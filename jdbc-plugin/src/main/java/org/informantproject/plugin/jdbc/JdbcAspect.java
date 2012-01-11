@@ -240,8 +240,14 @@ public class JdbcAspect {
     public boolean resultNextAdvice(ProceedingJoinPoint joinPoint, final ResultSet resultSet)
             throws Throwable {
 
-        JdbcSpanDetail lastSpan = statementMirrorCache.getStatementMirror(resultSet.getStatement())
-                .getLastJdbcSpanDetail();
+        StatementMirror statementMirror = statementMirrorCache.getStatementMirror(resultSet
+                .getStatement());
+        if (statementMirror == null) {
+            // this is not a statement execution, it is some other execution of ResultSet.next(),
+            // e.g. Connection.getMetaData().getTables().next()
+            return (Boolean) joinPoint.proceed();
+        }
+        JdbcSpanDetail lastSpan = statementMirror.getLastJdbcSpanDetail();
         if (lastSpan == null) {
             // tracing must be disabled (e.g. exceeded trace limit per operation),
             // but metric data is still gathered

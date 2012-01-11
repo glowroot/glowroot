@@ -17,6 +17,25 @@
 <!DOCTYPE aspectj PUBLIC
   "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
 <aspectj>
+  <weaver>
+    <!--
+      sql server jdbc driver is signed so weaving it fails, first with a warning:
+
+      warning define generated class failed
+      java.lang.SecurityException:
+      class "com.microsoft.sqlserver.jdbc.SQLServerConnection$AjcClosure1"'s signer
+      information does not match signer information of other classes in the same package
+
+      and then with a fatal error:
+
+      java.lang.NoClassDefFoundError: com/microsoft/sqlserver/jdbc/SQLServerConnection$AjcClosure3
+
+      weaving sql server jdbc isn't needed anyways since Informant weaves calls to the driver
+      instead of the executions of method bodies inside the driver (a small but significant
+      difference)
+    -->
+    <exclude within="com.microsoft.sqlserver.jdbc..*" />
+  </weaver>
   <aspects>
     <aspect name="org.informantproject.plugin.jdbc.JdbcAspect" />
   </aspects>
