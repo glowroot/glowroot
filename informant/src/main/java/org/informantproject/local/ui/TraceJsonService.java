@@ -70,7 +70,11 @@ public class TraceJsonService implements JsonService {
         } else {
             response = writeResponse(traces, request.getFrom());
         }
-        logger.debug("onMessage(): response={}", response);
+        if (response.length() <= 2000) {
+            logger.debug("onMessage(): response={}", response);
+        } else {
+            logger.debug("onMessage(): response={}...", response.substring(0, 2000));
+        }
         return response;
     }
 
