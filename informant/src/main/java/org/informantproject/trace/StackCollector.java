@@ -125,6 +125,6 @@ public class StackCollector implements Runnable {
 
     private long getMillisUntilTraceReachesThreshold(Trace trace, int thresholdMillis) {
         long traceDurationTime = ticker.read() - trace.getStartTime();
-        return thresholdMillis - TimeUnit.NANOSECONDS.toMillis(traceDurationTime);
+        return Math.max(0, thresholdMillis - TimeUnit.NANOSECONDS.toMillis(traceDurationTime));
     }
 }
