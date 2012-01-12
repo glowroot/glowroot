@@ -153,7 +153,7 @@ public class ServletAspect {
 
     @AfterReturning("isPluginEnabled() && inTrace() && requestGetParameterPointcut()"
             + " && !cflowbelow(requestGetParameterPointcut()) && target(request)"
-            + " && !within(org.informantproject.plugin.servlet.ServletPlugin)")
+            + " && !within(org.informantproject.plugin.servlet.ServletAspect)")
     public void afterReturningRequestGetParameterPointcut(HttpServletRequest request) {
         // only now is it safe to get parameters (if parameters are retrieved before this, it could
         // prevent a servlet from choosing to read the underlying stream instead of using the
