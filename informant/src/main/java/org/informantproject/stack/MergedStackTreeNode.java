@@ -46,6 +46,7 @@ public class MergedStackTreeNode {
     // (see MergedStackTree) in order to avoid volatile and ensure consistent state of read
     //
     private volatile int sampleCount;
+    // TODO generate a test case that produces multiple thread states for a single node
     private volatile Map<State, Integer> leafThreadStateSampleCounts;
     // optimization for common case where there is just a single thread state recorded
     // so the map (above) doesn't need to be instantiated unless necessary

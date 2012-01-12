@@ -35,7 +35,7 @@ public class LevelOneAspect {
         return PluginServices.get().isEnabled();
     }
 
-    @Pointcut("call(* org.informantproject.test.api.LevelOne.call(java.lang.String,"
+    @Pointcut("call(void org.informantproject.test.api.LevelOne.call(java.lang.String,"
             + " java.lang.String))")
     void levelOnePointcut() {}
 

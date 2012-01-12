@@ -34,7 +34,6 @@ public final class Span {
     private final long traceStartTime;
     private final long startTime;
     private volatile long endTime;
-    private volatile boolean completed;
 
     // index is per trace and starts at 0
     private final int index;
@@ -81,11 +80,11 @@ public final class Span {
 
     // duration of span in nanoseconds
     public long getDuration() {
-        return endTime - startTime;
+        return endTime == 0 ? 0 : endTime - startTime;
     }
 
     public boolean isCompleted() {
-        return completed;
+        return endTime != 0;
     }
 
     public int getIndex() {
@@ -102,9 +101,5 @@ public final class Span {
 
     void setEndTime(long endTime) {
         this.endTime = endTime;
-    }
-
-    void setCompleted(boolean completed) {
-        this.completed = completed;
     }
 }

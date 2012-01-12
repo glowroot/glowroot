@@ -21,5 +21,6 @@
     <aspect name="org.informantproject.test.plugin.LevelOneAspect" />
     <aspect name="org.informantproject.test.plugin.LevelTwoAspect" />
     <aspect name="org.informantproject.test.plugin.LevelThreeAspect" />
+    <aspect name="org.informantproject.test.plugin.NestableAspect" />
   </aspects>
 </aspectj>

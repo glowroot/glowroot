@@ -86,7 +86,8 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setThreadNames(gson.toJson(trace.getThreadNames()));
         storedTrace.setUsername(trace.getUsername());
         storedTrace.setSpans(gson.toJson(trace.getRootSpan().getSpans()));
-        storedTrace.setMergedStackTree(gson.toJson(trace.getMergedStackTree()));
+        storedTrace.setMergedStackTreeRootNodes(gson.toJson(trace.getMergedStackTree()
+                .getRootNodes()));
         return storedTrace;
     }
 

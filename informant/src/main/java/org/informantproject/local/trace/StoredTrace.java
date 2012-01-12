@@ -15,6 +15,8 @@
  */
 package org.informantproject.local.trace;
 
+import com.google.common.base.Objects;
+
 /**
  * Structure used as part of the response to "/traces".
  * 
@@ -33,7 +35,7 @@ public class StoredTrace {
 
     private String metricData;
     private String spans;
-    private String mergedStackTree;
+    private String mergedStackTreeRootNodes;
 
     public String getId() {
         return id;
@@ -107,11 +109,27 @@ public class StoredTrace {
         this.spans = spans;
     }
 
-    public String getMergedStackTree() {
-        return mergedStackTree;
+    public String getMergedStackTreeRootNodes() {
+        return mergedStackTreeRootNodes;
     }
 
-    public void setMergedStackTree(String mergedStackTree) {
-        this.mergedStackTree = mergedStackTree;
+    public void setMergedStackTreeRootNodes(String mergedStackTreeRootNodes) {
+        this.mergedStackTreeRootNodes = mergedStackTreeRootNodes;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("id", id)
+                .add("startAt", startAt)
+                .add("stuck", stuck)
+                .add("duration", duration)
+                .add("completed", completed)
+                .add("threadNames", threadNames)
+                .add("username", username)
+                .add("metricData", metricData)
+                .add("spans", spans)
+                .add("mergedStackTreeRootNodes", mergedStackTreeRootNodes)
+                .toString();
     }
 }

@@ -40,7 +40,7 @@ public class LevelThreeAspect {
         return PluginServices.get().getRootSpanDetail() != null;
     }
 
-    @Pointcut("call(* org.informantproject.test.api.LevelThree.call(java.lang.String,"
+    @Pointcut("call(void org.informantproject.test.api.LevelThree.call(java.lang.String,"
             + " java.lang.String))")
     void levelThreePointcut() {}
 

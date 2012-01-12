@@ -50,7 +50,6 @@ public class RootSpan {
 
     private final long startTime;
     private volatile long endTime;
-    private volatile boolean completed;
 
     private final Span rootSpan;
     private final Queue<Span> spans = new ConcurrentLinkedQueue<Span>();
@@ -87,11 +86,11 @@ public class RootSpan {
 
     // duration of trace in nanoseconds
     public long getDuration() {
-        return endTime - startTime;
+        return endTime == 0 ? 0 : endTime - startTime;
     }
 
     public boolean isCompleted() {
-        return completed;
+        return endTime != 0;
     }
 
     // typically pop() methods don't require the span to pop, but for safety,
@@ -100,7 +99,6 @@ public class RootSpan {
     // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     void popSpan(Span span, long spanEndTime) {
         span.setEndTime(spanEndTime);
-        span.setCompleted(true);
         Deque spanStack = spanStackHolder.get();
         Span pop = (Span) spanStack.removeLast();
         if (!pop.equals(span)) {
@@ -118,7 +116,6 @@ public class RootSpan {
         }
         if (spanStack.isEmpty()) {
             endTime = spanEndTime;
-            completed = true;
         }
     }
 

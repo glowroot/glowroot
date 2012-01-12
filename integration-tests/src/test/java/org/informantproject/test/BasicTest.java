@@ -22,15 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.informantproject.test.api.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.GetTracesResponse.Span;
 import org.informantproject.testkit.GetTracesResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -86,7 +86,6 @@ public class BasicTest {
         Span span3 = traces.get(0).getSpans().get(2);
         assertThat(span3.getDescription(), is("Level Three"));
         assertThat(span3.getContextMap(), is(mapOf("arg1", "axy", "arg2", "bxy")));
-        System.out.println(traces.get(0));
     }
 
     private static CoreConfiguration makeRandomCoreConfiguration() {
@@ -119,7 +118,7 @@ public class BasicTest {
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public void execute() {
+        public void execute() throws InterruptedException {
             new LevelOne().call("a", "b");
         }
     }

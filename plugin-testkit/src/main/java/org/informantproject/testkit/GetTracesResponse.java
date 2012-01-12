@@ -61,6 +61,7 @@ public class GetTracesResponse {
         private List<String> threadNames;
         private String username;
         private List<Span> spans;
+        private List<MergedStackTreeNode> mergedStackTreeRootNodes;
         public String getId() {
             return id;
         }
@@ -88,6 +89,9 @@ public class GetTracesResponse {
         public List<Span> getSpans() {
             return spans;
         }
+        public List<MergedStackTreeNode> getMergedStackTreeRootNodes() {
+            return mergedStackTreeRootNodes;
+        }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
@@ -99,6 +103,7 @@ public class GetTracesResponse {
                     .add("completed", completed)
                     .add("username", username)
                     .add("spans", spans)
+                    .add("mergedStackTreeRootNodes", mergedStackTreeRootNodes)
                     .toString();
         }
     }
@@ -142,6 +147,67 @@ public class GetTracesResponse {
                     .add("level", level)
                     .add("description", description)
                     .add("contextMap", contextMap)
+                    .toString();
+        }
+    }
+
+    public static class MergedStackTreeNode {
+        private StackTraceElement stackTraceElement;
+        private List<MergedStackTreeNode> childNodes;
+        private int sampleCount;
+        private volatile Map<String, Integer> leafThreadStateSampleCounts;
+        private volatile String singleLeafState;
+        public StackTraceElement getStackTraceElement() {
+            return stackTraceElement;
+        }
+        public List<MergedStackTreeNode> getChildNodes() {
+            return childNodes;
+        }
+        public int getSampleCount() {
+            return sampleCount;
+        }
+        public Map<String, Integer> getLeafThreadStateSampleCounts() {
+            return leafThreadStateSampleCounts;
+        }
+        public String getSingleLeafState() {
+            return singleLeafState;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("stackTraceElement", stackTraceElement)
+                    .add("childNodes", childNodes)
+                    .add("sampleCount", sampleCount)
+                    .add("leafThreadStateSampleCounts", leafThreadStateSampleCounts)
+                    .add("singleLeafState", singleLeafState)
+                    .toString();
+        }
+    }
+
+    public static class StackTraceElement {
+        private String declaringClass;
+        private String methodName;
+        private String fileName;
+        private int lineNumber;
+        public String getDeclaringClass() {
+            return declaringClass;
+        }
+        public String getMethodName() {
+            return methodName;
+        }
+        public String getFileName() {
+            return fileName;
+        }
+        public int getLineNumber() {
+            return lineNumber;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("declaringClass", declaringClass)
+                    .add("methodName", methodName)
+                    .add("fileName", fileName)
+                    .add("lineNumber", lineNumber)
                     .toString();
         }
     }

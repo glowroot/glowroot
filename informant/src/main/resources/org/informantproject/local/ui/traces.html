@@ -19,8 +19,7 @@
 <script id="tracestemplate" type="text/x-handlebars-template">
 {{#traces}}
 <div>
-{{#if stuck}}<b>STUCK</b><br>{{/if}}
-{{#unless completed}}NOT COMPLETED<br>{{/unless}}
+{{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
 start: {{date start}}<br>
 duration: {{nanostomillis duration}} milliseconds<br>
 {{#if username}}username: {{username}}<br>{{/if}}
@@ -36,27 +35,71 @@ spans:<br>
   {{#eachentry contextMap}}{{/eachentry}}
   {{/if}}
 {{/spans}}
-<br>
+merged stack trace:<br>
+{{#mergedstacktrace mergedStackTreeRootNodes}}{{/mergedstacktrace}}
 </div>
 {{/traces}}
 </script>
 <script type="text/javascript">
   Handlebars.registerHelper('date', function(timestamp) {
-    return new Date(timestamp).format("m/d/yy h:MM:ss.l TT (Z)");
-  });
+      return new Date(timestamp).format("m/d/yy h:MM:ss.l TT (Z)");
+    });
   Handlebars.registerHelper('nanostomillis', function(nanos) {
-	    return nanos / 1000000;
-	  });
+      return (nanos / 1000000).toFixed(1);
+    });
   Handlebars.registerHelper('first', function(array, fn) {
-	    return fn(array[0]);
-	  });
+      return fn(array[0]);
+    });
   Handlebars.registerHelper('eachentry', function(context, block) {
-    var ret = "";
-    for (var prop in context) {
-      ret = ret + '&nbsp;&nbsp;&nbsp;&nbsp;' + prop + ": " + JSON.stringify(context[prop]) + "<br>";
+      var ret = "";
+      for (var prop in context) {
+        ret = ret + '&nbsp;&nbsp;&nbsp;&nbsp;' + prop + ": " + JSON.stringify(context[prop]) + "<br>";
+      }
+      return ret;
+    });
+  Handlebars.registerHelper('mergedstacktrace', function(rootNodes, block) {
+      var totalSampleCount = 0;
+      for (var i = 0; i < rootNodes.length; i++) {
+        totalSampleCount += rootNodes[i].sampleCount;
+      }
+      return curr(rootNodes, 0, totalSampleCount);
+    });
+  function curr(childNodes, level, totalSampleCount) {
+    var ret = '';
+    // order child nodes by sampleCount (descending)
+    childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount });
+    for (var i = 0; i < childNodes.length; i++) {
+      var childNode = childNodes[i];
+      var stackTraceElement = childNode.stackTraceElement;
+      ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
+      var samplePercentage = (childNode.sampleCount / totalSampleCount) * 100;
+      ret += samplePercentage.toFixed(1);
+      ret += '%</span>'
+      for (var j = 0; j < level; j++) {
+        ret += '&nbsp;';
+      }
+      ret += stackTraceElement.declaringClass + '.' + stackTraceElement.methodName;
+      if (stackTraceElement.lineNumber == -2) {
+        ret += '(Native Method)<br>';
+      } else {
+        ret += '(' + stackTraceElement.fileName + ':' + stackTraceElement.lineNumber + ')<br>';  
+      }
+      if (childNode.singleLeafState) {
+        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
+        ret += samplePercentage.toFixed(1);
+        ret += '%</span>'
+        for (var j = 0; j < level; j++) {
+          ret += '&nbsp;';
+        }
+        ret += '&nbsp;' + childNode.singleLeafState + '<br>';
+      } else if (childNode.leafThreadStateSampleCounts) {
+        // TODO generate a test case that produces multiple thread states for a single node
+        ret += JSON.stringify(childNode.leafThreadStateSampleCounts) + '<br>';
+      }
+      ret += curr(childNode.childNodes, level + 1, totalSampleCount);
     }
     return ret;
-  });
+  }
   var template;
   $(function() {
     template = Handlebars.compile($("#tracestemplate").html());
@@ -89,89 +132,89 @@ spans:<br>
     var rangeTo;
 
     function plotFullDate(date) {
-        rangeFrom = date.getTime();
-        rangeTo = rangeFrom + 24 * 60 * 60 * 1000; // rangeFrom + 24 hours
-        gettracesummaries(rangeFrom, rangeTo);
+      rangeFrom = date.getTime();
+      rangeTo = rangeFrom + 24 * 60 * 60 * 1000; // rangeFrom + 24 hours
+      gettracesummaries(rangeFrom, rangeTo);
     }
     function plott(data) {
-    	plot = $.plot($("#placeholder"), [data], options);
-        overview = $.plot($("#overview"), [data], overviewOptions);
+      plot = $.plot($("#placeholder"), [data], options);
+      overview = $.plot($("#overview"), [data], overviewOptions);
 
-        // now connect the two
-        $("#placeholder").bind("plotselected", function (event, ranges) {
-            // clamp the zooming to prevent eternal zoom
-            // also round xaxis to nearest millisecond
-            ranges.xaxis.from = Math.floor(ranges.xaxis.from);
-            ranges.xaxis.to = Math.ceil(ranges.xaxis.to);
-            if (ranges.yaxis.to - ranges.yaxis.from < 0.00001)
-              ranges.yaxis.to = ranges.yaxis.from + 0.00001;
+      // now connect the two
+      $("#placeholder").bind("plotselected", function (event, ranges) {
+        // clamp the zooming to prevent eternal zoom
+        // also round xaxis to nearest millisecond
+        ranges.xaxis.from = Math.floor(ranges.xaxis.from);
+        ranges.xaxis.to = Math.ceil(ranges.xaxis.to);
+        if (ranges.yaxis.to - ranges.yaxis.from < 0.00001)
+          ranges.yaxis.to = ranges.yaxis.from + 0.00001;
 
-            rangeFrom = ranges.xaxis.from;
-            rangeTo = ranges.xaxis.to;
+        rangeFrom = ranges.xaxis.from;
+        rangeTo = ranges.xaxis.to;
             
-            // do the zooming
-            plot = $.plot($("#placeholder"), [data],
-                          $.extend(true, {}, options, {
-                              xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
-                              yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
-                          }));
+        // do the zooming
+        plot = $.plot($("#placeholder"), [data],
+                      $.extend(true, {}, options, {
+                               xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+                               yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+                      }));
 
-            // don't fire event on the overview to prevent eternal loop
-            overview.setSelection(ranges, true);
-          });
-          $("#overview").bind("plotselected", function (event, ranges) {
-            plot.setSelection(ranges);
-          });
+        // don't fire event on the overview to prevent eternal loop
+        overview.setSelection(ranges, true);
+      });
+      $("#overview").bind("plotselected", function (event, ranges) {
+        plot.setSelection(ranges);
+      });
     }
 
     function gettracesummaries(from, to, low, high) {
-	    var queryString = 'from=' + from + '&to=' + to;
-	    if (low != undefined) {
-	      queryString += '&low=' + low;
-	    }
-	    if (high != undefined) {
-	      queryString += '&high=' + low;
-	    }
-	    $.getJSON('/traceSummaries?from=' + from + '&to=' + to, function(response) {
-	    	// shift for timezone
-	    	for (var i = 0; i < response.data.length; i++) {
-	    		response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000;
-	    	}
-	    	plott(response.data)
-	      });
-	    $('#traces').html('');
-	  }
+      var queryString = 'from=' + from + '&to=' + to;
+      if (low != undefined) {
+        queryString += '&low=' + low;
+      }
+      if (high != undefined) {
+        queryString += '&high=' + low;
+      }
+      $.getJSON('/traceSummaries?from=' + from + '&to=' + to, function(response) {
+          // shift for timezone
+          for (var i = 0; i < response.data.length; i++) {
+            response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000;
+          }
+          plott(response.data)
+        });
+      $('#traces').html('');
+    }
     function gettraces(from, to, low, high) {
-	    var queryString = 'from=' + from + '&to=' + to;
-	    if (low != undefined) {
-	      queryString += '&low=' + low;
-	    }
-	    if (high != undefined) {
-	      queryString += '&high=' + low;
-	    }
-	    from += new Date(from).getTimezoneOffset() * 60 * 1000;
-	    to += new Date(to).getTimezoneOffset() * 60 * 1000;
-	    $.getJSON('/traces?from=' + from + '&to=' + to, function(response) {
-	      $('#traces').html('');
-	      if (response.traces.length) {
-	        var html = template(response);
-	        $(html).appendTo('#traces');
-	        // for debugging:
-	        //$('<div>' + JSON.stringify(response.traces) + '</div>').appendTo('#traces');
-	      } else {
-	        $('#traces').html('no data');
-	      }
-	    });
-	  }
+      var queryString = 'from=' + from + '&to=' + to;
+      if (low != undefined) {
+        queryString += '&low=' + low;
+      }
+      if (high != undefined) {
+        queryString += '&high=' + low;
+      }
+      from += new Date(from).getTimezoneOffset() * 60 * 1000;
+      to += new Date(to).getTimezoneOffset() * 60 * 1000;
+      $.getJSON('/traces?from=' + from + '&to=' + to, function(response) {
+        $('#traces').html('');
+        if (response.traces.length) {
+          var html = template(response);
+          $(html).appendTo('#traces');
+          // for debugging:
+          //$('<div>' + JSON.stringify(response.traces[0]) + '</div>').appendTo('#traces');
+        } else {
+          $('#traces').html('no data');
+        }
+      });
+    }
 
     $("#datepicker").datepicker({
         onSelect : function(dateText, inst) {
-       	  plotFullDate($(this).datepicker('getDate'));
-        }
+            plotFullDate($(this).datepicker('getDate'));
+          }
       });
     $("#showdetails").button();
     $("#showdetails").click(function() {
-    	gettraces(rangeFrom, rangeTo);
+        gettraces(rangeFrom, rangeTo);
       });
 
     var d = new Date();

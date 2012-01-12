@@ -16,6 +16,7 @@
 package org.informantproject.test.plugin;
 
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
@@ -28,34 +29,47 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
  * @since 0.5
  */
 @Aspect
-public class LevelTwoAspect {
+public class NestableAspect {
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
         return PluginServices.get().isEnabled();
     }
 
-    @Pointcut("if()")
-    public static boolean inTrace() {
-        return PluginServices.get().getRootSpanDetail() != null;
+    @Pointcut("call(void org.informantproject.test.api.Nestable.call())")
+    void nestablePointcut() {}
+
+    @Around("isPluginEnabled() && nestablePointcut()")
+    public Object nestableAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        if (PluginServices.get().getRootSpanDetail() == null) {
+            return PluginServices.get().executeRootSpan(getRootSpanDetail(), joinPoint, "nestable");
+        } else {
+            return PluginServices.get().executeSpan(getSpanDetail(), joinPoint, "nestable");
+        }
     }
 
-    @Pointcut("call(void org.informantproject.test.api.LevelTwo.call(java.lang.String,"
-            + " java.lang.String))")
-    void levelTwoPointcut() {}
-
-    @Around("isPluginEnabled() && levelTwoPointcut() && args(arg1, arg2)")
-    public Object callAdvice(ProceedingJoinPoint joinPoint, final String arg1, final String arg2)
-            throws Throwable {
-
-        SpanDetail spanDetail = new SpanDetail() {
+    private RootSpanDetail getRootSpanDetail() {
+        return new RootSpanDetail() {
             public String getDescription() {
-                return "Level Two";
+                return "Nestable";
             }
             public SpanContextMap getContextMap() {
-                return SpanContextMap.of("arg1", arg1, "arg2", arg2);
+                return null;
+            }
+            public String getUsername() {
+                return null;
             }
         };
-        return PluginServices.get().executeSpan(spanDetail, joinPoint, "level two");
+    }
+
+    private SpanDetail getSpanDetail() {
+        return new SpanDetail() {
+            public String getDescription() {
+                return "Nestable";
+            }
+            public SpanContextMap getContextMap() {
+                return null;
+            }
+        };
     }
 }
