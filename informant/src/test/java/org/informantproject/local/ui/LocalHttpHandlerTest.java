@@ -20,13 +20,13 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.informantproject.MainEntryPoint;
 import org.informantproject.configuration.CoreConfigurationTestData;
 import org.informantproject.configuration.ImmutableCoreConfiguration;
 import org.informantproject.util.ThreadChecker;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -87,15 +87,5 @@ public class LocalHttpHandlerTest {
         JsonObject rootNode = new JsonParser().parse(responseText).getAsJsonObject();
         String coreConfigurationJson = new Gson().toJson(rootNode.get("coreConfiguration"));
         assertThat(coreConfigurationJson, is(randomCoreConfiguration.toJson()));
-    }
-
-    @Test
-    public void shouldReadTraces() throws Exception {
-        BoundRequestBuilder request = asyncHttpClient
-                .prepareGet("http://localhost:4000/traces?start=0&end=0");
-        // when
-        Response response = request.execute().get();
-        // then
-        System.out.println(response.getResponseBody());
     }
 }
