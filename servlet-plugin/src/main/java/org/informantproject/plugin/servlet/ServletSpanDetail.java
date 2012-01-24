@@ -20,9 +20,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
-
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.shaded.google.common.base.Strings;
@@ -42,7 +39,9 @@ import org.informantproject.shaded.google.common.base.Strings;
  */
 class ServletSpanDetail implements RootSpanDetail {
 
-    // this must extend either Servlet or Filter
+    // whether intercepting a servlet or a filter
+    private final boolean filter;
+    // the servlet or filter class that is being intercepted
     private final Class<?> clazz;
 
     // TODO allow additional notation for session attributes to capture, e.g.
@@ -82,16 +81,14 @@ class ServletSpanDetail implements RootSpanDetail {
 
     private volatile Map<String, String> sessionAttributeUpdatedValueMap;
 
-    ServletSpanDetail(Class<?> clazz, String requestMethod, String requestURI) {
-        this(clazz, requestMethod, requestURI, null, null, null);
+    ServletSpanDetail(boolean filter, Class<?> clazz, String requestMethod, String requestURI) {
+        this(filter, clazz, requestMethod, requestURI, null, null, null);
     }
 
-    ServletSpanDetail(Class<?> clazz, String requestMethod, String requestURI,
+    ServletSpanDetail(boolean filter, Class<?> clazz, String requestMethod, String requestURI,
             String username, String sessionId, Map<String, String> sessionAttributeMap) {
 
-        if (!Servlet.class.isAssignableFrom(clazz) && !Filter.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException("clazz must be a Servlet or a Filter");
-        }
+        this.filter = filter;
         this.clazz = clazz;
         this.requestMethod = requestMethod;
         this.requestURI = requestURI;
@@ -105,12 +102,10 @@ class ServletSpanDetail implements RootSpanDetail {
     }
 
     public String getDescription() {
-        if (Servlet.class.isAssignableFrom(clazz)) {
-            return "servlet: " + clazz.getName() + ".service()";
-        } else if (Filter.class.isAssignableFrom(clazz)) {
+        if (filter) {
             return "filter: " + clazz.getName() + ".doFilter()";
         } else {
-            throw new IllegalStateException("clazz must be a Servlet or a Filter");
+            return "servlet: " + clazz.getName() + ".service()";
         }
     }
 

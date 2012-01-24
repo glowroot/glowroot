@@ -20,14 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
@@ -40,8 +32,10 @@ import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
 
 /**
  * Defines pointcuts and captures data on
- * {@link HttpServlet#service(ServletRequest, ServletResponse)} and
- * {@link Filter#doFilter(ServletRequest, ServletResponse, FilterChain)} calls.
+ * {@link javax.servlet.http.HttpServlet#service(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}
+ * and
+ * {@link javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}
+ * calls.
  * 
  * By default only calls to the top-most Filter and to the top-most Servlet are captured.
  * "isWarnOnSpanOutsideTrace" core configuration property can be used to enable capturing of nested
@@ -98,12 +92,26 @@ public class ServletAspect {
     @Pointcut("servletPointcut() && cflowbelow(servletPointcut())")
     void nestedServletPointcut() {}
 
-    // conveniently the same code can handle both Servlet.service() and Filter.doFilter()
-    @Around("isPluginEnabled() && (topLevelServletPointcut() || topLevelFilterPointcut())"
-            + " && target(target) && args(request, ..)")
+    @Around("isPluginEnabled() && topLevelServletPointcut() && target(target)"
+            + " && args(realRequest, ..)")
     public void aroundTopLevelServletPointcut(ProceedingJoinPoint joinPoint, Object target,
-            HttpServletRequest request) throws Throwable {
+            Object realRequest) throws Throwable {
 
+        aroundTopLevelServletOrFilterPointcut(joinPoint, target, realRequest, false);
+    }
+
+    @Around("isPluginEnabled() && topLevelFilterPointcut() && target(target)"
+            + " && args(realRequest, ..)")
+    public void aroundTopLevelFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
+            Object realRequest) throws Throwable {
+
+        aroundTopLevelServletOrFilterPointcut(joinPoint, target, realRequest, true);
+    }
+
+    private void aroundTopLevelServletOrFilterPointcut(ProceedingJoinPoint joinPoint,
+            Object target, Object realRequest, boolean filter) throws Throwable {
+
+        HttpServletRequest request = HttpServletRequest.from(realRequest);
         // capture more expensive data (request parameter map and session info)
         // for top level servlet pointcuts
         ServletSpanDetail spanDetail;
@@ -111,12 +119,12 @@ public class ServletAspect {
         // if the request doesn't already have one
         HttpSession session = request.getSession(false);
         if (session == null) {
-            spanDetail = new ServletSpanDetail(target.getClass(), request.getMethod(),
+            spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
                     request.getRequestURI());
         } else {
             String username = getSessionAttributeTextValue(session,
                     ServletPluginPropertyUtils.getUsernameSessionAttributePath());
-            spanDetail = new ServletSpanDetail(target.getClass(), request.getMethod(),
+            spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
                     request.getRequestURI(), username, session.getId(),
                     getSessionAttributes(session));
         }
@@ -128,13 +136,28 @@ public class ServletAspect {
         }
     }
 
-    @Around("isPluginEnabled() && inTrace() && (nestedServletPointcut() || nestedFilterPointcut())"
-            + " && target(target) && args(request, ..)")
+    @Around("isPluginEnabled() && inTrace() && nestedFilterPointcut() && target(target)"
+            + " && args(realRequest, ..)")
     public void aroundNestedServletPointcut(ProceedingJoinPoint joinPoint, Object target,
-            HttpServletRequest request) throws Throwable {
+            Object realRequest) throws Throwable {
 
+        aroundNestedServletOrFilterPointcut(joinPoint, target, realRequest, false);
+    }
+
+    @Around("isPluginEnabled() && inTrace() && nestedServletPointcut() && target(target)"
+            + " && args(realRequest, ..)")
+    public void aroundNestedFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
+            Object realRequest) throws Throwable {
+
+        aroundNestedServletOrFilterPointcut(joinPoint, target, realRequest, true);
+    }
+
+    private void aroundNestedServletOrFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
+            Object realRequest, boolean filter) throws Throwable {
+
+        HttpServletRequest request = HttpServletRequest.from(realRequest);
         if (ServletPluginPropertyUtils.isCaptureNestedExecutions()) {
-            ServletSpanDetail spanDetail = new ServletSpanDetail(target.getClass(),
+            ServletSpanDetail spanDetail = new ServletSpanDetail(filter, target.getClass(),
                     request.getMethod(), request.getRequestURI());
             // passing null spanSummaryKey so it won't record aggregate timing data
             // for nested servlets and filters
@@ -152,9 +175,10 @@ public class ServletAspect {
     void requestGetParameterPointcut() {}
 
     @AfterReturning("isPluginEnabled() && inTrace() && requestGetParameterPointcut()"
-            + " && !cflowbelow(requestGetParameterPointcut()) && target(request)"
+            + " && !cflowbelow(requestGetParameterPointcut()) && target(realRequest)"
             + " && !within(org.informantproject.plugin.servlet.ServletAspect)")
-    public void afterReturningRequestGetParameterPointcut(HttpServletRequest request) {
+    public void afterReturningRequestGetParameterPointcut(Object realRequest) {
+        HttpServletRequest request = HttpServletRequest.from(realRequest);
         // only now is it safe to get parameters (if parameters are retrieved before this, it could
         // prevent a servlet from choosing to read the underlying stream instead of using the
         // getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
@@ -174,21 +198,23 @@ public class ServletAspect {
     void requestGetSessionPointcut() {}
 
     @AfterReturning(pointcut = "isPluginEnabled() && inTrace() && requestGetSessionPointcut()"
-            + " && !cflowbelow(requestGetSessionPointcut()) && target(request)",
-            returning = "session")
-    public void afterReturningRequestGetSession(HttpServletRequest request, HttpSession session) {
+            + " && !cflowbelow(requestGetSessionPointcut()) && target(realRequest)",
+            returning = "realSession")
+    public void afterReturningRequestGetSession(Object realRequest, Object realSession) {
+        HttpServletRequest request = HttpServletRequest.from(realRequest);
+        HttpSession session = HttpSession.from(realSession);
         ServletSpanDetail spanDetail = getRootServletSpanDetail(request);
         if (spanDetail != null && session != null && session.isNew()) {
             spanDetail.setSessionIdUpdatedValue(session.getId());
         }
     }
-
     @Pointcut("call(void javax.servlet.http.HttpSession.invalidate())")
     void sessionInvalidatePointcut() {}
 
     @Before("isPluginEnabled() && inTrace() && sessionInvalidatePointcut()"
-            + " && !cflowbelow(sessionInvalidatePointcut()) && target(session)")
-    public void beforeSessionInvalidatePointcut(HttpSession session) {
+            + " && !cflowbelow(sessionInvalidatePointcut()) && target(realSession)")
+    public void beforeSessionInvalidatePointcut(Object realSession) {
+        HttpSession session = HttpSession.from(realSession);
         ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
         if (spanDetail != null) {
             spanDetail.setSessionIdUpdatedValue("");
@@ -201,11 +227,12 @@ public class ServletAspect {
     void sessionSetAttributePointcut() {}
 
     @AfterReturning("isPluginEnabled() && inTrace() && sessionSetAttributePointcut()"
-            + " && !cflowbelow(sessionSetAttributePointcut()) && target(session)"
+            + " && !cflowbelow(sessionSetAttributePointcut()) && target(realSession)"
             + " && args(name, value)")
-    public void afterReturningSessionSetAttributePointcut(HttpSession session, String name,
+    public void afterReturningSessionSetAttributePointcut(Object realSession, String name,
             Object value) {
 
+        HttpSession session = HttpSession.from(realSession);
         // both name and value are non-null per HttpSession.setAttribute() specification
         ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
         if (spanDetail != null) {
@@ -228,8 +255,10 @@ public class ServletAspect {
     void sessionRemoveAttributePointcut() {}
 
     @AfterReturning("isPluginEnabled() && inTrace() && sessionRemoveAttributePointcut()"
-            + " && !cflowbelow(sessionRemoveAttributePointcut()) && target(session) && args(name)")
-    public void afterReturningSessionRemoveAttributePointcut(HttpSession session, String name) {
+            + " && !cflowbelow(sessionRemoveAttributePointcut()) && target(realSession)"
+            + " && args(name)")
+    public void afterReturningSessionRemoveAttributePointcut(Object realSession, String name) {
+        HttpSession session = HttpSession.from(realSession);
         // update session attribute in ServletSpanDetail if necessary
         Set<String> sessionAttributePaths = ServletPluginPropertyUtils.getSessionAttributePaths();
         if (isSingleWildcard(sessionAttributePaths) || sessionAttributePaths.contains(name)) {
