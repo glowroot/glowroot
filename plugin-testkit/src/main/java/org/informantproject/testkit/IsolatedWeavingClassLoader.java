@@ -31,19 +31,20 @@ import com.google.common.io.Closeables;
  */
 class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
 
-    private final Class<?>[] bridgeInterfaces;
+    private final Class<?>[] bridgeClasses;
     // guarded by 'this'
     private final Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
 
-    // in some cases an explicit bridge interface isn't needed since all "java."
-    // classes can be used as bridge interface / classes
+    // in some cases an explicit bridge class isn't needed since all "java." classes can be used as
+    // bridge classes
     public IsolatedWeavingClassLoader() {
         this(new Class<?>[0]);
     }
 
-    public IsolatedWeavingClassLoader(Class<?>... bridgeInterfaces) {
+    // bridge classes can be either interfaces or base classes
+    public IsolatedWeavingClassLoader(Class<?>... bridgeClasses) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        this.bridgeInterfaces = bridgeInterfaces;
+        this.bridgeClasses = bridgeClasses;
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -61,9 +62,9 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
         if (isJavaSystemClass(name)) {
             return super.findClass(name);
         }
-        for (Class<?> bridgeInterface : bridgeInterfaces) {
-            if (bridgeInterface.getName().equals(name)) {
-                return bridgeInterface;
+        for (Class<?> bridgeClass : bridgeClasses) {
+            if (bridgeClass.getName().equals(name)) {
+                return bridgeClass;
             }
         }
         String resourceName = name.replace('.', '/') + ".class";
@@ -112,8 +113,8 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
         if (isJavaSystemClass(name)) {
             return true;
         }
-        for (Class<?> bridgeInterface : bridgeInterfaces) {
-            if (bridgeInterface.getName().equals(name)) {
+        for (Class<?> bridgeClass : bridgeClasses) {
+            if (bridgeClass.getName().equals(name)) {
                 return true;
             }
         }

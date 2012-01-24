@@ -26,16 +26,16 @@ import com.google.common.base.Objects;
  */
 public class GetTracesResponse {
 
-    private long start;
-    private long end;
+    private long from;
+    private long to;
     private List<Trace> traces;
 
-    public long getStart() {
-        return start;
+    public long getFrom() {
+        return from;
     }
 
-    public long getEnd() {
-        return end;
+    public long getTo() {
+        return to;
     }
 
     public List<Trace> getTraces() {
@@ -45,16 +45,16 @@ public class GetTracesResponse {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("start", start)
-                .add("end", end)
+                .add("from", from)
+                .add("to", to)
                 .add("traces", traces)
                 .toString();
     }
 
     public static class Trace {
         private String id;
-        private long start;
-        private long end;
+        private long from;
+        private long to;
         private boolean stuck;
         private long duration;
         private boolean completed;
@@ -65,11 +65,11 @@ public class GetTracesResponse {
         public String getId() {
             return id;
         }
-        public long getStart() {
-            return start;
+        public long getFrom() {
+            return from;
         }
-        public long getEnd() {
-            return end;
+        public long getTo() {
+            return to;
         }
         public boolean isStuck() {
             return stuck;
@@ -96,8 +96,8 @@ public class GetTracesResponse {
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("id", id)
-                    .add("start", start)
-                    .add("end", end)
+                    .add("from", from)
+                    .add("to", to)
                     .add("stuck", stuck)
                     .add("duration", duration)
                     .add("completed", completed)

@@ -47,9 +47,9 @@ public final class MainEntryPoint {
 
     private MainEntryPoint() {}
 
-    public static void premain(String options, Instrumentation instrumentation) {
-        logger.debug("premain(): options={}", options);
-        start(options);
+    public static void premain(String agentArgs, Instrumentation instrumentation) {
+        logger.debug("premain(): agentArgs={}", agentArgs);
+        start(agentArgs);
         // start the AspectJ load-time weaving agent
         Agent.premain(null, instrumentation);
     }

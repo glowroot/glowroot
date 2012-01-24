@@ -84,8 +84,8 @@ public class Informant {
         return getTraces(baselineTime, 0);
     }
 
-    public List<Trace> getTraces(long start, long end) throws Exception {
-        String json = get("/traces?start=" + start + "&end=" + end);
+    public List<Trace> getTraces(long from, long to) throws Exception {
+        String json = get("/traces?from=" + from + "&to=" + to);
         return new Gson().fromJson(json, GetTracesResponse.class).getTraces();
     }
 
