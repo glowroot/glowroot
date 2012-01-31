@@ -55,6 +55,7 @@ public class JarFileShadingTest {
                     + " (e.g. from inside of Eclipse) and it should succeed.");
         }
         List<String> acceptableEntries = new ArrayList<String>();
+        acceptableEntries.add("org.informantproject\\..*");
         acceptableEntries.add("org/");
         acceptableEntries.add("org/informantproject/.*");
         acceptableEntries.add("META-INF/");
