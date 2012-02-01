@@ -9,7 +9,7 @@
 <script id="configurationtemplate" type="text/x-handlebars-template">
 <div>
 <form>
-Enabled: {{coreConfiguration.enabled}}<br>
+Enabled: <input type="checkbox" id="enabled" value="true"{{#if coreConfiguration.enabled}} checked{{/if}}><br>
 Threshold: <input type="text" id="thresholdMillis" value="{{coreConfiguration.thresholdMillis}}"> (millis)<br>
 Stuck threshold: <input type="text" id="stuckThresholdMillis" value="{{coreConfiguration.stuckThresholdMillis}}"> (millis)<br>
 Stack trace initial delay: <input type="text" id="stackTraceInitialDelayMillis" value="{{coreConfiguration.stackTraceInitialDelayMillis}}"> (millis)<br>
@@ -35,7 +35,7 @@ Max spans per trace: <input type="text" id="maxSpansPerTrace" value="{{coreConfi
   function updateconfiguration() {
 		$.post('/configuration/update',
 		  JSON.stringify({'coreConfiguration': {
-			'enabled': true,
+			'enabled': document.forms[0].enabled.checked,
 			'thresholdMillis': document.forms[0].thresholdMillis.value,
 			'stuckThresholdMillis': document.forms[0].stuckThresholdMillis.value,
     		'stackTraceInitialDelayMillis': document.forms[0].stackTraceInitialDelayMillis.value,
