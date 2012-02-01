@@ -152,12 +152,12 @@ public class GetTracesResponse {
     }
 
     public static class MergedStackTreeNode {
-        private StackTraceElement stackTraceElement;
+        private String stackTraceElement;
         private List<MergedStackTreeNode> childNodes;
         private int sampleCount;
         private volatile Map<String, Integer> leafThreadStateSampleCounts;
         private volatile String singleLeafState;
-        public StackTraceElement getStackTraceElement() {
+        public String getStackTraceElement() {
             return stackTraceElement;
         }
         public List<MergedStackTreeNode> getChildNodes() {
@@ -180,34 +180,6 @@ public class GetTracesResponse {
                     .add("sampleCount", sampleCount)
                     .add("leafThreadStateSampleCounts", leafThreadStateSampleCounts)
                     .add("singleLeafState", singleLeafState)
-                    .toString();
-        }
-    }
-
-    public static class StackTraceElement {
-        private String declaringClass;
-        private String methodName;
-        private String fileName;
-        private int lineNumber;
-        public String getDeclaringClass() {
-            return declaringClass;
-        }
-        public String getMethodName() {
-            return methodName;
-        }
-        public String getFileName() {
-            return fileName;
-        }
-        public int getLineNumber() {
-            return lineNumber;
-        }
-        @Override
-        public String toString() {
-            return Objects.toStringHelper(this)
-                    .add("declaringClass", declaringClass)
-                    .add("methodName", methodName)
-                    .add("fileName", fileName)
-                    .add("lineNumber", lineNumber)
                     .toString();
         }
     }

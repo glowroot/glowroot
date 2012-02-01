@@ -78,12 +78,7 @@ merged stack trace:<br>
       for (var j = 0; j < level; j++) {
         ret += '&nbsp;';
       }
-      ret += stackTraceElement.declaringClass + '.' + stackTraceElement.methodName;
-      if (stackTraceElement.lineNumber == -2) {
-        ret += '(Native Method)<br>';
-      } else {
-        ret += '(' + stackTraceElement.fileName + ':' + stackTraceElement.lineNumber + ')<br>';  
-      }
+      ret += stackTraceElement + '<br>';
       if (childNode.singleLeafState) {
         ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
         ret += samplePercentage.toFixed(1);

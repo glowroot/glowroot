@@ -29,6 +29,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
@@ -81,7 +82,9 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setStuck(trace.isStuck());
         storedTrace.setDuration(trace.getDuration());
         storedTrace.setCompleted(trace.isCompleted());
-        Gson gson = new GsonBuilder().registerTypeAdapter(Span.class, new SpanGsonSerializer())
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Span.class, new SpanGsonSerializer())
+                .registerTypeAdapter(StackTraceElement.class, new StackTraceElementGsonSerializer())
                 .create();
         storedTrace.setThreadNames(gson.toJson(trace.getThreadNames()));
         storedTrace.setUsername(trace.getUsername());
@@ -103,6 +106,14 @@ public class TraceSinkLocal implements TraceSink {
             jsonObject.add("contextMap", context.serialize(span.getContextMap(),
                     new TypeToken<Map<String, Object>>() {}.getType()));
             return jsonObject;
+        }
+    }
+
+    private static class StackTraceElementGsonSerializer implements
+            JsonSerializer<StackTraceElement> {
+        public JsonElement serialize(StackTraceElement stackTraceElement, Type unused,
+                JsonSerializationContext context) {
+            return new JsonPrimitive(stackTraceElement.toString());
         }
     }
 }
