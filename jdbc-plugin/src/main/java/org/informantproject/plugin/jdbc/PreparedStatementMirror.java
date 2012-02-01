@@ -78,7 +78,7 @@ class PreparedStatementMirror extends StatementMirror {
             parameters.add(object);
         } else if (parameterIndex < parameters.size() + 1) {
             // overwrite existing value
-            parameters.set(parameterIndex, object);
+            parameters.set(parameterIndex - 1, object);
         } else {
             // expand list with nulls
             for (int i = parameters.size() + 1; i < parameterIndex; i++) {
