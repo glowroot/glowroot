@@ -26,17 +26,38 @@ duration: {{nanostomillis duration}} milliseconds<br>
 threadName(s): {{threadNames}}<br>
 root context:<br>
 {{#first spans}}
-{{#eachentry contextMap}}{{/eachentry}}
+  <div style="margin-left: 1em">{{#eachentry contextMap}}{{/eachentry}}</div>
 {{/first}}
-spans:<br>
+<a href="javascript:$('#spans_{{id}}').toggle()">spans</a> ({{spans.length}})<br>
+<div id="spans_{{id}}" style="display: none">
 {{#spans}}
-  &nbsp;&nbsp;+{{nanostomillis offset}}&nbsp;&nbsp;&nbsp;{{nanostomillis duration}}&nbsp;&nbsp;&nbsp;{{description}}<br>
-  {{#if index}}  
-  {{#eachentry contextMap}}{{/eachentry}}
-  {{/if}}
+  <div style="float: left; margin-left: 1em">+{{nanostomillis offset}}</div>
+  <div style="margin-left: {{margin level}}em">
+    <div style="float: left">{{nanostomillis duration}}&nbsp;</div>
+    <div style="margin-left: 3em">
+      <span class="span_{{../id}}_{{index}}">
+        <a href="javascript:$('.span_{{../id}}_{{index}}').toggle()" style="text-decoration: none; color: black">
+          {{#short description}}{{/short}}
+        </a>
+      </span>
+      <span class="span_{{../id}}_{{index}}" style="display: none">
+        <a href="javascript:$('.span_{{../id}}_{{index}}').toggle()" style="text-decoration: none; color: blue">
+          {{description}}
+        </a>
+      </span>
+      {{#if index}}
+        <div>{{#eachentry contextMap}}{{/eachentry}}</div>
+      {{/if}}
+    </div>
+  </div>
 {{/spans}}
-merged stack trace:<br>
-{{#mergedstacktrace mergedStackTreeRootNodes}}{{/mergedstacktrace}}
+</div>
+<a href="javascript:$('#mst_{{id}}').toggle()">merged stack trace</a><br>
+<div id="mst_{{id}}" style="display: none; white-space: nowrap">
+  {{#mergedstacktrace mergedStackTreeRootNodes}}{{/mergedstacktrace}}
+</div>
+</div>
+<br>
 </div>
 {{/traces}}
 </script>
@@ -53,9 +74,23 @@ merged stack trace:<br>
   Handlebars.registerHelper('eachentry', function(context, block) {
       var ret = "";
       for (var prop in context) {
-        ret = ret + '&nbsp;&nbsp;&nbsp;&nbsp;' + prop + ": " + JSON.stringify(context[prop]) + "<br>";
+        ret = ret + prop + ": " + JSON.stringify(context[prop]) + "<br>";
       }
       return ret;
+    });
+  Handlebars.registerHelper('margin', function(level) {
+      return 4 + level;
+    });
+  Handlebars.registerHelper('margin2', function(level) {
+      return 7 + level;
+    });
+  Handlebars.registerHelper('short', function(description, block) {
+      if (description.length < 160) {
+        return description;
+      } else {
+        return description.slice(0, 80)
+            + " <span style='color: blue; font-weight: bold'>...</span> " + description.slice(-80);
+      }
     });
   Handlebars.registerHelper('mergedstacktrace', function(rootNodes, block) {
       var totalSampleCount = 0;
@@ -71,27 +106,30 @@ merged stack trace:<br>
     for (var i = 0; i < childNodes.length; i++) {
       var childNode = childNodes[i];
       var stackTraceElement = childNode.stackTraceElement;
+      if (childNode.sampleCount < totalSampleCount) {
+        level++;
+      }
+      for (var j = 0; j < level; j++) {
+        ret += '&nbsp;';
+      }
       ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
       var samplePercentage = (childNode.sampleCount / totalSampleCount) * 100;
       ret += samplePercentage.toFixed(1);
       ret += '%</span>'
-      for (var j = 0; j < level; j++) {
-        ret += '&nbsp;';
-      }
       ret += stackTraceElement + '<br>';
       if (childNode.singleLeafState) {
-        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
-        ret += samplePercentage.toFixed(1);
-        ret += '%</span>'
         for (var j = 0; j < level; j++) {
           ret += '&nbsp;';
         }
+        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
+        ret += samplePercentage.toFixed(1);
+        ret += '%</span>'
         ret += '&nbsp;' + childNode.singleLeafState + '<br>';
       } else if (childNode.leafThreadStateSampleCounts) {
         // TODO generate a test case that produces multiple thread states for a single node
         ret += JSON.stringify(childNode.leafThreadStateSampleCounts) + '<br>';
       }
-      ret += curr(childNode.childNodes, level + 1, totalSampleCount);
+      ret += curr(childNode.childNodes, level, totalSampleCount);
     }
     return ret;
   }
@@ -146,7 +184,7 @@ merged stack trace:<br>
 
         rangeFrom = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000;
         rangeTo = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000;
-            
+
         // do the zooming
         plot = $.plot($("#placeholder"), [data],
                       $.extend(true, {}, options, {
