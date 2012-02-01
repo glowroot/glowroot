@@ -149,8 +149,8 @@ merged stack trace:<br>
         if (ranges.yaxis.to - ranges.yaxis.from < 0.00001)
           ranges.yaxis.to = ranges.yaxis.from + 0.00001;
 
-        rangeFrom = ranges.xaxis.from;
-        rangeTo = ranges.xaxis.to;
+        rangeFrom = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000;
+        rangeTo = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000;
             
         // do the zooming
         plot = $.plot($("#placeholder"), [data],
@@ -192,8 +192,6 @@ merged stack trace:<br>
       if (high != undefined) {
         queryString += '&high=' + low;
       }
-      from += new Date(from).getTimezoneOffset() * 60 * 1000;
-      to += new Date(to).getTimezoneOffset() * 60 * 1000;
       $.getJSON('/traces?from=' + from + '&to=' + to, function(response) {
         $('#traces').html('');
         if (response.traces.length) {
