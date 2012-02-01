@@ -52,8 +52,6 @@ import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
 public class ServletAspect {
 
     private static final String TOP_LEVEL_SERVLET_SUMMARY_KEY = "http request";
-    private static final String ROOT_SPAN_DETAIL_ATTRIBUTE_NAME =
-            "org.informantproject.plugin.servlet.RootSpanDetail";
 
     private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
             new ThreadLocal<ServletSpanDetail>();
@@ -112,33 +110,43 @@ public class ServletAspect {
             Object target, Object realRequest, boolean filter) throws Throwable {
 
         HttpServletRequest request = HttpServletRequest.from(realRequest);
-        // capture more expensive data (request parameter map and session info)
-        // for top level servlet pointcuts
-        ServletSpanDetail spanDetail;
-        // passing "false" so it won't create a session
-        // if the request doesn't already have one
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
-                    request.getRequestURI());
+        if (topLevelServletSpanDetail.get() == null) {
+            // capture more expensive data (request parameter map and session info) for the top
+            // level filter/servlet pointcut
+            // request parameter map is collected in afterReturningRequestGetParameterPointcut()
+            // session info is collected here if the request already has a session
+            ServletSpanDetail spanDetail;
+            // passing "false" so it won't create a session if the request doesn't already have one
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
+                        request.getRequestURI());
+            } else {
+                String username = getSessionAttributeTextValue(session,
+                        ServletPluginPropertyUtils.getUsernameSessionAttributePath());
+                spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
+                        request.getRequestURI(), username, session.getId(),
+                        getSessionAttributes(session));
+            }
+            topLevelServletSpanDetail.set(spanDetail);
+            try {
+                pluginServices.executeRootSpan(spanDetail, joinPoint,
+                        TOP_LEVEL_SERVLET_SUMMARY_KEY);
+            } finally {
+                topLevelServletSpanDetail.set(null);
+            }
         } else {
-            String username = getSessionAttributeTextValue(session,
-                    ServletPluginPropertyUtils.getUsernameSessionAttributePath());
-            spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
-                    request.getRequestURI(), username, session.getId(),
-                    getSessionAttributes(session));
-        }
-        topLevelServletSpanDetail.set(spanDetail);
-        try {
-            pluginServices.executeRootSpan(spanDetail, joinPoint, TOP_LEVEL_SERVLET_SUMMARY_KEY);
-        } finally {
-            topLevelServletSpanDetail.set(null);
+            // this is the top-most servlet, but is still nested under a filter so no need to
+            // gather expensive http request and session data
+            ServletSpanDetail spanDetail = new ServletSpanDetail(filter, target.getClass(),
+                    request.getMethod(), request.getRequestURI());
+            pluginServices.executeSpan(spanDetail, joinPoint, null);
         }
     }
 
     @Around("isPluginEnabled() && inTrace() && nestedFilterPointcut() && target(target)"
             + " && args(realRequest, ..)")
-    public void aroundNestedServletPointcut(ProceedingJoinPoint joinPoint, Object target,
+    public void aroundNestedFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
             Object realRequest) throws Throwable {
 
         aroundNestedServletOrFilterPointcut(joinPoint, target, realRequest, false);
@@ -146,7 +154,7 @@ public class ServletAspect {
 
     @Around("isPluginEnabled() && inTrace() && nestedServletPointcut() && target(target)"
             + " && args(realRequest, ..)")
-    public void aroundNestedFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
+    public void aroundNestedServletPointcut(ProceedingJoinPoint joinPoint, Object target,
             Object realRequest) throws Throwable {
 
         aroundNestedServletOrFilterPointcut(joinPoint, target, realRequest, true);
@@ -182,7 +190,7 @@ public class ServletAspect {
         // only now is it safe to get parameters (if parameters are retrieved before this, it could
         // prevent a servlet from choosing to read the underlying stream instead of using the
         // getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
-        ServletSpanDetail spanDetail = getRootServletSpanDetail(request);
+        ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
         if (spanDetail != null && !spanDetail.isRequestParameterMapCaptured()) {
             // this request is being traced and the request parameter map hasn't been captured yet
             spanDetail.captureRequestParameterMap(request.getParameterMap());
@@ -198,12 +206,13 @@ public class ServletAspect {
     void requestGetSessionPointcut() {}
 
     @AfterReturning(pointcut = "isPluginEnabled() && inTrace() && requestGetSessionPointcut()"
-            + " && !cflowbelow(requestGetSessionPointcut()) && target(realRequest)",
-            returning = "realSession")
-    public void afterReturningRequestGetSession(Object realRequest, Object realSession) {
-        HttpServletRequest request = HttpServletRequest.from(realRequest);
+            + " && !cflowbelow(requestGetSessionPointcut())", returning = "realSession")
+    public void afterReturningRequestGetSession(Object realSession) {
         HttpSession session = HttpSession.from(realSession);
-        ServletSpanDetail spanDetail = getRootServletSpanDetail(request);
+        // either getSession(), getSession(true) or getSession(false) has triggered this pointcut
+        // after calls to the first two, a new session may have been created
+        // (the third one could be ignored but is harmless)
+        ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
         if (spanDetail != null && session != null && session.isNew()) {
             spanDetail.setSessionIdUpdatedValue(session.getId());
         }
@@ -267,10 +276,6 @@ public class ServletAspect {
                 spanDetail.putSessionAttributeChangedValue(name, "");
             }
         }
-    }
-
-    private static ServletSpanDetail getRootServletSpanDetail(HttpServletRequest request) {
-        return (ServletSpanDetail) request.getAttribute(ROOT_SPAN_DETAIL_ATTRIBUTE_NAME);
     }
 
     private static ServletSpanDetail getRootServletSpanDetail(HttpSession session) {
