@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.GetTracesResponse.Span;
 import org.informantproject.testkit.GetTracesResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.MockEntryPoint;
+import org.informantproject.testkit.RootSpanMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,11 +45,26 @@ import org.junit.Test;
 // which are common in application server environments
 public class JdbcPluginTest {
 
+    private static final String DB_NAME = "test";
     private static InformantContainer container;
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = InformantContainer.newInstance();
+        // set up database
+        new File(DB_NAME + ".h2.db").delete();
+        Connection connection = createConnection();
+        Statement statement = null;
+        try {
+            statement = connection.createStatement();
+            statement.execute("create table employee (name varchar(100))");
+            statement.execute("insert into employee (name) values ('john doe')");
+        } finally {
+            if (statement != null) {
+                statement.close();
+            }
+            connection.close();
+        }
     }
 
     @AfterClass
@@ -68,8 +83,8 @@ public class JdbcPluginTest {
         assertThat(traces.size(), is(1));
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(2));
-        Span mockSpan = trace.getSpans().get(0);
-        assertThat(mockSpan.getDescription(), is("mock"));
+        Span rootSpan = trace.getSpans().get(0);
+        assertThat(rootSpan.getDescription(), is("mock root span"));
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getDescription(),
                 is("jdbc execution: select * from employee => 1 row"));
@@ -96,54 +111,34 @@ public class JdbcPluginTest {
     // select * from employee where (name like ?)
     // [john%]
 
-    public static class ExecuteJdbcSelectAndIterateOverResults implements AppUnderTest {
-        public void execute() throws Exception {
-            new File("test.h2.db").delete();
-            JdbcDataSource dataSource = new JdbcDataSource();
-            dataSource.setURL("jdbc:h2:test");
-            dataSource.setUser("sa");
-            Connection connection = dataSource.getConnection();
+    private static Connection createConnection() throws SQLException {
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:" + DB_NAME);
+        dataSource.setUser("sa");
+        return dataSource.getConnection();
+    }
+
+    public static class ExecuteJdbcSelectAndIterateOverResults implements AppUnderTest,
+            RootSpanMarker {
+
+        private Connection connection;
+
+        public void executeApp() throws Exception {
+            connection = createConnection();
             try {
-                setUp(connection);
-                try {
-                    execute(connection);
-                } finally {
-                    tearDown(connection);
-                }
+                rootSpanMarker();
             } finally {
                 connection.close();
             }
         }
-        private static void setUp(Connection connection) throws SQLException {
+
+        public void rootSpanMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
-                statement.execute("create table employee (name varchar(100))");
-                statement.execute("insert into employee (name) values ('john doe')");
-            } finally {
-                statement.close();
-            }
-        }
-        private static void execute(final Connection connection) throws Exception {
-            MockEntryPoint mockEntryPoint = new MockEntryPoint() {
-                public void run() throws Exception {
-                    Statement statement = connection.createStatement();
-                    try {
-                        statement.execute("select * from employee");
-                        ResultSet rs = statement.getResultSet();
-                        while (rs.next()) {
-                        }
-                    } finally {
-                        statement.close();
-                    }
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                while (rs.next()) {
                 }
-            };
-            mockEntryPoint.run();
-        }
-        private static void tearDown(Connection connection) throws SQLException {
-            Statement statement;
-            statement = connection.createStatement();
-            try {
-                statement.execute("drop table employee");
             } finally {
                 statement.close();
             }
