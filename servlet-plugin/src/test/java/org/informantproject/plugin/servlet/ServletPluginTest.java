@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,7 @@ public class ServletPluginTest {
     }
 
     public static class ExecuteServlet implements AppUnderTest {
-        public void execute() throws ServletException, IOException {
+        public void executeApp() throws ServletException, IOException {
             Servlet servlet = new MockServlet();
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/servlettest");
             MockHttpServletResponse response = new MockHttpServletResponse();
@@ -165,7 +165,7 @@ public class ServletPluginTest {
     }
 
     public static class ExecuteFilter implements AppUnderTest {
-        public void execute() throws ServletException, IOException {
+        public void executeApp() throws ServletException, IOException {
             Filter filter = new MockFilter();
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/filtertest");
             MockHttpServletResponse response = new MockHttpServletResponse();
@@ -175,7 +175,7 @@ public class ServletPluginTest {
     }
 
     public static class ExecuteFilterWithNestedServlet implements AppUnderTest {
-        public void execute() throws ServletException, IOException {
+        public void executeApp() throws ServletException, IOException {
             Filter filter = new MockFilterWithServlet();
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/combotest");
             MockHttpServletResponse response = new MockHttpServletResponse();
@@ -185,7 +185,7 @@ public class ServletPluginTest {
     }
 
     public static class InvalidateSession implements AppUnderTest {
-        public void execute() throws ServletException, IOException {
+        public void executeApp() throws ServletException, IOException {
             MockHttpSession session = new MockHttpSession();
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/invalidate");
             request.setSession(session);
