@@ -118,7 +118,7 @@ public class BasicTest {
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public void execute() throws InterruptedException {
+        public void executeApp() throws InterruptedException {
             new LevelOne().call("a", "b");
         }
     }

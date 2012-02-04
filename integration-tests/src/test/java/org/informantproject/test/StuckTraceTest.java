@@ -21,11 +21,11 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 
-import org.informantproject.test.api.Nestable;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.GetTracesResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
+import org.informantproject.testkit.RootSpanMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,9 +69,12 @@ public class StuckTraceTest {
         assertThat(traces.get(1).getSpans().get(0).getDuration(), is(not(0L)));
     }
 
-    public static class ShouldGenerateStuckTrace implements AppUnderTest {
-        public void execute() throws InterruptedException {
-            new Nestable(new int[] { 150 }).call();
+    public static class ShouldGenerateStuckTrace implements AppUnderTest, RootSpanMarker {
+        public void executeApp() throws InterruptedException {
+            rootSpanMarker();
+        }
+        public void rootSpanMarker() throws InterruptedException {
+            Thread.sleep(150);
         }
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,19 +28,19 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
  * @since 0.5
  */
 @Aspect
-public class MockAspect {
+public class RootSpanMarkerAspect {
 
-    @Pointcut("execution(void org.informantproject.testkit.MockEntryPoint.run())")
-    void runPointcut() {}
+    @Pointcut("execution(void org.informantproject.testkit.RootSpanMarker.rootSpanMarker())")
+    void rootSpanMarkerPointcut() {}
 
-    @Around("runPointcut()")
-    public void aroundRunPointcut(ProceedingJoinPoint joinPoint) throws Throwable {
-        PluginServices.get().executeRootSpan(new MockRootSpan(), joinPoint, "mock entry point");
+    @Around("rootSpanMarkerPointcut()")
+    public void aroundRootSpanMarkerPointcut(ProceedingJoinPoint joinPoint) throws Throwable {
+        PluginServices.get().executeRootSpan(new MockRootSpan(), joinPoint, "mock root span");
     }
 
     private static class MockRootSpan implements RootSpanDetail {
         public String getDescription() {
-            return "mock";
+            return "mock root span";
         }
         public SpanContextMap getContextMap() {
             return null;

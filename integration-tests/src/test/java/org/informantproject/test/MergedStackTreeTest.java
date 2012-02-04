@@ -63,7 +63,7 @@ public class MergedStackTreeTest {
     }
 
     public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest {
-        public void execute() throws InterruptedException {
+        public void executeApp() throws InterruptedException {
             int[] sleepTimings = new int[] { 50, 40, 30, 10, 10, 10 };
             new Nestable(new Nestable(sleepTimings), sleepTimings).call();
         }
