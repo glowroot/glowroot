@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,8 @@ public class MergedStackTree {
         }
     }
 
-    private void addToStackTree(StackTraceElement[] stackTraceElements, State threadState) {
+    // public for unit tests (otherwise could be private)
+    public void addToStackTree(StackTraceElement[] stackTraceElements, State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextStackTraceIndex = 0;
@@ -72,7 +73,10 @@ public class MergedStackTree {
             boolean matchFound = false;
             for (MergedStackTreeNode childNode : nextChildNodes) {
                 if (stackTraceElements[nextStackTraceIndex]
-                        .equals(childNode.getStackTraceElement())) {
+                        .equals(childNode.getStackTraceElement())
+                        && (nextStackTraceIndex > 0 || threadState == childNode
+                                .getLeafThreadState())) {
+                    // only consider thread state when matching the leaf node
                     // match found, update lastMatchedNode and continue
                     childNode.incrementSampleCount();
                     lastMatchedNode = childNode;
@@ -88,6 +92,10 @@ public class MergedStackTree {
         // add remaining stack trace elements
         for (int i = nextStackTraceIndex; i >= 0; i--) {
             MergedStackTreeNode nextNode = new MergedStackTreeNode(stackTraceElements[i]);
+            if (i == 0) {
+                // leaf node
+                nextNode.setLeafThreadState(threadState);
+            }
             if (lastMatchedNode == null) {
                 // new root node
                 rootNodes.add(nextNode);
@@ -96,7 +104,5 @@ public class MergedStackTree {
             }
             lastMatchedNode = nextNode;
         }
-        // add leaf sampling
-        lastMatchedNode.addLeafSampling(threadState);
     }
 }

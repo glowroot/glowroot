@@ -17,9 +17,6 @@ package org.informantproject.stack;
 
 import java.lang.Thread.State;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -46,11 +43,7 @@ public class MergedStackTreeNode {
     // (see MergedStackTree) in order to avoid volatile and ensure consistent state of read
     //
     private volatile int sampleCount;
-    // TODO generate a test case that produces multiple thread states for a single node
-    private volatile Map<State, Integer> leafThreadStateSampleCounts;
-    // optimization for common case where there is just a single thread state recorded
-    // so the map (above) doesn't need to be instantiated unless necessary
-    private volatile State singleLeafState;
+    private volatile State leafThreadState;
 
     MergedStackTreeNode(StackTraceElement stackTraceElement) {
         this.stackTraceElement = stackTraceElement;
@@ -61,29 +54,8 @@ public class MergedStackTreeNode {
         childNodes.add(methodTreeElement);
     }
 
-    void addLeafSampling(State threadState) {
-
-        if (singleLeafState == null) {
-
-            // first leaf sampling for this node
-            singleLeafState = threadState;
-
-        } else if (!threadState.equals(singleLeafState) && leafThreadStateSampleCounts == null) {
-
-            // first leaf sampling of a different state than the single "best guess" state
-            // leaving optimized state, now the map has to be instantiated
-            leafThreadStateSampleCounts = new ConcurrentHashMap<State, Integer>();
-            leafThreadStateSampleCounts.put(singleLeafState, sampleCount);
-        }
-
-        if (leafThreadStateSampleCounts != null) {
-            Integer count = leafThreadStateSampleCounts.get(threadState);
-            if (count == null) {
-                leafThreadStateSampleCounts.put(threadState, 1);
-            } else {
-                leafThreadStateSampleCounts.put(threadState, count + 1);
-            }
-        }
+    void setLeafThreadState(State leafThreadState) {
+        this.leafThreadState = leafThreadState;
     }
 
     // sampleCount is volatile to ensure visibility, but this method still needs to be called under
@@ -105,17 +77,10 @@ public class MergedStackTreeNode {
     }
 
     public boolean isLeaf() {
-        return leafThreadStateSampleCounts != null || singleLeafState != null;
+        return leafThreadState != null;
     }
 
-    public Map<State, Integer> getLeafThreadStateSampleCounts() {
-        if (leafThreadStateSampleCounts == null && singleLeafState == null) {
-            return Collections.emptyMap();
-        } else if (leafThreadStateSampleCounts == null) {
-            // optimized for common case with single "best guess" state
-            return Collections.singletonMap(singleLeafState, sampleCount);
-        } else {
-            return leafThreadStateSampleCounts;
-        }
+    public State getLeafThreadState() {
+        return leafThreadState;
     }
 }

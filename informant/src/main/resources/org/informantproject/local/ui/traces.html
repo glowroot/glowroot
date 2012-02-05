@@ -132,17 +132,14 @@ root context:<br>
       ret += samplePercentage.toFixed(1);
       ret += '%</span>'
       ret += stackTraceElement + '<br>';
-      if (childNode.singleLeafState) {
+      if (childNode.leafThreadState) {
         for (var j = 0; j < level; j++) {
           ret += '&nbsp;';
         }
         ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
         ret += samplePercentage.toFixed(1);
         ret += '%</span>'
-        ret += '&nbsp;' + childNode.singleLeafState + '<br>';
-      } else if (childNode.leafThreadStateSampleCounts) {
-        // TODO generate a test case that produces multiple thread states for a single node
-        ret += JSON.stringify(childNode.leafThreadStateSampleCounts) + '<br>';
+        ret += '&nbsp;' + childNode.leafThreadState + '<br>';
       }
       ret += curr(childNode.childNodes, level, totalSampleCount);
     }
