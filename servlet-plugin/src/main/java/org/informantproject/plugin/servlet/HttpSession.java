@@ -22,9 +22,9 @@ import java.util.concurrent.ExecutionException;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.shaded.google.common.cache.Cache;
 import org.informantproject.shaded.google.common.cache.CacheBuilder;
 import org.informantproject.shaded.google.common.cache.CacheLoader;
+import org.informantproject.shaded.google.common.cache.LoadingCache;
 
 /**
  * @author Trask Stalnaker
@@ -34,8 +34,8 @@ class HttpSession {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServletRequest.class);
 
-    private static final Cache<ClassLoader, ScopedMethods> methodCache = CacheBuilder.newBuilder()
-            .weakKeys().build(new CacheLoader<ClassLoader, ScopedMethods>() {
+    private static final LoadingCache<ClassLoader, ScopedMethods> methodCache = CacheBuilder
+            .newBuilder().weakKeys().build(new CacheLoader<ClassLoader, ScopedMethods>() {
                 @Override
                 public ScopedMethods load(ClassLoader classLoader) throws Exception {
                     return new ScopedMethods(classLoader);
