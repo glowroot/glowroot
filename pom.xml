@@ -30,6 +30,7 @@
     <module>informant</module>
     <module>plugin-testkit</module>
     <module>integration-tests</module>
+    <module>ui-testing</module>
   </modules>
 
   <scm>

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.test.plugin;
+package org.informantproject.testing.ui;
 
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
@@ -29,43 +28,26 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
  * @since 0.5
  */
 @Aspect
-public class NestableAspect {
+public class ExpensiveCallAspect {
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
         return PluginServices.get().isEnabled();
     }
 
-    @Pointcut("call(void org.informantproject.test.api.Nestable.call())")
-    void nestablePointcut() {}
+    @Pointcut("call(void org.informantproject.testing.ui.ExpensiveCall.execute())")
+    void expensivePointcut() {}
 
-    @Around("isPluginEnabled() && nestablePointcut()")
-    public Object nestableAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (PluginServices.get().getRootSpanDetail() == null) {
-            return PluginServices.get().executeRootSpan(getRootSpanDetail(), joinPoint, "nestable");
-        } else {
-            return PluginServices.get().executeSpan(getSpanDetail(), joinPoint, "nestable");
-        }
+    @Around("isPluginEnabled() && expensivePointcut() && target(expensive)")
+    public Object nestableAdvice(ProceedingJoinPoint joinPoint, ExpensiveCall expensive)
+            throws Throwable {
+        return PluginServices.get().executeSpan(getSpanDetail(expensive), joinPoint, "expensive");
     }
 
-    private RootSpanDetail getRootSpanDetail() {
-        return new RootSpanDetail() {
-            public String getDescription() {
-                return "Nestable";
-            }
-            public SpanContextMap getContextMap() {
-                return null;
-            }
-            public String getUsername() {
-                return null;
-            }
-        };
-    }
-
-    private SpanDetail getSpanDetail() {
+    private SpanDetail getSpanDetail(final ExpensiveCall expensive) {
         return new SpanDetail() {
             public String getDescription() {
-                return "Nestable";
+                return expensive.getDescription();
             }
             public SpanContextMap getContextMap() {
                 return null;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2011-2012 the original author or authors.
+  Copyright 2012 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!DOCTYPE aspectj PUBLIC
-  "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
-<aspectj>
-  <aspects>
-    <aspect name="org.informantproject.test.plugin.LevelOneAspect" />
-    <aspect name="org.informantproject.test.plugin.LevelTwoAspect" />
-    <aspect name="org.informantproject.test.plugin.LevelThreeAspect" />
-  </aspects>
-</aspectj>
+<configuration>
+  <appender name="STDOUT" class="org.informantproject.shaded.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="info">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

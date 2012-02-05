@@ -20,11 +20,11 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 
-import org.informantproject.test.api.Nestable;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.GetTracesResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
+import org.informantproject.testkit.RootSpanMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,10 +62,13 @@ public class MergedStackTreeTest {
         assertThat(traces.get(0).getMergedStackTreeRootNodes().size(), is(1));
     }
 
-    public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest {
+    public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,
+            RootSpanMarker {
         public void executeApp() throws InterruptedException {
-            int[] sleepTimings = new int[] { 50, 40, 30, 10, 10, 10 };
-            new Nestable(new Nestable(sleepTimings), sleepTimings).call();
+            rootSpanMarker();
+        }
+        public void rootSpanMarker() throws InterruptedException {
+            Thread.sleep(150);
         }
     }
 }
