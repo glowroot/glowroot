@@ -105,7 +105,7 @@
               -->
               <rawString>true</rawString>
               <pattern>^META-INF/aop(-ajc)?.xml$</pattern>
-              <shadedPattern>META-INF/org.informantproject.shaded.aop$1.xml</shadedPattern>
+              <shadedPattern>META-INF/org.informantproject.aop$1.xml</shadedPattern>
             </relocation>
             <relocation>
               <!--
@@ -116,7 +116,7 @@
               -->
               <rawString>true</rawString>
               <pattern>^META-INF/aop.xml;META-INF/aop-ajc.xml;org/aspectj/aop.xml$</pattern>
-              <shadedPattern>META-INF/org.informantproject.shaded.aop.xml;META-INF/org.informantproject.shaded.aop-ajc.xml;org/informantproject/shaded/aspectj/aop.xml</shadedPattern>
+              <shadedPattern>META-INF/org.informantproject.aop.xml;META-INF/org.informantproject.aop-ajc.xml;org/informantproject/shaded/aspectj/aop.xml</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
