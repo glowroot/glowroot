@@ -19,9 +19,9 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentMap;
 
-import org.informantproject.shaded.google.common.cache.Cache;
 import org.informantproject.shaded.google.common.cache.CacheBuilder;
 import org.informantproject.shaded.google.common.cache.CacheLoader;
+import org.informantproject.shaded.google.common.cache.LoadingCache;
 import org.informantproject.shaded.google.common.collect.MapMaker;
 
 /**
@@ -41,7 +41,7 @@ import org.informantproject.shaded.google.common.collect.MapMaker;
  */
 class StatementMirrorCache {
 
-    private final Cache<Statement, StatementMirror> statementMirrorCache = CacheBuilder
+    private final LoadingCache<Statement, StatementMirror> statementMirrorCache = CacheBuilder
             .newBuilder().weakKeys().build(new StatementMirrorLazyMapValueFunction());
 
     private final ConcurrentMap<PreparedStatement, PreparedStatementMirror> preparedStatementMirrorMap =
