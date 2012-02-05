@@ -141,7 +141,9 @@ root context:<br>
         ret += '%</span>'
         ret += '&nbsp;' + childNode.leafThreadState + '<br>';
       }
-      ret += curr(childNode.childNodes, level, totalSampleCount);
+      if (childNode.childNodes) {
+        ret += curr(childNode.childNodes, level, totalSampleCount);
+      }
     }
     return ret;
   }

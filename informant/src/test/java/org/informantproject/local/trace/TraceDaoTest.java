@@ -18,6 +18,7 @@ package org.informantproject.local.trace;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.lang.Thread.State;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -103,5 +104,22 @@ public class TraceDaoTest {
         traceDao.delete(traceId);
         // then
         assertThat(traceDao.count(), is(0L));
+    }
+
+    @Test
+    public void shouldStoreVeryLargeMergedStackTrace(TraceTestData traceTestData) {
+        // given
+        Trace trace = traceTestData.createTrace();
+        // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
+        // using a 1mb thread stack size so testing with 10,000 here just to be sure
+        StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
+        for (int i = 0; i < stackTraceElements.length; i++) {
+            stackTraceElements[i] = new StackTraceElement(TraceDaoTest.class.getName(),
+                    "method" + i, "TraceDaoTest.java", 100 + 10 * i);
+        }
+        trace.getMergedStackTree().addToStackTree(stackTraceElements, State.RUNNABLE);
+        // when
+        TraceSinkLocal.buildStoredTrace(trace);
+        // then don't blow up with StackOverflowError
     }
 }
