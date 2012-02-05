@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,9 @@ public abstract class InformantContainer {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
         closeImpl();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
+        // no need to keep incrementing ui port and db filename if tests are being run serially
+        // (especially since all tests are being run in serial at this point)
+        uiPortCounter.compareAndSet(DEFAULT_UI_PORT + 1, DEFAULT_UI_PORT);
     }
 
     public Informant getInformant() {
@@ -96,6 +99,8 @@ public abstract class InformantContainer {
 
     private void init() throws Exception {
         preExistingThreads = ThreadChecker.currentThreadList();
+        // increment ui port and db filename so that tests can be run in parallel by using multiple
+        // InformantContainers (however tests are not being run in parallel at this point)
         int uiPort = uiPortCounter.getAndIncrement();
         String dbFile = "informant";
         if (uiPort != DEFAULT_UI_PORT) {
