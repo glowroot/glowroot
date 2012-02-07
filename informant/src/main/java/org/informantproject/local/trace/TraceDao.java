@@ -77,7 +77,8 @@ public class TraceDao {
                     + " capturedAt <= ?");
             selectSummaryPS = connection.prepareStatement("select capturedAt, duration from trace"
                     + " where capturedAt >= ? and capturedAt <= ?");
-            deletePS = connection.prepareStatement("delete from trace where id = ?");
+            deletePS = connection.prepareStatement("delete from trace where capturedAt >= ? and"
+                    + " capturedAt <= ?");
             countPS = connection.prepareStatement("select count(*) from trace");
         } catch (SQLException e) {
             errorOnInit = true;
@@ -172,21 +173,20 @@ public class TraceDao {
         }
     }
 
-    void delete(String id) {
-        logger.debug("delete(): id={}", id);
+    public int deleteStoredTraces(long capturedFrom, long capturedTo) {
+        logger.debug("deleteStoredTraces(): capturedFrom={}, capturedTo={}", capturedFrom,
+                capturedTo);
         if (!valid) {
-            return;
+            return 0;
         }
         synchronized (connection) {
             try {
-                deletePreparedStatement.setString(1, id);
-                int rowCount = deletePreparedStatement.executeUpdate();
-                if (rowCount != 1) {
-                    logger.error("unexpected delete row count '" + rowCount + "'",
-                            new IllegalStateException());
-                }
+                deletePreparedStatement.setLong(1, capturedFrom);
+                deletePreparedStatement.setLong(2, capturedTo);
+                return deletePreparedStatement.executeUpdate();
             } catch (SQLException e) {
                 logger.error(e.getMessage(), e);
+                return 0;
             }
         }
     }

@@ -47,6 +47,12 @@
       window.location.href = '/'
     })
   }
+  function clearData() {
+    var keepMillis = $('input:radio[name=keepMillis]:checked').val()
+    $.post('/admin/cleardata?keep=' + keepMillis, function() {
+      window.location.href = '/'
+    })
+  }
   read()
 </script>
 </head>
@@ -109,6 +115,25 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="update()">Save changes</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Clear data</legend>
+      <div class="control-group">
+        <div class="controls">
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="0" checked> Keep none
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="3600000"> Keep last hour
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="86400000"> Keep last 24 hours
+          </label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="clearData()">Clear data</button>
       </div>
     </fieldset>
   </form>

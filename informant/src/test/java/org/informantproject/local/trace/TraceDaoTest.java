@@ -97,11 +97,8 @@ public class TraceDaoTest {
         // given
         Trace trace = traceTestData.createTrace();
         traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
-        StoredTrace storedTrace = storedTraces.get(0);
-        String traceId = storedTrace.getId();
         // when
-        traceDao.delete(traceId);
+        traceDao.deleteStoredTraces(0, 0);
         // then
         assertThat(traceDao.count(), is(0L));
     }

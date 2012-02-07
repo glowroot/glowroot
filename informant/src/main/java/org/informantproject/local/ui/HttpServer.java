@@ -103,7 +103,7 @@ public class HttpServer extends HttpServerBase {
             UpdateConfigurationJsonService updateConfigurationJsonService,
             TraceDetailJsonService traceDetailJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            MetricJsonService metricJsonService) {
+            MetricJsonService metricJsonService, ClearDataJsonService clearDataJsonService) {
 
         super(port, "Informant-");
         uriMappings.put(Pattern.compile("^/configuration/read$"), readConfigurationJsonService);
@@ -111,6 +111,7 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/trace/details$"), traceDetailJsonService);
         uriMappings.put(Pattern.compile("^/trace/summaries$"), traceSummaryJsonService);
         uriMappings.put(Pattern.compile("^/metrics$"), metricJsonService);
+        uriMappings.put(Pattern.compile("^/admin/cleardata"), clearDataJsonService);
     }
 
     @Override
