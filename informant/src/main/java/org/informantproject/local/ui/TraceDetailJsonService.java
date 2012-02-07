@@ -32,15 +32,15 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/traces" in LocalModule.
+ * Json service to read trace data. Bound to url "/trace/details" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class TraceJsonService implements JsonService {
+public class TraceDetailJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceDetailJsonService.class);
 
     private static final int DONT_SEND_END_TIME_IN_RESPONSE = -1;
 
@@ -48,7 +48,7 @@ public class TraceJsonService implements JsonService {
     private final Clock clock;
 
     @Inject
-    public TraceJsonService(TraceDao traceDao, Clock clock) {
+    public TraceDetailJsonService(TraceDao traceDao, Clock clock) {
         this.traceDao = traceDao;
         this.clock = clock;
     }

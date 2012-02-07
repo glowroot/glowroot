@@ -32,12 +32,12 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/traceSummaries" in LocalModule.
+ * Json service to read trace data. Bound to url "/trace/summaries" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO look at reusable parts between TraceSummaryJsonService and TraceJsonService
+// TODO look at reusable parts between TraceSummaryJsonService and TraceDetailJsonService
 @Singleton
 public class TraceSummaryJsonService implements JsonService {
 

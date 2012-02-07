@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.informantproject.testkit.Configuration.CoreConfiguration;
-import org.informantproject.testkit.GetTracesResponse.Trace;
+import org.informantproject.testkit.GetTraceDetailResponse.Trace;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
 import com.ning.http.client.AsyncHttpClient;
@@ -54,7 +55,7 @@ public class Informant {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
                 + path);
         Response response = request.execute().get();
-        return response.getResponseBody();
+        return validateAndReturnBody(response);
     }
 
     public String post(String path, String data) throws InterruptedException, ExecutionException,
@@ -64,7 +65,7 @@ public class Informant {
                 + path);
         request.setBody(data);
         Response response = request.execute().get();
-        return response.getResponseBody();
+        return validateAndReturnBody(response);
     }
 
     public CoreConfiguration getCoreConfiguration() throws InterruptedException,
@@ -85,8 +86,8 @@ public class Informant {
     }
 
     public List<Trace> getTraces(long from, long to) throws Exception {
-        String json = get("/traces?from=" + from + "&to=" + to);
-        return new Gson().fromJson(json, GetTracesResponse.class).getTraces();
+        String json = get("/trace/details?from=" + from + "&to=" + to);
+        return new Gson().fromJson(json, GetTraceDetailResponse.class).getTraces();
     }
 
     void resetBaselineTime() throws InterruptedException {
@@ -95,5 +96,14 @@ public class Informant {
             Thread.sleep(1);
         }
         this.baselineTime = System.currentTimeMillis();
+    }
+
+    private static final String validateAndReturnBody(Response response) throws IOException {
+        if (response.getStatusCode() == HttpResponseStatus.OK.getCode()) {
+            return response.getResponseBody();
+        } else {
+            throw new IllegalStateException("Unexpected HTTP status code returned: "
+                    + response.getStatusCode() + " (" + response.getStatusText() + ")");
+        }
     }
 }

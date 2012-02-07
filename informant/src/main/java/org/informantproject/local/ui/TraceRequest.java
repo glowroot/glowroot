@@ -16,7 +16,7 @@
 package org.informantproject.local.ui;
 
 /**
- * Structure used to deserialize json post data sent to "/traces".
+ * Structure used to deserialize json post data sent to "/trace/summaries" and "/trace/details".
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -222,7 +222,7 @@ root context:<br>
       if (high != undefined) {
         queryString += '&high=' + low;
       }
-      $.getJSON('/traceSummaries?from=' + from + '&to=' + to, function(response) {
+      $.getJSON('/trace/summaries?from=' + from + '&to=' + to, function(response) {
           // shift for timezone
           for (var i = 0; i < response.data.length; i++) {
             response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000;
@@ -239,7 +239,7 @@ root context:<br>
       if (high != undefined) {
         queryString += '&high=' + low;
       }
-      $.getJSON('/traces?from=' + from + '&to=' + to, function(response) {
+      $.getJSON('/trace/details?from=' + from + '&to=' + to, function(response) {
         $('#traces').html('');
         if (response.traces.length) {
           var html = template(response);

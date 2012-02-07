@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
-import org.informantproject.testkit.GetTracesResponse.Trace;
+import org.informantproject.testkit.GetTraceDetailResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.junit.AfterClass;

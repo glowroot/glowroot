@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to update configuration data. Bound to url "/configuration/update" in LocalModule.
+ * Json service to update configuration data. Bound to url "/configuration/update" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5

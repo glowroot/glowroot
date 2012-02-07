@@ -24,7 +24,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class GetTracesResponse {
+public class GetTraceDetailResponse {
 
     private long from;
     private long to;

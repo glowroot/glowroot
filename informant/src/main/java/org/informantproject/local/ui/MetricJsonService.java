@@ -34,7 +34,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read metrics data. Bound to url "/metrics" in LocalModule.
+ * Json service to read metrics data. Bound to url "/metrics" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5

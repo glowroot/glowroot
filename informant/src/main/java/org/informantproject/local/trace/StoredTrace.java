@@ -18,7 +18,7 @@ package org.informantproject.local.trace;
 import com.google.common.base.Objects;
 
 /**
- * Structure used as part of the response to "/traces".
+ * Structure used as part of the response to "/trace/details".
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -24,7 +24,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read configuration data. Bound to url "/configuration/read" in LocalModule.
+ * Json service to read configuration data. Bound to url "/configuration/read" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -96,14 +96,15 @@ public class HttpServer extends HttpServerBase {
     public HttpServer(@LocalHttpServerPort int port,
             ReadConfigurationJsonService readConfigurationJsonService,
             UpdateConfigurationJsonService updateConfigurationJsonService,
-            TraceJsonService traceJsonService, TraceSummaryJsonService traceSummaryJsonService,
+            TraceDetailJsonService traceDetailJsonService,
+            TraceSummaryJsonService traceSummaryJsonService,
             MetricJsonService metricJsonService) {
 
         super(port, "Informant-");
         uriMappings.put(Pattern.compile("^/configuration/read$"), readConfigurationJsonService);
         uriMappings.put(Pattern.compile("^/configuration/update$"), updateConfigurationJsonService);
-        uriMappings.put(Pattern.compile("^/traces$"), traceJsonService);
-        uriMappings.put(Pattern.compile("^/traceSummaries$"), traceSummaryJsonService);
+        uriMappings.put(Pattern.compile("^/trace/details$"), traceDetailJsonService);
+        uriMappings.put(Pattern.compile("^/trace/summaries$"), traceSummaryJsonService);
         uriMappings.put(Pattern.compile("^/metrics$"), metricJsonService);
     }
 
