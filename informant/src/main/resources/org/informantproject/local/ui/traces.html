@@ -17,262 +17,260 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>Traces</title>
-<!-- not using CDN hosted js files since the embedded ui is typically for monitoring
-     an application on a local machine / local network so this should be faster -->
-<link rel="stylesheet" href="resources/jqueryui/1.8.16/themes/ui-lightness/jquery.ui.all.css">
-<script type="text/javascript" src="resources/jquery/1.7/jquery.min.js"></script>
-<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.core.min.js"></script>
-<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.widget.min.js"></script>
-<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.button.min.js"></script>
-<script type="text/javascript" src="resources/jqueryui/1.8.16/jquery.ui.datepicker.min.js"></script>
-<script type="text/javascript" src="resources/dateformat/1.2.3/date.format.js"></script>
-<script type="text/javascript" src="resources/handlebars/1.0.0.beta.3/handlebars.js"></script>
-<script type="text/javascript" src="resources/flot/0.7/jquery.flot.min.js"></script>
-<script type="text/javascript" src="resources/flot/0.7/jquery.flot.selection.min.js"></script>
+<title>Informant | Traces</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" href="bootstrap/2.0.0/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<link rel="stylesheet" href="jqueryui/1.8.17/ui-lightness/jquery-ui.all.css" type="text/css" />
+<script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="jqueryui/1.8.17/jquery-ui.all.min.js"></script>
+<script type="text/javascript" src="dateformat/1.2.3/date.format.js"></script>
+<script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
+<script type="text/javascript" src="flot/0.7/jquery.flot.min.js"></script>
+<script type="text/javascript" src="flot/0.7/jquery.flot.selection.min.js"></script>
 
-<script id="tracestemplate" type="text/x-handlebars-template">
+<script id="tracesTemplate" type="text/x-handlebars-template">
 {{#traces}}
 <div>
-{{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
-start: {{date start}}<br>
-duration: {{nanostomillis duration}} milliseconds<br>
-{{#if username}}username: {{username}}<br>{{/if}}
-threadName(s): {{threadNames}}<br>
-root context:<br>
-{{#first spans}}
-  <div style="margin-left: 1em">{{#eachentry contextMap}}{{/eachentry}}</div>
-{{/first}}
-<a href="javascript:$('#spans_{{id}}').toggle()">spans</a> ({{spans.length}})<br>
-<div id="spans_{{id}}" style="display: none">
-{{#spans}}
-  <div style="float: left; margin-left: 1em">+{{nanostomillis offset}}</div>
-  <div style="margin-left: {{margin level}}em">
-    <div style="float: left">{{nanostomillis duration}}&nbsp;</div>
-    <div style="margin-left: 3em">
-      <span class="span_{{../id}}_{{index}}">
-        <a href="javascript:$('.span_{{../id}}_{{index}}').toggle()" style="text-decoration: none; color: black">
-          {{#short description}}{{/short}}
-        </a>
-      </span>
-      <span class="span_{{../id}}_{{index}}" style="display: none">
-        <a href="javascript:$('.span_{{../id}}_{{index}}').toggle()" style="text-decoration: none; color: blue">
-          {{description}}
-        </a>
-      </span>
-      {{#if index}}
-        <div>{{#eachentry contextMap}}{{/eachentry}}</div>
-      {{/if}}
+  {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
+  start: {{date start}}<br>
+  duration: {{nanosToMillis duration}} milliseconds<br>
+  {{#if username}}username: {{username}}<br>{{/if}}
+  threadName(s): {{threadNames}}<br>
+  root context:<br>
+  {{#first spans}}
+    <div style="margin-left: 1em">{{#eachEntry contextMap}}{{/eachEntry}}</div>
+  {{/first}}
+  <a href="javascript:$('#sp_{{id}}').toggle()">spans</a> ({{spans.length}})<br>
+  <div id="sp_{{id}}" style="display: none">
+    {{#spans}}
+      <div style="float: left; margin-left: 1em; width: 3em; text-align: right">
+        +{{nanosToMillis offset}}
+      </div>
+      <div style="margin-left: {{margin level}}em">
+        <div style="width: 3em; float: left; text-align: right">
+          {{nanosToMillis duration}}&nbsp;
+        </div>
+        <div style="margin-left: 4em">
+          {{#ifLongDescription description}}
+            <span class="sp_{{../id}}_{{index}}">
+              <a href="javascript:$('.sp_{{../id}}_{{index}}').toggle()" style="color: #333">
+                {{#short description}}{{/short}}
+              </a>
+            </span>
+            <span class="sp_{{../id}}_{{index}}" style="display: none">
+              <a href="javascript:$('.sp_{{../id}}_{{index}}').toggle()">
+                {{description}}
+              </a>
+            </span>
+          {{^}}
+            {{description}}
+          {{/ifLongDescription}}
+          {{#if index}}
+            <!-- context map for index=0 is displayed in root context section above -->
+            <div style="margin-left: 2em">{{#eachEntry contextMap}}{{/eachEntry}}</div>
+          {{/if}}
+        </div>
+      </div>
+    {{/spans}}
+  </div>
+  <div style="clear: both"></div>
+    <a href="javascript:$('#mst_{{id}}').toggle()">merged stack trace</a><br>
+    <div id="mst_{{id}}" style="display: none; white-space: nowrap">
+      {{#mergedStackTrace mergedStackTreeRootNodes}}{{/mergedStackTrace}}
     </div>
   </div>
-{{/spans}}
-</div>
-<a href="javascript:$('#mst_{{id}}').toggle()">merged stack trace</a><br>
-<div id="mst_{{id}}" style="display: none; white-space: nowrap">
-  {{#mergedstacktrace mergedStackTreeRootNodes}}{{/mergedstacktrace}}
-</div>
-</div>
-<br>
+  <br>
 </div>
 {{/traces}}
 </script>
 <script type="text/javascript">
   Handlebars.registerHelper('date', function(timestamp) {
-      return new Date(timestamp).format("m/d/yy h:MM:ss.l TT (Z)");
-    });
-  Handlebars.registerHelper('nanostomillis', function(nanos) {
-      return (nanos / 1000000).toFixed(1);
-    });
-  Handlebars.registerHelper('first', function(array, fn) {
-      return fn(array[0]);
-    });
-  Handlebars.registerHelper('eachentry', function(context, block) {
-      var ret = "";
-      for (var prop in context) {
-        ret = ret + prop + ": " + JSON.stringify(context[prop]) + "<br>";
-      }
-      return ret;
-    });
-  Handlebars.registerHelper('margin', function(level) {
-      return 4 + level;
-    });
-  Handlebars.registerHelper('margin2', function(level) {
-      return 7 + level;
-    });
-  Handlebars.registerHelper('short', function(description, block) {
-      if (description.length < 160) {
-        return description;
-      } else {
-        return description.slice(0, 80)
-            + " <span style='color: blue; font-weight: bold'>...</span> " + description.slice(-80);
-      }
-    });
-  Handlebars.registerHelper('mergedstacktrace', function(rootNodes, block) {
-      var totalSampleCount = 0;
-      for (var i = 0; i < rootNodes.length; i++) {
-        totalSampleCount += rootNodes[i].sampleCount;
-      }
-      return curr(rootNodes, 0, totalSampleCount);
-    });
-  function curr(childNodes, level, totalSampleCount) {
-    var ret = '';
-    // order child nodes by sampleCount (descending)
-    childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount });
-    for (var i = 0; i < childNodes.length; i++) {
-      var childNode = childNodes[i];
-      var stackTraceElement = childNode.stackTraceElement;
-      if (childNode.sampleCount < totalSampleCount) {
-        level++;
-      }
-      for (var j = 0; j < level; j++) {
-        ret += '&nbsp;';
-      }
-      ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
-      var samplePercentage = (childNode.sampleCount / totalSampleCount) * 100;
-      ret += samplePercentage.toFixed(1);
-      ret += '%</span>'
-      ret += stackTraceElement + '<br>';
-      if (childNode.leafThreadState) {
-        for (var j = 0; j < level; j++) {
-          ret += '&nbsp;';
-        }
-        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">';
-        ret += samplePercentage.toFixed(1);
-        ret += '%</span>'
-        ret += '&nbsp;' + childNode.leafThreadState + '<br>';
-      }
-      if (childNode.childNodes) {
-        ret += curr(childNode.childNodes, level, totalSampleCount);
-      }
+    return new Date(timestamp).format('m/d/yy h:MM:ss.l TT (Z)')
+  })
+  Handlebars.registerHelper('nanosToMillis', function(nanos) {
+    return (nanos / 1000000).toFixed(1)
+  })
+  Handlebars.registerHelper('first', function(array, options) {
+    return options.fn(array[0])
+  })
+  Handlebars.registerHelper('eachEntry', function(map, block) {
+    var ret = ''
+    for (var prop in map) {
+      ret = ret + prop + ': ' + JSON.stringify(map[prop]) + '<br>'
     }
-    return ret;
-  }
-  var template;
-  $(function() {
-    template = Handlebars.compile($("#tracestemplate").html());
-    Handlebars.registerPartial("span", $("#span-partial").html());
- 
+    return ret
+  })
+  Handlebars.registerHelper('ifLongDescription', function(description, options) {
+    if (description.length > 160) {
+      return options.fn(this)
+    } else {
+      return options.inverse(this)
+    }
+  })
+  Handlebars.registerHelper('margin', function(level) {
+    return 5 + level
+  })
+  Handlebars.registerHelper('short', function(description) {
+    if (description.length <= 160) {
+      return description
+    } else {
+      return description.slice(0, 80)
+        + " <span style='color: #b12930; font-weight: bold'>...</span> " + description.slice(-80)
+    }
+  })
+  Handlebars.registerHelper('mergedStackTrace', function(rootNodes, block) {
+    var totalSampleCount = 0
+    for (var i = 0; i < rootNodes.length; i++) {
+      totalSampleCount += rootNodes[i].sampleCount
+    }
+    function curr(childNodes, level, totalSampleCount) {
+      var ret = ''
+      // order child nodes by sampleCount (descending)
+      childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount })
+      for (var i = 0; i < childNodes.length; i++) {
+        var childNode = childNodes[i]
+        var stackTraceElement = childNode.stackTraceElement
+        if (childNode.sampleCount < totalSampleCount) {
+          level++
+        }
+        for (var j = 0; j < level; j++) {
+          ret += '&nbsp;'
+        }
+        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
+        var samplePercentage = (childNode.sampleCount / totalSampleCount) * 100
+        ret += samplePercentage.toFixed(1)
+        ret += '%</span>'
+        ret += stackTraceElement + '<br>'
+        if (childNode.leafThreadState) {
+          for (var j = 0; j < level; j++) {
+            ret += '&nbsp;'
+          }
+          ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
+          ret += samplePercentage.toFixed(1)
+          ret += '%</span>'
+          ret += '&nbsp;' + childNode.leafThreadState + '<br>'
+        }
+        if (childNode.childNodes) {
+          ret += curr(childNode.childNodes, level, totalSampleCount)
+        }
+      }
+      return ret
+    }
+    return curr(rootNodes, 0, totalSampleCount)
+  })
+  $(document).ready(function() {
+    var template = Handlebars.compile($('#tracesTemplate').html())
+    Handlebars.registerPartial('span', $('#span-partial').html())
+
     var options = {
-      legend: { show: false }, 
+      legend: { show: false },
       series: {
         lines: { show: true },
         points: { show: true }
       },
-      xaxis: { mode: "time" },
+      xaxis: { mode: 'time' },
       yaxis: { ticks: 10 },
-      selection: { mode: "xy" }
-    };
- 
+      selection: { mode: 'xy' }
+    }
     var overviewOptions = {
-      legend: { show: true, container: $("#overviewLegend") },
+      legend: { show: true, container: $('#overviewLegend') },
       series: {
         lines: { show: true, lineWidth: 1 },
         shadowSize: 0
       },
-      xaxis: { mode: "time", ticks: 1 },
+      xaxis: { mode: 'time', ticks: 1 },
       yaxis: { ticks: 3},
-      grid: { color: "#999" },
-      selection: { mode: "xy" }
-    };
-    
-    var rangeFrom;
-    var rangeTo;
+      grid: { color: '#999' },
+      selection: { mode: 'xy' }
+    }
 
     function plotFullDate(date) {
-      rangeFrom = date.getTime();
-      rangeTo = rangeFrom + 24 * 60 * 60 * 1000; // rangeFrom + 24 hours
-      gettracesummaries(rangeFrom, rangeTo);
+      var from = date.getTime()
+      var to = from + 24 * 60 * 60 * 1000; // from + 24 hours
+      getTraceSummaries(from, to)
     }
-    function plott(data) {
-      plot = $.plot($("#placeholder"), [data], options);
-      overview = $.plot($("#overview"), [data], overviewOptions);
+
+    function plotResponseData(data) {
+      var plot = $.plot($('#placeholder'), [data], options)
+      var overview = $.plot($('#overview'), [data], overviewOptions)
 
       // now connect the two
-      $("#placeholder").bind("plotselected", function (event, ranges) {
+      $('#placeholder').bind('plotselected', function (event, ranges) {
         // clamp the zooming to prevent eternal zoom
         // also round xaxis to nearest millisecond
-        ranges.xaxis.from = Math.floor(ranges.xaxis.from);
-        ranges.xaxis.to = Math.ceil(ranges.xaxis.to);
-        if (ranges.yaxis.to - ranges.yaxis.from < 0.00001)
-          ranges.yaxis.to = ranges.yaxis.from + 0.00001;
-
-        rangeFrom = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000;
-        rangeTo = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000;
-
+        ranges.xaxis.from = Math.floor(ranges.xaxis.from)
+        ranges.xaxis.to = Math.ceil(ranges.xaxis.to)
+        if (ranges.yaxis.to - ranges.yaxis.from < 0.00001) {
+          ranges.yaxis.to = ranges.yaxis.from + 0.00001
+        }
         // do the zooming
-        plot = $.plot($("#placeholder"), [data],
-                      $.extend(true, {}, options, {
-                               xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
-                               yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
-                      }));
+        plot = $.plot($('#placeholder'), [data], $.extend(true, {}, options, {
+          xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+          yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+        }))
 
         // don't fire event on the overview to prevent eternal loop
-        overview.setSelection(ranges, true);
-      });
-      $("#overview").bind("plotselected", function (event, ranges) {
-        plot.setSelection(ranges);
-      });
+        overview.setSelection(ranges, true)
+        // reset the show details button handler
+        $('#showDetails').unbind('click')
+        $('#showDetails').click(function() {
+          getTraceDetails(ranges)
+        })
+      })
+      $('#overview').bind('plotselected', function (event, ranges) {
+        plot.setSelection(ranges)
+      })
     }
 
-    function gettracesummaries(from, to, low, high) {
-      var queryString = 'from=' + from + '&to=' + to;
-      if (low != undefined) {
-        queryString += '&low=' + low;
-      }
-      if (high != undefined) {
-        queryString += '&high=' + low;
-      }
+    function getTraceSummaries(from, to) {
       $.getJSON('/trace/summaries?from=' + from + '&to=' + to, function(response) {
-          // shift for timezone
-          for (var i = 0; i < response.data.length; i++) {
-            response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000;
-          }
-          plott(response.data)
-        });
-      $('#traces').html('');
-    }
-    function gettraces(from, to, low, high) {
-      var queryString = 'from=' + from + '&to=' + to;
-      if (low != undefined) {
-        queryString += '&low=' + low;
-      }
-      if (high != undefined) {
-        queryString += '&high=' + low;
-      }
-      $.getJSON('/trace/details?from=' + from + '&to=' + to, function(response) {
-        $('#traces').html('');
-        if (response.traces.length) {
-          var html = template(response);
-          $(html).appendTo('#traces');
-          // for debugging:
-          //$('<div>' + JSON.stringify(response.traces[0]) + '</div>').appendTo('#traces');
-        } else {
-          $('#traces').html('no data');
+        // shift for timezone
+        for (var i = 0; i < response.data.length; i++) {
+          response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000
         }
-      });
+        var range = { 'xaxis' : { 'from' : 0, 'to' : 0 }, 'yaxis' : { 'from' : 0, 'to' : 0 }}
+        if (response.data.length > 0) {
+          range.xaxis.from = response.data[0][0]
+          range.xaxis.to = response.data[response.data.length - 1][0]
+        }
+        plotResponseData(response.data)
+        $('#showDetails').unbind('click')
+        $('#showDetails').click(function() {
+          getTraceDetails(range)
+        })
+      })
+      $('#traces').html('')
     }
 
-    $("#datepicker").datepicker({
-        onSelect : function(dateText, inst) {
-            plotFullDate($(this).datepicker('getDate'));
-          }
-      });
-    $("#showdetails").button();
-    $("#showdetails").click(function() {
-        gettraces(rangeFrom, rangeTo);
-      });
+    function getTraceDetails(ranges) {
+      var from = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000
+      var to = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000
+      $.getJSON('/trace/details?from=' + from + '&to=' + to, function(response) {
+        $('#traces').html('')
+        if (response.traces.length) {
+          var html = template(response)
+          $(html).appendTo('#traces')
+        } else {
+          $('#traces').html('no data')
+        }
+      })
+    }
 
-    var d = new Date();
-    d.setHours(0,0,0,0);
-    $("#datepicker").datepicker("setDate", d);
-    plotFullDate(d);
-  });
+    $('#datePicker').datepicker({ onSelect : function(dateText, inst) {
+      plotFullDate($(this).datepicker('getDate'))
+    }})
+    var d = new Date()
+    d.setHours(0,0,0,0)
+    $('#datePicker').datepicker('setDate', d)
+    plotFullDate(d)
+  })
 </script>
 </head>
 <body>
-  <h2>Traces</h2>
+  <h1 class="page-title"><a href="/">Informant</a> <span style="color: #333">| Traces</span></h1>
   <div>
-    Date: <input type="text" id="datepicker">
+    Date: <input style="width: 7em" type="text" id="datePicker">
   </div><br>
   <div style="float: left">
     <div id="placeholder" style="width: 600px; height: 200px"></div>
@@ -282,7 +280,8 @@ root context:<br>
     <p id="overviewLegend" style="margin-left: 10px"></p>
   </div>
   <div style="clear: left"></div>
-  <button id="showdetails">Show Details</button>
+  <br>
+  <button class="btn" id="showDetails">Show Details</button>
   <br>
   <br>
   <div id="traces"></div>

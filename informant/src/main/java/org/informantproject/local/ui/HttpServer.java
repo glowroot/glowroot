@@ -67,29 +67,34 @@ public class HttpServer extends HttpServerBase {
             .synchronizedMap(new LinkedHashMap<Pattern, Object>());
 
     {
-        uriMappings.put(Pattern.compile("^/resources/jquery/(.*)$"),
-                "org/informantproject/javascript/jquery/$1");
-        uriMappings.put(Pattern.compile("^/resources/jqueryui/(.*)$"),
-                "org/informantproject/javascript/jqueryui/$1");
-        uriMappings.put(Pattern.compile("^/resources/flot/(.*)$"),
-                "org/informantproject/javascript/flot/$1");
-        uriMappings.put(Pattern.compile("^/resources/dynatree/(.*)$"),
-                "org/informantproject/javascript/dynatree/$1");
-        uriMappings.put(Pattern.compile("^/resources/dateformat/(.*)$"),
-                "org/informantproject/javascript/dateformat/$1");
-        uriMappings.put(Pattern.compile("^/resources/handlebars/(.*)$"),
-                "org/informantproject/javascript/handlebars/$1");
-
-        uriMappings.put(Pattern.compile("^/resources/javascript/(.*)$"),
-                "org/informantproject/local/ui/javascript/$1");
-        uriMappings.put(Pattern.compile("^/resources/css/(.*)$"),
-                "org/informantproject/local/ui/css/$1");
+        // pages
+        uriMappings.put(Pattern.compile("^/$"), "org/informantproject/local/ui/index.html");
         uriMappings.put(Pattern.compile("^/traces.html$"),
                 "org/informantproject/local/ui/traces.html");
-        uriMappings.put(Pattern.compile("^/metrics.html$"),
-                "org/informantproject/local/ui/metrics.html");
         uriMappings.put(Pattern.compile("^/configuration.html$"),
                 "org/informantproject/local/ui/configuration.html");
+        // resources
+        uriMappings.put(Pattern.compile("^/img/(.*)$"),
+                "org/informantproject/local/ui/img/$1");
+        uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
+        uriMappings.put(Pattern.compile("^/js/(.*)$"), "org/informantproject/local/ui/js/$1");
+        // 3rd party resources
+        uriMappings.put(Pattern.compile("^/bootstrap/(.*)$"),
+                "org/informantproject/webresources/bootstrap/$1");
+        uriMappings.put(Pattern.compile("^/specialelite/(.*)$"),
+                "org/informantproject/webresources/specialelite/$1");
+        uriMappings.put(Pattern.compile("^/jquery/(.*)$"),
+                "org/informantproject/webresources/jquery/$1");
+        uriMappings.put(Pattern.compile("^/jqueryui/(.*)$"),
+                "org/informantproject/webresources/jqueryui/$1");
+        uriMappings.put(Pattern.compile("^/flot/(.*)$"),
+                "org/informantproject/webresources/flot/$1");
+        uriMappings.put(Pattern.compile("^/dynatree/(.*)$"),
+                "org/informantproject/webresources/dynatree/$1");
+        uriMappings.put(Pattern.compile("^/dateformat/(.*)$"),
+                "org/informantproject/webresources/dateformat/$1");
+        uriMappings.put(Pattern.compile("^/handlebars/(.*)$"),
+                "org/informantproject/webresources/handlebars/$1");
     }
 
     @Inject
@@ -166,11 +171,19 @@ public class HttpServer extends HttpServerBase {
         if (extension.equals("html")) {
             return "text/html";
         } else if (extension.equals("js")) {
-            return "text/javascript";
+            return "application/javascript";
         } else if (extension.equals("css")) {
             return "text/css";
         } else if (extension.equals("png")) {
             return "image/png";
+        } else if (extension.equals("ico")) {
+            return "image/x-icon";
+        } else if (extension.equals("woff")) {
+            return "application/x-font-woff";
+        } else if (extension.equals("eot")) {
+            return "application/vnd.ms-fontobject";
+        } else if (extension.equals("ttf")) {
+            return "application/x-font-ttf";
         } else {
             return null;
         }

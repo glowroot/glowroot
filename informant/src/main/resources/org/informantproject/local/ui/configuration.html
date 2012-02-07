@@ -17,54 +17,100 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>Configuration</title>
-<script type="text/javascript" src="resources/jquery/1.7/jquery.min.js"></script>
-<script type="text/javascript" src="resources/handlebars/1.0.0.beta.3/handlebars.js"></script>
-
-<script id="configurationtemplate" type="text/x-handlebars-template">
-<div>
-<form>
-Enabled: <input type="checkbox" id="enabled" value="true"{{#if coreConfiguration.enabled}} checked{{/if}}><br>
-Threshold: <input type="text" id="thresholdMillis" value="{{coreConfiguration.thresholdMillis}}"> (millis)<br>
-Stuck threshold: <input type="text" id="stuckThresholdMillis" value="{{coreConfiguration.stuckThresholdMillis}}"> (millis)<br>
-Stack trace initial delay: <input type="text" id="stackTraceInitialDelayMillis" value="{{coreConfiguration.stackTraceInitialDelayMillis}}"> (millis)<br>
-Stack trace period: <input type="text" id="stackTracePeriodMillis" value="{{coreConfiguration.stackTracePeriodMillis}}"> (millis)<br>
-Max spans per trace: <input type="text" id="maxSpansPerTrace" value="{{coreConfiguration.maxSpansPerTrace}}"><br>
-<input type="button" value="Update" onclick="updateconfiguration()">
-</form>
-</div>
-</script>
+<title>Informant | Configuration</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" href="bootstrap/2.0.0/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
 <script type="text/javascript">
-  var template;
-  $(function() {
-    template = Handlebars.compile($("#configurationtemplate").html());
-    getconfiguration();
-  });
-  function getconfiguration() {
+  function read() {
     $.getJSON('/configuration/read', function(configuration) {
-      $('#configuration').html('');
-      var html = template(configuration);
-      $(html).appendTo('#configuration');
-    });
+      var coreConfiguration = configuration.coreConfiguration
+      $('#enabled').attr('checked', coreConfiguration.enabled)
+      $('#thresholdMillis').val(coreConfiguration.thresholdMillis)
+      $('#stuckThresholdMillis').val(coreConfiguration.stuckThresholdMillis)
+      $('#stackTraceInitialDelayMillis').val(coreConfiguration.stackTraceInitialDelayMillis)
+      $('#stackTracePeriodMillis').val(coreConfiguration.stackTracePeriodMillis)
+      $('#maxSpansPerTrace').val(coreConfiguration.maxSpansPerTrace)
+    })
   }
-  function updateconfiguration() {
-		$.post('/configuration/update',
-		  JSON.stringify({'coreConfiguration': {
-			'enabled': document.forms[0].enabled.checked,
-			'thresholdMillis': document.forms[0].thresholdMillis.value,
-			'stuckThresholdMillis': document.forms[0].stuckThresholdMillis.value,
-    		'stackTraceInitialDelayMillis': document.forms[0].stackTraceInitialDelayMillis.value,
-		    'stackTracePeriodMillis': document.forms[0].stackTracePeriodMillis.value,
-		    'maxSpansPerTrace': document.forms[0].maxSpansPerTrace.value
-		  }}),
-		  function() {
-	        alert('updated!');
-		  });
-	  }
+  function update() {
+    var configuration = { 'coreConfiguration': {
+      'enabled': $('#enabled').is(':checked'),
+      'thresholdMillis': $('#thresholdMillis').val(),
+      'stuckThresholdMillis': $('#stuckThresholdMillis').val(),
+      'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
+      'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
+      'maxSpansPerTrace': $('#maxSpansPerTrace').val()
+    }}
+    $.post('/configuration/update', JSON.stringify(configuration), function() {
+      window.location.href = '/'
+    })
+  }
+  read()
 </script>
 </head>
 <body>
-  <h1>Configuration</h1>
-  <div style="clear: left" id="configuration"></div>
+  <h1 class="page-title">
+    <a href="/">Informant</a> <span style="color: black">| Configuration</span>
+  </h1>
+  <form class="form-horizontal">
+    <fieldset>
+      <legend>Thresholds and limits</legend>
+      <div class="control-group">
+        <label class="control-label" for="enabled">Enabled:</label>
+        <div class="controls">
+          <input id="enabled" type="checkbox" value="true">
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="thresholdMillis">Threshold:</label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="thresholdMillis" type="text">
+            <span class="add-on">milliseconds</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="stuckThresholdMillis">Stuck threshold:</label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="stuckThresholdMillis" type="text">
+            <span class="add-on">milliseconds</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="stackTraceInitialDelayMillis">
+          Stack trace initial delay:
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="stackTraceInitialDelayMillis" type="text">
+            <span class="add-on">milliseconds</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="stackTracePeriodMillis">Stack trace period:</label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="stackTracePeriodMillis" type="text">
+            <span class="add-on">milliseconds</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="maxSpansPerTrace">Max spans per trace:</label>
+        <div class="controls">
+          <input style="width: 6em" id="maxSpansPerTrace" type="text">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="update()">Save changes</button>
+      </div>
+    </fieldset>
+  </form>
 </body>
 </html>
