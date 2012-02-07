@@ -245,7 +245,9 @@
             </relocation>
             <relocation>
               <pattern>edu.emory.mathcs.backport.java.util</pattern>
-              <shadedPattern>org.informantproject.shaded.emory.mathcs.backport.java.util</shadedPattern>
+              <shadedPattern>
+                org.informantproject.shaded.emory.mathcs.backport.java.util
+              </shadedPattern>
             </relocation>
             <relocation>
               <pattern>javax.annotation</pattern>
