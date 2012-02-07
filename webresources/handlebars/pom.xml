@@ -11,7 +11,7 @@
 
   <groupId>org.informantproject.webresources</groupId>
   <artifactId>webresources-handlebars</artifactId>
-  <version>1.0.0.beta.3-SNAPSHOT</version>
+  <version>1.0.0.beta.6-SNAPSHOT</version>
 
   <name>Handlebars Javascript Library (packaged for Informant)</name>
   <description>
