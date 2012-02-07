@@ -26,7 +26,9 @@
 
   <scm>
     <connection>scm:git:https://github.com/informantproject/jdbc-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:informantproject/jdbc-plugin.git</developerConnection>
+    <developerConnection>
+      scm:git:git@github.com:informantproject/jdbc-plugin.git
+    </developerConnection>
     <url>https://github.com/informantproject/jdbc-plugin</url>
   </scm>
 
