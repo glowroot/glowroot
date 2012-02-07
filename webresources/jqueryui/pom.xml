@@ -11,7 +11,7 @@
 
   <groupId>org.informantproject.webresources</groupId>
   <artifactId>webresources-jqueryui</artifactId>
-  <version>1.8.16-SNAPSHOT</version>
+  <version>1.8.17-SNAPSHOT</version>
 
   <name>jQuery UI Javascript Library (packaged for Informant)</name>
   <description>
