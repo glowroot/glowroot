@@ -26,9 +26,9 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.GetTracesResponse.Span;
-import org.informantproject.testkit.GetTracesResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
+import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
