@@ -26,6 +26,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +64,8 @@ public class HttpServer extends HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
+    private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
+
     private final Map<Pattern, Object> uriMappings = Collections
             .synchronizedMap(new LinkedHashMap<Pattern, Object>());
 
@@ -73,9 +76,8 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/local/ui/traces.html");
         uriMappings.put(Pattern.compile("^/configuration.html$"),
                 "org/informantproject/local/ui/configuration.html");
-        // resources
-        uriMappings.put(Pattern.compile("^/img/(.*)$"),
-                "org/informantproject/local/ui/img/$1");
+        // internal resources
+        uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
         uriMappings.put(Pattern.compile("^/js/(.*)$"), "org/informantproject/local/ui/js/$1");
         // 3rd party resources
@@ -167,6 +169,10 @@ public class HttpServer extends HttpServerBase {
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType + "; charset=UTF-8");
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
+        if (path.startsWith("org/informantproject/webresources/")) {
+            // these are all third-party versioned resources and can be safely cached forever
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
+        }
         return response;
     }
 
