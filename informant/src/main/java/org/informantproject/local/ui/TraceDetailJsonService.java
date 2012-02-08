@@ -41,6 +41,8 @@ public class TraceDetailJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDetailJsonService.class);
 
+    private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
+
     private final TraceDao traceDao;
 
     @Inject
@@ -51,7 +53,12 @@ public class TraceDetailJsonService implements JsonService {
     public String handleRequest(String message) throws IOException {
         logger.debug("handleRequest(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
-        List<StoredTrace> traces = traceDao.readStoredTraces(request.getFrom(), request.getTo());
+        // since low and high are qualified using <= (instead of <), and precision in the database
+        // is in whole nanoseconds, ceil(low) and floor(high) give the correct final result even in
+        // cases where low and high are not in whole nanoseconds
+        List<StoredTrace> traces = traceDao.readStoredTraces(request.getFrom(), request.getTo(),
+                (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND),
+                (long) Math.floor(request.getHigh() * NANOSECONDS_PER_MILLISECOND));
         String response = writeResponse(traces);
         if (response.length() <= 2000) {
             logger.debug("handleRequest(): response={}", response);

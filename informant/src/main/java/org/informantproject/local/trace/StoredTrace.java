@@ -28,7 +28,7 @@ public class StoredTrace {
     private String id;
     private long startAt;
     private boolean stuck;
-    private long duration;
+    private long duration; // nanoseconds
     private boolean completed;
     private String threadNames;
     private String username;

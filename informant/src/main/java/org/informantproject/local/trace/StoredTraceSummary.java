@@ -26,7 +26,7 @@ import com.google.common.base.Objects;
 public class StoredTraceSummary {
 
     private long capturedAt;
-    private double duration;
+    private double duration; // nanoseconds
 
     public StoredTraceSummary() {}
 

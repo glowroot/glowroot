@@ -194,6 +194,15 @@
     function plotResponseData(data) {
       var plot = $.plot($('#placeholder'), [data], options)
       var overview = $.plot($('#overview'), [data], overviewOptions)
+      // reset the show details button handler
+      $('#showDetails').unbind('click')
+      $('#showDetails').click(function() {
+        var xticks = plot.getAxes().xaxis.ticks
+        var yticks = plot.getAxes().yaxis.ticks
+        var range = { 'xaxis' : { 'from' : xticks[0].v, 'to' : xticks[xticks.length - 1].v },
+          'yaxis' : { 'from' : yticks[0].v, 'to' : yticks[yticks.length - 1].v }}
+        getTraceDetails(range)
+      })
 
       // now connect the two
       $('#placeholder').bind('plotselected', function (event, ranges) {
@@ -235,10 +244,6 @@
           range.xaxis.to = response.data[response.data.length - 1][0]
         }
         plotResponseData(response.data)
-        $('#showDetails').unbind('click')
-        $('#showDetails').click(function() {
-          getTraceDetails(range)
-        })
       })
       $('#traces').html('')
     }
@@ -246,7 +251,11 @@
     function getTraceDetails(ranges) {
       var from = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000
       var to = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000
-      $.getJSON('/trace/details?from=' + from + '&to=' + to, function(traces) {
+      // low, high are expected in milliseconds
+      var low = ranges.yaxis.from * 1000
+      var high = ranges.yaxis.to * 1000
+      var query = 'from=' + from + '&to=' + to + '&low=' + low + '&high=' + high
+      $.getJSON('/trace/details?' + query, function(traces) {
         $('#traces').html('')
         if (traces.length) {
           var html = template(traces)

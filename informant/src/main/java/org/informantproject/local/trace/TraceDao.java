@@ -48,6 +48,7 @@ public class TraceDao {
 
     private final PreparedStatement insertPreparedStatement;
     private final PreparedStatement selectPreparedStatement;
+    private final PreparedStatement selectPreparedStatement2;
     private final PreparedStatement selectSummaryPreparedStatement;
     private final PreparedStatement deletePreparedStatement;
     private final PreparedStatement countPreparedStatement;
@@ -60,6 +61,7 @@ public class TraceDao {
         this.clock = clock;
         PreparedStatement insertPS = null;
         PreparedStatement selectPS = null;
+        PreparedStatement selectPS2 = null;
         PreparedStatement selectSummaryPS = null;
         PreparedStatement deletePS = null;
         PreparedStatement countPS = null;
@@ -75,6 +77,10 @@ public class TraceDao {
                     + " duration, completed, threadNames, username, spans,"
                     + " mergedStackTreeRootNodes from trace where capturedAt >= ? and"
                     + " capturedAt <= ?");
+            selectPS2 = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
+                    + " duration, completed, threadNames, username, spans,"
+                    + " mergedStackTreeRootNodes from trace where capturedAt >= ? and"
+                    + " capturedAt <= ? and duration >= ? and duration <= ?");
             selectSummaryPS = connection.prepareStatement("select capturedAt, duration from trace"
                     + " where capturedAt >= ? and capturedAt <= ?");
             deletePS = connection.prepareStatement("delete from trace where capturedAt >= ? and"
@@ -86,6 +92,7 @@ public class TraceDao {
         }
         insertPreparedStatement = insertPS;
         selectPreparedStatement = selectPS;
+        selectPreparedStatement2 = selectPS2;
         selectSummaryPreparedStatement = selectSummaryPS;
         deletePreparedStatement = deletePS;
         countPreparedStatement = countPS;
@@ -152,24 +159,34 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
-        synchronized (connection) {
-            try {
-                selectPreparedStatement.setLong(1, capturedFrom);
-                selectPreparedStatement.setLong(2, capturedTo);
-                ResultSet resultSet = selectPreparedStatement.executeQuery();
-                try {
-                    List<StoredTrace> traces = new ArrayList<StoredTrace>();
-                    while (resultSet.next()) {
-                        traces.add(buildStoredTraceFromResultSet(resultSet));
-                    }
-                    return traces;
-                } finally {
-                    resultSet.close();
-                }
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-                return Collections.emptyList();
-            }
+        try {
+            selectPreparedStatement.setLong(1, capturedFrom);
+            selectPreparedStatement.setLong(2, capturedTo);
+            return readStoredTrace(selectPreparedStatement);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo, long lowDuration,
+            long highDuration) {
+
+        logger.debug("readStoredTraces(): capturedFrom={}, capturedTo={}, lowDuration={},"
+                + " highDuration={}", new long[] { capturedFrom, capturedTo, lowDuration,
+                highDuration });
+        if (!valid) {
+            return Collections.emptyList();
+        }
+        try {
+            selectPreparedStatement2.setLong(1, capturedFrom);
+            selectPreparedStatement2.setLong(2, capturedTo);
+            selectPreparedStatement2.setLong(3, lowDuration);
+            selectPreparedStatement2.setLong(4, highDuration);
+            return readStoredTrace(selectPreparedStatement2);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyList();
         }
     }
 
@@ -219,6 +236,21 @@ public class TraceDao {
                     + " username varchar, spans varchar, mergedStackTreeRootNodes varchar)");
         } finally {
             statement.close();
+        }
+    }
+
+    private static List<StoredTrace> readStoredTrace(PreparedStatement preparedStatement)
+            throws SQLException {
+
+        ResultSet resultSet = preparedStatement.executeQuery();
+        try {
+            List<StoredTrace> traces = new ArrayList<StoredTrace>();
+            while (resultSet.next()) {
+                traces.add(buildStoredTraceFromResultSet(resultSet));
+            }
+            return traces;
+        } finally {
+            resultSet.close();
         }
     }
 

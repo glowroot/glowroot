@@ -25,6 +25,8 @@ class TraceRequest {
 
     private long from;
     private long to;
+    private double low; // milliseconds, with nanosecond precision
+    private double high; // milliseconds, with nanosecond precision
 
     public long getFrom() {
         return from;
@@ -40,5 +42,21 @@ class TraceRequest {
 
     public void setTo(long to) {
         this.to = to;
+    }
+
+    public double getLow() {
+        return low;
+    }
+
+    public void setLow(double low) {
+        this.low = low;
+    }
+
+    public double getHigh() {
+        return high;
+    }
+
+    public void setHigh(double high) {
+        this.high = high;
     }
 }

@@ -86,7 +86,8 @@ public class Informant {
     }
 
     public List<Trace> getTraces(long from, long to) throws Exception {
-        String json = get("/trace/details?from=" + from + "&to=" + to);
+        String json = get("/trace/details?from=" + from + "&to=" + to + "&low=0&high="
+                + Long.MAX_VALUE);
         return new Gson().fromJson(json, new TypeToken<List<Trace>>() {}.getType());
     }
 

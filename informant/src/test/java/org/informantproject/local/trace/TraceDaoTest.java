@@ -93,6 +93,48 @@ public class TraceDaoTest {
     }
 
     @Test
+    public void shouldReadTraceWithDurationQualifier(TraceDao traceDao,
+            TraceTestData traceTestData) {
+
+        // given
+        Trace trace = traceTestData.createTrace();
+        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        // when
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, trace.getDuration(),
+                trace.getDuration());
+        // then
+        assertThat(storedTraces.size(), is(1));
+    }
+
+    @Test
+    public void shouldNotReadTraceWithHighDurationQualifier(TraceDao traceDao,
+            TraceTestData traceTestData) {
+
+        // given
+        Trace trace = traceTestData.createTrace();
+        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        // when
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, trace.getDuration() + 1,
+                trace.getDuration() + 2);
+        // then
+        assertThat(storedTraces.size(), is(0));
+    }
+
+    @Test
+    public void shouldNotReadTraceWithLowDurationQualifier(TraceDao traceDao,
+            TraceTestData traceTestData) {
+
+        // given
+        Trace trace = traceTestData.createTrace();
+        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        // when
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, trace.getDuration() - 2,
+                trace.getDuration() - 1);
+        // then
+        assertThat(storedTraces.size(), is(0));
+    }
+
+    @Test
     public void shouldDeletedTrace(TraceDao traceDao, TraceTestData traceTestData) {
         // given
         Trace trace = traceTestData.createTrace();
