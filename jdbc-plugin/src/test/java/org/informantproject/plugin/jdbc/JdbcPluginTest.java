@@ -27,10 +27,10 @@ import java.util.List;
 
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.GetTracesResponse.Span;
-import org.informantproject.testkit.GetTracesResponse.Trace;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
+import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
