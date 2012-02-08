@@ -30,7 +30,7 @@
 <script type="text/javascript" src="flot/0.7/jquery.flot.selection.min.js"></script>
 
 <script id="tracesTemplate" type="text/x-handlebars-template">
-{{#traces}}
+{{#each .}}
 <div>
   {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
   start: {{date start}}<br>
@@ -82,7 +82,7 @@
   </div>
   <br>
 </div>
-{{/traces}}
+{{/each}}
 </script>
 <script type="text/javascript">
   Handlebars.registerHelper('date', function(timestamp) {
@@ -246,10 +246,10 @@
     function getTraceDetails(ranges) {
       var from = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000
       var to = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000
-      $.getJSON('/trace/details?from=' + from + '&to=' + to, function(response) {
+      $.getJSON('/trace/details?from=' + from + '&to=' + to, function(traces) {
         $('#traces').html('')
-        if (response.traces.length) {
-          var html = template(response)
+        if (traces.length) {
+          var html = template(traces)
           $(html).appendTo('#traces')
         } else {
           $('#traces').html('no data')

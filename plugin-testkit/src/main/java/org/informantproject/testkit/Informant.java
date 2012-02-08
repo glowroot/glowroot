@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.informantproject.testkit.Configuration.CoreConfiguration;
-import org.informantproject.testkit.GetTraceDetailResponse.Trace;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
@@ -82,12 +82,12 @@ public class Informant {
 
     // returns all traces since since the last call to InformantContainer.executeAppUnderTest()
     public List<Trace> getAllTraces() throws Exception {
-        return getTraces(baselineTime, 0);
+        return getTraces(baselineTime, System.currentTimeMillis());
     }
 
     public List<Trace> getTraces(long from, long to) throws Exception {
         String json = get("/trace/details?from=" + from + "&to=" + to);
-        return new Gson().fromJson(json, GetTraceDetailResponse.class).getTraces();
+        return new Gson().fromJson(json, new TypeToken<List<Trace>>() {}.getType());
     }
 
     void resetBaselineTime() throws InterruptedException {

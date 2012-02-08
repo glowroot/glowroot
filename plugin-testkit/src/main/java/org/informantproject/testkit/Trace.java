@@ -1,18 +1,3 @@
-/**
- * Copyright 2011-2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.informantproject.testkit;
 
 import java.util.List;
@@ -20,95 +5,67 @@ import java.util.Map;
 
 import com.google.common.base.Objects;
 
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-public class GetTraceDetailResponse {
+public class Trace {
 
+    private String id;
     private long from;
     private long to;
-    private List<Trace> traces;
+    private boolean stuck;
+    private long duration;
+    private boolean completed;
+    private List<String> threadNames;
+    private String username;
+    private List<Span> spans;
+    private List<MergedStackTreeNode> mergedStackTreeRootNodes;
 
+    public String getId() {
+        return id;
+    }
     public long getFrom() {
         return from;
     }
-
     public long getTo() {
         return to;
     }
-
-    public List<Trace> getTraces() {
-        return traces;
+    public boolean isStuck() {
+        return stuck;
+    }
+    public long getDuration() {
+        return duration;
+    }
+    public boolean isCompleted() {
+        return completed;
+    }
+    public List<String> getThreadNames() {
+        return threadNames;
+    }
+    public String getUsername() {
+        return username;
+    }
+    public List<Span> getSpans() {
+        return spans;
+    }
+    public List<MergedStackTreeNode> getMergedStackTreeRootNodes() {
+        return mergedStackTreeRootNodes;
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
+                .add("id", id)
                 .add("from", from)
                 .add("to", to)
-                .add("traces", traces)
+                .add("stuck", stuck)
+                .add("duration", duration)
+                .add("completed", completed)
+                .add("username", username)
+                .add("spans", spans)
+                .add("mergedStackTreeRootNodes", mergedStackTreeRootNodes)
                 .toString();
     }
 
-    public static class Trace {
-        private String id;
-        private long from;
-        private long to;
-        private boolean stuck;
-        private long duration;
-        private boolean completed;
-        private List<String> threadNames;
-        private String username;
-        private List<Span> spans;
-        private List<MergedStackTreeNode> mergedStackTreeRootNodes;
-        public String getId() {
-            return id;
-        }
-        public long getFrom() {
-            return from;
-        }
-        public long getTo() {
-            return to;
-        }
-        public boolean isStuck() {
-            return stuck;
-        }
-        public long getDuration() {
-            return duration;
-        }
-        public boolean isCompleted() {
-            return completed;
-        }
-        public List<String> getThreadNames() {
-            return threadNames;
-        }
-        public String getUsername() {
-            return username;
-        }
-        public List<Span> getSpans() {
-            return spans;
-        }
-        public List<MergedStackTreeNode> getMergedStackTreeRootNodes() {
-            return mergedStackTreeRootNodes;
-        }
-        @Override
-        public String toString() {
-            return Objects.toStringHelper(this)
-                    .add("id", id)
-                    .add("from", from)
-                    .add("to", to)
-                    .add("stuck", stuck)
-                    .add("duration", duration)
-                    .add("completed", completed)
-                    .add("username", username)
-                    .add("spans", spans)
-                    .add("mergedStackTreeRootNodes", mergedStackTreeRootNodes)
-                    .toString();
-        }
-    }
-
     public static class Span {
+
         private long offset;
         private long duration;
         private int index;
@@ -116,6 +73,7 @@ public class GetTraceDetailResponse {
         private int level;
         private String description;
         private Map<String, Object> contextMap;
+
         public long getOffset() {
             return offset;
         }
@@ -137,6 +95,7 @@ public class GetTraceDetailResponse {
         public Map<String, Object> getContextMap() {
             return contextMap;
         }
+
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
@@ -152,11 +111,13 @@ public class GetTraceDetailResponse {
     }
 
     public static class MergedStackTreeNode {
+
         private String stackTraceElement;
         private List<MergedStackTreeNode> childNodes;
         private int sampleCount;
         private volatile Map<String, Integer> leafThreadStateSampleCounts;
         private volatile String singleLeafState;
+
         public String getStackTraceElement() {
             return stackTraceElement;
         }
@@ -172,6 +133,7 @@ public class GetTraceDetailResponse {
         public String getSingleLeafState() {
             return singleLeafState;
         }
+
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
