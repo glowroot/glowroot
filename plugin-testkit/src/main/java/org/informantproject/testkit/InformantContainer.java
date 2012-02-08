@@ -50,11 +50,11 @@ public abstract class InformantContainer {
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant.jar, the same way Informant is used by end users
-            logger.debug("setUpContainer(): using external JVM app container");
+            logger.debug("newInstance(): using external JVM app container");
             container = new ExternalJvmInformantContainer();
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
-            logger.debug("setUpContainer(): using same JVM app container");
+            logger.debug("newInstance(): using same JVM app container");
             container = new SameJvmInformantContainer();
         }
         container.init();

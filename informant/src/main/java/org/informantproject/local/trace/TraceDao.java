@@ -148,7 +148,7 @@ public class TraceDao {
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
-        logger.debug("readStoredTrace(): capturedFrom={}, capturedTo={}", capturedFrom, capturedTo);
+        logger.debug("readStoredTraces(): capturedFrom={}, capturedTo={}", capturedFrom, capturedTo);
         if (!valid) {
             return Collections.emptyList();
         }

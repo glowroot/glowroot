@@ -17,6 +17,8 @@ package org.informantproject.local.ui;
 
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.ui.HttpServer.JsonService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -30,6 +32,9 @@ import com.google.inject.Singleton;
 @Singleton
 public class UpdateConfigurationJsonService implements JsonService {
 
+    private static final Logger logger = LoggerFactory
+            .getLogger(UpdateConfigurationJsonService.class);
+
     private final ConfigurationService configurationService;
 
     @Inject
@@ -38,6 +43,7 @@ public class UpdateConfigurationJsonService implements JsonService {
     }
 
     public String handleRequest(String message) {
+        logger.debug("handleRequest(): message={}", message);
         configurationService.updateConfiguration(message);
         return null;
     }

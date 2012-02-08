@@ -54,7 +54,7 @@ public class TraceDetailJsonService implements JsonService {
     }
 
     public String handleRequest(String message) throws IOException {
-        logger.debug("onMessage(): message={}", message);
+        logger.debug("handleRequest(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         if (request.getFrom() < 0) {
             request.setFrom(clock.currentTimeMillis() + request.getFrom());
@@ -71,9 +71,9 @@ public class TraceDetailJsonService implements JsonService {
             response = writeResponse(traces, request.getFrom());
         }
         if (response.length() <= 2000) {
-            logger.debug("onMessage(): response={}", response);
+            logger.debug("handleRequest(): response={}", response);
         } else {
-            logger.debug("onMessage(): response={}...", response.substring(0, 2000));
+            logger.debug("handleRequest(): response={}...", response.substring(0, 2000));
         }
         return response;
     }

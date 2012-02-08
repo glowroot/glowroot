@@ -19,6 +19,8 @@ import java.io.IOException;
 
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.ui.HttpServer.JsonService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -32,6 +34,9 @@ import com.google.inject.Singleton;
 @Singleton
 public class ReadConfigurationJsonService implements JsonService {
 
+    private static final Logger logger = LoggerFactory
+            .getLogger(ReadConfigurationJsonService.class);
+
     private final ConfigurationService configurationService;
 
     @Inject
@@ -40,6 +45,7 @@ public class ReadConfigurationJsonService implements JsonService {
     }
 
     public String handleRequest(String message) throws IOException {
+        logger.debug("handleRequest(): message={}", message);
         return "{\"coreConfiguration\":" + configurationService.getCoreConfiguration().toJson()
                 + ",\"pluginConfiguration\":"
                 + configurationService.getPluginConfiguration().toJson() + "}";

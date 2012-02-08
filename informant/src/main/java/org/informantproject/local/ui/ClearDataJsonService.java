@@ -47,7 +47,7 @@ public class ClearDataJsonService implements JsonService {
     }
 
     public String handleRequest(String message) {
-        logger.debug("onMessage(): message={}", message);
+        logger.debug("handleRequest(): message={}", message);
         JsonObject request = new JsonParser().parse(message).getAsJsonObject();
         long keep = request.get("keep").getAsLong();
         traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keep);

@@ -73,7 +73,7 @@ public class MetricJsonService implements JsonService {
         } else {
             response = writeResponse(metricPoints, request.getStart());
         }
-        logger.debug("onMessage(): response={}", response);
+        logger.debug("handleRequest(): response={}", response);
         return response;
     }
 

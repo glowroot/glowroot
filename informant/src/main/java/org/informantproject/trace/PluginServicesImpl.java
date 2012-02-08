@@ -126,7 +126,7 @@ public class PluginServicesImpl extends PluginServices {
     public Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint, String spanSummaryKey)
             throws Throwable {
 
-        logger.debug("recordMetricData(): summaryKey={}", spanSummaryKey);
+        logger.debug("proceedAndRecordMetricData(): summaryKey={}", spanSummaryKey);
         long startTime = ticker.read();
         try {
             return joinPoint.proceed();
