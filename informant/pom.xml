@@ -67,6 +67,11 @@
       <version>1.2.3-SNAPSHOT</version>
     </dependency>
     <dependency>
+      <groupId>org.informantproject.webresources</groupId>
+      <artifactId>webresources-spin</artifactId>
+      <version>1.2.3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <version>3.2.7.Final</version>

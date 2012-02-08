@@ -95,6 +95,8 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/webresources/dateformat/$1");
         uriMappings.put(Pattern.compile("^/handlebars/(.*)$"),
                 "org/informantproject/webresources/handlebars/$1");
+        uriMappings.put(Pattern.compile("^/spin/(.*)$"),
+                "org/informantproject/webresources/spin/$1");
     }
 
     @Inject
