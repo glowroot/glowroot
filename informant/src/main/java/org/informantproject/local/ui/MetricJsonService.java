@@ -55,8 +55,9 @@ public class MetricJsonService implements JsonService {
         this.clock = clock;
     }
 
-    public String handleRequest(String message) throws IOException {
-        logger.debug("handleRequest(): message={}", message);
+    // called dynamically from HttpServer
+    public String handleRead(String message) throws IOException {
+        logger.debug("handleRead(): message={}", message);
         MetricRequest request = new Gson().fromJson(message, MetricRequest.class);
         if (request.getStart() < 0) {
             request.setStart(clock.currentTimeMillis() + request.getStart());
@@ -73,7 +74,7 @@ public class MetricJsonService implements JsonService {
         } else {
             response = writeResponse(metricPoints, request.getStart());
         }
-        logger.debug("handleRequest(): response={}", response);
+        logger.debug("handleRead(): response={}", response);
         return response;
     }
 

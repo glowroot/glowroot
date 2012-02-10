@@ -15,8 +15,6 @@
  */
 package org.informantproject.local.ui;
 
-import java.io.IOException;
-
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
@@ -26,28 +24,34 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read configuration data. Bound to url "/configuration/read" in HttpServer.
+ * Json service to read configuration data. Bound to url "/configuration" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class ReadConfigurationJsonService implements JsonService {
+public class ConfigurationJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(ReadConfigurationJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConfigurationJsonService.class);
 
     private final ConfigurationService configurationService;
 
     @Inject
-    public ReadConfigurationJsonService(ConfigurationService configurationService) {
+    public ConfigurationJsonService(ConfigurationService configurationService) {
         this.configurationService = configurationService;
     }
 
-    public String handleRequest(String message) throws IOException {
-        logger.debug("handleRequest(): message={}", message);
+    // called dynamically from HttpServer
+    public String handleRead(String message) {
+        logger.debug("handleRead(): message={}", message);
         return "{\"coreConfiguration\":" + configurationService.getCoreConfiguration().toJson()
                 + ",\"pluginConfiguration\":"
                 + configurationService.getPluginConfiguration().toJson() + "}";
+    }
+
+    // called dynamically from HttpServer
+    public void handleUpdate(String message) {
+        logger.debug("handleUpdate(): message={}", message);
+        configurationService.updateConfiguration(message);
     }
 }

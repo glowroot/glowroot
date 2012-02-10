@@ -15,6 +15,7 @@
  */
 package org.informantproject.local.ui;
 
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -25,6 +26,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -103,19 +106,20 @@ public class HttpServer extends HttpServerBase {
 
     @Inject
     public HttpServer(@LocalHttpServerPort int port,
-            ReadConfigurationJsonService readConfigurationJsonService,
-            UpdateConfigurationJsonService updateConfigurationJsonService,
+            ConfigurationJsonService configurationJsonService,
             TraceDetailJsonService traceDetailJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            MetricJsonService metricJsonService, ClearDataJsonService clearDataJsonService) {
+            MetricJsonService metricJsonService, AdminJsonService adminJsonService) {
 
         super(port, "Informant-");
-        uriMappings.put(Pattern.compile("^/configuration/read$"), readConfigurationJsonService);
-        uriMappings.put(Pattern.compile("^/configuration/update$"), updateConfigurationJsonService);
-        uriMappings.put(Pattern.compile("^/trace/details$"), traceDetailJsonService);
-        uriMappings.put(Pattern.compile("^/trace/summaries$"), traceSummaryJsonService);
-        uriMappings.put(Pattern.compile("^/metrics$"), metricJsonService);
-        uriMappings.put(Pattern.compile("^/admin/cleardata"), clearDataJsonService);
+        // the parentheses define the part of the match that is used to dynamically construct the
+        // "handleX" method to call in the json service, e.g. /trace/details calls the method
+        // handleDetails in TraceDetailJsonService
+        uriMappings.put(Pattern.compile("^/configuration/(.*)$"), configurationJsonService);
+        uriMappings.put(Pattern.compile("^/trace/(details)$"), traceDetailJsonService);
+        uriMappings.put(Pattern.compile("^/trace/(summaries)$"), traceSummaryJsonService);
+        uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);
+        uriMappings.put(Pattern.compile("^/admin/(.*)"), adminJsonService);
     }
 
     @Override
@@ -128,8 +132,12 @@ public class HttpServer extends HttpServerBase {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
                 if (uriMappingEntry.getValue() instanceof JsonService) {
-                    return handleJsonRequest(request, decoder,
-                            (JsonService) uriMappingEntry.getValue());
+                    String serviceMethodName = "handle"
+                            + matcher.group(1).substring(0, 1).toUpperCase()
+                            + matcher.group(1).substring(1);
+                    String requestText = getRequestText(request, decoder);
+                    return handleJsonRequest((JsonService) uriMappingEntry.getValue(),
+                            serviceMethodName, requestText);
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
@@ -198,24 +206,67 @@ public class HttpServer extends HttpServerBase {
         }
     }
 
-    private static HttpResponse handleJsonRequest(HttpRequest request, QueryStringDecoder decoder,
-            JsonService jsonService) throws IOException {
+    private static HttpResponse handleJsonRequest(JsonService jsonService,
+            String serviceMethodName, String requestText) {
 
-        String requestText = getRequestJson(request, decoder);
-        logger.debug("handleJsonRequest(): request.content={}", requestText);
-        String responseText = jsonService.handleRequest(requestText);
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        if (responseText == null) {
-            response.setContent(ChannelBuffers.EMPTY_BUFFER);
-        } else {
-            response.setContent(ChannelBuffers.copiedBuffer(responseText, Charsets.ISO_8859_1));
-            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        logger.debug("handleJsonRequest(): serviceMethodName={}, requestText={}",
+                serviceMethodName, requestText);
+        Object responseText;
+        try {
+            responseText = callMethod(jsonService, serviceMethodName, requestText);
+        } catch (SecurityException e) {
+            logger.error(e.getMessage(), e);
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        } catch (IllegalArgumentException e) {
+            logger.error(e.getMessage(), e);
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        } catch (NoSuchMethodException e) {
+            logger.error(e.getMessage(), e);
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        } catch (IllegalAccessException e) {
+            logger.error(e.getMessage(), e);
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        } catch (InvocationTargetException e) {
+            logger.error(e.getMessage(), e);
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
-        return response;
+        if (responseText == null) {
+            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+            response.setContent(ChannelBuffers.EMPTY_BUFFER);
+            return response;
+        } else if (responseText instanceof String) {
+            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+            response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
+                    Charsets.ISO_8859_1));
+            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            return response;
+        } else {
+            logger.error("Unexpected type of json service response '{}'",
+                    responseText.getClass().getName());
+            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+        }
     }
 
-    private static String getRequestJson(HttpRequest request, QueryStringDecoder decoder) {
+    private static Object callMethod(Object object, String methodName, String optionalArg)
+            throws SecurityException, NoSuchMethodException, IllegalArgumentException,
+            IllegalAccessException, InvocationTargetException {
 
+        boolean withArg = true;
+        Method method;
+        try {
+            method = object.getClass().getMethod(methodName, String.class);
+        } catch (NoSuchMethodException e) {
+            method = object.getClass().getMethod(methodName);
+            withArg = false;
+        }
+        if (withArg) {
+            return method.invoke(object, optionalArg);
+        } else {
+            return method.invoke(object);
+        }
+    }
+
+    private static String getRequestText(HttpRequest request, QueryStringDecoder decoder) {
         if (decoder.getParameters().isEmpty()) {
             return request.getContent().toString(Charsets.ISO_8859_1);
         } else {
@@ -233,9 +284,11 @@ public class HttpServer extends HttpServerBase {
         }
     }
 
-    public interface JsonService {
-        String handleRequest(String message) throws IOException;
-    }
+    // marker interface
+    public interface JsonService {}
+
+    @SuppressWarnings("serial")
+    public static class PathNotFoundException extends Exception {}
 
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.PARAMETER)

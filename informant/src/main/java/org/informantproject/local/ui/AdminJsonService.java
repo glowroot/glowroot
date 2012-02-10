@@ -27,30 +27,30 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to clear captured data. Bound to url "/admin/clear" in HttpServer.
+ * Json service to clear captured data. Bound to url "/admin" in HttpServer.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class ClearDataJsonService implements JsonService {
+public class AdminJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClearDataJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
     private final TraceDao traceDao;
     private final Clock clock;
 
     @Inject
-    public ClearDataJsonService(TraceDao traceDao, Clock clock) {
+    public AdminJsonService(TraceDao traceDao, Clock clock) {
         this.traceDao = traceDao;
         this.clock = clock;
     }
 
-    public String handleRequest(String message) {
-        logger.debug("handleRequest(): message={}", message);
+    // called dynamically from HttpServer
+    public void handleCleardata(String message) {
+        logger.debug("handleCleardata(): message={}", message);
         JsonObject request = new JsonParser().parse(message).getAsJsonObject();
         long keep = request.get("keep").getAsLong();
         traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keep);
-        return null;
     }
 }

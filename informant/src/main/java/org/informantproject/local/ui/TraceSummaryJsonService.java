@@ -37,7 +37,6 @@ import com.google.inject.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO look at reusable parts between TraceSummaryJsonService and TraceDetailJsonService
 @Singleton
 public class TraceSummaryJsonService implements JsonService {
 
@@ -54,8 +53,8 @@ public class TraceSummaryJsonService implements JsonService {
         this.clock = clock;
     }
 
-    public String handleRequest(String message) throws IOException {
-        logger.debug("handleRequest(): message={}", message);
+    public String handleSummaries(String message) throws IOException {
+        logger.debug("handleSummaries(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         if (request.getFrom() < 0) {
             request.setFrom(clock.currentTimeMillis() + request.getFrom());
@@ -72,7 +71,7 @@ public class TraceSummaryJsonService implements JsonService {
         } else {
             response = writeResponse(traceSummaries, request.getFrom());
         }
-        logger.debug("handleRequest(): response={}", response);
+        logger.debug("handleSummaries(): response={}", response);
         return response;
     }
 

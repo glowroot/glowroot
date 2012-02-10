@@ -50,8 +50,8 @@ public class TraceDetailJsonService implements JsonService {
         this.traceDao = traceDao;
     }
 
-    public String handleRequest(String message) throws IOException {
-        logger.debug("handleRequest(): message={}", message);
+    public String handleDetails(String message) throws IOException {
+        logger.debug("handleDetails(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         // since low and high are qualified using <= (instead of <), and precision in the database
         // is in whole nanoseconds, ceil(low) and floor(high) give the correct final result even in
@@ -61,9 +61,9 @@ public class TraceDetailJsonService implements JsonService {
                 (long) Math.floor(request.getHigh() * NANOSECONDS_PER_MILLISECOND));
         String response = writeResponse(traces);
         if (response.length() <= 2000) {
-            logger.debug("handleRequest(): response={}", response);
+            logger.debug("handleDetails(): response={}", response);
         } else {
-            logger.debug("handleRequest(): response={}...", response.substring(0, 2000));
+            logger.debug("handleDetails(): response={}...", response.substring(0, 2000));
         }
         return response;
     }
