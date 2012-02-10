@@ -69,6 +69,12 @@ public abstract class InformantContainer {
         try {
             informant.resetBaselineTime();
             executeAppUnderTestImpl(appUnderTestClass, threadName);
+            // wait for all traces to be written to the embedded db
+            long startMillis = System.currentTimeMillis();
+            while (informant.getNumPendingTraceWrites() > 0
+                    && System.currentTimeMillis() - startMillis < 5000) {
+                Thread.sleep(100);
+            }
         } finally {
             Thread.currentThread().setName(previousThreadName);
         }

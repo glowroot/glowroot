@@ -109,7 +109,8 @@ public class HttpServer extends HttpServerBase {
             ConfigurationJsonService configurationJsonService,
             TraceDetailJsonService traceDetailJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            MetricJsonService metricJsonService, AdminJsonService adminJsonService) {
+            MetricJsonService metricJsonService, AdminJsonService adminJsonService,
+            StatJsonService statJsonService) {
 
         super(port, "Informant-");
         // the parentheses define the part of the match that is used to dynamically construct the
@@ -120,6 +121,7 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/trace/(summaries)$"), traceSummaryJsonService);
         uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);
         uriMappings.put(Pattern.compile("^/admin/(.*)"), adminJsonService);
+        uriMappings.put(Pattern.compile("^/stat/(.*)"), statJsonService);
     }
 
     @Override

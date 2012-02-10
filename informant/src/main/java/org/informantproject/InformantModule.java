@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.metric.MetricCollector;
 import org.informantproject.trace.StackCollector;
 import org.informantproject.trace.StuckTraceCollector;
@@ -62,6 +63,7 @@ class InformantModule extends AbstractModule {
         injector.getInstance(StuckTraceCollector.class).shutdown();
         injector.getInstance(StackCollector.class).shutdown();
         injector.getInstance(MetricCollector.class).shutdown();
+        injector.getInstance(TraceSinkLocal.class).shutdown();
         try {
             injector.getInstance(Connection.class).close();
         } catch (SQLException e) {

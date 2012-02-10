@@ -91,6 +91,11 @@ public class Informant {
         return new Gson().fromJson(json, new TypeToken<List<Trace>>() {}.getType());
     }
 
+    public int getNumPendingTraceWrites() throws Exception {
+        String numTraces = get("/stat/numPendingTraceWrites");
+        return Integer.parseInt(numTraces);
+    }
+
     void resetBaselineTime() throws InterruptedException {
         if (baselineTime != 0) {
             // guarantee that there is no possible overlap

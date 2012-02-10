@@ -21,7 +21,9 @@ import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.configuration.ImmutableCoreConfiguration;
@@ -30,6 +32,7 @@ import org.informantproject.stack.MergedStackTreeNode;
 import org.informantproject.trace.Span;
 import org.informantproject.trace.Trace;
 import org.informantproject.trace.TraceSink;
+import org.informantproject.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +46,7 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * Implementation of TraceSink for local storage in embedded H2 database. Some day there may be
@@ -51,12 +55,18 @@ import com.google.inject.Inject;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Singleton
 public class TraceSinkLocal implements TraceSink {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSinkLocal.class);
 
+    private final ExecutorService executorService = DaemonExecutors
+            .newSingleThreadExecutor("Informant-StackCollector");
+
     private final ConfigurationService configurationService;
     private final TraceDao traceDao;
+
+    private final AtomicInteger queueLength = new AtomicInteger(0);
 
     @Inject
     public TraceSinkLocal(ConfigurationService configurationService, TraceDao traceDao) {
@@ -64,7 +74,7 @@ public class TraceSinkLocal implements TraceSink {
         this.traceDao = traceDao;
     }
 
-    public void onCompletedTrace(Trace trace) {
+    public void onCompletedTrace(final Trace trace) {
         ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
         int thresholdMillis = configuration.getThresholdMillis();
         boolean thresholdDisabled =
@@ -77,12 +87,27 @@ public class TraceSinkLocal implements TraceSink {
         if ((!thresholdDisabled && durationInNanoseconds >= TimeUnit.MILLISECONDS
                 .toNanos(thresholdMillis)) || trace.isStuck()) {
 
-            traceDao.storeTrace(buildStoredTrace(trace));
+            queueLength.incrementAndGet();
+            executorService.execute(new Runnable() {
+                public void run() {
+                    traceDao.storeTrace(buildStoredTrace(trace));
+                    queueLength.decrementAndGet();
+                }
+            });
         }
     }
 
     public void onStuckTrace(Trace trace) {
         traceDao.storeTrace(buildStoredTrace(trace));
+    }
+
+    public void shutdown() {
+        logger.debug("shutdown()");
+        executorService.shutdownNow();
+    }
+
+    public int getQueueLength() {
+        return queueLength.get();
     }
 
     // package protected for unit tests
