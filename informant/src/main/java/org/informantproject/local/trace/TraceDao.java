@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,6 +71,10 @@ public class TraceDao {
         boolean errorOnInit = false;
         try {
             if (!JdbcUtil.tableExists("trace", connection)) {
+                createTable(connection);
+            } else if (tableNeedsUpgrade(connection)) {
+                // the upgrade at this point is just drop/re-create
+                dropTable(connection);
                 createTable(connection);
             }
             insertPS = connection.prepareStatement("insert into trace (id, capturedAt, startAt,"
@@ -236,12 +241,61 @@ public class TraceDao {
         }
     }
 
+    private static boolean tableNeedsUpgrade(Connection connection) throws SQLException {
+        ResultSet resultSet = connection.getMetaData().getColumns(null, null, "TRACE", null);
+        if (!resultSet.next() || !"ID".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"CAPTUREDAT".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.BIGINT != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"STARTAT".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.BIGINT != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"STUCK".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.BOOLEAN != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"DURATION".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.BIGINT != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"COMPLETED".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.BOOLEAN != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"THREADNAMES".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"USERNAME".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next() || !"SPANS".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.CLOB != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        } else if (!resultSet.next()
+                || !"MERGEDSTACKTREE".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.CLOB != resultSet.getInt("DATA_TYPE")) {
+            return true;
+        }
+        return false;
+    }
+
+    private static void dropTable(Connection connection) throws SQLException {
+        Statement statement = connection.createStatement();
+        try {
+            statement.execute("drop table trace");
+        } finally {
+            statement.close();
+        }
+    }
+
     private static void createTable(Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         try {
             statement.execute("create table trace (id varchar, capturedAt bigint, startAt bigint,"
                     + " stuck boolean, duration bigint, completed boolean, threadnames varchar,"
                     + " username varchar, spans clob, mergedStackTree clob)");
+            if (tableNeedsUpgrade(connection)) {
+                logger.error("the logic in tableNeedsUpgrade() needs fixing", new Throwable());
+            }
         } finally {
             statement.close();
         }
