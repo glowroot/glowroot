@@ -41,6 +41,8 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.util.ThreadNameDeterminer;
+import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +59,21 @@ public abstract class HttpServerBase {
     private final ServerBootstrap bootstrap;
     private final ChannelGroup allChannels;
 
+    static {
+        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
+            public String determineThreadName(String currentThreadName, String proposedThreadName)
+                    throws Exception {
+                return "Informant-" + proposedThreadName;
+            }
+        });
+    }
+
     public HttpServerBase(int port, String threadNamePrefix) {
         bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
-                DaemonExecutors.newCachedThreadPool(threadNamePrefix + "HttpServer-Boss"),
-                DaemonExecutors.newCachedThreadPool(threadNamePrefix + "HttpServer-Worker")));
+                DaemonExecutors.newCachedThreadPool(threadNamePrefix
+                        + "Informant-HttpServer-Boss"),
+                DaemonExecutors.newCachedThreadPool(threadNamePrefix
+                        + "Informant-HttpServer-Worker")));
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
                 ChannelPipeline pipeline = pipeline();

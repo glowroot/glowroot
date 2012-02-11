@@ -184,7 +184,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>1.5</version>
+        <version>1.6-SNAPSHOT</version>
         <executions>
           <execution>
             <goals>
@@ -243,6 +243,22 @@
             <relocation>
               <pattern>org.h2</pattern>
               <shadedPattern>org.informantproject.shaded.h2</shadedPattern>
+            </relocation>
+            <relocation>
+              <!--
+                shade thread names as well to make it easy to identify informant threads
+              -->
+              <rawString>true</rawString>
+              <pattern>H2 File Lock Watchdog</pattern>
+              <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
+            </relocation>
+            <relocation>
+              <!--
+                shade thread names as well to make it easy to identify informant threads
+              -->
+              <rawString>true</rawString>
+              <pattern>H2 Log Writer</pattern>
+              <shadedPattern>H2 Log Writer</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.google.common</pattern>
