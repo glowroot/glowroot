@@ -20,7 +20,10 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import com.google.common.collect.Lists;
 
 /**
  * Merged stack tree built from sampled stack traces captured by periodic calls to
@@ -44,11 +47,23 @@ public class MergedStackTree {
     // marked transient for gson serialization
     private final transient Object lock = new Object();
 
-    // this method returns an iterable with a "weakly consistent" iterator
-    // that will never throw ConcurrentModificationException, see
-    // ConcurrentLinkedQueue.iterator()
-    public Iterable<MergedStackTreeNode> getRootNodes() {
-        return rootNodes;
+    public MergedStackTreeNode getRootNode() {
+        List<MergedStackTreeNode> rootNodes = Lists.newArrayList(this.rootNodes);
+        if (rootNodes.size() == 0) {
+            return null;
+        } else if (rootNodes.size() == 1) {
+            return rootNodes.get(0);
+        } else {
+            int totalSampleCount = 0;
+            for (MergedStackTreeNode rootNode : rootNodes) {
+                totalSampleCount += rootNode.getSampleCount();
+            }
+            MergedStackTreeNode syntheticRootNode = new MergedStackTreeNode(totalSampleCount);
+            for (MergedStackTreeNode rootNode : rootNodes) {
+                syntheticRootNode.addChildNode(rootNode);
+            }
+            return syntheticRootNode;
+        }
     }
 
     public void captureStackTrace(Thread thread) {

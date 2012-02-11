@@ -86,8 +86,8 @@ public class TraceDetailJsonService implements JsonService {
             jw.name("username").value(storedTrace.getUsername());
             sw.write(",\"spans\":");
             sw.write(storedTrace.getSpans());
-            sw.write(",\"mergedStackTreeRootNodes\":");
-            sw.write(storedTrace.getMergedStackTreeRootNodes());
+            sw.write(",\"mergedStackTree\":");
+            sw.write(storedTrace.getMergedStackTree());
             // TODO write metric data, trace and merged stack tree
             jw.endObject();
         }

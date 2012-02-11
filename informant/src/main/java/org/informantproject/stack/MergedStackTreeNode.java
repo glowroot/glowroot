@@ -45,7 +45,17 @@ public class MergedStackTreeNode {
     private volatile int sampleCount;
     private volatile State leafThreadState;
 
+    // this is for creating a single synthetic root node above other root nodes when there are
+    // multiple root nodes
+    MergedStackTreeNode(int sampleCount) {
+        stackTraceElement = null;
+        this.sampleCount = sampleCount;
+    }
+
     MergedStackTreeNode(StackTraceElement stackTraceElement) {
+        if (stackTraceElement == null) {
+            throw new NullPointerException("stackTraceElement cannot be null");
+        }
         this.stackTraceElement = stackTraceElement;
         sampleCount = 1;
     }
@@ -62,6 +72,10 @@ public class MergedStackTreeNode {
     // an appropriate lock so that two threads do not try to increment the count at the same time
     void incrementSampleCount() {
         sampleCount++;
+    }
+
+    public boolean isSyntheticRoot() {
+        return stackTraceElement == null;
     }
 
     public Iterable<MergedStackTreeNode> getChildNodes() {

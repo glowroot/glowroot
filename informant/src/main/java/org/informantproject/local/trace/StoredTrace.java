@@ -35,7 +35,7 @@ public class StoredTrace {
 
     private String metricData;
     private String spans;
-    private String mergedStackTreeRootNodes;
+    private String mergedStackTree;
 
     public String getId() {
         return id;
@@ -109,12 +109,12 @@ public class StoredTrace {
         this.spans = spans;
     }
 
-    public String getMergedStackTreeRootNodes() {
-        return mergedStackTreeRootNodes;
+    public String getMergedStackTree() {
+        return mergedStackTree;
     }
 
-    public void setMergedStackTreeRootNodes(String mergedStackTreeRootNodes) {
-        this.mergedStackTreeRootNodes = mergedStackTreeRootNodes;
+    public void setMergedStackTree(String mergedStackTree) {
+        this.mergedStackTree = mergedStackTree;
     }
 
     @Override
@@ -129,7 +129,7 @@ public class StoredTrace {
                 .add("username", username)
                 .add("metricData", metricData)
                 .add("spans", spans)
-                .add("mergedStackTreeRootNodes", mergedStackTreeRootNodes)
+                .add("mergedStackTree", mergedStackTree)
                 .toString();
     }
 }

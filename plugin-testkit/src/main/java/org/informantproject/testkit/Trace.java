@@ -35,7 +35,7 @@ public class Trace {
     private List<String> threadNames;
     private String username;
     private List<Span> spans;
-    private List<MergedStackTreeNode> mergedStackTreeRootNodes;
+    private MergedStackTreeNode mergedStackTree;
 
     public String getId() {
         return id;
@@ -64,8 +64,8 @@ public class Trace {
     public List<Span> getSpans() {
         return spans;
     }
-    public List<MergedStackTreeNode> getMergedStackTreeRootNodes() {
-        return mergedStackTreeRootNodes;
+    public MergedStackTreeNode getMergedStackTree() {
+        return mergedStackTree;
     }
 
     @Override
@@ -79,7 +79,7 @@ public class Trace {
                 .add("completed", completed)
                 .add("username", username)
                 .add("spans", spans)
-                .add("mergedStackTreeRootNodes", mergedStackTreeRootNodes)
+                .add("mergedStackTree", mergedStackTree)
                 .toString();
     }
 

@@ -72,15 +72,14 @@ public class TraceDao {
             }
             insertPS = connection.prepareStatement("insert into trace (id, capturedAt, startAt,"
                     + " stuck, duration, completed, threadNames, username, spans,"
-                    + " mergedStackTreeRootNodes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    + " mergedStackTree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             selectPS = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
-                    + " duration, completed, threadNames, username, spans,"
-                    + " mergedStackTreeRootNodes from trace where capturedAt >= ? and"
-                    + " capturedAt <= ?");
+                    + " duration, completed, threadNames, username, spans, mergedStackTree from"
+                    + " trace where capturedAt >= ? and capturedAt <= ?");
             selectPS2 = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
-                    + " duration, completed, threadNames, username, spans,"
-                    + " mergedStackTreeRootNodes from trace where capturedAt >= ? and"
-                    + " capturedAt <= ? and duration >= ? and duration <= ?");
+                    + " duration, completed, threadNames, username, spans, mergedStackTree from"
+                    + " trace where capturedAt >= ? and capturedAt <= ? and duration >= ? and"
+                    + " duration <= ?");
             selectSummaryPS = connection.prepareStatement("select capturedAt, duration from trace"
                     + " where capturedAt >= ? and capturedAt <= ?");
             deletePS = connection.prepareStatement("delete from trace where capturedAt >= ? and"
@@ -117,7 +116,7 @@ public class TraceDao {
                 insertPreparedStatement.setString(index++, storedTrace.getUsername());
                 insertPreparedStatement.setString(index++, storedTrace.getSpans());
                 insertPreparedStatement.setString(index++,
-                        storedTrace.getMergedStackTreeRootNodes());
+                        storedTrace.getMergedStackTree());
                 // TODO write metric data
                 insertPreparedStatement.executeUpdate();
                 // don't close prepared statement
@@ -234,7 +233,7 @@ public class TraceDao {
         try {
             statement.execute("create table trace (id varchar, capturedAt bigint, startAt bigint,"
                     + " stuck boolean, duration bigint, completed boolean, threadnames varchar,"
-                    + " username varchar, spans varchar, mergedStackTreeRootNodes varchar)");
+                    + " username varchar, spans varchar, mergedStackTree varchar)");
         } finally {
             statement.close();
         }
@@ -269,7 +268,7 @@ public class TraceDao {
         storedTrace.setThreadNames(resultSet.getString(columnIndex++));
         storedTrace.setUsername(resultSet.getString(columnIndex++));
         storedTrace.setSpans(resultSet.getString(columnIndex++));
-        storedTrace.setMergedStackTreeRootNodes(resultSet.getString(columnIndex++));
+        storedTrace.setMergedStackTree(resultSet.getString(columnIndex++));
         return storedTrace;
     }
 

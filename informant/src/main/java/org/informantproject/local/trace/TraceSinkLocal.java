@@ -125,40 +125,33 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setUsername(trace.getUsername());
         storedTrace.setSpans(gson.toJson(trace.getRootSpan().getSpans()));
         try {
-            storedTrace.setMergedStackTreeRootNodes(buildMergedStackTreeRootNodes(trace
-                    .getMergedStackTree()));
+            storedTrace.setMergedStackTree(buildMergedStackTree(trace.getMergedStackTree()));
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
         return storedTrace;
     }
 
-    private static String buildMergedStackTreeRootNodes(MergedStackTree mergedStackTree)
-            throws IOException {
-
+    private static String buildMergedStackTree(MergedStackTree mergedStackTree) throws IOException {
+        MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
+        if (rootNode == null) {
+            return null;
+        }
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
-        jw.beginArray();
-        for (MergedStackTreeNode rootNode : mergedStackTree.getRootNodes()) {
-            writeMergedStackTreeRootNode(rootNode, jw);
-        }
-        jw.endArray();
-        jw.close();
-        return sw.toString();
-    }
-
-    private static void writeMergedStackTreeRootNode(MergedStackTreeNode rootNode, JsonWriter jw)
-            throws IOException {
-
-        // walk tree depth first
         LinkedList<Object> toVisit = new LinkedList<Object>();
         toVisit.add(rootNode);
+        // walk tree depth first
         while (!toVisit.isEmpty()) {
             Object curr = toVisit.removeLast();
             if (curr instanceof MergedStackTreeNode) {
                 MergedStackTreeNode currNode = (MergedStackTreeNode) curr;
                 jw.beginObject();
-                jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
+                if (currNode.isSyntheticRoot()) {
+                    jw.name("stackTraceElement").value("<multiple root nodes>");
+                } else {
+                    jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
+                }
                 jw.name("sampleCount").value(currNode.getSampleCount());
                 if (currNode.isLeaf()) {
                     jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
@@ -178,6 +171,8 @@ public class TraceSinkLocal implements TraceSink {
                 jw.endObject();
             }
         }
+        jw.close();
+        return sw.toString();
     }
 
     private static enum JsonWriterOp {

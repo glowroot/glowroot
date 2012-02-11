@@ -77,7 +77,7 @@
   <div style="clear: both"></div>
     <a href="javascript:$('#mst_{{id}}').toggle()">merged stack trace</a><br>
     <div id="mst_{{id}}" style="display: none; white-space: nowrap">
-      {{#mergedStackTrace mergedStackTreeRootNodes}}{{/mergedStackTrace}}
+      {{#displayMergedStackTree mergedStackTree}}{{/displayMergedStackTree}}
     </div>
   </div>
   <br>
@@ -119,45 +119,41 @@
         + " <span style='color: #b12930; font-weight: bold'>...</span> " + description.slice(-80)
     }
   })
-  Handlebars.registerHelper('mergedStackTrace', function(rootNodes, block) {
-    var totalSampleCount = 0
-    for (var i = 0; i < rootNodes.length; i++) {
-      totalSampleCount += rootNodes[i].sampleCount
-    }
-    function curr(childNodes, level, totalSampleCount) {
+  Handlebars.registerHelper('displayMergedStackTree', function(rootNode, block) {
+    function curr(node, level) {
       var ret = ''
-      // order child nodes by sampleCount (descending)
-      childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount })
-      for (var i = 0; i < childNodes.length; i++) {
-        var childNode = childNodes[i]
-        var stackTraceElement = childNode.stackTraceElement
-        if (childNode.sampleCount < totalSampleCount) {
-          level++
-        }
+      var stackTraceElement = node.stackTraceElement
+      if (node.sampleCount < rootNode.sampleCount) {
+        level++
+      }
+      for (var j = 0; j < level; j++) {
+        ret += '&nbsp;'
+      }
+      ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
+      var samplePercentage = (node.sampleCount / rootNode.sampleCount) * 100
+      ret += samplePercentage.toFixed(1)
+      ret += '%</span>'
+      ret += stackTraceElement + '<br>'
+      if (node.leafThreadState) {
         for (var j = 0; j < level; j++) {
           ret += '&nbsp;'
         }
         ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
-        var samplePercentage = (childNode.sampleCount / totalSampleCount) * 100
         ret += samplePercentage.toFixed(1)
         ret += '%</span>'
-        ret += stackTraceElement + '<br>'
-        if (childNode.leafThreadState) {
-          for (var j = 0; j < level; j++) {
-            ret += '&nbsp;'
-          }
-          ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
-          ret += samplePercentage.toFixed(1)
-          ret += '%</span>'
-          ret += '&nbsp;' + childNode.leafThreadState + '<br>'
-        }
-        if (childNode.childNodes) {
-          ret += curr(childNode.childNodes, level, totalSampleCount)
+        ret += '&nbsp;' + node.leafThreadState + '<br>'
+      }
+      if (node.childNodes) {
+        var childNodes = node.childNodes
+        // order child nodes by sampleCount (descending)
+        childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount })
+        for (var i = 0; i < childNodes.length; i++) {
+          ret += curr(childNodes[i], level)
         }
       }
       return ret
     }
-    return curr(rootNodes, 0, totalSampleCount)
+    return curr(rootNode, 0)
   })
   $(document).ready(function() {
     var template = Handlebars.compile($('#tracesTemplate').html())
