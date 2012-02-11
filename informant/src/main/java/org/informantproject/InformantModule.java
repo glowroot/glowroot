@@ -87,8 +87,9 @@ class InformantModule extends AbstractModule {
             throw new IllegalStateException(e);
         }
         try {
-            return DriverManager.getConnection("jdbc:h2:" + commandLineOptions.getDbFile(), "sa",
-                    "");
+            // LZF compression is pretty fast, other options are DEFLATE or NONE
+            return DriverManager.getConnection("jdbc:h2:" + commandLineOptions.getDbFile()
+                    + ";COMPRESS_LOB=LZF", "sa", "");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);

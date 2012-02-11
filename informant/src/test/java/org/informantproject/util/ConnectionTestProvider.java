@@ -35,7 +35,8 @@ public class ConnectionTestProvider implements Provider<Connection> {
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e);
             }
-            Connection connection = DriverManager.getConnection("jdbc:h2:informant", "sa", "");
+            Connection connection = DriverManager.getConnection(
+                    "jdbc:h2:informant;COMPRESS_LOB=LZF", "sa", "");
             // cyclic relationship here between connection and jdbc helper
             if (JdbcUtil.tableExists("trace", connection)) {
                 Statement statement = connection.createStatement();
