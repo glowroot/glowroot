@@ -53,7 +53,7 @@ public final class Span {
         this.level = level;
     }
 
-    public String getDescription() {
+    public CharSequence getDescription() {
         return spanDetail.getDescription();
     }
 

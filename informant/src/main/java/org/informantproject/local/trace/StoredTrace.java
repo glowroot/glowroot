@@ -34,8 +34,10 @@ public class StoredTrace {
     private String username;
 
     private String metricData;
-    private String spans;
-    private String mergedStackTree;
+    // using CharSequence so these potentially very large strings can be built using
+    // LargeStringBuilder
+    private CharSequence spans;
+    private CharSequence mergedStackTree;
 
     public String getId() {
         return id;
@@ -101,19 +103,19 @@ public class StoredTrace {
         this.metricData = metricData;
     }
 
-    public String getSpans() {
+    public CharSequence getSpans() {
         return spans;
     }
 
-    public void setSpans(String spans) {
+    public void setSpans(CharSequence spans) {
         this.spans = spans;
     }
 
-    public String getMergedStackTree() {
+    public CharSequence getMergedStackTree() {
         return mergedStackTree;
     }
 
-    public void setMergedStackTree(String mergedStackTree) {
+    public void setMergedStackTree(CharSequence mergedStackTree) {
         this.mergedStackTree = mergedStackTree;
     }
 

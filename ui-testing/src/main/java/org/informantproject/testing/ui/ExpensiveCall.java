@@ -43,7 +43,7 @@ public class ExpensiveCall {
 
     public String getDescription() {
         int descriptionLength = random.nextInt(maxDescriptionLength);
-        StringBuffer sb = new StringBuffer(descriptionLength);
+        StringBuilder sb = new StringBuilder(descriptionLength);
         for (int i = 0; i < descriptionLength; i++) {
             if (random.nextInt(6) == 0) {
                 // on average, one of six characters will be a space

@@ -15,6 +15,7 @@
  */
 package org.informantproject.local.trace;
 
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.informantproject.api.CharSequenceReader;
 import org.informantproject.util.Clock;
 import org.informantproject.util.JdbcUtil;
 import org.slf4j.Logger;
@@ -114,9 +116,15 @@ public class TraceDao {
                 insertPreparedStatement.setBoolean(index++, storedTrace.isCompleted());
                 insertPreparedStatement.setString(index++, storedTrace.getThreadNames());
                 insertPreparedStatement.setString(index++, storedTrace.getUsername());
-                insertPreparedStatement.setString(index++, storedTrace.getSpans());
-                insertPreparedStatement.setString(index++,
-                        storedTrace.getMergedStackTree());
+                insertPreparedStatement.setCharacterStream(index++, new CharSequenceReader(
+                        storedTrace.getSpans()), storedTrace.getSpans().length());
+                if (storedTrace.getMergedStackTree() == null) {
+                    insertPreparedStatement.setClob(index++, (Clob) null);
+                } else {
+                    insertPreparedStatement.setCharacterStream(index++, new CharSequenceReader(
+                            storedTrace.getMergedStackTree()), storedTrace.getMergedStackTree()
+                            .length());
+                }
                 // TODO write metric data
                 insertPreparedStatement.executeUpdate();
                 // don't close prepared statement
@@ -233,7 +241,7 @@ public class TraceDao {
         try {
             statement.execute("create table trace (id varchar, capturedAt bigint, startAt bigint,"
                     + " stuck boolean, duration bigint, completed boolean, threadnames varchar,"
-                    + " username varchar, spans varchar, mergedStackTree varchar)");
+                    + " username varchar, spans clob, mergedStackTree clob)");
         } finally {
             statement.close();
         }

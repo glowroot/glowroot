@@ -16,7 +16,6 @@
 package org.informantproject.local.ui;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.List;
 
 import org.informantproject.local.trace.StoredTrace;
@@ -25,6 +24,7 @@ import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -69,8 +69,8 @@ public class TraceDetailJsonService implements JsonService {
     }
 
     private static String writeResponse(List<StoredTrace> storedTraces) throws IOException {
-        StringWriter sw = new StringWriter();
-        JsonWriter jw = new JsonWriter(sw);
+        StringBuilder sb = new StringBuilder();
+        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
         for (StoredTrace storedTrace : storedTraces) {
             jw.beginObject();
@@ -81,18 +81,24 @@ public class TraceDetailJsonService implements JsonService {
             jw.name("duration").value(storedTrace.getDuration());
             jw.name("completed").value(storedTrace.isCompleted());
             // inject raw json into stream
-            sw.write(",\"threadNames\":");
-            sw.write(storedTrace.getThreadNames());
-            jw.name("username").value(storedTrace.getUsername());
-            sw.write(",\"spans\":");
-            sw.write(storedTrace.getSpans());
-            sw.write(",\"mergedStackTree\":");
-            sw.write(storedTrace.getMergedStackTree());
+            sb.append(",\"threadNames\":");
+            sb.append(storedTrace.getThreadNames());
+            if (storedTrace.getUsername() != null) {
+                jw.name("username").value(storedTrace.getUsername());
+            }
+            if (storedTrace.getSpans() != null) {
+                sb.append(",\"spans\":");
+                sb.append(storedTrace.getSpans());
+            }
+            if (storedTrace.getMergedStackTree() != null) {
+                sb.append(",\"mergedStackTree\":");
+                sb.append(storedTrace.getMergedStackTree());
+            }
             // TODO write metric data, trace and merged stack tree
             jw.endObject();
         }
         jw.endArray();
         jw.close();
-        return sw.toString();
+        return sb.toString();
     }
 }

@@ -16,8 +16,6 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +23,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.JsonCharSequence;
+import org.informantproject.api.LargeStringBuilder;
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.configuration.ImmutableCoreConfiguration;
 import org.informantproject.stack.MergedStackTree;
@@ -37,12 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -118,12 +115,14 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setStuck(trace.isStuck());
         storedTrace.setDuration(trace.getDuration());
         storedTrace.setCompleted(trace.isCompleted());
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Span.class, new SpanGsonSerializer())
-                .create();
+        Gson gson = new GsonBuilder().create();
         storedTrace.setThreadNames(gson.toJson(trace.getThreadNames()));
         storedTrace.setUsername(trace.getUsername());
-        storedTrace.setSpans(gson.toJson(trace.getRootSpan().getSpans()));
+        try {
+            storedTrace.setSpans(buildSpans(trace.getRootSpan().getSpans()));
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
         try {
             storedTrace.setMergedStackTree(buildMergedStackTree(trace.getMergedStackTree()));
         } catch (IOException e) {
@@ -132,13 +131,46 @@ public class TraceSinkLocal implements TraceSink {
         return storedTrace;
     }
 
-    private static String buildMergedStackTree(MergedStackTree mergedStackTree) throws IOException {
+    private static CharSequence buildSpans(Iterable<Span> spans) throws IOException {
+        LargeStringBuilder sb = new LargeStringBuilder();
+        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+        jw.beginArray();
+        Gson gson = new Gson();
+        for (Span span : spans) {
+            jw.beginObject();
+            jw.name("offset");
+            jw.value(span.getOffset());
+            jw.name("duration");
+            jw.value(span.getDuration());
+            jw.name("index");
+            jw.value(span.getIndex());
+            jw.name("parentIndex");
+            jw.value(span.getParentIndex());
+            jw.name("level");
+            jw.value(span.getLevel());
+            // inject raw json into stream
+            sb.append(",\"description\":\"");
+            sb.append(JsonCharSequence.toJson(span.getDescription()));
+            sb.append("\"");
+            sb.append(",\"contextMap\":");
+            sb.append(gson.toJson(span.getContextMap(),
+                    new TypeToken<Map<String, Object>>() {}.getType()));
+            jw.endObject();
+        }
+        jw.endArray();
+        jw.close();
+        return sb.build();
+    }
+
+    private static CharSequence buildMergedStackTree(MergedStackTree mergedStackTree)
+            throws IOException {
+
         MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
         if (rootNode == null) {
             return null;
         }
-        StringWriter sw = new StringWriter();
-        JsonWriter jw = new JsonWriter(sw);
+        LargeStringBuilder sb = new LargeStringBuilder();
+        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         LinkedList<Object> toVisit = new LinkedList<Object>();
         toVisit.add(rootNode);
         // walk tree depth first
@@ -172,25 +204,10 @@ public class TraceSinkLocal implements TraceSink {
             }
         }
         jw.close();
-        return sw.toString();
+        return sb.build();
     }
 
     private static enum JsonWriterOp {
         END_OBJECT, END_ARRAY
-    }
-
-    private static class SpanGsonSerializer implements JsonSerializer<Span> {
-        public JsonElement serialize(Span span, Type unused, JsonSerializationContext context) {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("offset", span.getOffset());
-            jsonObject.addProperty("duration", span.getDuration());
-            jsonObject.addProperty("index", span.getIndex());
-            jsonObject.addProperty("parentIndex", span.getParentIndex());
-            jsonObject.addProperty("level", span.getLevel());
-            jsonObject.addProperty("description", span.getDescription());
-            jsonObject.add("contextMap", context.serialize(span.getContextMap(),
-                    new TypeToken<Map<String, Object>>() {}.getType()));
-            return jsonObject;
-        }
     }
 }
