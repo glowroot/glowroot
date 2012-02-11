@@ -30,7 +30,7 @@
 <script type="text/javascript" src="flot/0.7/jquery.flot.selection.min.js"></script>
 
 <script id="tracesTemplate" type="text/x-handlebars-template">
-{{#each .}}
+{{#each_with_index .}}
 <div>
   {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
   start: {{date start}}<br>
@@ -41,50 +41,59 @@
   {{#first spans}}
     <div style="margin-left: 1em">{{#eachEntry contextMap}}{{/eachEntry}}</div>
   {{/first}}
-  <a href="javascript:$('#sp_{{id}}').toggle()">spans</a> ({{spans.length}})<br>
-  <div id="sp_{{id}}" style="display: none">
-    {{#spans}}
-      <div style="float: left; margin-left: 1em; width: 3em; text-align: right">
-        +{{nanosToMillis offset}}
-      </div>
-      <div style="margin-left: {{margin level}}em">
-        <div style="width: 3em; float: left; text-align: right">
-          {{nanosToMillis duration}}&nbsp;
-        </div>
-        <div style="margin-left: 4em">
-          {{#ifLongDescription description}}
-            <span class="sp_{{../id}}_{{index}}">
-              <a href="javascript:$('.sp_{{../id}}_{{index}}').toggle()" style="color: #333">
-                {{#short description}}{{/short}}
-              </a>
-            </span>
-            <span class="sp_{{../id}}_{{index}}" style="display: none">
-              <a href="javascript:$('.sp_{{../id}}_{{index}}').toggle()">
-                {{description}}
-              </a>
-            </span>
-          {{^}}
-            {{description}}
-          {{/ifLongDescription}}
-          {{#if index}}
-            <!-- context map for index=0 is displayed in root context section above -->
-            <div style="margin-left: 2em">{{#eachEntry contextMap}}{{/eachEntry}}</div>
-          {{/if}}
-        </div>
-      </div>
-    {{/spans}}
-  </div>
+  <a href="javascript:toggleSpan({{index}}, '{{id}}')">spans</a> ({{spans.length}})<br>
+  <div id="sp_{{id}}" style="display: none"></div>
   <div style="clear: both"></div>
-    <a href="javascript:$('#mst_{{id}}').toggle()">merged stack trace</a><br>
-    <div id="mst_{{id}}" style="display: none; white-space: nowrap">
-      {{#displayMergedStackTree mergedStackTree}}{{/displayMergedStackTree}}
-    </div>
+    <a href="javascript:toggleMergedStackTrace({{index}}, '{{id}}')">merged stack trace</a><br>
+    <div id="mst_{{id}}" style="display: none; white-space: nowrap"></div>
   </div>
   <br>
 </div>
-{{/each}}
+{{/each_with_index}}
+</script>
+<script id="spansTemplate" type="text/x-handlebars-template">
+{{#spans}}
+  <div style="float: left; margin-left: 1em; width: 3em; text-align: right">
+    +{{nanosToMillis offset}}
+  </div>
+  <div style="margin-left: {{margin level}}em">
+    <div style="width: 3em; float: left; text-align: right">
+      {{nanosToMillis duration}}&nbsp;
+    </div>
+    <div style="margin-left: 4em">
+      {{#ifLongDescription description}}
+        <span class="sp_{{../id}}_{{index}}">
+          <a href="javascript:$('.sp_{{../id}}_{{index}}').toggle()" style="color: #333">
+            {{#short description}}{{/short}}
+          </a>
+        </span>
+        <span class="sp_{{../id}}_{{index}}" style="display: none">
+          <a href="javascript:$('.sp_{{../id}}_{{index}}').toggle()">
+            {{description}}
+          </a>
+        </span>
+      {{^}}
+        {{description}}
+      {{/ifLongDescription}}
+      {{#if index}}
+        <!-- context map for index=0 is displayed in root context section above -->
+        <div style="margin-left: 2em">{{#eachEntry contextMap}}{{/eachEntry}}</div>
+      {{/if}}
+    </div>
+  </div>
+{{/spans}}
 </script>
 <script type="text/javascript">
+  Handlebars.registerHelper('each_with_index', function(array, options) {
+    var ret = ''
+    for (var i = 0; i < array.length; i++) {
+      var item = array[i]
+      // stick index onto item
+      item.index = i
+      ret += options.fn(item)
+    }
+    return ret
+  })
   Handlebars.registerHelper('date', function(timestamp) {
     return new Date(timestamp).format('m/d/yy h:MM:ss.l TT (Z)')
   })
@@ -119,45 +128,13 @@
         + " <span style='color: #b12930; font-weight: bold'>...</span> " + description.slice(-80)
     }
   })
-  Handlebars.registerHelper('displayMergedStackTree', function(rootNode, block) {
-    function curr(node, level) {
-      var ret = ''
-      var stackTraceElement = node.stackTraceElement
-      if (node.sampleCount < rootNode.sampleCount) {
-        level++
-      }
-      for (var j = 0; j < level; j++) {
-        ret += '&nbsp;'
-      }
-      ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
-      var samplePercentage = (node.sampleCount / rootNode.sampleCount) * 100
-      ret += samplePercentage.toFixed(1)
-      ret += '%</span>'
-      ret += stackTraceElement + '<br>'
-      if (node.leafThreadState) {
-        for (var j = 0; j < level; j++) {
-          ret += '&nbsp;'
-        }
-        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
-        ret += samplePercentage.toFixed(1)
-        ret += '%</span>'
-        ret += '&nbsp;' + node.leafThreadState + '<br>'
-      }
-      if (node.childNodes) {
-        var childNodes = node.childNodes
-        // order child nodes by sampleCount (descending)
-        childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount })
-        for (var i = 0; i < childNodes.length; i++) {
-          ret += curr(childNodes[i], level)
-        }
-      }
-      return ret
-    }
-    return curr(rootNode, 0)
-  })
   $(document).ready(function() {
-    var template = Handlebars.compile($('#tracesTemplate').html())
-    Handlebars.registerPartial('span', $('#span-partial').html())
+    var tracesTemplate = Handlebars.compile($('#tracesTemplate').html())
+    var spansTemplate1 = Handlebars.compile($('#spansTemplate').html())
+
+    // this stores the results of the last trace details retrieval so that the individual trace
+    // details can be lazily formatted when they are expanded
+    var traceDetails = []
 
     var options = {
       legend: { show: false },
@@ -252,14 +229,73 @@
       var high = ranges.yaxis.to * 1000
       var query = 'from=' + from + '&to=' + to + '&low=' + low + '&high=' + high
       $.getJSON('/trace/details?' + query, function(traces) {
+        traceDetails = traces
         $('#traces').html('')
         if (traces.length) {
-          var html = template(traces)
+          var html = tracesTemplate(traces)
           $(html).appendTo('#traces')
         } else {
           $('#traces').html('no data')
         }
       })
+    }
+
+    window.toggleSpan = function(index, id) {
+      if ($('#sp_' + id).is(':visible')) {
+        $('#sp_' + id).hide()
+      } else {
+        if (! $('#sp_' + id).html()) {
+          var html = spansTemplate1(traceDetails[index])
+          $(html).appendTo('#sp_' + id)
+        }
+        $('#sp_' + id).show()
+      }
+    }
+
+    window.toggleMergedStackTrace = function(index, id) {
+      var rootNode = traceDetails[index].mergedStackTree
+      function curr(node, level) {
+        var ret = ''
+        var stackTraceElement = node.stackTraceElement
+        if (node.sampleCount < rootNode.sampleCount) {
+          level++
+        }
+        for (var j = 0; j < level; j++) {
+          ret += '&nbsp;'
+        }
+        ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
+        var samplePercentage = (node.sampleCount / rootNode.sampleCount) * 100
+        ret += samplePercentage.toFixed(1)
+        ret += '%</span>'
+        ret += stackTraceElement + '<br>'
+        if (node.leafThreadState) {
+          for (var j = 0; j < level; j++) {
+            ret += '&nbsp;'
+          }
+          ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
+          ret += samplePercentage.toFixed(1)
+          ret += '%</span>'
+          ret += '&nbsp;' + node.leafThreadState + '<br>'
+        }
+        if (node.childNodes) {
+          var childNodes = node.childNodes
+          // order child nodes by sampleCount (descending)
+          childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount })
+          for (var i = 0; i < childNodes.length; i++) {
+            ret += curr(childNodes[i], level)
+          }
+        }
+        return ret
+      }
+      if ($('#mst_' + id).is(':visible')) {
+        $('#mst_' + id).hide()
+      } else {
+        if (! $('#mst_' + id).html()) {
+          var html = curr(rootNode, 0)
+          $(html).appendTo('#mst_' + id)
+        }
+        $('#mst_' + id).show()
+      }
     }
 
     $('#datePicker').datepicker({ onSelect : function(dateText, inst) {
