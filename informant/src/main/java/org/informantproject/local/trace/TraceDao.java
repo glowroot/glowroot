@@ -275,6 +275,17 @@ public class TraceDao {
                 || Types.CLOB != resultSet.getInt("DATA_TYPE")) {
             return true;
         }
+
+        // at least for now, also check the index as part of the same check
+        resultSet = connection.getMetaData().getIndexInfo(null, null, "TRACE", false, false);
+        if (!resultSet.next() || !"TRACE_IDX".equals(resultSet.getString("INDEX_NAME"))
+                || !"CAPTUREDAT".equals(resultSet.getString("COLUMN_NAME"))) {
+            return true;
+        } else if (!resultSet.next() || !"TRACE_IDX".equals(resultSet.getString("INDEX_NAME"))
+                || !"DURATION".equals(resultSet.getString("COLUMN_NAME"))) {
+            return true;
+        }
+
         return false;
     }
 
@@ -293,6 +304,7 @@ public class TraceDao {
             statement.execute("create table trace (id varchar, capturedAt bigint, startAt bigint,"
                     + " stuck boolean, duration bigint, completed boolean, threadnames varchar,"
                     + " username varchar, spans clob, mergedStackTree clob)");
+            statement.execute("create index trace_idx on trace (capturedAt, duration)");
             if (tableNeedsUpgrade(connection)) {
                 logger.error("the logic in tableNeedsUpgrade() needs fixing", new Throwable());
             }
