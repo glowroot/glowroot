@@ -16,6 +16,7 @@
 package org.informantproject.plugin.servlet;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -112,8 +113,7 @@ public class ServletPluginTest {
         Span servletSpan = trace.getSpans().get(1);
         assertThat(servletSpan.getDescription(), is("servlet: " + MockServlet.class.getName()
                 + ".service()"));
-        assertThat((String) servletSpan.getContextMap().get("request method"), is("GET"));
-        assertThat((String) servletSpan.getContextMap().get("request uri"), is("/combotest"));
+        assertThat(servletSpan.getContextMap(), is(nullValue()));
     }
 
     @Test

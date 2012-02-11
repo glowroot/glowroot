@@ -120,7 +120,7 @@ public class ServletAspect {
             HttpSession session = request.getSession(false);
             if (session == null) {
                 spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
-                        request.getRequestURI());
+                        request.getRequestURI(), null, null, null);
             } else {
                 String username = getSessionAttributeTextValue(session,
                         ServletPluginPropertyUtils.getUsernameSessionAttributePath());
@@ -138,35 +138,30 @@ public class ServletAspect {
         } else {
             // this is the top-most servlet, but is still nested under a filter so no need to
             // gather expensive http request and session data
-            ServletSpanDetail spanDetail = new ServletSpanDetail(filter, target.getClass(),
-                    request.getMethod(), request.getRequestURI());
+            SpanDetail spanDetail = new NestedServletSpanDetail(filter, target.getClass());
             pluginServices.executeSpan(spanDetail, joinPoint, null);
         }
     }
 
-    @Around("isPluginEnabled() && inTrace() && nestedFilterPointcut() && target(target)"
-            + " && args(realRequest, ..)")
-    public void aroundNestedFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
-            Object realRequest) throws Throwable {
+    @Around("isPluginEnabled() && inTrace() && nestedFilterPointcut() && target(target)")
+    public void aroundNestedFilterPointcut(ProceedingJoinPoint joinPoint, Object target)
+            throws Throwable {
 
-        aroundNestedServletOrFilterPointcut(joinPoint, target, realRequest, false);
+        aroundNestedServletOrFilterPointcut(joinPoint, target, false);
     }
 
-    @Around("isPluginEnabled() && inTrace() && nestedServletPointcut() && target(target)"
-            + " && args(realRequest, ..)")
-    public void aroundNestedServletPointcut(ProceedingJoinPoint joinPoint, Object target,
-            Object realRequest) throws Throwable {
+    @Around("isPluginEnabled() && inTrace() && nestedServletPointcut() && target(target)")
+    public void aroundNestedServletPointcut(ProceedingJoinPoint joinPoint, Object target)
+            throws Throwable {
 
-        aroundNestedServletOrFilterPointcut(joinPoint, target, realRequest, true);
+        aroundNestedServletOrFilterPointcut(joinPoint, target, true);
     }
 
     private void aroundNestedServletOrFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
-            Object realRequest, boolean filter) throws Throwable {
+            boolean filter) throws Throwable {
 
-        HttpServletRequest request = HttpServletRequest.from(realRequest);
         if (ServletPluginPropertyUtils.isCaptureNestedExecutions()) {
-            ServletSpanDetail spanDetail = new ServletSpanDetail(filter, target.getClass(),
-                    request.getMethod(), request.getRequestURI());
+            SpanDetail spanDetail = new NestedServletSpanDetail(filter, target.getClass());
             // passing null spanSummaryKey so it won't record aggregate timing data
             // for nested servlets and filters
             pluginServices.executeSpan(spanDetail, joinPoint, null);

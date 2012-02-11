@@ -81,10 +81,6 @@ class ServletSpanDetail implements RootSpanDetail {
 
     private volatile Map<String, String> sessionAttributeUpdatedValueMap;
 
-    ServletSpanDetail(boolean filter, Class<?> clazz, String requestMethod, String requestURI) {
-        this(filter, clazz, requestMethod, requestURI, null, null, null);
-    }
-
     ServletSpanDetail(boolean filter, Class<?> clazz, String requestMethod, String requestURI,
             String username, String sessionId, Map<String, String> sessionAttributeMap) {
 
