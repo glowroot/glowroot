@@ -125,7 +125,7 @@ public class HttpServer extends HttpServerBase {
     }
 
     @Override
-    public HttpResponse handleRequest(HttpRequest request) throws IOException {
+    protected HttpResponse handleRequest(HttpRequest request) throws IOException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();

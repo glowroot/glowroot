@@ -91,7 +91,7 @@ public abstract class HttpServerBase {
         logger.debug("HttpServerBase(): http server bound");
     }
 
-    public abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
+    protected abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
             InterruptedException;
 
     public void shutdown() {
