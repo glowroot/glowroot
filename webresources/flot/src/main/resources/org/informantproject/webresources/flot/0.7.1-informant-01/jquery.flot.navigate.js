@@ -1,4 +1,30 @@
 /*
+Copyright 2007-2011 IOLA and Ole Laursen
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Informant note: this is the latest non-minimized jquery.flot.navigate.js
+downloaded from http://code.google.com/p/flot/issues/detail?id=643
+(this version hasn't hit a flot release yet)
+with a couple extra changes (search for 'informant' below)
+
 Flot plugin for adding panning and zooming capabilities to a plot.
 
 The default behaviour is double click and scrollwheel up/down to zoom
@@ -256,7 +282,7 @@ drag = $special.drag = {
 		switch ( event.type ){
 			// mousemove, check distance, start dragging
 			case !dd.dragging && 'mousemove': 
-				//  drag tolerance, x² + y² = distance²
+				//  drag tolerance, x^2 + y^2 = distance^2
 				if ( Math.pow(  event.pageX-dd.pageX, 2 ) + Math.pow(  event.pageY-dd.pageY, 2 ) < Math.pow( dd.distance, 2 ) ) 
 					break; // distance tolerance not reached
 				event.target = dd.target; // force target from "mousedown" event (fix distance issue)
@@ -669,7 +695,7 @@ function handler(event) {
 
             if (!c)
                 c = { left: w / 2, top: h / 2 };
-                
+            
             var xf = c.left / w,
                 yf = c.top / h,
                 minmax = {
@@ -682,6 +708,15 @@ function handler(event) {
                         max: c.top + (1 - yf) * h / amount
                     }
                 };
+            // change for informant: stick to edges
+            if (xf > 0.9 && amount > 1) {
+              // close to edge, zooming in, so stick to the edge
+              minmax.x.max = w
+            }
+            if (xf < 0.1 && amount > 1) {
+              // close to edge, zooming in, so stick to the edge
+              minmax.x.min = 0
+            }
 
             $.each(plot.getAxes(), function(_, axis) {
                 var opts = axis.options,
@@ -701,11 +736,14 @@ function handler(event) {
                     max = tmp;
                 }
 
-                var range = max - min;
-                if (zr &&
-                    ((zr[0] != null && range < zr[0]) ||
-                     (zr[1] != null && range > zr[1])))
-                    return;
+                // change for informant: change zoom range to be absolute range
+                // instead of range of width
+                if (zr && zr[0] != null && min < zr[0]) {
+                  min = zr[0]
+                }
+                if (zr && zr[1] != null && max > zr[1]) {
+                  max = zr[1]
+                }
             
                 opts.min = min;
                 opts.max = max;
