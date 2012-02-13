@@ -11,7 +11,12 @@
 
   <groupId>org.informantproject.webresources</groupId>
   <artifactId>webresources-flot</artifactId>
-  <version>0.7-SNAPSHOT</version>
+  <!--
+    sort of following version numbering from
+    http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-pom-syntax.html
+    #pom-reationships-sect-versions
+  -->
+  <version>0.7.1-informant-01-SNAPSHOT</version>
 
   <name>Flot Javascript Library (packaged for Informant)</name>
   <description>
