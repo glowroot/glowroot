@@ -59,7 +59,7 @@
     <dependency>
       <groupId>org.informantproject.webresources</groupId>
       <artifactId>webresources-flot</artifactId>
-      <version>0.7-SNAPSHOT</version>
+      <version>0.7.1-informant-01-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.informantproject.webresources</groupId>

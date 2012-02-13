@@ -26,8 +26,9 @@
 <script type="text/javascript" src="jqueryui/1.8.17/jquery-ui.all.min.js"></script>
 <script type="text/javascript" src="dateformat/1.2.3/date.format.js"></script>
 <script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
-<script type="text/javascript" src="flot/0.7/jquery.flot.min.js"></script>
-<script type="text/javascript" src="flot/0.7/jquery.flot.selection.min.js"></script>
+<script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.min.js"></script>
+<script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.selection.min.js"></script>
+<script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.navigate.min.js"></script>
 
 <script id="tracesTemplate" type="text/x-handlebars-template">
 {{#each_with_index .}}
@@ -132,78 +133,43 @@
     var tracesTemplate = Handlebars.compile($('#tracesTemplate').html())
     var spansTemplate1 = Handlebars.compile($('#spansTemplate').html())
 
-    // this stores the results of the last trace details retrieval so that the individual trace
-    // details can be lazily formatted when they are expanded
-    var traceDetails = []
+    var plot, selection, traceDetails
 
     var options = {
       legend: { show: false },
       series: {
-        lines: { show: true },
         points: { show: true }
       },
       xaxis: { mode: 'time' },
-      yaxis: { ticks: 10 },
+      yaxis: { ticks: 10, zoomRange : false },
+      zoom: { interactive: true, amount : 1.5 },
       selection: { mode: 'xy' }
     }
-    var overviewOptions = {
-      legend: { show: true, container: $('#overviewLegend') },
-      series: {
-        lines: { show: true, lineWidth: 1 },
-        shadowSize: 0
-      },
-      xaxis: { mode: 'time', ticks: 1 },
-      yaxis: { ticks: 3},
-      grid: { color: '#999' },
-      selection: { mode: 'xy' }
-    }
-
     function plotFullDate(date) {
       var from = date.getTime()
       var to = from + 24 * 60 * 60 * 1000; // from + 24 hours
       getTraceSummaries(from, to)
     }
-
     function plotResponseData(data) {
-      var plot = $.plot($('#placeholder'), [data], options)
-      var overview = $.plot($('#overview'), [data], overviewOptions)
-      // reset the show details button handler
-      $('#showDetails').unbind('click')
-      $('#showDetails').click(function() {
-        var xticks = plot.getAxes().xaxis.ticks
-        var yticks = plot.getAxes().yaxis.ticks
-        var range = { 'xaxis' : { 'from' : xticks[0].v, 'to' : xticks[xticks.length - 1].v },
-          'yaxis' : { 'from' : yticks[0].v, 'to' : yticks[yticks.length - 1].v }}
-        getTraceDetails(range)
-      })
-
-      // now connect the two
-      $('#placeholder').bind('plotselected', function (event, ranges) {
-        // clamp the zooming to prevent eternal zoom
-        // also round xaxis to nearest millisecond
-        ranges.xaxis.from = Math.floor(ranges.xaxis.from)
-        ranges.xaxis.to = Math.ceil(ranges.xaxis.to)
-        if (ranges.yaxis.to - ranges.yaxis.from < 0.00001) {
-          ranges.yaxis.to = ranges.yaxis.from + 0.00001
+      var overrideOptions = {}
+      if (data.length) {
+        overrideOptions = {
+          xaxis: { zoomRange : [ data[0][0], data[data.length - 1][0] ] }
         }
-        // do the zooming
-        plot = $.plot($('#placeholder'), [data], $.extend(true, {}, options, {
-          xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
-          yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
-        }))
-
-        // don't fire event on the overview to prevent eternal loop
-        overview.setSelection(ranges, true)
-        // reset the show details button handler
-        $('#showDetails').unbind('click')
-        $('#showDetails').click(function() {
-          getTraceDetails(ranges)
-        })
-      })
-      $('#overview').bind('plotselected', function (event, ranges) {
-        plot.setSelection(ranges)
-      })
+      }
+      plot = $.plot($('#placeholder'), [data], $.extend(true, {}, options, overrideOptions))
+      selection = null
     }
+    $('#placeholder').bind("plotselected", function(event, ranges) {
+      selection = ranges
+    })
+    $('#placeholder').bind("plotunselected", function(event, ranges) {
+      selection = null
+    })
+    $('#placeholder').bind('plotzoom', function (event, plot) {
+      if (selection)
+        plot.setSelection(selection)
+    })
 
     function getTraceSummaries(from, to) {
       $.getJSON('/trace/summaries?from=' + from + '&to=' + to, function(response) {
@@ -211,23 +177,29 @@
         for (var i = 0; i < response.data.length; i++) {
           response.data[i][0] -= new Date(response.data[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        var range = { 'xaxis' : { 'from' : 0, 'to' : 0 }, 'yaxis' : { 'from' : 0, 'to' : 0 }}
-        if (response.data.length > 0) {
-          range.xaxis.from = response.data[0][0]
-          range.xaxis.to = response.data[response.data.length - 1][0]
-        }
         plotResponseData(response.data)
       })
       $('#traces').html('')
     }
 
-    function getTraceDetails(ranges) {
-      var from = ranges.xaxis.from + new Date(ranges.xaxis.from).getTimezoneOffset() * 60 * 1000
-      var to = ranges.xaxis.to + new Date(ranges.xaxis.to).getTimezoneOffset() * 60 * 1000
-      // low, high are expected in milliseconds
-      var low = ranges.yaxis.from * 1000
-      var high = ranges.yaxis.to * 1000
-      var query = 'from=' + from + '&to=' + to + '&low=' + low + '&high=' + high
+    function getTraceDetails() {
+      var from, to, low, high
+      if (selection) {
+        from = selection.xaxis.from + new Date(selection.xaxis.from).getTimezoneOffset() * 60 * 1000
+        to = selection.xaxis.to + new Date(selection.xaxis.to).getTimezoneOffset() * 60 * 1000
+        // low, high are expected in milliseconds
+        low = selection.yaxis.from * 1000
+        high = selection.yaxis.to * 1000
+      } else {
+        var axes = plot.getAxes()
+        from = axes.xaxis.min + new Date(axes.xaxis.min).getTimezoneOffset() * 60 * 1000
+        to = axes.xaxis.max + new Date(axes.xaxis.max).getTimezoneOffset() * 60 * 1000
+        // low, high are expected in milliseconds
+        low = axes.yaxis.min * 1000
+        high = axes.yaxis.max * 1000
+      }
+      var query = 'from=' + Math.floor(from) + '&to=' + Math.ceil(to) + '&low=' + low + '&high='
+        + high
       $.getJSON('/trace/details?' + query, function(traces) {
         traceDetails = traces
         $('#traces').html('')
@@ -257,9 +229,8 @@
       function curr(node, level) {
         var ret = ''
         var stackTraceElement = node.stackTraceElement
-        if (node.sampleCount < rootNode.sampleCount) {
+        if (node.sampleCount < rootNode.sampleCount)
           level++
-        }
         for (var j = 0; j < level; j++) {
           ret += '&nbsp;'
         }
@@ -301,6 +272,9 @@
     $('#datePicker').datepicker({ onSelect : function(dateText, inst) {
       plotFullDate($(this).datepicker('getDate'))
     }})
+    $('#showDetails').click(function() {
+      getTraceDetails()
+    })
     var d = new Date()
     d.setHours(0,0,0,0)
     $('#datePicker').datepicker('setDate', d)
@@ -313,14 +287,9 @@
   <div>
     Date: <input style="width: 7em" type="text" id="datePicker">
   </div><br>
-  <div style="float: left">
-    <div id="placeholder" style="width: 600px; height: 200px"></div>
+  <div>
+    <div id="placeholder" style="width: 900px; height: 300px"></div>
   </div>
-  <div id="miniature" style="float: left; margin-left: 20px">
-    <div id="overview" style="width: 300px; height: 100px"></div>
-    <p id="overviewLegend" style="margin-left: 10px"></p>
-  </div>
-  <div style="clear: left"></div>
   <br>
   <button class="btn" id="showDetails">Show Details</button>
   <br>
