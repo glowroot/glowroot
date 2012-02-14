@@ -106,8 +106,9 @@ public class StackCollector implements Runnable {
                         && trace.getCaptureStackTraceScheduledFuture() == null) {
 
                     // schedule stack traces to be taken every X seconds
-                    long initialDelayMillis = getMillisUntilTraceReachesThreshold(trace,
-                            configuration.getStackTraceInitialDelayMillis());
+                    long initialDelayMillis = Math.max(0,
+                            configuration.getStackTraceInitialDelayMillis()
+                                    - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
                     CollectStackCommand command = new CollectStackCommand(trace);
                     ScheduledFuture<?> captureStackTraceScheduledFuture = scheduledExecutor
                             .scheduleWithFixedDelay(command, initialDelayMillis,
@@ -121,10 +122,5 @@ public class StackCollector implements Runnable {
                 }
             }
         }
-    }
-
-    private long getMillisUntilTraceReachesThreshold(Trace trace, int thresholdMillis) {
-        long traceDurationTime = ticker.read() - trace.getStartTime();
-        return Math.max(0, thresholdMillis - TimeUnit.NANOSECONDS.toMillis(traceDurationTime));
     }
 }

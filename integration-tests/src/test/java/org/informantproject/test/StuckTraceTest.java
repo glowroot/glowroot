@@ -61,12 +61,9 @@ public class StuckTraceTest {
         List<Trace> traces = container.getInformant().getAllTraces();
         assertThat(traces.get(0).isStuck(), is(true));
         assertThat(traces.get(0).isCompleted(), is(false));
-        assertThat(traces.get(0).getDuration(), is(0L));
-        assertThat(traces.get(0).getSpans().get(0).getDuration(), is(0L));
         assertThat(traces.get(1).isStuck(), is(true));
         assertThat(traces.get(1).isCompleted(), is(true));
         assertThat(traces.get(1).getDuration(), is(not(0L)));
-        assertThat(traces.get(1).getSpans().get(0).getDuration(), is(not(0L)));
     }
 
     public static class ShouldGenerateStuckTrace implements AppUnderTest, RootSpanMarker {

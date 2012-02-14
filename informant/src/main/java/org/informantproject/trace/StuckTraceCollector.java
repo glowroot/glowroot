@@ -102,8 +102,8 @@ public class StuckTraceCollector implements Runnable {
                 if (NanoUtils.isLessThan(trace.getStartTime(), stuckMessageThresholdTime)
                         && trace.getStuckCommandScheduledFuture() == null) {
                     // schedule stuck thread message
-                    long initialDelayMillis = getMillisUntilTraceReachesThreshold(trace,
-                            configuration.getStuckThresholdMillis());
+                    long initialDelayMillis = Math.max(0, configuration.getStuckThresholdMillis()
+                            - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
                     CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
                             traceSink);
                     ScheduledFuture<?> stuckCommandScheduledFuture = scheduledExecutor.schedule(
@@ -116,10 +116,5 @@ public class StuckTraceCollector implements Runnable {
                 }
             }
         }
-    }
-
-    private long getMillisUntilTraceReachesThreshold(Trace trace, int thresholdMillis) {
-        long traceDurationTime = ticker.read() - trace.getStartTime();
-        return Math.max(0, thresholdMillis - TimeUnit.NANOSECONDS.toMillis(traceDurationTime));
     }
 }

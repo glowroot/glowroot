@@ -86,7 +86,7 @@ public class RootSpan {
 
     // duration of trace in nanoseconds
     public long getDuration() {
-        return endTime == 0 ? 0 : endTime - startTime;
+        return endTime == 0 ? ticker.read() - startTime : endTime - startTime;
     }
 
     public boolean isCompleted() {
