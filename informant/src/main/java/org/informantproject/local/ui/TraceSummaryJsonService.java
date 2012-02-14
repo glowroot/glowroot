@@ -17,11 +17,17 @@ package org.informantproject.local.ui;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.trace.StoredTraceSummary;
 import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.ui.HttpServer.JsonService;
+import org.informantproject.trace.Trace;
+import org.informantproject.trace.TraceRegistry;
 import org.informantproject.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +48,18 @@ public class TraceSummaryJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
 
-    private static final int DONT_SEND_END_TIME_IN_RESPONSE = -1;
-
     private final TraceDao traceDao;
+    private final TraceRegistry traceRegistry;
+    private final ConfigurationService configurationService;
     private final Clock clock;
 
     @Inject
-    public TraceSummaryJsonService(TraceDao traceDao, Clock clock) {
+    public TraceSummaryJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
+            ConfigurationService configurationService, Clock clock) {
+
         this.traceDao = traceDao;
+        this.traceRegistry = traceRegistry;
+        this.configurationService = configurationService;
         this.clock = clock;
     }
 
@@ -59,43 +69,73 @@ public class TraceSummaryJsonService implements JsonService {
         if (request.getFrom() < 0) {
             request.setFrom(clock.currentTimeMillis() + request.getFrom());
         }
-        boolean isEndCurrentTime = (request.getTo() == 0);
-        if (isEndCurrentTime) {
+        List<StoredTraceSummary> liveSummaries = new ArrayList<StoredTraceSummary>();
+        if (request.getTo() == 0 || request.getTo() > clock.currentTimeMillis()) {
+            // capture live traces first to make sure that none are missed in between reading stored
+            // traces and then capturing live traces, possible duplicates are removed below
+            long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configurationService
+                    .getCoreConfiguration().getThresholdMillis());
+            for (Trace trace : traceRegistry.getTraces()) {
+                long duration = trace.getDuration();
+                if (duration >= thresholdNanos) {
+                    liveSummaries.add(new StoredTraceSummary(trace.getId(), clock
+                            .currentTimeMillis(), duration, false));
+                } else {
+                    // the traces are ordered by start time
+                    break;
+                }
+            }
+        }
+        if (request.getTo() == 0) {
             request.setTo(clock.currentTimeMillis());
         }
-        List<StoredTraceSummary> traceSummaries = traceDao.readStoredTraceSummaries(
+        List<StoredTraceSummary> storedSummaries = traceDao.readStoredTraceSummaries(
                 request.getFrom(), request.getTo());
-        String response;
-        if (isEndCurrentTime) {
-            response = writeResponse(traceSummaries, request.getFrom(), request.getTo());
-        } else {
-            response = writeResponse(traceSummaries, request.getFrom());
+
+        // TODO first remove duplicates within stored summaries (stuck/unstuck pair)
+
+        // remove duplicates between live and stored summaries
+        for (Iterator<StoredTraceSummary> i = liveSummaries.iterator(); i.hasNext();) {
+            StoredTraceSummary liveSummary = i.next();
+            for (Iterator<StoredTraceSummary> j = storedSummaries.iterator(); j.hasNext();) {
+                StoredTraceSummary storedSummary = j.next();
+                if (liveSummary.getId().equals(storedSummary.getId())) {
+                    // prefer stored summary if it is completed, otherwise prefer live summary
+                    if (storedSummary.isCompleted()) {
+                        i.remove();
+                    } else {
+                        j.remove();
+                    }
+                    // there can be at most one duplicate per id, so ok to break to outer
+                    break;
+                }
+            }
         }
+        String response = writeResponse(storedSummaries, liveSummaries);
         logger.debug("handleSummaries(): response={}", response);
         return response;
     }
 
-    private static String writeResponse(List<StoredTraceSummary> storedTraceSummaries, long start)
-            throws IOException {
-
-        return writeResponse(storedTraceSummaries, start, DONT_SEND_END_TIME_IN_RESPONSE);
-    }
-
-    private static String writeResponse(List<StoredTraceSummary> storedTraceSummaries, long start,
-            long end) throws IOException {
+    private static String writeResponse(List<StoredTraceSummary> storedTraceSummaries,
+            List<StoredTraceSummary> liveTraceSummaries) throws IOException {
 
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
         jw.beginObject();
-        jw.name("start").value(start);
-        if (end != DONT_SEND_END_TIME_IN_RESPONSE) {
-            jw.name("end").value(end);
-        }
-        jw.name("data").beginArray();
+        jw.name("storedData").beginArray();
         for (StoredTraceSummary storedTraceSummary : storedTraceSummaries) {
             jw.beginArray();
             jw.value(storedTraceSummary.getCapturedAt());
             jw.value(storedTraceSummary.getDuration() / 1000000000.0);
+            jw.endArray();
+        }
+        jw.endArray();
+        jw.name("liveData").beginArray();
+        for (StoredTraceSummary liveTraceSummary : liveTraceSummaries) {
+            jw.beginArray();
+            jw.value(liveTraceSummary.getCapturedAt());
+            jw.value(liveTraceSummary.getDuration() / 1000000000.0);
+            jw.value(liveTraceSummary.getId());
             jw.endArray();
         }
         jw.endArray();

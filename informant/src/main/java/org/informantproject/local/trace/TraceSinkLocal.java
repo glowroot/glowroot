@@ -107,8 +107,8 @@ public class TraceSinkLocal implements TraceSink {
         return queueLength.get();
     }
 
-    // package protected for unit tests
-    static StoredTrace buildStoredTrace(Trace trace) {
+    // TODO refactor??
+    public static StoredTrace buildStoredTrace(Trace trace) {
         StoredTrace storedTrace = new StoredTrace();
         storedTrace.setId(trace.getId());
         storedTrace.setStartAt(trace.getStartDate().getTime());

@@ -50,6 +50,7 @@ public class TraceDao {
     private final Clock clock;
 
     private final PreparedStatement insertPreparedStatement;
+    private final PreparedStatement selectByIdPreparedStatement;
     private final PreparedStatement selectPreparedStatement;
     private final PreparedStatement selectPreparedStatement2;
     private final PreparedStatement selectSummaryPreparedStatement;
@@ -63,6 +64,7 @@ public class TraceDao {
         this.connection = connection;
         this.clock = clock;
         PreparedStatement insertPS = null;
+        PreparedStatement selectByIdPS = null;
         PreparedStatement selectPS = null;
         PreparedStatement selectPS2 = null;
         PreparedStatement selectSummaryPS = null;
@@ -80,6 +82,9 @@ public class TraceDao {
             insertPS = connection.prepareStatement("insert into trace (id, capturedAt, startAt,"
                     + " stuck, duration, completed, threadNames, username, spans,"
                     + " mergedStackTree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            selectByIdPS = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
+                    + " duration, completed, threadNames, username, spans, mergedStackTree from"
+                    + " trace where id = ?");
             selectPS = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
                     + " duration, completed, threadNames, username, spans, mergedStackTree from"
                     + " trace where capturedAt >= ? and capturedAt <= ?");
@@ -87,8 +92,8 @@ public class TraceDao {
                     + " duration, completed, threadNames, username, spans, mergedStackTree from"
                     + " trace where capturedAt >= ? and capturedAt <= ? and duration >= ? and"
                     + " duration <= ?");
-            selectSummaryPS = connection.prepareStatement("select capturedAt, duration from trace"
-                    + " where capturedAt >= ? and capturedAt <= ?");
+            selectSummaryPS = connection.prepareStatement("select id, capturedAt, duration,"
+                    + " completed from trace where capturedAt >= ? and capturedAt <= ?");
             deletePS = connection.prepareStatement("delete from trace where capturedAt >= ? and"
                     + " capturedAt <= ?");
             countPS = connection.prepareStatement("select count(*) from trace");
@@ -97,6 +102,7 @@ public class TraceDao {
             logger.error(e.getMessage(), e);
         }
         insertPreparedStatement = insertPS;
+        selectByIdPreparedStatement = selectByIdPS;
         selectPreparedStatement = selectPS;
         selectPreparedStatement2 = selectPS2;
         selectSummaryPreparedStatement = selectSummaryPS;
@@ -166,6 +172,21 @@ public class TraceDao {
         }
     }
 
+    // multiple stored traces for the same id can exist in the case of stuck/unstuck trace records
+    public List<StoredTrace> readStoredTraces(String id) {
+        logger.debug("readStoredTraces(): id={}", id);
+        if (!valid) {
+            return Collections.emptyList();
+        }
+        try {
+            selectByIdPreparedStatement.setString(1, id);
+            return readStoredTrace(selectByIdPreparedStatement);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
         logger.debug("readStoredTraces(): capturedFrom={}, capturedTo={}", capturedFrom,
                 capturedTo);
@@ -190,6 +211,9 @@ public class TraceDao {
                 highDuration });
         if (!valid) {
             return Collections.emptyList();
+        }
+        if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
+            return readStoredTraces(capturedFrom, capturedTo);
         }
         try {
             selectPreparedStatement2.setLong(1, capturedFrom);
@@ -349,9 +373,7 @@ public class TraceDao {
     private static StoredTraceSummary buildStoredTraceSummaryFromResultSet(ResultSet resultSet)
             throws SQLException {
 
-        StoredTraceSummary storedTraceSummary = new StoredTraceSummary();
-        storedTraceSummary.setCapturedAt(resultSet.getLong(1));
-        storedTraceSummary.setDuration(resultSet.getLong(2));
-        return storedTraceSummary;
+        return new StoredTraceSummary(resultSet.getString(1), resultSet.getLong(2),
+                resultSet.getLong(3), resultSet.getBoolean(4));
     }
 }

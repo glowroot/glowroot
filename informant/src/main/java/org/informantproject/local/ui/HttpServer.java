@@ -276,14 +276,25 @@ public class HttpServer extends HttpServerBase {
             // flatten map values from list to single element where possible
             Map<String, Object> parameters = new HashMap<String, Object>();
             for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
+                String key = entry.getKey();
+                key = convertUnderscoreToCamel(key);
                 if (entry.getValue().size() == 1) {
-                    parameters.put(entry.getKey(), entry.getValue().get(0));
+                    parameters.put(key, entry.getValue().get(0));
                 } else {
-                    parameters.put(entry.getKey(), entry.getValue());
+                    parameters.put(key, entry.getValue());
                 }
             }
             return new Gson().toJson(parameters);
         }
+    }
+
+    private static String convertUnderscoreToCamel(String s) {
+        int underscoreIndex;
+        while ((underscoreIndex = s.indexOf('_')) != -1) {
+            s = s.substring(0, underscoreIndex) + s.substring(underscoreIndex + 1,
+                    underscoreIndex + 2).toUpperCase() + s.substring(underscoreIndex + 2);
+        }
+        return s;
     }
 
     // marker interface

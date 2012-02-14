@@ -25,14 +25,24 @@ import com.google.common.base.Objects;
  */
 public class StoredTraceSummary {
 
+    private String id;
     private long capturedAt;
     private double duration; // nanoseconds
+    private boolean completed;
 
-    public StoredTraceSummary() {}
-
-    public StoredTraceSummary(long capturedAt, double duration) {
+    public StoredTraceSummary(String id, long capturedAt, double duration, boolean completed) {
+        this.id = id;
         this.capturedAt = capturedAt;
         this.duration = duration;
+        this.completed = completed;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public long getCapturedAt() {
@@ -49,6 +59,14 @@ public class StoredTraceSummary {
 
     public void setDuration(double duration) {
         this.duration = duration;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
 
     @Override

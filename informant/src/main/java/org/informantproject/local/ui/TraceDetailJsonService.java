@@ -16,14 +16,19 @@
 package org.informantproject.local.ui;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.informantproject.local.trace.StoredTrace;
 import org.informantproject.local.trace.TraceDao;
+import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer.JsonService;
+import org.informantproject.trace.Trace;
+import org.informantproject.trace.TraceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
@@ -44,22 +49,54 @@ public class TraceDetailJsonService implements JsonService {
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
     private final TraceDao traceDao;
+    private final TraceRegistry traceRegistry;
 
     @Inject
-    public TraceDetailJsonService(TraceDao traceDao) {
+    public TraceDetailJsonService(TraceDao traceDao, TraceRegistry traceRegistry) {
+
         this.traceDao = traceDao;
+        this.traceRegistry = traceRegistry;
     }
 
     public String handleDetails(String message) throws IOException {
         logger.debug("handleDetails(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
+        long from = request.getFrom();
+        long to = request.getTo() == 0 ? Long.MAX_VALUE : request.getTo();
         // since low and high are qualified using <= (instead of <), and precision in the database
         // is in whole nanoseconds, ceil(low) and floor(high) give the correct final result even in
         // cases where low and high are not in whole nanoseconds
-        List<StoredTrace> traces = traceDao.readStoredTraces(request.getFrom(), request.getTo(),
-                (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND),
-                (long) Math.floor(request.getHigh() * NANOSECONDS_PER_MILLISECOND));
-        String response = writeResponse(traces);
+        long low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
+        long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
+                * NANOSECONDS_PER_MILLISECOND);
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(from, to, low, high);
+        if (request.getExtraIds() != null) {
+            // check live traces for the extra ids first
+            List<String> extraIds;
+            if (request.getExtraIds().length() == 0) {
+                extraIds = Collections.emptyList();
+            } else {
+                extraIds = Lists.newArrayList(request.getExtraIds().split(","));
+            }
+            for (Trace trace : traceRegistry.getTraces()) {
+                if (extraIds.contains(trace.getId())) {
+                    storedTraces.add(TraceSinkLocal.buildStoredTrace(trace));
+                    extraIds.remove(trace.getId());
+                }
+            }
+            // if any extra ids were not found in the live traces, then they must have completed so
+            // read them from trace dao
+            for (String extraId : extraIds) {
+                List<StoredTrace> extraTraces = traceDao.readStoredTraces(extraId);
+                if (!extraTraces.isEmpty()) {
+                    storedTraces.add(extraTraces.get(extraTraces.size() - 1));
+                } else {
+                    logger.warn("requested extra id '{}' not found in either live or stored"
+                            + " traces", extraId);
+                }
+            }
+        }
+        String response = writeResponse(storedTraces);
         if (response.length() <= 2000) {
             logger.debug("handleDetails(): response={}", response);
         } else {

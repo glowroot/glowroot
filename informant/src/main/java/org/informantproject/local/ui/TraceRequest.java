@@ -27,6 +27,7 @@ class TraceRequest {
     private long to;
     private double low; // milliseconds, with nanosecond precision
     private double high; // milliseconds, with nanosecond precision
+    private String extraIds;
 
     public long getFrom() {
         return from;
@@ -58,5 +59,13 @@ class TraceRequest {
 
     public void setHigh(double high) {
         this.high = high;
+    }
+
+    public String getExtraIds() {
+        return extraIds;
+    }
+
+    public void setExtraIds(String extraIds) {
+        this.extraIds = extraIds;
     }
 }

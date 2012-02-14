@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class TraceRegistry {
+public class TraceRegistry {
 
     // collection of active running traces, ordered by start time
     // TODO precise ordering by start time would require synchronization or some other method
@@ -72,7 +72,7 @@ class TraceRegistry {
     }
 
     // returns list of traces ordered by start time
-    Collection<Trace> getTraces() {
+    public Collection<Trace> getTraces() {
         return traces;
     }
 }
