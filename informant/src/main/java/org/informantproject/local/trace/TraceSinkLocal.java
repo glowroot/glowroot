@@ -62,13 +62,17 @@ public class TraceSinkLocal implements TraceSink {
 
     private final ConfigurationService configurationService;
     private final TraceDao traceDao;
+    private final StackTraceDao stackTraceDao;
 
     private final AtomicInteger queueLength = new AtomicInteger(0);
 
     @Inject
-    public TraceSinkLocal(ConfigurationService configurationService, TraceDao traceDao) {
+    public TraceSinkLocal(ConfigurationService configurationService, TraceDao traceDao,
+            StackTraceDao stackTraceDao) {
+
         this.configurationService = configurationService;
         this.traceDao = traceDao;
+        this.stackTraceDao = stackTraceDao;
     }
 
     public void onCompletedTrace(final Trace trace) {
@@ -107,8 +111,7 @@ public class TraceSinkLocal implements TraceSink {
         return queueLength.get();
     }
 
-    // TODO refactor??
-    public static StoredTrace buildStoredTrace(Trace trace) {
+    public StoredTrace buildStoredTrace(Trace trace) {
         StoredTrace storedTrace = new StoredTrace();
         storedTrace.setId(trace.getId());
         storedTrace.setStartAt(trace.getStartDate().getTime());
@@ -131,7 +134,7 @@ public class TraceSinkLocal implements TraceSink {
         return storedTrace;
     }
 
-    private static CharSequence buildSpans(Iterable<Span> spans) throws IOException {
+    private CharSequence buildSpans(Iterable<Span> spans) throws IOException {
         LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
@@ -155,6 +158,11 @@ public class TraceSinkLocal implements TraceSink {
             sb.append(",\"contextMap\":");
             sb.append(gson.toJson(span.getContextMap(),
                     new TypeToken<Map<String, Object>>() {}.getType()));
+            if (span.getStackTraceElements() != null) {
+                String stackTraceHash = stackTraceDao.storeStackTrace(span.getStackTraceElements());
+                jw.name("stackTraceHash");
+                jw.value(stackTraceHash);
+            }
             jw.endObject();
         }
         jw.endArray();

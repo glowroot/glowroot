@@ -42,6 +42,8 @@ public final class Span {
     // level is just a convenience for output
     private final int level;
 
+    private volatile StackTraceElement[] stackTraceElements;
+
     Span(SpanDetail spanDetail, long traceStartTime, long startTime, int index, int parentIndex,
             int level) {
 
@@ -99,7 +101,15 @@ public final class Span {
         return level;
     }
 
+    public StackTraceElement[] getStackTraceElements() {
+        return stackTraceElements;
+    }
+
     void setEndTime(long endTime) {
         this.endTime = endTime;
+    }
+
+    void setStackTraceElements(StackTraceElement[] stackTraceElements) {
+        this.stackTraceElements = stackTraceElements;
     }
 }

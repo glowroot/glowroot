@@ -17,6 +17,7 @@ package org.informantproject.trace;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -211,7 +212,14 @@ public class PluginServicesImpl extends PluginServices {
     // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     private void popSpan(Span span, long elementEndTime) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
-        currentTrace.getRootSpan().popSpan(span, elementEndTime);
+        StackTraceElement[] stackTraceElements = null;
+        if (elementEndTime - span.getStartTime() >= TimeUnit.MILLISECONDS
+                .toNanos(configurationService.getCoreConfiguration()
+                        .getSpanStackTraceThresholdMillis())) {
+            stackTraceElements = Thread.currentThread().getStackTrace();
+            // TODO remove last few stack trace elements?
+        }
+        currentTrace.getRootSpan().popSpan(span, elementEndTime, stackTraceElements);
         if (currentTrace.isCompleted()) {
             // the root span has been popped off
             cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());

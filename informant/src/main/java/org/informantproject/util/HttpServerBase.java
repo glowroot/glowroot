@@ -131,6 +131,8 @@ public abstract class HttpServerBase {
             if (e.getCause() instanceof InterruptedException) {
                 // ignore, probably just termination
             } else {
+                // TODO need to be more careful, losing important errors this way
+                e.getCause().printStackTrace();
                 // most likely just browser disconnect
                 // ("An existing connection was forcibly closed by the remote host")
                 logger.debug(e.getCause().getMessage(), e);

@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <link rel="stylesheet" href="jqueryui/1.8.17/ui-lightness/jquery-ui.all.css" type="text/css" />
 <script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="bootstrap/2.0.0/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="jqueryui/1.8.17/jquery-ui.all.min.js"></script>
 <script type="text/javascript" src="dateformat/1.2.3/date.format.js"></script>
 <script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
@@ -80,6 +81,9 @@
       {{#if index}}
         <!-- context map for index=0 is displayed in root context section above -->
         <div style="margin-left: 2em">{{#eachEntry contextMap}}{{/eachEntry}}</div>
+      {{/if}}
+      {{#if stackTraceHash}}
+        <a href="javascript: viewStackTrace('{{stackTraceHash}}')">view stack trace</a>
       {{/if}}
     </div>
   </div>
@@ -258,7 +262,6 @@
         $('#sp_' + id).show()
       }
     }
-
     window.toggleMergedStackTrace = function(index, id) {
       var rootNode = traceDetails[index].mergedStackTree
       function curr(node, level) {
@@ -303,6 +306,15 @@
         $('#mst_' + id).show()
       }
     }
+    window.viewStackTrace = function(stackTraceHash) {
+      $.getJSON('/stacktrace/read?hash=' + stackTraceHash, function(stackTraceElements) {
+        $('#stacktrace').html('')
+        for (var i = 0; i < stackTraceElements.length; i++) {
+          $('#stacktrace').append(stackTraceElements[i] + '<br>')
+        }
+        $('#stacktracemodal').modal('show')
+      })
+    }
 
     $('#datePicker').datepicker({ onSelect : function(dateText, inst) {
       plotFullDate($(this).datepicker('getDate'))
@@ -330,5 +342,16 @@
   <br>
   <br>
   <div id="traces"></div>
+  <div id="stacktracemodal" class="modal hide fade"
+    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
+    <div class="modal-header">
+      <a class="close" data-dismiss="modal">×</a>
+      <h3>Stack Trace</h3>
+    </div>
+    <div id="stacktrace" class="modal-body"></div>
+    <div class="modal-footer">
+      <a href="#" class="btn">Close</a>
+    </div>
+  </div>
 </body>
 </html>

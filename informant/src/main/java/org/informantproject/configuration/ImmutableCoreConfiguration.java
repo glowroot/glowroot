@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,11 @@ public class ImmutableCoreConfiguration {
 
     private int stackTracePeriodMillis = 1000;
 
+    // TODO this doesn't really make sense for Filters/servlets? or maybe just not top-level?
+    // though even those might be interesting occasionally
+    // TODO also re-think the name
+    private int spanStackTraceThresholdMillis = 5000;
+
     // used to limit memory requirement, also used to help limit log file size,
     // 0 means don't capture any traces, -1 means no limit
     private int maxSpansPerTrace = 1000;
@@ -86,6 +91,10 @@ public class ImmutableCoreConfiguration {
         return stackTracePeriodMillis;
     }
 
+    public int getSpanStackTraceThresholdMillis() {
+        return spanStackTraceThresholdMillis;
+    }
+
     public int getMaxSpansPerTrace() {
         return maxSpansPerTrace;
     }
@@ -109,7 +118,8 @@ public class ImmutableCoreConfiguration {
                 .add("thresholdMillis", thresholdMillis)
                 .add("stuckThresholdMillis", stuckThresholdMillis)
                 .add("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis)
-                .add("stackTraceInitialDelayMillis", stackTracePeriodMillis)
+                .add("stackTracePeriodMillis", stackTracePeriodMillis)
+                .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxSpansPerTrace", maxSpansPerTrace)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("metricPeriodMillis", metricPeriodMillis);
@@ -128,15 +138,19 @@ public class ImmutableCoreConfiguration {
                 && Objects.equal(stackTraceInitialDelayMillis,
                         other.getStackTraceInitialDelayMillis())
                 && Objects.equal(stackTracePeriodMillis, other.getStackTracePeriodMillis())
+                && Objects.equal(spanStackTraceThresholdMillis,
+                        other.getSpanStackTraceThresholdMillis())
                 && Objects.equal(maxSpansPerTrace, other.getMaxSpansPerTrace())
-                && Objects.equal(warnOnSpanOutsideTrace, other.isWarnOnSpanOutsideTrace());
+                && Objects.equal(warnOnSpanOutsideTrace, other.isWarnOnSpanOutsideTrace())
+                && Objects.equal(metricPeriodMillis, other.getMetricPeriodMillis());
     }
 
     @Override
     public int hashCode() {
         return Objects.hashCode(enabled, thresholdMillis, stuckThresholdMillis,
-                stackTraceInitialDelayMillis, stackTracePeriodMillis, maxSpansPerTrace,
-                warnOnSpanOutsideTrace);
+                stackTraceInitialDelayMillis, stackTracePeriodMillis,
+                spanStackTraceThresholdMillis, maxSpansPerTrace, warnOnSpanOutsideTrace,
+                metricPeriodMillis);
     }
 
     static ImmutableCoreConfiguration fromJson(String json) {
@@ -150,6 +164,7 @@ public class ImmutableCoreConfiguration {
         private int stuckThresholdMillis;
         private int stackTraceInitialDelayMillis;
         private int stackTracePeriodMillis;
+        private int spanStackTraceThresholdMillis;
         private int maxSpansPerTrace;
         private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
@@ -164,6 +179,7 @@ public class ImmutableCoreConfiguration {
             stuckThresholdMillis = base.stuckThresholdMillis;
             stackTraceInitialDelayMillis = base.stackTraceInitialDelayMillis;
             stackTracePeriodMillis = base.stackTracePeriodMillis;
+            spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
             maxSpansPerTrace = base.maxSpansPerTrace;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
             metricPeriodMillis = base.metricPeriodMillis;
@@ -176,6 +192,7 @@ public class ImmutableCoreConfiguration {
             configuration.stuckThresholdMillis = stuckThresholdMillis;
             configuration.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
             configuration.stackTracePeriodMillis = stackTracePeriodMillis;
+            configuration.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             configuration.maxSpansPerTrace = maxSpansPerTrace;
             configuration.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             configuration.metricPeriodMillis = metricPeriodMillis;
@@ -204,6 +221,12 @@ public class ImmutableCoreConfiguration {
 
         CoreConfigurationBuilder setStackTracePeriodMillis(int stackTracePeriodMillis) {
             this.stackTracePeriodMillis = stackTracePeriodMillis;
+            return this;
+        }
+
+        CoreConfigurationBuilder setSpanStackTraceThresholdMillis(int
+                spanStackTraceThresholdMillis) {
+            this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
 

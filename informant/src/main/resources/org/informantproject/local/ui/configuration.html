@@ -32,6 +32,7 @@
       $('#stuckThresholdMillis').val(coreConfiguration.stuckThresholdMillis)
       $('#stackTraceInitialDelayMillis').val(coreConfiguration.stackTraceInitialDelayMillis)
       $('#stackTracePeriodMillis').val(coreConfiguration.stackTracePeriodMillis)
+      $('#spanStackTraceThresholdMillis').val(coreConfiguration.spanStackTraceThresholdMillis)
       $('#maxSpansPerTrace').val(coreConfiguration.maxSpansPerTrace)
     })
   }
@@ -42,6 +43,7 @@
       'stuckThresholdMillis': $('#stuckThresholdMillis').val(),
       'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
       'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
+      'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
       'maxSpansPerTrace': $('#maxSpansPerTrace').val()
     }}
     $.post('/configuration/update', JSON.stringify(configuration), function() {
@@ -112,6 +114,17 @@
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="stackTracePeriodMillis" type="text">
+            <span class="add-on">milliseconds</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="spanStackTraceThresholdMillis">
+          Span stack trace threshold:
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="spanStackTraceThresholdMillis" type="text">
             <span class="add-on">milliseconds</span>
           </div>
         </div>

@@ -97,8 +97,9 @@ public class RootSpan {
     // the span to pop is passed in just to make sure it is the one on top
     // (and if it is not the one on top, then pop until it is found, preventing
     // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long spanEndTime) {
+    void popSpan(Span span, long spanEndTime, StackTraceElement[] stackTraceElements) {
         span.setEndTime(spanEndTime);
+        span.setStackTraceElements(stackTraceElements);
         Deque spanStack = spanStackHolder.get();
         Span pop = (Span) spanStack.removeLast();
         if (!pop.equals(span)) {

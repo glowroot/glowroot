@@ -50,12 +50,15 @@ public class TraceDetailJsonService implements JsonService {
 
     private final TraceDao traceDao;
     private final TraceRegistry traceRegistry;
+    private final TraceSinkLocal traceSinkLocal;
 
     @Inject
-    public TraceDetailJsonService(TraceDao traceDao, TraceRegistry traceRegistry) {
+    public TraceDetailJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
+            TraceSinkLocal traceSinkLocal) {
 
         this.traceDao = traceDao;
         this.traceRegistry = traceRegistry;
+        this.traceSinkLocal = traceSinkLocal;
     }
 
     public String handleDetails(String message) throws IOException {
@@ -80,7 +83,7 @@ public class TraceDetailJsonService implements JsonService {
             }
             for (Trace trace : traceRegistry.getTraces()) {
                 if (extraIds.contains(trace.getId())) {
-                    storedTraces.add(TraceSinkLocal.buildStoredTrace(trace));
+                    storedTraces.add(traceSinkLocal.buildStoredTrace(trace));
                     extraIds.remove(trace.getId());
                 }
             }
