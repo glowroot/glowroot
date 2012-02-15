@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
  */
 package org.informantproject.trace;
 
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
+import java.util.concurrent.TimeUnit;
+
+import org.informantproject.local.trace.StoredTrace;
 import org.informantproject.util.Clock;
 
-import com.google.common.base.Ticker;
 import com.google.inject.Inject;
 
 /**
@@ -30,57 +29,31 @@ import com.google.inject.Inject;
 public class TraceTestData {
 
     private final Clock clock;
-    private final Ticker ticker;
 
     @Inject
-    public TraceTestData(Clock clock, Ticker ticker) {
+    public TraceTestData(Clock clock) {
         this.clock = clock;
-        this.ticker = ticker;
     }
 
-    public Trace createTrace() {
-        RootSpanDetail spanDetail = new RootSpanDetail() {
-            public String getDescription() {
-                return "Level One";
-            }
-            public SpanContextMap getContextMap() {
-                SpanContextMap contextMap = SpanContextMap.of("arg1", "a", "arg2", "b");
-                SpanContextMap nestedContextMap = SpanContextMap.of("nestedkey11", "a",
-                        "nestedkey12", "b", "subnestedkey1",
-                        SpanContextMap.of("subnestedkey1", "a", "subnestedkey2", "b"));
-                contextMap.put("nested1", nestedContextMap);
-                contextMap.put("nested2",
-                        SpanContextMap.of("nestedkey21", "a", "nestedkey22", "b"));
-                return contextMap;
-            }
-            public String getUsername() {
-                return null;
-            }
-        };
-
-        Trace trace = new Trace(spanDetail, clock, ticker);
-
-        Span secondSpan = trace.getRootSpan().pushSpan(new SpanDetail() {
-            public String getDescription() {
-                return "Level Two";
-            }
-            public SpanContextMap getContextMap() {
-                return SpanContextMap.of("arg1", "ax", "arg2", "bx");
-            }
-        });
-
-        Span thirdSpan = trace.getRootSpan().pushSpan(new SpanDetail() {
-            public String getDescription() {
-                return "Level Three";
-            }
-            public SpanContextMap getContextMap() {
-                return SpanContextMap.of("arg1", "axy", "arg2", "bxy");
-            }
-        });
-
-        trace.getRootSpan().popSpan(thirdSpan, ticker.read());
-        trace.getRootSpan().popSpan(secondSpan, ticker.read());
-        trace.getRootSpan().popSpan(trace.getRootSpan().getRootSpan(), ticker.read());
-        return trace;
+    public StoredTrace createTrace() {
+        StoredTrace storedTrace = new StoredTrace();
+        storedTrace.setId("abc123");
+        storedTrace.setStartAt(clock.currentTimeMillis() - 10);
+        storedTrace.setStuck(false);
+        storedTrace.setDuration(TimeUnit.MILLISECONDS.toNanos(10));
+        storedTrace.setCompleted(true);
+        storedTrace.setThreadNames("[\"main\"]");
+        storedTrace.setUsername("j");
+        storedTrace.setSpans("[{\"offset\":0,\"duration\":0,\"index\":0,\"parentIndex\":-1,"
+                + "\"level\":0,\"description\":\"Level One\",\"contextMap\":{\"arg1\":\"a\","
+                + "\"arg2\":\"b\",\"nested1\":{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\","
+                + "\"subnestedkey1\":{\"subnestedkey1\":\"a\",\"subnestedkey2\":\"b\"}},"
+                + "\"nested2\":{\"nestedkey21\":\"a\",\"nestedkey22\":\"b\"}}},{\"offset\":0,"
+                + "\"duration\":0,\"index\":1,\"parentIndex\":0,\"level\":1,"
+                + "\"description\":\"Level Two\",\"contextMap\":{\"arg1\":\"ax\","
+                + "\"arg2\":\"bx\"}},{\"offset\":0,\"duration\":0,\"index\":2,\"parentIndex\":1,"
+                + "\"level\":2,\"description\":\"Level Three\",\"contextMap\":{\"arg1\":\"axy\","
+                + "\"arg2\":\"bxy\"}}]");
+        return storedTrace;
     }
 }

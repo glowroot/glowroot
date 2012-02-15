@@ -162,7 +162,7 @@ public class TraceSinkLocal implements TraceSink {
         return sb.build();
     }
 
-    private static CharSequence buildMergedStackTree(MergedStackTree mergedStackTree)
+    static CharSequence buildMergedStackTree(MergedStackTree mergedStackTree)
             throws IOException {
 
         MergedStackTreeNode rootNode = mergedStackTree.getRootNode();

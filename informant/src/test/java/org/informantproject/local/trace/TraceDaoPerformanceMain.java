@@ -17,8 +17,6 @@ package org.informantproject.local.trace;
 
 import java.sql.Connection;
 
-import org.informantproject.trace.Trace;
-import org.informantproject.trace.TraceSink;
 import org.informantproject.trace.TraceTestData;
 import org.informantproject.util.Clock;
 import org.informantproject.util.ConnectionTestProvider;
@@ -45,13 +43,12 @@ public class TraceDaoPerformanceMain {
     public static void main(String... args) {
         Injector injector = Guice.createInjector(new Module());
         TraceTestData traceTestData = injector.getInstance(TraceTestData.class);
-        TraceSink traceSink = injector.getInstance(TraceSinkLocal.class);
         TraceDao traceDao = injector.getInstance(TraceDao.class);
 
-        Trace trace = traceTestData.createTrace();
+        StoredTrace storedTrace = traceTestData.createTrace();
         Stopwatch stopwatch = new Stopwatch().start();
         for (int i = 0; i < 1000; i++) {
-            traceSink.onCompletedTrace(trace);
+            traceDao.storeTrace(storedTrace);
         }
         System.out.println(stopwatch.elapsedMillis());
         System.out.println(traceDao.count());

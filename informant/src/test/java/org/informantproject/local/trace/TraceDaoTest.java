@@ -18,14 +18,12 @@ package org.informantproject.local.trace;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.lang.Thread.State;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
 
-import org.informantproject.trace.Trace;
 import org.informantproject.trace.TraceTestData;
 import org.informantproject.util.ConnectionTestProvider;
 import org.informantproject.util.JdbcUtil;
@@ -74,21 +72,21 @@ public class TraceDaoTest {
     @Test
     public void shouldReadTrace(TraceDao traceDao, TraceTestData traceTestData) {
         // given
-        Trace trace = traceTestData.createTrace();
-        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        StoredTrace storedTrace = traceTestData.createTrace();
+        traceDao.storeTrace(storedTrace);
         // when
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
         // then
         assertThat(storedTraces.size(), is(1));
-        StoredTrace storedTrace = storedTraces.get(0);
-        assertThat(storedTrace.getStartAt(), is(trace.getStartDate().getTime()));
-        assertThat(storedTrace.isStuck(), is(trace.isStuck()));
-        assertThat(storedTrace.getId(), is(trace.getId()));
-        assertThat(storedTrace.getDuration(), is(trace.getDuration()));
-        assertThat(storedTrace.isCompleted(), is(trace.isCompleted()));
-        assertThat(storedTrace.getThreadNames(), is("[\"" + Thread.currentThread().getName()
+        StoredTrace storedTrace2 = storedTraces.get(0);
+        assertThat(storedTrace2.getStartAt(), is(storedTrace.getStartAt()));
+        assertThat(storedTrace2.isStuck(), is(storedTrace.isStuck()));
+        assertThat(storedTrace2.getId(), is(storedTrace.getId()));
+        assertThat(storedTrace2.getDuration(), is(storedTrace.getDuration()));
+        assertThat(storedTrace2.isCompleted(), is(storedTrace.isCompleted()));
+        assertThat(storedTrace2.getThreadNames(), is("[\"" + Thread.currentThread().getName()
                 + "\"]"));
-        assertThat(storedTrace.getUsername(), is(trace.getUsername()));
+        assertThat(storedTrace2.getUsername(), is(storedTrace.getUsername()));
         // TODO verify metricData, trace and mergedStackTree
     }
 
@@ -97,11 +95,11 @@ public class TraceDaoTest {
             TraceTestData traceTestData) {
 
         // given
-        Trace trace = traceTestData.createTrace();
-        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        StoredTrace storedTrace = traceTestData.createTrace();
+        traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, trace.getDuration(),
-                trace.getDuration());
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, storedTrace.getDuration(),
+                storedTrace.getDuration());
         // then
         assertThat(storedTraces.size(), is(1));
     }
@@ -111,11 +109,11 @@ public class TraceDaoTest {
             TraceTestData traceTestData) {
 
         // given
-        Trace trace = traceTestData.createTrace();
-        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        StoredTrace storedTrace = traceTestData.createTrace();
+        traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, trace.getDuration() + 1,
-                trace.getDuration() + 2);
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0,
+                storedTrace.getDuration() + 1, storedTrace.getDuration() + 2);
         // then
         assertThat(storedTraces.size(), is(0));
     }
@@ -125,11 +123,11 @@ public class TraceDaoTest {
             TraceTestData traceTestData) {
 
         // given
-        Trace trace = traceTestData.createTrace();
-        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        StoredTrace storedTrace = traceTestData.createTrace();
+        traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, trace.getDuration() - 2,
-                trace.getDuration() - 1);
+        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0,
+                storedTrace.getDuration() - 2, storedTrace.getDuration() - 1);
         // then
         assertThat(storedTraces.size(), is(0));
     }
@@ -137,28 +135,10 @@ public class TraceDaoTest {
     @Test
     public void shouldDeletedTrace(TraceDao traceDao, TraceTestData traceTestData) {
         // given
-        Trace trace = traceTestData.createTrace();
-        traceDao.storeTrace(TraceSinkLocal.buildStoredTrace(trace));
+        traceDao.storeTrace(traceTestData.createTrace());
         // when
         traceDao.deleteStoredTraces(0, 0);
         // then
         assertThat(traceDao.count(), is(0L));
-    }
-
-    @Test
-    public void shouldStoreVeryLargeMergedStackTrace(TraceTestData traceTestData) {
-        // given
-        Trace trace = traceTestData.createTrace();
-        // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
-        // using a 1mb thread stack size so testing with 10,000 here just to be sure
-        StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
-        for (int i = 0; i < stackTraceElements.length; i++) {
-            stackTraceElements[i] = new StackTraceElement(TraceDaoTest.class.getName(),
-                    "method" + i, "TraceDaoTest.java", 100 + 10 * i);
-        }
-        trace.getMergedStackTree().addToStackTree(stackTraceElements, State.RUNNABLE);
-        // when
-        TraceSinkLocal.buildStoredTrace(trace);
-        // then don't blow up with StackOverflowError
     }
 }
