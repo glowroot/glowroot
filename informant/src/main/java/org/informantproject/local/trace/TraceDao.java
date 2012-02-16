@@ -55,6 +55,7 @@ public class TraceDao {
     private final PreparedStatement selectPreparedStatement2;
     private final PreparedStatement selectSummaryPreparedStatement;
     private final PreparedStatement deletePreparedStatement;
+    private final PreparedStatement truncatePreparedStatement;
     private final PreparedStatement countPreparedStatement;
 
     private final boolean valid;
@@ -69,6 +70,7 @@ public class TraceDao {
         PreparedStatement selectPS2 = null;
         PreparedStatement selectSummaryPS = null;
         PreparedStatement deletePS = null;
+        PreparedStatement truncatePS = null;
         PreparedStatement countPS = null;
         boolean errorOnInit = false;
         try {
@@ -96,6 +98,7 @@ public class TraceDao {
                     + " completed from trace where capturedAt >= ? and capturedAt <= ?");
             deletePS = connection.prepareStatement("delete from trace where capturedAt >= ? and"
                     + " capturedAt <= ?");
+            truncatePS = connection.prepareStatement("truncate table trace");
             countPS = connection.prepareStatement("select count(*) from trace");
         } catch (SQLException e) {
             errorOnInit = true;
@@ -107,6 +110,7 @@ public class TraceDao {
         selectPreparedStatement2 = selectPS2;
         selectSummaryPreparedStatement = selectSummaryPS;
         deletePreparedStatement = deletePS;
+        truncatePreparedStatement = truncatePS;
         countPreparedStatement = countPS;
         this.valid = !errorOnInit;
     }
@@ -241,6 +245,20 @@ public class TraceDao {
             } catch (SQLException e) {
                 logger.error(e.getMessage(), e);
                 return 0;
+            }
+        }
+    }
+
+    public void deleteAllStoredTraces() {
+        logger.debug("deleteAllStoredTraces()");
+        if (!valid) {
+            return;
+        }
+        synchronized (connection) {
+            try {
+                truncatePreparedStatement.execute();
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
             }
         }
     }
