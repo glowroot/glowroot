@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package org.informantproject.plugin.jdbc;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.shaded.google.common.cache.CacheBuilder;
 import org.informantproject.shaded.google.common.cache.CacheLoader;
 import org.informantproject.shaded.google.common.cache.LoadingCache;
@@ -41,11 +44,15 @@ import org.informantproject.shaded.google.common.collect.MapMaker;
  */
 class StatementMirrorCache {
 
+    private static final Logger logger = LoggerFactory.getLogger(StatementMirrorCache.class);
+
     private final LoadingCache<Statement, StatementMirror> statementMirrorCache = CacheBuilder
             .newBuilder().weakKeys().build(new StatementMirrorLazyMapValueFunction());
 
     private final ConcurrentMap<PreparedStatement, PreparedStatementMirror> preparedStatementMirrorMap =
             new MapMaker().weakKeys().makeMap();
+
+    private final AtomicBoolean missingSqlTextErrorLogged = new AtomicBoolean();
 
     StatementMirror getStatementMirror(Statement statement) {
         if (statement instanceof PreparedStatement) {
@@ -83,6 +90,11 @@ class StatementMirrorCache {
     PreparedStatementMirror getPreparedStatementMirror(PreparedStatement preparedStatement) {
         PreparedStatementMirror info = preparedStatementMirrorMap.get(preparedStatement);
         if (info == null) {
+            if (!missingSqlTextErrorLogged.getAndSet(true)) {
+                // this error is only logged the first time it occurs
+                logger.error("SQL TEXT WAS NOT CAPTURED BY INFORMANT.  PLEASE REPORT THIS.",
+                        new Throwable());
+            }
             return new PreparedStatementMirror(
                     "SQL TEXT WAS NOT CAPTURED BY INFORMANT.  PLEASE REPORT THIS.");
         }
