@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.informantproject.plugin.jdbc;
 import java.util.Collection;
 import java.util.List;
 
+import org.informantproject.api.LargeStringBuilder;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
 
@@ -91,31 +92,30 @@ class JdbcSpanDetail implements SpanDetail {
         this.batchedSqls = null;
     }
 
-    public String getDescription() {
-        // initialized to 128 characters since sql texts are typically fairly long
-        StringBuffer description = new StringBuffer(128);
-        description.append("jdbc execution: ");
+    public CharSequence getDescription() {
+        LargeStringBuilder sb = new LargeStringBuilder();
+        sb.append("jdbc execution: ");
         if (batchedSqls != null) {
-            appendBatchedSqls(description);
-            return description.toString();
+            appendBatchedSqls(sb);
+            return sb.toString();
         }
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {
             // print out number of batches to make it easy to identify
-            description.append(batchedParameters.size());
-            description.append(" x ");
+            sb.append(Integer.toString(batchedParameters.size()));
+            sb.append(" x ");
         }
-        description.append(sql);
+        sb.append(sql);
         if (isUsingParameters() && !parameters.isEmpty()) {
-            appendParameters(description, parameters);
+            appendParameters(sb, parameters);
         } else if (isUsingBatchedParameters()) {
             for (List<Object> oneParameters : batchedParameters) {
-                appendParameters(description, oneParameters);
+                appendParameters(sb, oneParameters);
             }
         }
         if (hasPerformedNext) {
-            appendRowCount(description);
+            appendRowCount(sb);
         }
-        return description.toString();
+        return sb.build();
     }
 
     // TODO put row num and bind parameters in context map?
@@ -139,45 +139,45 @@ class JdbcSpanDetail implements SpanDetail {
         return batchedParameters != null;
     }
 
-    private void appendBatchedSqls(StringBuffer description) {
+    private void appendBatchedSqls(LargeStringBuilder sb) {
         boolean first = true;
         for (String batchedSql : batchedSqls) {
             if (!first) {
-                description.append(", ");
+                sb.append(", ");
             }
-            description.append(batchedSql);
+            sb.append(batchedSql);
             first = false;
         }
     }
 
-    private void appendRowCount(StringBuffer description) {
-        description.append(" => ");
-        description.append(numRows);
+    private void appendRowCount(LargeStringBuilder sb) {
+        sb.append(" => ");
+        sb.append(Integer.toString(numRows));
         if (numRows == 1) {
-            description.append(" row");
+            sb.append(" row");
         } else {
-            description.append(" rows");
+            sb.append(" rows");
         }
     }
 
-    private static void appendParameters(StringBuffer description, List<Object> parameters) {
-        description.append(" [");
+    private static void appendParameters(LargeStringBuilder sb, List<Object> parameters) {
+        sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {
             if (!first) {
-                description.append(", ");
+                sb.append(", ");
             }
             if (parameter instanceof String) {
-                description.append('\'');
-                description.append(parameter);
-                description.append('\'');
+                sb.append("\'");
+                sb.append((String) parameter);
+                sb.append("\'");
             } else if (parameter == NULL_PARAMETER) {
-                description.append("NULL");
+                sb.append("NULL");
             } else {
-                description.append(parameter);
+                sb.append(parameter.toString());
             }
             first = false;
         }
-        description.append(']');
+        sb.append("]");
     }
 }
