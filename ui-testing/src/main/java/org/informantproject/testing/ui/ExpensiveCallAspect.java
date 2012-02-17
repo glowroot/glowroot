@@ -15,6 +15,8 @@
  */
 package org.informantproject.testing.ui;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
@@ -29,6 +31,8 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
  */
 @Aspect
 public class ExpensiveCallAspect {
+
+    private static final AtomicInteger counter = new AtomicInteger();
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -50,7 +54,14 @@ public class ExpensiveCallAspect {
                 return expensive.getDescription();
             }
             public SpanContextMap getContextMap() {
-                return null;
+                if (counter.getAndIncrement() % 10 == 0) {
+                    return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
+                            SpanContextMap.of("attr31", SpanContextMap.of("attr311", "value311",
+                                    "attr312", "value312"), "attr32", "value32", "attr33",
+                                    "value33"));
+                } else {
+                    return null;
+                }
             }
         };
     }

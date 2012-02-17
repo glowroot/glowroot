@@ -54,7 +54,9 @@ public class NestableCallAspect {
                 return "Nestable";
             }
             public SpanContextMap getContextMap() {
-                return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3", "value3");
+                return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
+                        SpanContextMap.of("attr31", SpanContextMap.of("attr311", "value311",
+                                "attr312", "value312"), "attr32", "value32", "attr33", "value33"));
             }
             public String getUsername() {
                 return null;
