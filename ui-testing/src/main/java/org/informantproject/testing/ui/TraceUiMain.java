@@ -40,6 +40,8 @@ public class TraceUiMain {
     public static class GenerateTraces implements AppUnderTest {
         public void executeApp() throws InterruptedException {
             while (true) {
+                // one very short trace that will have an empty merged stack tree
+                new NestableCall(1, 10, 100).execute();
                 new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
                 new NestableCall(new NestableCall(50, 50, 5000), 100, 50, 5000).execute();
                 new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
