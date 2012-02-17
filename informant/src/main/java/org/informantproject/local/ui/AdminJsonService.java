@@ -50,11 +50,11 @@ public class AdminJsonService implements JsonService {
     public void handleCleardata(String message) {
         logger.debug("handleCleardata(): message={}", message);
         JsonObject request = new JsonParser().parse(message).getAsJsonObject();
-        long keep = request.get("keep").getAsLong();
-        if (keep == 0) {
+        long keepMillis = request.get("keepMillis").getAsLong();
+        if (keepMillis == 0) {
             traceDao.deleteAllStoredTraces();
         } else {
-            traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keep);
+            traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keepMillis);
         }
     }
 }

@@ -54,7 +54,7 @@
     var spinOptions = { lines: 10, width: 4, radius: 8 }
     var spinner = new Spinner(spinOptions)
     var keepMillis = $('input:radio[name=keepMillis]:checked').val()
-    $.post('/admin/cleardata?keep=' + keepMillis, function() {
+    $.post('/admin/cleardata?keepMillis=' + keepMillis, function() {
       spinner.stop()
       window.location.href = '/'
     })
