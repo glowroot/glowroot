@@ -91,6 +91,10 @@ public class Informant {
         return new Gson().fromJson(json, new TypeToken<List<Trace>>() {}.getType());
     }
 
+    public void deleteAllTraces() throws Exception {
+        get("/admin/cleardata?keepMillis=0");
+    }
+
     public int getNumPendingTraceWrites() throws Exception {
         String numTraces = get("/stat/numPendingTraceWrites");
         return Integer.parseInt(numTraces);
