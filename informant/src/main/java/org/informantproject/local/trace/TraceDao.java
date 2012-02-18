@@ -182,12 +182,14 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
-        try {
-            selectByIdPreparedStatement.setString(1, id);
-            return readStoredTrace(selectByIdPreparedStatement);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+        synchronized (connection) {
+            try {
+                selectByIdPreparedStatement.setString(1, id);
+                return readStoredTrace(selectByIdPreparedStatement);
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
+                return Collections.emptyList();
+            }
         }
     }
 
@@ -197,13 +199,15 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
-        try {
-            selectPreparedStatement.setLong(1, capturedFrom);
-            selectPreparedStatement.setLong(2, capturedTo);
-            return readStoredTrace(selectPreparedStatement);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+        synchronized (connection) {
+            try {
+                selectPreparedStatement.setLong(1, capturedFrom);
+                selectPreparedStatement.setLong(2, capturedTo);
+                return readStoredTrace(selectPreparedStatement);
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
+                return Collections.emptyList();
+            }
         }
     }
 
@@ -216,18 +220,20 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
-        if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
-            return readStoredTraces(capturedFrom, capturedTo);
-        }
-        try {
-            selectPreparedStatement2.setLong(1, capturedFrom);
-            selectPreparedStatement2.setLong(2, capturedTo);
-            selectPreparedStatement2.setLong(3, lowDuration);
-            selectPreparedStatement2.setLong(4, highDuration);
-            return readStoredTrace(selectPreparedStatement2);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+        synchronized (connection) {
+            if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
+                return readStoredTraces(capturedFrom, capturedTo);
+            }
+            try {
+                selectPreparedStatement2.setLong(1, capturedFrom);
+                selectPreparedStatement2.setLong(2, capturedTo);
+                selectPreparedStatement2.setLong(3, lowDuration);
+                selectPreparedStatement2.setLong(4, highDuration);
+                return readStoredTrace(selectPreparedStatement2);
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
+                return Collections.emptyList();
+            }
         }
     }
 
