@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import org.informantproject.configuration.ImmutableCoreConfiguration.CoreConfigu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Inject;
@@ -69,22 +67,51 @@ public class ConfigurationService {
         coreConfigurationListeners.add(listener);
     }
 
-    public void updateConfiguration(String message) {
-        logger.debug("updateConfiguration(): message={}", message);
+    public void updateCoreConfiguration(String message) {
+        logger.debug("updateCoreConfiguration(): message={}", message);
         JsonObject messageJson = new JsonParser().parse(message).getAsJsonObject();
-        JsonElement coreConfigurationJson = messageJson.get("coreConfiguration");
-        if (coreConfigurationJson != null) {
-            coreConfiguration = new Gson().fromJson(coreConfigurationJson,
-                    CoreConfigurationBuilder.class).build();
-            configurationDao.storeCoreConfiguration(coreConfiguration);
-            notifyCoreConfigurationListeners();
+        CoreConfigurationBuilder builder = new CoreConfigurationBuilder(coreConfiguration);
+        if (messageJson.get("enabled") != null) {
+            builder.setEnabled(messageJson.get("enabled").getAsBoolean());
         }
-        JsonElement pluginConfigurationJson = messageJson.get("pluginConfiguration");
-        if (pluginConfigurationJson != null) {
-            pluginConfiguration = ImmutablePluginConfiguration.fromJson(pluginConfigurationJson
-                    .getAsJsonObject());
-            configurationDao.storePluginConfiguration(pluginConfiguration);
+        if (messageJson.get("thresholdMillis") != null) {
+            builder.setThresholdMillis(messageJson.get("thresholdMillis").getAsInt());
         }
+        if (messageJson.get("stuckThresholdMillis") != null) {
+            builder.setStuckThresholdMillis(messageJson.get("stuckThresholdMillis").getAsInt());
+        }
+        if (messageJson.get("stackTraceInitialDelayMillis") != null) {
+            builder.setStackTraceInitialDelayMillis(messageJson.get("stackTraceInitialDelayMillis")
+                    .getAsInt());
+        }
+        if (messageJson.get("stackTracePeriodMillis") != null) {
+            builder.setStackTracePeriodMillis(messageJson.get("stackTracePeriodMillis").getAsInt());
+        }
+        if (messageJson.get("spanStackTraceThresholdMillis") != null) {
+            builder.setSpanStackTraceThresholdMillis(messageJson.get(
+                    "spanStackTraceThresholdMillis").getAsInt());
+        }
+        if (messageJson.get("maxSpansPerTrace") != null) {
+            builder.setMaxSpansPerTrace(messageJson.get("maxSpansPerTrace").getAsInt());
+        }
+        if (messageJson.get("rollingSizeMb") != null) {
+            builder.setRollingSizeMb(messageJson.get("rollingSizeMb").getAsInt());
+        }
+        if (messageJson.get("warnOnSpanOutsideTrace") != null) {
+            builder.setWarnOnSpanOutsideTrace(messageJson.get("warnOnSpanOutsideTrace")
+                    .getAsBoolean());
+        }
+        if (messageJson.get("metricPeriodMillis") != null) {
+            builder.setMetricPeriodMillis(messageJson.get("metricPeriodMillis").getAsInt());
+        }
+        coreConfiguration = builder.build();
+        configurationDao.storeCoreConfiguration(coreConfiguration);
+        notifyCoreConfigurationListeners();
+    }
+
+    public void updatePluginConfiguration(ImmutablePluginConfiguration pluginConfiguration) {
+        this.pluginConfiguration = pluginConfiguration;
+        configurationDao.storePluginConfiguration(pluginConfiguration);
     }
 
     private void notifyCoreConfigurationListeners() {

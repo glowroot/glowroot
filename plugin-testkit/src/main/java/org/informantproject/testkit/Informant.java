@@ -76,8 +76,7 @@ public class Informant {
     }
 
     public void updateCoreConfiguration(CoreConfiguration coreConfiguration) throws Exception {
-        post("/configuration/update",
-                "{\"coreConfiguration\":" + new Gson().toJson(coreConfiguration) + "}");
+        post("/configuration/update", new Gson().toJson(coreConfiguration));
     }
 
     // returns all traces since since the last call to InformantContainer.executeAppUnderTest()

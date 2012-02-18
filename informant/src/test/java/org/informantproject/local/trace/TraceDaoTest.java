@@ -27,6 +27,8 @@ import java.util.Set;
 import org.informantproject.trace.TraceTestData;
 import org.informantproject.util.ConnectionTestProvider;
 import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.RollingFile;
+import org.informantproject.util.RollingFileTestProvider;
 import org.informantproject.util.ThreadChecker;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
@@ -49,6 +51,8 @@ public class TraceDaoTest {
         @Override
         protected void configureTest() {
             bind(Connection.class).toProvider(ConnectionTestProvider.class).in(TestSingleton.class);
+            bind(RollingFile.class).toProvider(RollingFileTestProvider.class).in(
+                    TestSingleton.class);
         }
     }
 
@@ -63,9 +67,10 @@ public class TraceDaoTest {
     }
 
     @After
-    public void after(Connection connection) throws SQLException, InterruptedException {
+    public void after(Connection connection, RollingFile rollingFile) throws Exception {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
         connection.close();
+        rollingFile.shutdown();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

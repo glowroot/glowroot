@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,9 @@ public class Configuration {
         private int stuckThresholdMillis;
         private int stackTraceInitialDelayMillis;
         private int stackTracePeriodMillis;
+        private int spanStackTraceThresholdMillis;
         private int maxSpansPerTrace;
+        private int rollingSizeMb;
         private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
         public boolean isEnabled() {
@@ -72,11 +74,23 @@ public class Configuration {
         public void setStackTracePeriodMillis(int stackTracePeriodMillis) {
             this.stackTracePeriodMillis = stackTracePeriodMillis;
         }
+        public int getSpanStackTraceThresholdMillis() {
+            return spanStackTraceThresholdMillis;
+        }
+        public void setSpanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
+            this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
+        }
         public int getMaxSpansPerTrace() {
             return maxSpansPerTrace;
         }
         public void setMaxSpansPerTrace(int maxSpansPerTrace) {
             this.maxSpansPerTrace = maxSpansPerTrace;
+        }
+        public int getRollingSizeMb() {
+            return rollingSizeMb;
+        }
+        public void setRollingSizeMb(int rollingSizeMb) {
+            this.rollingSizeMb = rollingSizeMb;
         }
         public boolean isWarnOnSpanOutsideTrace() {
             return warnOnSpanOutsideTrace;
@@ -93,8 +107,9 @@ public class Configuration {
         @Override
         public int hashCode() {
             return Objects.hashCode(enabled, thresholdMillis, stuckThresholdMillis,
-                    stackTraceInitialDelayMillis, stackTracePeriodMillis, maxSpansPerTrace,
-                    warnOnSpanOutsideTrace, metricPeriodMillis);
+                    stackTraceInitialDelayMillis, stackTracePeriodMillis,
+                    spanStackTraceThresholdMillis, maxSpansPerTrace,
+                    rollingSizeMb, warnOnSpanOutsideTrace, metricPeriodMillis);
         }
         @Override
         public boolean equals(Object o) {
@@ -108,7 +123,10 @@ public class Configuration {
                     && Objects.equal(stackTraceInitialDelayMillis,
                             other.stackTraceInitialDelayMillis)
                     && Objects.equal(stackTracePeriodMillis, other.stackTracePeriodMillis)
+                    && Objects.equal(spanStackTraceThresholdMillis,
+                            other.spanStackTraceThresholdMillis)
                     && Objects.equal(maxSpansPerTrace, other.maxSpansPerTrace)
+                    && Objects.equal(rollingSizeMb, other.rollingSizeMb)
                     && Objects.equal(warnOnSpanOutsideTrace, other.warnOnSpanOutsideTrace)
                     && Objects.equal(metricPeriodMillis, other.metricPeriodMillis);
         }

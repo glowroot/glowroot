@@ -20,6 +20,8 @@ import java.sql.Connection;
 import org.informantproject.trace.TraceTestData;
 import org.informantproject.util.Clock;
 import org.informantproject.util.ConnectionTestProvider;
+import org.informantproject.util.RollingFile;
+import org.informantproject.util.RollingFileTestProvider;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;
@@ -36,6 +38,7 @@ public class TraceDaoPerformanceMain {
         @Override
         protected void configure() {
             bind(Connection.class).toProvider(ConnectionTestProvider.class);
+            bind(RollingFile.class).toProvider(RollingFileTestProvider.class);
             bind(Clock.class).toInstance(Clock.systemClock());
         }
     }

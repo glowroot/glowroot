@@ -126,6 +126,8 @@ public class TraceDetailJsonService implements JsonService {
             if (storedTrace.getUsername() != null) {
                 jw.name("username").value(storedTrace.getUsername());
             }
+            sb.append(",\"rootSpan\":");
+            sb.append(storedTrace.getRootSpan());
             if (storedTrace.getSpans() != null) {
                 sb.append(",\"spans\":");
                 sb.append(storedTrace.getSpans());

@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -118,11 +117,17 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setStuck(trace.isStuck());
         storedTrace.setDuration(trace.getDuration());
         storedTrace.setCompleted(trace.isCompleted());
-        Gson gson = new GsonBuilder().create();
+        Gson gson = new Gson();
         storedTrace.setThreadNames(gson.toJson(trace.getThreadNames()));
         storedTrace.setUsername(trace.getUsername());
         try {
-            storedTrace.setSpans(buildSpans(trace.getRootSpan().getSpans()));
+            storedTrace.setRootSpan(buildSpan(trace.getRootSpan().getSpans().iterator().next(),
+                    gson));
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+        try {
+            storedTrace.setSpans(buildSpans(trace.getRootSpan().getSpans(), gson));
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
@@ -134,40 +139,51 @@ public class TraceSinkLocal implements TraceSink {
         return storedTrace;
     }
 
-    private CharSequence buildSpans(Iterable<Span> spans) throws IOException {
+    private String buildSpan(Span span, Gson gson) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+        writeSpan(span, jw, sb, gson);
+        jw.close();
+        return sb.toString();
+    }
+
+    private CharSequence buildSpans(Iterable<Span> spans, Gson gson) throws IOException {
         LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
-        Gson gson = new Gson();
         for (Span span : spans) {
-            jw.beginObject();
-            jw.name("offset");
-            jw.value(span.getOffset());
-            jw.name("duration");
-            jw.value(span.getDuration());
-            jw.name("index");
-            jw.value(span.getIndex());
-            jw.name("parentIndex");
-            jw.value(span.getParentIndex());
-            jw.name("level");
-            jw.value(span.getLevel());
-            // inject raw json into stream
-            sb.append(",\"description\":\"");
-            sb.append(JsonCharSequence.toJson(span.getDescription()));
-            sb.append("\"");
-            sb.append(",\"contextMap\":");
-            sb.append(gson.toJson(span.getContextMap(),
-                    new TypeToken<Map<String, Object>>() {}.getType()));
-            if (span.getStackTraceElements() != null) {
-                String stackTraceHash = stackTraceDao.storeStackTrace(span.getStackTraceElements());
-                jw.name("stackTraceHash");
-                jw.value(stackTraceHash);
-            }
-            jw.endObject();
+            writeSpan(span, jw, sb, gson);
         }
         jw.endArray();
         jw.close();
         return sb.build();
+    }
+
+    private void writeSpan(Span span, JsonWriter jw, Appendable sb, Gson gson) throws IOException {
+        jw.beginObject();
+        jw.name("offset");
+        jw.value(span.getOffset());
+        jw.name("duration");
+        jw.value(span.getDuration());
+        jw.name("index");
+        jw.value(span.getIndex());
+        jw.name("parentIndex");
+        jw.value(span.getParentIndex());
+        jw.name("level");
+        jw.value(span.getLevel());
+        // inject raw json into stream
+        sb.append(",\"description\":\"");
+        sb.append(JsonCharSequence.toJson(span.getDescription()));
+        sb.append("\"");
+        sb.append(",\"contextMap\":");
+        sb.append(gson.toJson(span.getContextMap(),
+                new TypeToken<Map<String, Object>>() {}.getType()));
+        if (span.getStackTraceElements() != null) {
+            String stackTraceHash = stackTraceDao.storeStackTrace(span.getStackTraceElements());
+            jw.name("stackTraceHash");
+            jw.value(stackTraceHash);
+        }
+        jw.endObject();
     }
 
     static CharSequence buildMergedStackTree(MergedStackTree mergedStackTree)

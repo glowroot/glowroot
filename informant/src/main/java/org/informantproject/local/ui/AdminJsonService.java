@@ -15,9 +15,13 @@
  */
 package org.informantproject.local.ui;
 
+import java.io.IOException;
+
+import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.informantproject.util.Clock;
+import org.informantproject.util.RollingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +42,17 @@ public class AdminJsonService implements JsonService {
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
     private final TraceDao traceDao;
+    private final RollingFile rollingFile;
+    private final ConfigurationService configurationService;
     private final Clock clock;
 
     @Inject
-    public AdminJsonService(TraceDao traceDao, Clock clock) {
+    public AdminJsonService(TraceDao traceDao, RollingFile rollingFile,
+            ConfigurationService configurationService, Clock clock) {
+
         this.traceDao = traceDao;
+        this.rollingFile = rollingFile;
+        this.configurationService = configurationService;
         this.clock = clock;
     }
 
@@ -56,5 +66,21 @@ public class AdminJsonService implements JsonService {
         } else {
             traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keepMillis);
         }
+    }
+
+    // called dynamically from HttpServer
+    public void handleResizerolling(String message) {
+        logger.debug("handleResizerolling(): message={}", message);
+        JsonObject request = new JsonParser().parse(message).getAsJsonObject();
+        int newRollingSizeMb = request.get("newRollingSizeMb").getAsInt();
+        try {
+            rollingFile.resize(newRollingSizeMb * 1024);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            // TODO ?
+            return;
+        }
+        configurationService.updateCoreConfiguration("{\"rollingSizeMb\":" + newRollingSizeMb
+                + "}");
     }
 }

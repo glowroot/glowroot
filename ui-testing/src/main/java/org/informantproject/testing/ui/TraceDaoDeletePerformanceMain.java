@@ -57,8 +57,10 @@ public class TraceDaoDeletePerformanceMain {
 
     public static class GenerateTraces implements AppUnderTest {
         public void executeApp() throws InterruptedException {
-            for (int i = 0; i < 10000; i++) {
-                new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
+            File rollingFile = new File("informant.rolling.db");
+            while (rollingFile.length() < 100 * 1024 * 1024) {
+                new NestableCall(new NestableCall(10, 2, 5000), 20, 2, 5000).execute();
+                System.out.println(rollingFile.length() / (1024 * 1024));
             }
         }
     }

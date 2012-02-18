@@ -15,15 +15,19 @@
  */
 package org.informantproject;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.metric.MetricCollector;
 import org.informantproject.trace.StackCollector;
 import org.informantproject.trace.StuckTraceCollector;
 import org.informantproject.util.Clock;
+import org.informantproject.util.RollingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +74,7 @@ class InformantModule extends AbstractModule {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
         }
+        injector.getInstance(RollingFile.class).shutdown();
     }
 
     @Override
@@ -84,6 +89,7 @@ class InformantModule extends AbstractModule {
         try {
             Class.forName("org.h2.Driver");
         } catch (ClassNotFoundException e) {
+            logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
         }
         try {
@@ -91,6 +97,18 @@ class InformantModule extends AbstractModule {
             return DriverManager.getConnection("jdbc:h2:" + commandLineOptions.getDbFile()
                     + ";COMPRESS_LOB=LZF", "sa", "");
         } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            throw new IllegalStateException(e);
+        }
+    }
+    @Provides
+    @Singleton
+    protected static RollingFile providesRollingFile(ConfigurationService configurationService) {
+        int rollingSizeMb = configurationService.getCoreConfiguration().getRollingSizeMb();
+        try {
+            // 1gb
+            return new RollingFile(new File("informant.rolling.db"), rollingSizeMb * 1024);
+        } catch (IOException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
         }

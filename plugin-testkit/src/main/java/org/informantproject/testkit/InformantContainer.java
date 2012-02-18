@@ -46,6 +46,14 @@ public abstract class InformantContainer {
     private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
     public static InformantContainer newInstance() throws Exception {
+        return newInstance(true);
+    }
+
+    public static InformantContainer newInstanceNoClean() throws Exception {
+        return newInstance(false);
+    }
+
+    private static InformantContainer newInstance(boolean cleanDbs) throws Exception {
         InformantContainer container;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
@@ -57,7 +65,7 @@ public abstract class InformantContainer {
             logger.debug("newInstance(): using same JVM app container");
             container = new SameJvmInformantContainer();
         }
-        container.init();
+        container.init(cleanDbs);
         return container;
     }
 
@@ -103,7 +111,7 @@ public abstract class InformantContainer {
 
     protected abstract void closeImpl() throws Exception;
 
-    private void init() throws Exception {
+    private void init(boolean cleanDbs) throws Exception {
         preExistingThreads = ThreadChecker.currentThreadList();
         // increment ui port and db filename so that tests can be run in parallel by using multiple
         // InformantContainers (however tests are not being run in parallel at this point)
@@ -112,8 +120,11 @@ public abstract class InformantContainer {
         if (uiPort != DEFAULT_UI_PORT) {
             dbFile += (uiPort - DEFAULT_UI_PORT);
         }
-        new File(dbFile + ".h2.db").delete();
-        new File(dbFile + ".trace.db").delete();
+        if (cleanDbs) {
+            new File(dbFile + ".h2.db").delete();
+            new File(dbFile + ".trace.db").delete();
+            new File(dbFile + ".rolling.db").delete();
+        }
         initImpl("ui.port=" + uiPort + ",db.file=" + dbFile);
         asyncHttpClient = new AsyncHttpClient();
         informant = new Informant(uiPort, asyncHttpClient);

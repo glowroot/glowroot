@@ -96,6 +96,7 @@ public class BasicTest {
         randomCoreConfiguration.setStackTraceInitialDelayMillis(1000 + random.nextInt(60000));
         randomCoreConfiguration.setStackTracePeriodMillis(1000 + random.nextInt(60000));
         randomCoreConfiguration.setMaxSpansPerTrace(1000 + random.nextInt(10000));
+        randomCoreConfiguration.setRollingSizeMb(100 + random.nextInt(10));
         randomCoreConfiguration.setWarnOnSpanOutsideTrace(random.nextBoolean());
         randomCoreConfiguration.setMetricPeriodMillis(1000 + random.nextInt(60000));
         return randomCoreConfiguration;

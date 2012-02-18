@@ -34,6 +34,7 @@ public class StoredTrace {
     private String username;
 
     private String metricData;
+    private String rootSpan;
     // using CharSequence so these potentially very large strings can be built using
     // LargeStringBuilder
     private CharSequence spans;
@@ -101,6 +102,14 @@ public class StoredTrace {
 
     public void setMetricData(String metricData) {
         this.metricData = metricData;
+    }
+
+    public String getRootSpan() {
+        return rootSpan;
+    }
+
+    public void setRootSpan(String rootSpan) {
+        this.rootSpan = rootSpan;
     }
 
     public CharSequence getSpans() {

@@ -15,7 +15,7 @@
  */
 package org.informantproject.local.trace;
 
-import java.sql.Clob;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,9 +26,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.informantproject.api.CharSequenceReader;
 import org.informantproject.util.Clock;
+import org.informantproject.util.FileBlock;
+import org.informantproject.util.FileBlock.InvalidBlockId;
 import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.RollingFile;
+import org.informantproject.util.RollingFile.FileBlockNoLongerExists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,7 @@ public class TraceDao {
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private final Connection connection;
+    private final RollingFile rollingFile;
     private final Clock clock;
 
     private final PreparedStatement insertPreparedStatement;
@@ -61,8 +65,9 @@ public class TraceDao {
     private final boolean valid;
 
     @Inject
-    TraceDao(Connection connection, Clock clock) {
+    TraceDao(Connection connection, RollingFile rollingFile, Clock clock) {
         this.connection = connection;
+        this.rollingFile = rollingFile;
         this.clock = clock;
         PreparedStatement insertPS = null;
         PreparedStatement selectByIdPS = null;
@@ -82,18 +87,18 @@ public class TraceDao {
                 createTable(connection);
             }
             insertPS = connection.prepareStatement("insert into trace (id, capturedAt, startAt,"
-                    + " stuck, duration, completed, threadNames, username, spans,"
-                    + " mergedStackTree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    + " stuck, duration, completed, threadNames, username, rootSpan, spans,"
+                    + " mergedStackTree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             selectByIdPS = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
-                    + " duration, completed, threadNames, username, spans, mergedStackTree from"
-                    + " trace where id = ?");
+                    + " duration, completed, threadNames, username, rootSpan, spans,"
+                    + " mergedStackTree from trace where id = ?");
             selectPS = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
-                    + " duration, completed, threadNames, username, spans, mergedStackTree from"
-                    + " trace where capturedAt >= ? and capturedAt <= ?");
+                    + " duration, completed, threadNames, username, rootSpan, spans,"
+                    + " mergedStackTree from trace where capturedAt >= ? and capturedAt <= ?");
             selectPS2 = connection.prepareStatement("select id, capturedAt, startAt, stuck,"
-                    + " duration, completed, threadNames, username, spans, mergedStackTree from"
-                    + " trace where capturedAt >= ? and capturedAt <= ? and duration >= ? and"
-                    + " duration <= ?");
+                    + " duration, completed, threadNames, username, rootSpan, spans,"
+                    + " mergedStackTree from trace where capturedAt >= ? and capturedAt <= ? and"
+                    + " duration >= ? and duration <= ?");
             selectSummaryPS = connection.prepareStatement("select id, capturedAt, duration,"
                     + " completed from trace where capturedAt >= ? and capturedAt <= ?");
             deletePS = connection.prepareStatement("delete from trace where capturedAt >= ? and"
@@ -120,26 +125,37 @@ public class TraceDao {
         if (!valid) {
             return;
         }
+        // capture time before writing to rolling file
+        long capturedAt = clock.currentTimeMillis();
+        String spansBlockId = null;
+        try {
+            spansBlockId = rollingFile.write(storedTrace.getSpans()).getId();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+        String mergedStackTreeBlockId = null;
+        if (storedTrace.getMergedStackTree() != null) {
+            try {
+                mergedStackTreeBlockId = rollingFile.write(storedTrace.getMergedStackTree())
+                        .getId();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
         synchronized (connection) {
             try {
                 int index = 1;
                 insertPreparedStatement.setString(index++, storedTrace.getId());
-                insertPreparedStatement.setLong(index++, clock.currentTimeMillis());
+                insertPreparedStatement.setLong(index++, capturedAt);
                 insertPreparedStatement.setLong(index++, storedTrace.getStartAt());
                 insertPreparedStatement.setBoolean(index++, storedTrace.isStuck());
                 insertPreparedStatement.setLong(index++, storedTrace.getDuration());
                 insertPreparedStatement.setBoolean(index++, storedTrace.isCompleted());
                 insertPreparedStatement.setString(index++, storedTrace.getThreadNames());
                 insertPreparedStatement.setString(index++, storedTrace.getUsername());
-                insertPreparedStatement.setCharacterStream(index++, new CharSequenceReader(
-                        storedTrace.getSpans()), storedTrace.getSpans().length());
-                if (storedTrace.getMergedStackTree() == null) {
-                    insertPreparedStatement.setClob(index++, (Clob) null);
-                } else {
-                    insertPreparedStatement.setCharacterStream(index++, new CharSequenceReader(
-                            storedTrace.getMergedStackTree()), storedTrace.getMergedStackTree()
-                            .length());
-                }
+                insertPreparedStatement.setString(index++, storedTrace.getRootSpan());
+                insertPreparedStatement.setString(index++, spansBlockId);
+                insertPreparedStatement.setString(index++, mergedStackTreeBlockId);
                 // TODO write metric data
                 insertPreparedStatement.executeUpdate();
                 // don't close prepared statement
@@ -182,15 +198,19 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
+        List<StoredTrace> storedTraces;
         synchronized (connection) {
             try {
                 selectByIdPreparedStatement.setString(1, id);
-                return readStoredTrace(selectByIdPreparedStatement);
+                storedTraces = readStoredTrace(selectByIdPreparedStatement);
             } catch (SQLException e) {
                 logger.error(e.getMessage(), e);
                 return Collections.emptyList();
             }
         }
+        // read from rolling file outside of synchronized block
+        fillInRollingFileData(storedTraces);
+        return storedTraces;
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
@@ -199,16 +219,20 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
+        List<StoredTrace> storedTraces;
         synchronized (connection) {
             try {
                 selectPreparedStatement.setLong(1, capturedFrom);
                 selectPreparedStatement.setLong(2, capturedTo);
-                return readStoredTrace(selectPreparedStatement);
+                storedTraces = readStoredTrace(selectPreparedStatement);
             } catch (SQLException e) {
                 logger.error(e.getMessage(), e);
                 return Collections.emptyList();
             }
         }
+        // read from rolling file outside of synchronized block
+        fillInRollingFileData(storedTraces);
+        return storedTraces;
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo, long lowDuration,
@@ -220,6 +244,7 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
+        List<StoredTrace> storedTraces;
         synchronized (connection) {
             if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
                 return readStoredTraces(capturedFrom, capturedTo);
@@ -229,10 +254,44 @@ public class TraceDao {
                 selectPreparedStatement2.setLong(2, capturedTo);
                 selectPreparedStatement2.setLong(3, lowDuration);
                 selectPreparedStatement2.setLong(4, highDuration);
-                return readStoredTrace(selectPreparedStatement2);
+                storedTraces = readStoredTrace(selectPreparedStatement2);
             } catch (SQLException e) {
                 logger.error(e.getMessage(), e);
                 return Collections.emptyList();
+            }
+        }
+        // read from rolling file outside of synchronized block
+        fillInRollingFileData(storedTraces);
+        return storedTraces;
+    }
+
+    private void fillInRollingFileData(List<StoredTrace> storedTraces) {
+        for (StoredTrace storedTrace : storedTraces) {
+            if (storedTrace.getSpans() != null) {
+                String sp = null;
+                try {
+                    sp = rollingFile.read(new FileBlock(storedTrace.getSpans().toString()));
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
+                } catch (InvalidBlockId e) {
+                    logger.error(e.getMessage(), e);
+                } catch (FileBlockNoLongerExists e) {
+                }
+                storedTrace.setSpans(sp);
+            }
+            if (storedTrace.getMergedStackTree() != null) {
+                String mst = null;
+                try {
+                    mst = rollingFile.read(new FileBlock(storedTrace.getMergedStackTree()
+                            .toString()));
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
+                } catch (InvalidBlockId e) {
+                    logger.error(e.getMessage(), e);
+                } catch (FileBlockNoLongerExists e) {
+                    // TODO provide user message in this case
+                }
+                storedTrace.setMergedStackTree(mst);
             }
         }
     }
@@ -315,12 +374,15 @@ public class TraceDao {
         } else if (!resultSet.next() || !"USERNAME".equals(resultSet.getString("COLUMN_NAME"))
                 || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
             return true;
+        } else if (!resultSet.next() || !"ROOTSPAN".equals(resultSet.getString("COLUMN_NAME"))
+                || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
+            return true;
         } else if (!resultSet.next() || !"SPANS".equals(resultSet.getString("COLUMN_NAME"))
-                || Types.CLOB != resultSet.getInt("DATA_TYPE")) {
+                || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
             return true;
         } else if (!resultSet.next()
                 || !"MERGEDSTACKTREE".equals(resultSet.getString("COLUMN_NAME"))
-                || Types.CLOB != resultSet.getInt("DATA_TYPE")) {
+                || Types.VARCHAR != resultSet.getInt("DATA_TYPE")) {
             return true;
         }
 
@@ -351,7 +413,8 @@ public class TraceDao {
         try {
             statement.execute("create table trace (id varchar, capturedAt bigint, startAt bigint,"
                     + " stuck boolean, duration bigint, completed boolean, threadnames varchar,"
-                    + " username varchar, spans clob, mergedStackTree clob)");
+                    + " username varchar, rootSpan varchar, spans varchar, mergedStackTree varchar"
+                    + ")");
             statement.execute("create index trace_idx on trace (capturedAt, duration)");
             if (tableNeedsUpgrade(connection)) {
                 logger.error("the logic in tableNeedsUpgrade() needs fixing", new Throwable());
@@ -389,6 +452,7 @@ public class TraceDao {
         storedTrace.setCompleted(resultSet.getBoolean(columnIndex++));
         storedTrace.setThreadNames(resultSet.getString(columnIndex++));
         storedTrace.setUsername(resultSet.getString(columnIndex++));
+        storedTrace.setRootSpan(resultSet.getString(columnIndex++));
         storedTrace.setSpans(resultSet.getString(columnIndex++));
         storedTrace.setMergedStackTree(resultSet.getString(columnIndex++));
         return storedTrace;

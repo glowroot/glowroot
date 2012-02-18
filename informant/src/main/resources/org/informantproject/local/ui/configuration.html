@@ -34,10 +34,15 @@
       $('#stackTracePeriodMillis').val(coreConfiguration.stackTracePeriodMillis)
       $('#spanStackTraceThresholdMillis').val(coreConfiguration.spanStackTraceThresholdMillis)
       $('#maxSpansPerTrace').val(coreConfiguration.maxSpansPerTrace)
+      $('#rollingSizeMb').val(coreConfiguration.rollingSizeMb)
+      if (configuration.actualRollingSizeMb != coreConfiguration.rollingSizeMb) {
+        $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
+        $('#rollingSizeHelp').css('display', 'inline-block')
+      }
     })
   }
   function update() {
-    var configuration = { 'coreConfiguration': {
+    var configuration = {
       'enabled': $('#enabled').is(':checked'),
       'thresholdMillis': $('#thresholdMillis').val(),
       'stuckThresholdMillis': $('#stuckThresholdMillis').val(),
@@ -45,7 +50,7 @@
       'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
       'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
       'maxSpansPerTrace': $('#maxSpansPerTrace').val()
-    }}
+    }
     $.post('/configuration/update', JSON.stringify(configuration), function() {
       window.location.href = '/'
     })
@@ -60,6 +65,20 @@
     })
     function displaySpinner() {
       spinner.spin(document.getElementById('clearButtonSpinner'))
+    }
+    // small delay so that if there is an immediate page return it doesn't blink
+    setTimeout(displaySpinner, 100)
+  }
+  function resizeRollingDb() {
+    var spinOptions = { lines: 10, width: 4, radius: 8 }
+    var spinner = new Spinner(spinOptions)
+    var newRollingSizeMb = $('#rollingSizeMb').val()
+    $.post('/admin/resizerolling?newRollingSizeMb=' + newRollingSizeMb, function() {
+      spinner.stop()
+      window.location.href = '/'
+    })
+    function displaySpinner() {
+      spinner.spin(document.getElementById('resizeButtonSpinner'))
     }
     // small delay so that if there is an immediate page return it doesn't blink
     setTimeout(displaySpinner, 100)
@@ -157,6 +176,27 @@
       <div class="form-actions">
         <button type="button" class="btn" onclick="clearData()">Clear data</button>
         <div id="clearButtonSpinner"
+          style="display: inline-block; margin-left: 30px; vertical-align: middle">
+        </div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Rolling database</legend>
+      <div class="control-group">
+        <label class="control-label" for="rollingSizeMb">Rolling database size:</label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="rollingSizeMb" type="text">
+            <span class="add-on">MB</span>
+            <div id="rollingSizeHelp" class="help-block" style="display: none; margin-left: 1em">
+              (actual rolling size <span id="actualRollingSizeMb"></span> MB)
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="resizeRollingDb()">Resize</button>
+        <div id="resizeButtonSpinner"
           style="display: inline-block; margin-left: 30px; vertical-align: middle">
         </div>
       </div>

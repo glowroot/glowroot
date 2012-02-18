@@ -17,6 +17,7 @@ package org.informantproject.local.ui;
 
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.ui.HttpServer.JsonService;
+import org.informantproject.util.RollingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,23 +36,29 @@ public class ConfigurationJsonService implements JsonService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationJsonService.class);
 
     private final ConfigurationService configurationService;
+    private final RollingFile rollingFile;
 
     @Inject
-    public ConfigurationJsonService(ConfigurationService configurationService) {
+    public ConfigurationJsonService(ConfigurationService configurationService,
+            RollingFile rollingFile) {
+
         this.configurationService = configurationService;
+        this.rollingFile = rollingFile;
     }
 
     // called dynamically from HttpServer
     public String handleRead(String message) {
         logger.debug("handleRead(): message={}", message);
+        double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024;
         return "{\"coreConfiguration\":" + configurationService.getCoreConfiguration().toJson()
                 + ",\"pluginConfiguration\":"
-                + configurationService.getPluginConfiguration().toJson() + "}";
+                + configurationService.getPluginConfiguration().toJson()
+                + ",\"actualRollingSizeMb\":" + rollingSizeMb + "}";
     }
 
     // called dynamically from HttpServer
     public void handleUpdate(String message) {
         logger.debug("handleUpdate(): message={}", message);
-        configurationService.updateConfiguration(message);
+        configurationService.updateCoreConfiguration(message);
     }
 }

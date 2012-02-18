@@ -73,10 +73,9 @@ public class LocalHttpHandlerTest {
         // given
         ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
                 .getRandomCoreConfiguration();
-        String json = "{\"coreConfiguration\":" + randomCoreConfiguration.toJson() + "}";
         BoundRequestBuilder updateRequest = asyncHttpClient
                 .preparePost("http://localhost:4000/configuration/update");
-        updateRequest.setBody(json);
+        updateRequest.setBody(randomCoreConfiguration.toJson());
         updateRequest.execute().get();
         BoundRequestBuilder readRequest = asyncHttpClient
                 .prepareGet("http://localhost:4000/configuration/read");
