@@ -25,6 +25,10 @@
     </license>
   </licenses>
 
+  <prerequisites>
+    <maven>2.2.1</maven>
+  </prerequisites>
+
   <modules>
     <module>plugin-api</module>
     <module>informant</module>
