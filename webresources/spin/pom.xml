@@ -26,6 +26,10 @@
     </license>
   </licenses>
 
+  <prerequisites>
+    <maven>2.2.1</maven>
+  </prerequisites>
+
   <scm>
     <connection>scm:git:https://github.com/informantproject/thirdparty-webresources.git</connection>
     <developerConnection>
