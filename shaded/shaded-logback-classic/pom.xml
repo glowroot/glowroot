@@ -24,6 +24,10 @@
     </license>
   </licenses>
 
+  <prerequisites>
+    <maven>2.2.1</maven>
+  </prerequisites>
+
   <dependencies>
     <dependency>
       <groupId>ch.qos.logback</groupId>
