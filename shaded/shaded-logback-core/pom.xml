@@ -13,8 +13,16 @@
   <artifactId>shaded-logback-core</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
-  <name>Logback Core (Shaded for Runtime Informant)</name>
-  <description>Logback Core (Shaded for Runtime Informant)</description>
+  <name>Logback Core (shaded for Informant)</name>
+  <description>Logback Core (shaded for Informant)</description>
+  <url>http://www.informantproject.org</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License - v 1.0</name>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <dependencies>
     <dependency>

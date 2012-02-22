@@ -13,9 +13,9 @@
   <artifactId>shaded-guava</artifactId>
   <version>11.0.1-SNAPSHOT</version>
 
-  <name>Guava (Shaded for Runtime Informant)</name>
-  <description>Guava (Shaded for Runtime Informant)</description>
-  <url>http://informantproject.org</url>
+  <name>Guava (shaded for Informant)</name>
+  <description>Guava (shaded for Informant)</description>
+  <url>http://www.informantproject.org</url>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>

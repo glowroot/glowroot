@@ -13,8 +13,16 @@
   <artifactId>shaded-aspectjrt</artifactId>
   <version>1.6.11-SNAPSHOT</version>
 
-  <name>AspectJ Runtime (Shaded for Runtime Informant)</name>
-  <description>AspectJ Runtime (Shaded for Runtime Informant)</description>
+  <name>AspectJ Runtime (shaded for Informant)</name>
+  <description>AspectJ Runtime (shaded for Informant)</description>
+  <url>http://www.informantproject.org</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License - v 1.0</name>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <dependencies>
     <dependency>
