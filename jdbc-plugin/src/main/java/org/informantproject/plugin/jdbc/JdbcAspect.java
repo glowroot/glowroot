@@ -75,7 +75,7 @@ public class JdbcAspect {
 
     // this pointcut isn't restricted to inTrace() because PreparedStatements must be tracked for
     // their entire life
-    @Around("connectionPreparePointcut() && !cflowbelow(connectionPreparePointcut()) && args(sql)")
+    @Around("connectionPreparePointcut() && args(sql, ..)")
     public Object connectionPrepareAdvice(ProceedingJoinPoint joinPoint, String sql)
             throws Throwable {
 
@@ -94,7 +94,7 @@ public class JdbcAspect {
             + " && !preparedStatementSetNullPointcut()")
     void preparedStatementSetXPointcut() {}
 
-    @Pointcut("call(void java.sql.PreparedStatement.setNull(int, ..))")
+    @Pointcut("call(void java.sql.PreparedStatement.setNull(int, *, ..))")
     void preparedStatementSetNullPointcut() {}
 
     @AfterReturning("inTrace() && preparedStatementSetXPointcut()"
@@ -161,7 +161,7 @@ public class JdbcAspect {
     // this pointcut isn't restricted to inTrace() so that Informant can log a warning if the jdbc
     // call occurs outside of a trace (assuming "warnOnSpanOutsideTrace" is enabled in Informant)
     @Around("isPluginEnabled() && statementExecutePointcut()"
-            + " && !cflowbelow(statementExecutePointcut()) && target(statement) && args(sql)")
+            + " && !cflowbelow(statementExecutePointcut()) && target(statement) && args(sql, ..)")
     public Object statementExecuteAdvice(ProceedingJoinPoint joinPoint, final Statement statement,
             final String sql) throws Throwable {
 
