@@ -16,11 +16,13 @@
 package org.informantproject.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import org.informantproject.configuration.ConfigurationService;
 import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.informantproject.util.Clock;
+import org.informantproject.util.DataSource;
 import org.informantproject.util.RollingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,15 +44,17 @@ public class AdminJsonService implements JsonService {
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
     private final TraceDao traceDao;
+    private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final ConfigurationService configurationService;
     private final Clock clock;
 
     @Inject
-    public AdminJsonService(TraceDao traceDao, RollingFile rollingFile,
+    public AdminJsonService(TraceDao traceDao, DataSource dataSource, RollingFile rollingFile,
             ConfigurationService configurationService, Clock clock) {
 
         this.traceDao = traceDao;
+        this.dataSource = dataSource;
         this.rollingFile = rollingFile;
         this.configurationService = configurationService;
         this.clock = clock;
@@ -61,10 +65,18 @@ public class AdminJsonService implements JsonService {
         logger.debug("handleCleardata(): message={}", message);
         JsonObject request = new JsonParser().parse(message).getAsJsonObject();
         long keepMillis = request.get("keepMillis").getAsLong();
+        boolean compact = request.get("compact").getAsBoolean();
         if (keepMillis == 0) {
             traceDao.deleteAllStoredTraces();
         } else {
             traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keepMillis);
+        }
+        if (compact) {
+            try {
+                dataSource.compact();
+            } catch (SQLException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
     }
 

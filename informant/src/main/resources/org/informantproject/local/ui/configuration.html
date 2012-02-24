@@ -59,7 +59,8 @@
     var spinOptions = { lines: 10, width: 4, radius: 8 }
     var spinner = new Spinner(spinOptions)
     var keepMillis = $('input:radio[name=keepMillis]:checked').val()
-    $.post('/admin/cleardata?keepMillis=' + keepMillis, function() {
+    var compact = $('#compact').is(':checked')
+    $.post('/admin/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
       spinner.stop()
       window.location.href = '/'
     })
@@ -171,6 +172,12 @@
           <label class="radio">
             <input type="radio" name="keepMillis" value="86400000"> Keep last 24 hours
           </label>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="compact">Compact</label>
+        <div class="controls">
+          <input id="compact" type="checkbox" value="true">
         </div>
       </div>
       <div class="form-actions">

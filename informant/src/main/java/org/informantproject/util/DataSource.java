@@ -95,6 +95,13 @@ public class DataSource {
         connection.close();
     }
 
+    public void compact() throws SQLException {
+        synchronized (lock) {
+            execute("shutdown compact");
+            connection = createConnection();
+        }
+    }
+
     public void execute(String sql) throws SQLException {
         synchronized (lock) {
             Statement statement = connection.createStatement();

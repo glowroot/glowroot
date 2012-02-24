@@ -91,7 +91,7 @@ public class Informant {
     }
 
     public void deleteAllTraces() throws Exception {
-        get("/admin/cleardata?keepMillis=0");
+        get("/admin/cleardata?keepMillis=0&compact=true");
     }
 
     public int getNumPendingTraceWrites() throws Exception {
