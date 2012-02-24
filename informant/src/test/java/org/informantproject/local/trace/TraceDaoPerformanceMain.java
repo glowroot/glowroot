@@ -15,11 +15,10 @@
  */
 package org.informantproject.local.trace;
 
-import java.sql.Connection;
-
 import org.informantproject.trace.TraceTestData;
 import org.informantproject.util.Clock;
-import org.informantproject.util.ConnectionTestProvider;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSourceTestProvider;
 import org.informantproject.util.RollingFile;
 import org.informantproject.util.RollingFileTestProvider;
 
@@ -37,7 +36,7 @@ public class TraceDaoPerformanceMain {
     public static class Module extends AbstractModule {
         @Override
         protected void configure() {
-            bind(Connection.class).toProvider(ConnectionTestProvider.class);
+            bind(DataSource.class).toProvider(DataSourceTestProvider.class);
             bind(RollingFile.class).toProvider(RollingFileTestProvider.class);
             bind(Clock.class).toInstance(Clock.systemClock());
         }

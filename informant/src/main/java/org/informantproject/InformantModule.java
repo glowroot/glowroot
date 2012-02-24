@@ -17,8 +17,6 @@ package org.informantproject;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import org.informantproject.configuration.ConfigurationService;
@@ -27,6 +25,7 @@ import org.informantproject.metric.MetricCollector;
 import org.informantproject.trace.StackCollector;
 import org.informantproject.trace.StuckTraceCollector;
 import org.informantproject.util.Clock;
+import org.informantproject.util.DataSource;
 import org.informantproject.util.RollingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +68,7 @@ class InformantModule extends AbstractModule {
         injector.getInstance(MetricCollector.class).shutdown();
         injector.getInstance(TraceSinkLocal.class).shutdown();
         try {
-            injector.getInstance(Connection.class).close();
+            injector.getInstance(DataSource.class).close();
         } catch (SQLException e) {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
@@ -85,22 +84,10 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    protected Connection providesConnection() {
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
-        try {
-            // LZF compression is pretty fast, other options are DEFLATE or NONE
-            return DriverManager.getConnection("jdbc:h2:" + commandLineOptions.getDbFile()
-                    + ";COMPRESS_LOB=LZF", "sa", "");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+    protected DataSource providesDataSource() {
+        return new DataSource(commandLineOptions.getDbFile());
     }
+
     @Provides
     @Singleton
     protected static RollingFile providesRollingFile(ConfigurationService configurationService) {

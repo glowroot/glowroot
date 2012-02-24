@@ -15,16 +15,17 @@
  */
 package org.informantproject.configuration;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.Types;
 
-import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSource.Column;
+import org.informantproject.util.DataSource.ResultSetExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -42,55 +43,27 @@ class ConfigurationDao {
     private static final String CORE = "core";
     private static final String PLUGIN = "plugin";
 
-    private final Connection connection;
+    private static ImmutableList<Column> columns = ImmutableList.of(
+            new Column("ID", Types.VARCHAR),
+            new Column("CONFIGURATION", Types.VARCHAR));
 
-    private final PreparedStatement insertPreparedStatement;
-    private final PreparedStatement selectPreparedStatement;
-    private final PreparedStatement existsPreparedStatement;
-    private final PreparedStatement updatePreparedStatement;
+    private final DataSource dataSource;
 
     private final boolean valid;
 
     @Inject
-    ConfigurationDao(Connection connection) {
-
-        this.connection = connection;
-        PreparedStatement localInsertPreparedStatement = null;
-        PreparedStatement localSelectPreparedStatement = null;
-        PreparedStatement localExistsPreparedStatement = null;
-        PreparedStatement localUpdatePreparedStatement = null;
-
+    ConfigurationDao(DataSource dataSource) {
+        this.dataSource = dataSource;
         boolean localValid;
-
         try {
-            if (!JdbcUtil.tableExists("configuration", connection)) {
-                // create table
-                Statement statement = connection.createStatement();
-                statement.execute("create table configuration (id varchar, configuration varchar)");
-                statement.close();
+            if (!dataSource.tableExists("configuration")) {
+                dataSource.createTable("configuration", columns);
             }
-
-            localInsertPreparedStatement = connection.prepareStatement(
-                    "insert into configuration (id, configuration) values (?, ?)");
-            localSelectPreparedStatement = connection.prepareStatement(
-                    "select configuration from configuration where id = ?");
-            localExistsPreparedStatement = connection.prepareStatement(
-                    "select 1 from configuration where id = ?");
-            localUpdatePreparedStatement = connection.prepareStatement(
-                    "update configuration set configuration = ? where id = ?");
-
             localValid = true;
-
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             localValid = false;
         }
-
-        insertPreparedStatement = localInsertPreparedStatement;
-        selectPreparedStatement = localSelectPreparedStatement;
-        existsPreparedStatement = localExistsPreparedStatement;
-        updatePreparedStatement = localUpdatePreparedStatement;
-
         valid = localValid;
     }
 
@@ -142,35 +115,27 @@ class ConfigurationDao {
         }
     }
 
-    private String readConfigurationJson(String id) {
-        synchronized (connection) {
-            ResultSet resultSet = null;
-            try {
-                selectPreparedStatement.setString(1, id);
-                resultSet = selectPreparedStatement.executeQuery();
-                if (resultSet.next()) {
-                    String json = resultSet.getString(1);
-                    if (resultSet.next()) {
-                        logger.error("more than one configuration record for id '" + id + "'",
-                                new IllegalStateException());
-                    }
-                    return json;
-                } else {
-                    // no results
-                    return null;
-                }
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-                return null;
-            } finally {
-                if (resultSet != null) {
-                    try {
-                        resultSet.close();
-                    } catch (SQLException e) {
-                        logger.error(e.getMessage(), e);
-                    }
-                }
-            }
+    private String readConfigurationJson(final String id) {
+        try {
+            return dataSource.query("select configuration from configuration where id = ?",
+                    new Object[] { id }, new ResultSetExtractor<String>() {
+                        public String extractData(ResultSet resultSet) throws SQLException {
+                            if (resultSet.next()) {
+                                String json = resultSet.getString(1);
+                                if (resultSet.next()) {
+                                    logger.error("more than one configuration record for id '" + id
+                                            + "'", new IllegalStateException());
+                                }
+                                return json;
+                            } else {
+                                // no results
+                                return null;
+                            }
+                        }
+                    });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
         }
     }
 
@@ -185,38 +150,29 @@ class ConfigurationDao {
     }
 
     private boolean exists(String id) throws SQLException {
-        synchronized (connection) {
-            existsPreparedStatement.setString(1, id);
-            ResultSet existsResultSet = existsPreparedStatement.executeQuery();
-            try {
-                return existsResultSet.next();
-            } finally {
-                existsResultSet.close();
-            }
-        }
+        return dataSource.query("select 1 from configuration where id = ?",
+                new Object[] { id }, new ResultSetExtractor<Boolean>() {
+                    public Boolean extractData(ResultSet resultSet) throws SQLException {
+                        return resultSet.next();
+                    }
+                });
     }
 
     private void update(String id, String configurationJson) throws SQLException {
-        synchronized (connection) {
-            updatePreparedStatement.setString(1, configurationJson);
-            updatePreparedStatement.setString(2, id);
-            int rowCount = updatePreparedStatement.executeUpdate();
-            if (rowCount != 1) {
-                logger.error("unexpected update row count '" + rowCount + "'",
-                        new IllegalStateException());
-            }
+        int rowCount = dataSource.update("update configuration set configuration = ? where id = ?",
+                new Object[] { configurationJson, id });
+        if (rowCount != 1) {
+            logger.error("unexpected update row count '" + rowCount + "'",
+                    new IllegalStateException());
         }
     }
 
     private void insert(String id, String configurationJson) throws SQLException {
-        synchronized (connection) {
-            insertPreparedStatement.setString(1, id);
-            insertPreparedStatement.setString(2, configurationJson);
-            int rowCount = insertPreparedStatement.executeUpdate();
-            if (rowCount != 1) {
-                logger.error("unexpected insert row count '" + rowCount + "'",
-                        new IllegalStateException());
-            }
+        int rowCount = dataSource.update("insert into configuration (id, configuration) values"
+                + " (?, ?)", new Object[] { id, configurationJson });
+        if (rowCount != 1) {
+            logger.error("unexpected insert row count '" + rowCount + "'",
+                    new IllegalStateException());
         }
     }
 }

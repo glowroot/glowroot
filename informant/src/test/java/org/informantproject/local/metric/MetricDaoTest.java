@@ -18,15 +18,19 @@ package org.informantproject.local.metric;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.informantproject.metric.MetricValue;
+import org.informantproject.util.Clock;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSourceTestProvider;
+import org.informantproject.util.MockClock;
+import org.informantproject.util.ThreadChecker;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -34,14 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.informantproject.local.metric.MetricDao;
-import org.informantproject.local.metric.Point;
-import org.informantproject.metric.MetricValue;
-import org.informantproject.util.Clock;
-import org.informantproject.util.ConnectionTestProvider;
-import org.informantproject.util.JdbcUtil;
-import org.informantproject.util.MockClock;
-import org.informantproject.util.ThreadChecker;
 
 /**
  * @author Trask Stalnaker
@@ -55,26 +51,24 @@ public class MetricDaoTest {
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
-            bind(Connection.class).toProvider(ConnectionTestProvider.class).in(TestSingleton.class);
+            bind(DataSource.class).toProvider(DataSourceTestProvider.class).in(TestSingleton.class);
             bind(MockClock.class).in(TestSingleton.class);
             bind(Clock.class).to(MockClock.class);
         }
     }
 
     @Before
-    public void before(Connection connection) throws SQLException {
+    public void before(DataSource dataSource) throws SQLException {
         preExistingThreads = ThreadChecker.currentThreadList();
-        if (JdbcUtil.tableExists("metric_point", connection)) {
-            Statement statement = connection.createStatement();
-            statement.execute("drop table metric_point");
-            statement.close();
+        if (dataSource.tableExists("metric_point")) {
+            dataSource.execute("drop table metric_point");
         }
     }
 
     @After
-    public void after(Connection connection) throws Exception {
+    public void after(DataSource dataSource) throws Exception {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        connection.close();
+        dataSource.close();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

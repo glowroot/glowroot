@@ -18,11 +18,11 @@ package org.informantproject.configuration;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Set;
 
-import org.informantproject.util.ConnectionTestProvider;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSourceTestProvider;
 import org.informantproject.util.ThreadChecker;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
@@ -45,7 +45,7 @@ public class ConfigurationServiceCoreTest {
         @Override
         protected void configureTest() {
             bind(ConfigurationService.class).in(TestSingleton.class);
-            bind(Connection.class).toProvider(ConnectionTestProvider.class).in(TestSingleton.class);
+            bind(DataSource.class).toProvider(DataSourceTestProvider.class).in(TestSingleton.class);
         }
     }
 
@@ -55,9 +55,9 @@ public class ConfigurationServiceCoreTest {
     }
 
     @After
-    public void after(Connection connection) throws SQLException, InterruptedException {
+    public void after(DataSource dataSource) throws SQLException, InterruptedException {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        connection.close();
+        dataSource.close();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

@@ -15,34 +15,28 @@
  */
 package org.informantproject.util;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Locale;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.inject.Provider;
 
 /**
- * Convenience method to verify whether a table exists in a database.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class JdbcUtil {
+public class DataSourceTestProvider implements Provider<DataSource> {
 
-    private static final Logger logger = LoggerFactory.getLogger(JdbcUtil.class);
-
-    private JdbcUtil() {}
-
-    public static boolean tableExists(String tableName, Connection connection) throws SQLException {
-        logger.debug("tableExists(): tableName={}", tableName);
-        ResultSet resultSet = connection.getMetaData().getTables(null, null,
-                tableName.toUpperCase(Locale.ENGLISH), null);
+    public DataSource get() {
+        DataSource dataSource = new DataSource("informant");
         try {
-            return resultSet.next();
-        } finally {
-            resultSet.close();
+            if (dataSource.tableExists("trace")) {
+                dataSource.execute("drop table trace");
+            }
+            if (dataSource.tableExists("configuration")) {
+                dataSource.execute("drop table configuration");
+            }
+            return dataSource;
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

@@ -18,15 +18,13 @@ package org.informantproject.local.trace;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
 
 import org.informantproject.trace.TraceTestData;
-import org.informantproject.util.ConnectionTestProvider;
-import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSourceTestProvider;
 import org.informantproject.util.RollingFile;
 import org.informantproject.util.RollingFileTestProvider;
 import org.informantproject.util.ThreadChecker;
@@ -50,26 +48,24 @@ public class TraceDaoTest {
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
-            bind(Connection.class).toProvider(ConnectionTestProvider.class).in(TestSingleton.class);
+            bind(DataSource.class).toProvider(DataSourceTestProvider.class).in(TestSingleton.class);
             bind(RollingFile.class).toProvider(RollingFileTestProvider.class).in(
                     TestSingleton.class);
         }
     }
 
     @Before
-    public void before(Connection connection) throws SQLException {
+    public void before(DataSource dataSource) throws SQLException {
         preExistingThreads = ThreadChecker.currentThreadList();
-        if (JdbcUtil.tableExists("trace", connection)) {
-            Statement statement = connection.createStatement();
-            statement.execute("drop table trace");
-            statement.close();
+        if (dataSource.tableExists("trace")) {
+            dataSource.execute("drop table trace");
         }
     }
 
     @After
-    public void after(Connection connection, RollingFile rollingFile) throws Exception {
+    public void after(DataSource dataSource, RollingFile rollingFile) throws Exception {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        connection.close();
+        dataSource.close();
         rollingFile.shutdown();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }

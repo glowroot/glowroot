@@ -19,15 +19,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.informantproject.util.ConnectionTestProvider;
-import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSourceTestProvider;
 import org.informantproject.util.ThreadChecker;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
@@ -49,24 +47,22 @@ public class ConfigurationDaoPluginTest {
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
-            bind(Connection.class).toProvider(ConnectionTestProvider.class).in(TestSingleton.class);
+            bind(DataSource.class).toProvider(DataSourceTestProvider.class).in(TestSingleton.class);
         }
     }
 
     @Before
-    public void before(Connection connection) throws SQLException {
+    public void before(DataSource dataSource) throws SQLException {
         preExistingThreads = ThreadChecker.currentThreadList();
-        if (JdbcUtil.tableExists("configuration", connection)) {
-            Statement statement = connection.createStatement();
-            statement.execute("drop table configuration");
-            statement.close();
+        if (dataSource.tableExists("configuration")) {
+            dataSource.execute("drop table configuration");
         }
     }
 
     @After
-    public void after(Connection connection) throws SQLException, InterruptedException {
+    public void after(DataSource dataSource) throws Exception {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        connection.close();
+        dataSource.close();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

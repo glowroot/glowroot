@@ -16,19 +16,19 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.Types;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSource.Column;
+import org.informantproject.util.DataSource.PrimaryKeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.gson.stream.JsonWriter;
@@ -46,35 +46,28 @@ public class StackTraceDao {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceDao.class);
 
-    private final Connection connection;
+    private static ImmutableList<Column> columns = ImmutableList.of(
+            new PrimaryKeyColumn("hash", Types.VARCHAR),
+            new Column("stack_trace", Types.CLOB));
 
-    private final PreparedStatement mergePreparedStatement;
-    private final PreparedStatement selectPreparedStatement;
+    private final DataSource dataSource;
 
     private final boolean valid;
 
     private final Map<String, Boolean> storedHashes = new ConcurrentHashMap<String, Boolean>();
 
     @Inject
-    StackTraceDao(Connection connection) {
-        this.connection = connection;
-        PreparedStatement mergePS = null;
-        PreparedStatement selectPS = null;
+    StackTraceDao(DataSource dataSource) {
+        this.dataSource = dataSource;
         boolean errorOnInit = false;
         try {
-            if (!JdbcUtil.tableExists("stacktrace", connection)) {
-                createTable(connection);
+            if (!dataSource.tableExists("stack_trace")) {
+                dataSource.createTable("stack_trace", columns);
             }
-            mergePS = connection.prepareStatement("merge into stacktrace (hash, stacktrace) values"
-                    + " (?, ?)");
-            selectPS = connection.prepareStatement("select stacktrace from stacktrace where"
-                    + " hash = ?");
         } catch (SQLException e) {
             errorOnInit = true;
             logger.error(e.getMessage(), e);
         }
-        mergePreparedStatement = mergePS;
-        selectPreparedStatement = selectPS;
         this.valid = !errorOnInit;
     }
 
@@ -94,18 +87,15 @@ public class StackTraceDao {
         if (storedHashes.containsKey(hex)) {
             return hex;
         }
-        synchronized (connection) {
-            try {
-                // TODO optimize with local cache
-                mergePreparedStatement.setString(1, hex);
-                mergePreparedStatement.setString(2, json);
-                mergePreparedStatement.executeUpdate();
-                storedHashes.put(hex, Boolean.TRUE);
-                return hex;
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-                return null;
-            }
+        try {
+            // TODO optimize with local cache
+            dataSource.update("merge into stack_trace (hash, stack_trace) values (?, ?)", hex,
+                    json);
+            storedHashes.put(hex, Boolean.TRUE);
+            return hex;
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
         }
     }
 
@@ -114,33 +104,12 @@ public class StackTraceDao {
         if (!valid) {
             return null;
         }
-        synchronized (connection) {
-            try {
-                selectPreparedStatement.setString(1, hash);
-                ResultSet resultSet = selectPreparedStatement.executeQuery();
-                try {
-                    if (resultSet.next()) {
-                        return resultSet.getString(1);
-                    } else {
-                        return null;
-                    }
-                } finally {
-                    resultSet.close();
-                }
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-                return null;
-            }
-        }
-    }
-
-    private static void createTable(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
         try {
-            statement.execute("create table stacktrace (hash varchar primary key, stacktrace"
-                    + " clob)");
-        } finally {
-            statement.close();
+            return dataSource.queryForString("select stack_trace from stack_trace where hash = ?",
+                    hash);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
         }
     }
 

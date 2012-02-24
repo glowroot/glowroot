@@ -15,24 +15,29 @@
  */
 package org.informantproject.local.metric;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.informantproject.metric.MetricValue;
 import org.informantproject.util.Clock;
-import org.informantproject.util.JdbcUtil;
+import org.informantproject.util.DataSource;
+import org.informantproject.util.DataSource.BatchPreparedStatementSetter;
+import org.informantproject.util.DataSource.Column;
+import org.informantproject.util.DataSource.ResultSetExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -47,39 +52,50 @@ public class MetricDao {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricDao.class);
 
-    private final Connection connection;
+    private static ImmutableList<Column> columns = ImmutableList.of(
+            new Column("metric_id", Types.VARCHAR),
+            new Column("captured_at", Types.BIGINT),
+            new Column("value", Types.DOUBLE));
+
+    private final DataSource dataSource;
     private final Clock clock;
 
-    private final PreparedStatement insertPreparedStatement;
-    // select prepared statements are indexed by the number of metricIds to use in the qualifier
-    private final Map<Integer, PreparedStatement> selectPreparedStatements =
-            new ConcurrentHashMap<Integer, PreparedStatement>();
-    private final PreparedStatement countPreparedStatement;
+    private final LoadingCache<Integer, String> selectSqls = CacheBuilder.newBuilder().build(
+            new CacheLoader<Integer, String>() {
+                @Override
+                public String load(Integer nMetricIds) throws Exception {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("select metric_id, captured_at, value from metric_point");
+                    sb.append(" where captured_at >= ? and captured_at <= ?");
+                    sb.append(" and metric_id in (");
+                    for (int i = 0; i < nMetricIds; i++) {
+                        if (i > 0) {
+                            sb.append(", ");
+                        }
+                        sb.append("?");
+                    }
+                    sb.append(")");
+                    return sb.toString();
+                }
+            });
 
     private final boolean valid;
 
     @Inject
-    public MetricDao(Connection connection, Clock clock) {
-        this.connection = connection;
+    public MetricDao(DataSource dataSource, Clock clock) {
+        this.dataSource = dataSource;
         this.clock = clock;
 
-        PreparedStatement insertPS = null;
-        PreparedStatement countPS = null;
         boolean localValid;
         try {
-            if (!JdbcUtil.tableExists("metric_point", connection)) {
-                createTable(connection);
+            if (!dataSource.tableExists("metric_point")) {
+                dataSource.createTable("metric_point", columns);
             }
-            insertPS = connection.prepareStatement("insert into metric_point"
-                    + " (capturedAt, metricId, value) values (?, ?, ?)");
-            countPS = connection.prepareStatement("select count(*) from metric_point");
             localValid = true;
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             localValid = false;
         }
-        insertPreparedStatement = insertPS;
-        countPreparedStatement = countPS;
         valid = localValid;
     }
 
@@ -87,37 +103,35 @@ public class MetricDao {
         if (!valid) {
             return Collections.emptyMap();
         }
-        synchronized (connection) {
-            try {
-                PreparedStatement selectPreparedStatement = getSelectPreparedStatement(metricIds
-                        .size());
-                selectPreparedStatement.setLong(1, from);
-                selectPreparedStatement.setLong(2, to);
-                for (int i = 0; i < metricIds.size(); i++) {
-                    selectPreparedStatement.setString(3 + i, metricIds.get(i));
-                }
-                ResultSet resultSet = selectPreparedStatement.executeQuery();
-                try {
-                    Map<String, List<Point>> map = new HashMap<String, List<Point>>();
-                    while (resultSet.next()) {
-                        String metricId = resultSet.getString(1);
-                        long capturedAt = resultSet.getLong(2);
-                        double value = resultSet.getDouble(3);
-                        List<Point> metricPoints = map.get(metricId);
-                        if (metricPoints == null) {
-                            metricPoints = new ArrayList<Point>();
-                            map.put(metricId, metricPoints);
+        Object[] args = new Object[2 + metricIds.size()];
+        args[0] = from;
+        args[1] = to;
+        for (int i = 0; i < metricIds.size(); i++) {
+            args[2 + i] = metricIds.get(i);
+        }
+        try {
+            return dataSource.query(selectSqls.getUnchecked(metricIds.size()), args,
+                    new ResultSetExtractor<Map<String, List<Point>>>() {
+                        public Map<String, List<Point>> extractData(ResultSet resultSet)
+                                throws SQLException {
+                            Map<String, List<Point>> map = new HashMap<String, List<Point>>();
+                            while (resultSet.next()) {
+                                String metricId = resultSet.getString(1);
+                                long capturedAt = resultSet.getLong(2);
+                                double value = resultSet.getDouble(3);
+                                List<Point> metricPoints = map.get(metricId);
+                                if (metricPoints == null) {
+                                    metricPoints = new ArrayList<Point>();
+                                    map.put(metricId, metricPoints);
+                                }
+                                metricPoints.add(new Point(capturedAt, value));
+                            }
+                            return map;
                         }
-                        metricPoints.add(new Point(capturedAt, value));
-                    }
-                    return map;
-                } finally {
-                    resultSet.close();
-                }
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-                return Collections.emptyMap();
-            }
+                    });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyMap();
         }
     }
 
@@ -125,73 +139,36 @@ public class MetricDao {
         if (!valid) {
             return 0;
         }
-        synchronized (connection) {
-            try {
-                ResultSet resultSet = countPreparedStatement.executeQuery();
-                try {
-                    resultSet.next();
-                    return resultSet.getLong(1);
-                } finally {
-                    resultSet.close();
-                }
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-                return 0;
-            }
+        try {
+            return dataSource.queryForLong("select count(*) from metric_point");
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return 0;
         }
     }
 
     // TODO ensure that any call to read end=currentTimeMillis
     // and any subsequent call with start=<previous currentTimeMillis>
     // will not miss any metrics
-    void storeMetricValues(Iterable<MetricValue> metricValues) {
+    void storeMetricValues(final List<MetricValue> metricValues) {
         if (!valid) {
             return;
         }
-        synchronized (connection) {
-            try {
-                // batch them up
-                for (MetricValue metricValue : metricValues) {
-                    insertPreparedStatement.setLong(1, clock.currentTimeMillis());
-                    insertPreparedStatement.setString(2, metricValue.getMetricId());
-                    insertPreparedStatement.setDouble(3, metricValue.getValue());
-                    insertPreparedStatement.addBatch();
-                }
-                insertPreparedStatement.executeBatch();
-                // don't close prepared statement
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private PreparedStatement getSelectPreparedStatement(int nMetricIds) throws SQLException {
-        PreparedStatement selectPreparedStatement = selectPreparedStatements.get(nMetricIds);
-        if (selectPreparedStatement == null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("select metricId, capturedAt, value from metric_point");
-            sb.append(" where capturedAt >= ? and capturedAt <= ?");
-            sb.append(" and metricId in (");
-            for (int i = 0; i < nMetricIds; i++) {
-                if (i > 0) {
-                    sb.append(", ");
-                }
-                sb.append("?");
-            }
-            sb.append(")");
-            selectPreparedStatement = connection.prepareStatement(sb.toString());
-            selectPreparedStatements.put(nMetricIds, selectPreparedStatement);
-        }
-        return selectPreparedStatement;
-    }
-
-    private static void createTable(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
         try {
-            statement.execute("create table metric_point"
-                    + " (metricId varchar, capturedAt bigint, value double)");
-        } finally {
-            statement.close();
+            dataSource.batchUpdate("insert into metric_point (captured_at, metric_id, value)"
+                    + " values (?, ?, ?)", new BatchPreparedStatementSetter() {
+                public void setValues(PreparedStatement preparedStatement, int i)
+                        throws SQLException {
+                    preparedStatement.setLong(1, clock.currentTimeMillis());
+                    preparedStatement.setString(2, metricValues.get(i).getMetricId());
+                    preparedStatement.setDouble(3, metricValues.get(i).getValue());
+                }
+                public int getBatchSize() {
+                    return metricValues.size();
+                }
+            });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
         }
     }
 }
