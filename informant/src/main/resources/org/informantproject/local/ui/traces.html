@@ -80,7 +80,7 @@
         {{description}}
       {{/ifLongDescription}}
       {{#if index}}
-        <!-- context map for index=0 is displayed in root context section above -->
+        {{! context map for index=0 is displayed in root context section above }}
         <div style="margin-left: 1em">{{#contextMapHtml contextMap}}{{/contextMapHtml}}</div>
       {{/if}}
       {{#if stackTraceHash}}
