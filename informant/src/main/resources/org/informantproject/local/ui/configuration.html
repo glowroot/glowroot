@@ -95,13 +95,13 @@
     <fieldset>
       <legend>Thresholds and limits</legend>
       <div class="control-group">
-        <label class="control-label" for="enabled">Enabled:</label>
+        <label class="control-label" for="enabled">Enabled</label>
         <div class="controls">
           <input id="enabled" type="checkbox" value="true">
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="thresholdMillis">Threshold:</label>
+        <label class="control-label" for="thresholdMillis">Threshold</label>
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="thresholdMillis" type="text">
@@ -110,7 +110,7 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="stuckThresholdMillis">Stuck threshold:</label>
+        <label class="control-label" for="stuckThresholdMillis">Stuck threshold</label>
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="stuckThresholdMillis" type="text">
@@ -120,7 +120,7 @@
       </div>
       <div class="control-group">
         <label class="control-label" for="stackTraceInitialDelayMillis">
-          Stack trace initial delay:
+          Stack trace initial delay
         </label>
         <div class="controls">
           <div class="input-append">
@@ -130,7 +130,7 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="stackTracePeriodMillis">Stack trace period:</label>
+        <label class="control-label" for="stackTracePeriodMillis">Stack trace period</label>
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="stackTracePeriodMillis" type="text">
@@ -140,7 +140,7 @@
       </div>
       <div class="control-group">
         <label class="control-label" for="spanStackTraceThresholdMillis">
-          Span stack trace threshold:
+          Span stack trace threshold
         </label>
         <div class="controls">
           <div class="input-append">
@@ -150,7 +150,7 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="maxSpansPerTrace">Max spans per trace:</label>
+        <label class="control-label" for="maxSpansPerTrace">Max spans per trace</label>
         <div class="controls">
           <input style="width: 6em" id="maxSpansPerTrace" type="text">
         </div>
@@ -160,17 +160,29 @@
       </div>
     </fieldset>
     <fieldset>
-      <legend>Clear data</legend>
+      <legend>
+        Summary data
+        <span style="padding-left: 15px; font-size: 15px; color:#999999">
+          (metric data and high level trace data)
+        </span>
+      </legend>
       <div class="control-group">
+        <label class="control-label" for="keepMillis">Keep</label>
         <div class="controls">
           <label class="radio">
-            <input type="radio" name="keepMillis" value="0" checked> Keep none
+            <input type="radio" name="keepMillis" value="2419200000" checked> Last 4 weeks
           </label>
           <label class="radio">
-            <input type="radio" name="keepMillis" value="3600000"> Keep last hour
+            <input type="radio" name="keepMillis" value="604800000"> Last 7 days
           </label>
           <label class="radio">
-            <input type="radio" name="keepMillis" value="86400000"> Keep last 24 hours
+            <input type="radio" name="keepMillis" value="86400000"> Last 24 hours
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="3600000"> Last 60 minutes
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="0"> None
           </label>
         </div>
       </div>
@@ -188,9 +200,14 @@
       </div>
     </fieldset>
     <fieldset>
-      <legend>Rolling database</legend>
+      <legend>
+        Detail data
+        <span style="padding-left: 15px; font-size: 15px; color:#999999">
+          (low level trace data)
+        </span>
+      </legend>
       <div class="control-group">
-        <label class="control-label" for="rollingSizeMb">Rolling database size:</label>
+        <label class="control-label" for="rollingSizeMb">Rolling database size</label>
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="rollingSizeMb" type="text">
