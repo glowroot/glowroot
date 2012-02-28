@@ -11,7 +11,7 @@
 
   <groupId>org.informantproject.shaded</groupId>
   <artifactId>shaded-guava</artifactId>
-  <version>11.0.1-SNAPSHOT</version>
+  <version>11.0.2-SNAPSHOT</version>
 
   <name>Guava (shaded for Informant)</name>
   <description>Guava (shaded for Informant)</description>
@@ -38,7 +38,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>11.0.1</version>
+      <version>11.0.2</version>
       <exclusions>
         <exclusion>
           <!--
