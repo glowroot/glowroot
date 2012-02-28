@@ -72,9 +72,9 @@
       <version>1.2.3-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.jboss.netty</groupId>
+      <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.2.7.Final</version>
+      <version>3.3.1.Final</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -84,7 +84,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>11.0.1</version>
+      <version>11.0.2</version>
     </dependency>
     <dependency>
       <groupId>backport-util-concurrent</groupId>
@@ -138,7 +138,7 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -230,9 +230,8 @@
               </excludes>
             </filter>
             <filter>
-              <artifact>org.jboss.netty:netty</artifact>
+              <artifact>io.netty:netty</artifact>
               <excludes>
-                <exclude>META-INF/COPYRIGHT.txt</exclude>
                 <exclude>META-INF/jboss-beans.xml</exclude>
                 <exclude>META-INF/LICENSE.txt</exclude>
                 <exclude>META-INF/NOTICE.txt</exclude>

@@ -33,12 +33,12 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>11.0.1</version>
+      <version>11.0.2</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.1</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
