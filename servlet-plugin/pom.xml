@@ -56,7 +56,7 @@
       -->
       <groupId>org.informantproject.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
-      <version>11.0.1-SNAPSHOT</version>
+      <version>11.0.2-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -81,7 +81,7 @@
       <!-- TODO replace spring mock servlet objects with embedded jetty -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>3.1.0.RELEASE</version>
+      <version>3.1.1.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -91,7 +91,7 @@
       -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>3.1.0.RELEASE</version>
+      <version>3.1.1.RELEASE</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
