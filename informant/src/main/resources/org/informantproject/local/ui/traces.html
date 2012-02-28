@@ -30,6 +30,7 @@
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.selection.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.navigate.min.js"></script>
+<script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.resize.min.js"></script>
 
 <script id="tracesTemplate" type="text/x-handlebars-template">
 {{#each_with_index .}}
@@ -345,12 +346,15 @@
 </script>
 </head>
 <body>
-  <h1 class="page-title"><a href="/">Informant</a> <span style="color: #333">| Traces</span></h1>
+  <h1 class="header">
+    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Traces</span>
+    <span class="header-see-also">see also: <a href="configuration.html">Configuration</a></span>
+  </h1>
   <div>
     Date: <input style="width: 7em" type="text" id="datePicker">
   </div><br>
   <div>
-    <div id="placeholder" style="width: 900px; height: 300px"></div>
+    <div id="placeholder" style="height: 300px"></div>
   </div>
   <br>
   <button class="btn" id="showDetails">Show Details</button>

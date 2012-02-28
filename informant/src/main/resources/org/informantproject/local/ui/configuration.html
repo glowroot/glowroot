@@ -41,6 +41,44 @@
       }
     })
   }
+  function showAndFadeSuccessMessage(selector) {
+    $(selector).each(function() {
+      // handling crazy user clicking on the button
+      if ($(this).data('timeout')) {
+        clearTimeout($(this).data('timeout'))
+      }
+      $(this).stop().animate({opacity:'100'})
+      $(this).css('display','inline-block')
+      var outerThis = this
+      $(this).data('timeout', setTimeout(function() { $(outerThis).fadeOut(1000) }, 1000))
+    })
+  }
+  function showSpinner(selector) {
+    $(selector).each(function() {
+      var data = $(this).data()
+      data.spinner = new Spinner({ lines: 10, width: 4, radius: 8 })
+      var outerThis = this
+      function displaySpinner() {
+        // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
+        if (data.spinner) {
+          $(outerThis).css('display','inline-block')
+          data.spinner.spin(outerThis)
+        }
+      }
+      // small delay so that if there is an immediate page return it doesn't blink
+      setTimeout(displaySpinner, 100)
+    })
+  }
+  function hideSpinner(selector) {
+    $(selector).each(function() {
+      var data = $(this).data()
+      if (data.spinner) {
+        data.spinner.stop()
+        delete data.spinner
+      }
+      $(this).hide()
+    })
+  }
   function update() {
     var configuration = {
       'enabled': $('#enabled').is(':checked'),
@@ -52,44 +90,47 @@
       'maxSpansPerTrace': $('#maxSpansPerTrace').val()
     }
     $.post('/configuration/update', JSON.stringify(configuration), function() {
-      window.location.href = '/'
+      showAndFadeSuccessMessage('#saveComplete')
     })
   }
+  var postingClearData = false
   function clearData() {
-    var spinOptions = { lines: 10, width: 4, radius: 8 }
-    var spinner = new Spinner(spinOptions)
+    // handling crazy user clicking on the button
+    if (postingClearData) return
+    postingClearData = true
     var keepMillis = $('input:radio[name=keepMillis]:checked').val()
     var compact = $('#compact').is(':checked')
     $.post('/admin/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
-      spinner.stop()
-      window.location.href = '/'
+      postingClearData = false
+      hideSpinner('#clearButtonSpinner')
+      showAndFadeSuccessMessage('#clearSuccessMessage')
     })
-    function displaySpinner() {
-      spinner.spin(document.getElementById('clearButtonSpinner'))
-    }
-    // small delay so that if there is an immediate page return it doesn't blink
-    setTimeout(displaySpinner, 100)
+    // in case button is clicked again before success message is hidden
+    $('#clearSuccessMessage').hide()
+    showSpinner('#clearButtonSpinner')
   }
+  var postingResize = false
   function resizeRollingDb() {
-    var spinOptions = { lines: 10, width: 4, radius: 8 }
-    var spinner = new Spinner(spinOptions)
+    // handling crazy user clicking on the button
+    if (postingResize) return
+    postingResize = true
     var newRollingSizeMb = $('#rollingSizeMb').val()
     $.post('/admin/resizerolling?newRollingSizeMb=' + newRollingSizeMb, function() {
-      spinner.stop()
-      window.location.href = '/'
+      postingResize = false
+      hideSpinner('#resizeButtonSpinner')
+      showAndFadeSuccessMessage('#resizeSuccessMessage')
     })
-    function displaySpinner() {
-      spinner.spin(document.getElementById('resizeButtonSpinner'))
-    }
-    // small delay so that if there is an immediate page return it doesn't blink
-    setTimeout(displaySpinner, 100)
+    // in case button is clicked again before success message is hidden
+    $('#resizeSuccessMessage').hide()
+    showSpinner('#resizeButtonSpinner')
   }
   read()
 </script>
 </head>
 <body>
-  <h1 class="page-title">
-    <a href="/">Informant</a> <span style="color: black">| Configuration</span>
+  <h1 class="header">
+    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Configuration</span>
+    <span class="header-see-also">see also: <a href="traces.html">Traces</a></span>
   </h1>
   <form class="form-horizontal">
     <fieldset>
@@ -157,6 +198,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="update()">Save changes</button>
+        <div id="saveComplete" class="form-button-success">Saved</div>
       </div>
     </fieldset>
     <fieldset>
@@ -194,9 +236,8 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="clearData()">Clear data</button>
-        <div id="clearButtonSpinner"
-          style="display: inline-block; margin-left: 30px; vertical-align: middle">
-        </div>
+        <div id="clearButtonSpinner" class="form-button-spinner"></div>
+        <div id="clearSuccessMessage" class="form-button-success">Cleared</div>
       </div>
     </fieldset>
     <fieldset>
@@ -220,9 +261,8 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="resizeRollingDb()">Resize</button>
-        <div id="resizeButtonSpinner"
-          style="display: inline-block; margin-left: 30px; vertical-align: middle">
-        </div>
+        <div id="resizeButtonSpinner" class="form-button-spinner"></div>
+        <div id="resizeSuccessMessage" class="form-button-success">Cleared</div>
       </div>
     </fieldset>
   </form>

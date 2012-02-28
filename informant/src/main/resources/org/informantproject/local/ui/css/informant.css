@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 body {
-  padding: 16px;
+  padding: 32px 48px;
 }
 @font-face {
   font-family: 'SpecialElite-Regular';
@@ -25,11 +25,57 @@ body {
   font-weight: normal;
   font-style: normal;
 }
-.page-title {
-  color: #b12930;
+.index-body {
+  text-align: center;
+  vertical-align: middle;
+  margin-top: 50px;
+}
+.index-body > h1 {
+  font-weight: normal;
+  padding: 10px;
+}
+.index-logo {
   font-family: 'SpecialElite-Regular';
+  font-size: 40px;
+  color: #b12930;
+}
+.index-item {
+  font-size: 36px;
+}
+.index-item > a, .index-item > a:hover {
+  color: #444444;
+}
+.header {
   font-weight: normal;
   margin-bottom: 24px;
+}
+.header-logo {
+  font-family: 'SpecialElite-Regular';
+  font-size: 34px;
+  border-right: 3px solid #555555;
+  padding-top: 6px;
+  padding-right: 10px;
+}
+.header-page-name {
+  color: #444444;
+  padding-left: 10px;
+}
+.header-see-also {
+  float: right;
+  color: #333333;
+  font-size: 20px;
+}
+.form-button-success {
+  display: none;
+  color: green;
+  font-size: 16px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.form-button-spinner {
+  display: none;
+  margin-left: 30px;
+  vertical-align: middle;
 }
 a, a:hover {
   color: #b12930;
