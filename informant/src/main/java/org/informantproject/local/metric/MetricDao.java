@@ -90,6 +90,13 @@ public class MetricDao {
         try {
             if (!dataSource.tableExists("metric_point")) {
                 dataSource.createTable("metric_point", columns);
+            } else if (dataSource.tableNeedsUpgrade("metric_point", columns)) {
+                logger.warn("upgrading metric_point table schema, which unfortunately at this point"
+                        + " just means dropping and re-create the table (losing existing data)");
+                dataSource.execute("drop table metric_point");
+                dataSource.createTable("metric_point", columns);
+                logger.warn("the schema for the metric_point table was outdated so it was dropped"
+                        + " and re-created, existing metric_point data was lost");
             }
             localValid = true;
         } catch (SQLException e) {

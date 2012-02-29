@@ -58,6 +58,14 @@ class ConfigurationDao {
         try {
             if (!dataSource.tableExists("configuration")) {
                 dataSource.createTable("configuration", columns);
+            } else if (dataSource.tableNeedsUpgrade("configuration", columns)) {
+                logger.warn("upgrading configuration table schema, which unfortunately at this"
+                        + " point just means dropping and re-create the table (losing existing"
+                        + " data)");
+                dataSource.execute("drop table configuration");
+                dataSource.createTable("configuration", columns);
+                logger.warn("the schema for the configuration table was outdated so it was dropped"
+                        + " and re-created, existing configuration data was lost");
             }
             localValid = true;
         } catch (SQLException e) {

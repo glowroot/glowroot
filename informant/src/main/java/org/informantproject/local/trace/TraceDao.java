@@ -82,10 +82,13 @@ public class TraceDao {
                 dataSource.createTable("trace", columns);
                 dataSource.createIndexes("trace", indexes);
             } else if (dataSource.tableNeedsUpgrade("trace", columns)) {
-                // the upgrade at this point is just drop/re-create
+                logger.warn("upgrading trace table schema, which unfortunately at this point just"
+                        + " means dropping and re-create the table (losing existing data)");
                 dataSource.execute("drop table trace");
                 dataSource.createTable("trace", columns);
                 dataSource.createIndexes("trace", indexes);
+                logger.warn("the schema for the trace table was outdated so it was dropped"
+                        + " and re-created, existing trace data was lost");
             }
         } catch (SQLException e) {
             errorOnInit = true;
