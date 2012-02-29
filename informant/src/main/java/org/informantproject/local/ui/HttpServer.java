@@ -233,21 +233,27 @@ public class HttpServer extends HttpServerBase {
             logger.error(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
+        HttpResponse response;
         if (responseText == null) {
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+            response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
-            return response;
         } else if (responseText instanceof String) {
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+            response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-            return response;
         } else {
             logger.error("Unexpected type of json service response '{}'",
                     responseText.getClass().getName());
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
+        // prevent caching of dynamic json data, using 'definitive' minimum set of headers from
+        // http://stackoverflow.com/questions/49547/
+        // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
+        response.setHeader(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+        response.setHeader(Names.PRAGMA, "no-cache");
+        response.setHeader(Names.EXPIRES, new Date(0));
+        return response;
     }
 
     private static Object callMethod(Object object, String methodName, String optionalArg)
