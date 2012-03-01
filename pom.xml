@@ -31,7 +31,7 @@
 
   <modules>
     <module>plugin-api</module>
-    <module>informant</module>
+    <module>core</module>
     <module>plugin-testkit</module>
     <module>integration-tests</module>
     <module>ui-testing</module>

@@ -17,7 +17,7 @@
   <dependencies>
     <dependency>
       <groupId>org.informantproject</groupId>
-      <artifactId>informant</artifactId>
+      <artifactId>informant-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

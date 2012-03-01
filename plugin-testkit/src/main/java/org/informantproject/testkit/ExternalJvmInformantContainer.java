@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.informantproject.util.DaemonExecutors;
+import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,18 +48,18 @@ class ExternalJvmInformantContainer extends InformantContainer {
     private ObjectInputStream objectIn;
 
     @Override
-    protected void initImpl(String options) throws Exception {
+    protected void initImpl(String agentArgs) throws Exception {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
-        String informantJarAndOptions = findInformantJarPath(classpath);
-        if (!Strings.isNullOrEmpty(options)) {
-            informantJarAndOptions += "=" + options;
+        String javaagentArg = "-javaagent:" + findInformantCoreJarPath(classpath);
+        if (!Strings.isNullOrEmpty(agentArgs)) {
+            javaagentArg += "=" + agentArgs;
         }
         ServerSocket serverSocket = new ServerSocket(0);
-        ProcessBuilder processBuilder = new ProcessBuilder(path, "-cp", classpath, "-javaagent:"
-                + informantJarAndOptions, ExternalJvmInformantContainer.class.getName(),
-                Integer.toString(serverSocket.getLocalPort()));
+        ProcessBuilder processBuilder = new ProcessBuilder(path, "-cp", classpath, javaagentArg,
+                ExternalJvmInformantContainer.class.getName(), Integer.toString(serverSocket
+                        .getLocalPort()));
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
         executorService = DaemonExecutors.newSingleThreadExecutor("ExternalMainPipe");
@@ -107,14 +107,15 @@ class ExternalJvmInformantContainer extends InformantContainer {
         }
     }
 
-    private static String findInformantJarPath(String classpath) {
+    private static String findInformantCoreJarPath(String classpath) {
         String[] classpathElements = classpath.split(File.pathSeparator);
         for (String classpathElement : classpathElements) {
-            if (new File(classpathElement).getName().matches("informant-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (new File(classpathElement).getName().matches(
+                    "informant-core-[0-9.]+(-SNAPSHOT)?.jar")) {
                 return classpathElement;
             }
         }
-        throw new IllegalStateException("Could not find informant.jar on the classpath: "
+        throw new IllegalStateException("Could not find informant-core.jar on the classpath: "
                 + classpath);
     }
 

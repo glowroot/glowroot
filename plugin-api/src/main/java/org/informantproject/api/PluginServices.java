@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public abstract class PluginServices {
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
 
     private static final String MAIN_ENTRY_POINT_CLASS_NAME =
-            "org.informantproject.MainEntryPoint";
+            "org.informantproject.core.MainEntryPoint";
     private static final String PLUGIN_SERVICES_GETTER_METHOD_NAME = "getPluginServices";
 
     // unfortunately this must be lazy loaded since otherwise there is a static initializer cycle

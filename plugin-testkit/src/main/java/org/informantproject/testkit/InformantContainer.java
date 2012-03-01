@@ -19,7 +19,7 @@ import java.io.File;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.informantproject.util.ThreadChecker;
+import org.informantproject.core.util.ThreadChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public abstract class InformantContainer {
         InformantContainer container;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
-            // process using -javaagent:informant.jar, the same way Informant is used by end users
+            // process using -javaagent:informant-core.jar
             logger.debug("newInstance(): using external JVM app container");
             container = new ExternalJvmInformantContainer();
         } else {

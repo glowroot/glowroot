@@ -38,21 +38,22 @@ public class JarFileShadingTest {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File informantJarFile = findInformantJarFileFromClasspath();
-        if (informantJarFile == null) {
-            informantJarFile = findInformantJarFileFromRelativePath();
+        File informantCoreJarFile = findInformantCoreJarFileFromClasspath();
+        if (informantCoreJarFile == null) {
+            informantCoreJarFile = findInformantCoreJarFileFromRelativePath();
         }
-        if (informantJarFile == null && System.getProperty("surefire.test.class.path") != null) {
-            throw new IllegalStateException("running inside maven"
-                    + " and can't find the Informant jar");
+        if (informantCoreJarFile == null
+                && System.getProperty("surefire.test.class.path") != null) {
+            throw new IllegalStateException("running inside maven and can't find"
+                    + " informant-core.jar");
         }
-        if (informantJarFile == null) {
+        if (informantCoreJarFile == null) {
             throw new IllegalStateException("You are probably running this test outside of maven"
                     + " (e.g. you are running this test from inside of Eclipse).  This test"
-                    + " requires the Informant jar to be available.  The easiest way to build the"
-                    + " Informant jar is to run 'mvn clean package' from the root directory of"
-                    + " this git repository.  After that you can re-run this test outside of maven"
-                    + " (e.g. from inside of Eclipse) and it should succeed.");
+                    + " requires informant-core.jar to be available.  The easiest way to build"
+                    + " informant-core.jar is to run 'mvn clean package' from the root directory"
+                    + " of this git repository.  After that you can re-run this test outside of"
+                    + " maven (e.g. from inside of Eclipse) and it should succeed.");
         }
         List<String> acceptableEntries = new ArrayList<String>();
         acceptableEntries.add("org.informantproject\\..*");
@@ -62,7 +63,7 @@ public class JarFileShadingTest {
         acceptableEntries.add("META-INF/org.informantproject\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/THIRD-PARTY\\.txt");
-        JarFile jarFile = new JarFile(informantJarFile);
+        JarFile jarFile = new JarFile(informantCoreJarFile);
         List<String> unacceptableEntries = new ArrayList<String>();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
             JarEntry jarEntry = e.nextElement();
@@ -83,12 +84,12 @@ public class JarFileShadingTest {
     // this covers the case where "mvn integration-test" is executed from inside the
     // informant-integration-test directory
     // this case wouldn't necessarily be covered by the relative path case below
-    private static File findInformantJarFileFromClasspath() {
+    private static File findInformantCoreJarFileFromClasspath() {
         String classpath = System.getProperty("java.class.path");
         String[] classpathElements = classpath.split(File.pathSeparator);
         for (String classpathElement : classpathElements) {
             File classpathElementFile = new File(classpathElement);
-            if (classpathElementFile.getName().matches("informant-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (classpathElementFile.getName().matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar")) {
                 return classpathElementFile;
             }
         }
@@ -96,11 +97,11 @@ public class JarFileShadingTest {
     }
 
     // this is mostly for convenience as it covers the case where this test is executed from
-    // inside eclipse after the Informant jar file has been built into ../informant/target
-    private static File findInformantJarFileFromRelativePath() {
-        File[] possibleMatches = new File("../informant/target").listFiles(new FilenameFilter() {
+    // inside eclipse after informant-core.jar file has been built into ../core/target
+    private static File findInformantCoreJarFileFromRelativePath() {
+        File[] possibleMatches = new File("../core/target").listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                return name.matches("informant-[0-9.]+(-SNAPSHOT)?.jar");
+                return name.matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar");
             }
         });
         if (possibleMatches.length == 0) {
@@ -108,8 +109,8 @@ public class JarFileShadingTest {
         } else if (possibleMatches.length == 1) {
             return possibleMatches[0];
         } else {
-            throw new IllegalStateException("More than one possible match"
-                    + " found for the Informant jar");
+            throw new IllegalStateException("More than one possible match found for"
+                    + " informant-core.jar");
         }
     }
 }

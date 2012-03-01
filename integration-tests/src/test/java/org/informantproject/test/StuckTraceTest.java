@@ -23,12 +23,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
-import org.informantproject.util.DaemonExecutors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

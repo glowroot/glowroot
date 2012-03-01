@@ -15,7 +15,7 @@
  */
 package org.informantproject.testkit;
 
-import org.informantproject.MainEntryPoint;
+import org.informantproject.core.MainEntryPoint;
 
 /**
  * @author Trask Stalnaker
