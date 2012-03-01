@@ -16,6 +16,7 @@
 package org.informantproject.trace;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.local.trace.StoredTrace;
 import org.informantproject.util.Clock;
@@ -28,6 +29,8 @@ import com.google.inject.Inject;
  */
 public class TraceTestData {
 
+    private static final AtomicInteger counter = new AtomicInteger();
+
     private final Clock clock;
 
     @Inject
@@ -37,7 +40,7 @@ public class TraceTestData {
 
     public StoredTrace createTrace() {
         StoredTrace storedTrace = new StoredTrace();
-        storedTrace.setId("abc123");
+        storedTrace.setId("abc" + counter.getAndIncrement());
         storedTrace.setStartAt(clock.currentTimeMillis() - 10);
         storedTrace.setStuck(false);
         storedTrace.setDuration(TimeUnit.MILLISECONDS.toNanos(10));

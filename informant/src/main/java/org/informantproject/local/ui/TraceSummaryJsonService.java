@@ -18,6 +18,7 @@ package org.informantproject.local.ui;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -69,39 +70,28 @@ public class TraceSummaryJsonService implements JsonService {
         if (request.getFrom() < 0) {
             request.setFrom(clock.currentTimeMillis() + request.getFrom());
         }
-        List<StoredTraceSummary> liveSummaries = new ArrayList<StoredTraceSummary>();
+        List<StoredTraceSummary> activeTraceSummaries;
         if (request.getTo() == 0 || request.getTo() > clock.currentTimeMillis()) {
-            // capture live traces first to make sure that none are missed in between reading stored
-            // traces and then capturing live traces, possible duplicates are removed below
-            long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configurationService
-                    .getCoreConfiguration().getThresholdMillis());
-            for (Trace trace : traceRegistry.getTraces()) {
-                long duration = trace.getDuration();
-                if (duration >= thresholdNanos) {
-                    liveSummaries.add(new StoredTraceSummary(trace.getId(), clock
-                            .currentTimeMillis(), duration, false));
-                } else {
-                    // the traces are ordered by start time
-                    break;
-                }
-            }
+            // capture active traces first to make sure that none are missed in between reading
+            // stored traces and then capturing active traces (possible duplicates are removed
+            // below)
+            activeTraceSummaries = getActiveTraceSummaries();
+        } else {
+            activeTraceSummaries = Collections.emptyList();
         }
         if (request.getTo() == 0) {
             request.setTo(clock.currentTimeMillis());
         }
-        List<StoredTraceSummary> storedSummaries = traceDao.readStoredTraceSummaries(
+        List<StoredTraceSummary> storedTraceSummaries = traceDao.readStoredTraceSummaries(
                 request.getFrom(), request.getTo());
-
-        // TODO first remove duplicates within stored summaries (stuck/unstuck pair)
-
-        // remove duplicates between live and stored summaries
-        for (Iterator<StoredTraceSummary> i = liveSummaries.iterator(); i.hasNext();) {
-            StoredTraceSummary liveSummary = i.next();
-            for (Iterator<StoredTraceSummary> j = storedSummaries.iterator(); j.hasNext();) {
-                StoredTraceSummary storedSummary = j.next();
-                if (liveSummary.getId().equals(storedSummary.getId())) {
-                    // prefer stored summary if it is completed, otherwise prefer live summary
-                    if (storedSummary.isCompleted()) {
+        // remove duplicates between active and stored trace summaries
+        for (Iterator<StoredTraceSummary> i = activeTraceSummaries.iterator(); i.hasNext();) {
+            StoredTraceSummary activeTraceSummary = i.next();
+            for (Iterator<StoredTraceSummary> j = storedTraceSummaries.iterator(); j.hasNext();) {
+                StoredTraceSummary storedTraceSummary = j.next();
+                if (activeTraceSummary.getId().equals(storedTraceSummary.getId())) {
+                    // prefer stored trace if it is completed, otherwise prefer active trace
+                    if (storedTraceSummary.isCompleted()) {
                         i.remove();
                     } else {
                         j.remove();
@@ -111,18 +101,35 @@ public class TraceSummaryJsonService implements JsonService {
                 }
             }
         }
-        String response = writeResponse(storedSummaries, liveSummaries);
+        String response = writeResponse(storedTraceSummaries, activeTraceSummaries);
         logger.debug("handleSummaries(): response={}", response);
         return response;
     }
 
+    private List<StoredTraceSummary> getActiveTraceSummaries() {
+        List<StoredTraceSummary> activeTraceSummaries = new ArrayList<StoredTraceSummary>();
+        long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configurationService
+                .getCoreConfiguration().getThresholdMillis());
+        for (Trace trace : traceRegistry.getTraces()) {
+            long duration = trace.getDuration();
+            if (duration >= thresholdNanos) {
+                activeTraceSummaries.add(new StoredTraceSummary(trace.getId(), clock
+                        .currentTimeMillis(), duration, false));
+            } else {
+                // the traces are ordered by start time
+                break;
+            }
+        }
+        return activeTraceSummaries;
+    }
+
     private static String writeResponse(List<StoredTraceSummary> storedTraceSummaries,
-            List<StoredTraceSummary> liveTraceSummaries) throws IOException {
+            List<StoredTraceSummary> activeTraceSummaries) throws IOException {
 
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
         jw.beginObject();
-        jw.name("storedData").beginArray();
+        jw.name("storedTraces").beginArray();
         for (StoredTraceSummary storedTraceSummary : storedTraceSummaries) {
             jw.beginArray();
             jw.value(storedTraceSummary.getCapturedAt());
@@ -130,12 +137,12 @@ public class TraceSummaryJsonService implements JsonService {
             jw.endArray();
         }
         jw.endArray();
-        jw.name("liveData").beginArray();
-        for (StoredTraceSummary liveTraceSummary : liveTraceSummaries) {
+        jw.name("activeTraces").beginArray();
+        for (StoredTraceSummary activeTraceSummary : activeTraceSummaries) {
             jw.beginArray();
-            jw.value(liveTraceSummary.getCapturedAt());
-            jw.value(liveTraceSummary.getDuration() / 1000000000.0);
-            jw.value(liveTraceSummary.getId());
+            jw.value(activeTraceSummary.getCapturedAt());
+            jw.value(activeTraceSummary.getDuration() / 1000000000.0);
+            jw.value(activeTraceSummary.getId());
             jw.endArray();
         }
         jw.endArray();

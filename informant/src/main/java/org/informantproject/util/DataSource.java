@@ -305,17 +305,22 @@ public class DataSource {
             try {
                 for (Index index : indexes) {
                     for (String column : index.getColumns()) {
-                        if (!resultSet.next()
-                                || !index.getName().equalsIgnoreCase(
-                                        resultSet.getString("INDEX_NAME"))
+                        if (!resultSet.next()) {
+                            return true;
+                        }
+                        // hack-ish to skip over primary key constraints which seem to be always
+                        // prefixed in H2 by PRIMARY_KEY_
+                        while (resultSet.getString("INDEX_NAME").startsWith("PRIMARY_KEY_")) {
+                            resultSet.next();
+                        }
+                        if (!index.name.equalsIgnoreCase(resultSet.getString("INDEX_NAME"))
                                 || !column.equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))) {
                             return true;
                         }
                     }
                 }
                 // don't check resultSet.next(), ok to have extra indexes (alphabetically at the
-                // end)
-                // (e.g. for some kind of temporary performance tuning)
+                // end, e.g. for some kind of temporary performance tuning)
                 return false;
             } finally {
                 resultSet.close();

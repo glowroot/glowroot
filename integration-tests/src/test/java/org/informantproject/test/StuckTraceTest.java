@@ -16,16 +16,19 @@
 package org.informantproject.test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
+import org.informantproject.util.DaemonExecutors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,14 +59,34 @@ public class StuckTraceTest {
         coreConfiguration.setStuckThresholdMillis(100);
         container.getInformant().updateCoreConfiguration(coreConfiguration);
         // when
-        container.executeAppUnderTest(ShouldGenerateStuckTrace.class);
+        ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
+        Future<Void> future = executorService.submit(new Callable<Void>() {
+            public Void call() throws Exception {
+                container.executeAppUnderTest(ShouldGenerateStuckTrace.class);
+                return null;
+            }
+        });
         // then
+        // need to give container enough time to start up and for the trace to get stuck
+        // loop in order to not wait too little or too much
+        Trace trace = null;
+        for (int i = 0; i < 100; i++) {
+            List<Trace> traces = container.getInformant().getAllTraces();
+            if (traces.size() == 1) {
+                trace = traces.get(0);
+                break;
+            }
+            Thread.sleep(50);
+        }
+        assertThat(trace.isStuck(), is(true));
+        assertThat(trace.isCompleted(), is(false));
+        future.get();
+        // should now be reported as unstuck
         List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.get(0).isStuck(), is(true));
-        assertThat(traces.get(0).isCompleted(), is(false));
-        assertThat(traces.get(1).isStuck(), is(true));
-        assertThat(traces.get(1).isCompleted(), is(true));
-        assertThat(traces.get(1).getDuration(), is(not(0L)));
+        assertThat(traces.get(0).isStuck(), is(false));
+        assertThat(traces.get(0).isCompleted(), is(true));
+        // cleanup
+        executorService.shutdown();
     }
 
     public static class ShouldGenerateStuckTrace implements AppUnderTest, RootSpanMarker {
@@ -71,7 +94,7 @@ public class StuckTraceTest {
             rootSpanMarker();
         }
         public void rootSpanMarker() throws InterruptedException {
-            Thread.sleep(150);
+            Thread.sleep(300);
         }
     }
 }

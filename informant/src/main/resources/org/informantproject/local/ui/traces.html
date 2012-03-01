@@ -171,24 +171,24 @@
       var to = from + 24 * 60 * 60 * 1000; // from + 24 hours
       getTraceSummaries(from, to)
     }
-    function plotResponseData(storedData, liveData) {
+    function plotResponseData(storedTraces, activeTraces) {
       var overrideOptions = {}
-      if (storedData.length || liveData.length) {
+      if (storedTraces.length || activeTraces.length) {
         var xmin
         var xmax
-        if (storedData.length) {
-          xmin = storedData[0][0]
-          xmax = storedData[storedData.length - 1][0]
+        if (storedTraces.length) {
+          xmin = storedTraces[0][0]
+          xmax = storedTraces[storedTraces.length - 1][0]
         }
-        if (liveData.length) {
-          xmin = Math.min(xmin, liveData[0][0])
-          xmax = Math.max(xmax, liveData[liveData.length - 1][0])
+        if (activeTraces.length) {
+          xmin = Math.min(xmin, activeTraces[0][0])
+          xmax = Math.max(xmax, activeTraces[activeTraces.length - 1][0])
         }
         overrideOptions = {
           xaxis: { zoomRange : [ xmin, xmax ] }
         }
       }
-      plot = $.plot($('#placeholder'), [storedData, liveData], $.extend(true, {}, options,
+      plot = $.plot($('#placeholder'), [storedTraces, activeTraces], $.extend(true, {}, options,
           overrideOptions))
       selection = null
     }
@@ -205,16 +205,16 @@
 
     function getTraceSummaries(from, to) {
       $.getJSON('/trace/summaries?from=' + from + '&to=' + to, function(response) {
-        var storedData = response.storedData
-        liveData = response.liveData
+        var storedTraces = response.storedTraces
+        activeTraces = response.activeTraces
         // shift for timezone
-        for (var i = 0; i < storedData.length; i++) {
-          storedData[i][0] -= new Date(storedData[i][0]).getTimezoneOffset() * 60 * 1000
+        for (var i = 0; i < storedTraces.length; i++) {
+          storedTraces[i][0] -= new Date(storedTraces[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        for (var i = 0; i < liveData.length; i++) {
-          liveData[i][0] -= new Date(liveData[i][0]).getTimezoneOffset() * 60 * 1000
+        for (var i = 0; i < activeTraces.length; i++) {
+          activeTraces[i][0] -= new Date(activeTraces[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        plotResponseData(storedData, liveData)
+        plotResponseData(storedTraces, activeTraces)
       })
       $('#traces').html('')
     }
@@ -229,10 +229,12 @@
         low = selection.yaxis.from * 1000
         high = selection.yaxis.to * 1000
         // add live traces inside the selection
-        for (var i = 0; i < liveData.length; i++) {
-          if (liveData[i][0] >= selection.xaxis.from && liveData[i][0] <= selection.xaxis.to
-              && liveData[i][1] >= selection.yaxis.from && liveData[i][1] <= selection.yaxis.to) {
-            extraIds.push(liveData[i][2])
+        for (var i = 0; i < activeTraces.length; i++) {
+          if (activeTraces[i][0] >= selection.xaxis.from
+              && activeTraces[i][0] <= selection.xaxis.to
+              && activeTraces[i][1] >= selection.yaxis.from
+              && activeTraces[i][1] <= selection.yaxis.to) {
+            extraIds.push(activeTraces[i][2])
           }
         }
       } else {
@@ -243,10 +245,10 @@
         low = axes.yaxis.min * 1000
         high = axes.yaxis.max * 1000
         // add live traces inside the current view
-        for (var i = 0; i < liveData.length; i++) {
-          if (liveData[i][0] >= axes.xaxis.min && liveData[i][0] <= axes.xaxis.max
-              && liveData[i][1] >= axes.yaxis.min && liveData[i][1] <= axes.yaxis.max) {
-            extraIds.push(liveData[i][2])
+        for (var i = 0; i < activeTraces.length; i++) {
+          if (activeTraces[i][0] >= axes.xaxis.min && activeTraces[i][0] <= axes.xaxis.max
+              && activeTraces[i][1] >= axes.yaxis.min && activeTraces[i][1] <= axes.yaxis.max) {
+            extraIds.push(activeTraces[i][2])
           }
         }
       }

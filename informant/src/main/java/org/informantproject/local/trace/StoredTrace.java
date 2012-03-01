@@ -23,7 +23,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class StoredTrace {
+public class StoredTrace implements Comparable<StoredTrace> {
 
     private String id;
     private long startAt;
@@ -126,6 +126,10 @@ public class StoredTrace {
 
     public void setMergedStackTree(CharSequence mergedStackTree) {
         this.mergedStackTree = mergedStackTree;
+    }
+
+    public int compareTo(StoredTrace o) {
+        return (int) (startAt - o.startAt);
     }
 
     @Override

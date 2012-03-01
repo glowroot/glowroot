@@ -114,7 +114,7 @@ public class TraceSinkLocal implements TraceSink {
         StoredTrace storedTrace = new StoredTrace();
         storedTrace.setId(trace.getId());
         storedTrace.setStartAt(trace.getStartDate().getTime());
-        storedTrace.setStuck(trace.isStuck());
+        storedTrace.setStuck(trace.isStuck() && !trace.isCompleted());
         storedTrace.setDuration(trace.getDuration());
         storedTrace.setCompleted(trace.isCompleted());
         Gson gson = new Gson();

@@ -47,10 +47,9 @@ public class TraceDaoPerformanceMain {
         TraceTestData traceTestData = injector.getInstance(TraceTestData.class);
         TraceDao traceDao = injector.getInstance(TraceDao.class);
 
-        StoredTrace storedTrace = traceTestData.createTrace();
         Stopwatch stopwatch = new Stopwatch().start();
         for (int i = 0; i < 1000; i++) {
-            traceDao.storeTrace(storedTrace);
+            traceDao.storeTrace(traceTestData.createTrace());
         }
         System.out.println(stopwatch.elapsedMillis());
         System.out.println(traceDao.count());

@@ -26,6 +26,7 @@ import org.informantproject.util.Clock;
 import org.informantproject.util.DataSource;
 import org.informantproject.util.DataSource.Column;
 import org.informantproject.util.DataSource.Index;
+import org.informantproject.util.DataSource.PrimaryKeyColumn;
 import org.informantproject.util.DataSource.RowMapper;
 import org.informantproject.util.FileBlock;
 import org.informantproject.util.FileBlock.InvalidBlockId;
@@ -50,7 +51,7 @@ public class TraceDao {
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private static ImmutableList<Column> columns = ImmutableList.of(
-            new Column("id", Types.VARCHAR),
+            new PrimaryKeyColumn("id", Types.VARCHAR),
             new Column("captured_at", Types.BIGINT),
             new Column("start_at", Types.BIGINT),
             new Column("stuck", Types.BOOLEAN),
@@ -120,7 +121,7 @@ public class TraceDao {
             }
         }
         try {
-            dataSource.update("insert into trace (id, captured_at, start_at, stuck, duration,"
+            dataSource.update("merge into trace (id, captured_at, start_at, stuck, duration,"
                     + " completed, thread_names, username, root_span, spans, merged_stack_tree)"
                     + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", storedTrace.getId(),
                     capturedAt, storedTrace.getStartAt(), storedTrace.isStuck(),
@@ -148,24 +149,30 @@ public class TraceDao {
         }
     }
 
-    // multiple stored traces for the same id can exist in the case of stuck/unstuck trace records
-    public List<StoredTrace> readStoredTraces(String id) {
+    public StoredTrace readStoredTrace(String id) {
         logger.debug("readStoredTraces(): id={}", id);
         if (!valid) {
-            return Collections.emptyList();
+            return null;
         }
         List<StoredTrace> storedTraces;
         try {
-            storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, thread_names, username, root_span, spans, merged_stack_tree"
-                    + " from trace where id = ?", new Object[] { id }, new TraceRowMapper());
+            storedTraces = dataSource.query("select id, captured_at, start_at,"
+                    + " stuck, duration, completed, thread_names, username, root_span, spans,"
+                    + " merged_stack_tree from trace where id = ?", new Object[] { id },
+                    new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return null;
+        }
+        if (storedTraces.isEmpty()) {
+            return null;
+        } else if (storedTraces.size() > 1) {
+            logger.error("multiple records returned for id '{}'", id);
         }
         // read from rolling file outside of jdbc connection
+        StoredTrace storedTrace = storedTraces.get(0);
         fillInRollingFileData(storedTraces);
-        return storedTraces;
+        return storedTrace;
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
@@ -219,32 +226,36 @@ public class TraceDao {
 
     private void fillInRollingFileData(List<StoredTrace> storedTraces) {
         for (StoredTrace storedTrace : storedTraces) {
-            if (storedTrace.getSpans() != null) {
-                String sp = null;
-                try {
-                    sp = rollingFile.read(new FileBlock(storedTrace.getSpans().toString()));
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
-                } catch (InvalidBlockId e) {
-                    logger.error(e.getMessage(), e);
-                } catch (FileBlockNoLongerExists e) {
-                }
-                storedTrace.setSpans(sp);
+            fillInRollingFileData(storedTrace);
+        }
+    }
+
+    private void fillInRollingFileData(StoredTrace storedTrace) {
+        if (storedTrace.getSpans() != null) {
+            String sp = null;
+            try {
+                sp = rollingFile.read(new FileBlock(storedTrace.getSpans().toString()));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            } catch (InvalidBlockId e) {
+                logger.error(e.getMessage(), e);
+            } catch (FileBlockNoLongerExists e) {
             }
-            if (storedTrace.getMergedStackTree() != null) {
-                String mst = null;
-                try {
-                    mst = rollingFile.read(new FileBlock(storedTrace.getMergedStackTree()
-                            .toString()));
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
-                } catch (InvalidBlockId e) {
-                    logger.error(e.getMessage(), e);
-                } catch (FileBlockNoLongerExists e) {
-                    // TODO provide user message in this case
-                }
-                storedTrace.setMergedStackTree(mst);
+            storedTrace.setSpans(sp);
+        }
+        if (storedTrace.getMergedStackTree() != null) {
+            String mst = null;
+            try {
+                mst = rollingFile.read(new FileBlock(storedTrace.getMergedStackTree()
+                        .toString()));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            } catch (InvalidBlockId e) {
+                logger.error(e.getMessage(), e);
+            } catch (FileBlockNoLongerExists e) {
+                // TODO provide user message in this case
             }
+            storedTrace.setMergedStackTree(mst);
         }
     }
 

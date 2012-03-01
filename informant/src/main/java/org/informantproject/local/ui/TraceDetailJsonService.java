@@ -16,8 +16,9 @@
 package org.informantproject.local.ui;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.informantproject.local.trace.StoredTrace;
 import org.informantproject.local.trace.TraceDao;
@@ -73,39 +74,47 @@ public class TraceDetailJsonService implements JsonService {
         long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                 * NANOSECONDS_PER_MILLISECOND);
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(from, to, low, high);
-        if (request.getExtraIds() != null) {
-            // check live traces for the extra ids first
-            List<String> extraIds;
-            if (request.getExtraIds().length() == 0) {
-                extraIds = Collections.emptyList();
-            } else {
-                extraIds = Lists.newArrayList(request.getExtraIds().split(","));
-            }
-            for (Trace trace : traceRegistry.getTraces()) {
-                if (extraIds.contains(trace.getId())) {
-                    storedTraces.add(traceSinkLocal.buildStoredTrace(trace));
-                    extraIds.remove(trace.getId());
-                }
-            }
-            // if any extra ids were not found in the live traces, then they must have completed so
-            // read them from trace dao
-            for (String extraId : extraIds) {
-                List<StoredTrace> extraTraces = traceDao.readStoredTraces(extraId);
-                if (!extraTraces.isEmpty()) {
-                    storedTraces.add(extraTraces.get(extraTraces.size() - 1));
-                } else {
-                    logger.warn("requested extra id '{}' not found in either live or stored"
-                            + " traces", extraId);
-                }
-            }
-        }
-        String response = writeResponse(storedTraces);
+        List<StoredTrace> mergedStoredTraces = mergeInExtraTraces(storedTraces,
+                request.getExtraIds());
+        String response = writeResponse(mergedStoredTraces);
         if (response.length() <= 2000) {
             logger.debug("handleDetails(): response={}", response);
         } else {
             logger.debug("handleDetails(): response={}...", response.substring(0, 2000));
         }
         return response;
+    }
+
+    private List<StoredTrace> mergeInExtraTraces(List<StoredTrace> storedTraces,
+            String extraIdsParam) {
+
+        if (extraIdsParam == null || extraIdsParam.length() == 0) {
+            return storedTraces;
+        }
+        List<String> extraIds = Lists.newArrayList(extraIdsParam.split(","));
+        Map<String, StoredTrace> mergedStoredTraces = new HashMap<String, StoredTrace>();
+        for (StoredTrace storedTrace : storedTraces) {
+            mergedStoredTraces.put(storedTrace.getId(), storedTrace);
+        }
+        // check active traces for the extra ids first
+        for (Trace trace : traceRegistry.getTraces()) {
+            if (extraIds.contains(trace.getId())) {
+                mergedStoredTraces.put(trace.getId(), traceSinkLocal.buildStoredTrace(trace));
+                extraIds.remove(trace.getId());
+            }
+        }
+        // if any extra ids were not found in the active traces, then they must have completed
+        // so read them from trace dao
+        for (String extraId : extraIds) {
+            StoredTrace extraTrace = traceDao.readStoredTrace(extraId);
+            if (extraTrace == null) {
+                logger.warn("requested extra id '{}' not found in either active or stored"
+                        + " traces", extraId);
+            } else {
+                mergedStoredTraces.put(extraTrace.getId(), extraTrace);
+            }
+        }
+        return Lists.newArrayList(mergedStoredTraces.values());
     }
 
     private static String writeResponse(List<StoredTrace> storedTraces) throws IOException {
