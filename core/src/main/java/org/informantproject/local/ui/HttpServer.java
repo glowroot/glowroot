@@ -112,7 +112,7 @@ public class HttpServer extends HttpServerBase {
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             AdminJsonService adminJsonService, StatJsonService statJsonService) {
 
-        super(port, "Informant-");
+        super(port);
         // the parentheses define the part of the match that is used to dynamically construct the
         // "handleX" method to call in the json service, e.g. /trace/details calls the method
         // handleDetails in TraceDetailJsonService

@@ -18,7 +18,6 @@ package org.informantproject.core.util;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-import org.informantproject.core.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
@@ -34,9 +33,10 @@ import com.google.common.base.Charsets;
 public class EchoHttpServer extends HttpServerBase {
 
     public EchoHttpServer(int port) {
-        super(port, "");
+        super(port);
     }
 
+    @Override
     public HttpResponse handleRequest(HttpRequest request) {
         String content = request.getContent().toString(Charsets.ISO_8859_1);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);

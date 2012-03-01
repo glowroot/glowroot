@@ -68,12 +68,11 @@ public abstract class HttpServerBase {
         });
     }
 
-    public HttpServerBase(int port, String threadNamePrefix) {
+    public HttpServerBase(int port) {
+        // thread names will be overridden by ThreadNameDeterminer above
         bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
-                DaemonExecutors.newCachedThreadPool(threadNamePrefix
-                        + "Informant-HttpServer-Boss"),
-                DaemonExecutors.newCachedThreadPool(threadNamePrefix
-                        + "Informant-HttpServer-Worker")));
+                DaemonExecutors.newCachedThreadPool("<thread name will be overridden>"),
+                DaemonExecutors.newCachedThreadPool("<thread name will be overridden>")));
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
                 ChannelPipeline pipeline = pipeline();
