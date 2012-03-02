@@ -15,16 +15,9 @@
  */
 package org.informantproject.plugin.servlet;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
-import org.informantproject.api.Logger;
-import org.informantproject.api.LoggerFactory;
-import org.informantproject.shaded.google.common.cache.CacheBuilder;
-import org.informantproject.shaded.google.common.cache.CacheLoader;
-import org.informantproject.shaded.google.common.cache.LoadingCache;
+import org.informantproject.api.UnresolvedMethod;
 
 /**
  * @author Trask Stalnaker
@@ -32,126 +25,44 @@ import org.informantproject.shaded.google.common.cache.LoadingCache;
  */
 class HttpServletRequest {
 
-    private static final Logger logger = LoggerFactory.getLogger(HttpServletRequest.class);
-
-    private static final LoadingCache<ClassLoader, ScopedMethods> methodCache = CacheBuilder
-            .newBuilder().weakKeys().build(new CacheLoader<ClassLoader, ScopedMethods>() {
-                @Override
-                public ScopedMethods load(ClassLoader classLoader) throws Exception {
-                    return new ScopedMethods(classLoader);
-                }
-            });
+    private static final UnresolvedMethod getSessionOneArgMethod = new UnresolvedMethod(
+            "javax.servlet.http.HttpServletRequest", "getSession", boolean.class);
+    private static final UnresolvedMethod getMethodMethod = new UnresolvedMethod(
+            "javax.servlet.http.HttpServletRequest", "getMethod");
+    private static final UnresolvedMethod getRequestURIMethod = new UnresolvedMethod(
+            "javax.servlet.http.HttpServletRequest", "getRequestURI");
+    private static final UnresolvedMethod getParameterMapMethod = new UnresolvedMethod(
+            "javax.servlet.http.HttpServletRequest", "getParameterMap");
+    private static final UnresolvedMethod getAttributeMethod = new UnresolvedMethod(
+            "javax.servlet.http.HttpServletRequest", "getAttribute", String.class);
 
     private final Object realRequest;
-    private final ScopedMethods methods;
 
     private HttpServletRequest(Object realRequest) {
         this.realRequest = realRequest;
-        try {
-            methods = methodCache.get(realRequest.getClass().getClassLoader());
-        } catch (ExecutionException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
     }
 
     HttpSession getSession(boolean create) {
-        try {
-            return HttpSession.from(methods.getSessionOneArgMethod.invoke(realRequest, create));
-        } catch (IllegalArgumentException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (InvocationTargetException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        return HttpSession.from(getSessionOneArgMethod.invoke(realRequest, create));
     }
 
     String getMethod() {
-        try {
-            return (String) methods.getMethodMethod.invoke(realRequest);
-        } catch (IllegalArgumentException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (InvocationTargetException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        return (String) getMethodMethod.invoke(realRequest);
     }
 
     String getRequestURI() {
-        try {
-            return (String) methods.getRequestURIMethod.invoke(realRequest);
-        } catch (IllegalArgumentException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (InvocationTargetException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        return (String) getRequestURIMethod.invoke(realRequest);
     }
 
     Map<?, ?> getParameterMap() {
-        try {
-            return (Map<?, ?>) methods.getParameterMapMethod.invoke(realRequest);
-        } catch (IllegalArgumentException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (InvocationTargetException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        return (Map<?, ?>) getParameterMapMethod.invoke(realRequest);
     }
 
     Object getAttribute(String name) {
-        try {
-            return methods.getAttributeMethod.invoke(realRequest, name);
-        } catch (IllegalArgumentException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        } catch (InvocationTargetException e) {
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        return getAttributeMethod.invoke(realRequest, name);
     }
 
     static HttpServletRequest from(Object realRequest) {
         return realRequest == null ? null : new HttpServletRequest(realRequest);
-    }
-
-    private static final class ScopedMethods {
-
-        private final Method getSessionOneArgMethod;
-        private final Method getMethodMethod;
-        private final Method getRequestURIMethod;
-        private final Method getParameterMapMethod;
-        private final Method getAttributeMethod;
-
-        private ScopedMethods(ClassLoader classLoader) throws ClassNotFoundException,
-                SecurityException, NoSuchMethodException {
-
-            Class<?> httpServletRequestClass = classLoader
-                    .loadClass("javax.servlet.http.HttpServletRequest");
-            getSessionOneArgMethod = httpServletRequestClass.getMethod("getSession", boolean.class);
-            getMethodMethod = httpServletRequestClass.getMethod("getMethod");
-            getRequestURIMethod = httpServletRequestClass.getMethod("getRequestURI");
-            getParameterMapMethod = httpServletRequestClass.getMethod("getParameterMap");
-            getAttributeMethod = httpServletRequestClass.getMethod("getAttribute", String.class);
-        }
     }
 }

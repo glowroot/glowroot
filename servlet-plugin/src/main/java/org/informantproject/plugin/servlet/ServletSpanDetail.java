@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
-import org.informantproject.shaded.google.common.base.Strings;
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -172,8 +171,7 @@ class ServletSpanDetail implements RootSpanDetail {
 
     private void addHttpSessionContext(SpanContextMap context) {
         if (sessionIdUpdatedValue != null) {
-            context.put("session id (at beginning of this request)",
-                    Strings.nullToEmpty(sessionIdInitialValue));
+            context.put("session id (at beginning of this request)", sessionIdInitialValue);
             context.put("session id (updated during this request)", sessionIdUpdatedValue);
         } else if (sessionIdInitialValue != null) {
             context.put("session id", sessionIdInitialValue);

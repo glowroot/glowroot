@@ -50,16 +50,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!--
-        using shaded-guava dependency to take advantage of
-        the guava library already included in the Informant jar
-      -->
-      <groupId>org.informantproject.shaded</groupId>
-      <artifactId>shaded-guava</artifactId>
-      <version>11.0.2-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-servlet_3.0_spec</artifactId>
       <version>1.0</version>
