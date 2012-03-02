@@ -65,14 +65,14 @@ body {
   color: #333333;
   font-size: 20px;
 }
-.form-button-success {
+.button-success-message {
   display: none;
   color: green;
   font-size: 16px;
   margin-left: 10px;
   vertical-align: middle;
 }
-.form-button-spinner {
+.button-spinner {
   display: none;
   margin-left: 30px;
   vertical-align: middle;

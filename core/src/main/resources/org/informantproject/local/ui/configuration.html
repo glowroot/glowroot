@@ -22,7 +22,8 @@
 <link rel="stylesheet" href="bootstrap/2.0.0/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
-<script type="text/javascript" src="spin/1.2.3/spin.min.js"></script>
+<script type="text/javascript" src="spin/1.2.4/spin.min.js"></script>
+<script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
   function read() {
     $.getJSON('/configuration/read', function(configuration) {
@@ -39,44 +40,6 @@
         $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
         $('#rollingSizeHelp').css('display', 'inline-block')
       }
-    })
-  }
-  function showAndFadeSuccessMessage(selector) {
-    $(selector).each(function() {
-      // handling crazy user clicking on the button
-      if ($(this).data('timeout')) {
-        clearTimeout($(this).data('timeout'))
-      }
-      $(this).stop().animate({opacity:'100'})
-      $(this).css('display','inline-block')
-      var outerThis = this
-      $(this).data('timeout', setTimeout(function() { $(outerThis).fadeOut(1000) }, 1000))
-    })
-  }
-  function showSpinner(selector) {
-    $(selector).each(function() {
-      var data = $(this).data()
-      data.spinner = new Spinner({ lines: 10, width: 4, radius: 8 })
-      var outerThis = this
-      function displaySpinner() {
-        // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
-        if (data.spinner) {
-          $(outerThis).css('display','inline-block')
-          data.spinner.spin(outerThis)
-        }
-      }
-      // small delay so that if there is an immediate page return it doesn't blink
-      setTimeout(displaySpinner, 100)
-    })
-  }
-  function hideSpinner(selector) {
-    $(selector).each(function() {
-      var data = $(this).data()
-      if (data.spinner) {
-        data.spinner.stop()
-        delete data.spinner
-      }
-      $(this).hide()
     })
   }
   function update() {
@@ -198,7 +161,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="update()">Save changes</button>
-        <div id="saveComplete" class="form-button-success">Saved</div>
+        <div id="saveComplete" class="button-success-message">Saved</div>
       </div>
     </fieldset>
     <fieldset>
@@ -236,8 +199,8 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="clearData()">Clear data</button>
-        <div id="clearButtonSpinner" class="form-button-spinner"></div>
-        <div id="clearSuccessMessage" class="form-button-success">Cleared</div>
+        <div id="clearButtonSpinner" class="button-spinner"></div>
+        <div id="clearSuccessMessage" class="button-success-message">Cleared</div>
       </div>
     </fieldset>
     <fieldset>
@@ -261,8 +224,8 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="resizeRollingDb()">Resize</button>
-        <div id="resizeButtonSpinner" class="form-button-spinner"></div>
-        <div id="resizeSuccessMessage" class="form-button-success">Cleared</div>
+        <div id="resizeButtonSpinner" class="button-spinner"></div>
+        <div id="resizeSuccessMessage" class="button-success-message">Cleared</div>
       </div>
     </fieldset>
   </form>

@@ -79,6 +79,8 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/local/ui/traces.html");
         uriMappings.put(Pattern.compile("^/configuration.html$"),
                 "org/informantproject/local/ui/configuration.html");
+        uriMappings.put(Pattern.compile("^/plugins.html$"),
+                "org/informantproject/local/ui/plugins.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
@@ -110,7 +112,8 @@ public class HttpServer extends HttpServerBase {
             TraceDetailJsonService traceDetailJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
-            AdminJsonService adminJsonService, StatJsonService statJsonService) {
+            AdminJsonService adminJsonService, StatJsonService statJsonService,
+            PluginJsonService pluginJsonService) {
 
         super(port);
         // the parentheses define the part of the match that is used to dynamically construct the
@@ -123,6 +126,7 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);
         uriMappings.put(Pattern.compile("^/admin/(.*)"), adminJsonService);
         uriMappings.put(Pattern.compile("^/stat/(.*)"), statJsonService);
+        uriMappings.put(Pattern.compile("^/plugin/(.*)"), pluginJsonService);
     }
 
     @Override

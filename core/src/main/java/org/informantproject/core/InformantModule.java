@@ -18,12 +18,15 @@ package org.informantproject.core;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCollector;
 import org.informantproject.core.trace.StackCollector;
 import org.informantproject.core.trace.StuckTraceCollector;
 import org.informantproject.core.util.Clock;
+import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.trace.TraceSinkLocal;
@@ -35,6 +38,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
  * Primary Guice module.
@@ -45,6 +51,9 @@ import com.google.inject.Singleton;
 class InformantModule extends AbstractModule {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantModule.class);
+
+    // TODO revisit this
+    private static final boolean USE_NETTY_BLOCKING_IO = false;
 
     private final CommandLineOptions commandLineOptions;
 
@@ -67,6 +76,7 @@ class InformantModule extends AbstractModule {
         injector.getInstance(StackCollector.class).shutdown();
         injector.getInstance(MetricCollector.class).shutdown();
         injector.getInstance(TraceSinkLocal.class).shutdown();
+        injector.getInstance(AsyncHttpClient.class).close();
         try {
             injector.getInstance(DataSource.class).close();
         } catch (SQLException e) {
@@ -99,6 +109,27 @@ class InformantModule extends AbstractModule {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
         }
+    }
+
+    @Provides
+    @Singleton
+    protected AsyncHttpClient providesAsyncHttpClient() {
+        ExecutorService executorService = DaemonExecutors
+                .newCachedThreadPool("Informant-AsyncHttpClient");
+        ScheduledExecutorService scheduledExecutorService = DaemonExecutors
+                .newSingleThreadScheduledExecutor("Informant-AsyncHttpClient-Reaper");
+        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
+                .setMaxRequestRetry(0)
+                .setExecutorService(executorService)
+                .setScheduledExecutorService(scheduledExecutorService);
+        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
+        if (USE_NETTY_BLOCKING_IO) {
+            providerConfig.addProperty(NettyAsyncHttpProviderConfig.USE_BLOCKING_IO, true);
+        }
+        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
+                executorService);
+        builder.setAsyncHttpClientProviderConfig(providerConfig);
+        return new AsyncHttpClient(builder.build());
     }
 
     @Provides

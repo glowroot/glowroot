@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Informant | Plugins</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" href="bootstrap/2.0.0/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
+<script type="text/javascript" src="spin/1.2.4/spin.min.js"></script>
+<script type="text/javascript" src="js/informant.js"></script>
+<style media="screen" type="text/css">
+  .table td { vertical-align:middle; }
+  .table { width : 900px; }
+  .table th { width: 300px; }
+</style>
+<script id="installedTemplate" type="text/x-handlebars-template">
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr><th>Plugin</th><th>Version</th></tr>
+    </thead>
+    <tbody>
+      {{#each .}}
+        <tr>
+          <td>{{name}}</td>
+          <td>{{version}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</script>
+<script id="installableTemplate" type="text/x-handlebars-template">
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr><th>Plugin</th><th>Version</th></tr>
+    </thead>
+    <tbody>
+      {{#each .}}
+        <tr>
+          <td>{{name}}</td>
+          <td>{{version}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    var installedSpinner = new Spinner({ lines: 10, width: 4, radius: 8 })
+    var installableSpinner = new Spinner({ lines: 10, width: 4, radius: 8 })
+    // small delay so that if there is an immediate page return it doesn't blink
+    setTimeout(function() {
+      if (installedSpinner) installedSpinner.spin($('#installedPlugins').get(0))
+      if (installableSpinner) installableSpinner.spin($('#installableSpinner').get(0))
+    }, 100)
+
+    var installedTemplate = Handlebars.compile($('#installedTemplate').html())
+    var installableTemplate = Handlebars.compile($('#installableTemplate').html())
+
+    $.getJSON('/plugin/installed', function(installedPlugins) {
+      $('#installedSpinner').hide()
+      installedSpinner.stop()
+      installedSpinner = null
+      var html = installedTemplate(installedPlugins)
+      $(html).appendTo('#installedPlugins')
+    })
+    $.getJSON('/plugin/installable', function(installablePlugins) {
+      $('#installableSpinner').hide()
+      installableSpinner.stop()
+      installableSpinner = null
+      var html = installableTemplate(installablePlugins)
+      $(html).appendTo('#installablePlugins')
+    })
+  })
+</script>
+</head>
+<body>
+  <h1 class="header">
+    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Plugins</span>
+    <span class="header-see-also">
+      see also: <a href="traces.html">Traces</a>, <a href="configuration.html">Configuration</a>
+    </span>
+  </h1>
+  <br>
+  <h3>Installed Plugins</h3>
+  <br>
+  <div id="installedPlugins"></div>
+  <div id="installedSpinner" style="width: 40px; height: 60px"></div>
+  <br>
+  <h3>Installable Plugins</h3>
+  <br>
+  <div id="installablePlugins"></div>
+  <div id="installableSpinner" style="width: 40px; height: 60px"></div>
+</body>
+</html>
