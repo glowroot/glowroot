@@ -16,7 +16,6 @@
 package org.informantproject.plugin.servlet;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -70,10 +69,7 @@ public class ServletPluginTest {
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("servlet: " + MockServlet.class.getName()
-                + ".service()"));
-        assertThat((String) span.getContextMap().get("request method"), is("GET"));
-        assertThat((String) span.getContextMap().get("request uri"), is("/servlettest"));
+        assertThat(span.getDescription(), is("GET /servlettest"));
     }
 
     @Test
@@ -88,10 +84,7 @@ public class ServletPluginTest {
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("filter: " + MockFilter.class.getName()
-                + ".doFilter()"));
-        assertThat((String) span.getContextMap().get("request method"), is("GET"));
-        assertThat((String) span.getContextMap().get("request uri"), is("/filtertest"));
+        assertThat(span.getDescription(), is("GET /filtertest"));
     }
 
     @Test
@@ -104,16 +97,9 @@ public class ServletPluginTest {
         List<Trace> traces = container.getInformant().getAllTraces();
         assertThat(traces.size(), is(1));
         Trace trace = traces.get(0);
-        assertThat(trace.getSpans().size(), is(2));
-        Span filterSpan = trace.getSpans().get(0);
-        assertThat(filterSpan.getDescription(),
-                is("filter: " + MockFilterWithServlet.class.getName() + ".doFilter()"));
-        assertThat((String) filterSpan.getContextMap().get("request method"), is("GET"));
-        assertThat((String) filterSpan.getContextMap().get("request uri"), is("/combotest"));
-        Span servletSpan = trace.getSpans().get(1);
-        assertThat(servletSpan.getDescription(), is("servlet: " + MockServlet.class.getName()
-                + ".service()"));
-        assertThat(servletSpan.getContextMap(), is(nullValue()));
+        assertThat(trace.getSpans().size(), is(1));
+        Span span = trace.getSpans().get(0);
+        assertThat(span.getDescription(), is("GET /combotest"));
     }
 
     @Test
@@ -145,10 +131,7 @@ public class ServletPluginTest {
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(),
-                is("servlet: " + InvalidateSessionMockServlet.class.getName() + ".service()"));
-        assertThat((String) span.getContextMap().get("request method"), is("GET"));
-        assertThat((String) span.getContextMap().get("request uri"), is("/invalidate"));
+        assertThat(span.getDescription(), is("GET /invalidate"));
         assertThat((String) span.getContextMap().get("session id (at beginning of this request)"),
                 is("1"));
         assertThat((String) span.getContextMap().get("session id (updated during this request)"),

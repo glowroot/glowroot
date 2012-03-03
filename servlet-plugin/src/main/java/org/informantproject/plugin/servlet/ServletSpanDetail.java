@@ -38,11 +38,6 @@ import org.informantproject.api.SpanContextMap;
  */
 class ServletSpanDetail implements RootSpanDetail {
 
-    // whether intercepting a servlet or a filter
-    private final boolean filter;
-    // the servlet or filter class that is being intercepted
-    private final Class<?> clazz;
-
     // TODO allow additional notation for session attributes to capture, e.g.
     // +currentControllerContext.key which would denote to capture the value of that attribute at
     // the beginning of the request
@@ -80,11 +75,9 @@ class ServletSpanDetail implements RootSpanDetail {
 
     private volatile Map<String, String> sessionAttributeUpdatedValueMap;
 
-    ServletSpanDetail(boolean filter, Class<?> clazz, String requestMethod, String requestURI,
-            String username, String sessionId, Map<String, String> sessionAttributeMap) {
+    ServletSpanDetail(String requestMethod, String requestURI, String username, String sessionId,
+            Map<String, String> sessionAttributeMap) {
 
-        this.filter = filter;
-        this.clazz = clazz;
         this.requestMethod = requestMethod;
         this.requestURI = requestURI;
         this.username = username;
@@ -97,11 +90,7 @@ class ServletSpanDetail implements RootSpanDetail {
     }
 
     public String getDescription() {
-        if (filter) {
-            return "filter: " + clazz.getName() + ".doFilter()";
-        } else {
-            return "servlet: " + clazz.getName() + ".service()";
-        }
+        return requestMethod + " " + requestURI;
     }
 
     public SpanContextMap getContextMap() {
@@ -153,10 +142,6 @@ class ServletSpanDetail implements RootSpanDetail {
     }
 
     private void addRequestContext(SpanContextMap context) {
-
-        context.put("request method", requestMethod);
-        context.put("request uri", requestURI);
-
         if (requestParameterMap != null && !requestParameterMap.isEmpty()) {
             SpanContextMap nestedContext = new SpanContextMap();
             for (String parameterName : requestParameterMap.keySet()) {

@@ -78,95 +78,37 @@ public class ServletAspect {
             + " javax.servlet.http.HttpServletResponse))")
     void servletPointcut() {}
 
-    @Pointcut("filterPointcut() && !cflowbelow(filterPointcut())")
-    void topLevelFilterPointcut() {}
+    @Pointcut("(filterPointcut() || servletPointcut()) && !cflowbelow(filterPointcut())"
+            + " && !cflowbelow(servletPointcut())")
+    void topLevelPointcut() {}
 
-    @Pointcut("servletPointcut() && !cflowbelow(servletPointcut())")
-    void topLevelServletPointcut() {}
-
-    @Pointcut("filterPointcut() && cflowbelow(filterPointcut())")
-    void nestedFilterPointcut() {}
-
-    @Pointcut("servletPointcut() && cflowbelow(servletPointcut())")
-    void nestedServletPointcut() {}
-
-    @Around("isPluginEnabled() && topLevelServletPointcut() && target(target)"
-            + " && args(realRequest, ..)")
-    public void aroundTopLevelServletPointcut(ProceedingJoinPoint joinPoint, Object target,
-            Object realRequest) throws Throwable {
-
-        aroundTopLevelServletOrFilterPointcut(joinPoint, target, realRequest, false);
-    }
-
-    @Around("isPluginEnabled() && topLevelFilterPointcut() && target(target)"
-            + " && args(realRequest, ..)")
-    public void aroundTopLevelFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
-            Object realRequest) throws Throwable {
-
-        aroundTopLevelServletOrFilterPointcut(joinPoint, target, realRequest, true);
-    }
-
-    private void aroundTopLevelServletOrFilterPointcut(ProceedingJoinPoint joinPoint,
-            Object target, Object realRequest, boolean filter) throws Throwable {
+    @Around("isPluginEnabled() && topLevelPointcut() && args(realRequest, ..)")
+    public void aroundTopLevelPointcut(ProceedingJoinPoint joinPoint, Object realRequest)
+            throws Throwable {
 
         HttpServletRequest request = HttpServletRequest.from(realRequest);
-        if (topLevelServletSpanDetail.get() == null) {
-            // capture more expensive data (request parameter map and session info) for the top
-            // level filter/servlet pointcut
-            // request parameter map is collected in afterReturningRequestGetParameterPointcut()
-            // session info is collected here if the request already has a session
-            ServletSpanDetail spanDetail;
-            // passing "false" so it won't create a session if the request doesn't already have one
-            HttpSession session = request.getSession(false);
-            if (session == null) {
-                spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
-                        request.getRequestURI(), null, null, null);
-            } else {
-                String username = getSessionAttributeTextValue(session,
-                        ServletPluginPropertyUtils.getUsernameSessionAttributePath());
-                spanDetail = new ServletSpanDetail(filter, target.getClass(), request.getMethod(),
-                        request.getRequestURI(), username, session.getId(),
-                        getSessionAttributes(session));
-            }
-            topLevelServletSpanDetail.set(spanDetail);
-            try {
-                pluginServices.executeRootSpan(spanDetail, joinPoint,
-                        TOP_LEVEL_SERVLET_SUMMARY_KEY);
-            } finally {
-                topLevelServletSpanDetail.set(null);
-            }
+        // capture more expensive data (request parameter map and session info) for the top
+        // level filter/servlet pointcut
+        // request parameter map is collected in afterReturningRequestGetParameterPointcut()
+        // session info is collected here if the request already has a session
+        ServletSpanDetail spanDetail;
+        // passing "false" so it won't create a session if the request doesn't already have one
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
+                    null, null, null);
         } else {
-            // this is the top-most servlet, but is still nested under a filter so no need to
-            // gather expensive http request and session data
-            SpanDetail spanDetail = new NestedServletSpanDetail(filter, target.getClass());
-            pluginServices.executeSpan(spanDetail, joinPoint, null);
+            String username = getSessionAttributeTextValue(session,
+                    ServletPluginPropertyUtils.getUsernameSessionAttributePath());
+            spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
+                    username, session.getId(), getSessionAttributes(session));
         }
-    }
-
-    @Around("isPluginEnabled() && inTrace() && nestedFilterPointcut() && target(target)")
-    public void aroundNestedFilterPointcut(ProceedingJoinPoint joinPoint, Object target)
-            throws Throwable {
-
-        aroundNestedServletOrFilterPointcut(joinPoint, target, false);
-    }
-
-    @Around("isPluginEnabled() && inTrace() && nestedServletPointcut() && target(target)")
-    public void aroundNestedServletPointcut(ProceedingJoinPoint joinPoint, Object target)
-            throws Throwable {
-
-        aroundNestedServletOrFilterPointcut(joinPoint, target, true);
-    }
-
-    private void aroundNestedServletOrFilterPointcut(ProceedingJoinPoint joinPoint, Object target,
-            boolean filter) throws Throwable {
-
-        if (ServletPluginPropertyUtils.isCaptureNestedExecutions()) {
-            SpanDetail spanDetail = new NestedServletSpanDetail(filter, target.getClass());
-            // passing null spanSummaryKey so it won't record aggregate timing data
-            // for nested servlets and filters
-            pluginServices.executeSpan(spanDetail, joinPoint, null);
-        } else {
-            joinPoint.proceed();
+        topLevelServletSpanDetail.set(spanDetail);
+        try {
+            pluginServices.executeRootSpan(spanDetail, joinPoint,
+                    TOP_LEVEL_SERVLET_SUMMARY_KEY);
+        } finally {
+            topLevelServletSpanDetail.set(null);
         }
     }
 

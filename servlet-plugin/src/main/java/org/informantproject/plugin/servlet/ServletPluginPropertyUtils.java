@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,19 +41,12 @@ final class ServletPluginPropertyUtils {
     // TODO support partial wildcards, e.g. "context*"
     private static final String SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME = "sessionAttributes";
 
-    private static final String CAPTURE_NESTED_EXECUTIONS_PROPERTY_NAME = "captureNestedExecutions";
-
     // optimization
     private static volatile Set<String> cachedSessionAttributes;
     private static volatile String cachedSessionAttributesText;
 
     // utility class
     private ServletPluginPropertyUtils() {}
-
-    static boolean isCaptureNestedExecutions() {
-        return PluginServices.get().getBooleanProperty(SERVLET_PLUGIN_NAME,
-                CAPTURE_NESTED_EXECUTIONS_PROPERTY_NAME, false);
-    }
 
     static String getUsernameSessionAttributePath() {
         return PluginServices.get().getStringProperty(SERVLET_PLUGIN_NAME,
