@@ -18,12 +18,16 @@ package org.informantproject.testing.ui;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.InformantContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 public class TraceUiMain {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceUiMain.class);
 
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.newInstance();
@@ -33,7 +37,7 @@ public class TraceUiMain {
         coreConfiguration.setStackTraceInitialDelayMillis(100);
         coreConfiguration.setStackTracePeriodMillis(10);
         container.getInformant().updateCoreConfiguration(coreConfiguration);
-        System.out.println("view trace ui at localhost:4000/traces.html");
+        logger.info("view trace ui at localhost:4000/traces.html");
         container.executeAppUnderTest(GenerateTraces.class);
     }
 

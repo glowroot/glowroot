@@ -20,6 +20,8 @@ import java.io.File;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.InformantContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 
@@ -28,6 +30,9 @@ import com.google.common.base.Stopwatch;
  * @since 0.5
  */
 public class TraceDaoDeletePerformanceMain {
+
+    private static final Logger logger = LoggerFactory
+            .getLogger(TraceDaoDeletePerformanceMain.class);
 
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.newInstance();
@@ -40,19 +45,19 @@ public class TraceDaoDeletePerformanceMain {
         container.executeAppUnderTest(GenerateTraces.class);
         int pendingWrites = container.getInformant().getNumPendingTraceWrites();
         while (pendingWrites > 0) {
-            System.out.println("pending trace writes: " + pendingWrites);
+            logger.info("pending trace writes: {}", pendingWrites);
             Thread.sleep(1000);
             pendingWrites = container.getInformant().getNumPendingTraceWrites();
         }
         File dbFile = new File("informant.h2.db");
         long dbSize = dbFile.length();
-        System.out.format("informant.h2.db: %,d bytes%n", dbSize);
+        logger.info("informant.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = new Stopwatch().start();
         container.getInformant().deleteAllTraces();
-        System.out.format("all traces deleted in: %,d millis%n", stopwatch.elapsedMillis());
-        System.out.format("informant.h2.db: %,d bytes%n", dbFile.length());
+        logger.info("all traces deleted in: {} millis", stopwatch.elapsedMillis());
+        logger.info("informant.h2.db: {} bytes", dbFile.length());
         container.close();
-        System.out.format("informant.h2.db: %,d bytes%n", dbFile.length());
+        logger.info("informant.h2.db: {} bytes", dbFile.length());
     }
 
     public static class GenerateTraces implements AppUnderTest {
@@ -60,7 +65,7 @@ public class TraceDaoDeletePerformanceMain {
             File rollingFile = new File("informant.rolling.db");
             while (rollingFile.length() < 100 * 1024 * 1024) {
                 new NestableCall(new NestableCall(10, 2, 5000), 20, 2, 5000).execute();
-                System.out.println(rollingFile.length() / (1024 * 1024));
+                logger.info("rolling file: {} mb", rollingFile.length() / (1024 * 1024));
             }
         }
     }

@@ -21,6 +21,8 @@ import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.RollingFileTestProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;
@@ -32,6 +34,8 @@ import com.google.inject.Injector;
  * @since 0.5
  */
 public class TraceDaoPerformanceMain {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceDaoPerformanceMain.class);
 
     public static class Module extends AbstractModule {
         @Override
@@ -51,7 +55,7 @@ public class TraceDaoPerformanceMain {
         for (int i = 0; i < 1000; i++) {
             traceDao.storeTrace(traceTestData.createTrace());
         }
-        System.out.println(stopwatch.elapsedMillis());
-        System.out.println(traceDao.count());
+        logger.info("elapsed time: {}", stopwatch.elapsedMillis());
+        logger.info("num traces: {}", traceDao.count());
     }
 }
