@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import org.h2.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,12 +77,9 @@ public class DataSource {
 
     public DataSource(String dbName) {
         this.dbName = dbName;
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        // loading driver via api, primarily as the inverse of Driver.unload() (see below) which is
+        // needed to prevent unit tests from getting PermGen OutOfMemoryError
+        Driver.load();
         try {
             connection = createConnection();
         } catch (SQLException e) {
@@ -93,6 +91,10 @@ public class DataSource {
     public void close() throws SQLException {
         logger.debug("close()");
         connection.close();
+        // unloading driver primarily for unit tests which run many times, each in a separate class
+        // loader, and so the H2 drivers stack up and hold onto their respective class loaders which
+        // leads to PermGen OutOfMemoryError
+        Driver.unload();
     }
 
     public void compact() throws SQLException {

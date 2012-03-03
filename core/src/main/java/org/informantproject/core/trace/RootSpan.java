@@ -41,12 +41,7 @@ public class RootSpan {
 
     private static final Logger logger = LoggerFactory.getLogger(RootSpan.class);
 
-    private static final ThreadLocal<Deque> spanStackHolder = new ThreadLocal<Deque>() {
-        @Override
-        protected Deque initialValue() {
-            return new LinkedBlockingDeque();
-        }
-    };
+    private final Deque spanStack = new LinkedBlockingDeque();
 
     private final long startTime;
     private volatile long endTime;
@@ -100,7 +95,6 @@ public class RootSpan {
     void popSpan(Span span, long spanEndTime, StackTraceElement[] stackTraceElements) {
         span.setEndTime(spanEndTime);
         span.setStackTraceElements(stackTraceElements);
-        Deque spanStack = spanStackHolder.get();
         Span pop = (Span) spanStack.removeLast();
         if (!pop.equals(span)) {
             // somehow(?) a pop was missed
@@ -121,7 +115,6 @@ public class RootSpan {
     }
 
     Span pushSpan(SpanDetail spanDetail) {
-        Deque spanStack = spanStackHolder.get();
         Span currentSpan = (Span) spanStack.getLast();
         Span span = new Span(spanDetail, startTime, ticker.read(), size, currentSpan.getIndex(),
                 currentSpan.getLevel() + 1);
@@ -130,7 +123,7 @@ public class RootSpan {
     }
 
     private void pushSpanInternal(Span span) {
-        spanStackHolder.get().add(span);
+        spanStack.add(span);
         spans.add(span);
         size++;
     }

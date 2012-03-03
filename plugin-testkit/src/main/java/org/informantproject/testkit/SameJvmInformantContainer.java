@@ -16,6 +16,7 @@
 package org.informantproject.testkit;
 
 import org.informantproject.core.MainEntryPoint;
+import org.informantproject.shaded.aspectj.bridge.context.CompilationAndWeavingContext;
 
 /**
  * @author Trask Stalnaker
@@ -23,7 +24,7 @@ import org.informantproject.core.MainEntryPoint;
  */
 class SameJvmInformantContainer extends InformantContainer {
 
-    private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
+    private IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
     public SameJvmInformantContainer() {
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class,
@@ -63,6 +64,15 @@ class SameJvmInformantContainer extends InformantContainer {
     @Override
     protected void closeImpl() throws Exception {
         isolatedWeavingClassLoader.newInstance(CloseSameJvmTest.class, Runnable.class).run();
+        // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
+        isolatedWeavingClassLoader = null;
+        // AspectJ has a memory leak that prevents the IsolatedWeavingClassLoader from being
+        // released, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=373195
+        // the sequence of calls below clears the map that is retaining the Threads which are in
+        // turn retaining their context class loaders
+        CompilationAndWeavingContext.setMultiThreaded(false);
+        CompilationAndWeavingContext.reset();
+        CompilationAndWeavingContext.setMultiThreaded(true);
     }
 
     public interface RunnableWithStringArg {
