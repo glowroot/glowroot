@@ -9,7 +9,7 @@
     <version>7</version>
   </parent>
 
-  <groupId>org.informantproject.plugin</groupId>
+  <groupId>org.informantproject.plugins</groupId>
   <artifactId>servlet-plugin</artifactId>
   <version>0.5-SNAPSHOT</version>
 
