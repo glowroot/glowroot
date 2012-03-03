@@ -18,6 +18,7 @@ package org.informantproject.core.configuration;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 /**
  * Immutable structure to hold the current core configuration.
@@ -167,7 +168,7 @@ public class ImmutableCoreConfiguration {
         return new Gson().fromJson(json, CoreConfigurationBuilder.class).build();
     }
 
-    static class CoreConfigurationBuilder {
+    public static class CoreConfigurationBuilder {
 
         private boolean enabled;
         private int thresholdMillis;
@@ -180,11 +181,11 @@ public class ImmutableCoreConfiguration {
         private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
 
-        CoreConfigurationBuilder() {
+        public CoreConfigurationBuilder() {
             this(new ImmutableCoreConfiguration());
         }
 
-        CoreConfigurationBuilder(ImmutableCoreConfiguration base) {
+        public CoreConfigurationBuilder(ImmutableCoreConfiguration base) {
             enabled = base.enabled;
             thresholdMillis = base.thresholdMillis;
             stuckThresholdMillis = base.stuckThresholdMillis;
@@ -197,7 +198,7 @@ public class ImmutableCoreConfiguration {
             metricPeriodMillis = base.metricPeriodMillis;
         }
 
-        ImmutableCoreConfiguration build() {
+        public ImmutableCoreConfiguration build() {
             ImmutableCoreConfiguration configuration = new ImmutableCoreConfiguration();
             configuration.enabled = enabled;
             configuration.thresholdMillis = thresholdMillis;
@@ -212,53 +213,89 @@ public class ImmutableCoreConfiguration {
             return configuration;
         }
 
-        CoreConfigurationBuilder setEnabled(boolean enabled) {
+        public void setFromJson(JsonObject jsonObject) {
+            if (jsonObject.get("enabled") != null) {
+                setEnabled(jsonObject.get("enabled").getAsBoolean());
+            }
+            if (jsonObject.get("thresholdMillis") != null) {
+                setThresholdMillis(jsonObject.get("thresholdMillis").getAsInt());
+            }
+            if (jsonObject.get("stuckThresholdMillis") != null) {
+                setStuckThresholdMillis(jsonObject.get("stuckThresholdMillis").getAsInt());
+            }
+            if (jsonObject.get("stackTraceInitialDelayMillis") != null) {
+                setStackTraceInitialDelayMillis(jsonObject.get("stackTraceInitialDelayMillis")
+                        .getAsInt());
+            }
+            if (jsonObject.get("stackTracePeriodMillis") != null) {
+                setStackTracePeriodMillis(jsonObject.get("stackTracePeriodMillis").getAsInt());
+            }
+            if (jsonObject.get("spanStackTraceThresholdMillis") != null) {
+                setSpanStackTraceThresholdMillis(jsonObject.get("spanStackTraceThresholdMillis")
+                        .getAsInt());
+            }
+            if (jsonObject.get("maxSpansPerTrace") != null) {
+                setMaxSpansPerTrace(jsonObject.get("maxSpansPerTrace").getAsInt());
+            }
+            if (jsonObject.get("rollingSizeMb") != null) {
+                setRollingSizeMb(jsonObject.get("rollingSizeMb").getAsInt());
+            }
+            if (jsonObject.get("warnOnSpanOutsideTrace") != null) {
+                setWarnOnSpanOutsideTrace(jsonObject.get("warnOnSpanOutsideTrace").getAsBoolean());
+            }
+            if (jsonObject.get("metricPeriodMillis") != null) {
+                setMetricPeriodMillis(jsonObject.get("metricPeriodMillis").getAsInt());
+            }
+        }
+
+        public CoreConfigurationBuilder setEnabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
 
-        CoreConfigurationBuilder setThresholdMillis(int thresholdMillis) {
+        public CoreConfigurationBuilder setThresholdMillis(int thresholdMillis) {
             this.thresholdMillis = thresholdMillis;
             return this;
         }
 
-        CoreConfigurationBuilder setStuckThresholdMillis(int stuckThresholdMillis) {
+        public CoreConfigurationBuilder setStuckThresholdMillis(int stuckThresholdMillis) {
             this.stuckThresholdMillis = stuckThresholdMillis;
             return this;
         }
 
-        CoreConfigurationBuilder setStackTraceInitialDelayMillis(int stackTraceInitialDelayMillis) {
+        public CoreConfigurationBuilder setStackTraceInitialDelayMillis(
+                int stackTraceInitialDelayMillis) {
             this.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
             return this;
         }
 
-        CoreConfigurationBuilder setStackTracePeriodMillis(int stackTracePeriodMillis) {
+        public CoreConfigurationBuilder setStackTracePeriodMillis(int stackTracePeriodMillis) {
             this.stackTracePeriodMillis = stackTracePeriodMillis;
             return this;
         }
 
-        CoreConfigurationBuilder setSpanStackTraceThresholdMillis(int
+        public CoreConfigurationBuilder setSpanStackTraceThresholdMillis(int
                 spanStackTraceThresholdMillis) {
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
 
-        CoreConfigurationBuilder setMaxSpansPerTrace(int maxSpansPerTrace) {
+        public CoreConfigurationBuilder setMaxSpansPerTrace(int maxSpansPerTrace) {
             this.maxSpansPerTrace = maxSpansPerTrace;
             return this;
         }
 
-        CoreConfigurationBuilder setRollingSizeMb(int rollingSizeMb) {
+        public CoreConfigurationBuilder setRollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
         }
 
-        CoreConfigurationBuilder setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
+        public CoreConfigurationBuilder setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
 
-        CoreConfigurationBuilder setMetricPeriodMillis(int metricPeriodMillis) {
+        public CoreConfigurationBuilder setMetricPeriodMillis(int metricPeriodMillis) {
             this.metricPeriodMillis = metricPeriodMillis;
             return this;
         }

@@ -1,0 +1,93 @@
+<!doctype html>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Informant | Misc</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" href="bootstrap/2.0.0/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="spin/1.2.4/spin.min.js"></script>
+<script type="text/javascript" src="js/informant.js"></script>
+<script type="text/javascript">
+  var postingClearData = false
+  function clearData() {
+    // handling crazy user clicking on the button
+    if (postingClearData) return
+    postingClearData = true
+    var keepMillis = $('input:radio[name=keepMillis]:checked').val()
+    var compact = $('#compact').is(':checked')
+    $.post('/misc/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
+      postingClearData = false
+      hideSpinner('#clearButtonSpinner')
+      showAndFadeSuccessMessage('#clearSuccessMessage')
+    })
+    // in case button is clicked again before success message is hidden
+    $('#clearSuccessMessage').hide()
+    showSpinner('#clearButtonSpinner')
+  }
+</script>
+</head>
+<body>
+  <h1 class="header">
+    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Misc</span>
+    <span class="header-see-also">see also: <a href="traces.html">Traces</a></span>
+  </h1>
+  <form class="form-horizontal">
+    <fieldset>
+      <legend>
+        Summary data
+        <span style="padding-left: 15px; font-size: 15px; color:#999999">
+          (metric data and high level trace data)
+        </span>
+      </legend>
+      <div class="control-group">
+        <label class="control-label" for="keepMillis">Keep</label>
+        <div class="controls">
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="2419200000" checked> Last 4 weeks
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="604800000"> Last 7 days
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="86400000"> Last 24 hours
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="3600000"> Last 60 minutes
+          </label>
+          <label class="radio">
+            <input type="radio" name="keepMillis" value="0"> None
+          </label>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="compact">Compact</label>
+        <div class="controls">
+          <input id="compact" type="checkbox" value="true">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="clearData()">Clear data</button>
+        <div id="clearButtonSpinner" class="button-spinner"></div>
+        <div id="clearSuccessMessage" class="button-success-message">Cleared</div>
+      </div>
+    </fieldset>
+  </form>
+</body>
+</html>

@@ -15,14 +15,12 @@
  */
 package org.informantproject.local.ui;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
-import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.trace.TraceDao;
+import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,24 +37,22 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class AdminJsonService implements JsonService {
+public class MiscJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(MiscJsonService.class);
 
     private final TraceDao traceDao;
+    private final TraceSinkLocal traceSinkLocal;
     private final DataSource dataSource;
-    private final RollingFile rollingFile;
-    private final ConfigurationService configurationService;
     private final Clock clock;
 
     @Inject
-    public AdminJsonService(TraceDao traceDao, DataSource dataSource, RollingFile rollingFile,
-            ConfigurationService configurationService, Clock clock) {
+    public MiscJsonService(TraceDao traceDao, TraceSinkLocal traceSinkLocal, DataSource dataSource,
+            Clock clock) {
 
         this.traceDao = traceDao;
+        this.traceSinkLocal = traceSinkLocal;
         this.dataSource = dataSource;
-        this.rollingFile = rollingFile;
-        this.configurationService = configurationService;
         this.clock = clock;
     }
 
@@ -81,18 +77,8 @@ public class AdminJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public void handleResizerolling(String message) {
-        logger.debug("handleResizerolling(): message={}", message);
-        JsonObject request = new JsonParser().parse(message).getAsJsonObject();
-        int newRollingSizeMb = request.get("newRollingSizeMb").getAsInt();
-        try {
-            rollingFile.resize(newRollingSizeMb * 1024);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            // TODO ?
-            return;
-        }
-        configurationService.updateCoreConfiguration("{\"rollingSizeMb\":" + newRollingSizeMb
-                + "}");
+    public String handleNumPendingTraceWrites(@SuppressWarnings("unused") String message) {
+        logger.debug("handleNumPendingTraceWrites()");
+        return Integer.toString(traceSinkLocal.getQueueLength());
     }
 }

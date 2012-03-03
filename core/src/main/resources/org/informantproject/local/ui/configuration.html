@@ -56,29 +56,15 @@
       showAndFadeSuccessMessage('#saveComplete')
     })
   }
-  var postingClearData = false
-  function clearData() {
-    // handling crazy user clicking on the button
-    if (postingClearData) return
-    postingClearData = true
-    var keepMillis = $('input:radio[name=keepMillis]:checked').val()
-    var compact = $('#compact').is(':checked')
-    $.post('/admin/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
-      postingClearData = false
-      hideSpinner('#clearButtonSpinner')
-      showAndFadeSuccessMessage('#clearSuccessMessage')
-    })
-    // in case button is clicked again before success message is hidden
-    $('#clearSuccessMessage').hide()
-    showSpinner('#clearButtonSpinner')
-  }
   var postingResize = false
   function resizeRollingDb() {
     // handling crazy user clicking on the button
     if (postingResize) return
     postingResize = true
-    var newRollingSizeMb = $('#rollingSizeMb').val()
-    $.post('/admin/resizerolling?newRollingSizeMb=' + newRollingSizeMb, function() {
+    var configuration = {
+      'rollingSizeMb': $('#rollingSizeMb').val()
+    }
+    $.post('/configuration/update', JSON.stringify(configuration), function() {
       postingResize = false
       hideSpinner('#resizeButtonSpinner')
       showAndFadeSuccessMessage('#resizeSuccessMessage')
@@ -159,57 +145,6 @@
           <input style="width: 6em" id="maxSpansPerTrace" type="text">
         </div>
       </div>
-      <div class="form-actions">
-        <button type="button" class="btn" onclick="update()">Save changes</button>
-        <div id="saveComplete" class="button-success-message">Saved</div>
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>
-        Summary data
-        <span style="padding-left: 15px; font-size: 15px; color:#999999">
-          (metric data and high level trace data)
-        </span>
-      </legend>
-      <div class="control-group">
-        <label class="control-label" for="keepMillis">Keep</label>
-        <div class="controls">
-          <label class="radio">
-            <input type="radio" name="keepMillis" value="2419200000" checked> Last 4 weeks
-          </label>
-          <label class="radio">
-            <input type="radio" name="keepMillis" value="604800000"> Last 7 days
-          </label>
-          <label class="radio">
-            <input type="radio" name="keepMillis" value="86400000"> Last 24 hours
-          </label>
-          <label class="radio">
-            <input type="radio" name="keepMillis" value="3600000"> Last 60 minutes
-          </label>
-          <label class="radio">
-            <input type="radio" name="keepMillis" value="0"> None
-          </label>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="compact">Compact</label>
-        <div class="controls">
-          <input id="compact" type="checkbox" value="true">
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn" onclick="clearData()">Clear data</button>
-        <div id="clearButtonSpinner" class="button-spinner"></div>
-        <div id="clearSuccessMessage" class="button-success-message">Cleared</div>
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>
-        Detail data
-        <span style="padding-left: 15px; font-size: 15px; color:#999999">
-          (low level trace data)
-        </span>
-      </legend>
       <div class="control-group">
         <label class="control-label" for="rollingSizeMb">Rolling database size</label>
         <div class="controls">
@@ -223,9 +158,8 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn" onclick="resizeRollingDb()">Resize</button>
-        <div id="resizeButtonSpinner" class="button-spinner"></div>
-        <div id="resizeSuccessMessage" class="button-success-message">Cleared</div>
+        <button type="button" class="btn" onclick="update()">Save changes</button>
+        <div id="saveComplete" class="button-success-message">Saved</div>
       </div>
     </fieldset>
   </form>

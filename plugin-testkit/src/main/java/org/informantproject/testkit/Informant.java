@@ -91,11 +91,11 @@ public class Informant {
     }
 
     public void deleteAllTraces() throws Exception {
-        get("/admin/cleardata?keepMillis=0&compact=true");
+        get("/misc/cleardata?keepMillis=0&compact=true");
     }
 
     public int getNumPendingTraceWrites() throws Exception {
-        String numTraces = get("/stat/numPendingTraceWrites");
+        String numTraces = get("/misc/numPendingTraceWrites");
         return Integer.parseInt(numTraces);
     }
 

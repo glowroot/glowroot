@@ -15,12 +15,17 @@
  */
 package org.informantproject.local.ui;
 
+import java.io.IOException;
+
 import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.core.configuration.ImmutableCoreConfiguration.CoreConfigurationBuilder;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -59,6 +64,20 @@ public class ConfigurationJsonService implements JsonService {
     // called dynamically from HttpServer
     public void handleUpdate(String message) {
         logger.debug("handleUpdate(): message={}", message);
-        configurationService.updateCoreConfiguration(message);
+        CoreConfigurationBuilder builder = new CoreConfigurationBuilder(
+                configurationService.getCoreConfiguration());
+        JsonObject messageJson = new JsonParser().parse(message).getAsJsonObject();
+        builder.setFromJson(messageJson);
+        configurationService.updateCoreConfiguration(builder.build());
+        if (messageJson.get("rollingSizeMb") != null) {
+            int newRollingSizeMb = messageJson.get("rollingSizeMb").getAsInt();
+            try {
+                rollingFile.resize(newRollingSizeMb * 1024);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                // TODO return HTTP 500 Internal Server Error?
+                return;
+            }
+        }
     }
 }

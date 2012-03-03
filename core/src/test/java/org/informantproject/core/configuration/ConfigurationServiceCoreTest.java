@@ -21,8 +21,6 @@ import static org.junit.Assert.assertThat;
 import java.sql.SQLException;
 import java.util.Set;
 
-import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.ThreadChecker;
@@ -79,7 +77,7 @@ public class ConfigurationServiceCoreTest {
         ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
                 .getRandomCoreConfiguration();
         // when
-        configurationService.updateCoreConfiguration(randomCoreConfiguration.toJson());
+        configurationService.updateCoreConfiguration(randomCoreConfiguration);
         // then
         assertThat(configurationService.getCoreConfiguration(), is(randomCoreConfiguration));
     }

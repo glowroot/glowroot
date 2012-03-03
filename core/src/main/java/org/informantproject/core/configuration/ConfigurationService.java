@@ -20,12 +20,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.informantproject.core.configuration.ImmutableCoreConfiguration.CoreConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -67,44 +64,8 @@ public class ConfigurationService {
         coreConfigurationListeners.add(listener);
     }
 
-    public void updateCoreConfiguration(String message) {
-        logger.debug("updateCoreConfiguration(): message={}", message);
-        JsonObject messageJson = new JsonParser().parse(message).getAsJsonObject();
-        CoreConfigurationBuilder builder = new CoreConfigurationBuilder(coreConfiguration);
-        if (messageJson.get("enabled") != null) {
-            builder.setEnabled(messageJson.get("enabled").getAsBoolean());
-        }
-        if (messageJson.get("thresholdMillis") != null) {
-            builder.setThresholdMillis(messageJson.get("thresholdMillis").getAsInt());
-        }
-        if (messageJson.get("stuckThresholdMillis") != null) {
-            builder.setStuckThresholdMillis(messageJson.get("stuckThresholdMillis").getAsInt());
-        }
-        if (messageJson.get("stackTraceInitialDelayMillis") != null) {
-            builder.setStackTraceInitialDelayMillis(messageJson.get("stackTraceInitialDelayMillis")
-                    .getAsInt());
-        }
-        if (messageJson.get("stackTracePeriodMillis") != null) {
-            builder.setStackTracePeriodMillis(messageJson.get("stackTracePeriodMillis").getAsInt());
-        }
-        if (messageJson.get("spanStackTraceThresholdMillis") != null) {
-            builder.setSpanStackTraceThresholdMillis(messageJson.get(
-                    "spanStackTraceThresholdMillis").getAsInt());
-        }
-        if (messageJson.get("maxSpansPerTrace") != null) {
-            builder.setMaxSpansPerTrace(messageJson.get("maxSpansPerTrace").getAsInt());
-        }
-        if (messageJson.get("rollingSizeMb") != null) {
-            builder.setRollingSizeMb(messageJson.get("rollingSizeMb").getAsInt());
-        }
-        if (messageJson.get("warnOnSpanOutsideTrace") != null) {
-            builder.setWarnOnSpanOutsideTrace(messageJson.get("warnOnSpanOutsideTrace")
-                    .getAsBoolean());
-        }
-        if (messageJson.get("metricPeriodMillis") != null) {
-            builder.setMetricPeriodMillis(messageJson.get("metricPeriodMillis").getAsInt());
-        }
-        coreConfiguration = builder.build();
+    public void updateCoreConfiguration(ImmutableCoreConfiguration coreConfiguration) {
+        this.coreConfiguration = coreConfiguration;
         configurationDao.storeCoreConfiguration(coreConfiguration);
         notifyCoreConfigurationListeners();
     }

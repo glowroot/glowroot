@@ -81,6 +81,8 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/local/ui/configuration.html");
         uriMappings.put(Pattern.compile("^/plugins.html$"),
                 "org/informantproject/local/ui/plugins.html");
+        uriMappings.put(Pattern.compile("^/misc.html$"),
+                "org/informantproject/local/ui/misc.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
@@ -108,25 +110,23 @@ public class HttpServer extends HttpServerBase {
 
     @Inject
     public HttpServer(@LocalHttpServerPort int port,
-            ConfigurationJsonService configurationJsonService,
-            TraceDetailJsonService traceDetailJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
+            TraceDetailJsonService traceDetailJsonService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
-            AdminJsonService adminJsonService, StatJsonService statJsonService,
+            ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
             PluginJsonService pluginJsonService) {
 
         super(port);
         // the parentheses define the part of the match that is used to dynamically construct the
-        // "handleX" method to call in the json service, e.g. /trace/details calls the method
-        // handleDetails in TraceDetailJsonService
-        uriMappings.put(Pattern.compile("^/configuration/(.*)$"), configurationJsonService);
-        uriMappings.put(Pattern.compile("^/trace/(details)$"), traceDetailJsonService);
+        // "handleX" method to call in the json service, e.g. /trace/summaries calls the method
+        // handleSummaries in TraceSummaryJsonService
         uriMappings.put(Pattern.compile("^/trace/(summaries)$"), traceSummaryJsonService);
+        uriMappings.put(Pattern.compile("^/trace/(details)$"), traceDetailJsonService);
         uriMappings.put(Pattern.compile("^/stacktrace/(read)$"), stackTraceJsonService);
         uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);
-        uriMappings.put(Pattern.compile("^/admin/(.*)"), adminJsonService);
-        uriMappings.put(Pattern.compile("^/stat/(.*)"), statJsonService);
+        uriMappings.put(Pattern.compile("^/configuration/(.*)$"), configurationJsonService);
         uriMappings.put(Pattern.compile("^/plugin/(.*)"), pluginJsonService);
+        uriMappings.put(Pattern.compile("^/misc/(.*)"), miscJsonService);
     }
 
     @Override
