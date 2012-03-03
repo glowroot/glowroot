@@ -32,10 +32,10 @@ public class Trace {
     private boolean stuck;
     private long duration;
     private boolean completed;
-    private List<String> threadNames;
+    private String description;
     private String username;
-    private Span rootSpan;
     private List<Metric> metrics;
+    private Map<String, Object> contextMap;
     private List<Span> spans;
     private MergedStackTreeNode mergedStackTree;
 
@@ -57,17 +57,17 @@ public class Trace {
     public boolean isCompleted() {
         return completed;
     }
-    public List<String> getThreadNames() {
-        return threadNames;
+    public String getDescription() {
+        return description;
     }
     public String getUsername() {
         return username;
     }
-    public Span getRootSpan() {
-        return rootSpan;
-    }
     public List<Metric> getMetrics() {
         return metrics;
+    }
+    public Map<String, Object> getContextMap() {
+        return contextMap;
     }
     public List<Span> getSpans() {
         return spans;
@@ -85,9 +85,10 @@ public class Trace {
                 .add("stuck", stuck)
                 .add("duration", duration)
                 .add("completed", completed)
+                .add("description", description)
                 .add("username", username)
-                .add("rootSpan", rootSpan)
                 .add("metrics", metrics)
+                .add("contextMap", contextMap)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();

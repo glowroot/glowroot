@@ -120,9 +120,10 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setStuck(trace.isStuck() && !trace.isCompleted());
         storedTrace.setDuration(trace.getDuration());
         storedTrace.setCompleted(trace.isCompleted());
-        Gson gson = new Gson();
-        storedTrace.setThreadNames(gson.toJson(trace.getThreadNames()));
+        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        storedTrace.setDescription(rootSpan.getDescription().toString());
         storedTrace.setUsername(trace.getUsername());
+        Gson gson = new Gson();
         List<MetricDataItem> items = Lists.newArrayList(trace.getMetricData().getItems());
         Collections.sort(items, new Comparator<MetricDataItem>() {
             public int compare(MetricDataItem item1, MetricDataItem item2) {
@@ -133,11 +134,10 @@ public class TraceSinkLocal implements TraceSink {
         if (items.size() > 0) {
             storedTrace.setMetrics(gson.toJson(items));
         }
-        try {
-            storedTrace.setRootSpan(buildSpan(trace.getRootSpan().getSpans().iterator().next(),
-                    gson));
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+        if (rootSpan.getContextMap() != null) {
+            String contextMap = gson.toJson(rootSpan.getContextMap(),
+                    new TypeToken<Map<String, Object>>() {}.getType());
+            storedTrace.setContextMap(contextMap);
         }
         try {
             storedTrace.setSpans(buildSpans(trace.getRootSpan().getSpans(), gson));
@@ -154,27 +154,23 @@ public class TraceSinkLocal implements TraceSink {
         return storedTrace;
     }
 
-    private String buildSpan(Span span, Gson gson) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        writeSpan(span, jw, sb, gson);
-        jw.close();
-        return sb.toString();
-    }
-
     private CharSequence buildSpans(Iterable<Span> spans, Gson gson) throws IOException {
         LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
+        boolean skipContextMap = true;
         for (Span span : spans) {
-            writeSpan(span, jw, sb, gson);
+            writeSpan(span, jw, sb, gson, skipContextMap);
+            skipContextMap = false;
         }
         jw.endArray();
         jw.close();
         return sb.build();
     }
 
-    private void writeSpan(Span span, JsonWriter jw, Appendable sb, Gson gson) throws IOException {
+    private void writeSpan(Span span, JsonWriter jw, Appendable sb, Gson gson,
+            boolean skipContextMap) throws IOException {
+
         jw.beginObject();
         jw.name("offset");
         jw.value(span.getOffset());
@@ -190,9 +186,11 @@ public class TraceSinkLocal implements TraceSink {
         sb.append(",\"description\":\"");
         sb.append(JsonCharSequence.toJson(span.getDescription()));
         sb.append("\"");
-        sb.append(",\"contextMap\":");
-        sb.append(gson.toJson(span.getContextMap(),
-                new TypeToken<Map<String, Object>>() {}.getType()));
+        if (!skipContextMap) {
+            sb.append(",\"contextMap\":");
+            sb.append(gson.toJson(span.getContextMap(),
+                    new TypeToken<Map<String, Object>>() {}.getType()));
+        }
         if (span.getStackTraceElements() != null) {
             String stackTraceHash = stackTraceDao.storeStackTrace(span.getStackTraceElements());
             jw.name("stackTraceHash");

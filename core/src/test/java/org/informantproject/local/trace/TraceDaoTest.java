@@ -28,8 +28,6 @@ import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.RollingFileTestProvider;
 import org.informantproject.core.util.ThreadChecker;
-import org.informantproject.local.trace.StoredTrace;
-import org.informantproject.local.trace.TraceDao;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -87,8 +85,7 @@ public class TraceDaoTest {
         assertThat(storedTrace2.getId(), is(storedTrace.getId()));
         assertThat(storedTrace2.getDuration(), is(storedTrace.getDuration()));
         assertThat(storedTrace2.isCompleted(), is(storedTrace.isCompleted()));
-        assertThat(storedTrace2.getThreadNames(), is("[\"" + Thread.currentThread().getName()
-                + "\"]"));
+        assertThat(storedTrace2.getDescription(), is("test description"));
         assertThat(storedTrace2.getUsername(), is(storedTrace.getUsername()));
         // TODO verify metricData, trace and mergedStackTree
     }

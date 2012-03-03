@@ -30,11 +30,10 @@ public class StoredTrace {
     private boolean stuck;
     private long duration; // nanoseconds
     private boolean completed;
-    private String threadNames;
+    private String description;
     private String username;
-
-    private String rootSpan;
     private String metrics;
+    private String contextMap;
     // using CharSequence so these potentially very large strings can be built using
     // LargeStringBuilder
     private CharSequence spans;
@@ -80,12 +79,12 @@ public class StoredTrace {
         this.completed = completed;
     }
 
-    public String getThreadNames() {
-        return threadNames;
+    public String getDescription() {
+        return description;
     }
 
-    public void setThreadNames(String threadNames) {
-        this.threadNames = threadNames;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getUsername() {
@@ -96,20 +95,20 @@ public class StoredTrace {
         this.username = username;
     }
 
-    public String getRootSpan() {
-        return rootSpan;
-    }
-
-    public void setRootSpan(String rootSpan) {
-        this.rootSpan = rootSpan;
-    }
-
     public String getMetrics() {
         return metrics;
     }
 
     public void setMetrics(String metrics) {
         this.metrics = metrics;
+    }
+
+    public String getContextMap() {
+        return contextMap;
+    }
+
+    public void setContextMap(String contextMap) {
+        this.contextMap = contextMap;
     }
 
     public CharSequence getSpans() {
@@ -136,9 +135,10 @@ public class StoredTrace {
                 .add("stuck", stuck)
                 .add("duration", duration)
                 .add("completed", completed)
-                .add("threadNames", threadNames)
+                .add("description", description)
                 .add("username", username)
-                .add("metricData", metrics)
+                .add("metrics", metrics)
+                .add("contextMap", contextMap)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();

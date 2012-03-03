@@ -45,7 +45,7 @@ public class TraceTestData {
         storedTrace.setStuck(false);
         storedTrace.setDuration(TimeUnit.MILLISECONDS.toNanos(10));
         storedTrace.setCompleted(true);
-        storedTrace.setThreadNames("[\"main\"]");
+        storedTrace.setDescription("test description");
         storedTrace.setUsername("j");
         storedTrace.setSpans("[{\"offset\":0,\"duration\":0,\"index\":0,\"parentIndex\":-1,"
                 + "\"level\":0,\"description\":\"Level One\",\"contextMap\":{\"arg1\":\"a\","

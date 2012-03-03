@@ -38,12 +38,10 @@
 {{#each_with_index .}}
 <div>
   {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
+  {{description}}<br>
   start: {{date start}}<br>
   duration: {{nanosToMillis duration}} milliseconds<br>
   {{#if username}}username: {{username}}<br>{{/if}}
-  threadName(s): {{threadNames}}<br>
-  root context:<br>
-  <div style="margin-left: 1em">{{#contextMapHtml rootSpan.contextMap}}{{/contextMapHtml}}</div>
   metric data:<br>
   <table style="margin-left: 1em; border-spacing:0">
     <thead>
@@ -67,10 +65,16 @@
       {{/each}}
     </tbody>
   <table>
+  {{#if contextMap}}
+    <a href="javascript:$('#cm_{{id}}').toggle()">context map</a>
+    ({{contextMapLines contextMap}})<br>
+    <div id="cm_{{id}}" style="display: none">
+      <div style="margin-left: 1em">{{#contextMapHtml contextMap}}{{/contextMapHtml}}</div>
+    </div>
+  {{/if}}
   {{#if spans}}
     <a href="javascript:toggleSpan({{index}}, '{{id}}')">spans</a> ({{spans.length}})<br>
     <div id="sp_{{id}}" style="display: none"></div>
-    <div style="clear: both"></div>
   {{/if}}
   {{#if mergedStackTree.sampleCount}}
     <a href="javascript:toggleMergedStackTrace({{index}}, '{{id}}')">merged stack trace</a>
@@ -137,6 +141,21 @@
   })
   Handlebars.registerHelper('first', function(array, options) {
     return options.fn(array[0])
+  })
+  Handlebars.registerHelper('contextMapLines', function(contextMap) {
+    function contextMapLines(contextMap) {
+      var ret = 0
+      for (var propName in contextMap) {
+        var propVal = contextMap[propName]
+        if (typeof propVal == 'object') {
+          ret += contextMapLines(propVal) + 1 // +1 because the map key is on its own line
+        } else {
+          ret += 1
+        }
+      }
+      return ret
+    }
+    return contextMapLines(contextMap)
   })
   Handlebars.registerHelper('contextMapHtml', function(contextMap) {
     function contextMapHtml(contextMap) {

@@ -129,17 +129,18 @@ public class TraceDetailJsonService implements JsonService {
             jw.name("uniqueId").value(storedTrace.getId());
             jw.name("duration").value(storedTrace.getDuration());
             jw.name("completed").value(storedTrace.isCompleted());
-            // inject raw json into stream
-            sb.append(",\"threadNames\":");
-            sb.append(storedTrace.getThreadNames());
+            jw.name("description").value(storedTrace.getDescription());
             if (storedTrace.getUsername() != null) {
                 jw.name("username").value(storedTrace.getUsername());
             }
-            sb.append(",\"rootSpan\":");
-            sb.append(storedTrace.getRootSpan());
+            // inject raw json into stream
             if (storedTrace.getMetrics() != null) {
                 sb.append(",\"metrics\":");
                 sb.append(storedTrace.getMetrics());
+            }
+            if (storedTrace.getContextMap() != null) {
+                sb.append(",\"contextMap\":");
+                sb.append(storedTrace.getContextMap());
             }
             if (storedTrace.getSpans() != null) {
                 sb.append(",\"spans\":");
