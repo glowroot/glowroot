@@ -20,8 +20,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 
 /**
  * @author Trask Stalnaker

@@ -19,9 +19,9 @@ import java.io.File;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.ThreadChecker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ning.http.client.AsyncHttpClient;
 

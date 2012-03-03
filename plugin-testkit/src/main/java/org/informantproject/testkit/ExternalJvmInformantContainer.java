@@ -24,9 +24,9 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DaemonExecutors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
