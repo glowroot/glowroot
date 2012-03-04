@@ -137,7 +137,8 @@
     return new Date(timestamp).format('m/d/yy h:MM:ss.l TT (Z)')
   })
   Handlebars.registerHelper('nanosToMillis', function(nanos) {
-    return (nanos / 1000000).toFixed(1)
+    if (nanos == -1) return '--'
+    else return (nanos / 1000000).toFixed(1)
   })
   Handlebars.registerHelper('first', function(array, options) {
     return options.fn(array[0])
