@@ -16,6 +16,8 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.stack.MergedStackTreeNode;
+import org.informantproject.core.trace.MetricDataItem;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceSink;
@@ -120,6 +123,16 @@ public class TraceSinkLocal implements TraceSink {
         Gson gson = new Gson();
         storedTrace.setThreadNames(gson.toJson(trace.getThreadNames()));
         storedTrace.setUsername(trace.getUsername());
+        List<MetricDataItem> items = Lists.newArrayList(trace.getMetricData().getItems());
+        Collections.sort(items, new Comparator<MetricDataItem>() {
+            public int compare(MetricDataItem item1, MetricDataItem item2) {
+                // can't just subtract totals and cast to int because of int overflow
+                return item1.getTotal() >= item2.getTotal() ? -1 : 1;
+            }
+        });
+        if (items.size() > 0) {
+            storedTrace.setMetrics(gson.toJson(items));
+        }
         try {
             storedTrace.setRootSpan(buildSpan(trace.getRootSpan().getSpans().iterator().next(),
                     gson));
@@ -131,10 +144,12 @@ public class TraceSinkLocal implements TraceSink {
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
-        try {
-            storedTrace.setMergedStackTree(buildMergedStackTree(trace.getMergedStackTree()));
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+        if (trace.getMergedStackTree().getRootNode() != null) {
+            try {
+                storedTrace.setMergedStackTree(buildMergedStackTree(trace.getMergedStackTree()));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
         return storedTrace;
     }
@@ -190,9 +205,6 @@ public class TraceSinkLocal implements TraceSink {
             throws IOException {
 
         MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
-        if (rootNode == null) {
-            return null;
-        }
         LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         LinkedList<Object> toVisit = new LinkedList<Object>();

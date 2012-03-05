@@ -34,6 +34,8 @@ public class Trace {
     private boolean completed;
     private List<String> threadNames;
     private String username;
+    private Span rootSpan;
+    private List<Metric> metrics;
     private List<Span> spans;
     private MergedStackTreeNode mergedStackTree;
 
@@ -61,6 +63,12 @@ public class Trace {
     public String getUsername() {
         return username;
     }
+    public Span getRootSpan() {
+        return rootSpan;
+    }
+    public List<Metric> getMetrics() {
+        return metrics;
+    }
     public List<Span> getSpans() {
         return spans;
     }
@@ -78,9 +86,47 @@ public class Trace {
                 .add("duration", duration)
                 .add("completed", completed)
                 .add("username", username)
+                .add("rootSpan", rootSpan)
+                .add("metrics", metrics)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();
+    }
+
+    public static class Metric {
+
+        private String name;
+        private long total;
+        private long min;
+        private long max;
+        private long count;
+
+        public String getName() {
+            return name;
+        }
+        public long getTotal() {
+            return total;
+        }
+        public long getMin() {
+            return min;
+        }
+        public long getMax() {
+            return max;
+        }
+        public long getCount() {
+            return count;
+        }
+
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("name", name)
+                    .add("total", total)
+                    .add("min", min)
+                    .add("max", max)
+                    .add("count", count)
+                    .toString();
+        }
     }
 
     public static class Span {

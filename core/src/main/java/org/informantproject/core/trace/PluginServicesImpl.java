@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.trace;
 
+import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +50,16 @@ public class PluginServicesImpl extends PluginServices {
     private final ConfigurationService configurationService;
     private final Clock clock;
     private final Ticker ticker;
+
+    // used to prevent recording overlapping metric timings for the same span summary key
+    private final ThreadLocal<LinkedList<String>> spanSummaryKeyStack =
+            new ThreadLocal<LinkedList<String>>() {
+                @Override
+                protected LinkedList<String> initialValue() {
+                    // ok to use non-thread safe structure since only accessed by single thread
+                    return new LinkedList<String>();
+                }
+            };
 
     @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
@@ -128,13 +139,20 @@ public class PluginServicesImpl extends PluginServices {
             throws Throwable {
 
         logger.debug("proceedAndRecordMetricData(): summaryKey={}", spanSummaryKey);
-        long startTime = ticker.read();
-        try {
+        boolean skipSummaryData = spanSummaryKeyStack.get().contains(spanSummaryKey);
+        if (skipSummaryData) {
             return joinPoint.proceed();
-        } finally {
-            long endTime = ticker.read();
-            // record aggregate timing data
-            recordSummaryData(spanSummaryKey, endTime - startTime);
+        } else {
+            spanSummaryKeyStack.get().add(spanSummaryKey);
+            long startTime = ticker.read();
+            try {
+                return joinPoint.proceed();
+            } finally {
+                long endTime = ticker.read();
+                spanSummaryKeyStack.get().removeLast();
+                // record aggregate timing data
+                recordSummaryData(spanSummaryKey, endTime - startTime);
+            }
         }
     }
 
@@ -161,14 +179,22 @@ public class PluginServicesImpl extends PluginServices {
 
         // start span
         Span span = pushSpan(spanDetail);
+        boolean skipSummaryData = spanSummaryKey == null
+                || spanSummaryKeyStack.get().contains(spanSummaryKey);
+        if (!skipSummaryData) {
+            spanSummaryKeyStack.get().add(spanSummaryKey);
+        }
         try {
             return joinPoint.proceed();
         } finally {
             // minimizing the number of calls to the clock timer as they are relatively expensive
             long endTime = ticker.read();
-            // record aggregate timing data
-            if (spanSummaryKey != null) {
-                recordSummaryData(spanSummaryKey, endTime - span.getStartTime());
+            if (!skipSummaryData) {
+                spanSummaryKeyStack.get().removeLast();
+                // record aggregate timing data
+                if (spanSummaryKey != null) {
+                    recordSummaryData(spanSummaryKey, endTime - span.getStartTime());
+                }
             }
             // pop span needs to be the last step (at least when this is a root span)
             popSpan(span, endTime);

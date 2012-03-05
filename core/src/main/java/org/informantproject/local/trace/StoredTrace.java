@@ -23,7 +23,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class StoredTrace implements Comparable<StoredTrace> {
+public class StoredTrace {
 
     private String id;
     private long startAt;
@@ -33,8 +33,8 @@ public class StoredTrace implements Comparable<StoredTrace> {
     private String threadNames;
     private String username;
 
-    private String metricData;
     private String rootSpan;
+    private String metrics;
     // using CharSequence so these potentially very large strings can be built using
     // LargeStringBuilder
     private CharSequence spans;
@@ -96,20 +96,20 @@ public class StoredTrace implements Comparable<StoredTrace> {
         this.username = username;
     }
 
-    public String getMetricData() {
-        return metricData;
-    }
-
-    public void setMetricData(String metricData) {
-        this.metricData = metricData;
-    }
-
     public String getRootSpan() {
         return rootSpan;
     }
 
     public void setRootSpan(String rootSpan) {
         this.rootSpan = rootSpan;
+    }
+
+    public String getMetrics() {
+        return metrics;
+    }
+
+    public void setMetrics(String metrics) {
+        this.metrics = metrics;
     }
 
     public CharSequence getSpans() {
@@ -128,10 +128,6 @@ public class StoredTrace implements Comparable<StoredTrace> {
         this.mergedStackTree = mergedStackTree;
     }
 
-    public int compareTo(StoredTrace o) {
-        return (int) (startAt - o.startAt);
-    }
-
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -142,7 +138,7 @@ public class StoredTrace implements Comparable<StoredTrace> {
                 .add("completed", completed)
                 .add("threadNames", threadNames)
                 .add("username", username)
-                .add("metricData", metricData)
+                .add("metricData", metrics)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();

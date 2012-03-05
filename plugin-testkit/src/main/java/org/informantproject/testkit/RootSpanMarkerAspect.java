@@ -30,12 +30,14 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class RootSpanMarkerAspect {
 
+    private static final String MOCK_SPAN_SUMMARY_KEY = "mock root span";
+
     @Pointcut("execution(void org.informantproject.testkit.RootSpanMarker.rootSpanMarker())")
     void rootSpanMarkerPointcut() {}
 
     @Around("rootSpanMarkerPointcut()")
     public void aroundRootSpanMarkerPointcut(ProceedingJoinPoint joinPoint) throws Throwable {
-        PluginServices.get().executeRootSpan(new MockRootSpan(), joinPoint, "mock root span");
+        PluginServices.get().executeRootSpan(new MockRootSpan(), joinPoint, MOCK_SPAN_SUMMARY_KEY);
     }
 
     private static class MockRootSpan implements RootSpanDetail {

@@ -31,7 +31,9 @@
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.selection.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.navigate.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.resize.min.js"></script>
-
+<style type="text/css">
+  table td { padding-left: 0px; padding-right: 16px; text-align: right }
+</style>
 <script id="tracesTemplate" type="text/x-handlebars-template">
 {{#each_with_index .}}
 <div>
@@ -42,6 +44,29 @@
   threadName(s): {{threadNames}}<br>
   root context:<br>
   <div style="margin-left: 1em">{{#contextMapHtml rootSpan.contextMap}}{{/contextMapHtml}}</div>
+  metric data:<br>
+  <table style="margin-left: 1em; border-spacing:0">
+    <thead>
+      <tr>
+        <td style="text-align: left">name</td>
+        <td>total</td>
+        <td>min</td>
+        <td>max</td>
+        <td>count</td>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each metrics}}
+        <tr>
+          <td style="text-align: left">{{name}}</td>
+          <td>{{nanosToMillis total}}</td>
+          <td>{{nanosToMillis min}}</td>
+          <td>{{nanosToMillis max}}</td>
+          <td>{{count}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  <table>
   {{#if spans}}
     <a href="javascript:toggleSpan({{index}}, '{{id}}')">spans</a> ({{spans.length}})<br>
     <div id="sp_{{id}}" style="display: none"></div>

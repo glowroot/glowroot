@@ -27,9 +27,9 @@ public class MetricDataItem {
 
     private final String name;
     // nanosecond rollover (292 years) isn't a concern for total time on a single trace
-    private volatile long totalTime;
-    private volatile long minimumTime = Long.MAX_VALUE;
-    private volatile long maximumTime = Long.MIN_VALUE;
+    private volatile long total;
+    private volatile long min = Long.MAX_VALUE;
+    private volatile long max = Long.MIN_VALUE;
     private volatile long count;
 
     MetricDataItem(String name) {
@@ -40,20 +40,20 @@ public class MetricDataItem {
         return name;
     }
 
-    public long getTotalTime() {
-        return totalTime;
+    public long getTotal() {
+        return total;
     }
 
-    public long getMinimumTime() {
-        return minimumTime;
+    public long getMin() {
+        return min;
     }
 
-    public long getMaximumTime() {
-        return maximumTime;
+    public long getMax() {
+        return max;
     }
 
     public long getAverageTime() {
-        return totalTime / count;
+        return total / count;
     }
 
     public long getCount() {
@@ -61,13 +61,13 @@ public class MetricDataItem {
     }
 
     void recordData(long time) {
-        if (time > maximumTime) {
-            maximumTime = time;
+        if (time > max) {
+            max = time;
         }
-        if (time < minimumTime) {
-            minimumTime = time;
+        if (time < min) {
+            min = time;
         }
         count++;
-        totalTime += time;
+        total += time;
     }
 }

@@ -137,6 +137,10 @@ public class TraceDetailJsonService implements JsonService {
             }
             sb.append(",\"rootSpan\":");
             sb.append(storedTrace.getRootSpan());
+            if (storedTrace.getMetrics() != null) {
+                sb.append(",\"metrics\":");
+                sb.append(storedTrace.getMetrics());
+            }
             if (storedTrace.getSpans() != null) {
                 sb.append(",\"spans\":");
                 sb.append(storedTrace.getSpans());
