@@ -29,35 +29,36 @@ public class LargeStringBuilder implements Appendable {
     private static final int LARGE_THRESHOLD = 100;
     private static final int BLOCK_SIZE = 200;
 
-    final List<CharSequence> strings = new ArrayList<CharSequence>();
+    final List<CharSequence> csqs = new ArrayList<CharSequence>();
     private StringBuilder curr;
     int count;
 
     // part of the contract is that char sequences should not be modified after appending
     // this is not an issue with immutable char sequences like String and LargeCharSequence (below)
     // but is an issue with mutable char sequences like StringBuilder and StringBuffer
-    public LargeStringBuilder append(CharSequence s) {
-        if (s.length() >= LARGE_THRESHOLD) {
+    public LargeStringBuilder append(CharSequence csq) {
+        if (csq.length() >= LARGE_THRESHOLD) {
             if (curr != null) {
-                strings.add(curr);
+                csqs.add(curr);
                 curr = null;
             }
-            strings.add(s);
+            csqs.add(csq);
         } else {
             if (curr == null) {
                 curr = new StringBuilder(BLOCK_SIZE);
             }
-            if (curr.length() + s.length() > BLOCK_SIZE) {
-                strings.add(curr);
+            if (curr.length() + csq.length() > BLOCK_SIZE) {
+                csqs.add(curr);
                 curr = new StringBuilder(BLOCK_SIZE);
             }
-            curr.append(s);
+            curr.append(csq);
         }
-        count += s.length();
+        count += csq.length();
         return this;
     }
 
     public Appendable append(CharSequence csq, int start, int end) throws IOException {
+        // this is not currently needed
         throw new UnsupportedOperationException();
     }
 
@@ -66,7 +67,7 @@ public class LargeStringBuilder implements Appendable {
             curr = new StringBuilder(BLOCK_SIZE);
         }
         if (curr.length() + 1 > BLOCK_SIZE) {
-            strings.add(curr);
+            csqs.add(curr);
             curr = new StringBuilder(BLOCK_SIZE);
         }
         curr.append(c);
@@ -76,9 +77,14 @@ public class LargeStringBuilder implements Appendable {
 
     public CharSequence build() {
         if (curr != null) {
-            strings.add(curr);
+            csqs.add(curr);
             curr = null;
         }
-        return new LargeCharSequence(strings, count);
+        return new LargeCharSequence(csqs, count);
+    }
+
+    @Override
+    public String toString() {
+        return build().toString();
     }
 }

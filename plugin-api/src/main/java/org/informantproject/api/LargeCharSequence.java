@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class LargeCharSequence implements CharSequence {
 
-    private final List<CharSequence> strings;
+    private final List<CharSequence> csqs;
     private final int count;
     // fields to optimize sequential read of charAt
     private int lastCharAtIndex;
@@ -36,17 +36,17 @@ public class LargeCharSequence implements CharSequence {
     private int getCharsListIndex;
     private int getCharsBaseIndex;
 
-    LargeCharSequence(List<CharSequence> strings, int count) {
-        this.strings = strings;
+    LargeCharSequence(List<CharSequence> csqs, int count) {
+        this.csqs = csqs;
         this.count = count;
     }
 
-    CharSequence toJson() {
+    CharSequence escapeJson() {
         LargeStringBuilder sb = new LargeStringBuilder();
-        for (CharSequence s : strings) {
-            CharSequence js = JsonCharSequence.toJson(s);
-            sb.strings.add(js);
-            sb.count += js.length();
+        for (CharSequence csq : csqs) {
+            CharSequence jsonCsq = JsonCharSequence.escapeJson(csq);
+            sb.csqs.add(jsonCsq);
+            sb.count += jsonCsq.length();
         }
         return sb.build();
     }
@@ -70,8 +70,8 @@ public class LargeCharSequence implements CharSequence {
             charAtBaseIndex = 0;
         }
         lastCharAtIndex = index;
-        while (charAtListIndex < strings.size()) {
-            CharSequence s = strings.get(charAtListIndex);
+        while (charAtListIndex < csqs.size()) {
+            CharSequence s = csqs.get(charAtListIndex);
             if (index < charAtBaseIndex + s.length()) {
                 return s.charAt(index - charAtBaseIndex);
             }
@@ -93,23 +93,23 @@ public class LargeCharSequence implements CharSequence {
         }
         LargeStringBuilder sb = null;
         int len = 0;
-        for (CharSequence s : strings) {
+        for (CharSequence csq : csqs) {
             if (sb != null) {
-                if (end < len + s.length()) {
-                    sb.append(s.subSequence(0, end - len));
+                if (end < len + csq.length()) {
+                    sb.append(csq.subSequence(0, end - len));
                     return sb.build();
                 } else {
-                    sb.append(s);
+                    sb.append(csq);
                 }
-            } else if (start < len + s.length()) {
-                if (end < len + s.length()) {
-                    return s.subSequence(start - len, end - len);
+            } else if (start < len + csq.length()) {
+                if (end < len + csq.length()) {
+                    return csq.subSequence(start - len, end - len);
                 } else {
                     sb = new LargeStringBuilder();
-                    sb.append(s.subSequence(start - len, s.length()));
+                    sb.append(csq.subSequence(start - len, csq.length()));
                 }
             }
-            len += s.length();
+            len += csq.length();
         }
         throw new AssertionError("error in above logic");
     }
@@ -117,8 +117,8 @@ public class LargeCharSequence implements CharSequence {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(count);
-        for (CharSequence s : strings) {
-            sb.append(s);
+        for (CharSequence csq : csqs) {
+            sb.append(csq);
         }
         return sb.toString();
     }
@@ -129,30 +129,30 @@ public class LargeCharSequence implements CharSequence {
             getCharsListIndex = 0;
             getCharsBaseIndex = 0;
             // advance
-            while (getCharsListIndex < strings.size()) {
-                CharSequence s = strings.get(getCharsListIndex);
+            while (getCharsListIndex < csqs.size()) {
+                CharSequence s = csqs.get(getCharsListIndex);
                 if (srcBegin < getCharsBaseIndex + s.length()) {
                     break;
                 }
                 getCharsListIndex++;
                 getCharsBaseIndex += s.length();
             }
-            if (getCharsListIndex == strings.size()) {
+            if (getCharsListIndex == csqs.size()) {
                 throw new AssertionError("error in above logic");
             }
             getCharsIndex = srcBegin;
         }
-        CharSequence curr = strings.get(getCharsListIndex);
+        CharSequence curr = csqs.get(getCharsListIndex);
         int currIndex = srcBegin - getCharsBaseIndex;
         int dstIndex = dstBegin;
         while (getCharsIndex < srcEnd) {
             if (currIndex == curr.length()) {
-                if (getCharsListIndex == strings.size() - 1) {
+                if (getCharsListIndex == csqs.size() - 1) {
                     break;
                 }
                 getCharsListIndex++;
                 getCharsBaseIndex += curr.length();
-                curr = strings.get(getCharsListIndex);
+                curr = csqs.get(getCharsListIndex);
                 currIndex = 0;
             }
             int n = Math.min(srcEnd - getCharsIndex, curr.length() - currIndex);

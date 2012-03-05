@@ -216,7 +216,7 @@ public class TraceSinkLocal implements TraceSink {
         jw.value(span.getLevel());
         // inject raw json into stream
         sb.append(",\"description\":\"");
-        sb.append(JsonCharSequence.toJson(span.getDescription()));
+        sb.append(JsonCharSequence.escapeJson(span.getDescription()));
         sb.append("\"");
         if (!skipContextMap) {
             sb.append(",\"contextMap\":");

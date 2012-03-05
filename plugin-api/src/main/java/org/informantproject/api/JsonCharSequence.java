@@ -21,56 +21,56 @@ package org.informantproject.api;
  */
 public class JsonCharSequence implements CharSequence {
 
-    private final CharSequence s;
-    private final int expandedSize;
-    private StringBuilder expanded;
+    private final CharSequence csq;
+    private final int escapedSize;
+    private StringBuilder escaped;
 
-    private JsonCharSequence(CharSequence s, int expandedSize) {
-        this.s = s;
-        this.expandedSize = expandedSize;
+    private JsonCharSequence(CharSequence csq, int escapedSize) {
+        this.csq = csq;
+        this.escapedSize = escapedSize;
     }
 
     public int length() {
-        return expandedSize;
+        return escapedSize;
     }
 
     public char charAt(int index) {
-        if (expanded == null) {
-            expanded = jsonExpandedString(s);
+        if (escaped == null) {
+            escaped = escaped(csq);
         }
-        return expanded.charAt(index);
+        return escaped.charAt(index);
     }
 
     public CharSequence subSequence(int start, int end) {
-        if (expanded == null) {
-            expanded = jsonExpandedString(s);
+        if (escaped == null) {
+            escaped = escaped(csq);
         }
-        return expanded.subSequence(start, end);
+        return escaped.subSequence(start, end);
     }
 
     public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
-        if (expanded == null) {
-            expanded = jsonExpandedString(s);
+        if (escaped == null) {
+            escaped = escaped(csq);
         }
-        expanded.getChars(srcBegin, srcEnd, dst, dstBegin);
+        escaped.getChars(srcBegin, srcEnd, dst, dstBegin);
     }
 
-    public static CharSequence toJson(CharSequence s) {
-        if (s instanceof LargeCharSequence) {
-            return ((LargeCharSequence) s).toJson();
+    public static CharSequence escapeJson(CharSequence csq) {
+        if (csq instanceof LargeCharSequence) {
+            return ((LargeCharSequence) csq).escapeJson();
         }
-        int expandedSize = jsonExpandedSize(s);
-        if (expandedSize == s.length()) {
-            return s;
+        int escapedSize = escapedSize(csq);
+        if (escapedSize == csq.length()) {
+            return csq;
         } else {
-            return new JsonCharSequence(s, expandedSize);
+            return new JsonCharSequence(csq, escapedSize);
         }
     }
 
-    private static int jsonExpandedSize(CharSequence s) {
+    private static int escapedSize(CharSequence csq) {
         int len = 0;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
+        for (int i = 0; i < csq.length(); i++) {
+            char c = csq.charAt(i);
             if (c == '"' || c == '\\' || c == '\t' || c == '\b' || c == '\n' || c == '\r'
                     || c == '\f') {
                 len += 2;
@@ -81,10 +81,10 @@ public class JsonCharSequence implements CharSequence {
         return len;
     }
 
-    private static StringBuilder jsonExpandedString(CharSequence s) {
+    private static StringBuilder escaped(CharSequence csq) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
+        for (int i = 0; i < csq.length(); i++) {
+            char c = csq.charAt(i);
             if (c == '"' || c == '\\' || c == '\t' || c == '\b' || c == '\n' || c == '\r'
                     || c == '\f') {
                 sb.append('\\');

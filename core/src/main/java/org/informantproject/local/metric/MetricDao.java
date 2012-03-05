@@ -64,18 +64,18 @@ public class MetricDao {
             new CacheLoader<Integer, String>() {
                 @Override
                 public String load(Integer nMetricIds) throws Exception {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("select metric_id, captured_at, value from metric_point");
-                    sb.append(" where captured_at >= ? and captured_at <= ?");
-                    sb.append(" and metric_id in (");
+                    StringBuilder sql = new StringBuilder();
+                    sql.append("select metric_id, captured_at, value from metric_point");
+                    sql.append(" where captured_at >= ? and captured_at <= ?");
+                    sql.append(" and metric_id in (");
                     for (int i = 0; i < nMetricIds; i++) {
                         if (i > 0) {
-                            sb.append(", ");
+                            sql.append(", ");
                         }
-                        sb.append("?");
+                        sql.append("?");
                     }
-                    sb.append(")");
-                    return sb.toString();
+                    sql.append(")");
+                    return sql.toString();
                 }
             });
 

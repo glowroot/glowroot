@@ -24,31 +24,31 @@ import java.io.Reader;
  */
 public class CharSequenceReader extends Reader {
 
-    private final CharSequence s;
+    private final CharSequence csq;
     private int index;
 
-    public CharSequenceReader(CharSequence s) {
-        this.s = s;
+    public CharSequenceReader(CharSequence csq) {
+        this.csq = csq;
     }
 
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
-        int n = Math.min(s.length() - index, len);
+        int n = Math.min(csq.length() - index, len);
         if (n == 0) {
             return -1;
         }
-        if (s instanceof String) {
-            ((String) s).getChars(index, index + n, cbuf, off);
-        } else if (s instanceof StringBuilder) {
-            ((StringBuilder) s).getChars(index, index + n, cbuf, off);
-        } else if (s instanceof JsonCharSequence) {
-            ((JsonCharSequence) s).getChars(index, index + n, cbuf, off);
-        } else if (s instanceof LargeCharSequence) {
-            ((LargeCharSequence) s).getChars(index, index + n, cbuf, off);
+        if (csq instanceof String) {
+            ((String) csq).getChars(index, index + n, cbuf, off);
+        } else if (csq instanceof StringBuilder) {
+            ((StringBuilder) csq).getChars(index, index + n, cbuf, off);
+        } else if (csq instanceof JsonCharSequence) {
+            ((JsonCharSequence) csq).getChars(index, index + n, cbuf, off);
+        } else if (csq instanceof LargeCharSequence) {
+            ((LargeCharSequence) csq).getChars(index, index + n, cbuf, off);
         } else {
             // resort to for loop
             for (int i = 0; i < n; i++) {
-                cbuf[off + i] = s.charAt(index + i);
+                cbuf[off + i] = csq.charAt(index + i);
             }
         }
         index += n;
