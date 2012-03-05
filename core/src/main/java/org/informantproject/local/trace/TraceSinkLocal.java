@@ -237,7 +237,7 @@ public class TraceSinkLocal implements TraceSink {
     private static String getStackTraceJson(StackTraceElement[] stackTraceElements)
             throws IOException {
 
-        StringBuilder sb = new StringBuilder();
+        LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
         for (StackTraceElement stackTraceElement : stackTraceElements) {

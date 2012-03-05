@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.informantproject.api.LargeStringBuilder;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
@@ -141,7 +142,7 @@ public class TraceDetailJsonService implements JsonService {
             }
         });
 
-        StringBuilder sb = new StringBuilder();
+        LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
         if (!activeTraces.isEmpty()) {
@@ -155,7 +156,7 @@ public class TraceDetailJsonService implements JsonService {
         return sb.toString();
     }
 
-    private static void writeStoredTraces(StringBuilder sb, JsonWriter jw,
+    private static void writeStoredTraces(Appendable sb, JsonWriter jw,
             List<StoredTrace> storedTraces) throws IOException {
 
         for (StoredTrace storedTrace : storedTraces) {
@@ -192,7 +193,7 @@ public class TraceDetailJsonService implements JsonService {
     }
 
     // TODO there is no unit or integration test that hits this code
-    private void writeActiveTraces(StringBuilder sb, JsonWriter jw,
+    private void writeActiveTraces(Appendable sb, JsonWriter jw,
             List<Trace> activeTraces) throws IOException {
 
         // there is a chance for slight inconsistency since this is reading active traces which are
