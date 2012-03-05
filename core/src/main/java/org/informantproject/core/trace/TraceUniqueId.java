@@ -16,7 +16,10 @@
 package org.informantproject.core.trace;
 
 import java.math.BigInteger;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.google.common.base.Strings;
 
 /**
  * The unique identifier for a trace. The string representation of the unique identifier is lazily
@@ -29,10 +32,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 class TraceUniqueId {
 
     // used to populate id (below)
-    private static final AtomicInteger idCounter = new AtomicInteger();
+    private static final AtomicLong idCounter = new AtomicLong();
+
+    private static final long MAX_ID = (long) Math.pow(16, 6); // at most 6 bytes in hex form
 
     private final long startTimeMillis;
-    private final int id;
+    private final long id;
 
     TraceUniqueId(long startTimeMillis) {
         this.startTimeMillis = startTimeMillis;
@@ -40,6 +45,27 @@ class TraceUniqueId {
     }
 
     public String get() {
-        return startTimeMillis + "-" + BigInteger.valueOf(id).toString(16);
+        return twelveDigitHex(startTimeMillis) + BigInteger.valueOf(id % MAX_ID).toString(16);
+    }
+
+    private static String twelveDigitHex(long x) {
+        String s = BigInteger.valueOf(x).toString(16);
+        if (s.length() > 12) {
+            return s.substring(s.length() - 12);
+        } else if (s.length() == 12) {
+            return s;
+        } else if (s.length() == 11) {
+            // this is the case for dates between Nov 3, 2004 and Jun 23, 2527 so it seems worth
+            // optimizing
+            return '0' + s;
+        } else {
+            return Strings.padStart(s, 12, '0');
+        }
+    }
+
+    public static void main(String... args) {
+        System.out.println(twelveDigitHex(System.currentTimeMillis()));
+        System.out.println(new Date((long) Math.pow(16, 10)));
+        System.out.println(new Date((long) Math.pow(16, 11)));
     }
 }
