@@ -182,7 +182,7 @@ public class HttpServer extends HttpServerBase {
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
-        response.setHeader(Names.CONTENT_TYPE, mimeType + "; charset=UTF-8");
+        response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
         if (path.startsWith("org/informantproject/webresources/")) {
             // these are all third-party versioned resources and can be safely cached forever
@@ -193,11 +193,11 @@ public class HttpServer extends HttpServerBase {
 
     private static String getMimeType(String extension) {
         if (extension.equals("html")) {
-            return "text/html";
+            return "text/html; charset=UTF-8";
         } else if (extension.equals("js")) {
-            return "application/javascript";
+            return "application/javascript; charset=UTF-8";
         } else if (extension.equals("css")) {
-            return "text/css";
+            return "text/css; charset=UTF-8";
         } else if (extension.equals("png")) {
             return "image/png";
         } else if (extension.equals("ico")) {
