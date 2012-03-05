@@ -135,8 +135,8 @@ public class TraceDao {
         }
     }
 
-    public List<StoredTraceSummary> readStoredTraceSummaries(long capturedFrom, long capturedTo) {
-        logger.debug("readStoredTraceSummaries(): capturedFrom={}, capturedTo={}", capturedFrom,
+    public List<StoredTraceDuration> readStoredTraceDurations(long capturedFrom, long capturedTo) {
+        logger.debug("readStoredTraceDurations(): capturedFrom={}, capturedTo={}", capturedFrom,
                 capturedTo);
         if (!valid) {
             return Collections.emptyList();
@@ -144,7 +144,7 @@ public class TraceDao {
         try {
             return dataSource.query("select id, captured_at, duration, completed from trace where"
                     + " captured_at >= ? and captured_at <= ?", new Object[] { capturedFrom,
-                    capturedTo }, new TraceSummaryRowMapper());
+                    capturedTo }, new TraceDurationRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return Collections.emptyList();
@@ -300,9 +300,9 @@ public class TraceDao {
         }
     }
 
-    private static class TraceSummaryRowMapper implements RowMapper<StoredTraceSummary> {
-        public StoredTraceSummary mapRow(ResultSet resultSet) throws SQLException {
-            return new StoredTraceSummary(resultSet.getString(1), resultSet.getLong(2),
+    private static class TraceDurationRowMapper implements RowMapper<StoredTraceDuration> {
+        public StoredTraceDuration mapRow(ResultSet resultSet) throws SQLException {
+            return new StoredTraceDuration(resultSet.getString(1), resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4));
         }
     }

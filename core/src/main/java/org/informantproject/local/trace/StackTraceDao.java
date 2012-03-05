@@ -15,23 +15,26 @@
  */
 package org.informantproject.local.trace;
 
-import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 
 import org.informantproject.core.util.DataSource;
+import org.informantproject.core.util.DataSource.BatchPreparedStatementSetter;
 import org.informantproject.core.util.DataSource.Column;
 import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.Hashing;
-import com.google.common.io.CharStreams;
-import com.google.gson.stream.JsonWriter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -54,7 +57,10 @@ public class StackTraceDao {
 
     private final boolean valid;
 
-    private final Map<String, Boolean> storedHashes = new ConcurrentHashMap<String, Boolean>();
+    // cache only contains hashes which are 20 bytes each, seems ok to keep 5000
+    // TODO expose cache efficiency via stats
+    private final Cache<String, Boolean> storedHashes = CacheBuilder.newBuilder().maximumSize(5000)
+            .build();
 
     @Inject
     StackTraceDao(DataSource dataSource) {
@@ -78,31 +84,36 @@ public class StackTraceDao {
         this.valid = !errorOnInit;
     }
 
-    String storeStackTrace(StackTraceElement[] stackTraceElements) {
+    public void storeStackTraces(Map<String, String> stackTraces) {
         logger.debug("storeStackTrace()");
         if (!valid) {
-            return null;
+            return;
         }
-        String json;
+        Map<String, String> newStackTraces = Maps.filterKeys(stackTraces, new Predicate<String>() {
+            public boolean apply(String hash) {
+                return storedHashes.getIfPresent(hash) == null;
+            }
+        });
+        final List<Entry<String, String>> newEntries = Lists.newArrayList(newStackTraces
+                .entrySet());
         try {
-            json = toJson(stackTraceElements);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-        String hex = Hashing.sha1().hashString(json, Charsets.UTF_8).toString();
-        if (storedHashes.containsKey(hex)) {
-            return hex;
-        }
-        try {
-            // TODO optimize with local cache
-            dataSource.update("merge into stack_trace (hash, stack_trace) values (?, ?)", hex,
-                    json);
-            storedHashes.put(hex, Boolean.TRUE);
-            return hex;
+            dataSource.batchUpdate("merge into stack_trace (hash, stack_trace) values (?, ?)",
+                    new BatchPreparedStatementSetter() {
+                        public void setValues(PreparedStatement preparedStatement, int i)
+                                throws SQLException {
+                            preparedStatement.setString(1, newEntries.get(i).getKey());
+                            preparedStatement.setString(2, newEntries.get(i).getValue());
+                        }
+                        public int getBatchSize() {
+                            return newEntries.size();
+                        }
+                    });
+            for (String hash : newStackTraces.keySet()) {
+                storedHashes.put(hash, Boolean.TRUE);
+            }
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return null;
+            return;
         }
     }
 
@@ -120,15 +131,4 @@ public class StackTraceDao {
         }
     }
 
-    private static String toJson(StackTraceElement[] stackTraceElements) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        jw.beginArray();
-        for (StackTraceElement stackTraceElement : stackTraceElements) {
-            jw.value(stackTraceElement.toString());
-        }
-        jw.endArray();
-        jw.close();
-        return sb.toString();
-    }
 }

@@ -23,14 +23,14 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class StoredTraceSummary {
+public class StoredTraceDuration {
 
     private String id;
     private long capturedAt;
     private double duration; // nanoseconds
     private boolean completed;
 
-    public StoredTraceSummary(String id, long capturedAt, double duration, boolean completed) {
+    public StoredTraceDuration(String id, long capturedAt, double duration, boolean completed) {
         this.id = id;
         this.capturedAt = capturedAt;
         this.duration = duration;
@@ -71,10 +71,10 @@ public class StoredTraceSummary {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof StoredTraceSummary)) {
+        if (!(o instanceof StoredTraceDuration)) {
             return false;
         }
-        StoredTraceSummary other = (StoredTraceSummary) o;
+        StoredTraceDuration other = (StoredTraceDuration) o;
         return Objects.equal(capturedAt, other.getCapturedAt())
                 && Objects.equal(duration, other.getDuration());
     }

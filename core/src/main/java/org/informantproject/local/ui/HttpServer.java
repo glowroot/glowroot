@@ -110,7 +110,7 @@ public class HttpServer extends HttpServerBase {
 
     @Inject
     public HttpServer(@LocalHttpServerPort int port,
-            TraceSummaryJsonService traceSummaryJsonService,
+            TraceDurationJsonService traceDurationJsonService,
             TraceDetailJsonService traceDetailJsonService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
@@ -118,9 +118,9 @@ public class HttpServer extends HttpServerBase {
 
         super(port);
         // the parentheses define the part of the match that is used to dynamically construct the
-        // "handleX" method to call in the json service, e.g. /trace/summaries calls the method
-        // handleSummaries in TraceSummaryJsonService
-        uriMappings.put(Pattern.compile("^/trace/(summaries)$"), traceSummaryJsonService);
+        // "handleX" method to call in the json service, e.g. /trace/durations calls the method
+        // handleDurations in TraceDurationJsonService
+        uriMappings.put(Pattern.compile("^/trace/(durations)$"), traceDurationJsonService);
         uriMappings.put(Pattern.compile("^/trace/(details)$"), traceDetailJsonService);
         uriMappings.put(Pattern.compile("^/stacktrace/(read)$"), stackTraceJsonService);
         uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);

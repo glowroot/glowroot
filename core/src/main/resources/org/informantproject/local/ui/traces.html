@@ -32,12 +32,16 @@
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.navigate.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.resize.min.js"></script>
 <style type="text/css">
-  table td { padding-left: 0px; padding-right: 16px; text-align: right }
+  table td { padding-left: 0px; padding-right: 16px; text-align: right; }
 </style>
 <script id="tracesTemplate" type="text/x-handlebars-template">
-{{#each_with_index .}}
+{{#each .}}
 <div>
-  {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
+  {{#if active}}
+    <b>ACTIVE {{#if stuck}}/ STUCK{{/if}}</b><br>
+  {{^}}
+    {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}
+  {{/if}}
   {{description}}<br>
   start: {{date start}}<br>
   duration: {{nanosToMillis duration}} milliseconds<br>
@@ -73,17 +77,17 @@
     </div>
   {{/if}}
   {{#if spans}}
-    <a href="javascript:toggleSpan({{index}}, '{{id}}')">spans</a> ({{spans.length}})<br>
+    <a href="javascript:toggleSpan('{{id}}')">spans</a> ({{spans.length}})<br>
     <div id="sp_{{id}}" style="display: none"></div>
   {{/if}}
   {{#if mergedStackTree.sampleCount}}
-    <a href="javascript:toggleMergedStackTrace({{index}}, '{{id}}')">merged stack trace</a>
+    <a href="javascript:toggleMergedStackTrace('{{id}}')">merged stack trace</a>
     ({{mergedStackTree.sampleCount}})<br>
     <div id="mst_{{id}}" style="display: none; white-space: nowrap"></div>
   {{/if}}
   <br>
 </div>
-{{/each_with_index}}
+{{/each}}
 </script>
 <script id="spansTemplate" type="text/x-handlebars-template">
 {{#spans}}
@@ -123,16 +127,6 @@
 {{/spans}}
 </script>
 <script type="text/javascript">
-  Handlebars.registerHelper('each_with_index', function(array, options) {
-    var ret = ''
-    for (var i = 0; i < array.length; i++) {
-      var item = array[i]
-      // stick index onto item
-      item.index = i
-      ret += options.fn(item)
-    }
-    return ret
-  })
   Handlebars.registerHelper('date', function(timestamp) {
     return new Date(timestamp).format('m/d/yy h:MM:ss.l TT (Z)')
   })
@@ -199,7 +193,7 @@
     var tracesTemplate = Handlebars.compile($('#tracesTemplate').html())
     var spansTemplate1 = Handlebars.compile($('#spansTemplate').html())
 
-    var plot, selection, traceDetails
+    var plot, selection, activeTraceDurations, traces
 
     var options = {
       legend: { show: false },
@@ -211,30 +205,37 @@
       zoom: { interactive: true, amount : 1.5 },
       selection: { mode: 'xy' }
     }
+    function traceForId(id) {
+      for (var i = 0; i < traces.length; i++) {
+        if (traces[i].id == id) {
+          return traces[i]
+        }
+      }
+    }
     function plotFullDate(date) {
       var from = date.getTime()
       var to = from + 24 * 60 * 60 * 1000; // from + 24 hours
-      getTraceSummaries(from, to)
+      getTraceDurations(from, to)
     }
-    function plotResponseData(storedTraces, activeTraces) {
+    function plotResponseData(storedTraceDurations, activeTraceDurations) {
       var overrideOptions = {}
-      if (storedTraces.length || activeTraces.length) {
+      if (storedTraceDurations.length || activeTraceDurations.length) {
         var xmin
         var xmax
-        if (storedTraces.length) {
-          xmin = storedTraces[0][0]
-          xmax = storedTraces[storedTraces.length - 1][0]
+        if (storedTraceDurations.length) {
+          xmin = storedTraceDurations[0][0]
+          xmax = storedTraceDurations[storedTraceDurations.length - 1][0]
         }
-        if (activeTraces.length) {
-          xmin = Math.min(xmin, activeTraces[0][0])
-          xmax = Math.max(xmax, activeTraces[activeTraces.length - 1][0])
+        if (activeTraceDurations.length) {
+          xmin = Math.min(xmin, activeTraceDurations[0][0])
+          xmax = Math.max(xmax, activeTraceDurations[activeTraceDurations.length - 1][0])
         }
         overrideOptions = {
           xaxis: { zoomRange : [ xmin, xmax ] }
         }
       }
-      plot = $.plot($('#placeholder'), [storedTraces, activeTraces], $.extend(true, {}, options,
-          overrideOptions))
+      plot = $.plot($('#placeholder'), [storedTraceDurations, activeTraceDurations],
+          $.extend(true, {}, options, overrideOptions))
       selection = null
     }
     $('#placeholder').bind("plotselected", function(event, ranges) {
@@ -248,18 +249,20 @@
         plot.setSelection(selection)
     })
 
-    function getTraceSummaries(from, to) {
-      $.getJSON('/trace/summaries?from=' + from + '&to=' + to, function(response) {
-        var storedTraces = response.storedTraces
-        activeTraces = response.activeTraces
+    function getTraceDurations(from, to) {
+      $.getJSON('/trace/durations?from=' + from + '&to=' + to, function(response) {
+        var storedTraceDurations = response.storedTraceDurations
+        activeTraceDurations = response.activeTraceDurations
         // shift for timezone
-        for (var i = 0; i < storedTraces.length; i++) {
-          storedTraces[i][0] -= new Date(storedTraces[i][0]).getTimezoneOffset() * 60 * 1000
+        for (var i = 0; i < storedTraceDurations.length; i++) {
+          storedTraceDurations[i][0] -= new Date(storedTraceDurations[i][0]).getTimezoneOffset()
+              * 60 * 1000
         }
-        for (var i = 0; i < activeTraces.length; i++) {
-          activeTraces[i][0] -= new Date(activeTraces[i][0]).getTimezoneOffset() * 60 * 1000
+        for (var i = 0; i < activeTraceDurations.length; i++) {
+          activeTraceDurations[i][0] -= new Date(activeTraceDurations[i][0]).getTimezoneOffset()
+              * 60 * 1000
         }
-        plotResponseData(storedTraces, activeTraces)
+        plotResponseData(storedTraceDurations, activeTraceDurations)
       })
       $('#traces').html('')
     }
@@ -274,12 +277,12 @@
         low = selection.yaxis.from * 1000
         high = selection.yaxis.to * 1000
         // add live traces inside the selection
-        for (var i = 0; i < activeTraces.length; i++) {
-          if (activeTraces[i][0] >= selection.xaxis.from
-              && activeTraces[i][0] <= selection.xaxis.to
-              && activeTraces[i][1] >= selection.yaxis.from
-              && activeTraces[i][1] <= selection.yaxis.to) {
-            extraIds.push(activeTraces[i][2])
+        for (var i = 0; i < activeTraceDurations.length; i++) {
+          if (activeTraceDurations[i][0] >= selection.xaxis.from
+              && activeTraceDurations[i][0] <= selection.xaxis.to
+              && activeTraceDurations[i][1] >= selection.yaxis.from
+              && activeTraceDurations[i][1] <= selection.yaxis.to) {
+            extraIds.push(activeTraceDurations[i][2])
           }
         }
       } else {
@@ -290,10 +293,12 @@
         low = axes.yaxis.min * 1000
         high = axes.yaxis.max * 1000
         // add live traces inside the current view
-        for (var i = 0; i < activeTraces.length; i++) {
-          if (activeTraces[i][0] >= axes.xaxis.min && activeTraces[i][0] <= axes.xaxis.max
-              && activeTraces[i][1] >= axes.yaxis.min && activeTraces[i][1] <= axes.yaxis.max) {
-            extraIds.push(activeTraces[i][2])
+        for (var i = 0; i < activeTraceDurations.length; i++) {
+          if (activeTraceDurations[i][0] >= axes.xaxis.min
+              && activeTraceDurations[i][0] <= axes.xaxis.max
+              && activeTraceDurations[i][1] >= axes.yaxis.min
+              && activeTraceDurations[i][1] <= axes.yaxis.max) {
+            extraIds.push(activeTraceDurations[i][2])
           }
         }
       }
@@ -302,11 +307,11 @@
       if (extraIds) {
         query += "&extra_ids=" + extraIds
       }
-      $.getJSON('/trace/details?' + query, function(traces) {
-        traceDetails = traces
+      $.getJSON('/trace/details?' + query, function(response) {
+        traces = response
         $('#traces').html('')
         if (traces.length) {
-          var html = tracesTemplate(traces)
+          html = tracesTemplate(traces)
           $(html).appendTo('#traces')
         } else {
           $('#traces').html('no data')
@@ -314,19 +319,19 @@
       })
     }
 
-    window.toggleSpan = function(index, id) {
+    window.toggleSpan = function(id) {
       if ($('#sp_' + id).is(':visible')) {
         $('#sp_' + id).hide()
       } else {
         if (! $('#sp_' + id).html()) {
-          var html = spansTemplate1(traceDetails[index])
+          var html = spansTemplate1(traceForId(id))
           $(html).appendTo('#sp_' + id)
         }
         $('#sp_' + id).show()
       }
     }
-    window.toggleMergedStackTrace = function(index, id) {
-      var rootNode = traceDetails[index].mergedStackTree
+    window.toggleMergedStackTrace = function(id) {
+      var rootNode = traceForId(id).mergedStackTree
       function curr(node, level) {
         var ret = ''
         var stackTraceElement = node.stackTraceElement
@@ -399,7 +404,8 @@
   </h1>
   <div>
     Date: <input style="width: 7em" type="text" id="datePicker">
-  </div><br>
+  </div>
+  <br>
   <div>
     <div id="placeholder" style="height: 300px"></div>
   </div>

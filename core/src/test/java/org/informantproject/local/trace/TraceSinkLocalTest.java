@@ -15,26 +15,30 @@
  */
 package org.informantproject.local.trace;
 
-import java.io.IOException;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.lang.Thread.State;
 
 import org.informantproject.core.stack.MergedStackTree;
-import org.informantproject.local.trace.TraceSinkLocal;
-import org.jukito.JukitoRunner;
+import org.informantproject.core.trace.Trace;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@RunWith(JukitoRunner.class)
 public class TraceSinkLocalTest {
 
     @Test
-    public void shouldStoreVeryLargeMergedStackTrace() throws IOException {
+    public void shouldStoreVeryLargeMergedStackTrace() {
         // given
         MergedStackTree mergedStackTree = new MergedStackTree();
+        Trace trace = mock(Trace.class);
+        when(trace.getMergedStackTree()).thenReturn(mergedStackTree);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
@@ -44,7 +48,9 @@ public class TraceSinkLocalTest {
         }
         mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
         // when
-        TraceSinkLocal.buildMergedStackTree(mergedStackTree);
+        CharSequence mergedStackTreeJson = TraceSinkLocal.getMergedStackTreeJson(trace);
         // then don't blow up with StackOverflowError
+        // (and an extra verification just to make sure the test was valid)
+        assertThat(mergedStackTreeJson.length(), is(greaterThan(1000000)));
     }
 }

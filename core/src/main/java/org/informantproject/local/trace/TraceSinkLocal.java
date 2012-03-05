@@ -18,6 +18,7 @@ package org.informantproject.local.trace;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,6 @@ import org.informantproject.api.JsonCharSequence;
 import org.informantproject.api.LargeStringBuilder;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
-import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.MetricDataItem;
 import org.informantproject.core.trace.Span;
@@ -39,7 +39,9 @@ import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -124,52 +126,82 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setDescription(rootSpan.getDescription().toString());
         storedTrace.setUsername(trace.getUsername());
         Gson gson = new Gson();
-        List<MetricDataItem> items = Lists.newArrayList(trace.getMetricData().getItems());
-        Collections.sort(items, new Comparator<MetricDataItem>() {
-            public int compare(MetricDataItem item1, MetricDataItem item2) {
-                // can't just subtract totals and cast to int because of int overflow
-                return item1.getTotal() >= item2.getTotal() ? -1 : 1;
-            }
-        });
-        if (items.size() > 0) {
-            storedTrace.setMetrics(gson.toJson(items));
-        }
-        if (rootSpan.getContextMap() != null) {
-            String contextMap = gson.toJson(rootSpan.getContextMap(),
-                    new TypeToken<Map<String, Object>>() {}.getType());
-            storedTrace.setContextMap(contextMap);
-        }
-        try {
-            storedTrace.setSpans(buildSpans(trace.getRootSpan().getSpans(), gson));
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }
-        if (trace.getMergedStackTree().getRootNode() != null) {
-            try {
-                storedTrace.setMergedStackTree(buildMergedStackTree(trace.getMergedStackTree()));
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
+        storedTrace.setMetrics(getMetricsJson(trace, gson));
+        storedTrace.setContextMap(getContextMapJson(trace, gson));
+        Map<String, String> stackTraces = new HashMap<String, String>();
+        storedTrace.setSpans(getSpansJson(trace, stackTraces, gson));
+        stackTraceDao.storeStackTraces(stackTraces);
+        storedTrace.setMergedStackTree(getMergedStackTreeJson(trace));
         return storedTrace;
     }
 
-    private CharSequence buildSpans(Iterable<Span> spans, Gson gson) throws IOException {
-        LargeStringBuilder sb = new LargeStringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        jw.beginArray();
-        boolean skipContextMap = true;
-        for (Span span : spans) {
-            writeSpan(span, jw, sb, gson, skipContextMap);
-            skipContextMap = false;
+    public static String getMetricsJson(Trace trace, Gson gson) {
+        List<MetricDataItem> items = Lists.newArrayList(trace.getMetricData().getItems());
+        if (items.size() == 0) {
+            return null;
+        } else {
+            Collections.sort(items, new Comparator<MetricDataItem>() {
+                public int compare(MetricDataItem item1, MetricDataItem item2) {
+                    // can't just subtract totals and cast to int because of int overflow
+                    return item1.getTotal() >= item2.getTotal() ? -1 : 1;
+                }
+            });
+            return gson.toJson(items);
         }
-        jw.endArray();
-        jw.close();
-        return sb.build();
     }
 
-    private void writeSpan(Span span, JsonWriter jw, Appendable sb, Gson gson,
-            boolean skipContextMap) throws IOException {
+    public static String getContextMapJson(Trace trace, Gson gson) {
+        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        if (rootSpan.getContextMap() == null) {
+            return null;
+        } else {
+            return gson.toJson(rootSpan.getContextMap(),
+                    new TypeToken<Map<String, Object>>() {}.getType());
+        }
+    }
+
+    public static CharSequence getSpansJson(Trace trace, Map<String, String> stackTraces,
+            Gson gson) {
+
+        try {
+            LargeStringBuilder sb = new LargeStringBuilder();
+            JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+            jw.beginArray();
+            boolean skipContextMap = true;
+            for (Span span : trace.getRootSpan().getSpans()) {
+                writeSpan(span, stackTraces, jw, sb, gson, skipContextMap);
+                skipContextMap = false;
+            }
+            jw.endArray();
+            jw.close();
+            return sb.build();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public static CharSequence getMergedStackTreeJson(Trace trace) {
+        if (trace.getMergedStackTree().getRootNode() == null) {
+            return null;
+        }
+        try {
+            MergedStackTreeNode rootNode = trace.getMergedStackTree().getRootNode();
+            LargeStringBuilder sb = new LargeStringBuilder();
+            JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+            LinkedList<Object> toVisit = new LinkedList<Object>();
+            toVisit.add(rootNode);
+            visitDepthFirst(toVisit, jw);
+            jw.close();
+            return sb.build();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private static void writeSpan(Span span, Map<String, String> stackTraces, JsonWriter jw,
+            Appendable sb, Gson gson, boolean skipContextMap) throws IOException {
 
         jw.beginObject();
         jw.name("offset");
@@ -192,22 +224,33 @@ public class TraceSinkLocal implements TraceSink {
                     new TypeToken<Map<String, Object>>() {}.getType()));
         }
         if (span.getStackTraceElements() != null) {
-            String stackTraceHash = stackTraceDao.storeStackTrace(span.getStackTraceElements());
+            String stackTraceJson = getStackTraceJson(span.getStackTraceElements());
+            String stackTraceHash = Hashing.sha1().hashString(stackTraceJson, Charsets.UTF_8)
+                    .toString();
+            stackTraces.put(stackTraceHash, stackTraceJson);
             jw.name("stackTraceHash");
             jw.value(stackTraceHash);
         }
         jw.endObject();
     }
 
-    static CharSequence buildMergedStackTree(MergedStackTree mergedStackTree)
+    private static String getStackTraceJson(StackTraceElement[] stackTraceElements)
             throws IOException {
 
-        MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
-        LargeStringBuilder sb = new LargeStringBuilder();
+        StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        LinkedList<Object> toVisit = new LinkedList<Object>();
-        toVisit.add(rootNode);
-        // walk tree depth first
+        jw.beginArray();
+        for (StackTraceElement stackTraceElement : stackTraceElements) {
+            jw.value(stackTraceElement.toString());
+        }
+        jw.endArray();
+        jw.close();
+        return sb.toString();
+    }
+
+    private static void visitDepthFirst(LinkedList<Object> toVisit, JsonWriter jw)
+            throws IOException {
+
         while (!toVisit.isEmpty()) {
             Object curr = toVisit.removeLast();
             if (curr instanceof MergedStackTreeNode) {
@@ -237,8 +280,6 @@ public class TraceSinkLocal implements TraceSink {
                 jw.endObject();
             }
         }
-        jw.close();
-        return sb.build();
     }
 
     private static enum JsonWriterOp {
