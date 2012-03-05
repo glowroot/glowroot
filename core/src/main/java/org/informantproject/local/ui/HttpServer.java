@@ -112,6 +112,7 @@ public class HttpServer extends HttpServerBase {
     public HttpServer(@LocalHttpServerPort int port,
             TraceDurationJsonService traceDurationJsonService,
             TraceDetailJsonService traceDetailJsonService,
+            TraceExportHttpService traceExportJsonService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
             PluginJsonService pluginJsonService) {
@@ -122,6 +123,7 @@ public class HttpServer extends HttpServerBase {
         // handleDurations in TraceDurationJsonService
         uriMappings.put(Pattern.compile("^/trace/(durations)$"), traceDurationJsonService);
         uriMappings.put(Pattern.compile("^/trace/(details)$"), traceDetailJsonService);
+        uriMappings.put(Pattern.compile("^/trace/export$"), traceExportJsonService);
         uriMappings.put(Pattern.compile("^/stacktrace/(read)$"), stackTraceJsonService);
         uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);
         uriMappings.put(Pattern.compile("^/configuration/(.*)$"), configurationJsonService);
@@ -145,6 +147,8 @@ public class HttpServer extends HttpServerBase {
                     String requestText = getRequestText(request, decoder);
                     return handleJsonRequest((JsonService) uriMappingEntry.getValue(),
                             serviceMethodName, requestText);
+                } else if (uriMappingEntry.getValue() instanceof HttpService) {
+                    return ((HttpService) uriMappingEntry.getValue()).handleRequest(request);
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
@@ -310,6 +314,10 @@ public class HttpServer extends HttpServerBase {
 
     // marker interface
     public interface JsonService {}
+
+    public interface HttpService {
+        HttpResponse handleRequest(HttpRequest request) throws IOException;
+    }
 
     @SuppressWarnings("serial")
     public static class PathNotFoundException extends Exception {}

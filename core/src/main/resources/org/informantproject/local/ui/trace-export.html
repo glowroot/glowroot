@@ -1,0 +1,76 @@
+<!doctype html>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Informant | Traces</title>
+<link href='http://fonts.googleapis.com/css?family=Special+Elite' rel='stylesheet' type='text/css'>
+<style type="text/css">
+  {{#include org/informantproject/webresources/bootstrap/2.0.0/css/bootstrap.min.css}}
+</style>
+<style type="text/css">
+  {{#include org/informantproject/local/ui/css/informant.css}}
+</style>
+<script type="text/javascript">
+{{#include org/informantproject/webresources/jquery/1.7.1/jquery.min.js}}
+</script>
+<script type="text/javascript">
+{{#include org/informantproject/webresources/dateformat/1.2.3/date.format.js}}
+</script>
+<script type="text/javascript">
+{{#include org/informantproject/webresources/handlebars/1.0.0.beta.6/handlebars.js}}
+</script>
+<script type="text/javascript">
+{{#include org/informantproject/local/ui/js/traces.js}}
+</script>
+<style type="text/css">
+  .header-logo-external-font {
+    font-family: 'Special Elite';
+    font-size: 34px;
+    border-right: 3px solid #555555;
+    padding-top: 6px;
+    padding-right: 10px;
+    color: #b12930;
+  }
+</style>
+<script type="text/javascript">
+  var exportPage = true // this prevents export button from showing on traces
+  traces = {{#include traces}}
+  $(document).ready(function() {
+    var html = tracesTemplate(traces)
+    $(html).appendTo('#traces')
+  })
+</script>
+</head>
+<body>
+  <h1 class="header">
+    <span class="header-logo-external-font">Informant</span><span class="header-page-name">Trace Export</span>
+  </h1>
+  <div id="traces"></div>
+  <div id="stacktracemodal" class="modal hide fade"
+    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
+    <div class="modal-header">
+      <a class="close" data-dismiss="modal">×</a>
+      <h3>Stack Trace</h3>
+    </div>
+    <div id="stacktrace" class="modal-body"></div>
+    <div class="modal-footer">
+      <a href="#" class="btn">Close</a>
+    </div>
+  </div>
+</body>
+</html>

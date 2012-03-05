@@ -84,7 +84,7 @@ public class TraceDetailJsonService implements JsonService {
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(from, to, low, high);
         List<Trace> activeTraces = new ArrayList<Trace>();
         processExtraIds(request.getExtraIds(), storedTraces, activeTraces);
-        String response = writeResponse(storedTraces, activeTraces);
+        String response = writeResponse(activeTraces, storedTraces);
         if (response.length() <= 2000) {
             logger.debug("handleDetails(): response={}", response);
         } else {
@@ -128,8 +128,8 @@ public class TraceDetailJsonService implements JsonService {
         }
     }
 
-    private String writeResponse(List<StoredTrace> storedTraces,
-            List<Trace> activeTraces) throws IOException {
+    private String writeResponse(List<Trace> activeTraces,
+            List<StoredTrace> storedTraces) throws IOException {
 
         // activeTraces is already sorted by oldest first (since they were pulled out of
         // TraceRegistry in order), which is the same as largest duration first (for active traces)
@@ -141,99 +141,97 @@ public class TraceDetailJsonService implements JsonService {
                 return storedTrace1.getDuration() >= storedTrace2.getDuration() ? -1 : 1;
             }
         });
-
         LargeStringBuilder sb = new LargeStringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
         if (!activeTraces.isEmpty()) {
-            writeActiveTraces(sb, jw, activeTraces);
+            for (Trace activeTrace : activeTraces) {
+                Map<String, String> stackTraces = new HashMap<String, String>();
+                writeActiveTrace(activeTrace, stackTraces, jw, sb);
+                stackTraceDao.storeStackTraces(stackTraces);
+            }
         }
         if (!storedTraces.isEmpty()) {
-            writeStoredTraces(sb, jw, storedTraces);
+            for (StoredTrace storedTrace : storedTraces) {
+                writeStoredTrace(storedTrace, jw, sb);
+            }
         }
         jw.endArray();
         jw.close();
         return sb.toString();
     }
 
-    private static void writeStoredTraces(Appendable sb, JsonWriter jw,
-            List<StoredTrace> storedTraces) throws IOException {
+    public static void writeStoredTrace(StoredTrace storedTrace, JsonWriter jw, Appendable sb)
+            throws IOException {
 
-        for (StoredTrace storedTrace : storedTraces) {
-            jw.beginObject();
-            jw.name("id").value(storedTrace.getId());
-            jw.name("start").value(storedTrace.getStartAt());
-            jw.name("stuck").value(storedTrace.isStuck());
-            jw.name("duration").value(storedTrace.getDuration());
-            jw.name("completed").value(storedTrace.isCompleted());
-            jw.name("description").value(storedTrace.getDescription());
-            if (storedTrace.getUsername() != null) {
-                jw.name("username").value(storedTrace.getUsername());
-            }
-            // inject raw json into stream
-            if (storedTrace.getMetrics() != null) {
-                sb.append(",\"metrics\":");
-                sb.append(storedTrace.getMetrics());
-            }
-            if (storedTrace.getContextMap() != null) {
-                sb.append(",\"contextMap\":");
-                sb.append(storedTrace.getContextMap());
-            }
-            if (storedTrace.getSpans() != null) {
-                // spans could be null if spans text has been rolled out
-                sb.append(",\"spans\":");
-                sb.append(storedTrace.getSpans());
-            }
-            if (storedTrace.getMergedStackTree() != null) {
-                sb.append(",\"mergedStackTree\":");
-                sb.append(storedTrace.getMergedStackTree());
-            }
-            jw.endObject();
+        jw.beginObject();
+        jw.name("id").value(storedTrace.getId());
+        jw.name("start").value(storedTrace.getStartAt());
+        jw.name("stuck").value(storedTrace.isStuck());
+        jw.name("duration").value(storedTrace.getDuration());
+        jw.name("completed").value(storedTrace.isCompleted());
+        jw.name("description").value(storedTrace.getDescription());
+        if (storedTrace.getUsername() != null) {
+            jw.name("username").value(storedTrace.getUsername());
         }
+        // inject raw json into stream
+        if (storedTrace.getMetrics() != null) {
+            sb.append(",\"metrics\":");
+            sb.append(storedTrace.getMetrics());
+        }
+        if (storedTrace.getContextMap() != null) {
+            sb.append(",\"contextMap\":");
+            sb.append(storedTrace.getContextMap());
+        }
+        if (storedTrace.getSpans() != null) {
+            // spans could be null if spans text has been rolled out
+            sb.append(",\"spans\":");
+            sb.append(storedTrace.getSpans());
+        }
+        if (storedTrace.getMergedStackTree() != null) {
+            sb.append(",\"mergedStackTree\":");
+            sb.append(storedTrace.getMergedStackTree());
+        }
+        jw.endObject();
     }
 
     // TODO there is no unit or integration test that hits this code
-    private void writeActiveTraces(Appendable sb, JsonWriter jw,
-            List<Trace> activeTraces) throws IOException {
+    public static void writeActiveTrace(Trace activeTrace, Map<String, String> stackTraces,
+            JsonWriter jw, Appendable sb) throws IOException {
 
         // there is a chance for slight inconsistency since this is reading active traces which are
         // still being modified and/or may even reach completion while they are being written
-        for (Trace activeTrace : activeTraces) {
-            jw.beginObject();
-            jw.name("active").value(true);
-            jw.name("id").value(activeTrace.getId());
-            jw.name("start").value(activeTrace.getStartDate().getTime());
-            jw.name("stuck").value(activeTrace.isStuck());
-            jw.name("duration").value(activeTrace.getDuration());
-            jw.name("completed").value(false);
-            Span rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
-            jw.name("description").value(rootSpan.getDescription().toString());
-            if (activeTrace.getUsername() != null) {
-                jw.name("username").value(activeTrace.getUsername());
-            }
-            Gson gson = new Gson();
-            String metrics = TraceSinkLocal.getMetricsJson(activeTrace, gson);
-            String contextMap = TraceSinkLocal.getContextMapJson(activeTrace, gson);
-            Map<String, String> stackTraces = new HashMap<String, String>();
-            CharSequence spans = TraceSinkLocal.getSpansJson(activeTrace, stackTraces, gson);
-            stackTraceDao.storeStackTraces(stackTraces);
-            CharSequence mergedStackTree = TraceSinkLocal.getMergedStackTreeJson(activeTrace);
-            // inject raw json into stream
-            if (metrics != null) {
-                sb.append(",\"metrics\":");
-                sb.append(metrics);
-            }
-            if (contextMap != null) {
-                sb.append(",\"contextMap\":");
-                sb.append(contextMap);
-            }
-            sb.append(",\"spans\":");
-            sb.append(spans);
-            if (mergedStackTree != null) {
-                sb.append(",\"mergedStackTree\":");
-                sb.append(mergedStackTree);
-            }
-            jw.endObject();
+        jw.beginObject();
+        jw.name("active").value(true);
+        jw.name("id").value(activeTrace.getId());
+        jw.name("start").value(activeTrace.getStartDate().getTime());
+        jw.name("stuck").value(activeTrace.isStuck());
+        jw.name("duration").value(activeTrace.getDuration());
+        jw.name("completed").value(false);
+        Span rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
+        jw.name("description").value(rootSpan.getDescription().toString());
+        if (activeTrace.getUsername() != null) {
+            jw.name("username").value(activeTrace.getUsername());
         }
+        Gson gson = new Gson();
+        String metrics = TraceSinkLocal.getMetricsJson(activeTrace, gson);
+        if (metrics != null) {
+            sb.append(",\"metrics\":");
+            sb.append(metrics);
+        }
+        String contextMap = TraceSinkLocal.getContextMapJson(activeTrace, gson);
+        if (contextMap != null) {
+            sb.append(",\"contextMap\":");
+            sb.append(contextMap);
+        }
+        CharSequence spans = TraceSinkLocal.getSpansJson(activeTrace, stackTraces, gson);
+        sb.append(",\"spans\":");
+        sb.append(spans);
+        CharSequence mergedStackTree = TraceSinkLocal.getMergedStackTreeJson(activeTrace);
+        if (mergedStackTree != null) {
+            sb.append(",\"mergedStackTree\":");
+            sb.append(mergedStackTree);
+        }
+        jw.endObject();
     }
 }
