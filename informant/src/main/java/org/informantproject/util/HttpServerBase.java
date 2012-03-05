@@ -135,7 +135,7 @@ public abstract class HttpServerBase {
                         .equals("An existing connection was forcibly closed by the remote host")) {
                     // ignore, just a browser disconnect
                 } else {
-                    logger.error(e.getCause().getMessage(), e);
+                    logger.error(e.getCause().getMessage(), e.getCause());
                 }
             }
             e.getChannel().close();
