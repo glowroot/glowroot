@@ -130,12 +130,13 @@ public class ServletPluginTest {
         assertThat(traces.size(), is(1));
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getDescription(), is("GET /invalidate"));
+        assertThat((String) trace.getContextMap().get("session id (at beginning of this request)"),
+                is("1"));
+        assertThat((String) trace.getContextMap().get("session id (updated during this request)"),
+                is(""));
         Span span = trace.getSpans().get(0);
         assertThat(span.getDescription(), is("GET /invalidate"));
-        assertThat((String) span.getContextMap().get("session id (at beginning of this request)"),
-                is("1"));
-        assertThat((String) span.getContextMap().get("session id (updated during this request)"),
-                is(""));
     }
 
     public static class ExecuteServlet implements AppUnderTest {
