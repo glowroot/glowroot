@@ -71,8 +71,9 @@ public class JsonCharSequence implements CharSequence {
         int len = 0;
         for (int i = 0; i < csq.length(); i++) {
             char c = csq.charAt(i);
-            if (c == '"' || c == '\\' || c == '\t' || c == '\b' || c == '\n' || c == '\r'
-                    || c == '\f') {
+            // see list of control characters that need escaping at http://json.org
+            if (c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' || c == '\r'
+                    || c == '\t') {
                 len += 2;
             } else {
                 len++;
@@ -85,10 +86,28 @@ public class JsonCharSequence implements CharSequence {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < csq.length(); i++) {
             char c = csq.charAt(i);
-            if (c == '"' || c == '\\' || c == '\t' || c == '\b' || c == '\n' || c == '\r'
-                    || c == '\f') {
+            // see list of control characters that need escaping at http://json.org
+            if (c == '"') {
                 sb.append('\\');
-                sb.append(c);
+                sb.append('"');
+            } else if (c == '\\') {
+                sb.append('\\');
+                sb.append('\\');
+            } else if (c == '\b') {
+                sb.append('\\');
+                sb.append('b');
+            } else if (c == '\f') {
+                sb.append('\\');
+                sb.append('f');
+            } else if (c == '\n') {
+                sb.append('\\');
+                sb.append('n');
+            } else if (c == '\r') {
+                sb.append('\\');
+                sb.append('r');
+            } else if (c == '\t') {
+                sb.append('\\');
+                sb.append('t');
             } else {
                 sb.append(c);
             }
