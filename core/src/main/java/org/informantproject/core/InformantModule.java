@@ -55,10 +55,10 @@ class InformantModule extends AbstractModule {
     // TODO revisit this
     private static final boolean USE_NETTY_BLOCKING_IO = false;
 
-    private final CommandLineOptions commandLineOptions;
+    private final AgentArgs agentArgs;
 
-    InformantModule(CommandLineOptions commandLineOptions) {
-        this.commandLineOptions = commandLineOptions;
+    InformantModule(AgentArgs agentArgs) {
+        this.agentArgs = agentArgs;
     }
 
     public static void start(Injector injector) {
@@ -89,22 +89,23 @@ class InformantModule extends AbstractModule {
     @Override
     protected void configure() {
         logger.debug("configure()");
-        install(new LocalModule(commandLineOptions.getUiPort()));
+        install(new LocalModule(agentArgs.getUiPort()));
     }
 
     @Provides
     @Singleton
     protected DataSource providesDataSource() {
-        return new DataSource(commandLineOptions.getDbFile());
+        return new DataSource(new File(agentArgs.getDataDir(), "informant.h2.db"));
     }
 
     @Provides
     @Singleton
-    protected static RollingFile providesRollingFile(ConfigurationService configurationService) {
+    protected RollingFile providesRollingFile(ConfigurationService configurationService) {
         int rollingSizeMb = configurationService.getCoreConfiguration().getRollingSizeMb();
         try {
             // 1gb
-            return new RollingFile(new File("informant.rolling.db"), rollingSizeMb * 1024);
+            return new RollingFile(new File(agentArgs.getDataDir(), "informant.rolling.db"),
+                    rollingSizeMb * 1024);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);

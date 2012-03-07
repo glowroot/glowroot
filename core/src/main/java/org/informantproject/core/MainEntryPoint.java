@@ -49,7 +49,7 @@ public final class MainEntryPoint {
 
     public static void premain(String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
-        start(agentArgs);
+        start(new AgentArgs(agentArgs));
         // start the AspectJ load-time weaving agent
         Agent.premain(null, instrumentation);
     }
@@ -59,17 +59,20 @@ public final class MainEntryPoint {
     }
 
     public static void start() {
-        start(null);
+        start(new AgentArgs());
     }
 
-    public static void start(String options) {
+    public static void start(String agentArgs) {
+        start(new AgentArgs(agentArgs));
+    }
+
+    public static void start(AgentArgs agentArgs) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
         synchronized (lock) {
             if (injector != null) {
                 throw new IllegalStateException("Informant is already started");
             }
-            CommandLineOptions commandLineOptions = new CommandLineOptions(options);
-            injector = Guice.createInjector(new InformantModule(commandLineOptions));
+            injector = Guice.createInjector(new InformantModule(agentArgs));
             InformantModule.start(injector);
             pluginServicesProxy.start(injector.getInstance(PluginServicesImpl.class));
         }
@@ -86,4 +89,5 @@ public final class MainEntryPoint {
             injector = null;
         }
     }
+
 }

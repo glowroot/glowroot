@@ -104,7 +104,7 @@ public abstract class InformantContainer {
         return informant;
     }
 
-    protected abstract void initImpl(String options) throws Exception;
+    protected abstract void initImpl(String agentArgs) throws Exception;
 
     protected abstract void executeAppUnderTestImpl(
             Class<? extends AppUnderTest> appUnderTestClass, String threadName) throws Exception;
@@ -116,16 +116,18 @@ public abstract class InformantContainer {
         // increment ui port and db filename so that tests can be run in parallel by using multiple
         // InformantContainers (however tests are not being run in parallel at this point)
         int uiPort = uiPortCounter.getAndIncrement();
-        String dbFile = "informant";
-        if (uiPort != DEFAULT_UI_PORT) {
-            dbFile += (uiPort - DEFAULT_UI_PORT);
+        File dataDir;
+        if (uiPort == DEFAULT_UI_PORT) {
+            dataDir = new File(".");
+        } else {
+            dataDir = new File("test-" + (uiPort - DEFAULT_UI_PORT));
         }
         if (cleanDbs) {
-            new File(dbFile + ".h2.db").delete();
-            new File(dbFile + ".trace.db").delete();
-            new File(dbFile + ".rolling.db").delete();
+            new File(dataDir, "informant.h2.db").delete();
+            new File(dataDir, "informant.trace.db").delete();
+            new File(dataDir, "informant.rolling.db").delete();
         }
-        initImpl("ui.port=" + uiPort + ",db.file=" + dbFile);
+        initImpl("ui.port=" + uiPort + ",data.dir=" + dataDir);
         asyncHttpClient = new AsyncHttpClient();
         informant = new Informant(uiPort, asyncHttpClient);
     }

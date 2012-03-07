@@ -32,13 +32,13 @@ class SameJvmInformantContainer extends InformantContainer {
     }
 
     @Override
-    protected void initImpl(String options) throws Exception {
+    protected void initImpl(String agentArgs) throws Exception {
         // TODO why does this commented out code break unit tests?
         // ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         // Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         // try {
         isolatedWeavingClassLoader.newInstance(OpenSameJvmTest.class,
-                RunnableWithStringArg.class).run(options);
+                RunnableWithStringArg.class).run(agentArgs);
         // } finally {
         // Thread.currentThread().setContextClassLoader(previousContextClassLoader);
         // }
@@ -80,11 +80,11 @@ class SameJvmInformantContainer extends InformantContainer {
     }
 
     public static class OpenSameJvmTest implements RunnableWithStringArg {
-        public void run(String options) {
+        public void run(String agentArgs) {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(OpenSameJvmTest.class.getClassLoader());
             try {
-                MainEntryPoint.start(options);
+                MainEntryPoint.start(agentArgs);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             } finally {

@@ -77,8 +77,13 @@ public class MiscJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public String handleNumPendingTraceWrites(@SuppressWarnings("unused") String message) {
+    public String handleNumPendingTraceWrites() {
         logger.debug("handleNumPendingTraceWrites()");
         return Integer.toString(traceSinkLocal.getQueueLength());
+    }
+
+    // called dynamically from HttpServer
+    public String handleDbFile() {
+        return dataSource.getDbFile().getAbsolutePath();
     }
 }

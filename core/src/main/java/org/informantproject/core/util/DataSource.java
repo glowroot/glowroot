@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.util;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -62,7 +63,7 @@ public class DataSource {
         sqlTypeNames.put(Types.DOUBLE, "double");
     }
 
-    private final String dbName;
+    private final File dbFile;
     @GuardedBy("lock")
     private Connection connection;
     private final Object lock = new Object();
@@ -75,8 +76,12 @@ public class DataSource {
                 }
             });
 
-    public DataSource(String dbName) {
-        this.dbName = dbName;
+    public DataSource(File dbFile) {
+        if (dbFile.getPath().endsWith(".h2.db")) {
+            this.dbFile = dbFile;
+        } else {
+            this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
+        }
         // loading driver via api, primarily as the inverse of Driver.unload() (see below) which is
         // needed to prevent unit tests from getting PermGen OutOfMemoryError
         Driver.load();
@@ -95,6 +100,10 @@ public class DataSource {
         // loader, and so the H2 drivers stack up and hold onto their respective class loaders which
         // leads to PermGen OutOfMemoryError
         Driver.unload();
+    }
+
+    public File getDbFile() {
+        return dbFile;
     }
 
     public void compact() throws SQLException {
@@ -370,7 +379,9 @@ public class DataSource {
     }
 
     private Connection createConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:h2:" + dbName + ";compress_lob=lzf", "sa", "");
+        String dbPath = dbFile.getPath();
+        dbPath = dbPath.substring(0, dbPath.length() - ".h2.db".length());
+        return DriverManager.getConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", "sa", "");
     }
 
     public interface ConnectionCallback<T> {

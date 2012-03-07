@@ -15,9 +15,8 @@
  */
 package org.informantproject.core.util;
 
+import java.io.File;
 import java.sql.SQLException;
-
-import org.informantproject.core.util.DataSource;
 
 import com.google.inject.Provider;
 
@@ -28,7 +27,7 @@ import com.google.inject.Provider;
 public class DataSourceTestProvider implements Provider<DataSource> {
 
     public DataSource get() {
-        DataSource dataSource = new DataSource("informant");
+        DataSource dataSource = new DataSource(new File("informant.h2.db"));
         try {
             if (dataSource.tableExists("trace")) {
                 dataSource.execute("drop table trace");

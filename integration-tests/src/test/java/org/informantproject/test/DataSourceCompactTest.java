@@ -53,9 +53,9 @@ public class DataSourceCompactTest {
         CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
         coreConfiguration.setThresholdMillis(0);
         container.getInformant().updateCoreConfiguration(coreConfiguration);
+        File dbFile = new File(container.getInformant().get("/misc/dbFile"));
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);
-        File dbFile = new File("informant.h2.db");
         long preCompactionDbSize = dbFile.length();
         container.getInformant().deleteAllTraces();
         // then
