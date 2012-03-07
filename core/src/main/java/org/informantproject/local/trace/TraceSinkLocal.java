@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.JsonCharSequence;
 import org.informantproject.api.LargeStringBuilder;
+import org.informantproject.api.SpanContextMap;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.stack.MergedStackTreeNode;
@@ -152,11 +153,12 @@ public class TraceSinkLocal implements TraceSink {
 
     public static String getContextMapJson(Trace trace, Gson gson) {
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
-        if (rootSpan.getContextMap() == null) {
+        // Span.getContextMap() may be creating the context map on the fly, so don't call it twice
+        SpanContextMap contextMap = rootSpan.getContextMap();
+        if (contextMap == null) {
             return null;
         } else {
-            return gson.toJson(rootSpan.getContextMap(),
-                    new TypeToken<Map<String, Object>>() {}.getType());
+            return gson.toJson(contextMap, new TypeToken<Map<String, Object>>() {}.getType());
         }
     }
 
@@ -218,10 +220,11 @@ public class TraceSinkLocal implements TraceSink {
         sb.append(",\"description\":\"");
         sb.append(JsonCharSequence.escapeJson(span.getDescription()));
         sb.append("\"");
-        if (!skipContextMap) {
+        // Span.getContextMap() may be creating the context map on the fly, so don't call it twice
+        SpanContextMap contextMap = span.getContextMap();
+        if (!skipContextMap && contextMap != null) {
             sb.append(",\"contextMap\":");
-            sb.append(gson.toJson(span.getContextMap(),
-                    new TypeToken<Map<String, Object>>() {}.getType()));
+            sb.append(gson.toJson(contextMap, new TypeToken<Map<String, Object>>() {}.getType()));
         }
         if (span.getStackTraceElements() != null) {
             String stackTraceJson = getStackTraceJson(span.getStackTraceElements());
