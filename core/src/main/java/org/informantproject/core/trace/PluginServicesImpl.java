@@ -276,7 +276,7 @@ public class PluginServicesImpl extends PluginServices {
             } catch (InterruptedException e) {
                 logger.error(e.getMessage(), e);
             } catch (ExecutionException e) {
-                logger.error(e.getMessage(), e);
+                logger.error(e.getMessage(), e.getCause());
             }
         }
     }

@@ -136,7 +136,7 @@ public class PluginJsonService implements JsonService {
             logger.error(e.getMessage(), e);
             return Collections.emptyList();
         } catch (ExecutionException e) {
-            logger.error(e.getMessage(), e);
+            logger.error(e.getMessage(), e.getCause());
             return Collections.emptyList();
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -160,7 +160,7 @@ public class PluginJsonService implements JsonService {
             } catch (InterruptedException e) {
                 logger.error(e.getMessage(), e);
             } catch (ExecutionException e) {
-                logger.error(e.getMessage(), e);
+                logger.error(e.getMessage(), e.getCause());
             } catch (ParserConfigurationException e) {
                 logger.error(e.getMessage(), e);
             } catch (SAXException e) {

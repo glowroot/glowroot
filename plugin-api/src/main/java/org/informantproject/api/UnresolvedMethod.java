@@ -88,8 +88,9 @@ public class UnresolvedMethod {
             method = resolvedMethods.get(target.getClass().getClassLoader());
         } catch (ExecutionException e) {
             // TODO bug in a plugin shouldn't be fatal to informant
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(), e);
+            logger.error("Fatal error occurred: " + e.getMessage(), e.getCause());
+            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
+                    e.getCause());
         }
         try {
             return method.invoke(target, parameters);
@@ -114,8 +115,9 @@ public class UnresolvedMethod {
             method = resolvedMethods.get(classLoader);
         } catch (ExecutionException e) {
             // TODO bug in a plugin shouldn't be fatal to informant
-            logger.error("Fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(), e);
+            logger.error("Fatal error occurred: " + e.getMessage(), e.getCause());
+            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
+                    e.getCause());
         }
         try {
             return method.invoke(null, parameters);
@@ -134,4 +136,3 @@ public class UnresolvedMethod {
         }
     }
 }
-

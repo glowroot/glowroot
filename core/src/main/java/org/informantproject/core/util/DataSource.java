@@ -367,7 +367,7 @@ public class DataSource {
             if (e.getCause() instanceof SQLException) {
                 throw (SQLException) e.getCause();
             } else {
-                logger.error(e.getMessage(), e);
+                logger.error(e.getMessage(), e.getCause());
                 throw new SQLException("Unexpected not-really-a-sql-exception");
             }
         }

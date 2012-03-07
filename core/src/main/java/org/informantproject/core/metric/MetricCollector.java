@@ -26,8 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.configuration.ConfigurationService.CoreConfigurationListener;
+import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +97,7 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
             } catch (InterruptedException e) {
                 logger.error(e.getMessage(), e);
             } catch (ExecutionException e) {
-                logger.error(e.getMessage(), e);
+                logger.error(e.getMessage(), e.getCause());
             }
             future = scheduledExecutor.scheduleWithFixedDelay(this, 0, bossIntervalMillis,
                     TimeUnit.MILLISECONDS);
