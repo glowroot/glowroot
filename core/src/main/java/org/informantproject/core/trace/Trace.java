@@ -120,12 +120,7 @@ public class Trace {
     }
 
     public String getUsername() {
-        SpanDetail spanDetail = rootSpan.getRootSpan().getSpanDetail();
-        if (spanDetail instanceof RootSpanDetail) {
-            return ((RootSpanDetail) spanDetail).getUsername();
-        } else {
-            return null;
-        }
+        return ((RootSpanDetail) rootSpan.getRootSpan().getSpanDetail()).getUsername();
     }
 
     public RootSpan getRootSpan() {
