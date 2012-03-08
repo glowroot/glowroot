@@ -90,6 +90,30 @@ public class JdbcPluginTest {
                 is("jdbc execution: select * from employee => 1 row"));
     }
 
+    @Test
+    public void testCommit() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(ExecuteJdbcCommit.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(3));
+        Span rootSpan = trace.getSpans().get(0);
+        assertThat(rootSpan.getDescription(), is("mock root span"));
+        Span jdbcInsertSpan = trace.getSpans().get(1);
+        assertThat(jdbcInsertSpan.getDescription(), is("jdbc execution: insert into employee"
+                + " (name) values ('john doe')"));
+        Span jdbcCommitSpan = trace.getSpans().get(2);
+        assertThat(jdbcCommitSpan.getDescription(), is("jdbc commit"));
+        assertThat(trace.getMetrics().size(), is(3));
+        assertThat(trace.getMetrics().get(0).getName(), is("mock root span"));
+        assertThat(trace.getMetrics().get(1).getName(), is("jdbc execute"));
+        assertThat(trace.getMetrics().get(2).getName(), is("jdbc commit"));
+    }
+
     // TODO testPreparedStatement
     // select * from employee where name like ?
     // [john%]
@@ -122,7 +146,6 @@ public class JdbcPluginTest {
             RootSpanMarker {
 
         private Connection connection;
-
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -131,7 +154,6 @@ public class JdbcPluginTest {
                 connection.close();
             }
         }
-
         public void rootSpanMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
@@ -142,6 +164,28 @@ public class JdbcPluginTest {
             } finally {
                 statement.close();
             }
+        }
+    }
+
+    public static class ExecuteJdbcCommit implements AppUnderTest, RootSpanMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            connection.setAutoCommit(false);
+            try {
+                rootSpanMarker();
+            } finally {
+                connection.close();
+            }
+        }
+        public void rootSpanMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                statement.execute("insert into employee (name) values ('john doe')");
+            } finally {
+                statement.close();
+            }
+            connection.commit();
         }
     }
 }

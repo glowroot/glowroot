@@ -25,6 +25,8 @@ import java.sql.Statement;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.SpanContextMap;
+import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 import org.informantproject.shaded.aspectj.lang.annotation.AfterReturning;
 import org.informantproject.shaded.aspectj.lang.annotation.Around;
@@ -52,6 +54,7 @@ public class JdbcAspect {
     private static final String JDBC_PREPARE_SUMMARY_KEY = "jdbc prepare";
     private static final String JDBC_EXECUTE_SUMMARY_KEY = "jdbc execute";
     private static final String JDBC_NEXT_SUMMARY_KEY = "jdbc next";
+    private static final String JDBC_COMMIT_SUMMARY_KEY = "jdbc commit";
 
     private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
     // TODO allow this to be mocked out for unit testing
@@ -262,6 +265,29 @@ public class JdbcAspect {
             // TODO also record time spent in next() into JdbcSpan
         }
         return currentRowValid;
+    }
+
+    // ========= Transactions =========
+
+    // pointcut for committing a transaction
+    @Pointcut("call(* java.sql.Connection.commit())")
+    void connectionCommitPointcut() {}
+
+    // record call and summary data for commits
+    // this pointcut isn't restricted to inTrace() so that Informant can log a warning if the jdbc
+    // call occurs outside of a trace (assuming "warnOnSpanOutsideTrace" is enabled in Informant)
+    @Around("isPluginEnabled() && connectionCommitPointcut()"
+            + " && !cflowbelow(connectionCommitPointcut())")
+    public Object connectionCommitAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        SpanDetail spanDetail = new SpanDetail() {
+            public CharSequence getDescription() {
+                return "jdbc commit";
+            }
+            public SpanContextMap getContextMap() {
+                return null;
+            }
+        };
+        return pluginServices.executeSpan(spanDetail, joinPoint, JDBC_COMMIT_SUMMARY_KEY);
     }
 
     // ================== Statement Clearing ==================
