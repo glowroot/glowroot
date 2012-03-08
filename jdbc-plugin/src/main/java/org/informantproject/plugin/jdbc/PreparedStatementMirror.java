@@ -93,4 +93,33 @@ class PreparedStatementMirror extends StatementMirror {
         parameters.clear();
         batchedParameters.clear();
     }
+
+    static class NullParameterValue {
+        @Override
+        public String toString() {
+            return "NULL";
+        }
+    }
+
+    static class ByteArrayParameterValue {
+        private final int length;
+        public ByteArrayParameterValue(byte[] b) {
+            length = b.length;
+        }
+        @Override
+        public String toString() {
+            return "{" + length + " bytes}";
+        }
+    }
+
+    static class StreamingParameterValue {
+        private final Object o;
+        public StreamingParameterValue(Object o) {
+            this.o = o;
+        }
+        @Override
+        public String toString() {
+            return "{stream:" + o.getClass().getSimpleName() + "}";
+        }
+    }
 }

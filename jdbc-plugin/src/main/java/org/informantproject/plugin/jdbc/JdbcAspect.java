@@ -27,6 +27,9 @@ import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
+import org.informantproject.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
+import org.informantproject.plugin.jdbc.PreparedStatementMirror.NullParameterValue;
+import org.informantproject.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 import org.informantproject.shaded.aspectj.lang.annotation.AfterReturning;
 import org.informantproject.shaded.aspectj.lang.annotation.Around;
@@ -108,7 +111,10 @@ public class JdbcAspect {
 
         if (x instanceof InputStream || x instanceof Reader) {
             statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
-                    parameterIndex, x.getClass().getName() + "@" + x.hashCode());
+                    parameterIndex, new StreamingParameterValue(x));
+        } else if (x instanceof byte[]) {
+            statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
+                    parameterIndex, new ByteArrayParameterValue((byte[]) x));
         } else {
             statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
                     parameterIndex, x);
@@ -122,7 +128,7 @@ public class JdbcAspect {
             int parameterIndex) {
 
         statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
-                parameterIndex, JdbcSpanDetail.NULL_PARAMETER);
+                parameterIndex, new NullParameterValue());
     }
 
     // ================== Statement Batching ==================

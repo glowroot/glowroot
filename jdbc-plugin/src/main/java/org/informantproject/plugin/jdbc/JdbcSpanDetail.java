@@ -50,8 +50,6 @@ import org.informantproject.api.SpanDetail;
  */
 class JdbcSpanDetail implements SpanDetail {
 
-    static final Object NULL_PARAMETER = new Object();
-
     private final String sql;
 
     // parameters and batchedParameters cannot both be non-null
@@ -171,8 +169,6 @@ class JdbcSpanDetail implements SpanDetail {
                 sb.append("\'");
                 sb.append((String) parameter);
                 sb.append("\'");
-            } else if (parameter == NULL_PARAMETER) {
-                sb.append("NULL");
             } else {
                 sb.append(parameter.toString());
             }
