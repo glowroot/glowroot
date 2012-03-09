@@ -49,7 +49,7 @@ class CollectStackCommand implements Runnable {
     public void run() {
         Trace trace = traceHolder.get();
         if (trace == null || trace.isCompleted()) {
-            throw new IllegalStateException("don't log me, just want to tell"
+            throw new IllegalStateException("Don't log me, just want to tell"
                     + " the scheduler to cancel subsequent executions");
         }
         try {

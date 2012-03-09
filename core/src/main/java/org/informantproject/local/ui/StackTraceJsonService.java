@@ -45,7 +45,7 @@ public class StackTraceJsonService implements JsonService {
 
     // TODO handle more REST-like binding, e.g. /stacktrace/<hash>
     public String handleRead(String message) {
-        logger.debug("handleDetails(): message={}", message);
+        logger.debug("handleRead(): message={}", message);
         JsonObject messageObject = (JsonObject) new JsonParser().parse(message);
         return stackTraceDao.readStackTrace(messageObject.get("hash").getAsString());
     }

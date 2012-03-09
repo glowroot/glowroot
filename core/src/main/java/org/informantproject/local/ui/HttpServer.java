@@ -251,7 +251,7 @@ public class HttpServer extends HttpServerBase {
                     Charsets.ISO_8859_1));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         } else {
-            logger.error("Unexpected type of json service response '{}'",
+            logger.error("unexpected type of json service response '{}'",
                     responseText.getClass().getName());
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }

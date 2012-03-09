@@ -85,9 +85,9 @@ public abstract class HttpServerBase {
             }
         });
         allChannels = new DefaultChannelGroup();
-        logger.debug("HttpServerBase(): binding http server to port {}", port);
+        logger.debug("<init>(): binding http server to port {}", port);
         allChannels.add(bootstrap.bind(new InetSocketAddress(port)));
-        logger.debug("HttpServerBase(): http server bound");
+        logger.debug("<init>(): http server bound");
     }
 
     protected abstract HttpResponse handleRequest(HttpRequest request) throws IOException,

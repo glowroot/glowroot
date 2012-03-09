@@ -85,7 +85,7 @@ public class StackTraceDao {
     }
 
     public void storeStackTraces(Map<String, String> stackTraces) {
-        logger.debug("storeStackTrace()");
+        logger.debug("storeStackTraces()");
         if (!valid) {
             return;
         }

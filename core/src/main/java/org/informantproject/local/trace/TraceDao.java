@@ -152,7 +152,7 @@ public class TraceDao {
     }
 
     public StoredTrace readStoredTrace(String id) {
-        logger.debug("readStoredTraces(): id={}", id);
+        logger.debug("readStoredTrace(): id={}", id);
         if (!valid) {
             return null;
         }

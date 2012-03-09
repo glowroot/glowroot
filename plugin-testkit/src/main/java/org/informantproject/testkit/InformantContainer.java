@@ -141,7 +141,7 @@ public abstract class InformantContainer {
         } else if (property.equalsIgnoreCase("false")) {
             return false;
         } else {
-            throw new IllegalStateException("unexpected value for system property"
+            throw new IllegalStateException("Unexpected value for system property"
                     + " 'externalJvmAppContainer', expecting 'true' or 'false'");
         }
     }

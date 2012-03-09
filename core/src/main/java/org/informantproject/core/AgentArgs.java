@@ -77,14 +77,14 @@ public class AgentArgs {
         try {
             this.uiPort = Integer.parseInt(uiPort);
         } catch (NumberFormatException e) {
-            logger.warn("invalid ui.port value '{}'. using default value '4000'", uiPort);
+            logger.warn("invalid ui.port value '{}', using default value '4000'", uiPort);
         }
     }
 
     private void setDataDir(File dataDir) {
         dataDir.mkdirs();
         if (!dataDir.isDirectory()) {
-            logger.warn("unable to create data.dir '{}'. using default value '{}'",
+            logger.warn("unable to create data.dir '{}', using default value '{}'",
                     dataDir.getAbsolutePath(), this.dataDir.getAbsolutePath());
         } else {
             this.dataDir = dataDir;

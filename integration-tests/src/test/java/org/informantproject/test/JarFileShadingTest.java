@@ -44,7 +44,7 @@ public class JarFileShadingTest {
         }
         if (informantCoreJarFile == null
                 && System.getProperty("surefire.test.class.path") != null) {
-            throw new IllegalStateException("running inside maven and can't find"
+            throw new IllegalStateException("Running inside maven and can't find"
                     + " informant-core.jar");
         }
         if (informantCoreJarFile == null) {

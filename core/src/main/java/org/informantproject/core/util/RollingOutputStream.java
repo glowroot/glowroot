@@ -174,12 +174,12 @@ class RollingOutputStream extends OutputStream {
         out.close();
         tmpOut.close();
         if (!rollingFile.delete()) {
-            logger.error("could not delete existing rolling file during resize", new Throwable());
+            logger.error("unable to delete existing rolling file during resize", new Throwable());
             // TODO recover as best as possible
             return;
         }
         if (!tmpRollingFile.renameTo(rollingFile)) {
-            logger.error("could not rename new rolling file during resize", new Throwable());
+            logger.error("unable to rename new rolling file during resize", new Throwable());
             // TODO recover as best as possible
             return;
         }

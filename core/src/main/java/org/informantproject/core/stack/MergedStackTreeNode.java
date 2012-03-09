@@ -54,7 +54,7 @@ public class MergedStackTreeNode {
 
     MergedStackTreeNode(StackTraceElement stackTraceElement) {
         if (stackTraceElement == null) {
-            throw new NullPointerException("stackTraceElement cannot be null");
+            throw new NullPointerException("Argument 'stackTraceElement' cannot be null");
         }
         this.stackTraceElement = stackTraceElement;
         sampleCount = 1;

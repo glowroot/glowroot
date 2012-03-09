@@ -115,7 +115,7 @@ class ExternalJvmInformantContainer extends InformantContainer {
                 return classpathElement;
             }
         }
-        throw new IllegalStateException("Could not find informant-core.jar on the classpath: "
+        throw new IllegalStateException("Unable to find informant-core.jar on the classpath: "
                 + classpath);
     }
 
