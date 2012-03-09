@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2011 the original author or authors.
+  Copyright 2011-2012 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 <!DOCTYPE aspectj PUBLIC
-  "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+  "-//AspectJ//DTD 1.5.0//EN" "http://www.eclipse.org/aspectj/dtd/aspectj_1_5_0.dtd">
 <aspectj>
   <aspects>
     <aspect name="org.informantproject.plugin.servlet.ServletAspect" />
