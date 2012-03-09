@@ -212,12 +212,6 @@
           <createSourcesJar>true</createSourcesJar>
           <filters>
             <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>META-INF/maven/**</exclude>
-              </excludes>
-            </filter>
-            <filter>
               <artifact>org.sonatype.sisu:sisu-guice</artifact>
               <excludes>
                 <exclude>META-INF/DEPENDENCIES</exclude>

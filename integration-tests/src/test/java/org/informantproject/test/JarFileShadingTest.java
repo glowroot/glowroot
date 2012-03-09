@@ -60,6 +60,7 @@ public class JarFileShadingTest {
         acceptableEntries.add("org/");
         acceptableEntries.add("org/informantproject/.*");
         acceptableEntries.add("META-INF/");
+        acceptableEntries.add("META-INF/maven/.*");
         acceptableEntries.add("META-INF/org.informantproject\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/THIRD-PARTY\\.txt");
