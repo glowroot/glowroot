@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 <!DOCTYPE aspectj PUBLIC
-  "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+  "-//AspectJ//DTD 1.5.0//EN" "http://www.eclipse.org/aspectj/dtd/aspectj_1_5_0.dtd">
 <aspectj>
   <aspects>
     <aspect name="org.informantproject.testkit.RootSpanMarkerAspect" />
