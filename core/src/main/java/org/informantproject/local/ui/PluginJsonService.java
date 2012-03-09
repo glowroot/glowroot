@@ -30,22 +30,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.SchemaFactory;
 
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -68,6 +77,13 @@ public class PluginJsonService implements JsonService {
 
     private final AsyncHttpClient asyncHttpClient;
 
+    private final Supplier<Collection<Plugin>> packagedPlugins = Suppliers
+            .memoize(new Supplier<Collection<Plugin>>() {
+                public Collection<Plugin> get() {
+                    return getPackagedPlugins();
+                }
+            });
+
     private final Supplier<Collection<Plugin>> installedPlugins = Suppliers
             .memoize(new Supplier<Collection<Plugin>>() {
                 public Collection<Plugin> get() {
@@ -89,13 +105,72 @@ public class PluginJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
+    public String handlePackaged() {
+        return new Gson().toJson(packagedPlugins.get());
+    }
+
+    // called dynamically from HttpServer
     public String handleInstalled() {
         return new Gson().toJson(installedPlugins.get());
     }
 
     // called dynamically from HttpServer
     public String handleInstallable() {
-        return new Gson().toJson(installablePlugins.get());
+        List<Plugin> notAlreadyInstalled = Lists.newArrayList(installablePlugins.get());
+        // this works because Plugin.equals() is defined only in terms of groupId and artifactId
+        Iterables.removeAll(notAlreadyInstalled, packagedPlugins.get());
+        Iterables.removeAll(notAlreadyInstalled, installedPlugins.get());
+        return new Gson().toJson(notAlreadyInstalled);
+    }
+
+    // informant and a set of plugins can be packaged together in a single jar in order to simplify
+    // distribution and installation. any plugins packaged with informant cannot be uninstalled
+    private Collection<Plugin> getPackagedPlugins() {
+        try {
+            Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
+                    "META-INF/org.informantproject.package.xml");
+            if (!e.hasMoreElements()) {
+                return Collections.emptyList();
+            }
+            URL resourceURL = e.nextElement();
+            if (e.hasMoreElements()) {
+                List<String> resourcePaths = new ArrayList<String>();
+                resourcePaths.add("'" + resourceURL.getPath() + "'");
+                while (e.hasMoreElements()) {
+                    resourcePaths.add("'" + e.nextElement().getPath() + "'");
+                }
+                logger.error("More than one resource found with name 'META-INF"
+                        + "/org.informantproject.package.xml'. This file is only supported inside"
+                        + " of an informant packaged jar so there should be only one. Only using"
+                        + " the first one of " + Joiner.on(", ").join(resourcePaths) + ".");
+            }
+            Document doc = getValidatedDocument(resourceURL.openStream(),
+                    "org/informantproject/local/schema/plugins-1.0.xsd");
+            Element root = doc.getDocumentElement();
+            NodeList pluginNodeList = root.getElementsByTagName("plugin");
+            List<Plugin> plugins = new ArrayList<Plugin>();
+            for (int i = 0; i < pluginNodeList.getLength(); i++) {
+                Element pluginElement = (Element) pluginNodeList.item(i);
+                String name = pluginElement.getElementsByTagName("name").item(0).getTextContent();
+                String groupId = pluginElement.getElementsByTagName("groupId").item(0)
+                        .getTextContent();
+                String artifactId = pluginElement.getElementsByTagName("artifactId").item(0)
+                        .getTextContent();
+                String version = pluginElement.getElementsByTagName("version").item(0)
+                        .getTextContent();
+                plugins.add(new Plugin(name, groupId, artifactId, version));
+            }
+            return plugins;
+        } catch (ParserConfigurationException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyList();
+        } catch (SAXException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyList();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
 
     private Collection<Plugin> getInstalledPlugins() {
@@ -183,12 +258,37 @@ public class PluginJsonService implements JsonService {
     private static String getVersionFromMetadata(String metadata)
             throws ParserConfigurationException, SAXException, IOException {
 
-        DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-        Document doc = docBuilder.parse(new ByteArrayInputStream(metadata.getBytes(
-                Charsets.UTF_8.name())));
-        Element root = doc.getDocumentElement();
+        byte[] xmlBytes = metadata.getBytes(Charsets.UTF_8.name());
+        Element root = getNonValidatedDocument(new ByteArrayInputStream(xmlBytes))
+                .getDocumentElement();
         return root.getElementsByTagName("version").item(0).getTextContent();
+    }
+
+    private static Document getNonValidatedDocument(InputStream inputStream)
+            throws ParserConfigurationException, SAXException, IOException {
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(inputStream);
+    }
+
+    private static Document getValidatedDocument(InputStream inputStream, String schemaResourcePath)
+            throws ParserConfigurationException, SAXException, IOException {
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setValidating(false);
+        factory.setNamespaceAware(true);
+        SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        InputStream resourceIn = PluginJsonService.class.getClassLoader().getResourceAsStream(
+                schemaResourcePath);
+        try {
+            factory.setSchema(schemaFactory
+                    .newSchema(new Source[] { new StreamSource(resourceIn) }));
+        } finally {
+            resourceIn.close();
+        }
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(inputStream);
     }
 
     private static class Plugin {
@@ -204,6 +304,19 @@ public class PluginJsonService implements JsonService {
             this.groupId = groupId;
             this.artifactId = artifactId;
             this.version = version;
+        }
+        // equality is defined only in terms of groupId and artifactId
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Plugin)) {
+                return false;
+            }
+            Plugin other = (Plugin) o;
+            return groupId.equals(other.groupId) && artifactId.equals(other.artifactId);
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(groupId, artifactId);
         }
     }
 }

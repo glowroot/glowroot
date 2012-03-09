@@ -30,6 +30,21 @@
   .table { width : 900px; }
   .table th { width: 300px; }
 </style>
+<script id="packagedTemplate" type="text/x-handlebars-template">
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr><th>Plugin</th><th>Version</th></tr>
+    </thead>
+    <tbody>
+      {{#each .}}
+        <tr>
+          <td>{{name}}</td>
+          <td>{{version}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</script>
 <script id="installedTemplate" type="text/x-handlebars-template">
   <table class="table table-bordered table-striped">
     <thead>
@@ -62,21 +77,24 @@
 </script>
 <script type="text/javascript">
   $(document).ready(function() {
-    var installedSpinner = new Spinner({ lines: 10, width: 4, radius: 8 })
     var installableSpinner = new Spinner({ lines: 10, width: 4, radius: 8 })
     // small delay so that if there is an immediate page return it doesn't blink
     setTimeout(function() {
-      if (installedSpinner) installedSpinner.spin($('#installedPlugins').get(0))
       if (installableSpinner) installableSpinner.spin($('#installableSpinner').get(0))
     }, 100)
 
+    var packagedTemplate = Handlebars.compile($('#packagedTemplate').html())
     var installedTemplate = Handlebars.compile($('#installedTemplate').html())
     var installableTemplate = Handlebars.compile($('#installableTemplate').html())
 
+    $.getJSON('/plugin/packaged', function(packagedPlugins) {
+      if (packagedPlugins.length > 0) {
+        $('#packagedSection').show()
+        var html = packagedTemplate(packagedPlugins)
+        $(html).appendTo('#packagedPlugins')
+      }
+    })
     $.getJSON('/plugin/installed', function(installedPlugins) {
-      $('#installedSpinner').hide()
-      installedSpinner.stop()
-      installedSpinner = null
       var html = installedTemplate(installedPlugins)
       $(html).appendTo('#installedPlugins')
     })
@@ -98,10 +116,15 @@
     </span>
   </h1>
   <br>
+  <div id="packagedSection" style="display: none">
+    <h3>Packaged Plugins</h3>
+    <br>
+    <div id="packagedPlugins"></div>
+    <br>
+  </div>
   <h3>Installed Plugins</h3>
   <br>
   <div id="installedPlugins"></div>
-  <div id="installedSpinner" style="width: 40px; height: 60px"></div>
   <br>
   <h3>Installable Plugins</h3>
   <br>

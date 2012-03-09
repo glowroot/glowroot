@@ -33,6 +33,7 @@
     <module>plugin-api</module>
     <module>core</module>
     <module>plugin-testkit</module>
+    <module>packager-maven-plugin</module>
     <module>integration-tests</module>
     <module>ui-testing</module>
   </modules>

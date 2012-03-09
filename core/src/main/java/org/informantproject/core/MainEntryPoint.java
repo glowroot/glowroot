@@ -16,6 +16,7 @@
 package org.informantproject.core;
 
 import java.lang.instrument.Instrumentation;
+import java.util.List;
 
 import org.informantproject.api.PluginServices;
 import org.informantproject.core.trace.PluginServicesImpl;
@@ -23,6 +24,9 @@ import org.informantproject.shaded.aspectj.weaver.loadtime.Agent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -51,6 +55,7 @@ public final class MainEntryPoint {
         logger.debug("premain(): agentArgs={}", agentArgs);
         start(new AgentArgs(agentArgs));
         // start the AspectJ load-time weaving agent
+        setAspectjAopXmlSearchPath();
         Agent.premain(null, instrumentation);
     }
 
@@ -90,4 +95,24 @@ public final class MainEntryPoint {
         }
     }
 
+    @VisibleForTesting
+    public static void setAspectjAopXmlSearchPath() {
+        // when an informant package is created (e.g. informant-for-web), the
+        // META-INF/org.informantproject.aop.xml files from each plugin are renamed slightly
+        // so that they can coexist with each other inside a single jar
+        // (e.g. META-INF/org.informantproject.aop.1.xml, ...)
+        List<String> resourceNames = Lists.newArrayList("META-INF/org.informantproject.aop.xml");
+        int i = 1;
+        while (true) {
+            String resourceName = "META-INF/org.informantproject.aop." + i + ".xml";
+            if (MainEntryPoint.class.getClassLoader().getResource(resourceName) == null) {
+                break;
+            } else {
+                resourceNames.add(resourceName);
+                i++;
+            }
+        }
+        System.setProperty("org.informantproject.shaded.aspectj.weaver.loadtime.configuration",
+                Joiner.on(";").join(resourceNames));
+    }
 }

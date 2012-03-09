@@ -37,6 +37,7 @@ class SameJvmInformantContainer extends InformantContainer {
         // ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         // Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         // try {
+        MainEntryPoint.setAspectjAopXmlSearchPath();
         isolatedWeavingClassLoader.newInstance(OpenSameJvmTest.class,
                 RunnableWithStringArg.class).run(agentArgs);
         // } finally {
