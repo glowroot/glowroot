@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -86,8 +87,13 @@ public abstract class HttpServerBase {
         });
         allChannels = new DefaultChannelGroup();
         logger.debug("<init>(): binding http server to port {}", port);
-        allChannels.add(bootstrap.bind(new InetSocketAddress(port)));
-        logger.debug("<init>(): http server bound");
+        try {
+            allChannels.add(bootstrap.bind(new InetSocketAddress(port)));
+            logger.debug("<init>(): http server bound");
+        } catch (ChannelException e) {
+            logger.error("could not start informant http listener on port " + port, e);
+            // allow everything else to proceed normally, but informant ui will not be available
+        }
     }
 
     protected abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
