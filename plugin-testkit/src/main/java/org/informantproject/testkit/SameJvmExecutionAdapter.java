@@ -15,6 +15,8 @@
  */
 package org.informantproject.testkit;
 
+import java.util.concurrent.Callable;
+
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.shaded.aspectj.bridge.context.CompilationAndWeavingContext;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
@@ -30,15 +32,16 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     SameJvmExecutionAdapter(String agentArgs) throws Exception {
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class,
                 RunnableWithStringArg.class);
-        ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
-        try {
-            MainEntryPoint.setAspectjAopXmlSearchPath();
-            isolatedWeavingClassLoader.newInstance(StartContainer.class,
-                    RunnableWithStringArg.class).run(agentArgs);
-        } finally {
-            Thread.currentThread().setContextClassLoader(previousContextClassLoader);
-        }
+        // the custom aop.xml path (e.g. ...aop.xml;...aop.1.xml;...aop.2.xml) must be set as a
+        // System property before instantiating anything via the isolated weaving class loader
+        MainEntryPoint.setAspectjAopXmlSearchPath();
+        isolatedWeavingClassLoader.newInstance(StartContainer.class,
+                RunnableWithStringArg.class).run(agentArgs);
+    }
+
+    public int getPort() throws Exception {
+        return (Integer) isolatedWeavingClassLoader.newInstance(GetPort.class, Callable.class)
+                .call();
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
@@ -88,12 +91,30 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
+    public static class GetPort implements Callable<Integer> {
+        public Integer call() {
+            ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
+            try {
+                return MainEntryPoint.getPort();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            } finally {
+                Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+            }
+        }
+    }
+
     public static class ShutdownContainer implements Runnable {
         public void run() {
+            ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
             try {
                 MainEntryPoint.shutdown();
             } catch (Exception e) {
                 throw new IllegalStateException(e);
+            } finally {
+                Thread.currentThread().setContextClassLoader(previousContextClassLoader);
             }
         }
     }

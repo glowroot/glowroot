@@ -20,8 +20,6 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 
-import org.informantproject.core.util.HttpServerBase;
-import org.informantproject.core.util.ThreadChecker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +34,6 @@ import com.ning.http.client.Response;
  */
 public class HttpServerTest {
 
-    private static final int PORT = 8089;
-
     private Set<Thread> preExistingThreads;
     private HttpServerBase httpServer;
     private AsyncHttpClient asyncHttpClient;
@@ -45,7 +41,7 @@ public class HttpServerTest {
     @Before
     public void before() {
         preExistingThreads = ThreadChecker.currentThreadList();
-        httpServer = new EchoHttpServer(PORT);
+        httpServer = new EchoHttpServer();
         asyncHttpClient = new AsyncHttpClient();
     }
 
@@ -61,7 +57,8 @@ public class HttpServerTest {
 
     @Test
     public void shouldReceivePingResponse() throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + PORT);
+        BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:"
+                + httpServer.getPort());
         request.setBody("hello there");
         Response response = request.execute().get();
         assertThat(response.getResponseBody(), is("hello there"));

@@ -22,12 +22,16 @@ import java.net.Socket;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.core.MainEntryPoint;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 class SocketCommandProcessor implements Runnable {
+
+    public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
+    public static final String GET_PORT_COMMAND = "GET_PORT";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -52,17 +56,24 @@ class SocketCommandProcessor implements Runnable {
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         while (true) {
-            String appClassName = (String) objectIn.readObject();
-            String threadName = (String) objectIn.readObject();
-            Class<?> appClass = Class.forName(appClassName);
-            String previousThreadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName);
-            try {
-                executeApp(appClass);
-            } finally {
-                Thread.currentThread().setName(previousThreadName);
+            String commandName = (String) objectIn.readObject();
+            if (commandName.equals(GET_PORT_COMMAND)) {
+                objectOut.writeObject(MainEntryPoint.getPort());
+            } else if (commandName.equals(EXECUTE_APP_COMMAND)) {
+                String appClassName = (String) objectIn.readObject();
+                String threadName = (String) objectIn.readObject();
+                Class<?> appClass = Class.forName(appClassName);
+                String previousThreadName = Thread.currentThread().getName();
+                Thread.currentThread().setName(threadName);
+                try {
+                    executeApp(appClass);
+                } finally {
+                    Thread.currentThread().setName(previousThreadName);
+                }
+                objectOut.writeObject("ok");
+            } else {
+                throw new IllegalStateException("Unexpected command '" + commandName + "'");
             }
-            objectOut.writeObject("ok");
         }
     }
 

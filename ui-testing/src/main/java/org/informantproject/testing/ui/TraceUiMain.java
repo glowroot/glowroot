@@ -27,17 +27,19 @@ import org.slf4j.LoggerFactory;
  */
 public class TraceUiMain {
 
+    private static final int UI_PORT = 4000;
+
     private static final Logger logger = LoggerFactory.getLogger(TraceUiMain.class);
 
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.create();
+        InformantContainer container = InformantContainer.create(UI_PORT);
         // set thresholds low so there will be lots of data to view
         CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
         coreConfiguration.setThresholdMillis(0);
         coreConfiguration.setStackTraceInitialDelayMillis(100);
         coreConfiguration.setStackTracePeriodMillis(10);
         container.getInformant().updateCoreConfiguration(coreConfiguration);
-        logger.info("view trace ui at localhost:4000/traces.html");
+        logger.info("view trace ui at localhost:" + UI_PORT + "/traces.html");
         container.executeAppUnderTest(GenerateTraces.class);
     }
 

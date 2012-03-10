@@ -76,9 +76,15 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         objectIn = new ObjectInputStream(socket.getInputStream());
     }
 
+    public int getPort() throws Exception {
+        objectOut.writeObject(SocketCommandProcessor.GET_PORT_COMMAND);
+        return (Integer) objectIn.readObject();
+    }
+
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
             String threadName) throws Exception {
 
+        objectOut.writeObject(SocketCommandProcessor.EXECUTE_APP_COMMAND);
         objectOut.writeObject(appUnderTestClass.getName());
         objectOut.writeObject(threadName);
         objectIn.readObject();

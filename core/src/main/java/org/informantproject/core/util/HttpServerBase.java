@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -60,6 +61,8 @@ public abstract class HttpServerBase {
     private final ServerBootstrap bootstrap;
     private final ChannelGroup allChannels;
 
+    private final int port;
+
     static {
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
             public String determineThreadName(String currentThreadName, String proposedThreadName)
@@ -67,6 +70,10 @@ public abstract class HttpServerBase {
                 return "Informant-" + proposedThreadName;
             }
         });
+    }
+
+    public HttpServerBase() {
+        this(0);
     }
 
     public HttpServerBase(int port) {
@@ -86,14 +93,25 @@ public abstract class HttpServerBase {
             }
         });
         allChannels = new DefaultChannelGroup();
-        logger.debug("<init>(): binding http server to port {}", port);
+        InetSocketAddress localAddress = new InetSocketAddress(port);
+        Channel channel;
         try {
-            allChannels.add(bootstrap.bind(new InetSocketAddress(port)));
-            logger.debug("<init>(): http server bound");
+            logger.debug("<init>(): binding http server to port {}", port);
+            channel = bootstrap.bind(localAddress);
         } catch (ChannelException e) {
             logger.error("could not start informant http listener on port " + port, e);
-            // allow everything else to proceed normally, but informant ui will not be available
+            this.port = -1;
+            // don't rethrow, allow everything else to proceed normally, but informant ui will not
+            // be available
+            return;
         }
+        this.port = ((InetSocketAddress) channel.getLocalAddress()).getPort();
+        allChannels.add(channel);
+        logger.debug("<init>(): http server bound");
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public void shutdown() {

@@ -36,8 +36,7 @@ public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
 
-    private static final int DEFAULT_UI_PORT = 4000;
-    private static final AtomicInteger uiPortCounter = new AtomicInteger(DEFAULT_UI_PORT);
+    private static final AtomicInteger dataDirCounter = new AtomicInteger();
 
     private final Set<Thread> preExistingThreads;
     private final ExecutionAdapter executionAdapter;
@@ -46,24 +45,28 @@ public class InformantContainer {
 
     private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
-    InformantContainer(ExecutionAdapter executionAdapter, int uiPort,
-            Set<Thread> preExistingThreads) {
+    InformantContainer(ExecutionAdapter executionAdapter, Set<Thread> preExistingThreads)
+            throws Exception {
 
         this.preExistingThreads = preExistingThreads;
         this.executionAdapter = executionAdapter;
         asyncHttpClient = new AsyncHttpClient();
-        informant = new Informant(uiPort, asyncHttpClient);
+        informant = new Informant(executionAdapter.getPort(), asyncHttpClient);
     }
 
     public static InformantContainer create() throws Exception {
+        return create(0);
+    }
+
+    public static InformantContainer create(int uiPort) throws Exception {
         // increment ui port and db filename so that tests can be run in parallel by using multiple
         // InformantContainers (however tests are not being run in parallel at this point)
-        int uiPort = uiPortCounter.getAndIncrement();
+        int dataDirNum = dataDirCounter.getAndIncrement();
         File dataDir;
-        if (uiPort == DEFAULT_UI_PORT) {
+        if (dataDirNum == 0) {
             dataDir = new File(".");
         } else {
-            dataDir = new File("test-" + (uiPort - DEFAULT_UI_PORT));
+            dataDir = new File("test-" + dataDirNum);
         }
         new File(dataDir, "informant.h2.db").delete();
         new File(dataDir, "informant.trace.db").delete();
@@ -75,15 +78,15 @@ public class InformantContainer {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
-            executionAdapter = new ExternalJvmExecutionAdapter("data.dir=" + dataDir + ",ui.port="
-                    + uiPort);
+            executionAdapter = new ExternalJvmExecutionAdapter("data.dir=" + dataDir
+                    + ",ui.port=" + uiPort);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using same JVM app container");
             executionAdapter = new SameJvmExecutionAdapter("data.dir=" + dataDir + ",ui.port="
                     + uiPort);
         }
-        return new InformantContainer(executionAdapter, uiPort, preExistingThreads);
+        return new InformantContainer(executionAdapter, preExistingThreads);
     }
 
     public Informant getInformant() {
@@ -116,9 +119,9 @@ public class InformantContainer {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
         executionAdapter.shutdownImpl();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
-        // no need to keep incrementing ui port and db filename if tests are being run serially
+        // no need to keep incrementing data dir counter if tests are being run serially
         // (especially since all tests are being run in serial at this point)
-        uiPortCounter.compareAndSet(DEFAULT_UI_PORT + 1, DEFAULT_UI_PORT);
+        dataDirCounter.compareAndSet(1, 0);
     }
 
     private static boolean useExternalJvmAppContainer() {
@@ -136,10 +139,9 @@ public class InformantContainer {
     }
 
     interface ExecutionAdapter {
-
+        int getPort() throws Exception;
         void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
                 String threadName) throws Exception;
-
         void shutdownImpl() throws Exception;
     }
 }

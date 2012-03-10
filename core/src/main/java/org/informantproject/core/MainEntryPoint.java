@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.informantproject.api.PluginServices;
 import org.informantproject.core.trace.PluginServicesImpl;
+import org.informantproject.local.ui.HttpServer;
 import org.informantproject.shaded.aspectj.weaver.loadtime.Agent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,10 @@ public final class MainEntryPoint {
         }
     }
 
+    public static int getPort() {
+        return injector.getInstance(HttpServer.class).getPort();
+    }
+
     public static void shutdown() {
         logger.debug("shutdown()");
         synchronized (lock) {
@@ -105,7 +110,7 @@ public final class MainEntryPoint {
         int i = 1;
         while (true) {
             String resourceName = "META-INF/org.informantproject.aop." + i + ".xml";
-            if (MainEntryPoint.class.getClassLoader().getResource(resourceName) == null) {
+            if (ClassLoader.getSystemResource(resourceName) == null) {
                 break;
             } else {
                 resourceNames.add(resourceName);
