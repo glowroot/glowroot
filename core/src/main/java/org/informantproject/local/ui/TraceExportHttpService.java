@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Ticker;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Closeables;
 import com.google.gson.stream.JsonWriter;
@@ -67,11 +68,13 @@ public class TraceExportHttpService implements HttpService {
 
     private final TraceDao traceDao;
     private final TraceRegistry traceRegistry;
+    private final Ticker ticker;
 
     @Inject
-    public TraceExportHttpService(TraceDao traceDao, TraceRegistry traceRegistry) {
+    public TraceExportHttpService(TraceDao traceDao, TraceRegistry traceRegistry, Ticker ticker) {
         this.traceDao = traceDao;
         this.traceRegistry = traceRegistry;
+        this.ticker = ticker;
     }
 
     public HttpResponse handleRequest(HttpRequest request) throws IOException {
@@ -83,10 +86,12 @@ public class TraceExportHttpService implements HttpService {
         CharSequence traceJson;
         Trace activeTrace = getActiveTrace(id);
         if (activeTrace != null) {
+            long captureTick = ticker.read();
             LargeStringBuilder buffer = new LargeStringBuilder();
             JsonWriter jw = new JsonWriter(CharStreams.asWriter(buffer));
             Map<String, String> stackTraces = new HashMap<String, String>();
-            TraceDetailJsonService.writeActiveTrace(activeTrace, stackTraces, jw, buffer);
+            TraceDetailJsonService.writeActiveTrace(activeTrace, stackTraces, captureTick, jw,
+                    buffer);
             jw.close();
             traceJson = buffer.build();
             // TODO handle stackTraces

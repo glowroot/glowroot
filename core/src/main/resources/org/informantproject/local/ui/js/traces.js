@@ -27,7 +27,7 @@ var tracesTemplateText = ''
 + '    <a href="trace/export?id={{id}}">export</a>'
 + '  {{/if}}<br>'
 + '  start: {{date start}}<br>'
-+ '  duration: {{nanosToMillis duration}} milliseconds<br>'
++ '  duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
 + '  {{#if username}}username: {{username}}<br>{{/if}}'
 + '  metric data:<br>'
 + '  <table class="metrics-table" style="margin-left: 1em; border-spacing:0">'
@@ -78,7 +78,7 @@ var spansTemplateText = ''
 + '  </div>'
 + '  <div style="margin-left: {{margin level}}em">'
 + '    <div style="width: 3em; float: left; text-align: right">'
-+ '      {{nanosToMillis duration}}&nbsp;'
++ '      {{nanosToMillis duration}}{{#if active}}..{{/if}}&nbsp;'
 + '    </div>'
 + '    <div style="margin-left: 4em">'
 + '      {{#ifLongDescription description}}'
@@ -111,8 +111,7 @@ Handlebars.registerHelper('date', function(timestamp) {
   return new Date(timestamp).format('m/d/yy h:MM:ss.l TT (Z)')
 })
 Handlebars.registerHelper('nanosToMillis', function(nanos) {
-  if (nanos == -1) return '--'
-  else return (nanos / 1000000).toFixed(1)
+  return (nanos / 1000000).toFixed(1)
 })
 Handlebars.registerHelper('first', function(array, options) {
   return options.fn(array[0])

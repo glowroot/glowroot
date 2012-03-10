@@ -29,8 +29,6 @@ import org.informantproject.api.SpanDetail;
  */
 public final class Span {
 
-    private static final int NOT_COMPLETE_DURATION = -1;
-
     private final SpanDetail spanDetail;
 
     private final long traceStartTime;
@@ -80,11 +78,6 @@ public final class Span {
     // offset in nanoseconds from beginning of trace
     public long getOffset() {
         return startTime - traceStartTime;
-    }
-
-    // duration of span in nanoseconds
-    public long getDuration() {
-        return endTime == 0 ? NOT_COMPLETE_DURATION : endTime - startTime;
     }
 
     public int getIndex() {

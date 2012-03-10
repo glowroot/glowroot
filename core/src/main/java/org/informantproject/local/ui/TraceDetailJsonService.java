@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Ticker;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
@@ -60,14 +61,16 @@ public class TraceDetailJsonService implements JsonService {
     private final TraceDao traceDao;
     private final TraceRegistry traceRegistry;
     private final StackTraceDao stackTraceDao;
+    private final Ticker ticker;
 
     @Inject
     public TraceDetailJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
-            StackTraceDao stackTraceDao) {
+            StackTraceDao stackTraceDao, Ticker ticker) {
 
         this.traceDao = traceDao;
         this.traceRegistry = traceRegistry;
         this.stackTraceDao = stackTraceDao;
+        this.ticker = ticker;
     }
 
     public String handleDetails(String message) throws IOException {
@@ -145,9 +148,10 @@ public class TraceDetailJsonService implements JsonService {
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
         if (!activeTraces.isEmpty()) {
+            long captureTick = ticker.read();
             for (Trace activeTrace : activeTraces) {
                 Map<String, String> stackTraces = new HashMap<String, String>();
-                writeActiveTrace(activeTrace, stackTraces, jw, sb);
+                writeActiveTrace(activeTrace, stackTraces, captureTick, jw, sb);
                 stackTraceDao.storeStackTraces(stackTraces);
             }
         }
@@ -197,7 +201,7 @@ public class TraceDetailJsonService implements JsonService {
 
     // TODO there is no unit or integration test that hits this code
     public static void writeActiveTrace(Trace activeTrace, Map<String, String> stackTraces,
-            JsonWriter jw, Appendable sb) throws IOException {
+            long captureTick, JsonWriter jw, Appendable sb) throws IOException {
 
         // there is a chance for slight inconsistency since this is reading active traces which are
         // still being modified and/or may even reach completion while they are being written
@@ -224,7 +228,8 @@ public class TraceDetailJsonService implements JsonService {
             sb.append(",\"contextMap\":");
             sb.append(contextMap);
         }
-        CharSequence spans = TraceSinkLocal.getSpansJson(activeTrace, stackTraces, gson);
+        CharSequence spans = TraceSinkLocal.getSpansJson(activeTrace, stackTraces, captureTick,
+                gson);
         sb.append(",\"spans\":");
         sb.append(spans);
         CharSequence mergedStackTree = TraceSinkLocal.getMergedStackTreeJson(activeTrace);

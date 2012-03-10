@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
@@ -68,16 +69,18 @@ public class TraceSinkLocal implements TraceSink {
     private final ConfigurationService configurationService;
     private final TraceDao traceDao;
     private final StackTraceDao stackTraceDao;
+    private final Ticker ticker;
 
     private final AtomicInteger queueLength = new AtomicInteger(0);
 
     @Inject
     public TraceSinkLocal(ConfigurationService configurationService, TraceDao traceDao,
-            StackTraceDao stackTraceDao) {
+            StackTraceDao stackTraceDao, Ticker ticker) {
 
         this.configurationService = configurationService;
         this.traceDao = traceDao;
         this.stackTraceDao = stackTraceDao;
+        this.ticker = ticker;
     }
 
     public void onCompletedTrace(final Trace trace) {
@@ -112,12 +115,22 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public StoredTrace buildStoredTrace(Trace trace) {
+        long captureTick = ticker.read();
         StoredTrace storedTrace = new StoredTrace();
         storedTrace.setId(trace.getId());
         storedTrace.setStartAt(trace.getStartDate().getTime());
         storedTrace.setStuck(trace.isStuck() && !trace.isCompleted());
-        storedTrace.setDuration(trace.getDuration());
-        storedTrace.setCompleted(trace.isCompleted());
+        // timings for traces that are still active are normalized to the capture tick in order to
+        // *attempt* to present a picture of the trace at that exact tick
+        // (without using synchronization to block updates to the trace while it is being read)
+        long endTime = trace.getEndTime();
+        if (endTime != 0 && endTime <= captureTick) {
+            storedTrace.setDuration(trace.getDuration());
+            storedTrace.setCompleted(true);
+        } else {
+            storedTrace.setDuration(captureTick - trace.getStartTime());
+            storedTrace.setCompleted(false);
+        }
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         storedTrace.setDescription(rootSpan.getDescription().toString());
         storedTrace.setUsername(trace.getUsername());
@@ -125,7 +138,7 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setMetrics(getMetricsJson(trace, gson));
         storedTrace.setContextMap(getContextMapJson(trace, gson));
         Map<String, String> stackTraces = new HashMap<String, String>();
-        storedTrace.setSpans(getSpansJson(trace, stackTraces, gson));
+        storedTrace.setSpans(getSpansJson(trace, stackTraces, captureTick, gson));
         stackTraceDao.storeStackTraces(stackTraces);
         storedTrace.setMergedStackTree(getMergedStackTreeJson(trace));
         return storedTrace;
@@ -163,7 +176,7 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public static CharSequence getSpansJson(Trace trace, Map<String, String> stackTraces,
-            Gson gson) {
+            long captureTick, Gson gson) {
 
         try {
             LargeStringBuilder sb = new LargeStringBuilder();
@@ -171,7 +184,7 @@ public class TraceSinkLocal implements TraceSink {
             jw.beginArray();
             boolean skipContextMap = true;
             for (Span span : trace.getRootSpan().getSpans()) {
-                writeSpan(span, stackTraces, jw, sb, gson, skipContextMap);
+                writeSpan(span, stackTraces, captureTick, skipContextMap, gson, jw, sb);
                 skipContextMap = false;
             }
             jw.endArray();
@@ -202,14 +215,28 @@ public class TraceSinkLocal implements TraceSink {
         }
     }
 
-    private static void writeSpan(Span span, Map<String, String> stackTraces, JsonWriter jw,
-            Appendable sb, Gson gson, boolean skipContextMap) throws IOException {
+    // timings for traces that are still active are normalized to the capture tick in order to
+    // *attempt* to present a picture of the trace at that exact tick
+    // (without using synchronization to block updates to the trace while it is being read)
+    private static void writeSpan(Span span, Map<String, String> stackTraces, long captureTick,
+            boolean skipContextMap, Gson gson, JsonWriter jw, Appendable sb) throws IOException {
 
+        if (span.getStartTime() > captureTick) {
+            // this span started after the capture tick
+            return;
+        }
         jw.beginObject();
         jw.name("offset");
         jw.value(span.getOffset());
         jw.name("duration");
-        jw.value(span.getDuration());
+        long endTime = span.getEndTime();
+        if (endTime != 0 && endTime <= captureTick) {
+            jw.value(span.getEndTime() - span.getStartTime());
+        } else {
+            jw.value(captureTick - span.getStartTime());
+            jw.name("active");
+            jw.value(true);
+        }
         jw.name("index");
         jw.value(span.getIndex());
         jw.name("parentIndex");
