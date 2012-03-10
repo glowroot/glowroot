@@ -80,17 +80,15 @@ public class MergedStackTree {
     public void addToStackTree(StackTraceElement[] stackTraceElements, State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
-        int nextStackTraceIndex = 0;
+        int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
-        for (nextStackTraceIndex = stackTraceElements.length - 1; nextStackTraceIndex >= 0; nextStackTraceIndex--) {
+        for (nextIndex = stackTraceElements.length - 1; nextIndex >= 0; nextIndex--) {
             // check all child nodes
             boolean matchFound = false;
             for (MergedStackTreeNode childNode : nextChildNodes) {
-                if (stackTraceElements[nextStackTraceIndex]
-                        .equals(childNode.getStackTraceElement())
-                        && (nextStackTraceIndex > 0 || threadState == childNode
-                                .getLeafThreadState())) {
+                if (stackTraceElements[nextIndex].equals(childNode.getStackTraceElement())
+                        && (nextIndex > 0 || threadState == childNode.getLeafThreadState())) {
                     // only consider thread state when matching the leaf node
                     // match found, update lastMatchedNode and continue
                     childNode.incrementSampleCount();
@@ -105,7 +103,7 @@ public class MergedStackTree {
             }
         }
         // add remaining stack trace elements
-        for (int i = nextStackTraceIndex; i >= 0; i--) {
+        for (int i = nextIndex; i >= 0; i--) {
             MergedStackTreeNode nextNode = new MergedStackTreeNode(stackTraceElements[i]);
             if (i == 0) {
                 // leaf node
