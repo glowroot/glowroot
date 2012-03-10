@@ -43,8 +43,8 @@ public class RootSpan {
 
     private final Deque spanStack = new LinkedBlockingDeque();
 
-    private final long startTime;
-    private volatile long endTime;
+    private final long startTick;
+    private volatile long endTick;
 
     private final Span rootSpan;
     private final Queue<Span> spans = new ConcurrentLinkedQueue<Span>();
@@ -54,8 +54,8 @@ public class RootSpan {
 
     RootSpan(SpanDetail spanDetail, Ticker ticker) {
         this.ticker = ticker;
-        startTime = ticker.read();
-        rootSpan = new Span(spanDetail, startTime, startTime, 0, -1, 0);
+        startTick = ticker.read();
+        rootSpan = new Span(spanDetail, startTick, startTick, 0, -1, 0);
         pushSpanInternal(rootSpan);
     }
 
@@ -71,37 +71,36 @@ public class RootSpan {
         return size;
     }
 
-    public long getStartTime() {
-        return startTime;
+    public long getStartTick() {
+        return startTick;
     }
 
-    public long getEndTime() {
-        return endTime;
+    public long getEndTick() {
+        return endTick;
     }
 
     // duration of trace in nanoseconds
     public long getDuration() {
-        return endTime == 0 ? ticker.read() - startTime : endTime - startTime;
+        return endTick == 0 ? ticker.read() - startTick : endTick - startTick;
     }
 
     public boolean isCompleted() {
-        return endTime != 0;
+        return endTick != 0;
     }
 
     // typically pop() methods don't require the span to pop, but for safety,
     // the span to pop is passed in just to make sure it is the one on top
     // (and if it is not the one on top, then pop until it is found, preventing
     // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long spanEndTime, StackTraceElement[] stackTraceElements) {
-        span.setEndTime(spanEndTime);
+    void popSpan(Span span, long endTick, StackTraceElement[] stackTraceElements) {
+        span.setEndTick(endTick);
         span.setStackTraceElements(stackTraceElements);
         Span pop = (Span) spanStack.removeLast();
         if (!pop.equals(span)) {
             // somehow(?) a pop was missed
             // this is just damage control
-            logger.error("found " + pop.getDescription()
-                    + " at the top of the stack when expecting " + span.getDescription(),
-                    new IllegalStateException());
+            logger.error("found " + pop.getDescription() + " at the top of the stack when"
+                    + " expecting " + span.getDescription(), new IllegalStateException());
             while (!spanStack.isEmpty() && !pop.equals(span)) {
                 pop = (Span) spanStack.removeLast();
             }
@@ -110,13 +109,13 @@ public class RootSpan {
             }
         }
         if (spanStack.isEmpty()) {
-            endTime = spanEndTime;
+            this.endTick = endTick;
         }
     }
 
     Span pushSpan(SpanDetail spanDetail) {
         Span currentSpan = (Span) spanStack.getLast();
-        Span span = new Span(spanDetail, startTime, ticker.read(), size, currentSpan.getIndex(),
+        Span span = new Span(spanDetail, startTick, ticker.read(), size, currentSpan.getIndex(),
                 currentSpan.getLevel() + 1);
         pushSpanInternal(span);
         return span;

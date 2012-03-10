@@ -102,7 +102,7 @@ public class StackCollector implements Runnable {
                 // scheduled execution of this repeating Runnable (in other words, it is within
                 // COMMAND_INTERVAL_MILLIS from exceeding the threshold) and the stack trace capture
                 // hasn't already been scheduled then schedule it
-                if (NanoUtils.isLessThan(trace.getStartTime(), stackTraceThresholdTime)
+                if (NanoUtils.isLessThan(trace.getStartTick(), stackTraceThresholdTime)
                         && trace.getCaptureStackTraceScheduledFuture() == null) {
 
                     // schedule stack traces to be taken every X seconds

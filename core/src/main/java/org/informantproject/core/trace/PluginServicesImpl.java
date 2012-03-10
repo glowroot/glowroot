@@ -144,14 +144,14 @@ public class PluginServicesImpl extends PluginServices {
             return joinPoint.proceed();
         } else {
             spanSummaryKeyStack.get().add(spanSummaryKey);
-            long startTime = ticker.read();
+            long startTick = ticker.read();
             try {
                 return joinPoint.proceed();
             } finally {
-                long endTime = ticker.read();
+                long endTick = ticker.read();
                 spanSummaryKeyStack.get().removeLast();
                 // record aggregate timing data
-                recordSummaryData(spanSummaryKey, endTime - startTime);
+                recordSummaryData(spanSummaryKey, endTick - startTick);
             }
         }
     }
@@ -188,16 +188,16 @@ public class PluginServicesImpl extends PluginServices {
             return joinPoint.proceed();
         } finally {
             // minimizing the number of calls to the clock timer as they are relatively expensive
-            long endTime = ticker.read();
+            long endTick = ticker.read();
             if (!skipSummaryData) {
                 spanSummaryKeyStack.get().removeLast();
                 // record aggregate timing data
                 if (spanSummaryKey != null) {
-                    recordSummaryData(spanSummaryKey, endTime - span.getStartTime());
+                    recordSummaryData(spanSummaryKey, endTick - span.getStartTick());
                 }
             }
             // pop span needs to be the last step (at least when this is a root span)
-            popSpan(span, endTime);
+            popSpan(span, endTick);
         }
     }
 
@@ -236,16 +236,15 @@ public class PluginServicesImpl extends PluginServices {
     // the span to pop is passed in just to make sure it is the one on top
     // (and if it is not the one on top, then pop until it is found, preventing
     // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    private void popSpan(Span span, long elementEndTime) {
+    private void popSpan(Span span, long endTick) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         StackTraceElement[] stackTraceElements = null;
-        if (elementEndTime - span.getStartTime() >= TimeUnit.MILLISECONDS
-                .toNanos(configurationService.getCoreConfiguration()
-                        .getSpanStackTraceThresholdMillis())) {
+        if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(configurationService
+                .getCoreConfiguration().getSpanStackTraceThresholdMillis())) {
             stackTraceElements = Thread.currentThread().getStackTrace();
             // TODO remove last few stack trace elements?
         }
-        currentTrace.getRootSpan().popSpan(span, elementEndTime, stackTraceElements);
+        currentTrace.getRootSpan().popSpan(span, endTick, stackTraceElements);
         if (currentTrace.isCompleted()) {
             // the root span has been popped off
             cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());

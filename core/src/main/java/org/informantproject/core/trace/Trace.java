@@ -98,12 +98,12 @@ public class Trace {
     }
 
     // a couple of properties make sense to expose as part of trace
-    public long getStartTime() {
-        return rootSpan.getStartTime();
+    public long getStartTick() {
+        return rootSpan.getStartTick();
     }
 
-    public long getEndTime() {
-        return rootSpan.getEndTime();
+    public long getEndTick() {
+        return rootSpan.getEndTick();
     }
 
     // duration of trace in nanoseconds

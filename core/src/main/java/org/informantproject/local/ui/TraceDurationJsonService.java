@@ -76,7 +76,7 @@ public class TraceDurationJsonService implements JsonService {
         }
         List<Trace> activeTraces = Collections.emptyList();
         long capturedAt = 0;
-        long capturedTick = 0;
+        long captureTick = 0;
         if (request.getTo() == 0 || request.getTo() > requestAt) {
             // capture active traces first to make sure that none are missed in between reading
             // stored traces and then capturing active traces (possible duplicates are removed
@@ -85,7 +85,7 @@ public class TraceDurationJsonService implements JsonService {
             // take capture timings after the capture to make sure there no traces captured that
             // start after the recorded capture time (resulting in negative duration)
             capturedAt = clock.currentTimeMillis();
-            capturedTick = ticker.read();
+            captureTick = ticker.read();
         }
         if (request.getTo() == 0) {
             request.setTo(requestAt);
@@ -110,7 +110,7 @@ public class TraceDurationJsonService implements JsonService {
             }
         }
         String response = writeResponse(storedTraceDurations, activeTraces, capturedAt,
-                capturedTick);
+                captureTick);
         logger.debug("handleDurations(): response={}", response);
         return response;
     }
@@ -132,7 +132,7 @@ public class TraceDurationJsonService implements JsonService {
     }
 
     private static String writeResponse(List<StoredTraceDuration> storedTraceDurations,
-            List<Trace> activeTraces, long capturedAt, long capturedTick) throws IOException {
+            List<Trace> activeTraces, long capturedAt, long captureTick) throws IOException {
 
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
@@ -141,7 +141,7 @@ public class TraceDurationJsonService implements JsonService {
         for (Trace activeTrace : activeTraces) {
             jw.beginArray();
             jw.value(capturedAt);
-            jw.value((capturedTick - activeTrace.getStartTime()) / 1000000000.0);
+            jw.value((captureTick - activeTrace.getStartTick()) / 1000000000.0);
             jw.value(activeTrace.getId());
             jw.endArray();
         }

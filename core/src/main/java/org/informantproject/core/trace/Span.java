@@ -31,9 +31,9 @@ public final class Span {
 
     private final SpanDetail spanDetail;
 
-    private final long traceStartTime;
-    private final long startTime;
-    private volatile long endTime;
+    private final long traceStartTick;
+    private final long startTick;
+    private volatile long endTick;
 
     // index is per trace and starts at 0
     private final int index;
@@ -44,12 +44,12 @@ public final class Span {
 
     private volatile StackTraceElement[] stackTraceElements;
 
-    Span(SpanDetail spanDetail, long traceStartTime, long startTime, int index, int parentIndex,
+    Span(SpanDetail spanDetail, long traceStartTick, long startTick, int index, int parentIndex,
             int level) {
 
         this.spanDetail = spanDetail;
-        this.traceStartTime = traceStartTime;
-        this.startTime = startTime;
+        this.traceStartTick = traceStartTick;
+        this.startTick = startTick;
         this.index = index;
         this.parentIndex = parentIndex;
         this.level = level;
@@ -67,17 +67,17 @@ public final class Span {
         return spanDetail;
     }
 
-    public long getStartTime() {
-        return startTime;
+    public long getStartTick() {
+        return startTick;
     }
 
-    public long getEndTime() {
-        return endTime;
+    public long getEndTick() {
+        return endTick;
     }
 
     // offset in nanoseconds from beginning of trace
     public long getOffset() {
-        return startTime - traceStartTime;
+        return startTick - traceStartTick;
     }
 
     public int getIndex() {
@@ -96,8 +96,8 @@ public final class Span {
         return stackTraceElements;
     }
 
-    void setEndTime(long endTime) {
-        this.endTime = endTime;
+    void setEndTick(long endTick) {
+        this.endTick = endTick;
     }
 
     void setStackTraceElements(StackTraceElement[] stackTraceElements) {

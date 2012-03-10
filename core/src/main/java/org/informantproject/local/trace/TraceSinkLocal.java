@@ -123,12 +123,12 @@ public class TraceSinkLocal implements TraceSink {
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
         // (without using synchronization to block updates to the trace while it is being read)
-        long endTime = trace.getEndTime();
-        if (endTime != 0 && endTime <= captureTick) {
+        long endTick = trace.getEndTick();
+        if (endTick != 0 && endTick <= captureTick) {
             storedTrace.setDuration(trace.getDuration());
             storedTrace.setCompleted(true);
         } else {
-            storedTrace.setDuration(captureTick - trace.getStartTime());
+            storedTrace.setDuration(captureTick - trace.getStartTick());
             storedTrace.setCompleted(false);
         }
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
@@ -221,7 +221,7 @@ public class TraceSinkLocal implements TraceSink {
     private static void writeSpan(Span span, Map<String, String> stackTraces, long captureTick,
             boolean skipContextMap, Gson gson, JsonWriter jw, Appendable sb) throws IOException {
 
-        if (span.getStartTime() > captureTick) {
+        if (span.getStartTick() > captureTick) {
             // this span started after the capture tick
             return;
         }
@@ -229,11 +229,11 @@ public class TraceSinkLocal implements TraceSink {
         jw.name("offset");
         jw.value(span.getOffset());
         jw.name("duration");
-        long endTime = span.getEndTime();
-        if (endTime != 0 && endTime <= captureTick) {
-            jw.value(span.getEndTime() - span.getStartTime());
+        long endTick = span.getEndTick();
+        if (endTick != 0 && endTick <= captureTick) {
+            jw.value(span.getEndTick() - span.getStartTick());
         } else {
-            jw.value(captureTick - span.getStartTime());
+            jw.value(captureTick - span.getStartTick());
             jw.name("active");
             jw.value(true);
         }
