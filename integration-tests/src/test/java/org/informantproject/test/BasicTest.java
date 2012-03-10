@@ -45,12 +45,12 @@ public class BasicTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.newInstance();
+        container = InformantContainer.create();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        container.shutdown();
     }
 
     @Test

@@ -32,41 +32,62 @@ import com.ning.http.client.AsyncHttpClient;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public abstract class InformantContainer {
+public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
 
     private static final int DEFAULT_UI_PORT = 4000;
     private static final AtomicInteger uiPortCounter = new AtomicInteger(DEFAULT_UI_PORT);
 
-    private Set<Thread> preExistingThreads;
-    private AsyncHttpClient asyncHttpClient;
-    private Informant informant;
+    private final Set<Thread> preExistingThreads;
+    private final ExecutionAdapter executionAdapter;
+    private final AsyncHttpClient asyncHttpClient;
+    private final Informant informant;
 
     private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
-    public static InformantContainer newInstance() throws Exception {
-        return newInstance(true);
+    InformantContainer(ExecutionAdapter executionAdapter, int uiPort,
+            Set<Thread> preExistingThreads) {
+
+        this.preExistingThreads = preExistingThreads;
+        this.executionAdapter = executionAdapter;
+        asyncHttpClient = new AsyncHttpClient();
+        informant = new Informant(uiPort, asyncHttpClient);
     }
 
-    public static InformantContainer newInstanceNoClean() throws Exception {
-        return newInstance(false);
-    }
-
-    private static InformantContainer newInstance(boolean cleanDbs) throws Exception {
-        InformantContainer container;
+    public static InformantContainer create() throws Exception {
+        // increment ui port and db filename so that tests can be run in parallel by using multiple
+        // InformantContainers (however tests are not being run in parallel at this point)
+        int uiPort = uiPortCounter.getAndIncrement();
+        File dataDir;
+        if (uiPort == DEFAULT_UI_PORT) {
+            dataDir = new File(".");
+        } else {
+            dataDir = new File("test-" + (uiPort - DEFAULT_UI_PORT));
+        }
+        new File(dataDir, "informant.h2.db").delete();
+        new File(dataDir, "informant.trace.db").delete();
+        new File(dataDir, "informant.rolling.db").delete();
+        // capture pre-existing threads before instantiating execution adapters
+        Set<Thread> preExistingThreads = ThreadChecker.currentThreadList();
+        ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
-            logger.debug("newInstance(): using external JVM app container");
-            container = new ExternalJvmInformantContainer();
+            logger.debug("create(): using external JVM app container");
+            executionAdapter = new ExternalJvmExecutionAdapter("data.dir=" + dataDir + ",ui.port="
+                    + uiPort);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
-            logger.debug("newInstance(): using same JVM app container");
-            container = new SameJvmInformantContainer();
+            logger.debug("create(): using same JVM app container");
+            executionAdapter = new SameJvmExecutionAdapter("data.dir=" + dataDir + ",ui.port="
+                    + uiPort);
         }
-        container.init(cleanDbs);
-        return container;
+        return new InformantContainer(executionAdapter, uiPort, preExistingThreads);
+    }
+
+    public Informant getInformant() {
+        return informant;
     }
 
     public final void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
@@ -76,7 +97,7 @@ public abstract class InformantContainer {
         String previousThreadName = Thread.currentThread().getName();
         try {
             informant.resetBaselineTime();
-            executeAppUnderTestImpl(appUnderTestClass, threadName);
+            executionAdapter.executeAppUnderTestImpl(appUnderTestClass, threadName);
             // wait for all traces to be written to the embedded db
             long startMillis = System.currentTimeMillis();
             while (informant.getNumPendingTraceWrites() > 0
@@ -88,48 +109,16 @@ public abstract class InformantContainer {
         }
     }
 
-    public final void close() throws Exception {
+    public void shutdown() throws Exception {
         // asyncHttpClient is not part of the "app under test", so shut it down
         // first before checking for non-daemon threads
         asyncHttpClient.close();
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        closeImpl();
+        executionAdapter.shutdownImpl();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
         // no need to keep incrementing ui port and db filename if tests are being run serially
         // (especially since all tests are being run in serial at this point)
         uiPortCounter.compareAndSet(DEFAULT_UI_PORT + 1, DEFAULT_UI_PORT);
-    }
-
-    public Informant getInformant() {
-        return informant;
-    }
-
-    protected abstract void initImpl(String agentArgs) throws Exception;
-
-    protected abstract void executeAppUnderTestImpl(
-            Class<? extends AppUnderTest> appUnderTestClass, String threadName) throws Exception;
-
-    protected abstract void closeImpl() throws Exception;
-
-    private void init(boolean cleanDbs) throws Exception {
-        preExistingThreads = ThreadChecker.currentThreadList();
-        // increment ui port and db filename so that tests can be run in parallel by using multiple
-        // InformantContainers (however tests are not being run in parallel at this point)
-        int uiPort = uiPortCounter.getAndIncrement();
-        File dataDir;
-        if (uiPort == DEFAULT_UI_PORT) {
-            dataDir = new File(".");
-        } else {
-            dataDir = new File("test-" + (uiPort - DEFAULT_UI_PORT));
-        }
-        if (cleanDbs) {
-            new File(dataDir, "informant.h2.db").delete();
-            new File(dataDir, "informant.trace.db").delete();
-            new File(dataDir, "informant.rolling.db").delete();
-        }
-        initImpl("ui.port=" + uiPort + ",data.dir=" + dataDir);
-        asyncHttpClient = new AsyncHttpClient();
-        informant = new Informant(uiPort, asyncHttpClient);
     }
 
     private static boolean useExternalJvmAppContainer() {
@@ -144,5 +133,13 @@ public abstract class InformantContainer {
             throw new IllegalStateException("Unexpected value for system property"
                     + " 'externalJvmAppContainer', expecting 'true' or 'false'");
         }
+    }
+
+    interface ExecutionAdapter {
+
+        void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
+                String threadName) throws Exception;
+
+        void shutdownImpl() throws Exception;
     }
 }

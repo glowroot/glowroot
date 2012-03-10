@@ -30,7 +30,7 @@ public class TraceUiMain {
     private static final Logger logger = LoggerFactory.getLogger(TraceUiMain.class);
 
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.newInstance();
+        InformantContainer container = InformantContainer.create();
         // set thresholds low so there will be lots of data to view
         CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
         coreConfiguration.setThresholdMillis(0);

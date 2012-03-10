@@ -17,35 +17,31 @@ package org.informantproject.testkit;
 
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.shaded.aspectj.bridge.context.CompilationAndWeavingContext;
+import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class SameJvmInformantContainer extends InformantContainer {
+class SameJvmExecutionAdapter implements ExecutionAdapter {
 
     private IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
-    public SameJvmInformantContainer() {
+    SameJvmExecutionAdapter(String agentArgs) throws Exception {
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class,
                 RunnableWithStringArg.class);
-    }
-
-    @Override
-    protected void initImpl(String agentArgs) throws Exception {
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         try {
             MainEntryPoint.setAspectjAopXmlSearchPath();
-            isolatedWeavingClassLoader.newInstance(OpenSameJvmTest.class,
+            isolatedWeavingClassLoader.newInstance(StartContainer.class,
                     RunnableWithStringArg.class).run(agentArgs);
         } finally {
             Thread.currentThread().setContextClassLoader(previousContextClassLoader);
         }
     }
 
-    @Override
-    protected void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
+    public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
             String threadName) throws Exception {
 
         String previousThreadName = Thread.currentThread().getName();
@@ -61,9 +57,8 @@ class SameJvmInformantContainer extends InformantContainer {
         }
     }
 
-    @Override
-    protected void closeImpl() throws Exception {
-        isolatedWeavingClassLoader.newInstance(CloseSameJvmTest.class, Runnable.class).run();
+    public void shutdownImpl() throws Exception {
+        isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
         isolatedWeavingClassLoader = null;
         // AspectJ has a memory leak that prevents the IsolatedWeavingClassLoader from being
@@ -79,10 +74,10 @@ class SameJvmInformantContainer extends InformantContainer {
         void run(String arg);
     }
 
-    public static class OpenSameJvmTest implements RunnableWithStringArg {
+    public static class StartContainer implements RunnableWithStringArg {
         public void run(String agentArgs) {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(OpenSameJvmTest.class.getClassLoader());
+            Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
             try {
                 MainEntryPoint.start(agentArgs);
             } catch (Exception e) {
@@ -93,7 +88,7 @@ class SameJvmInformantContainer extends InformantContainer {
         }
     }
 
-    public static class CloseSameJvmTest implements Runnable {
+    public static class ShutdownContainer implements Runnable {
         public void run() {
             try {
                 MainEntryPoint.shutdown();

@@ -35,7 +35,7 @@ public class TraceDaoDeletePerformanceMain {
             .getLogger(TraceDaoDeletePerformanceMain.class);
 
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.newInstance();
+        InformantContainer container = InformantContainer.create();
         // set thresholds low so there will be lots of data to view
         CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
         coreConfiguration.setThresholdMillis(0);
@@ -56,7 +56,7 @@ public class TraceDaoDeletePerformanceMain {
         container.getInformant().deleteAllTraces();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsedMillis());
         logger.info("informant.h2.db: {} bytes", dbFile.length());
-        container.close();
+        container.shutdown();
         logger.info("informant.h2.db: {} bytes", dbFile.length());
     }
 

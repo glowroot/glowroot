@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DaemonExecutors;
+import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
 
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
@@ -35,20 +36,18 @@ import com.google.common.io.ByteStreams;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ExternalJvmInformantContainer extends InformantContainer {
+class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(ExternalJvmInformantContainer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExternalJvmExecutionAdapter.class);
 
-    private Process process;
-    private ExecutorService executorService;
+    private final Process process;
+    private final ExecutorService executorService;
 
-    private Socket socket;
-    private ObjectOutputStream objectOut;
-    private ObjectInputStream objectIn;
+    private final Socket socket;
+    private final ObjectOutputStream objectOut;
+    private final ObjectInputStream objectIn;
 
-    @Override
-    protected void initImpl(String agentArgs) throws Exception {
+    ExternalJvmExecutionAdapter(String agentArgs) throws Exception {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
@@ -58,7 +57,7 @@ class ExternalJvmInformantContainer extends InformantContainer {
         }
         ServerSocket serverSocket = new ServerSocket(0);
         ProcessBuilder processBuilder = new ProcessBuilder(path, "-cp", classpath, javaagentArg,
-                ExternalJvmInformantContainer.class.getName(), Integer.toString(serverSocket
+                ExternalJvmExecutionAdapter.class.getName(), Integer.toString(serverSocket
                         .getLocalPort()));
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
@@ -77,8 +76,7 @@ class ExternalJvmInformantContainer extends InformantContainer {
         objectIn = new ObjectInputStream(socket.getInputStream());
     }
 
-    @Override
-    protected void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
+    public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
             String threadName) throws Exception {
 
         objectOut.writeObject(appUnderTestClass.getName());
@@ -86,8 +84,7 @@ class ExternalJvmInformantContainer extends InformantContainer {
         objectIn.readObject();
     }
 
-    @Override
-    protected void closeImpl() throws Exception {
+    public void shutdownImpl() throws Exception {
         objectOut.close();
         objectIn.close();
         socket.close();
