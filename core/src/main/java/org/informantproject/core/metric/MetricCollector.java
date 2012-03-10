@@ -77,12 +77,6 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
         }
     }
 
-    public void shutdown() {
-        logger.debug("shutdown()");
-        future.cancel(true);
-        scheduledExecutor.shutdownNow();
-    }
-
     public void onChange(ImmutableCoreConfiguration updatedConfiguration) {
         int updatedBossIntervalMillis = updatedConfiguration.getMetricPeriodMillis();
         if (updatedBossIntervalMillis != bossIntervalMillis) {
@@ -102,6 +96,12 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
             future = scheduledExecutor.scheduleWithFixedDelay(this, 0, bossIntervalMillis,
                     TimeUnit.MILLISECONDS);
         }
+    }
+
+    public void shutdown() {
+        logger.debug("shutdown()");
+        future.cancel(true);
+        scheduledExecutor.shutdownNow();
     }
 
     private void runInternal() {

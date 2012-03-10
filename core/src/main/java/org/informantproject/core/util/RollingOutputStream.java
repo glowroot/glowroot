@@ -101,10 +101,6 @@ class RollingOutputStream extends OutputStream {
         }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
     }
 
-    void shutdown() {
-        executorService.shutdownNow();
-    }
-
     void startBlock() {
         blockStartIndex = currIndex;
     }
@@ -198,6 +194,10 @@ class RollingOutputStream extends OutputStream {
     // just for unit testing
     void sync() throws SyncFailedException, IOException {
         out.getFD().sync();
+    }
+
+    void shutdown() {
+        executorService.shutdownNow();
     }
 
     @Override

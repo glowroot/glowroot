@@ -53,12 +53,6 @@ public class RollingFile {
         inFile = new RandomAccessFile(rollingFile, "r");
     }
 
-    public void shutdown() {
-        synchronized (lock) {
-            rollingOut.shutdown();
-        }
-    }
-
     // TODO handle exceptions better
     public FileBlock write(CharSequence s) throws IOException {
         synchronized (lock) {
@@ -104,6 +98,13 @@ public class RollingFile {
     public double getRollingSizeKb() {
         synchronized (lock) {
             return rollingOut.getRollingSizeBytes() / (double) 1024;
+        }
+    }
+
+    public void shutdown() {
+        logger.debug("shutdown()");
+        synchronized (lock) {
+            rollingOut.shutdown();
         }
     }
 

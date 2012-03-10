@@ -107,11 +107,6 @@ public class TraceSinkLocal implements TraceSink {
         traceDao.storeTrace(buildStoredTrace(trace));
     }
 
-    public void shutdown() {
-        logger.debug("shutdown()");
-        executorService.shutdownNow();
-    }
-
     public int getQueueLength() {
         return queueLength.get();
     }
@@ -134,6 +129,11 @@ public class TraceSinkLocal implements TraceSink {
         stackTraceDao.storeStackTraces(stackTraces);
         storedTrace.setMergedStackTree(getMergedStackTreeJson(trace));
         return storedTrace;
+    }
+
+    public void shutdown() {
+        logger.debug("shutdown()");
+        executorService.shutdownNow();
     }
 
     public static String getMetricsJson(Trace trace, Gson gson) {

@@ -96,15 +96,15 @@ public abstract class HttpServerBase {
         }
     }
 
-    protected abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
-            InterruptedException;
-
     public void shutdown() {
         logger.debug("shutdown(): stopping http server");
         allChannels.close().awaitUninterruptibly();
         logger.debug("shutdown(): http server stopped");
         bootstrap.releaseExternalResources();
     }
+
+    protected abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
+            InterruptedException;
 
     private class SimpleHttpHandlerWrapper extends SimpleChannelUpstreamHandler {
         @Override
