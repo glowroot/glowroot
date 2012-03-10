@@ -59,7 +59,7 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (isJavaSystemClass(name)) {
+        if (isInBootClassLoader(name)) {
             return super.findClass(name);
         }
         for (Class<?> bridgeClass : bridgeClasses) {
@@ -97,7 +97,7 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
     protected synchronized Class<?> loadClass(String name, boolean resolve)
             throws ClassNotFoundException {
 
-        if (isJavaSystemClass(name)) {
+        if (isInBootClassLoader(name)) {
             return super.loadClass(name, resolve);
         }
         Class<?> c = classes.get(name);
@@ -110,7 +110,7 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
     }
 
     private <S> boolean isBridgeable(String name) {
-        if (isJavaSystemClass(name)) {
+        if (isInBootClassLoader(name)) {
             return true;
         }
         for (Class<?> bridgeClass : bridgeClasses) {
@@ -121,8 +121,12 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
         return false;
     }
 
-    private static boolean isJavaSystemClass(String name) {
-        return name.startsWith("java.") || name.startsWith("sun.")
-                || name.startsWith("javax.management.");
+    private static boolean isInBootClassLoader(String name) {
+        try {
+            Class<?> c = Class.forName(name, false, ClassLoader.getSystemClassLoader());
+            return c.getClassLoader() == null;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

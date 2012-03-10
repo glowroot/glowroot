@@ -33,16 +33,15 @@ class SameJvmInformantContainer extends InformantContainer {
 
     @Override
     protected void initImpl(String agentArgs) throws Exception {
-        // TODO why does this commented out code break unit tests?
-        // ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-        // Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
-        // try {
-        MainEntryPoint.setAspectjAopXmlSearchPath();
-        isolatedWeavingClassLoader.newInstance(OpenSameJvmTest.class,
-                RunnableWithStringArg.class).run(agentArgs);
-        // } finally {
-        // Thread.currentThread().setContextClassLoader(previousContextClassLoader);
-        // }
+        ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
+        try {
+            MainEntryPoint.setAspectjAopXmlSearchPath();
+            isolatedWeavingClassLoader.newInstance(OpenSameJvmTest.class,
+                    RunnableWithStringArg.class).run(agentArgs);
+        } finally {
+            Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+        }
     }
 
     @Override
