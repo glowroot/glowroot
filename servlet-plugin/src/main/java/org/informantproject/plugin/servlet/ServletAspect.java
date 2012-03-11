@@ -55,8 +55,8 @@ public class ServletAspect {
 
     private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
             new ThreadLocal<ServletSpanDetail>();
-    // TODO allow this to be mocked out for unit testing
-    private static final PluginServices pluginServices = PluginServices.get();
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject.plugins:servlet-plugin");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {

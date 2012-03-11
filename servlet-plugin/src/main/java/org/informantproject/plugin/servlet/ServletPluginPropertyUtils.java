@@ -28,8 +28,6 @@ import org.informantproject.api.PluginServices;
  */
 final class ServletPluginPropertyUtils {
 
-    private static final String SERVLET_PLUGIN_NAME = "servlet";
-
     // TODO support nested paths
     private static final String USERNAME_SESSION_ATTRIBUTE_PATH_PROPERTY_NAME =
             "usernameSessionAttribute";
@@ -41,6 +39,9 @@ final class ServletPluginPropertyUtils {
     // TODO support partial wildcards, e.g. "context*"
     private static final String SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME = "sessionAttributes";
 
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject.plugins:servlet-plugin");
+
     // optimization
     private static volatile Set<String> cachedSessionAttributes;
     private static volatile String cachedSessionAttributesText;
@@ -49,12 +50,11 @@ final class ServletPluginPropertyUtils {
     private ServletPluginPropertyUtils() {}
 
     static String getUsernameSessionAttributePath() {
-        return PluginServices.get().getStringProperty(SERVLET_PLUGIN_NAME,
-                USERNAME_SESSION_ATTRIBUTE_PATH_PROPERTY_NAME);
+        return pluginServices.getStringProperty(USERNAME_SESSION_ATTRIBUTE_PATH_PROPERTY_NAME);
     }
 
     static Set<String> getSessionAttributePaths() {
-        String sessionAttributesText = PluginServices.get().getStringProperty(SERVLET_PLUGIN_NAME,
+        String sessionAttributesText = pluginServices.getStringProperty(
                 SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
         if (!sessionAttributesText.equals(cachedSessionAttributesText)) {
             String[] sessionAttributesArray = sessionAttributesText.split(",");
