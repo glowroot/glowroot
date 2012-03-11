@@ -31,9 +31,11 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class NestableCallAspect {
 
+    private static final PluginServices pluginServices = PluginServices.get("unittest");
+
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
-        return PluginServices.get().isEnabled();
+        return pluginServices.isEnabled();
     }
 
     @Pointcut("call(void org.informantproject.testing.ui.NestableCall.execute())")
@@ -41,10 +43,10 @@ public class NestableCallAspect {
 
     @Around("isPluginEnabled() && nestablePointcut()")
     public Object nestableAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (PluginServices.get().getRootSpanDetail() == null) {
-            return PluginServices.get().executeRootSpan(getRootSpanDetail(), joinPoint, "nestable");
+        if (pluginServices.getRootSpanDetail() == null) {
+            return pluginServices.executeRootSpan(getRootSpanDetail(), joinPoint, "nestable");
         } else {
-            return PluginServices.get().executeSpan(getSpanDetail(), joinPoint, "nestable");
+            return pluginServices.executeSpan(getSpanDetail(), joinPoint, "nestable");
         }
     }
 

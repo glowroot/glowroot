@@ -32,11 +32,13 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class ExpensiveCallAspect {
 
+    private static final PluginServices pluginServices = PluginServices.get("unittest");
+
     private static final AtomicInteger counter = new AtomicInteger();
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
-        return PluginServices.get().isEnabled();
+        return pluginServices.isEnabled();
     }
 
     @Pointcut("call(void org.informantproject.testing.ui.ExpensiveCall.execute())")
@@ -45,7 +47,8 @@ public class ExpensiveCallAspect {
     @Around("isPluginEnabled() && expensivePointcut() && target(expensive)")
     public Object nestableAdvice(ProceedingJoinPoint joinPoint, ExpensiveCall expensive)
             throws Throwable {
-        return PluginServices.get().executeSpan(getSpanDetail(expensive), joinPoint, "expensive");
+
+        return pluginServices.executeSpan(getSpanDetail(expensive), joinPoint, "expensive");
     }
 
     private SpanDetail getSpanDetail(final ExpensiveCall expensive) {

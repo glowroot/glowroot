@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCollector;
+import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.trace.StackCollector;
 import org.informantproject.core.trace.StuckTraceCollector;
 import org.informantproject.core.util.Clock;
@@ -38,6 +39,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
@@ -90,6 +92,7 @@ class InformantModule extends AbstractModule {
     protected void configure() {
         logger.debug("configure()");
         install(new LocalModule(agentArgs.getUiPort()));
+        install(new FactoryModuleBuilder().build(PluginServicesImplFactory.class));
     }
 
     @Provides

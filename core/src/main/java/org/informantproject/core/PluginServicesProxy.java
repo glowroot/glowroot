@@ -18,16 +18,25 @@ package org.informantproject.core;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
-import org.informantproject.core.trace.PluginServicesImpl;
+import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 
 /**
+ * Plugins may get instantiated by aspectj and request their PluginServices before Informant has
+ * finished starting up, in which case they are given this proxy which will point to the real
+ * PluginServices as soon as possible.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 class PluginServicesProxy extends PluginServices {
 
+    private final String pluginId;
     private volatile PluginServices pluginServices;
+
+    public PluginServicesProxy(String pluginId) {
+        this.pluginId = pluginId;
+    }
 
     @Override
     public boolean isEnabled() {
@@ -39,24 +48,22 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public String getStringProperty(String pluginName, String propertyName) {
+    public String getStringProperty(String propertyName) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getStringProperty(pluginName, propertyName);
+            return pluginServices.getStringProperty(propertyName);
         }
     }
 
     @Override
-    public Boolean getBooleanProperty(String pluginName, String propertyName,
-            Boolean defaultValue) {
-
+    public Boolean getBooleanProperty(String propertyName, Boolean defaultValue) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getBooleanProperty(pluginName, propertyName, defaultValue);
+            return pluginServices.getBooleanProperty(propertyName, defaultValue);
         }
     }
 
@@ -103,11 +110,7 @@ class PluginServicesProxy extends PluginServices {
         }
     }
 
-    void start(PluginServicesImpl pluginServicesImpl) {
-        this.pluginServices = pluginServicesImpl;
-    }
-
-    void shutdown() {
-        pluginServices = null;
+    void start(PluginServicesImplFactory pluginServicesImplFactory) {
+        this.pluginServices = pluginServicesImplFactory.create(pluginId);
     }
 }

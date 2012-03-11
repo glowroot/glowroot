@@ -32,12 +32,14 @@ public class RootSpanMarkerAspect {
 
     private static final String MOCK_SPAN_SUMMARY_KEY = "mock root span";
 
+    private static final PluginServices pluginServices = PluginServices.get("unittest");
+
     @Pointcut("execution(void org.informantproject.testkit.RootSpanMarker.rootSpanMarker())")
     void rootSpanMarkerPointcut() {}
 
     @Around("rootSpanMarkerPointcut()")
     public void aroundRootSpanMarkerPointcut(ProceedingJoinPoint joinPoint) throws Throwable {
-        PluginServices.get().executeRootSpan(new MockRootSpan(), joinPoint, MOCK_SPAN_SUMMARY_KEY);
+        pluginServices.executeRootSpan(new MockRootSpan(), joinPoint, MOCK_SPAN_SUMMARY_KEY);
     }
 
     private static class MockRootSpan implements RootSpanDetail {

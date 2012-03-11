@@ -16,10 +16,14 @@
 package org.informantproject.core;
 
 import java.lang.instrument.Instrumentation;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.concurrent.GuardedBy;
 
 import org.informantproject.api.PluginServices;
-import org.informantproject.core.trace.PluginServicesImpl;
+import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.local.ui.HttpServer;
 import org.informantproject.shaded.aspectj.weaver.loadtime.Agent;
 import org.slf4j.Logger;
@@ -46,9 +50,16 @@ public final class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
-    private static final PluginServicesProxy pluginServicesProxy = new PluginServicesProxy();
     private static volatile Injector injector;
     private static final Object lock = new Object();
+
+    // plugins may get instantiated by aspectj and request their PluginServices instance before
+    // Informant has finished starting up, in which case they are given a proxy which will point to
+    // the real PluginServices as soon as possible
+    @GuardedBy("returnPluginServicesProxy")
+    private static final List<PluginServicesProxy> pluginServicesProxies =
+            new ArrayList<PluginServicesProxy>();
+    private static volatile AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
 
     private MainEntryPoint() {}
 
@@ -60,8 +71,17 @@ public final class MainEntryPoint {
         Agent.premain(null, instrumentation);
     }
 
-    public static PluginServices getPluginServices() {
-        return pluginServicesProxy;
+    public static PluginServices createPluginServices(String pluginId) {
+        if (returnPluginServicesProxy.get()) {
+            synchronized (returnPluginServicesProxy) {
+                if (returnPluginServicesProxy.get()) {
+                    PluginServicesProxy proxy = new PluginServicesProxy(pluginId);
+                    pluginServicesProxies.add(proxy);
+                    return proxy;
+                }
+            }
+        }
+        return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
     }
 
     public static void start() {
@@ -80,7 +100,14 @@ public final class MainEntryPoint {
             }
             injector = Guice.createInjector(new InformantModule(agentArgs));
             InformantModule.start(injector);
-            pluginServicesProxy.start(injector.getInstance(PluginServicesImpl.class));
+        }
+        returnPluginServicesProxy.set(false);
+        synchronized (returnPluginServicesProxy) {
+            for (PluginServicesProxy proxy : pluginServicesProxies) {
+                proxy.start(injector.getInstance(PluginServicesImplFactory.class));
+            }
+            // don't need reference to these proxies anymore, may as well clean up
+            pluginServicesProxies.clear();
         }
     }
 
@@ -94,7 +121,6 @@ public final class MainEntryPoint {
             if (injector == null) {
                 throw new IllegalStateException("Informant is not started");
             }
-            pluginServicesProxy.shutdown();
             InformantModule.shutdown(injector);
             injector = null;
         }

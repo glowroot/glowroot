@@ -30,14 +30,16 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class LevelThreeAspect {
 
+    private static final PluginServices pluginServices = PluginServices.get("unittest");
+
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
-        return PluginServices.get().isEnabled();
+        return pluginServices.isEnabled();
     }
 
     @Pointcut("if()")
     public static boolean inTrace() {
-        return PluginServices.get().getRootSpanDetail() != null;
+        return pluginServices.getRootSpanDetail() != null;
     }
 
     @Pointcut("call(void org.informantproject.test.api.LevelThree.call(java.lang.String,"
@@ -56,6 +58,6 @@ public class LevelThreeAspect {
                 return SpanContextMap.of("arg1", arg1, "arg2", arg2);
             }
         };
-        return PluginServices.get().executeSpan(spanDetail, joinPoint, "level three");
+        return pluginServices.executeSpan(spanDetail, joinPoint, "level three");
     }
 }

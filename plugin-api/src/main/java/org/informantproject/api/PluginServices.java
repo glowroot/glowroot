@@ -20,6 +20,10 @@ import java.lang.reflect.Method;
 
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 /**
  * This is the primary service exposed to plugins.
  * 
@@ -35,14 +39,16 @@ public abstract class PluginServices {
 
     private static final String MAIN_ENTRY_POINT_CLASS_NAME =
             "org.informantproject.core.MainEntryPoint";
-    private static final String PLUGIN_SERVICES_GETTER_METHOD_NAME = "getPluginServices";
+    private static final String CREATE_PLUGIN_SERVICES_METHOD_NAME = "createPluginServices";
 
-    // unfortunately this must be lazy loaded since otherwise there is a static initializer cycle
-    // (MainEntryPoint.pluginServicesProxy -> PluginServicesProxy -> PluginServices
-    // -> MainEntryPoint.pluginServicesProxy)
-    private static volatile PluginServices pluginServices;
+    private static final LoadingCache<String, PluginServices> pluginServices = CacheBuilder
+            .newBuilder().build(new CacheLoader<String, PluginServices>() {
+                @Override
+                public PluginServices load(String pluginId) throws Exception {
+                    return createPluginServices(pluginId);
+                }
+            });
 
-    // TODO add plugin name as arg and allow individual plugins to be enabled/disabled
     public abstract boolean isEnabled();
 
     // never returns null
@@ -54,11 +60,10 @@ public abstract class PluginServices {
     //
     // As long as calls to this method are called at some point after verifying isEnabled() then
     // there is no problem.
-    public abstract String getStringProperty(String pluginName, String propertyName);
+    public abstract String getStringProperty(String propertyName);
 
     // see comment for getStringProperty()
-    public abstract Boolean getBooleanProperty(String pluginName, String propertyName,
-            Boolean defaultValue);
+    public abstract Boolean getBooleanProperty(String propertyName, Boolean defaultValue);
 
     public abstract Object executeRootSpan(RootSpanDetail rootSpanDetail,
             ProceedingJoinPoint joinPoint, String spanSummaryKey) throws Throwable;
@@ -72,20 +77,16 @@ public abstract class PluginServices {
     // see comment for getStringProperty()
     public abstract RootSpanDetail getRootSpanDetail();
 
-    public static PluginServices get() {
-        if (pluginServices == null) {
-            // don't need to worry about synchronization since getPluginServices() is idempotent
-            pluginServices = getPluginServices();
-        }
-        return pluginServices;
+    public static PluginServices get(String pluginId) {
+        return pluginServices.getUnchecked(pluginId);
     }
 
-    private static PluginServices getPluginServices() {
+    private static PluginServices createPluginServices(String pluginId) {
         try {
             Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
             Method getPluginServicesMethod = mainEntryPointClass
-                    .getMethod(PLUGIN_SERVICES_GETTER_METHOD_NAME);
-            return (PluginServices) getPluginServicesMethod.invoke(null);
+                    .getMethod(CREATE_PLUGIN_SERVICES_METHOD_NAME, String.class);
+            return (PluginServices) getPluginServicesMethod.invoke(null, pluginId);
         } catch (ClassNotFoundException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
@@ -119,12 +120,11 @@ public abstract class PluginServices {
             return false;
         }
         @Override
-        public String getStringProperty(String pluginName, String propertyName) {
+        public String getStringProperty(String propertyName) {
             return null;
         }
         @Override
-        public Boolean getBooleanProperty(String pluginName, String propertyName,
-                Boolean defaultValue) {
+        public Boolean getBooleanProperty(String propertyName, Boolean defaultValue) {
             return null;
         }
         @Override

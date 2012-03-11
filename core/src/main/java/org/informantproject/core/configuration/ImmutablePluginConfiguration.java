@@ -65,10 +65,9 @@ public class ImmutablePluginConfiguration {
                     propertyMap.put(subEntry.getKey(), subEntry.getValue());
                 } else {
                     logger.error("unexpected plugin configuration value type '"
-                            + subEntry.getValue().getClass() + "' for plugin name '"
-                            + entry.getKey() + "' and property name '" + subEntry.getKey()
-                            + "' (expecting one of " + Joiner.on(", ").join(validValueTypes) + ")",
-                            new Throwable());
+                            + subEntry.getValue().getClass() + "' for pluginId '" + entry.getKey()
+                            + "' and property name '" + subEntry.getKey() + "' (expecting one of "
+                            + Joiner.on(", ").join(validValueTypes) + ")", new Throwable());
                 }
             }
             propertyMaps.put(entry.getKey(), propertyMap);
@@ -76,8 +75,8 @@ public class ImmutablePluginConfiguration {
     }
 
     // never returns null
-    public String getStringProperty(String pluginName, String propertyName) {
-        Map<String, Object> propertyMap = propertyMaps.get(pluginName);
+    public String getStringProperty(String pluginId, String propertyName) {
+        Map<String, Object> propertyMap = propertyMaps.get(pluginId);
         if (propertyMap == null) {
             return "";
         }
@@ -89,8 +88,8 @@ public class ImmutablePluginConfiguration {
         }
     }
 
-    public Double getDoubleProperty(String pluginName, String propertyName, Double defaultValue) {
-        Map<String, Object> propertyMap = propertyMaps.get(pluginName);
+    public Double getDoubleProperty(String pluginId, String propertyName, Double defaultValue) {
+        Map<String, Object> propertyMap = propertyMaps.get(pluginId);
         if (propertyMap == null) {
             return defaultValue;
         }
@@ -101,16 +100,15 @@ public class ImmutablePluginConfiguration {
             return defaultValue;
         } else {
             logger.warn("expecting Double value type, but found value type '"
-                    + propertyValue.getClass() + "' for plugin name '" + pluginName
+                    + propertyValue.getClass() + "' for pluginId '" + pluginId
                     + "' and property name '" + propertyName + "'");
             return defaultValue;
         }
     }
 
-    public Boolean getBooleanProperty(String pluginName, String propertyName,
-            Boolean defaultValue) {
+    public Boolean getBooleanProperty(String pluginId, String propertyName, Boolean defaultValue) {
 
-        Map<String, Object> propertyMap = propertyMaps.get(pluginName);
+        Map<String, Object> propertyMap = propertyMaps.get(pluginId);
         if (propertyMap == null) {
             return defaultValue;
         }
@@ -121,18 +119,18 @@ public class ImmutablePluginConfiguration {
             return defaultValue;
         } else {
             logger.warn("expecting Boolean value type, but found value type '"
-                    + propertyValue.getClass() + "' for plugin name '" + pluginName
+                    + propertyValue.getClass() + "' for pluginId '" + pluginId
                     + "' and property name '" + propertyName + "'");
             return defaultValue;
         }
     }
 
-    public Iterable<String> getPluginNames() {
+    public Iterable<String> getPluginIds() {
         return propertyMaps.keySet();
     }
 
-    public Iterable<String> getPropertyNames(String pluginName) {
-        Map<String, Object> propertyMap = propertyMaps.get(pluginName);
+    public Iterable<String> getPropertyNames(String pluginId) {
+        Map<String, Object> propertyMap = propertyMaps.get(pluginId);
         if (propertyMap == null) {
             return Collections.emptySet();
         } else {

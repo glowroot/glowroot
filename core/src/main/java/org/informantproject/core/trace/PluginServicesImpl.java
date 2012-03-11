@@ -32,18 +32,23 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
- * Implementation of PluginServices from the Plugin API.
+ * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
+ * isEnabled(), getStringProperty(), etc can be scoped to the given plugin. The pluginId should be
+ * "groupId:artifactId", constructed from the plugin's maven coordinates (or at least matching the
+ * groupId and artifactId specified in the plugin's org.informantproject.plugin.xml).
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Singleton
 public class PluginServicesImpl extends PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
+
+    // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
+    // plugin's org.informantproject.plugin.xml
+    private final String pluginId;
 
     private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
@@ -62,9 +67,10 @@ public class PluginServicesImpl extends PluginServices {
             };
 
     @Inject
-    PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
+    PluginServicesImpl(String pluginId, TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigurationService configurationService, Clock clock, Ticker ticker) {
 
+        this.pluginId = pluginId;
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configurationService = configurationService;
@@ -73,20 +79,16 @@ public class PluginServicesImpl extends PluginServices {
     }
 
     @Override
-    public String getStringProperty(String pluginName, String propertyName) {
-        logger.debug("getStringProperty(): pluginName={}, propertyName={}", pluginName,
-                propertyName);
-        return configurationService.getPluginConfiguration().getStringProperty(pluginName,
+    public String getStringProperty(String propertyName) {
+        logger.debug("getStringProperty(): propertyName={}", propertyName);
+        return configurationService.getPluginConfiguration().getStringProperty(pluginId,
                 propertyName);
     }
 
     @Override
-    public Boolean getBooleanProperty(String pluginName, String propertyName,
-            Boolean defaultValue) {
-
-        logger.debug("getBooleanProperty(): pluginName={}, propertyName={}", pluginName,
-                propertyName);
-        return configurationService.getPluginConfiguration().getBooleanProperty(pluginName,
+    public Boolean getBooleanProperty(String propertyName, Boolean defaultValue) {
+        logger.debug("getBooleanProperty(): propertyName={}", propertyName);
+        return configurationService.getPluginConfiguration().getBooleanProperty(pluginId,
                 propertyName, defaultValue);
     }
 
@@ -278,5 +280,9 @@ public class PluginServicesImpl extends PluginServices {
                 logger.error(e.getMessage(), e.getCause());
             }
         }
+    }
+
+    public interface PluginServicesImplFactory {
+        public PluginServicesImpl create(String pluginId);
     }
 }

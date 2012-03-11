@@ -30,9 +30,11 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class LevelOneAspect {
 
+    private static final PluginServices pluginServices = PluginServices.get("unittest");
+
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
-        return PluginServices.get().isEnabled();
+        return pluginServices.isEnabled();
     }
 
     @Pointcut("call(void org.informantproject.test.api.LevelOne.call(java.lang.String,"
@@ -61,6 +63,6 @@ public class LevelOneAspect {
                 return null;
             }
         };
-        return PluginServices.get().executeRootSpan(rootSpanDetail, joinPoint, "level one");
+        return pluginServices.executeRootSpan(rootSpanDetail, joinPoint, "level one");
     }
 }
