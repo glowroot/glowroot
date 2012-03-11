@@ -60,8 +60,8 @@ public class JdbcAspect {
     private static final String JDBC_COMMIT_SUMMARY_KEY = "jdbc commit";
 
     private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
-    // TODO allow this to be mocked out for unit testing
-    private static final PluginServices pluginServices = PluginServices.get();
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject.plugins:jdbc-plugin");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
