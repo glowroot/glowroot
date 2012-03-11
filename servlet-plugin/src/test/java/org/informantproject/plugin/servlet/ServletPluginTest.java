@@ -16,16 +16,20 @@
 package org.informantproject.plugin.servlet;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.Filter;
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.informantproject.testkit.AppUnderTest;
+import org.informantproject.testkit.Configuration.PluginConfiguration;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Span;
@@ -44,6 +48,8 @@ import org.springframework.mock.web.MockHttpSession;
  * @since 0.5
  */
 public class ServletPluginTest {
+
+    private static final String PLUGIN_ID = "org.informantproject.plugins:servlet-plugin";
 
     private static InformantContainer container;
 
@@ -69,7 +75,7 @@ public class ServletPluginTest {
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("GET /servlettest"));
+        assertThat(span.getDescription(), is("GET /servletundertest"));
     }
 
     @Test
@@ -110,13 +116,247 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testUsername() {
-        // TODO build out this unit test
+    public void testHasSessionUsernameAttribute() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasSessionUsernameAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getUsername(), is("abc"));
     }
 
     @Test
-    public void testSessionAttributes() {
-        // TODO build out this unit test
+    public void testSetSessionUsernameAttribute() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetSessionUsernameAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getUsername(), is("abc"));
+    }
+
+    @Test
+    public void testSetSessionUsernameAttributeNull() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetSessionUsernameAttributeNull.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        // this is intentional, setting username attribute to null shouldn't clear out username for
+        // that particular request (since the request was in fact, originally, for that username)
+        assertThat(trace.getUsername(), is("something"));
+    }
+
+    @Test
+    public void testHasNestedSessionUsernameAttributePath() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameone.two");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getUsername(), is("xyz"));
+    }
+
+    @Test
+    public void testSetNestedSessionUsernameAttributePath() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameone.two");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getUsername(), is("xyz"));
+    }
+
+    @Test
+    public void testHasSessionAttribute() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "testattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace).get("testattr"), is("val"));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+    }
+
+    @Test
+    public void testHasSessionAttributeUsingWildcard() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "*");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace).get("testattr"), is("val"));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+    }
+
+    @Test
+    public void testHasSessionAttributeNotReadable() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", null);
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+    }
+
+    @Test
+    public void testSetSessionAttribute() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "testattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace).get("testattr"), is("val"));
+    }
+
+    @Test
+    public void testSetSessionAttributeUsingWildcard() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "*");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace).get("testattr"), is("val"));
+    }
+
+    @Test
+    public void testSetSessionAttributeNotReadable() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", null);
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+    }
+
+    @Test
+    public void testSetSessionAttributeNull() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "*");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetSessionAttributeNull.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace).containsValue("testattr"), is(false));
+    }
+
+    @Test
+    public void testHasNestedSessionAttributePath() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "one.two");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasNestedSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace).get("one.two"), is("three"));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+    }
+
+    @Test
+    public void testSetNestedSessionAttributePath() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "one.two");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(SetNestedSessionAttribute.class);
+        // then
+        List<Trace> traces = container.getInformant().getAllTraces();
+        assertThat(traces.size(), is(1));
+        Trace trace = traces.get(0);
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace).get("one.two"), is("three"));
     }
 
     @Test
@@ -130,23 +370,36 @@ public class ServletPluginTest {
         assertThat(traces.size(), is(1));
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
-        assertThat(trace.getDescription(), is("GET /invalidate"));
+        assertThat(trace.getDescription(), is("GET /servletundertest"));
         assertThat((String) trace.getContextMap().get("session id (at beginning of this request)"),
-                is("1"));
+                is("1234"));
         assertThat((String) trace.getContextMap().get("session id (updated during this request)"),
                 is(""));
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("GET /invalidate"));
+        assertThat(span.getDescription(), is("GET /servletundertest"));
     }
 
-    public static class ExecuteServlet implements AppUnderTest {
-        public void executeApp() throws ServletException, IOException {
-            Servlet servlet = new MockServlet();
-            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/servlettest");
-            MockHttpServletResponse response = new MockHttpServletResponse();
-            servlet.service(request, response);
-        }
+    private PluginConfiguration getPluginConfiguration() throws Exception {
+        return container.getInformant().getPluginConfiguration(PLUGIN_ID);
     }
+
+    private void storePluginConfiguration(PluginConfiguration pluginConfiguration) throws Exception {
+        container.getInformant().storePluginConfiguration(PLUGIN_ID, pluginConfiguration);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> getSessionAttributes(Trace trace) {
+        return (Map<String, String>) trace.getContextMap().get("session attributes");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
+        return (Map<String, String>) trace.getContextMap().get("session attributes (updated during"
+                + " this request)");
+    }
+
+    @SuppressWarnings("serial")
+    public static class ExecuteServlet extends ServletUnderTest {}
 
     public static class ExecuteFilter implements AppUnderTest {
         public void executeApp() throws ServletException, IOException {
@@ -168,14 +421,114 @@ public class ServletPluginTest {
         }
     }
 
-    public static class InvalidateSession implements AppUnderTest {
-        public void executeApp() throws ServletException, IOException {
-            MockHttpSession session = new MockHttpSession();
-            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/invalidate");
-            request.setSession(session);
-            MockHttpServletResponse response = new MockHttpServletResponse();
-            InvalidateSessionMockServlet servlet = new InvalidateSessionMockServlet();
-            servlet.service(request, response);
+    @SuppressWarnings("serial")
+    public static class HasSessionUsernameAttribute extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("usernameattr", "abc");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetSessionUsernameAttribute extends ServletUnderTest {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("usernameattr", "abc");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetSessionUsernameAttributeNull extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("usernameattr", "something");
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("usernameattr", null);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class HasNestedSessionUsernameAttribute extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("usernameone", new NestedTwo("xyz"));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetNestedSessionUsernameAttribute extends ServletUnderTest {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("usernameone", new NestedTwo("xyz"));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class HasSessionAttribute extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("testattr", "val");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetSessionAttribute extends ServletUnderTest {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("testattr", "val");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetSessionAttributeNull extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("testattr", "something");
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("testattr", null);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class HasNestedSessionAttribute extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("one", new NestedTwo("three"));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetNestedSessionAttribute extends ServletUnderTest {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("one", new NestedTwo("three"));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class InvalidateSession extends ServletUnderTest {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setSession(new MockHttpSession(request
+                    .getServletContext(), "1234"));
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().invalidate();
+        }
+    }
+
+    public static class NestedTwo {
+        private final String two;
+        public NestedTwo(String two) {
+            this.two = two;
+        }
+        public String getTwo() {
+            return two;
         }
     }
 }

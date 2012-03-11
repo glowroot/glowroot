@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
 
@@ -59,7 +60,7 @@ class ServletSpanDetail implements RootSpanDetail {
     private final String requestURI;
     private volatile Map<String, String[]> requestParameterMap;
 
-    private volatile String username;
+    private volatile Optional<String> username = Optional.absent();
 
     // the initial value is the sessionId as it was present at the beginning of the request
     private final String sessionIdInitialValue;
@@ -73,10 +74,10 @@ class ServletSpanDetail implements RootSpanDetail {
     // of the request
     private final Map<String, String> sessionAttributeInitialValueMap;
 
-    private volatile Map<String, String> sessionAttributeUpdatedValueMap;
+    private volatile Map<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletSpanDetail(String requestMethod, String requestURI, String username, String sessionId,
-            Map<String, String> sessionAttributeMap) {
+    ServletSpanDetail(String requestMethod, String requestURI, Optional<String> username,
+            String sessionId, Map<String, String> sessionAttributeMap) {
 
         this.requestMethod = requestMethod;
         this.requestURI = requestURI;
@@ -100,7 +101,7 @@ class ServletSpanDetail implements RootSpanDetail {
         return context;
     }
 
-    public String getUsername() {
+    public Optional<String> getUsername() {
         return username;
     }
 
@@ -118,7 +119,7 @@ class ServletSpanDetail implements RootSpanDetail {
         this.requestParameterMap = map;
     }
 
-    void setUsername(String username) {
+    void setUsername(Optional<String> username) {
         this.username = username;
     }
 
@@ -126,9 +127,9 @@ class ServletSpanDetail implements RootSpanDetail {
         this.sessionIdUpdatedValue = sessionId;
     }
 
-    void putSessionAttributeChangedValue(String name, String value) {
+    void putSessionAttributeChangedValue(String name, Optional<String> value) {
         if (sessionAttributeUpdatedValueMap == null) {
-            sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, String>();
+            sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, Optional<String>>();
         }
         sessionAttributeUpdatedValueMap.put(name, value);
     }
@@ -165,21 +166,31 @@ class ServletSpanDetail implements RootSpanDetail {
             // session attributes were captured at the beginning of the request, and no session
             // attributes were updated mid-request
             context.put("session attributes", getSessionAttributeInitialValues());
+        } else if (sessionAttributeInitialValueMap == null
+                && sessionAttributeUpdatedValueMap != null) {
+            // no session attributes were available at the beginning of the request, and session
+            // attributes were updated mid-request
+            context.put("session attributes (updated during this request)",
+                    getSessionAttributeUpdatedValues());
         } else if (sessionAttributeUpdatedValueMap != null) {
             // session attributes were updated mid-request
             SpanContextMap initialValuesNestedContext = getSessionAttributeInitialValues();
             // add empty values into initial values for any updated attributes that are not already
             // present in initial values nested context
-            for (Entry<String, String> entry : sessionAttributeUpdatedValueMap.entrySet()) {
+            for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
+                    .entrySet()) {
                 if (initialValuesNestedContext.containsKey(entry.getKey())
                         && entry.getValue() != null) {
-                    initialValuesNestedContext.put(entry.getKey(), entry.getValue());
+                    initialValuesNestedContext.putString(entry.getKey(), entry.getValue());
                 }
             }
             context.put("session attributes (at beginning of this request)",
                     initialValuesNestedContext);
             context.put("session attributes (updated during this request)",
                     getSessionAttributeUpdatedValues());
+        } else {
+            // both initial and updated value maps are null so there is nothing to add to the
+            // context map
         }
     }
 
@@ -197,9 +208,9 @@ class ServletSpanDetail implements RootSpanDetail {
     private SpanContextMap getSessionAttributeUpdatedValues() {
         // create nested context with session attribute updated values
         SpanContextMap nestedContext = new SpanContextMap();
-        for (Entry<String, String> entry : sessionAttributeUpdatedValueMap.entrySet()) {
+        for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap.entrySet()) {
             if (entry.getValue() != null) {
-                nestedContext.put(entry.getKey(), entry.getValue());
+                nestedContext.putString(entry.getKey(), entry.getValue());
             }
         }
         return nestedContext;

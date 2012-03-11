@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
@@ -96,10 +97,15 @@ public class ServletAspect {
         HttpSession session = request.getSession(false);
         if (session == null) {
             spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
-                    null, null, null);
+                    Optional.absent(String.class), null, null);
         } else {
-            String username = getSessionAttributeTextValue(session,
-                    ServletPluginPropertyUtils.getUsernameSessionAttributePath());
+            Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
+                    .getSessionUsernameAttributePath();
+            Optional<String> username = Optional.absent();
+            if (sessionUsernameAttributePath.isPresent()) {
+                username = getSessionAttributeTextValue(session, sessionUsernameAttributePath
+                        .get());
+            }
             spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
                     username, session.getId(), getSessionAttributes(session));
         }
@@ -179,21 +185,12 @@ public class ServletAspect {
             Object value) {
 
         HttpSession session = HttpSession.from(realSession);
-        // both name and value are non-null per HttpSession.setAttribute() specification
+        // name is non-null per HttpSession.setAttribute() javadoc, but value may be null (which per
+        // the javadoc is the same as calling removeAttribute()
         ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
         if (spanDetail != null) {
-            // check for username attribute
-            // TODO handle possible nested path here
-            if (name.equals(ServletPluginPropertyUtils.getUsernameSessionAttributePath())) {
-                // value should be a String, but toString() is still called just to be safe
-                spanDetail.setUsername(value.toString());
-            }
-            // update session attribute in ServletSpanDetail if necessary
-            Set<String> sessionAttributePaths = ServletPluginPropertyUtils
-                    .getSessionAttributePaths();
-            if (isSingleWildcard(sessionAttributePaths) || sessionAttributePaths.contains(name)) {
-                spanDetail.putSessionAttributeChangedValue(name, value.toString());
-            }
+            updateUsernameIfApplicable(spanDetail, name, value, session);
+            updateSessionAttributesIfApplicable(spanDetail, name, value, session);
         }
     }
 
@@ -204,13 +201,66 @@ public class ServletAspect {
             + " && !cflowbelow(sessionRemoveAttributePointcut()) && target(realSession)"
             + " && args(name)")
     public void afterReturningSessionRemoveAttributePointcut(Object realSession, String name) {
-        HttpSession session = HttpSession.from(realSession);
-        // update session attribute in ServletSpanDetail if necessary
-        Set<String> sessionAttributePaths = ServletPluginPropertyUtils.getSessionAttributePaths();
-        if (isSingleWildcard(sessionAttributePaths) || sessionAttributePaths.contains(name)) {
-            ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
-            if (spanDetail != null) {
-                spanDetail.putSessionAttributeChangedValue(name, "");
+        // calling HttpSession.setAttribute() with null value is the same as calling
+        // removeAttribute(), per the setAttribute() javadoc
+        afterReturningSessionSetAttributePointcut(realSession, name, null);
+    }
+
+    private void updateUsernameIfApplicable(ServletSpanDetail spanDetail, String name,
+            Object value,
+            HttpSession session) {
+
+        if (value == null) {
+            // if username value is set to null, don't clear it
+            return;
+        }
+        Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
+                .getSessionUsernameAttributePath();
+        if (sessionUsernameAttributePath.isPresent()) {
+            if (sessionUsernameAttributePath.get().equals(name)) {
+                // it's unlikely, but possible, that toString() returns null
+                spanDetail.setUsername(Optional.fromNullable(value.toString()));
+            } else if (sessionUsernameAttributePath.get().startsWith(name + ".")) {
+                Optional<String> val = getSessionAttributeTextValue(session,
+                        sessionUsernameAttributePath.get());
+                spanDetail.setUsername(val);
+            }
+        }
+    }
+
+    private void updateSessionAttributesIfApplicable(ServletSpanDetail spanDetail, String name,
+            Object value, HttpSession session) {
+
+        if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
+            if (value == null) {
+                spanDetail.putSessionAttributeChangedValue(name, Optional.absent(String.class));
+            } else {
+                // it's unlikely, but possible, that toString() returns null
+                spanDetail.putSessionAttributeChangedValue(name, Optional.fromNullable(value
+                        .toString()));
+            }
+        } else if (ServletPluginPropertyUtils.getSessionAttributeNames().contains(name)) {
+            // update all session attributes (possibly nested) at or under the set attribute
+            for (String path : ServletPluginPropertyUtils.getSessionAttributePaths()) {
+                if (path.equals(name)) {
+                    if (value == null) {
+                        spanDetail.putSessionAttributeChangedValue(path, Optional.absent(
+                                String.class));
+                    } else {
+                        // it's unlikely, but possible, that toString() returns null
+                        spanDetail.putSessionAttributeChangedValue(path, Optional.fromNullable(
+                                value.toString()));
+                    }
+                } else if (path.startsWith(name + ".")) {
+                    if (value == null) {
+                        // no need to navigate path since it will always be Optional.absent()
+                        spanDetail.putSessionAttributeChangedValue(path, Optional.absent(
+                                String.class));
+                    } else {
+                        Optional<String> val = getSessionAttributeTextValue(session, path);
+                        spanDetail.putSessionAttributeChangedValue(path, val);
+                    }
+                }
             }
         }
     }
@@ -239,13 +289,16 @@ public class ServletAspect {
         if (sessionAttributePaths == null || sessionAttributePaths.isEmpty()) {
             return null;
         }
-        if (isSingleWildcard(sessionAttributePaths)) {
+        if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
             // special single value of "*" means dump all http session attributes
             Map<String, String> sessionAttributeMap = new HashMap<String, String>();
             for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
                 String attributeName = (String) e.nextElement();
-                Object attributeValue = session.getAttribute(attributeName);
-                sessionAttributeMap.put(attributeName, attributeValue.toString());
+                Object value = session.getAttribute(attributeName);
+                // value shouldn't be null, but its (remotely) possible that a concurrent request
+                // for the same session just removed the attribute
+                String valueString = value == null ? null : value.toString();
+                sessionAttributeMap.put(attributeName, valueString);
             }
             return sessionAttributeMap;
         } else {
@@ -253,24 +306,35 @@ public class ServletAspect {
                     sessionAttributePaths.size());
             // dump only http session attributes in list
             for (String attributePath : sessionAttributePaths) {
-                String attributeValue = getSessionAttributeTextValue(session, attributePath);
-                sessionAttributeMap.put(attributePath, attributeValue);
+                Optional<String> value = getSessionAttributeTextValue(session, attributePath);
+                if (value.isPresent()) {
+                    sessionAttributeMap.put(attributePath, value.get());
+                }
             }
             return sessionAttributeMap;
         }
     }
 
-    private static String getSessionAttributeTextValue(HttpSession session, String attributePath) {
-        Object value = session.getAttribute(attributePath);
-        if (value == null) {
-            return null;
-        } else {
-            return value.toString();
-        }
-    }
+    private static Optional<String> getSessionAttributeTextValue(HttpSession session,
+            String attributePath) {
 
-    private static boolean isSingleWildcard(Set<String> sessionAttributePaths) {
-        return sessionAttributePaths.size() == 1
-                && sessionAttributePaths.iterator().next().equals("*");
+        if (attributePath.indexOf('.') == -1) {
+            // fast path
+            Object value = session.getAttribute(attributePath);
+            if (value == null) {
+                return Optional.absent();
+            } else {
+                return Optional.of(value.toString());
+            }
+        } else {
+            String[] path = attributePath.split("\\.");
+            Object curr = session.getAttribute(path[0]);
+            Optional<?> value = PathUtil.getValue(curr, path, 1);
+            if (value.isPresent()) {
+                return Optional.of(value.get().toString());
+            } else {
+                return Optional.absent();
+            }
+        }
     }
 }
