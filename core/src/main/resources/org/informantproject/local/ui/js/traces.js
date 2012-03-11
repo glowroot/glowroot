@@ -64,7 +64,7 @@ var tracesTemplateText = ''
 + '    <div id="sp_{{id}}" style="display: none"></div>'
 + '  {{/if}}'
 + '  {{#if mergedStackTree.sampleCount}}'
-+ '    <a href="javascript:toggleMergedStackTrace(\'{{id}}\')">merged stack trace</a>'
++ '    <a href="javascript:toggleMergedStackTree(\'{{id}}\')">merged stack tree</a>'
 + '    ({{mergedStackTree.sampleCount}})<br>'
 + '    <div id="mst_{{id}}" style="display: none; white-space: nowrap"></div>'
 + '  {{/if}}'
@@ -196,7 +196,7 @@ function toggleSpan(id) {
     $('#sp_' + id).show()
   }
 }
-function toggleMergedStackTrace(id) {
+function toggleMergedStackTree(id) {
   var rootNode = traceForId(id).mergedStackTree
   function curr(node, level) {
     var ret = ''

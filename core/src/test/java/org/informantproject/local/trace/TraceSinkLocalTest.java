@@ -34,7 +34,7 @@ import org.junit.Test;
 public class TraceSinkLocalTest {
 
     @Test
-    public void shouldStoreVeryLargeMergedStackTrace() {
+    public void shouldStoreVeryLargeMergedStackTree() {
         // given
         MergedStackTree mergedStackTree = new MergedStackTree();
         Trace trace = mock(Trace.class);
