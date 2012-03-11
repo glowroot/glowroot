@@ -50,7 +50,7 @@ public class JdbcPluginTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.newInstance();
+        container = InformantContainer.create();
         // set up database
         new File(DB_NAME + ".h2.db").delete();
         Connection connection = createConnection();
@@ -69,7 +69,7 @@ public class JdbcPluginTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        container.shutdown();
     }
 
     @Test
