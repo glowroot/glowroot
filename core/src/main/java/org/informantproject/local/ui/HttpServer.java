@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.gson.Gson;
@@ -71,6 +72,8 @@ public class HttpServer extends HttpServerBase {
 
     private final Map<Pattern, Object> uriMappings = Collections
             .synchronizedMap(new LinkedHashMap<Pattern, Object>());
+
+    private final List<JsonServiceMappings> jsonServiceMappings = Lists.newArrayList();
 
     {
         // pages
@@ -118,17 +121,34 @@ public class HttpServer extends HttpServerBase {
             PluginJsonService pluginJsonService) {
 
         super(port);
+        uriMappings.put(Pattern.compile("^/trace/export$"), traceExportJsonService);
         // the parentheses define the part of the match that is used to dynamically construct the
         // "handleX" method to call in the json service, e.g. /trace/durations calls the method
         // handleDurations in TraceDurationJsonService
-        uriMappings.put(Pattern.compile("^/trace/(durations)$"), traceDurationJsonService);
-        uriMappings.put(Pattern.compile("^/trace/(details)$"), traceDetailJsonService);
-        uriMappings.put(Pattern.compile("^/trace/export$"), traceExportJsonService);
-        uriMappings.put(Pattern.compile("^/stacktrace/(read)$"), stackTraceJsonService);
-        uriMappings.put(Pattern.compile("^/metrics/(.*)$"), metricJsonService);
-        uriMappings.put(Pattern.compile("^/configuration/(.*)$"), configurationJsonService);
-        uriMappings.put(Pattern.compile("^/plugin/(.*)"), pluginJsonService);
-        uriMappings.put(Pattern.compile("^/misc/(.*)"), miscJsonService);
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/durations$"),
+                traceDurationJsonService, "getDurations"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/details$"),
+                traceDetailJsonService, "getDetails"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/stacktrace/(.*)$"),
+                stackTraceJsonService, "getStackTrace"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/metrics/read$"),
+                metricJsonService, "getMetrics"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/read$"),
+                configurationJsonService, "getConfiguration"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/update$"),
+                configurationJsonService, "storeConfiguration"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/packaged$"),
+                pluginJsonService, "getPackagedPlugins"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/installed$"),
+                pluginJsonService, "getInstalledPlugins"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/installable$"),
+                pluginJsonService, "getInstallablePlugins"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/cleardata$"),
+                miscJsonService, "clearData"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc"
+                + "/numPendingTraceWrites$"), miscJsonService, "getNumPendingTraceWrites"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/dbFile$"),
+                miscJsonService, "getDbFilePath"));
     }
 
     @Override
@@ -140,20 +160,25 @@ public class HttpServer extends HttpServerBase {
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
-                if (uriMappingEntry.getValue() instanceof JsonService) {
-                    String serviceMethodName = "handle"
-                            + matcher.group(1).substring(0, 1).toUpperCase()
-                            + matcher.group(1).substring(1);
-                    String requestText = getRequestText(request, decoder);
-                    return handleJsonRequest((JsonService) uriMappingEntry.getValue(),
-                            serviceMethodName, requestText);
-                } else if (uriMappingEntry.getValue() instanceof HttpService) {
+                if (uriMappingEntry.getValue() instanceof HttpService) {
                     return ((HttpService) uriMappingEntry.getValue()).handleRequest(request);
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
                     return handleStaticRequest(resourcePath);
                 }
+            }
+        }
+        for (JsonServiceMappings jsonServiceMapping : jsonServiceMappings) {
+            Matcher matcher = jsonServiceMapping.pattern.matcher(path);
+            if (matcher.matches()) {
+                String requestText = getRequestText(request, decoder);
+                String[] args = new String[matcher.groupCount()];
+                for (int i = 0; i < args.length; i++) {
+                    args[i] = matcher.group(i + 1);
+                }
+                return handleJsonRequest(jsonServiceMapping.service,
+                        jsonServiceMapping.methodName, args, requestText);
             }
         }
         logger.warn("Unexpected uri '{}'", request.getUri());
@@ -218,13 +243,13 @@ public class HttpServer extends HttpServerBase {
     }
 
     private static HttpResponse handleJsonRequest(JsonService jsonService,
-            String serviceMethodName, String requestText) {
+            String serviceMethodName, String[] args, String requestText) {
 
-        logger.debug("handleJsonRequest(): serviceMethodName={}, requestText={}",
-                serviceMethodName, requestText);
+        logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
+                new Object[] { serviceMethodName, args, requestText });
         Object responseText;
         try {
-            responseText = callMethod(jsonService, serviceMethodName, requestText);
+            responseText = callMethod(jsonService, serviceMethodName, args, requestText);
         } catch (SecurityException e) {
             logger.error(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
@@ -264,23 +289,34 @@ public class HttpServer extends HttpServerBase {
         return response;
     }
 
-    private static Object callMethod(Object object, String methodName, String optionalArg)
-            throws SecurityException, NoSuchMethodException, IllegalArgumentException,
-            IllegalAccessException, InvocationTargetException {
+    private static Object callMethod(Object object, String methodName, Object[] args,
+            String optionalArg) throws SecurityException, NoSuchMethodException,
+            IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 
-        boolean withArg = true;
+        boolean withOptionalArg = true;
         Method method;
         try {
-            method = object.getClass().getMethod(methodName, String.class);
+            method = object.getClass().getMethod(methodName, getParameterTypes(args.length + 1));
         } catch (NoSuchMethodException e) {
-            method = object.getClass().getMethod(methodName);
-            withArg = false;
+            method = object.getClass().getMethod(methodName, getParameterTypes(args.length));
+            withOptionalArg = false;
         }
-        if (withArg) {
-            return method.invoke(object, optionalArg);
+        if (withOptionalArg) {
+            Object[] argsWithOptional = new String[args.length + 1];
+            System.arraycopy(args, 0, argsWithOptional, 0, args.length);
+            argsWithOptional[args.length] = optionalArg;
+            return method.invoke(object, argsWithOptional);
         } else {
-            return method.invoke(object);
+            return method.invoke(object, args);
         }
+    }
+
+    private static Class<?>[] getParameterTypes(int length) {
+        Class<?>[] parameterTypes = new Class<?>[length];
+        for (int i = 0; i < parameterTypes.length; i++) {
+            parameterTypes[i] = String.class;
+        }
+        return parameterTypes;
     }
 
     private static String getRequestText(HttpRequest request, QueryStringDecoder decoder) {
@@ -326,4 +362,15 @@ public class HttpServer extends HttpServerBase {
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
     public @interface LocalHttpServerPort {}
+
+    private static class JsonServiceMappings {
+        private final Pattern pattern;
+        private final JsonService service;
+        private final String methodName;
+        private JsonServiceMappings(Pattern pattern, JsonService service, String methodName) {
+            this.pattern = pattern;
+            this.service = service;
+            this.methodName = methodName;
+        }
+    }
 }

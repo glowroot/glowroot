@@ -56,7 +56,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Http service to export full trace html page. Bound to url "/trace/export" in HttpServer.
+ * Http service to export full trace html page.
  * 
  * @author Trask Stalnaker
  * @since 0.5

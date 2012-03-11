@@ -30,7 +30,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read configuration data. Bound to url "/configuration" in HttpServer.
+ * Json service to read configuration data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -52,7 +52,7 @@ public class ConfigurationJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public String handleRead(String message) {
+    public String getConfiguration(String message) {
         logger.debug("handleRead(): message={}", message);
         double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024;
         return "{\"coreConfiguration\":" + configurationService.getCoreConfiguration().toJson()
@@ -62,7 +62,7 @@ public class ConfigurationJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public void handleUpdate(String message) {
+    public void storeConfiguration(String message) {
         logger.debug("handleUpdate(): message={}", message);
         CoreConfigurationBuilder builder = new CoreConfigurationBuilder(
                 configurationService.getCoreConfiguration());

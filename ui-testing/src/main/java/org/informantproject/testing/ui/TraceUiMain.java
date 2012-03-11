@@ -38,6 +38,7 @@ public class TraceUiMain {
         coreConfiguration.setThresholdMillis(0);
         coreConfiguration.setStackTraceInitialDelayMillis(100);
         coreConfiguration.setStackTracePeriodMillis(10);
+        coreConfiguration.setSpanStackTraceThresholdMillis(100);
         container.getInformant().updateCoreConfiguration(coreConfiguration);
         logger.info("view trace ui at localhost:" + UI_PORT + "/traces.html");
         container.executeAppUnderTest(GenerateTraces.class);

@@ -20,13 +20,11 @@ import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/stacktrace" in HttpServer.
+ * Json service to read trace data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -43,10 +41,9 @@ public class StackTraceJsonService implements JsonService {
         this.stackTraceDao = stackTraceDao;
     }
 
-    // TODO handle more REST-like binding, e.g. /stacktrace/<hash>
-    public String handleRead(String message) {
-        logger.debug("handleRead(): message={}", message);
-        JsonObject messageObject = (JsonObject) new JsonParser().parse(message);
-        return stackTraceDao.readStackTrace(messageObject.get("hash").getAsString());
+    // called dynamically from HttpServer
+    public String getStackTrace(String hash) {
+        logger.debug("getStackTrace(): hash={}", hash);
+        return stackTraceDao.readStackTrace(hash);
     }
 }

@@ -34,7 +34,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read metrics data. Bound to url "/metrics" in HttpServer.
+ * Json service to read metrics data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -56,7 +56,7 @@ public class MetricJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public String handleRead(String message) throws IOException {
+    public String getMetrics(String message) throws IOException {
         logger.debug("handleRead(): message={}", message);
         MetricRequest request = new Gson().fromJson(message, MetricRequest.class);
         if (request.getStart() < 0) {

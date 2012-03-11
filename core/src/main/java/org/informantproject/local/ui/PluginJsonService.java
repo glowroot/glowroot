@@ -80,14 +80,14 @@ public class PluginJsonService implements JsonService {
     private final Supplier<Collection<Plugin>> packagedPlugins = Suppliers
             .memoize(new Supplier<Collection<Plugin>>() {
                 public Collection<Plugin> get() {
-                    return getPackagedPlugins();
+                    return readPackagedPlugins();
                 }
             });
 
     private final Supplier<Collection<Plugin>> installedPlugins = Suppliers
             .memoize(new Supplier<Collection<Plugin>>() {
                 public Collection<Plugin> get() {
-                    return getInstalledPlugins();
+                    return readInstalledPlugins();
                 }
             });
 
@@ -95,7 +95,7 @@ public class PluginJsonService implements JsonService {
     private final Supplier<Collection<Plugin>> installablePlugins = Suppliers
             .memoizeWithExpiration(new Supplier<Collection<Plugin>>() {
                 public Collection<Plugin> get() {
-                    return getInstallablePlugins();
+                    return readInstallablePlugins();
                 }
             }, 3600, TimeUnit.SECONDS);
 
@@ -105,17 +105,17 @@ public class PluginJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public String handlePackaged() {
+    public String getPackagedPlugins() {
         return new Gson().toJson(packagedPlugins.get());
     }
 
     // called dynamically from HttpServer
-    public String handleInstalled() {
+    public String getInstalledPlugins() {
         return new Gson().toJson(installedPlugins.get());
     }
 
     // called dynamically from HttpServer
-    public String handleInstallable() {
+    public String getInstallablePlugins() {
         List<Plugin> notAlreadyInstalled = Lists.newArrayList(installablePlugins.get());
         // this works because Plugin.equals() is defined only in terms of groupId and artifactId
         Iterables.removeAll(notAlreadyInstalled, packagedPlugins.get());
@@ -125,7 +125,7 @@ public class PluginJsonService implements JsonService {
 
     // informant and a set of plugins can be packaged together in a single jar in order to simplify
     // distribution and installation. any plugins packaged with informant cannot be uninstalled
-    private Collection<Plugin> getPackagedPlugins() {
+    private Collection<Plugin> readPackagedPlugins() {
         try {
             Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
                     "META-INF/org.informantproject.package.xml");
@@ -173,7 +173,7 @@ public class PluginJsonService implements JsonService {
         }
     }
 
-    private Collection<Plugin> getInstalledPlugins() {
+    private Collection<Plugin> readInstalledPlugins() {
         try {
             Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
                     "META-INF/org.informantproject.plugin.properties");
@@ -200,7 +200,7 @@ public class PluginJsonService implements JsonService {
         }
     }
 
-    private Collection<Plugin> getInstallablePlugins() {
+    private Collection<Plugin> readInstallablePlugins() {
         // TODO configure AsyncHttpClient to handle HTTPS
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://"
                 + INSTALLABLE_PLUGINS_URL);

@@ -31,7 +31,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to clear captured data. Bound to url "/admin" in HttpServer.
+ * Json service to clear captured data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -57,7 +57,7 @@ public class MiscJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public void handleCleardata(String message) {
+    public void clearData(String message) {
         logger.debug("handleCleardata(): message={}", message);
         JsonObject request = new JsonParser().parse(message).getAsJsonObject();
         long keepMillis = request.get("keepMillis").getAsLong();
@@ -77,13 +77,13 @@ public class MiscJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public String handleNumPendingTraceWrites() {
+    public String getNumPendingTraceWrites() {
         logger.debug("handleNumPendingTraceWrites()");
         return Integer.toString(traceSinkLocal.getQueueLength());
     }
 
     // called dynamically from HttpServer
-    public String handleDbFile() {
+    public String getDbFilePath() {
         return dataSource.getDbFile().getAbsolutePath();
     }
 }

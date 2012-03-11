@@ -241,7 +241,7 @@ function toggleMergedStackTree(id) {
   }
 }
 function viewStackTrace(stackTraceHash) {
-  $.getJSON('/stacktrace/read?hash=' + stackTraceHash, function(stackTraceElements) {
+  $.getJSON('/stacktrace/' + stackTraceHash, function(stackTraceElements) {
     $('#stacktrace').html('')
     for (var i = 0; i < stackTraceElements.length; i++) {
       $('#stacktrace').append(stackTraceElements[i] + '<br>')

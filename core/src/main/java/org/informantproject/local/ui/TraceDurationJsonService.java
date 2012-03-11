@@ -40,7 +40,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/trace/durations" in HttpServer.
+ * Json service to read trace data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -67,8 +67,9 @@ public class TraceDurationJsonService implements JsonService {
         this.clock = clock;
     }
 
-    public String handleDurations(String message) throws IOException {
-        logger.debug("handleDurations(): message={}", message);
+    // called dynamically from HttpServer
+    public String getDurations(String message) throws IOException {
+        logger.debug("getDurations(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         long requestAt = clock.currentTimeMillis();
         if (request.getFrom() < 0) {
@@ -111,7 +112,7 @@ public class TraceDurationJsonService implements JsonService {
         }
         String response = writeResponse(storedTraceDurations, activeTraces, capturedAt,
                 captureTick);
-        logger.debug("handleDurations(): response={}", response);
+        logger.debug("getDurations(): response={}", response);
         return response;
     }
 

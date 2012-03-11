@@ -46,7 +46,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data. Bound to url "/trace/details" in HttpServer.
+ * Json service to read trace data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -73,8 +73,9 @@ public class TraceDetailJsonService implements JsonService {
         this.ticker = ticker;
     }
 
-    public String handleDetails(String message) throws IOException {
-        logger.debug("handleDetails(): message={}", message);
+    // called dynamically from HttpServer
+    public String getDetails(String message) throws IOException {
+        logger.debug("getDetails(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         long from = request.getFrom();
         long to = request.getTo() == 0 ? Long.MAX_VALUE : request.getTo();
@@ -89,9 +90,9 @@ public class TraceDetailJsonService implements JsonService {
         processExtraIds(request.getExtraIds(), storedTraces, activeTraces);
         String response = writeResponse(activeTraces, storedTraces);
         if (response.length() <= 2000) {
-            logger.debug("handleDetails(): response={}", response);
+            logger.debug("getDetails(): response={}", response);
         } else {
-            logger.debug("handleDetails(): response={}...", response.substring(0, 2000));
+            logger.debug("getDetails(): response={}...", response.substring(0, 2000));
         }
         return response;
     }
