@@ -215,8 +215,8 @@ public class TraceDetailJsonService implements JsonService {
         jw.name("completed").value(false);
         Span rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
         jw.name("description").value(rootSpan.getDescription().toString());
-        if (activeTrace.getUsername() != null) {
-            jw.name("username").value(activeTrace.getUsername());
+        if (activeTrace.getUsername().isPresent()) {
+            jw.name("username").value(activeTrace.getUsername().get());
         }
         Gson gson = new Gson();
         String metrics = TraceSinkLocal.getMetricsJson(activeTrace, gson);

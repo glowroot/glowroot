@@ -17,12 +17,14 @@ package org.informantproject.testkit;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.PluginConfiguration;
+import org.informantproject.testkit.Configuration.PluginConfigurationJsonDeserializer;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
@@ -46,21 +48,18 @@ public class Informant {
 
     public void setThresholdMillis(int thresholdMillis) throws Exception {
         CoreConfiguration coreConfiguration = getCoreConfiguration();
-        coreConfiguration.setEnabled(true);
         coreConfiguration.setThresholdMillis(thresholdMillis);
         updateCoreConfiguration(coreConfiguration);
     }
 
-    public String get(String path) throws InterruptedException, ExecutionException, IOException {
+    public String get(String path) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
                 + path);
         Response response = request.execute().get();
         return validateAndReturnBody(response);
     }
 
-    public String post(String path, String data) throws InterruptedException, ExecutionException,
-            IOException {
-
+    public String post(String path, String data) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + uiPort
                 + path);
         request.setBody(data);
@@ -68,15 +67,24 @@ public class Informant {
         return validateAndReturnBody(response);
     }
 
-    public CoreConfiguration getCoreConfiguration() throws InterruptedException,
-            ExecutionException, IOException {
-
-        String json = get("/configuration/read");
-        return new Gson().fromJson(json, Configuration.class).getCoreConfiguration();
+    public CoreConfiguration getCoreConfiguration() throws Exception {
+        return getConfiguration().getCoreConfiguration();
     }
 
     public void updateCoreConfiguration(CoreConfiguration coreConfiguration) throws Exception {
-        post("/configuration/update", new Gson().toJson(coreConfiguration));
+        post("/configuration/core/properties", new GsonBuilder().serializeNulls().create().toJson(
+                coreConfiguration));
+    }
+
+    public PluginConfiguration getPluginConfiguration(String pluginId) throws Exception {
+        return getConfiguration().getPluginConfiguration().get(pluginId);
+    }
+
+    public void storePluginConfiguration(String pluginId, PluginConfiguration pluginConfiguration)
+            throws Exception {
+
+        post("/configuration/plugin/" + pluginId + "/properties", pluginConfiguration
+                .getPropertiesJson());
     }
 
     // returns all traces since since the last call to InformantContainer.executeAppUnderTest()
@@ -107,7 +115,14 @@ public class Informant {
         this.baselineTime = System.currentTimeMillis();
     }
 
-    private static final String validateAndReturnBody(Response response) throws IOException {
+    private Configuration getConfiguration() throws Exception {
+        String json = get("/configuration/read");
+        Gson gson = new GsonBuilder().registerTypeAdapter(PluginConfiguration.class,
+                new PluginConfigurationJsonDeserializer()).create();
+        return gson.fromJson(json, Configuration.class);
+    }
+
+    private static String validateAndReturnBody(Response response) throws IOException {
         if (response.getStatusCode() == HttpResponseStatus.OK.getCode()) {
             return response.getResponseBody();
         } else {

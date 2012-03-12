@@ -21,11 +21,15 @@ import java.sql.Types;
 
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.Column;
+import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.informantproject.core.util.DataSource.ResultSetExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -41,11 +45,11 @@ class ConfigurationDao {
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationDao.class);
 
     private static final String CORE = "core";
-    private static final String PLUGIN = "plugin";
 
     private static ImmutableList<Column> columns = ImmutableList.of(
-            new Column("ID", Types.VARCHAR),
-            new Column("CONFIGURATION", Types.VARCHAR));
+            new PrimaryKeyColumn("ID", Types.VARCHAR),
+            new Column("ENABLED", Types.VARCHAR),
+            new Column("PROPERTIES", Types.VARCHAR));
 
     private final DataSource dataSource;
 
@@ -75,68 +79,22 @@ class ConfigurationDao {
         valid = localValid;
     }
 
-    synchronized ImmutableCoreConfiguration readCoreConfiguration() {
+    ImmutableCoreConfiguration readCoreConfiguration() {
+        logger.debug("readCoreConfiguration()");
         if (!valid) {
             return null;
-        }
-        String json = readConfigurationJson(CORE);
-        if (json == null) {
-            return null;
-        } else {
-            return ImmutableCoreConfiguration.fromJson(json);
-        }
-    }
-
-    synchronized ImmutablePluginConfiguration readPluginConfiguration() {
-        if (!valid) {
-            return null;
-        }
-        String json = readConfigurationJson(PLUGIN);
-        if (json == null) {
-            return null;
-        } else {
-            return ImmutablePluginConfiguration.fromJson(json);
-        }
-    }
-
-    synchronized void storeCoreConfiguration(ImmutableCoreConfiguration configuration) {
-        logger.debug("storeCoreConfiguration(): configuration={}", configuration);
-        if (!valid) {
-            return;
         }
         try {
-            storeConfiguration(CORE, configuration.toJson());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    synchronized void storePluginConfiguration(ImmutablePluginConfiguration configuration) {
-        logger.debug("storePluginConfiguration(): configuration={}", configuration);
-        if (!valid) {
-            return;
-        }
-        try {
-            storeConfiguration(PLUGIN, configuration.toJson());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private String readConfigurationJson(final String id) {
-        try {
-            return dataSource.query("select configuration from configuration where id = ?",
-                    new Object[] { id }, new ResultSetExtractor<String>() {
-                        public String extractData(ResultSet resultSet) throws SQLException {
+            return dataSource.query("select enabled, properties from configuration where id ="
+                    + " ?", new Object[] { CORE },
+                    new ResultSetExtractor<ImmutableCoreConfiguration>() {
+                        public ImmutableCoreConfiguration extractData(ResultSet resultSet)
+                                throws SQLException {
                             if (resultSet.next()) {
-                                String json = resultSet.getString(1);
-                                if (resultSet.next()) {
-                                    logger.error("more than one configuration record for id '" + id
-                                            + "'", new IllegalStateException());
-                                }
-                                return json;
+                                boolean enabled = resultSet.getBoolean(1);
+                                String json = resultSet.getString(2);
+                                return ImmutableCoreConfiguration.create(enabled, json);
                             } else {
-                                // no results
                                 return null;
                             }
                         }
@@ -147,40 +105,101 @@ class ConfigurationDao {
         }
     }
 
-    private void storeConfiguration(String id, String configurationJson) throws SQLException {
-        logger.debug("storeCoreConfiguration(): id={}, configurationJson={}", id,
-                configurationJson);
-        if (exists(id)) {
-            update(id, configurationJson);
+    ImmutablePluginConfiguration readPluginConfiguration(final PluginDescriptor pluginDescriptor) {
+        logger.debug("readPluginConfiguration(): pluginDescriptor.id={}", pluginDescriptor.getId());
+        if (!valid) {
+            return null;
+        }
+        try {
+            return dataSource.query("select enabled, properties from configuration where id ="
+                    + " ?", new Object[] { pluginDescriptor.getId() },
+                    new ResultSetExtractor<ImmutablePluginConfiguration>() {
+                        public ImmutablePluginConfiguration extractData(ResultSet resultSet)
+                                throws SQLException {
+                            if (resultSet.next()) {
+                                return buildPluginConfiguration(pluginDescriptor, resultSet);
+                            } else {
+                                // no existing plugin configuration record
+                                return ImmutablePluginConfiguration.create(pluginDescriptor, true);
+                            }
+                        }
+                    });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    void setCoreEnabled(boolean enabled) {
+        logger.debug("setCoreEnabled(): enabled={}", enabled);
+        try {
+            dataSource.update("merge into configuration (id, enabled) values (?, ?)", new Object[] {
+                    CORE, enabled });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    void setPluginEnabled(String pluginId, boolean enabled) {
+        logger.debug("setPluginEnabled(): pluginId={}, enabled={}", pluginId, enabled);
+        try {
+            dataSource.update("merge into configuration (id, enabled) values (?, ?)", new Object[] {
+                    pluginId, enabled });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    void storeCoreProperties(String propertiesJson) {
+        logger.debug("storeCoreProperties(): propertiesJson={}", propertiesJson);
+        if (!valid) {
+            return;
+        }
+        try {
+            dataSource.update("merge into configuration (id, properties) values (?, ?)",
+                    new Object[] { CORE, propertiesJson });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    void storePluginProperties(String pluginId, String propertiesJson) {
+        logger.debug("storePluginProperties(): pluginId={}, propertiesJson={}", pluginId,
+                propertiesJson);
+        if (!valid) {
+            return;
+        }
+        try {
+            dataSource.update("merge into configuration (id, properties) values (?, ?)",
+                    new Object[] { pluginId, propertiesJson });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private static ImmutablePluginConfiguration buildPluginConfiguration(
+            PluginDescriptor pluginDescriptor, ResultSet resultSet) throws SQLException {
+
+        boolean enabled = resultSet.getBoolean(1);
+        String json = resultSet.getString(2);
+        if (json == null) {
+            logger.error("configuration is null for plugin id '{}'", pluginDescriptor.getId());
+            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
+        }
+        JsonElement propertiesElement;
+        try {
+            propertiesElement = new Gson().fromJson(json, JsonElement.class);
+        } catch (JsonSyntaxException e) {
+            logger.error(e.getMessage(), e);
+            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
+        }
+        if (propertiesElement.isJsonObject()) {
+            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled, propertiesElement
+                    .getAsJsonObject());
         } else {
-            insert(id, configurationJson);
-        }
-    }
-
-    private boolean exists(String id) throws SQLException {
-        return dataSource.query("select 1 from configuration where id = ?",
-                new Object[] { id }, new ResultSetExtractor<Boolean>() {
-                    public Boolean extractData(ResultSet resultSet) throws SQLException {
-                        return resultSet.next();
-                    }
-                });
-    }
-
-    private void update(String id, String configurationJson) throws SQLException {
-        int rowCount = dataSource.update("update configuration set configuration = ? where id = ?",
-                new Object[] { configurationJson, id });
-        if (rowCount != 1) {
-            logger.error("unexpected update row count '" + rowCount + "'",
-                    new IllegalStateException());
-        }
-    }
-
-    private void insert(String id, String configurationJson) throws SQLException {
-        int rowCount = dataSource.update("insert into configuration (id, configuration) values"
-                + " (?, ?)", new Object[] { id, configurationJson });
-        if (rowCount != 1) {
-            logger.error("unexpected insert row count '" + rowCount + "'",
-                    new IllegalStateException());
+            logger.error("configuration for plugin id '{}' is not json object", pluginDescriptor
+                    .getId());
+            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
         }
     }
 }

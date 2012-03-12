@@ -14,19 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<package xmlns="http://www.informantproject.org/package/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.informantproject.org/package/1.0 http://www.informantproject.org/xsd/package-1.0.xsd">
+<plugin xmlns="http://www.informantproject.org/plugin/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.informantproject.org/plugin/1.0 http://www.informantproject.org/xsd/plugin-1.0.xsd">
 
-  <plugin>
-    <name>Test 1</name>
-    <groupId>org.informantproject.plugins.test1</groupId>
-    <artifactId>test1-plugin</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
-  </plugin>
-  <plugin>
-    <name>Test 2</name>
-    <groupId>org.informantproject.plugins.test2</groupId>
-    <artifactId>test2-plugin</artifactId>
-    <version>0.5.2-SNAPSHOT</version>
-  </plugin>
-</package>
+    <name>Plugin Testkit Plugin</name>
+    <groupId>org.informantproject</groupId>
+    <artifactId>informant-plugin-testkit</artifactId>
+    <version>0.5-SNAPSHOT</version>
+</plugin>

@@ -116,8 +116,18 @@ public class ImmutableCoreConfiguration {
         return metricPeriodMillis;
     }
 
-    public String toJson() {
-        return new Gson().toJson(this);
+    public String getPropertiesJson() {
+        JsonObject propertiesJson = new JsonObject();
+        propertiesJson.addProperty("thresholdMillis", thresholdMillis);
+        propertiesJson.addProperty("stuckThresholdMillis", stuckThresholdMillis);
+        propertiesJson.addProperty("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis);
+        propertiesJson.addProperty("stackTracePeriodMillis", stackTracePeriodMillis);
+        propertiesJson.addProperty("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis);
+        propertiesJson.addProperty("maxSpansPerTrace", maxSpansPerTrace);
+        propertiesJson.addProperty("rollingSizeMb", rollingSizeMb);
+        propertiesJson.addProperty("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace);
+        propertiesJson.addProperty("metricPeriodMillis", metricPeriodMillis);
+        return new Gson().toJson(propertiesJson);
     }
 
     @Override
@@ -164,8 +174,10 @@ public class ImmutableCoreConfiguration {
                 warnOnSpanOutsideTrace, metricPeriodMillis);
     }
 
-    static ImmutableCoreConfiguration fromJson(String json) {
-        return new Gson().fromJson(json, CoreConfigurationBuilder.class).build();
+    static ImmutableCoreConfiguration create(boolean enabled, String propertiesJson) {
+        return new Gson().fromJson(propertiesJson, CoreConfigurationBuilder.class)
+                .setEnabled(enabled)
+                .build();
     }
 
     public static class CoreConfigurationBuilder {
@@ -214,9 +226,6 @@ public class ImmutableCoreConfiguration {
         }
 
         public void setFromJson(JsonObject jsonObject) {
-            if (jsonObject.get("enabled") != null) {
-                setEnabled(jsonObject.get("enabled").getAsBoolean());
-            }
             if (jsonObject.get("thresholdMillis") != null) {
                 setThresholdMillis(jsonObject.get("thresholdMillis").getAsInt());
             }

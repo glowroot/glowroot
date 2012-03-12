@@ -15,6 +15,7 @@
  */
 package org.informantproject.core;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
@@ -48,7 +49,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public String getStringProperty(String propertyName) {
+    public Optional<String> getStringProperty(String propertyName) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -58,12 +59,22 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Boolean getBooleanProperty(String propertyName, Boolean defaultValue) {
+    public boolean getBooleanProperty(String propertyName) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getBooleanProperty(propertyName, defaultValue);
+            return pluginServices.getBooleanProperty(propertyName);
+        }
+    }
+
+    @Override
+    public Optional<Double> getDoubleProperty(String propertyName) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            return pluginServices.getDoubleProperty(propertyName);
         }
     }
 

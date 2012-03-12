@@ -15,7 +15,24 @@
  */
 package org.informantproject.testkit;
 
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.informantproject.api.Optional;
+
 import com.google.common.base.Objects;
+import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 /**
  * @author Trask Stalnaker
@@ -23,18 +40,27 @@ import com.google.common.base.Objects;
  */
 public class Configuration {
 
+    private boolean enabled;
     private CoreConfiguration coreConfiguration;
+    private Map<String, PluginConfiguration> pluginConfiguration;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public CoreConfiguration getCoreConfiguration() {
         return coreConfiguration;
     }
 
-    public void setCoreConfiguration(CoreConfiguration coreConfiguration) {
-        this.coreConfiguration = coreConfiguration;
+    public Map<String, PluginConfiguration> getPluginConfiguration() {
+        return pluginConfiguration;
     }
 
     public static class CoreConfiguration {
-        private boolean enabled;
         private int thresholdMillis;
         private int stuckThresholdMillis;
         private int stackTraceInitialDelayMillis;
@@ -44,12 +70,6 @@ public class Configuration {
         private int rollingSizeMb;
         private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
-        public boolean isEnabled() {
-            return enabled;
-        }
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
         public int getThresholdMillis() {
             return thresholdMillis;
         }
@@ -106,7 +126,7 @@ public class Configuration {
         }
         @Override
         public int hashCode() {
-            return Objects.hashCode(enabled, thresholdMillis, stuckThresholdMillis,
+            return Objects.hashCode(thresholdMillis, stuckThresholdMillis,
                     stackTraceInitialDelayMillis, stackTracePeriodMillis,
                     spanStackTraceThresholdMillis, maxSpansPerTrace,
                     rollingSizeMb, warnOnSpanOutsideTrace, metricPeriodMillis);
@@ -117,8 +137,7 @@ public class Configuration {
                 return false;
             }
             CoreConfiguration other = (CoreConfiguration) o;
-            return Objects.equal(enabled, other.enabled)
-                    && Objects.equal(thresholdMillis, other.thresholdMillis)
+            return Objects.equal(thresholdMillis, other.thresholdMillis)
                     && Objects.equal(stuckThresholdMillis, other.stuckThresholdMillis)
                     && Objects.equal(stackTraceInitialDelayMillis,
                             other.stackTraceInitialDelayMillis)
@@ -129,6 +148,54 @@ public class Configuration {
                     && Objects.equal(rollingSizeMb, other.rollingSizeMb)
                     && Objects.equal(warnOnSpanOutsideTrace, other.warnOnSpanOutsideTrace)
                     && Objects.equal(metricPeriodMillis, other.metricPeriodMillis);
+        }
+    }
+
+    public static class PluginConfiguration {
+        private boolean enabled;
+        private final Map<String, Optional<Object>> properties = Maps.newHashMap();
+        public boolean isEnabled() {
+            return enabled;
+        }
+        public Optional<Object> getProperty(String name) {
+            return properties.get(name);
+        }
+        public void setProperty(String name, Object value) {
+            properties.put(name, Optional.fromNullable(value));
+        }
+        public String getPropertiesJson() {
+            Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
+                    new OptionalJsonSerializer()).serializeNulls().create();
+            return gson.toJson(properties);
+        }
+    }
+
+    public static class PluginConfigurationJsonDeserializer implements
+            JsonDeserializer<PluginConfiguration> {
+
+        public PluginConfiguration deserialize(JsonElement json, Type typeOfT,
+                JsonDeserializationContext context) throws JsonParseException {
+
+            PluginConfiguration pluginConfiguration = new PluginConfiguration();
+            pluginConfiguration.enabled = json.getAsJsonObject().get("enabled").getAsBoolean();
+            JsonObject properties = json.getAsJsonObject().get("properties").getAsJsonObject();
+            for (Entry<String, JsonElement> entry : properties.entrySet()) {
+                if (entry.getValue().isJsonNull()) {
+                    pluginConfiguration.setProperty(entry.getKey(), null);
+                } else {
+                    pluginConfiguration.setProperty(entry.getKey(), context.deserialize(entry
+                            .getValue(), Object.class));
+                }
+            }
+            return pluginConfiguration;
+        }
+    }
+
+    private static class OptionalJsonSerializer implements JsonSerializer<Optional<?>> {
+
+        public JsonElement serialize(Optional<?> src, Type typeOfSrc,
+                JsonSerializationContext context) {
+            return src.isPresent() ? context.serialize(src.get()) : JsonNull.INSTANCE;
         }
     }
 }

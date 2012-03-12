@@ -22,13 +22,126 @@
 <link rel="stylesheet" href="bootstrap/2.0.0/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
-<script type="text/javascript" src="spin/1.2.4/spin.min.js"></script>
+<script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
+<script id="pluginTemplate" type="text/x-handlebars-template">
+<br>
+<div>
+  <span style="vertical-align: middle; font-size: 19px">{{name}}</span>
+  <span class="btn-group" style="display: inline-block; margin-left: 10px; vertical-align: middle">
+    <button id="{{id}}_enabled_on" class="btn btn-on">ON</button>
+    <button id="{{id}}_enabled_off" class="btn btn-off">OFF</button>
+  </span>
+  <span id="{{id}}_enableComplete" class="button-success-message" style="line-height: 18px">
+    Enabled
+  </span>
+  <span id="{{id}}_disableComplete" class="button-success-message" style="color: gray">
+    Disabled
+  </span>
+</div>
+<br>
+{{#if propertyDescriptors}}
+  <form class="well form-horizontal" style="margin-left: 40px">
+    <fieldset>
+      {{#each propertyDescriptors}}
+        {{#ifString type}}
+          <div class="control-group">
+            <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
+            <div class="controls">
+              <input style="width: 12em" id="{{../../id}}_{{name}}" type="text">
+            </div>
+          </div>
+        {{/ifString}}
+        {{#ifBoolean type}}
+          <div class="control-group">
+            <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
+            <div class="controls">
+              <input id="{{../../id}}_{{name}}" type="checkbox" value="true">
+            </div>
+          </div>
+        {{/ifBoolean}}
+        {{#ifDouble type}}
+          <div class="control-group">
+            <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
+            <div class="controls">
+              <input style="width: 6em" id="{{../../id}}_{{name}}" type="text">
+            </div>
+          </div>
+        {{/ifDouble}}
+      {{/each}}
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="updatePluginConfiguration('{{id}}')">
+          Save changes
+        </button>
+        <div id="{{id}}_saveComplete" class="button-success-message">Saved</div>
+      </div>
+    </fieldset>
+  </form>
+{{/if}}
+</script>
 <script type="text/javascript">
+  Handlebars.registerHelper('ifString', function(type, options) {
+    if (type == 'string') {
+      return options.fn(this)
+    } else {
+      return options.inverse(this)
+    }
+  })
+  Handlebars.registerHelper('ifBoolean', function(type, options) {
+    if (type == 'boolean') {
+      return options.fn(this)
+    } else {
+      return options.inverse(this)
+    }
+  })
+  Handlebars.registerHelper('ifDouble', function(type, options) {
+    if (type == 'double') {
+      return options.fn(this)
+    } else {
+      return options.inverse(this)
+    }
+  })
+  var pluginTemplate = Handlebars.compile($('#pluginTemplate').html())
+  var plugins
+  function escapeForSelector(id) {
+    // '.' and ':' have to be escaped for jquery selectors
+    return id.replace(/\./g, '\\.').replace(/:/g, '\\:')
+  }
+  function setUpOnOffButton(selectorPrefix, initialValue, urlPrefix) {
+    if (initialValue) {
+      $('#' + selectorPrefix + 'enabled_on').addClass('active')
+    } else {
+      $('#' + selectorPrefix + 'enabled_off').addClass('active')
+    }
+    $('#' + selectorPrefix + 'enabled_on').click(function() {
+      if ($('#' + selectorPrefix + 'enabled_on').hasClass('active')) {
+        return
+      }
+      $.post(urlPrefix + '/enable', function() {
+        $('#' + selectorPrefix + 'enabled_off').removeClass('active')
+        $('#' + selectorPrefix + 'enabled_on').addClass('active')
+        // in case user toggles back and forth between enable/disable
+        $('#' + selectorPrefix + 'disableComplete').hide()
+        showAndFadeSuccessMessage('#' + selectorPrefix + 'enableComplete')
+      })
+    })
+    $('#' + selectorPrefix + 'enabled_off').click(function() {
+      if ($('#' + selectorPrefix + 'enabled_off').hasClass('active')) {
+        return
+      }
+      $.post(urlPrefix + '/disable', function() {
+        $('#' + selectorPrefix + 'enabled_on').removeClass('active')
+        $('#' + selectorPrefix + 'enabled_off').addClass('active')
+        // in case user toggles back and forth between enable/disable
+        $('#' + selectorPrefix + 'enableComplete').hide()
+        showAndFadeSuccessMessage('#' + selectorPrefix + 'disableComplete')
+      })
+    })
+  }
   function read() {
     $.getJSON('/configuration/read', function(configuration) {
+      setUpOnOffButton('', configuration.enabled, '/configuration/core')
       var coreConfiguration = configuration.coreConfiguration
-      $('#enabled').attr('checked', coreConfiguration.enabled)
       $('#thresholdMillis').val(coreConfiguration.thresholdMillis)
       $('#stuckThresholdMillis').val(coreConfiguration.stuckThresholdMillis)
       $('#stackTraceInitialDelayMillis').val(coreConfiguration.stackTraceInitialDelayMillis)
@@ -40,40 +153,81 @@
         $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
         $('#rollingSizeHelp').css('display', 'inline-block')
       }
+      plugins = configuration.pluginDescriptors
+      for (var i = 0; i < plugins.length; i++) {
+        var plugin = plugins[i]
+        plugin.id = plugin.groupId + ':' + plugin.artifactId
+        var propertyDescriptors = []
+        for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
+          if (!plugin.propertyDescriptors[j].hidden) {
+            propertyDescriptors.push(plugin.propertyDescriptors[j])
+          }
+        }
+        plugin.propertyDescriptors = propertyDescriptors
+        var html = pluginTemplate(plugin)
+        $(html).appendTo('#plugins')
+        setUpOnOffButton(escapeForSelector(plugin.id) + '_', configuration
+            .pluginConfiguration[plugin.id].enabled, '/configuration/plugin/' + plugin.id)
+        var pluginProperties = configuration.pluginConfiguration[plugin.id].properties
+        for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
+          var propertyDescriptors = plugin.propertyDescriptors[j]
+          var value = pluginProperties[propertyDescriptors.name]
+          if (propertyDescriptors.type == 'boolean') {
+            $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).attr('checked',
+                value)
+          } else {
+            $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).val(value)
+          }
+        }
+      }
     })
   }
-  function update() {
+  function updateCoreConfiguration() {
     var configuration = {
-      'enabled': $('#enabled').is(':checked'),
       'thresholdMillis': $('#thresholdMillis').val(),
       'stuckThresholdMillis': $('#stuckThresholdMillis').val(),
       'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
       'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
       'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
-      'maxSpansPerTrace': $('#maxSpansPerTrace').val()
+      'maxSpansPerTrace': $('#maxSpansPerTrace').val(),
+      'rollingSizeMb': $('#rollingSizeMb').val()
     }
-    $.post('/configuration/update', JSON.stringify(configuration), function() {
+    $.post('/configuration/core/properties', JSON.stringify(configuration), function() {
       showAndFadeSuccessMessage('#saveComplete')
     })
   }
-  var postingResize = false
-  function resizeRollingDb() {
-    // handling crazy user clicking on the button
-    if (postingResize) return
-    postingResize = true
-    var configuration = {
-      'rollingSizeMb': $('#rollingSizeMb').val()
+  function updatePluginConfiguration(pluginId) {
+    var plugin = pluginForId(pluginId)
+    var configuration = {}
+    for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
+      var propertyDescriptors = plugin.propertyDescriptors[j]
+      if (!propertyDescriptors.hidden) {
+        var value
+        if (propertyDescriptors.type == 'boolean') {
+          value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).is(
+              ':checked')
+        } else {
+          value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).val()
+        }
+        configuration[propertyDescriptors.name] = value
+      }
     }
-    $.post('/configuration/update', JSON.stringify(configuration), function() {
-      postingResize = false
-      hideSpinner('#resizeButtonSpinner')
-      showAndFadeSuccessMessage('#resizeSuccessMessage')
-    })
-    // in case button is clicked again before success message is hidden
-    $('#resizeSuccessMessage').hide()
-    showSpinner('#resizeButtonSpinner')
+    $.post('/configuration/plugin/' + pluginId + '/properties', JSON.stringify(configuration),
+        function() {
+          showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
+        })
   }
-  read()
+  function pluginForId(pluginId) {
+    for (var i = 0; i < plugins.length; i++) {
+      if (plugins[i].id == pluginId) {
+        return plugins[i]
+      }
+    }
+    return null
+  }
+  $(document).ready(function() {
+    read()
+  })
 </script>
 </head>
 <body>
@@ -81,15 +235,13 @@
     <a class="header-logo" href="/">Informant</a><span class="header-page-name">Configuration</span>
     <span class="header-see-also">see also: <a href="traces.html">Traces</a></span>
   </h1>
-  <form class="form-horizontal">
+  <div class="btn-group">
+    <button id="enabled_on" class="btn btn-on">ON</button>
+    <button id="enabled_off" class="btn btn-off">OFF</button>
+  </div>
+  <br>
+  <form class="well form-horizontal">
     <fieldset>
-      <legend>Thresholds and limits</legend>
-      <div class="control-group">
-        <label class="control-label" for="enabled">Enabled</label>
-        <div class="controls">
-          <input id="enabled" type="checkbox" value="true">
-        </div>
-      </div>
       <div class="control-group">
         <label class="control-label" for="thresholdMillis">Threshold</label>
         <div class="controls">
@@ -158,10 +310,11 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn" onclick="update()">Save changes</button>
+        <button type="button" class="btn" onclick="updateCoreConfiguration()">Save changes</button>
         <div id="saveComplete" class="button-success-message">Saved</div>
       </div>
     </fieldset>
   </form>
+  <div id="plugins"></div>
 </body>
 </html>

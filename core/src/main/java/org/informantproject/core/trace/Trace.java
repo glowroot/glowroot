@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.core.stack.MergedStackTree;
@@ -119,7 +120,7 @@ public class Trace {
         return stuck.get();
     }
 
-    public String getUsername() {
+    public Optional<String> getUsername() {
         return ((RootSpanDetail) rootSpan.getRootSpan().getSpanDetail()).getUsername();
     }
 

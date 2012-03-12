@@ -32,7 +32,8 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class ExpensiveCallAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("unittest");
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject:informant-ui-testing");
 
     private static final AtomicInteger counter = new AtomicInteger();
 

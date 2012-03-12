@@ -26,8 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ConfigurationService.CoreConfigurationListener;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
+import org.informantproject.core.configuration.ConfigurationService.ConfigurationListener;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +41,14 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MetricCollector implements Runnable, CoreConfigurationListener {
+public class MetricCollector implements Runnable, ConfigurationListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricCollector.class);
 
     private final ScheduledExecutorService scheduledExecutor =
             DaemonExecutors.newSingleThreadScheduledExecutor("Informant-MetricCollector");
 
+    private final ConfigurationService configurationService;
     private final MetricSink metricSink;
 
     private volatile Future<?> future;
@@ -56,11 +56,12 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
 
     @Inject
     public MetricCollector(ConfigurationService configurationService, MetricSink metricSink) {
+        this.configurationService = configurationService;
         this.metricSink = metricSink;
         bossIntervalMillis = configurationService.getCoreConfiguration().getMetricPeriodMillis();
         future = scheduledExecutor.scheduleWithFixedDelay(this, 0, bossIntervalMillis,
                 TimeUnit.MILLISECONDS);
-        configurationService.addCoreConfigurationListener(this);
+        configurationService.addConfigurationListener(this);
     }
 
     public void run() {
@@ -77,8 +78,9 @@ public class MetricCollector implements Runnable, CoreConfigurationListener {
         }
     }
 
-    public void onChange(ImmutableCoreConfiguration updatedConfiguration) {
-        int updatedBossIntervalMillis = updatedConfiguration.getMetricPeriodMillis();
+    public void onChange() {
+        int updatedBossIntervalMillis = configurationService.getCoreConfiguration()
+                .getMetricPeriodMillis();
         if (updatedBossIntervalMillis != bossIntervalMillis) {
             bossIntervalMillis = updatedBossIntervalMillis;
             future.cancel(false);

@@ -15,6 +15,7 @@
  */
 package org.informantproject.testing.ui;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
@@ -31,7 +32,8 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class NestableCallAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("unittest");
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject:informant-ui-testing");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -60,8 +62,8 @@ public class NestableCallAspect {
                         SpanContextMap.of("attr31", SpanContextMap.of("attr311", "value311",
                                 "attr312", "value312"), "attr32", "value32", "attr33", "value33"));
             }
-            public String getUsername() {
-                return null;
+            public Optional<String> getUsername() {
+                return Optional.absent();
             }
         };
     }

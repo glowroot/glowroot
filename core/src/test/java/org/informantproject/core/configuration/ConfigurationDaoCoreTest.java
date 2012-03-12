@@ -22,8 +22,6 @@ import static org.junit.Assert.assertThat;
 import java.sql.SQLException;
 import java.util.Set;
 
-import org.informantproject.core.configuration.ConfigurationDao;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.ThreadChecker;
@@ -78,7 +76,8 @@ public class ConfigurationDaoCoreTest {
     public void shouldReadConfiguration(ConfigurationDao configurationDao) {
         // given
         ImmutableCoreConfiguration originalCoreConfiguration = new ImmutableCoreConfiguration();
-        configurationDao.storeCoreConfiguration(originalCoreConfiguration);
+        configurationDao.setCoreEnabled(originalCoreConfiguration.isEnabled());
+        configurationDao.storeCoreProperties(originalCoreConfiguration.getPropertiesJson());
         // when
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         // then
@@ -91,9 +90,11 @@ public class ConfigurationDaoCoreTest {
         ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
         ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
                 .getRandomCoreConfiguration();
-        configurationDao.storeCoreConfiguration(defaultCoreConfiguration);
+        configurationDao.storeCoreProperties(defaultCoreConfiguration.getPropertiesJson());
+        configurationDao.setCoreEnabled(defaultCoreConfiguration.isEnabled());
         // when
-        configurationDao.storeCoreConfiguration(randomCoreConfiguration);
+        configurationDao.storeCoreProperties(randomCoreConfiguration.getPropertiesJson());
+        configurationDao.setCoreEnabled(randomCoreConfiguration.isEnabled());
         // then
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         assertThat(coreConfiguration, is(randomCoreConfiguration));

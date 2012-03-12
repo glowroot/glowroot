@@ -85,3 +85,11 @@ body {
 a, a:hover {
   color: #b12930;
 }
+.btn-on.active {
+  color: green;
+  font-weight: bold;
+}
+.btn-off.active {
+  color: red;
+  font-weight: bold;
+}

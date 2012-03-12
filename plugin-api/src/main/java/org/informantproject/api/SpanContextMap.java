@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.google.common.base.Preconditions;
+
 /**
  * This map can be used to attach contextual context to a span (e.g. attaching the request or
  * session attributes to a servlet entry point). These maps are generally lazy instantiated in
@@ -34,9 +36,9 @@ import java.util.TreeMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class SpanContextMap implements Map<String, Object> {
+public class SpanContextMap implements Map<String, Optional<?>> {
 
-    private final Map<String, Object> inner;
+    private final Map<String, Optional<?>> inner;
 
     public SpanContextMap() {
         this(false);
@@ -44,61 +46,94 @@ public class SpanContextMap implements Map<String, Object> {
 
     public SpanContextMap(boolean sortedByKey) {
         if (sortedByKey) {
-            inner = new TreeMap<String, Object>();
+            inner = new TreeMap<String, Optional<?>>();
         } else {
-            inner = new LinkedHashMap<String, Object>();
+            inner = new LinkedHashMap<String, Optional<?>>();
         }
     }
 
-    public Object putString(String key, String value) {
+    public Optional<?> putString(String key, Optional<String> value) {
+        Preconditions.checkNotNull(value);
         return inner.put(key, value);
+    }
+
+    public Optional<?> putDate(String key, Optional<Date> value) {
+        Preconditions.checkNotNull(value);
+        return inner.put(key, value);
+    }
+
+    public Optional<?> putDouble(String key, Optional<Double> value) {
+        Preconditions.checkNotNull(value);
+        return inner.put(key, value);
+    }
+
+    public Optional<?> putBoolean(String key, Optional<Boolean> value) {
+        Preconditions.checkNotNull(value);
+        return inner.put(key, value);
+    }
+
+    public Optional<?> putMap(String key, Optional<? extends Map<String, Optional<?>>> value) {
+        Preconditions.checkNotNull(value);
+        if (value.isPresent()) {
+            if (value.get() instanceof SpanContextMap) {
+                return inner.put(key, value);
+            } else {
+                // build and put a SpanContextMap instead
+                SpanContextMap nestedContextMap = new SpanContextMap();
+                for (Entry<?, ?> entry : ((Map<?, ?>) value.get()).entrySet()) {
+                    nestedContextMap.put((String) entry.getKey(), entry.getValue());
+                }
+                return inner.put(key, Optional.of(nestedContextMap));
+            }
+        } else {
+            return inner.put(key, Optional.absent());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public Optional<?> put(String key, Optional<?> value) {
+        Preconditions.checkNotNull(value);
+        // TODO write unit tests using each of these data types
+        if (value.isPresent()) {
+            if (value.get() instanceof String) {
+                return putString(key, (Optional<String>) value);
+            } else if (value.get() instanceof Date) {
+                return putDate(key, (Optional<Date>) value);
+            } else if (value.get() instanceof Number) {
+                return putDouble(key, (Optional<Double>) value);
+            } else if (value.get() instanceof Boolean) {
+                return putBoolean(key, (Optional<Boolean>) value);
+            } else if (value.get() instanceof SpanContextMap) {
+                return putMap(key, (Optional<SpanContextMap>) value);
+            } else {
+                throw new IllegalArgumentException("Unexpected value type '"
+                        + value.getClass().getName() + "'");
+            }
+        } else {
+            return inner.put(key, Optional.absent());
+        }
+    }
+
+    // convenience nullable puts
+
+    public Object putString(String key, String value) {
+        return putString(key, Optional.fromNullable(value));
     }
 
     public Object putDate(String key, Date value) {
-        return inner.put(key, value);
+        return putDate(key, Optional.fromNullable(value));
     }
 
     public Object putDouble(String key, Double value) {
-        return inner.put(key, value);
+        return putDouble(key, Optional.fromNullable(value));
     }
 
     public Object putBoolean(String key, Boolean value) {
-        return inner.put(key, value);
-    }
-
-    public Object putMap(String key, Map<String, Object> value) {
-        if (value == null) {
-            return inner.put(key, null);
-        } else if (value instanceof SpanContextMap) {
-            return inner.put(key, value);
-        } else {
-            // build and put a SpanContextMap instead
-            SpanContextMap nestedContextMap = new SpanContextMap();
-            for (Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
-                nestedContextMap.put((String) entry.getKey(), entry.getValue());
-            }
-            return inner.put(key, nestedContextMap);
-        }
+        return putBoolean(key, Optional.fromNullable(value));
     }
 
     public Object put(String key, Object value) {
-        // TODO write unit tests using each of these data types
-        if (value == null) {
-            return inner.put(key, null);
-        } else if (value instanceof String) {
-            return putString(key, (String) value);
-        } else if (value instanceof Date) {
-            return putDate(key, (Date) value);
-        } else if (value instanceof Number) {
-            return putDouble(key, (Double) value);
-        } else if (value instanceof Boolean) {
-            return putBoolean(key, (Boolean) value);
-        } else if (value instanceof SpanContextMap) {
-            return putMap(key, (SpanContextMap) value);
-        } else {
-            throw new IllegalArgumentException("Unexpected value type '"
-                    + value.getClass().getName() + "'");
-        }
+        return put(key, Optional.fromNullable(value));
     }
 
     public int size() {
@@ -117,15 +152,15 @@ public class SpanContextMap implements Map<String, Object> {
         return inner.containsValue(value);
     }
 
-    public Object get(Object key) {
+    public Optional<?> get(Object key) {
         return inner.get(key);
     }
 
-    public Object remove(Object key) {
+    public Optional<?> remove(Object key) {
         return inner.remove(key);
     }
 
-    public void putAll(Map<? extends String, ? extends Object> t) {
+    public void putAll(Map<? extends String, ? extends Optional<?>> t) {
         // this will call put() above which is where the validation will be enforced
         inner.putAll(t);
     }
@@ -138,11 +173,11 @@ public class SpanContextMap implements Map<String, Object> {
         return inner.keySet();
     }
 
-    public Collection<Object> values() {
+    public Collection<Optional<?>> values() {
         return inner.values();
     }
 
-    public Set<Entry<String, Object>> entrySet() {
+    public Set<Entry<String, Optional<?>>> entrySet() {
         return inner.entrySet();
     }
 

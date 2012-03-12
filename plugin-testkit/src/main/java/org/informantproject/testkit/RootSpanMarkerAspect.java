@@ -15,6 +15,7 @@
  */
 package org.informantproject.testkit;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
@@ -32,7 +33,8 @@ public class RootSpanMarkerAspect {
 
     private static final String MOCK_SPAN_SUMMARY_KEY = "mock root span";
 
-    private static final PluginServices pluginServices = PluginServices.get("unittest");
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject:informant-plugin-testkit");
 
     @Pointcut("execution(void org.informantproject.testkit.RootSpanMarker.rootSpanMarker())")
     void rootSpanMarkerPointcut() {}
@@ -49,8 +51,8 @@ public class RootSpanMarkerAspect {
         public SpanContextMap getContextMap() {
             return null;
         }
-        public String getUsername() {
-            return null;
+        public Optional<String> getUsername() {
+            return Optional.absent();
         }
     }
 }

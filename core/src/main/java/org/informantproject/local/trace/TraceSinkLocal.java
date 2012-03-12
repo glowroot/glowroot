@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.JsonCharSequence;
 import org.informantproject.api.LargeStringBuilder;
+import org.informantproject.api.Optional;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
@@ -37,6 +38,7 @@ import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
+import org.informantproject.core.util.OptionalJsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,7 @@ import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -133,8 +136,12 @@ public class TraceSinkLocal implements TraceSink {
         }
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         storedTrace.setDescription(rootSpan.getDescription().toString());
-        storedTrace.setUsername(trace.getUsername());
-        Gson gson = new Gson();
+        if (trace.getUsername().isPresent()) {
+            storedTrace.setUsername(trace.getUsername().get());
+        }
+        // OptionalJsonSerializer is needed for serializing SpanContextMaps
+        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
+                new OptionalJsonSerializer()).create();
         storedTrace.setMetrics(getMetricsJson(trace, gson));
         storedTrace.setContextMap(getContextMapJson(trace, gson));
         Map<String, String> stackTraces = new HashMap<String, String>();
@@ -143,7 +150,6 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setMergedStackTree(getMergedStackTreeJson(trace));
         return storedTrace;
     }
-
     public void shutdown() {
         logger.debug("shutdown()");
         executorService.shutdownNow();
@@ -251,7 +257,7 @@ public class TraceSinkLocal implements TraceSink {
         SpanContextMap contextMap = span.getContextMap();
         if (!skipContextMap && contextMap != null) {
             sb.append(",\"contextMap\":");
-            sb.append(gson.toJson(contextMap, new TypeToken<Map<String, Object>>() {}.getType()));
+            sb.append(gson.toJson(contextMap));
         }
         if (span.getStackTraceElements() != null) {
             String stackTraceJson = getStackTraceJson(span.getStackTraceElements());

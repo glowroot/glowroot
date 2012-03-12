@@ -74,8 +74,8 @@ public class LocalHttpHandlerTest {
         ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
                 .getRandomCoreConfiguration();
         BoundRequestBuilder updateRequest = asyncHttpClient
-                .preparePost("http://localhost:4000/configuration/update");
-        updateRequest.setBody(randomCoreConfiguration.toJson());
+                .preparePost("http://localhost:4000/configuration/core/properties");
+        updateRequest.setBody(randomCoreConfiguration.getPropertiesJson());
         updateRequest.execute().get();
         BoundRequestBuilder readRequest = asyncHttpClient
                 .prepareGet("http://localhost:4000/configuration/read");
@@ -85,6 +85,6 @@ public class LocalHttpHandlerTest {
         String responseText = response.getResponseBody();
         JsonObject rootNode = new JsonParser().parse(responseText).getAsJsonObject();
         String coreConfigurationJson = new Gson().toJson(rootNode.get("coreConfiguration"));
-        assertThat(coreConfigurationJson, is(randomCoreConfiguration.toJson()));
+        assertThat(coreConfigurationJson, is(randomCoreConfiguration.getPropertiesJson()));
     }
 }

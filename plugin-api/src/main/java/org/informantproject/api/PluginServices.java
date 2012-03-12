@@ -60,10 +60,13 @@ public abstract class PluginServices {
     //
     // As long as calls to this method are called at some point after verifying isEnabled() then
     // there is no problem.
-    public abstract String getStringProperty(String propertyName);
+    public abstract Optional<String> getStringProperty(String propertyName);
 
     // see comment for getStringProperty()
-    public abstract Boolean getBooleanProperty(String propertyName, Boolean defaultValue);
+    public abstract boolean getBooleanProperty(String propertyName);
+
+    // see comment for getStringProperty()
+    public abstract Optional<Double> getDoubleProperty(String propertyName);
 
     public abstract Object executeRootSpan(RootSpanDetail rootSpanDetail,
             ProceedingJoinPoint joinPoint, String spanSummaryKey) throws Throwable;
@@ -120,11 +123,15 @@ public abstract class PluginServices {
             return false;
         }
         @Override
-        public String getStringProperty(String propertyName) {
+        public Optional<String> getStringProperty(String propertyName) {
             return null;
         }
         @Override
-        public Boolean getBooleanProperty(String propertyName, Boolean defaultValue) {
+        public boolean getBooleanProperty(String propertyName) {
+            return false;
+        }
+        @Override
+        public Optional<Double> getDoubleProperty(String propertyName) {
             return null;
         }
         @Override

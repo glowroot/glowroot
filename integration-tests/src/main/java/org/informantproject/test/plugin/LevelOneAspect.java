@@ -15,6 +15,7 @@
  */
 package org.informantproject.test.plugin;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanContextMap;
@@ -30,7 +31,8 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class LevelOneAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("unittest");
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject:informant-integration-tests");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -47,7 +49,13 @@ public class LevelOneAspect {
 
         RootSpanDetail rootSpanDetail = new RootSpanDetail() {
             public String getDescription() {
-                return "Level One";
+                String description = pluginServices.getStringProperty("alternateDescription").or(
+                        "Level One");
+                if (pluginServices.getBooleanProperty("starredDescription")) {
+                    return description + "*";
+                } else {
+                    return description;
+                }
             }
             public SpanContextMap getContextMap() {
                 SpanContextMap contextMap = SpanContextMap.of("arg1", arg1, "arg2", arg2);
@@ -59,8 +67,8 @@ public class LevelOneAspect {
                         SpanContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
                 return contextMap;
             }
-            public String getUsername() {
-                return null;
+            public Optional<String> getUsername() {
+                return Optional.absent();
             }
         };
         return pluginServices.executeRootSpan(rootSpanDetail, joinPoint, "level one");

@@ -91,7 +91,6 @@ public class BasicTest {
 
     private static CoreConfiguration makeRandomCoreConfiguration() {
         CoreConfiguration randomCoreConfiguration = new CoreConfiguration();
-        randomCoreConfiguration.setEnabled(random.nextBoolean());
         randomCoreConfiguration.setThresholdMillis(1000 + random.nextInt(60000));
         randomCoreConfiguration.setStuckThresholdMillis(1000 + random.nextInt(60000));
         randomCoreConfiguration.setStackTraceInitialDelayMillis(1000 + random.nextInt(60000));

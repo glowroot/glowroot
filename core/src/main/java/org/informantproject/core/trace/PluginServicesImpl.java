@@ -20,10 +20,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.core.configuration.ConfigurationService.ConfigurationListener;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.util.Clock;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
@@ -31,7 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
 
 /**
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
@@ -42,19 +48,50 @@ import com.google.inject.Inject;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PluginServicesImpl extends PluginServices {
+public class PluginServicesImpl extends PluginServices implements ConfigurationListener {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
-
-    // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
-    // plugin's org.informantproject.plugin.xml
-    private final String pluginId;
 
     private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
     private final ConfigurationService configurationService;
     private final Clock clock;
     private final Ticker ticker;
+
+    // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
+    // plugin's org.informantproject.plugin.xml
+    private final String pluginId;
+
+    // cache enabled status and plugin properties for slightly faster lookup (and for not having to
+    // convert guava Optional to informant Optional every time)
+    private volatile boolean enabled;
+
+    private final LoadingCache<String, Optional<String>> stringProperties = CacheBuilder
+            .newBuilder().build(new CacheLoader<String, Optional<String>>() {
+                @Override
+                public Optional<String> load(String propertyName) throws Exception {
+                    return configurationService.getPluginConfiguration(pluginId).getStringProperty(
+                            propertyName);
+                }
+            });
+
+    private final LoadingCache<String, Boolean> booleanProperties = CacheBuilder
+            .newBuilder().build(new CacheLoader<String, Boolean>() {
+                @Override
+                public Boolean load(String propertyName) throws Exception {
+                    return configurationService.getPluginConfiguration(pluginId)
+                            .getBooleanProperty(propertyName);
+                }
+            });
+
+    private final LoadingCache<String, Optional<Double>> doubleProperties = CacheBuilder
+            .newBuilder().build(new CacheLoader<String, Optional<Double>>() {
+                @Override
+                public Optional<Double> load(String propertyName) throws Exception {
+                    return configurationService.getPluginConfiguration(pluginId).getDoubleProperty(
+                            propertyName);
+                }
+            });
 
     // used to prevent recording overlapping metric timings for the same span summary key
     private final ThreadLocal<LinkedList<String>> spanSummaryKeyStack =
@@ -67,29 +104,45 @@ public class PluginServicesImpl extends PluginServices {
             };
 
     @Inject
-    PluginServicesImpl(String pluginId, TraceRegistry traceRegistry, TraceSink traceSink,
-            ConfigurationService configurationService, Clock clock, Ticker ticker) {
+    PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
+            ConfigurationService configurationService, Clock clock, Ticker ticker,
+            @Assisted String pluginId) {
 
-        this.pluginId = pluginId;
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configurationService = configurationService;
         this.clock = clock;
         this.ticker = ticker;
+        this.pluginId = pluginId;
+        // add configuration listener first before caching configuration properties to avoid a
+        // (remotely) possible race condition
+        configurationService.addConfigurationListener(this);
+        enabled = configurationService.getCoreConfiguration().isEnabled() && configurationService
+                .getPluginConfiguration(pluginId).isEnabled();
     }
 
     @Override
-    public String getStringProperty(String propertyName) {
+    public boolean isEnabled() {
+        // this method should have as little overhead as possible so don't even call logger
+        return this.enabled && !traceRegistry.isCurrentRootSpanDisabled();
+    }
+
+    @Override
+    public Optional<String> getStringProperty(String propertyName) {
         logger.debug("getStringProperty(): propertyName={}", propertyName);
-        return configurationService.getPluginConfiguration().getStringProperty(pluginId,
-                propertyName);
+        return stringProperties.getUnchecked(propertyName);
     }
 
     @Override
-    public Boolean getBooleanProperty(String propertyName, Boolean defaultValue) {
+    public boolean getBooleanProperty(String propertyName) {
         logger.debug("getBooleanProperty(): propertyName={}", propertyName);
-        return configurationService.getPluginConfiguration().getBooleanProperty(pluginId,
-                propertyName, defaultValue);
+        return booleanProperties.getUnchecked(propertyName);
+    }
+
+    @Override
+    public Optional<Double> getDoubleProperty(String propertyName) {
+        logger.debug("getDoubleProperty(): propertyName={}", propertyName);
+        return doubleProperties.getUnchecked(propertyName);
     }
 
     @Override
@@ -168,12 +221,12 @@ public class PluginServicesImpl extends PluginServices {
         }
     }
 
-    @Override
-    public boolean isEnabled() {
-        boolean enabled = configurationService.getCoreConfiguration().isEnabled()
-                && !traceRegistry.isCurrentRootSpanDisabled();
-        logger.debug("isEnabled(): enabled={}", enabled);
-        return enabled;
+    public void onChange() {
+        enabled = configurationService.getCoreConfiguration().isEnabled() && configurationService
+                .getPluginConfiguration(pluginId).isEnabled();
+        stringProperties.invalidateAll();
+        booleanProperties.invalidateAll();
+        doubleProperties.invalidateAll();
     }
 
     private Object proceedAndRecordSpanAndMetricData(SpanDetail spanDetail,

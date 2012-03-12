@@ -122,9 +122,9 @@ public class HttpServer extends HttpServerBase {
 
         super(port);
         uriMappings.put(Pattern.compile("^/trace/export$"), traceExportJsonService);
-        // the parentheses define the part of the match that is used to dynamically construct the
-        // "handleX" method to call in the json service, e.g. /trace/durations calls the method
-        // handleDurations in TraceDurationJsonService
+        // the parentheses define the part of the match that is used to construct the args for
+        // calling the method in json service, e.g. /stacktrace/abc123 below calls the method
+        // getStackTrace("abc123") in TraceDurationJsonService
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/durations$"),
                 traceDurationJsonService, "getDurations"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/details$"),
@@ -135,8 +135,18 @@ public class HttpServer extends HttpServerBase {
                 metricJsonService, "getMetrics"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/read$"),
                 configurationJsonService, "getConfiguration"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/update$"),
-                configurationJsonService, "storeConfiguration"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/core"
+                + "/properties"), configurationJsonService, "storeCoreProperties"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/core"
+                + "/enable"), configurationJsonService, "enableCore"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/core"
+                + "/disable"), configurationJsonService, "disableCore"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/plugin"
+                + "/([^/]+)/enable"), configurationJsonService, "enablePlugin"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/plugin"
+                + "/([^/]+)/disable"), configurationJsonService, "disablePlugin"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/plugin"
+                + "/([^/]+)/properties$"), configurationJsonService, "storePluginProperties"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/packaged$"),
                 pluginJsonService, "getPackagedPlugins"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/installed$"),
@@ -150,7 +160,6 @@ public class HttpServer extends HttpServerBase {
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/dbFile$"),
                 miscJsonService, "getDbFilePath"));
     }
-
     @Override
     protected HttpResponse handleRequest(HttpRequest request) throws IOException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());

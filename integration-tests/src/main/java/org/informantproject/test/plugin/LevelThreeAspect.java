@@ -30,7 +30,8 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class LevelThreeAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("unittest");
+    private static final PluginServices pluginServices = PluginServices
+            .get("org.informantproject:informant-integration-tests");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
