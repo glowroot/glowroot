@@ -109,15 +109,18 @@ public class JdbcAspect {
     public void preparedStatementSetXAdvice(PreparedStatement preparedStatement,
             int parameterIndex, Object x) {
 
+        PreparedStatementMirror preparedStatementMirror = statementMirrorCache
+                .getPreparedStatementMirror(preparedStatement);
         if (x instanceof InputStream || x instanceof Reader) {
-            statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
-                    parameterIndex, new StreamingParameterValue(x));
+            preparedStatementMirror.setParameterValue(parameterIndex,
+                    new StreamingParameterValue(x));
         } else if (x instanceof byte[]) {
-            statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
-                    parameterIndex, new ByteArrayParameterValue((byte[]) x));
+            boolean displayAsHex = JdbcPlugin.isDisplayBinaryParameterAsHex(preparedStatementMirror
+                    .getSql(), parameterIndex);
+            preparedStatementMirror.setParameterValue(parameterIndex, new ByteArrayParameterValue(
+                    (byte[]) x, displayAsHex));
         } else {
-            statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
-                    parameterIndex, x);
+            preparedStatementMirror.setParameterValue(parameterIndex, x);
         }
     }
 

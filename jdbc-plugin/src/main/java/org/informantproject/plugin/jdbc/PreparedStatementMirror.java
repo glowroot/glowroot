@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 class PreparedStatementMirror extends StatementMirror {
 
+    private static final char[] hexDigits = "0123456789abcdef".toCharArray();
+
     private final String sql;
     private List<Object> parameters;
     private Collection<List<Object>> batchedParameters;
@@ -103,12 +105,25 @@ class PreparedStatementMirror extends StatementMirror {
 
     static class ByteArrayParameterValue {
         private final int length;
-        public ByteArrayParameterValue(byte[] b) {
-            length = b.length;
+        private final byte[] bytes;
+        private final boolean displayAsHex;
+        public ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {
+            length = bytes.length;
+            this.displayAsHex = displayAsHex;
+            if (displayAsHex) {
+                // only retain bytes if needed for displaying as hex
+                this.bytes = bytes;
+            } else {
+                this.bytes = null;
+            }
         }
         @Override
         public String toString() {
-            return "{" + length + " bytes}";
+            if (displayAsHex) {
+                return toHex(bytes);
+            } else {
+                return "{" + length + " bytes}";
+            }
         }
     }
 
@@ -121,5 +136,15 @@ class PreparedStatementMirror extends StatementMirror {
         public String toString() {
             return "{stream:" + o.getClass().getSimpleName() + "}";
         }
+    }
+
+    // copied from com.google.common.hash.HashCode.toString() with minor modification
+    private static String toHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(2 + 2 * bytes.length);
+        sb.append("0x");
+        for (byte b : bytes) {
+            sb.append(hexDigits[(b >> 4) & 0xf]).append(hexDigits[b & 0xf]);
+        }
+        return sb.toString();
     }
 }
