@@ -136,8 +136,9 @@ public class TraceSinkLocal implements TraceSink {
         }
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         storedTrace.setDescription(rootSpan.getDescription().toString());
-        if (trace.getUsername().isPresent()) {
-            storedTrace.setUsername(trace.getUsername().get());
+        Optional<String> username = trace.getUsername();
+        if (username.isPresent()) {
+            storedTrace.setUsername(username.get());
         }
         // OptionalJsonSerializer is needed for serializing SpanContextMaps
         Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,

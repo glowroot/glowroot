@@ -55,25 +55,21 @@
       var to = from + 24 * 60 * 60 * 1000; // from + 24 hours
       getTraceDurations(from, to)
     }
-    function plotResponseData(storedTraceDurations, activeTraceDurations) {
-      var overrideOptions = {}
-      if (storedTraceDurations.length || activeTraceDurations.length) {
-        var xmin
-        var xmax
-        if (storedTraceDurations.length) {
-          xmin = storedTraceDurations[0][0]
-          xmax = storedTraceDurations[storedTraceDurations.length - 1][0]
-        }
-        if (activeTraceDurations.length) {
-          xmin = Math.min(xmin, activeTraceDurations[0][0])
-          xmax = Math.max(xmax, activeTraceDurations[activeTraceDurations.length - 1][0])
-        }
-        overrideOptions = {
-          xaxis: { zoomRange : [ xmin, xmax ] }
-        }
+    function plotResponseData(storedTraceDurations, activeTraceDurations, from, to) {
+      var fromAsDate = new Date(from)
+      fromAsDate.setHours(0,0,0,0)
+      var zoomRangeFrom = fromAsDate.getTime()
+      var zoomRangeTo = zoomRangeFrom + 24 * 60 * 60 * 1000; // zoomRangeFrom + 24 hours
+      from -= new Date(from).getTimezoneOffset() * 60 * 1000
+      to -= new Date(to).getTimezoneOffset() * 60 * 1000
+      zoomRangeFrom -= new Date(zoomRangeFrom).getTimezoneOffset() * 60 * 1000
+      zoomRangeTo -= new Date(zoomRangeTo).getTimezoneOffset() * 60 * 1000
+      overrideOptions = {
+        xaxis: { min : from, max : to, zoomRange : [ zoomRangeFrom, zoomRangeTo ] }
       }
       plot = $.plot($('#placeholder'), [storedTraceDurations, activeTraceDurations],
           $.extend(true, {}, options, overrideOptions))
+      updateTimeFilter()
       selection = null
     }
     $('#placeholder').bind("plotselected", function(event, ranges) {
@@ -83,11 +79,53 @@
       selection = null
     })
     $('#placeholder').bind('plotzoom', function (event, plot) {
-      if (selection)
+      if (selection) {
         plot.setSelection(selection)
+      }
+      updateTimeFilter()
     })
+    function updateTimeFilter() {
+      var from = Math.floor(plot.getAxes().xaxis.min)
+      var to = Math.ceil(plot.getAxes().xaxis.max)
+      // shift timezone
+      from += new Date(from).getTimezoneOffset() * 60 * 1000
+      to += new Date(to).getTimezoneOffset() * 60 * 1000
+      $('#timeFilter').html(new Date(from).format('h:MM:ss TT') + ' &nbsp; to &nbsp; '
+          + new Date(to).format('h:MM:ss TT (Z)'))
+    }
+    function refresh() {
+      var from = Math.floor(plot.getAxes().xaxis.min)
+      var to = Math.ceil(plot.getAxes().xaxis.max)
+      // shift timezone
+      from += new Date(from).getTimezoneOffset() * 60 * 1000
+      to += new Date(to).getTimezoneOffset() * 60 * 1000
+      var fromAsDate = new Date(from)
+      fromAsDate.setHours(0,0,0,0)
+      if ($('#dateFilter').datepicker('getDate').getTime() == fromAsDate.getTime()) {
+        // dateFilter hasn't changed
+        getTraceDurations(from, to)
+      } else {
+        // dateFilter has changed
+        plotFullDate($('#dateFilter').datepicker('getDate'))
+      }
+    }
     function getTraceDurations(from, to) {
-      $.getJSON('/trace/durations?from=' + from + '&to=' + to, function(response) {
+      var queryString = 'from=' + from + '&to=' + to
+      var durationLow = $('#durationLow').val() * 1000
+      if (durationLow) {
+        queryString += '&low=' + durationLow
+      }
+      var durationHigh = $('#durationHigh').val() * 1000
+      if (durationHigh) {
+        queryString += '&high=' + durationHigh
+      }
+      var usernameComparator = $('#usernameComparator').val()
+      var username = $('#username').val()
+      if (username) {
+        queryString += '&usernameComparator=' + usernameComparator
+        queryString += '&username=' + username
+      }
+      $.getJSON('/trace/durations?' + queryString, function(response) {
         var storedTraceDurations = response.storedTraceDurations
         activeTraceDurations = response.activeTraceDurations
         // shift for timezone
@@ -99,7 +137,7 @@
           activeTraceDurations[i][0] -= new Date(activeTraceDurations[i][0]).getTimezoneOffset()
               * 60 * 1000
         }
-        plotResponseData(storedTraceDurations, activeTraceDurations)
+        plotResponseData(storedTraceDurations, activeTraceDurations, from, to)
       })
       $('#traces').html('')
     }
@@ -107,8 +145,8 @@
       var from, to, low, high
       var extraIds = []
       if (selection) {
-        from = selection.xaxis.from + new Date(selection.xaxis.from).getTimezoneOffset() * 60 * 1000
-        to = selection.xaxis.to + new Date(selection.xaxis.to).getTimezoneOffset() * 60 * 1000
+        from = selection.xaxis.from
+        to = selection.xaxis.to
         // low, high are expected in milliseconds
         low = selection.yaxis.from * 1000
         high = selection.yaxis.to * 1000
@@ -123,8 +161,8 @@
         }
       } else {
         var axes = plot.getAxes()
-        from = axes.xaxis.min + new Date(axes.xaxis.min).getTimezoneOffset() * 60 * 1000
-        to = axes.xaxis.max + new Date(axes.xaxis.max).getTimezoneOffset() * 60 * 1000
+        from = axes.xaxis.min
+        to = axes.xaxis.max
         // low, high are expected in milliseconds
         low = axes.yaxis.min * 1000
         high = axes.yaxis.max * 1000
@@ -138,6 +176,9 @@
           }
         }
       }
+      // shift timezone
+      from += new Date(from).getTimezoneOffset() * 60 * 1000
+      to += new Date(to).getTimezoneOffset() * 60 * 1000
       var query = 'from=' + Math.floor(from) + '&to=' + Math.ceil(to) + '&low=' + low + '&high='
         + high
       if (extraIds) {
@@ -154,16 +195,34 @@
         }
       })
     }
-    $('#datePicker').datepicker({ onSelect : function(dateText, inst) {
-      plotFullDate($(this).datepicker('getDate'))
-    }})
+    var today = new Date()
+    today.setHours(0,0,0,0)
+    $('#dateFilter').datepicker({})
+    $('#dateFilter').datepicker('setDate', today)
+    $('#durationComparator').change(function() {
+      if ($('#durationComparator').val() == 'greater') {
+        $('#durationLowDiv').show()
+        $('#durationAndDiv').hide()
+        $('#durationHighDiv').hide()
+        $('#durationHigh').val('')
+      } else if ($('#durationComparator').val() == 'less') {
+        $('#durationLowDiv').hide()
+        $('#durationLow').val('')
+        $('#durationAndDiv').hide()
+        $('#durationHighDiv').show()
+      } else if ($('#durationComparator').val() == 'between') {
+        $('#durationLowDiv').show()
+        $('#durationAndDiv').show()
+        $('#durationHighDiv').show()
+      }
+    })
     $('#showDetails').click(function() {
       getTraceDetails()
     })
-    var d = new Date()
-    d.setHours(0,0,0,0)
-    $('#datePicker').datepicker('setDate', d)
-    plotFullDate(d)
+    $('#refreshButton').click(function() {
+      refresh()
+    })
+    plotFullDate(today)
   })
 </script>
 </head>
@@ -172,9 +231,59 @@
     <a class="header-logo" href="/">Informant</a><span class="header-page-name">Traces</span>
     <span class="header-see-also">see also: <a href="configuration.html">Configuration</a></span>
   </h1>
-  <div>
-    Date: <input style="width: 7em" type="text" id="datePicker">
-  </div>
+  <form class="form-horizontal">
+    <fieldset>
+      <legend>Filters</legend>
+      <div class="control-group">
+        <label class="control-label" for="dateFilter">Date</label>
+        <div class="controls">
+          <input type="text" class="input-small" id="dateFilter">
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="timeFilter">Time</label>
+        <div class="controls">
+          <!-- TODO maybe bootstrap issue that padding-top is required for vertical alignment? -->
+          <span id="timeFilter" class="help-inline" style="padding-top: 5px">All day</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="durationBounds">Duration</label>
+        <div class="controls">
+          <select class="input-medium0" id="durationComparator">
+            <option value="greater">Greater than</option>
+            <option value="less">Less than</option>
+            <option value="between">Between</option>
+          </select>
+          <div id="durationLowDiv" class="input-append">
+            <input id="durationLow" class="input-small"
+              type="text"><span class="add-on">seconds</span>
+          </div>
+          <div id="durationAndDiv" class="input-append" style="display: none">and</div>
+          <div id="durationHighDiv" class="input-append" style="display: none">
+            <input id="durationHigh" class="input-small"
+              type="text"><span class="add-on">seconds</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="username">Username</label>
+        <div class="controls">
+          <select class="input-medium0" id="usernameComparator">
+            <option value="begins">Begins with</option>
+            <option value="equals">Equals</option>
+            <option value="contains">Contains</option>
+          </select>
+          <input type="text" class="input-small" id="username">
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="controls">
+          <button id="refreshButton" type="button" class="btn">Refresh</button>
+        </div>
+      </div>
+    </fieldset>
+  </form>
   <br>
   <div>
     <div id="placeholder" style="height: 300px"></div>

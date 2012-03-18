@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -135,16 +136,35 @@ public class TraceDao {
         }
     }
 
-    public List<StoredTraceDuration> readStoredTraceDurations(long capturedFrom, long capturedTo) {
-        logger.debug("readStoredTraceDurations(): capturedFrom={}, capturedTo={}", capturedFrom,
-                capturedTo);
+    public List<StoredTraceDuration> readStoredTraceDurations(long capturedFrom, long capturedTo,
+            long durationLow, long durationHigh, StringComparator usernameComparator,
+            String username) {
+
+        logger.debug("readStoredTraceDurations(): capturedFrom={}, capturedTo={}, durationLow={},"
+                + " durationHigh={}", new Object[] { capturedFrom, capturedTo, durationLow,
+                durationHigh });
         if (!valid) {
             return Collections.emptyList();
         }
         try {
-            return dataSource.query("select id, captured_at, duration, completed from trace where"
-                    + " captured_at >= ? and captured_at <= ?", new Object[] { capturedFrom,
-                    capturedTo }, new TraceDurationRowMapper());
+            String sql = "select id, captured_at, duration, completed from trace where"
+                    + " captured_at >= ? and captured_at <= ?";
+            List<Object> args = new ArrayList<Object>();
+            args.add(capturedFrom);
+            args.add(capturedTo);
+            if (durationLow != 0) {
+                sql += " and duration >= ?";
+                args.add(durationLow);
+            }
+            if (durationHigh != Long.MAX_VALUE) {
+                sql += " and duration <= ?";
+                args.add(durationHigh);
+            }
+            if (usernameComparator != null) {
+                sql += " and username " + usernameComparator.getComparator() + " ?";
+                args.add(usernameComparator.formatParameter(username));
+            }
+            return dataSource.query(sql, args.toArray(), new TraceDurationRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return Collections.emptyList();
@@ -297,6 +317,22 @@ public class TraceDao {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;
+        }
+    }
+
+    public static enum StringComparator {
+        BEGINS("like", "%s%%"), EQUALS("=", "%s"), CONTAINS("like", "%%%s%%");
+        private final String comparator;
+        private final String parameterFormat;
+        private StringComparator(String comparator, String parameterTemplate) {
+            this.comparator = comparator;
+            this.parameterFormat = parameterTemplate;
+        }
+        public String formatParameter(String parameter) {
+            return String.format(parameterFormat, parameter);
+        }
+        public String getComparator() {
+            return comparator;
         }
     }
 

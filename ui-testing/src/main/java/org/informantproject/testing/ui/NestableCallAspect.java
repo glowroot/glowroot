@@ -15,6 +15,9 @@
  */
 package org.informantproject.testing.ui;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -25,12 +28,19 @@ import org.informantproject.shaded.aspectj.lang.annotation.Around;
 import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
 import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Aspect
 public class NestableCallAspect {
+
+    private static final List<Optional<String>> USERNAMES = ImmutableList.of(Optional.of("able"),
+            Optional.of("baker"), Optional.of("charlie"), Optional.absent(String.class));
+
+    private static final AtomicInteger counter = new AtomicInteger();
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-ui-testing");
@@ -63,7 +73,7 @@ public class NestableCallAspect {
                                 "attr312", "value312"), "attr32", "value32", "attr33", "value33"));
             }
             public Optional<String> getUsername() {
-                return Optional.absent();
+                return USERNAMES.get(counter.getAndIncrement() % 4);
             }
         };
     }

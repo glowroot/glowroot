@@ -27,6 +27,8 @@ class TraceRequest {
     private long to;
     private double low; // milliseconds, with nanosecond precision
     private double high; // milliseconds, with nanosecond precision
+    private String usernameComparator;
+    private String username;
     private String extraIds;
 
     public long getFrom() {
@@ -59,6 +61,22 @@ class TraceRequest {
 
     public void setHigh(double high) {
         this.high = high;
+    }
+
+    public String getUsernameComparator() {
+        return usernameComparator;
+    }
+
+    public void setUsernameComparator(String usernameComparator) {
+        this.usernameComparator = usernameComparator;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getExtraIds() {
