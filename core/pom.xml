@@ -243,6 +243,16 @@
                 <exclude>META-INF/license/**</exclude>
               </excludes>
             </filter>
+            <filter>
+              <!-- this is really only needed for the sources jar -->
+              <artifact>backport-util-concurrent:backport-util-concurrent</artifact>
+              <excludes>
+                <exclude>sun/**</exclude>
+                <exclude>LEGAL</exclude>
+                <exclude>license.html</exclude>
+                <exclude>README.html</exclude>
+              </excludes>
+            </filter>
           </filters>
           <relocations>
             <relocation>
