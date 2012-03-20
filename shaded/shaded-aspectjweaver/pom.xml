@@ -36,26 +36,15 @@
     </dependency>
   </dependencies>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <!--
-        apache snapshot repository is needed for the latest build of maven-shade-plugin
-        which contains the fix for http://jira.codehaus.org/browse/MSHADE-104
-      -->
-      <id>apache.snapshots</id>
-      <name>Apache Snapshot Repository</name>
-      <url>https://repository.apache.org/content/groups/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>1.6-SNAPSHOT</version>
+        <!--
+          locally built 1.6 plus new shadeSourcesContent feature from
+          https://jira.codehaus.org/browse/MSHADE-112
+        -->
+        <version>1.6-1-SNAPSHOT</version>
         <executions>
           <execution>
             <goals>
@@ -65,6 +54,7 @@
         </executions>
         <configuration>
           <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
           <filters>
             <filter>
               <artifact>org.aspectj:aspectjweaver</artifact>

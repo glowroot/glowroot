@@ -40,7 +40,11 @@
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>1.5</version>
+        <!--
+          locally built 1.6 plus new shadeSourcesContent feature from
+          https://jira.codehaus.org/browse/MSHADE-112
+        -->
+        <version>1.6-1-SNAPSHOT</version>
         <executions>
           <execution>
             <goals>
@@ -50,6 +54,7 @@
         </executions>
         <configuration>
           <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
           <relocations>
             <relocation>
               <pattern>org.aspectj</pattern>
