@@ -86,7 +86,7 @@ public class JdbcAspect {
             throws Throwable {
 
         PreparedStatement preparedStatement = (PreparedStatement) pluginServices
-                .proceedAndRecordMetricData(joinPoint, JDBC_PREPARE_SUMMARY_KEY);
+                .proceedAndRecordMetricData(JDBC_PREPARE_SUMMARY_KEY, joinPoint);
         statementMirrorCache.getOrCreatePreparedStatementMirror(preparedStatement, sql);
         return preparedStatement;
     }
@@ -180,7 +180,7 @@ public class JdbcAspect {
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(sql);
         statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(jdbcSpanDetail, joinPoint, JDBC_EXECUTE_SUMMARY_KEY);
+        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
     }
 
     // record span and summary data for Statement.execute()
@@ -193,7 +193,7 @@ public class JdbcAspect {
                 .getPreparedStatementMirror(preparedStatement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
         info.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(jdbcSpanDetail, joinPoint, JDBC_EXECUTE_SUMMARY_KEY);
+        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
     }
 
     // handle Statement.executeBatch()
@@ -212,7 +212,7 @@ public class JdbcAspect {
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(statementMirror.getBatchedSqlCopy());
         statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(jdbcSpanDetail, joinPoint, JDBC_EXECUTE_SUMMARY_KEY);
+        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
     }
 
     @Around("inTrace() && preparedStatementExecuteBatchPointcut()"
@@ -235,7 +235,7 @@ public class JdbcAspect {
             jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
         }
         info.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(jdbcSpanDetail, joinPoint, JDBC_EXECUTE_SUMMARY_KEY);
+        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
     }
 
     // ========= ResultSet =========
@@ -263,11 +263,11 @@ public class JdbcAspect {
         if (lastSpan == null) {
             // tracing must be disabled (e.g. exceeded trace limit per operation),
             // but metric data is still gathered
-            return (Boolean) pluginServices.proceedAndRecordMetricData(joinPoint,
-                    JDBC_NEXT_SUMMARY_KEY);
+            return (Boolean) pluginServices.proceedAndRecordMetricData(JDBC_NEXT_SUMMARY_KEY,
+                    joinPoint);
         }
-        boolean currentRowValid = (Boolean) pluginServices.proceedAndRecordMetricData(joinPoint,
-                JDBC_NEXT_SUMMARY_KEY);
+        boolean currentRowValid = (Boolean) pluginServices.proceedAndRecordMetricData(
+                JDBC_NEXT_SUMMARY_KEY, joinPoint);
         lastSpan.setHasPerformedNext();
         if (currentRowValid) {
             lastSpan.setNumRows(resultSet.getRow());
@@ -296,7 +296,7 @@ public class JdbcAspect {
                 return null;
             }
         };
-        return pluginServices.executeSpan(spanDetail, joinPoint, JDBC_COMMIT_SUMMARY_KEY);
+        return pluginServices.executeSpan(JDBC_COMMIT_SUMMARY_KEY, spanDetail, joinPoint);
     }
 
     // ================== Statement Clearing ==================
