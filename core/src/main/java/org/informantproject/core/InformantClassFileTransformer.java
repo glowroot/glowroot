@@ -45,13 +45,13 @@ public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter
             final byte[] bytes) throws IllegalClassFormatException {
 
         try {
-            return pluginServices.proceedAndRecordMetricData(new Callable<byte[]>() {
-                public byte[] call() throws IllegalClassFormatException {
-                    return InformantClassFileTransformer.super.transform(loader, className,
-                            classBeingRedefined, protectionDomain, bytes);
-                }
-            },
-                    WEAVING_SUMMARY_KEY);
+            return pluginServices.proceedAndRecordMetricData(WEAVING_SUMMARY_KEY,
+                    new Callable<byte[]>() {
+                        public byte[] call() throws IllegalClassFormatException {
+                            return InformantClassFileTransformer.super.transform(loader, className,
+                                    classBeingRedefined, protectionDomain, bytes);
+                        }
+                    });
         } catch (IllegalClassFormatException e) {
             throw e;
         } catch (Exception e) {

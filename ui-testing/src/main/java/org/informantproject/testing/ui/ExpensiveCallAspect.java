@@ -49,7 +49,7 @@ public class ExpensiveCallAspect {
     public Object nestableAdvice(ProceedingJoinPoint joinPoint, ExpensiveCall expensive)
             throws Throwable {
 
-        return pluginServices.executeSpan(getSpanDetail(expensive), joinPoint, "expensive");
+        return pluginServices.executeSpan("expensive", getSpanDetail(expensive), joinPoint);
     }
 
     private SpanDetail getSpanDetail(final ExpensiveCall expensive) {

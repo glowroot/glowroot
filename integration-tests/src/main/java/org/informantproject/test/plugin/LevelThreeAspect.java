@@ -59,6 +59,6 @@ public class LevelThreeAspect {
                 return SpanContextMap.of("arg1", arg1, "arg2", arg2);
             }
         };
-        return pluginServices.executeSpan(spanDetail, joinPoint, "level three");
+        return pluginServices.executeSpan("level three", spanDetail, joinPoint);
     }
 }

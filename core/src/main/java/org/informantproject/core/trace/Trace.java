@@ -17,6 +17,7 @@ package org.informantproject.core.trace;
 
 import java.lang.ref.WeakReference;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
@@ -27,6 +28,8 @@ import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -42,6 +45,8 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 public class Trace {
+
+    private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -61,6 +66,9 @@ public class Trace {
 
     // root span for this trace
     private final RootSpan rootSpan;
+
+    // used to prevent recording overlapping metric timings for the same span
+    private final LinkedList<String> spanNameStack = new LinkedList<String>();
 
     // stack trace data constructed from sampled stack traces
     // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
@@ -82,11 +90,12 @@ public class Trace {
     private volatile ScheduledFuture<?> captureStackTraceScheduledFuture;
     private volatile ScheduledFuture<?> stuckCommandScheduledFuture;
 
-    Trace(SpanDetail spanDetail, Clock clock, Ticker ticker) {
+    Trace(String spanName, SpanDetail spanDetail, Clock clock, Ticker ticker) {
         long startTimeMillis = clock.currentTimeMillis();
         id = new TraceUniqueId(startTimeMillis);
         startDate = new Date(startTimeMillis);
         rootSpan = new RootSpan(spanDetail, ticker);
+        spanNameStack.add(spanName);
         addThreadName(Thread.currentThread());
     }
 
@@ -153,12 +162,6 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    // this is intentionally not synchronized since it can measure very fine
-    // grained actions and can be called very often
-    void recordSpanDuration(String spanSummaryKey, long duration) {
-        metricData.recordData(spanSummaryKey, duration);
-    }
-
     // this method doesn't need to be synchronized
     void setCaptureStackTraceScheduledFuture(ScheduledFuture<?> stackTraceScheduledFuture) {
         this.captureStackTraceScheduledFuture = stackTraceScheduledFuture;
@@ -175,6 +178,56 @@ public class Trace {
             // TODO gather thread names at different point? maybe during contextual trace?
             addThreadName(thread);
             mergedStackTreeSupplier.get().captureStackTrace(thread);
+        }
+    }
+
+    Span pushSpan(String spanName, SpanDetail spanDetail) {
+        spanNameStack.add(spanName);
+        return rootSpan.pushSpan(spanDetail);
+    }
+
+    // this case (without detail) is optimized to only take ticker readings when necessary, in other
+    // words, when span name is the top-most such span name on the span name stack (whereas the case
+    // above - with detail - already takes ticker readings as part of span creation so no need for
+    // such optimization since the span duration can just be pulled from the span)
+    boolean pushSpanWithoutDetail(String spanName) {
+        boolean alreadyPresent = spanNameStack.contains(spanName);
+        if (!alreadyPresent) {
+            spanNameStack.add(spanName);
+        }
+        return alreadyPresent;
+    }
+
+    // typically pop() methods don't require the objects to pop, but for safety, the spanName and
+    // span to pop is passed in just to make sure they are the ones on top (and if not, then pop
+    // until they are found, preventing any nasty bugs from a missed pop, e.g. a trace never being
+    // marked as complete)
+    void popSpan(String spanName, Span span, long endTick, StackTraceElement[] stackTraceElements) {
+        popSpanNameSafe(spanName);
+        metricData.recordData(spanName, endTick - span.getStartTick());
+        rootSpan.popSpan(span, endTick, stackTraceElements);
+    }
+
+    // typically pop() methods don't require the objects to pop, but for safety, the spanName is
+    // passed in just to make sure it is the one on top (and if not, then pop until it is found,
+    // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
+    void popSpanWithoutDetail(String spanName, long duration) {
+        popSpanNameSafe(spanName);
+        metricData.recordData(spanName, duration);
+    }
+
+    private void popSpanNameSafe(String spanName) {
+        String poppedSpanName = spanNameStack.removeLast();
+        if (!poppedSpanName.equals(spanName)) {
+            // somehow(?) a pop was missed, this is just damage control
+            logger.error("found '{}' at the top of the span name stack when expecting '{}'",
+                    poppedSpanName, spanName);
+            while (!spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
+                poppedSpanName = spanNameStack.removeLast();
+            }
+            if (spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
+                logger.error("popped entire span name stack, never found '{}'", spanName);
+            }
         }
     }
 

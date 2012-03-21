@@ -71,6 +71,6 @@ public class LevelOneAspect {
                 return Optional.absent();
             }
         };
-        return pluginServices.executeRootSpan(rootSpanDetail, joinPoint, "level one");
+        return pluginServices.executeRootSpan("level one", rootSpanDetail, joinPoint);
     }
 }

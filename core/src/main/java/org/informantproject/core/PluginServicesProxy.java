@@ -81,46 +81,46 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Object executeRootSpan(RootSpanDetail rootSpanDetail, ProceedingJoinPoint joinPoint,
-            String spanSummaryKey) throws Throwable {
+    public Object executeRootSpan(String spanName, RootSpanDetail rootSpanDetail,
+            ProceedingJoinPoint joinPoint) throws Throwable {
 
         if (pluginServices == null) {
             return joinPoint.proceed();
         } else {
-            return pluginServices.executeRootSpan(rootSpanDetail, joinPoint, spanSummaryKey);
+            return pluginServices.executeRootSpan(spanName, rootSpanDetail, joinPoint);
         }
     }
 
     @Override
-    public Object executeSpan(SpanDetail spanDetail, ProceedingJoinPoint joinPoint,
-            String spanSummaryKey) throws Throwable {
+    public Object executeSpan(String spanName, SpanDetail spanDetail,
+            ProceedingJoinPoint joinPoint) throws Throwable {
 
         if (pluginServices == null) {
             return joinPoint.proceed();
         } else {
-            return pluginServices.executeSpan(spanDetail, joinPoint, spanSummaryKey);
+            return pluginServices.executeSpan(spanName, spanDetail, joinPoint);
         }
     }
 
     @Override
-    public Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint, String spanSummaryKey)
+    public Object proceedAndRecordMetricData(String spanName, ProceedingJoinPoint joinPoint)
             throws Throwable {
 
         if (pluginServices == null) {
             return joinPoint.proceed();
         } else {
-            return pluginServices.proceedAndRecordMetricData(joinPoint, spanSummaryKey);
+            return pluginServices.proceedAndRecordMetricData(spanName, joinPoint);
         }
     }
 
     @Override
-    public <V> V proceedAndRecordMetricData(Callable<V> callable,
-            String spanSummaryKey) throws Exception {
+    public <V> V proceedAndRecordMetricData(String spanName,
+            Callable<V> callable) throws Exception {
 
         if (pluginServices == null) {
             return callable.call();
         } else {
-            return pluginServices.proceedAndRecordMetricData(callable, spanSummaryKey);
+            return pluginServices.proceedAndRecordMetricData(spanName, callable);
         }
     }
 

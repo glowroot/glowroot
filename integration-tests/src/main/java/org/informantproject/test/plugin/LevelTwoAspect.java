@@ -59,6 +59,6 @@ public class LevelTwoAspect {
                 return SpanContextMap.of("arg1", arg1, "arg2", arg2);
             }
         };
-        return pluginServices.executeSpan(spanDetail, joinPoint, "level two");
+        return pluginServices.executeSpan("level two", spanDetail, joinPoint);
     }
 }

@@ -69,17 +69,17 @@ public abstract class PluginServices {
     // see comment for getStringProperty()
     public abstract Optional<Double> getDoubleProperty(String propertyName);
 
-    public abstract Object executeRootSpan(RootSpanDetail rootSpanDetail,
-            ProceedingJoinPoint joinPoint, String spanSummaryKey) throws Throwable;
+    public abstract Object executeRootSpan(String spanName,
+            RootSpanDetail rootSpanDetail, ProceedingJoinPoint joinPoint) throws Throwable;
 
-    public abstract Object executeSpan(SpanDetail spanDetail, ProceedingJoinPoint joinPoint,
-            String spanSummaryKey) throws Throwable;
+    public abstract Object executeSpan(String spanName, SpanDetail spanDetail,
+            ProceedingJoinPoint joinPoint) throws Throwable;
 
-    public abstract Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint,
-            String spanSummaryKey) throws Throwable;
+    public abstract Object proceedAndRecordMetricData(String spanName,
+            ProceedingJoinPoint joinPoint) throws Throwable;
 
-    public abstract <V> V proceedAndRecordMetricData(Callable<V> callable,
-            String spanSummaryKey) throws Exception;
+    public abstract <V> V proceedAndRecordMetricData(String spanName,
+            Callable<V> callable) throws Exception;
 
     // see comment for getStringProperty()
     public abstract RootSpanDetail getRootSpanDetail();
@@ -139,23 +139,23 @@ public abstract class PluginServices {
             return null;
         }
         @Override
-        public Object executeRootSpan(RootSpanDetail rootSpanDetail, ProceedingJoinPoint joinPoint,
-                String spanSummaryKey) throws Throwable {
+        public Object executeRootSpan(String spanName, RootSpanDetail rootSpanDetail,
+                ProceedingJoinPoint joinPoint) throws Throwable {
             return joinPoint.proceed();
         }
         @Override
-        public Object executeSpan(SpanDetail spanDetail, ProceedingJoinPoint joinPoint,
-                String spanSummaryKey) throws Throwable {
+        public Object executeSpan(String spanName, SpanDetail spanDetail,
+                ProceedingJoinPoint joinPoint) throws Throwable {
             return joinPoint.proceed();
         }
         @Override
-        public Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint,
-                String spanSummaryKey) throws Throwable {
+        public Object proceedAndRecordMetricData(String spanName,
+                ProceedingJoinPoint joinPoint) throws Throwable {
             return joinPoint.proceed();
         }
         @Override
-        public <V> V proceedAndRecordMetricData(Callable<V> callable,
-                String spanSummaryKey) throws Exception {
+        public <V> V proceedAndRecordMetricData(String spanName,
+                Callable<V> callable) throws Exception {
             return callable.call();
         }
         @Override

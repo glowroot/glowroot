@@ -88,31 +88,6 @@ public class RootSpan {
         return endTick != 0;
     }
 
-    // typically pop() methods don't require the span to pop, but for safety,
-    // the span to pop is passed in just to make sure it is the one on top
-    // (and if it is not the one on top, then pop until it is found, preventing
-    // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long endTick, StackTraceElement[] stackTraceElements) {
-        span.setEndTick(endTick);
-        span.setStackTraceElements(stackTraceElements);
-        Span pop = (Span) spanStack.removeLast();
-        if (!pop.equals(span)) {
-            // somehow(?) a pop was missed
-            // this is just damage control
-            logger.error("found " + pop.getDescription() + " at the top of the stack when"
-                    + " expecting " + span.getDescription(), new IllegalStateException());
-            while (!spanStack.isEmpty() && !pop.equals(span)) {
-                pop = (Span) spanStack.removeLast();
-            }
-            if (spanStack.isEmpty() && !pop.equals(span)) {
-                logger.error("popped entire stack, never found " + span.getDescription());
-            }
-        }
-        if (spanStack.isEmpty()) {
-            this.endTick = endTick;
-        }
-    }
-
     Span pushSpan(SpanDetail spanDetail) {
         Span currentSpan = (Span) spanStack.getLast();
         Span span = new Span(spanDetail, startTick, ticker.read(), size, currentSpan.getIndex(),
@@ -121,9 +96,36 @@ public class RootSpan {
         return span;
     }
 
+    // typically pop() methods don't require the objects to pop, but for safety, the span is
+    // passed in just to make sure it is the one on top (and if not, then pop until it is found,
+    // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
+    void popSpan(Span span, long endTick, StackTraceElement[] stackTraceElements) {
+        span.setEndTick(endTick);
+        span.setStackTraceElements(stackTraceElements);
+        popSpanSafe(span);
+        if (spanStack.isEmpty()) {
+            this.endTick = endTick;
+        }
+    }
+
     private void pushSpanInternal(Span span) {
         spanStack.add(span);
         spans.add(span);
         size++;
+    }
+
+    private void popSpanSafe(Span span) {
+        Span pop = (Span) spanStack.removeLast();
+        if (!pop.equals(span)) {
+            // somehow(?) a pop was missed, this is just damage control
+            logger.error("found '{}' at the top of the stack when expecting '{}'",
+                    pop.getDescription(), span.getDescription());
+            while (!spanStack.isEmpty() && !pop.equals(span)) {
+                pop = (Span) spanStack.removeLast();
+            }
+            if (spanStack.isEmpty() && !pop.equals(span)) {
+                logger.error("popped entire stack, never found '{}'", span.getDescription());
+            }
+        }
     }
 }

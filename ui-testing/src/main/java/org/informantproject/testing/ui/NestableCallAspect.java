@@ -56,9 +56,9 @@ public class NestableCallAspect {
     @Around("isPluginEnabled() && nestablePointcut()")
     public Object nestableAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         if (pluginServices.getRootSpanDetail() == null) {
-            return pluginServices.executeRootSpan(getRootSpanDetail(), joinPoint, "nestable");
+            return pluginServices.executeRootSpan("nestable", getRootSpanDetail(), joinPoint);
         } else {
-            return pluginServices.executeSpan(getSpanDetail(), joinPoint, "nestable");
+            return pluginServices.executeSpan("nestable", getSpanDetail(), joinPoint);
         }
     }
 

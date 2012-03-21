@@ -41,7 +41,7 @@ public class RootSpanMarkerAspect {
 
     @Around("rootSpanMarkerPointcut()")
     public void aroundRootSpanMarkerPointcut(ProceedingJoinPoint joinPoint) throws Throwable {
-        pluginServices.executeRootSpan(new MockRootSpan(), joinPoint, MOCK_SPAN_SUMMARY_KEY);
+        pluginServices.executeRootSpan(MOCK_SPAN_SUMMARY_KEY, new MockRootSpan(), joinPoint);
     }
 
     private static class MockRootSpan implements RootSpanDetail {
