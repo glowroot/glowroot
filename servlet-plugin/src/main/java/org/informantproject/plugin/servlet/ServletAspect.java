@@ -111,8 +111,8 @@ public class ServletAspect {
         }
         topLevelServletSpanDetail.set(spanDetail);
         try {
-            pluginServices.executeRootSpan(spanDetail, joinPoint,
-                    TOP_LEVEL_SERVLET_SUMMARY_KEY);
+            pluginServices.executeRootSpan(TOP_LEVEL_SERVLET_SUMMARY_KEY, spanDetail,
+                    joinPoint);
         } finally {
             topLevelServletSpanDetail.set(null);
         }
