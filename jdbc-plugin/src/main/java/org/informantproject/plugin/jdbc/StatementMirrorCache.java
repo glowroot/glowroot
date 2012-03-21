@@ -73,8 +73,8 @@ class StatementMirrorCache {
             // however, this case is handled anyways just to be safe since maybe(?) it's possible
             // that a pool could hand out read-only versions of a prepared statement that has no
             // parameters
-            preparedStatementMirrorMap.putIfAbsent(preparedStatement,
-                    new PreparedStatementMirror(sql));
+            preparedStatementMirrorMap.putIfAbsent(preparedStatement, new PreparedStatementMirror(
+                    sql));
             info = preparedStatementMirrorMap.get(preparedStatement);
         } else if (!info.getSql().equals(sql)) {
             // sql has changed for this PreparedStatement
@@ -95,8 +95,8 @@ class StatementMirrorCache {
                 logger.error("SQL TEXT WAS NOT CAPTURED BY INFORMANT.  PLEASE REPORT THIS.",
                         new Throwable());
             }
-            return new PreparedStatementMirror(
-                    "SQL TEXT WAS NOT CAPTURED BY INFORMANT.  PLEASE REPORT THIS.");
+            return new PreparedStatementMirror("SQL TEXT WAS NOT CAPTURED BY INFORMANT.  PLEASE"
+                    + " REPORT THIS.");
         }
         return info;
     }
