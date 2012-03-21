@@ -58,6 +58,7 @@ public class JdbcAspect {
     private static final String JDBC_EXECUTE_SUMMARY_KEY = "jdbc execute";
     private static final String JDBC_NEXT_SUMMARY_KEY = "jdbc next";
     private static final String JDBC_COMMIT_SUMMARY_KEY = "jdbc commit";
+    private static final String JDBC_STATEMENT_CLOSE_SUMMARY_KEY = "jdbc statement close";
 
     private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
     private static final PluginServices pluginServices = PluginServices
@@ -314,5 +315,15 @@ public class JdbcAspect {
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         statementMirror.clearBatch();
         statementMirror.setLastJdbcSpanDetail(null);
+    }
+
+    // ================== Statement Closing ==================
+
+    @Pointcut("call(void java.sql.Statement.close())")
+    void statementClosePointcut() {}
+
+    @Around("statementClosePointcut() && !cflowbelow(statementClosePointcut())")
+    public void statementCloseAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        pluginServices.proceedAndRecordMetricData(JDBC_STATEMENT_CLOSE_SUMMARY_KEY, joinPoint);
     }
 }

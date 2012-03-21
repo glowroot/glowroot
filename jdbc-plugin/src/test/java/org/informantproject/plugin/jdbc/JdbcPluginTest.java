@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.List;
 
 import org.h2.jdbcx.JdbcDataSource;
@@ -34,6 +35,8 @@ import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 /**
  * Basic test of the jdbc plugin.
@@ -108,10 +111,14 @@ public class JdbcPluginTest {
                 + " (name) values ('john doe')"));
         Span jdbcCommitSpan = trace.getSpans().get(2);
         assertThat(jdbcCommitSpan.getDescription(), is("jdbc commit"));
-        assertThat(trace.getMetrics().size(), is(3));
+        assertThat(trace.getMetrics().size(), is(4));
+        // ordering is by total desc, so not fixed (though root span will be first since it
+        // encompasses all other timings)
         assertThat(trace.getMetrics().get(0).getName(), is("mock root span"));
-        assertThat(trace.getMetrics().get(1).getName(), is("jdbc execute"));
-        assertThat(trace.getMetrics().get(2).getName(), is("jdbc commit"));
+        HashSet<String> metricNames = Sets.newHashSet(trace.getMetrics().get(1).getName(),
+                trace.getMetrics().get(2).getName(), trace.getMetrics().get(3).getName());
+        assertThat(metricNames, is(Sets.newHashSet("jdbc execute", "jdbc commit",
+                "jdbc statement close")));
     }
 
     // TODO testPreparedStatement
