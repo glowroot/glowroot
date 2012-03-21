@@ -16,6 +16,7 @@
 package org.informantproject.core.trace;
 
 import java.util.LinkedList;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -190,18 +191,41 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint, String spanSummaryKey)
-            throws Throwable {
+    public Object proceedAndRecordMetricData(final ProceedingJoinPoint joinPoint,
+            String spanSummaryKey) throws Throwable {
 
-        logger.debug("proceedAndRecordMetricData(): summaryKey={}", spanSummaryKey);
+        return proceedAndRecordMetricData(new CallableWithThrowable<Object, Throwable>() {
+            public Object call() throws Throwable {
+                return joinPoint.proceed();
+            }
+        },
+                spanSummaryKey);
+    }
+
+    @Override
+    public <V> V proceedAndRecordMetricData(final Callable<V> callable, String spanSummaryKey)
+            throws Exception {
+
+        return proceedAndRecordMetricData(new CallableWithThrowable<V, Exception>() {
+            public V call() throws Exception {
+                return callable.call();
+            }
+        },
+                spanSummaryKey);
+    }
+
+    private <V, T extends Throwable> V proceedAndRecordMetricData(CallableWithThrowable<V, T> callable,
+            String spanSummaryKey) throws T {
+
+        logger.debug("proceedAndRecordMetricData(): spanSummaryKey={}", spanSummaryKey);
         boolean skipSummaryData = spanSummaryKeyStack.get().contains(spanSummaryKey);
         if (skipSummaryData) {
-            return joinPoint.proceed();
+            return callable.call();
         } else {
             spanSummaryKeyStack.get().add(spanSummaryKey);
             long startTick = ticker.read();
             try {
-                return joinPoint.proceed();
+                return callable.call();
             } finally {
                 long endTick = ticker.read();
                 spanSummaryKeyStack.get().removeLast();
@@ -336,6 +360,10 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     public interface PluginServicesImplFactory {
-        public PluginServicesImpl create(String pluginId);
+        PluginServicesImpl create(String pluginId);
+    }
+
+    private interface CallableWithThrowable<V, T extends Throwable> {
+        V call() throws T;
     }
 }

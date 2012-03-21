@@ -15,6 +15,8 @@
  */
 package org.informantproject.core;
 
+import java.util.concurrent.Callable;
+
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -108,6 +110,17 @@ class PluginServicesProxy extends PluginServices {
             return joinPoint.proceed();
         } else {
             return pluginServices.proceedAndRecordMetricData(joinPoint, spanSummaryKey);
+        }
+    }
+
+    @Override
+    public <V> V proceedAndRecordMetricData(Callable<V> callable,
+            String spanSummaryKey) throws Exception {
+
+        if (pluginServices == null) {
+            return callable.call();
+        } else {
+            return pluginServices.proceedAndRecordMetricData(callable, spanSummaryKey);
         }
     }
 

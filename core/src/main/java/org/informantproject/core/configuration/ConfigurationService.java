@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,6 +103,9 @@ public class ConfigurationService {
         pluginDescriptors = readPluginDescriptors();
         initCoreConfiguration();
         pluginConfigurations = Maps.newHashMap();
+        // add the "built-in" plugin configuration for the aspectj weaving metrics
+        pluginConfigurations.put("org.informantproject:informant-core",
+                new ImmutablePluginConfiguration(true, new HashMap<String, Optional<?>>()));
         for (PluginDescriptor pluginDescriptor : pluginDescriptors.values()) {
             pluginConfigurations.put(pluginDescriptor.getId(), configurationDao
                     .readPluginConfiguration(pluginDescriptor));
@@ -113,7 +117,12 @@ public class ConfigurationService {
     }
 
     public ImmutablePluginConfiguration getPluginConfiguration(String pluginId) {
-        return pluginConfigurations.get(pluginId);
+        ImmutablePluginConfiguration pluginConfiguration = pluginConfigurations.get(pluginId);
+        if (pluginConfiguration == null) {
+            logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId, Joiner
+                    .on(", ").join(pluginConfigurations.keySet()));
+        }
+        return pluginConfiguration;
     }
 
     public void addConfigurationListener(ConfigurationListener listener) {

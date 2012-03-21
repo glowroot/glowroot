@@ -25,7 +25,6 @@ import javax.annotation.concurrent.GuardedBy;
 import org.informantproject.api.PluginServices;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.local.ui.HttpServer;
-import org.informantproject.shaded.aspectj.weaver.loadtime.Agent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,9 +52,11 @@ public final class MainEntryPoint {
     private static volatile Injector injector;
     private static final Object lock = new Object();
 
-    // plugins may get instantiated by aspectj and request their PluginServices instance before
-    // Informant has finished starting up, in which case they are given a proxy which will point to
-    // the real PluginServices as soon as possible
+    // when running unit tests under IsolatedWeavingClassLoader, plugins may get instantiated by
+    // aspectj and request their PluginServices instance before Informant has finished starting up,
+    // in which case they are given a proxy which will point to the real PluginServices as soon as
+    // possible. this is not an issue when running under javaagent, since in that case Informant is
+    // started up before adding the aspectj weaving agent (InformantClassFileTransformer).
     @GuardedBy("returnPluginServicesProxy")
     private static final List<PluginServicesProxy> pluginServicesProxies =
             new ArrayList<PluginServicesProxy>();
@@ -68,7 +69,8 @@ public final class MainEntryPoint {
         start(new AgentArgs(agentArgs));
         // start the AspectJ load-time weaving agent
         setAspectjAopXmlSearchPath();
-        Agent.premain(null, instrumentation);
+        PluginServices pluginServices = createPluginServices("org.informantproject:informant-core");
+        instrumentation.addTransformer(new InformantClassFileTransformer(pluginServices));
     }
 
     public static PluginServices createPluginServices(String pluginId) {

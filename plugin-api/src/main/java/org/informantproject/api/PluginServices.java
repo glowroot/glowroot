@@ -17,6 +17,7 @@ package org.informantproject.api;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.Callable;
 
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 
@@ -76,6 +77,9 @@ public abstract class PluginServices {
 
     public abstract Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint,
             String spanSummaryKey) throws Throwable;
+
+    public abstract <V> V proceedAndRecordMetricData(Callable<V> callable,
+            String spanSummaryKey) throws Exception;
 
     // see comment for getStringProperty()
     public abstract RootSpanDetail getRootSpanDetail();
@@ -148,6 +152,11 @@ public abstract class PluginServices {
         public Object proceedAndRecordMetricData(ProceedingJoinPoint joinPoint,
                 String spanSummaryKey) throws Throwable {
             return joinPoint.proceed();
+        }
+        @Override
+        public <V> V proceedAndRecordMetricData(Callable<V> callable,
+                String spanSummaryKey) throws Exception {
+            return callable.call();
         }
         @Override
         public RootSpanDetail getRootSpanDetail() {
