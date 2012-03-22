@@ -371,10 +371,10 @@ public class ServletPluginTest {
         Trace trace = traces.get(0);
         assertThat(trace.getSpans().size(), is(1));
         assertThat(trace.getDescription(), is("GET /servletundertest"));
-        assertThat((String) trace.getContextMap().get("session id (at beginning of this request)"),
-                is("1234"));
-        assertThat((String) trace.getContextMap().get("session id (updated during this request)"),
-                is(""));
+        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id (at beginning"
+                + " of this request)"), is("1234"));
+        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id (updated"
+                + " during this request)"), is(""));
         Span span = trace.getSpans().get(0);
         assertThat(span.getDescription(), is("GET /servletundertest"));
     }
@@ -389,13 +389,14 @@ public class ServletPluginTest {
 
     @SuppressWarnings("unchecked")
     private static Map<String, String> getSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getContextMap().get("session attributes");
+        return (Map<String, String>) trace.getSpans().get(0).getContextMap().get(
+                "session attributes");
     }
 
     @SuppressWarnings("unchecked")
     private static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getContextMap().get("session attributes (updated during"
-                + " this request)");
+        return (Map<String, String>) trace.getSpans().get(0).getContextMap().get(
+                "session attributes (updated during this request)");
     }
 
     @SuppressWarnings("serial")
