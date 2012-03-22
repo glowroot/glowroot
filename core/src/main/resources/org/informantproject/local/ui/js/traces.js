@@ -66,7 +66,19 @@ var tracesTemplateText = ''
 + '  {{#if mergedStackTree.sampleCount}}'
 + '    <a href="" onclick="toggleMergedStackTree(\'{{id}}\'); return false">merged stack tree</a>'
 + '    ({{mergedStackTree.sampleCount}})<br>'
-+ '    <div id="mst_{{id}}" style="display: none; white-space: nowrap"></div>'
++ '    <div id="mst_outer_{{id}}" style="display: none; white-space: nowrap">'
++ '      <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
++ '          id="mst_filter_{{id}}"></select>'
++ '      <br>'
++ '      <div id="mst_uninteresting_outer_{{id}}" style="display: none">'
++ '        <a style="margin-left: 1em" href="" id="mst_uninteresting_link_{{id}}"'
++ '            onclick="toggleUninteresting(\'{{id}}\'); return false">'
++ '          expand common base'
++ '        </a>'
++ '        <div id="mst_uninteresting_{{id}}" style="display: none"></div>'
++ '      </div>'
++ '      <div id="mst_interesting_{{id}}"></div>'
++ '    </div>'
 + '  {{/if}}'
 + '  <br>'
 + '</div>'
@@ -199,49 +211,181 @@ function toggleSpan(id) {
     $('#sp_' + id).show()
   }
 }
+function toggleUninteresting(id) {
+  if ($('#mst_uninteresting_' + id).is(':visible')) {
+    $('#mst_uninteresting_link_' + id).html('expand common base')
+    $('#mst_uninteresting_' + id).hide()
+  } else {
+    $('#mst_uninteresting_link_' + id).html('shrink common base')
+    $('#mst_uninteresting_' + id).show()
+  }
+}
 function toggleMergedStackTree(id) {
   var rootNode = traceForId(id).mergedStackTree
-  function curr(node, level) {
-    var ret = ''
-    var stackTraceElement = node.stackTraceElement
-    if (node.sampleCount < rootNode.sampleCount)
-      level++
-    for (var j = 0; j < level; j++) {
-      ret += '&nbsp;'
+  function curr(node, level, spanName) {
+    var rootNodeSampleCount
+    var nodeSampleCount
+    if (spanName) {
+      rootNodeSampleCount = rootNode.spanNameCounts[spanName] || 0
+      nodeSampleCount = node.spanNameCounts[spanName] || 0
+      if (nodeSampleCount == 0) {
+        return ''
+      }
+    } else {
+      rootNodeSampleCount = rootNode.sampleCount
+      nodeSampleCount = node.sampleCount
     }
-    ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
-    var samplePercentage = (node.sampleCount / rootNode.sampleCount) * 100
+    if (nodeSampleCount < rootNodeSampleCount) {
+      level++
+    }
+    var ret = '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3) + 1)
+        + 'em">'
+    var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100
     ret += samplePercentage.toFixed(1)
     ret += '%</span>'
-    ret += stackTraceElement + '<br>'
+    ret += node.stackTraceElement + '<br>'
     if (node.leafThreadState) {
-      for (var j = 0; j < level; j++) {
-        ret += '&nbsp;'
-      }
-      ret += '&nbsp;&nbsp;<span style="display: inline-block; width: 4em">'
+      ret += '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3) + 1)
+          + 'em">'
       ret += samplePercentage.toFixed(1)
       ret += '%</span>'
-      ret += '&nbsp;' + node.leafThreadState + '<br>'
+      ret += '&nbsp;' + node.leafThreadState
+      ret += '<br>'
     }
     if (node.childNodes) {
       var childNodes = node.childNodes
       // order child nodes by sampleCount (descending)
-      childNodes.sort(function(a, b) { return b.sampleCount - a.sampleCount })
+      childNodes.sort(function(a, b) {
+        if (spanName) {
+          return (b.spanNameCounts[spanName] || 0) - (a.spanNameCounts[spanName] || 0)
+        } else {
+          return b.sampleCount - a.sampleCount
+        }
+      })
       for (var i = 0; i < childNodes.length; i++) {
-        ret += curr(childNodes[i], level)
+        ret += curr(childNodes[i], level, spanName)
       }
     }
     return ret
   }
-  if ($('#mst_' + id).is(':visible')) {
-    $('#mst_' + id).hide()
+  if ($('#mst_outer_' + id).is(':visible')) {
+    $('#mst_outer_' + id).hide()
   } else {
     if (! $('#mst_' + id).html()) {
-      var html = curr(rootNode, 0)
-      $(html).appendTo('#mst_' + id)
+      // first time only, process merged stack tree and populate dropdown
+      processMergedStackTree(id)
+      // build tree
+      var tree = { name : '', childNodes : {} }
+      $.each(rootNode.spanNameCounts, function(spanName, count) {
+        // only really need to look at leafs (' / other') to hit all nodes
+        if (spanName.match(/ \/ other$/)) {
+          var parts = spanName.split(' / ')
+          var node = tree
+          var partialName = ''
+          $.each(parts, function(i, part) {
+            if (i > 0) {
+              partialName += ' / '
+            }
+            partialName += part
+            if (!node.childNodes[part]) {
+              node.childNodes[part] = { name : partialName, childNodes : {} }
+            }
+            node = node.childNodes[part]
+          })
+        }
+      })
+      function nodesDepthFirst(node) {
+        var all = [ node ]
+        // order by count desc
+        var childNodes = []
+        $.each(node.childNodes, function(name, childNode) {
+          childNodes.push(childNode)
+        })
+        childNodes.sort(function(a, b) {
+          return rootNode.spanNameCounts[b.name] - rootNode.spanNameCounts[a.name]
+        })
+        if (childNodes.length == 1 && childNodes[0].name.match(/ \/ other$/)) {
+          // skip if single 'other' node (in which case it will be represented by current node)
+          return all
+        }
+        $.each(childNodes, function(i, childNode) {
+          all = all.concat(nodesDepthFirst(childNode))
+        })
+        return all
+      }
+      var orderedNodes = nodesDepthFirst(tree)
+      // remove the root '' since all nodes are already under the single root span metric
+      orderedNodes.splice(0, 1)
+      // build filter dropdown
+      $('#mst_filter_' + id).html('')
+      $.each(orderedNodes, function(i, node) {
+        $('#mst_filter_' + id).append($('<option />').val(node.name).text(node.name + ' ('
+            + rootNode.spanNameCounts[node.name] + ')'))
+      })
+      var i = 0
+      var interestingRootNode = rootNode
+      var uninterestingHtml = ''
+      while (true) {
+        uninterestingHtml += '<span style="display: inline-block; width: 4em; margin-left: 1em">'
+            + '100.0%</span>' + interestingRootNode.stackTraceElement + '<br>'
+        if (! interestingRootNode.childNodes || interestingRootNode.childNodes.length != 1) {
+          break
+        }
+        var childNode = interestingRootNode.childNodes[0]
+        if (childNode.leafThreadState) {
+          break
+        }
+        interestingRootNode = childNode
+        i++
+      }
+      $('#mst_filter_' + id).change(function() {
+        // update merged stack tree based on filter
+        var interestingHtml = curr(interestingRootNode, 0, $(this).val())
+        $('#mst_uninteresting_outer_' + id).show()
+        $('#mst_uninteresting_' + id).html(uninterestingHtml)
+        $('#mst_interesting_' + id).html(interestingHtml)
+      })
+      // build initial merged stack tree
+      var interestingHtml = curr(interestingRootNode, 0)
+      $('#mst_uninteresting_outer_' + id).show()
+      $('#mst_uninteresting_' + id).html(uninterestingHtml)
+      $('#mst_interesting_' + id).html(interestingHtml)
     }
-    $('#mst_' + id).show()
+    $('#mst_outer_' + id).show()
   }
+}
+function processMergedStackTree(id) {
+  var rootNode = traceForId(id).mergedStackTree
+  function calculateSpanNameCounts(node) {
+    var mergedCounts = {}
+    if (node.leafThreadState) {
+      var partial = ''
+      $.each(node.spanNames, function(i, spanName) {
+        if (i > 0) {
+          partial += ' / '
+        }
+        partial += spanName
+        mergedCounts[partial] = node.sampleCount
+      })
+      mergedCounts[partial + ' / other'] = node.sampleCount
+    }
+    if (node.childNodes) {
+      var childNodes = node.childNodes
+      for (var i = 0; i < childNodes.length; i++) {
+        var spanNameCounts = calculateSpanNameCounts(childNodes[i])
+        $.each(spanNameCounts, function(spanName, count) {
+          if (mergedCounts[spanName]) {
+            mergedCounts[spanName] += count
+          } else {
+            mergedCounts[spanName] = count
+          }
+        })
+      }
+    }
+    node.spanNameCounts = mergedCounts
+    return mergedCounts
+  }
+  calculateSpanNameCounts(rootNode)
 }
 function viewStackTrace(stackTraceHash) {
   $.getJSON('/stacktrace/' + stackTraceHash, function(stackTraceElements) {

@@ -15,9 +15,11 @@
  */
 package org.informantproject.core.trace;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
@@ -34,6 +36,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
+
+import edu.emory.mathcs.backport.java.util.Deque;
+import edu.emory.mathcs.backport.java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. servlet request).
@@ -68,7 +74,7 @@ public class Trace {
     private final RootSpan rootSpan;
 
     // used to prevent recording overlapping metric timings for the same span
-    private final LinkedList<String> spanNameStack = new LinkedList<String>();
+    private final Deque spanNameStack = new LinkedBlockingDeque();
 
     // stack trace data constructed from sampled stack traces
     // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
@@ -96,7 +102,7 @@ public class Trace {
         startDate = new Date(startTimeMillis);
         rootSpan = new RootSpan(spanDetail, ticker);
         spanNameStack.add(spanName);
-        addThreadName(Thread.currentThread());
+        addThreadName();
     }
 
     public Date getStartDate() {
@@ -175,13 +181,29 @@ public class Trace {
     void captureStackTrace() {
         Thread thread = threadHolder.get();
         if (thread != null) {
-            // TODO gather thread names at different point? maybe during contextual trace?
-            addThreadName(thread);
-            mergedStackTreeSupplier.get().captureStackTrace(thread);
+            // take a snapshot of the span name stack as close to the stack trace capture as
+            // possible (don't want the expense of synchronization for every addition to the span
+            // name stack, though this leaves open the possibility of the two being out of sync)
+            ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+            @SuppressWarnings("unchecked")
+            List<String> spanNames = Lists.newArrayList(spanNameStack);
+            ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
+            if (spanNames.isEmpty()) {
+                // trace has ended
+                return;
+            }
+            List<String> uniqueSpanNames = Lists.newArrayList();
+            for (String spanName : spanNames) {
+                if (!uniqueSpanNames.contains(spanName)) {
+                    uniqueSpanNames.add(spanName);
+                }
+            }
+            mergedStackTreeSupplier.get().addStackTrace(threadInfo, uniqueSpanNames);
         }
     }
 
     Span pushSpan(String spanName, SpanDetail spanDetail) {
+        addThreadName();
         spanNameStack.add(spanName);
         return rootSpan.pushSpan(spanDetail);
     }
@@ -190,6 +212,8 @@ public class Trace {
     // words, when span name is the top-most such span name on the span name stack (whereas the case
     // above - with detail - already takes ticker readings as part of span creation so no need for
     // such optimization since the span duration can just be pulled from the span)
+    //
+    // be careful not to call popSpanWithoutDetail if this method returns true
     boolean pushSpanWithoutDetail(String spanName) {
         boolean alreadyPresent = spanNameStack.contains(spanName);
         if (!alreadyPresent) {
@@ -204,26 +228,32 @@ public class Trace {
     // marked as complete)
     void popSpan(String spanName, Span span, long endTick, StackTraceElement[] stackTraceElements) {
         popSpanNameSafe(spanName);
-        metricData.recordData(spanName, endTick - span.getStartTick());
+        // unlike popSpanWithoutDetail, there is no guarantee here that this is a top-level span for
+        // the given span name, so this is checked before recording metric data
+        if (!spanNameStack.contains(spanName)) {
+            metricData.recordData(spanName, endTick - span.getStartTick());
+        }
         rootSpan.popSpan(span, endTick, stackTraceElements);
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the spanName is
     // passed in just to make sure it is the one on top (and if not, then pop until it is found,
     // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
+    //
+    // be careful not to call this method if pushSpanWithoutDetail returned true
     void popSpanWithoutDetail(String spanName, long duration) {
         popSpanNameSafe(spanName);
         metricData.recordData(spanName, duration);
     }
 
     private void popSpanNameSafe(String spanName) {
-        String poppedSpanName = spanNameStack.removeLast();
+        String poppedSpanName = (String) spanNameStack.removeLast();
         if (!poppedSpanName.equals(spanName)) {
             // somehow(?) a pop was missed, this is just damage control
             logger.error("found '{}' at the top of the span name stack when expecting '{}'",
                     poppedSpanName, spanName);
             while (!spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
-                poppedSpanName = spanNameStack.removeLast();
+                poppedSpanName = (String) spanNameStack.removeLast();
             }
             if (spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
                 logger.error("popped entire span name stack, never found '{}'", spanName);
@@ -231,8 +261,8 @@ public class Trace {
         }
     }
 
-    private void addThreadName(Thread thread) {
-        String threadName = thread.getName();
+    private void addThreadName() {
+        String threadName = Thread.currentThread().getName();
         if (!threadNames.contains(threadName)) {
             // intentionally calling contains first for performance even though add()
             // performs a similar check, this is because of the specific implementation of

@@ -206,7 +206,6 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     private <V, T extends Throwable> V proceedAndRecordMetricData(String spanName,
             CallableWithThrowable<V, T> callable) throws T {
 
-        logger.debug("proceedAndRecordMetricData(): spanName={}", spanName);
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
             return callable.call();

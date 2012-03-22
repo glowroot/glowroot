@@ -301,6 +301,12 @@ public class TraceSinkLocal implements TraceSink {
                 jw.name("sampleCount").value(currNode.getSampleCount());
                 if (currNode.isLeaf()) {
                     jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
+                    jw.name("spanNames");
+                    jw.beginArray();
+                    for (String spanName : currNode.getSpanNames()) {
+                        jw.value(spanName);
+                    }
+                    jw.endArray();
                 }
                 List<MergedStackTreeNode> childNodes = Lists.newArrayList(currNode.getChildNodes());
                 if (childNodes.isEmpty()) {
