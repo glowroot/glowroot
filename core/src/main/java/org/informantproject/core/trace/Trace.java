@@ -21,7 +21,6 @@ import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -64,9 +63,6 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
-    // stores the thread name(s) at trace start and at each stack trace capture
-    private final List<String> threadNames = new CopyOnWriteArrayList<String>();
-
     // stores timing info so that summary metric data can be reported for a given trace
     private final MetricData metricData = new MetricData();
 
@@ -102,7 +98,6 @@ public class Trace {
         startDate = new Date(startTimeMillis);
         rootSpan = new RootSpan(spanDetail, ticker);
         spanNameStack.add(spanName);
-        addThreadName();
     }
 
     public Date getStartDate() {
@@ -149,10 +144,6 @@ public class Trace {
 
     public MetricData getMetricData() {
         return metricData;
-    }
-
-    public List<String> getThreadNames() {
-        return threadNames;
     }
 
     public ScheduledFuture<?> getCaptureStackTraceScheduledFuture() {
@@ -203,7 +194,6 @@ public class Trace {
     }
 
     Span pushSpan(String spanName, SpanDetail spanDetail) {
-        addThreadName();
         spanNameStack.add(spanName);
         return rootSpan.pushSpan(spanDetail);
     }
@@ -258,20 +248,6 @@ public class Trace {
             if (spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
                 logger.error("popped entire span name stack, never found '{}'", spanName);
             }
-        }
-    }
-
-    private void addThreadName() {
-        String threadName = Thread.currentThread().getName();
-        if (!threadNames.contains(threadName)) {
-            // intentionally calling contains first for performance even though add()
-            // performs a similar check, this is because of the specific implementation of
-            // CopyOnWriteArraySet.add() which performs checking for a duplicate
-            // at the same time as copying since (as the implementors wrote)
-            // "This wins in the most common case where [the value] is not present".
-            // however for us, typically the thread name will already be present (since it
-            // typically doesn't change), so this would be inefficient in our case
-            threadNames.add(threadName);
         }
     }
 }
