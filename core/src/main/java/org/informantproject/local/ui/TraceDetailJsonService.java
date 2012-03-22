@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.informantproject.api.LargeStringBuilder;
+import org.informantproject.api.Optional;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
+import org.informantproject.core.util.OptionalJsonSerializer;
 import org.informantproject.local.trace.StackTraceDao;
 import org.informantproject.local.trace.StoredTrace;
 import org.informantproject.local.trace.TraceDao;
@@ -41,6 +43,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -180,13 +183,13 @@ public class TraceDetailJsonService implements JsonService {
             jw.name("username").value(storedTrace.getUsername());
         }
         // inject raw json into stream
+        if (storedTrace.getAttributes() != null) {
+            sb.append(",\"attributes\":");
+            sb.append(storedTrace.getAttributes());
+        }
         if (storedTrace.getMetrics() != null) {
             sb.append(",\"metrics\":");
             sb.append(storedTrace.getMetrics());
-        }
-        if (storedTrace.getContextMap() != null) {
-            sb.append(",\"contextMap\":");
-            sb.append(storedTrace.getContextMap());
         }
         if (storedTrace.getSpans() != null) {
             // spans could be null if spans text has been rolled out
@@ -218,16 +221,18 @@ public class TraceDetailJsonService implements JsonService {
         if (activeTrace.getUsername().isPresent()) {
             jw.name("username").value(activeTrace.getUsername().get());
         }
-        Gson gson = new Gson();
+        // OptionalJsonSerializer is needed for serializing trace attributes and span context maps
+        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
+                new OptionalJsonSerializer()).create();
+        String attributes = TraceSinkLocal.getAttributesJson(activeTrace, gson);
+        if (attributes != null) {
+            sb.append(",\"attributes\":");
+            sb.append(attributes);
+        }
         String metrics = TraceSinkLocal.getMetricsJson(activeTrace, gson);
         if (metrics != null) {
             sb.append(",\"metrics\":");
             sb.append(metrics);
-        }
-        String contextMap = TraceSinkLocal.getContextMapJson(activeTrace, gson);
-        if (contextMap != null) {
-            sb.append(",\"contextMap\":");
-            sb.append(contextMap);
         }
         CharSequence spans = TraceSinkLocal.getSpansJson(activeTrace, stackTraces, captureTick,
                 gson);

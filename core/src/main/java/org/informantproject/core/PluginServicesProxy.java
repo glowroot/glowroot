@@ -125,6 +125,16 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
+    public void putTraceAttribute(String name, String value) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            pluginServices.putTraceAttribute(name, value);
+        }
+    }
+
+    @Override
     public RootSpanDetail getRootSpanDetail() {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."

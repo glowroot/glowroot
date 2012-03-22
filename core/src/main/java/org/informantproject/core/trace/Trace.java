@@ -21,6 +21,8 @@ import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.Date;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -32,6 +34,7 @@ import org.informantproject.core.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
@@ -62,6 +65,10 @@ public class Trace {
     private final Date startDate;
 
     private final AtomicBoolean stuck = new AtomicBoolean();
+
+    // attribute name ordering is maintained for consistent display
+    // (assumption is order of entry is order of importance)
+    private final Queue<Attribute> attributes = new ConcurrentLinkedQueue<Attribute>();
 
     // stores timing info so that summary metric data can be reported for a given trace
     private final MetricData metricData = new MetricData();
@@ -134,16 +141,20 @@ public class Trace {
         return ((RootSpanDetail) rootSpan.getRootSpan().getSpanDetail()).getUsername();
     }
 
+    public Iterable<Attribute> getAttributes() {
+        return attributes;
+    }
+
+    public MetricData getMetricData() {
+        return metricData;
+    }
+
     public RootSpan getRootSpan() {
         return rootSpan;
     }
 
     public MergedStackTree getMergedStackTree() {
         return mergedStackTreeSupplier.get();
-    }
-
-    public MetricData getMetricData() {
-        return metricData;
     }
 
     public ScheduledFuture<?> getCaptureStackTraceScheduledFuture() {
@@ -157,6 +168,20 @@ public class Trace {
     // returns previous value
     boolean setStuck() {
         return stuck.getAndSet(true);
+    }
+
+    void putAttribute(String name, Optional<String> value) {
+        Preconditions.checkNotNull(name);
+        Preconditions.checkNotNull(value);
+        // write to orderedAttributeNames only happen in a single thread (the trace thread), so no
+        // race condition worries here
+        for (Attribute attribute : attributes) {
+            if (attribute.getName().equals(name)) {
+                attribute.setValue(value);
+                return;
+            }
+        }
+        attributes.add(new Attribute(name, value));
     }
 
     // this method doesn't need to be synchronized
@@ -248,6 +273,24 @@ public class Trace {
             if (spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
                 logger.error("popped entire span name stack, never found '{}'", spanName);
             }
+        }
+    }
+
+    public static class Attribute {
+        private final String name;
+        private volatile Optional<String> value;
+        private Attribute(String name, Optional<String> value) {
+            this.name = name;
+            this.value = value;
+        }
+        public String getName() {
+            return name;
+        }
+        public Optional<String> getValue() {
+            return value;
+        }
+        public void setValue(Optional<String> value) {
+            this.value = value;
         }
     }
 }

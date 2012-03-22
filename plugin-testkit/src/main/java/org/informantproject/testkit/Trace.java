@@ -34,8 +34,8 @@ public class Trace {
     private boolean completed;
     private String description;
     private String username;
+    private List<Attribute> attributes;
     private List<Metric> metrics;
-    private Map<String, Object> contextMap;
     private List<Span> spans;
     private MergedStackTreeNode mergedStackTree;
 
@@ -63,11 +63,11 @@ public class Trace {
     public String getUsername() {
         return username;
     }
+    public List<Attribute> getAttributes() {
+        return attributes;
+    }
     public List<Metric> getMetrics() {
         return metrics;
-    }
-    public Map<String, Object> getContextMap() {
-        return contextMap;
     }
     public List<Span> getSpans() {
         return spans;
@@ -87,11 +87,32 @@ public class Trace {
                 .add("completed", completed)
                 .add("description", description)
                 .add("username", username)
+                .add("attributes", attributes)
                 .add("metrics", metrics)
-                .add("contextMap", contextMap)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();
+    }
+
+    public static class Attribute {
+
+        private String name;
+        private String value;
+
+        public String getName() {
+            return name;
+        }
+        public String getValue() {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("name", name)
+                    .add("value", value)
+                    .toString();
+        }
     }
 
     public static class Metric {

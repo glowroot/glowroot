@@ -74,13 +74,14 @@ public class BasicTest {
         List<Trace> traces = container.getInformant().getAllTraces();
         assertThat(traces.size(), is(1));
         assertThat(traces.get(0).getDescription(), is("Level One"));
-        assertThat(traces.get(0).getContextMap(), is(mapOf("arg1", "a", "arg2", "b",
-                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
-                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
-                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b"))));
+        assertThat(traces.get(0).getAttributes().size(), is(0));
         assertThat(traces.get(0).getSpans().size(), is(3));
         Span span1 = traces.get(0).getSpans().get(0);
         assertThat(span1.getDescription(), is("Level One"));
+        assertThat(span1.getContextMap(), is(mapOf("arg1", "a", "arg2", "b",
+                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
+                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b"))));
         Span span2 = traces.get(0).getSpans().get(1);
         assertThat(span2.getDescription(), is("Level Two"));
         assertThat(span2.getContextMap(), is(mapOf("arg1", "ax", "arg2", "bx")));

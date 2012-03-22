@@ -60,8 +60,8 @@ public class TraceDao {
             new Column("completed", Types.BOOLEAN),
             new Column("description", Types.VARCHAR),
             new Column("username", Types.VARCHAR),
+            new Column("attributes", Types.VARCHAR),
             new Column("metrics", Types.VARCHAR),
-            new Column("context_map", Types.VARCHAR),
             new Column("spans", Types.VARCHAR),
             new Column("merged_stack_tree", Types.VARCHAR));
 
@@ -124,12 +124,12 @@ public class TraceDao {
         }
         try {
             dataSource.update("merge into trace (id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, metrics, context_map, spans,"
+                    + " completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     storedTrace.getId(), capturedAt, storedTrace.getStartAt(),
                     storedTrace.isStuck(), storedTrace.getDuration(), storedTrace.isCompleted(),
                     storedTrace.getDescription(), storedTrace.getUsername(),
-                    storedTrace.getMetrics(), storedTrace.getContextMap(), spansBlockId,
+                    storedTrace.getAttributes(), storedTrace.getMetrics(), spansBlockId,
                     mergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -179,7 +179,7 @@ public class TraceDao {
         List<StoredTrace> storedTraces;
         try {
             storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, metrics, context_map, spans,"
+                    + " completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree from trace where id = ?", new Object[] { id },
                     new TraceRowMapper());
         } catch (SQLException e) {
@@ -206,7 +206,7 @@ public class TraceDao {
         List<StoredTrace> storedTraces;
         try {
             storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, metrics, context_map, spans,"
+                    + " completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree from trace where captured_at >= ? and captured_at <= ?",
                     new Object[] { capturedFrom, capturedTo }, new TraceRowMapper());
         } catch (SQLException e) {
@@ -233,7 +233,7 @@ public class TraceDao {
         List<StoredTrace> storedTraces;
         try {
             storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, metrics, context_map, spans,"
+                    + " completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree from trace where captured_at >= ? and captured_at <= ?"
                     + " and duration >= ? and duration <= ?", new Object[] { capturedFrom,
                     capturedTo, lowDuration, highDuration }, new TraceRowMapper());
@@ -355,8 +355,8 @@ public class TraceDao {
             storedTrace.setCompleted(resultSet.getBoolean(columnIndex++));
             storedTrace.setDescription(resultSet.getString(columnIndex++));
             storedTrace.setUsername(resultSet.getString(columnIndex++));
+            storedTrace.setAttributes(resultSet.getString(columnIndex++));
             storedTrace.setMetrics(resultSet.getString(columnIndex++));
-            storedTrace.setContextMap(resultSet.getString(columnIndex++));
             // wait and read from rolling file outside of jdbc connection
             storedTrace.setSpans(resultSet.getString(columnIndex++));
             storedTrace.setMergedStackTree(resultSet.getString(columnIndex++));

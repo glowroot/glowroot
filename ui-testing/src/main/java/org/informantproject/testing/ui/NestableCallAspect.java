@@ -58,6 +58,8 @@ public class NestableCallAspect {
         if (pluginServices.getRootSpanDetail() == null) {
             return pluginServices.executeRootSpan("nestable", getRootSpanDetail(), joinPoint);
         } else {
+            pluginServices.putTraceAttribute("my first attribute", "hello world");
+            pluginServices.putTraceAttribute("and second", "val");
             return pluginServices.executeSpan("nestable", getSpanDetail(), joinPoint);
         }
     }

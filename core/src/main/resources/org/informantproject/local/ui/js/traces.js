@@ -29,6 +29,9 @@ var tracesTemplateText = ''
 + '  start: {{date start}}<br>'
 + '  duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
 + '  {{#if username}}username: {{username}}<br>{{/if}}'
++ '  {{#each attributes}}'
++ '    {{name}}: {{value}}<br>'
++ '  {{/each}}'
 + '  breakdown:<br>'
 + '  <table class="metrics-table" style="margin-left: 1em; border-spacing:0">'
 + '    <thead>'
@@ -52,13 +55,6 @@ var tracesTemplateText = ''
 + '      {{/each}}'
 + '    </tbody>'
 + '  </table>'
-+ '  {{#if contextMap}}'
-+ '    <a href="" onclick="$(\'#cm_{{id}}\').toggle(); return false">context map</a>'
-+ '    ({{contextMapLines contextMap}})<br>'
-+ '    <div id="cm_{{id}}" style="display: none">'
-+ '      <div style="margin-left: 1em">{{#contextMapHtml contextMap}}{{/contextMapHtml}}</div>'
-+ '    </div>'
-+ '  {{/if}}'
 + '  {{#if spans}}'
 + '    <a href="" onclick="toggleSpan(\'{{id}}\'); return false">spans</a> ({{spans.length}})<br>'
 + '    <div id="sp_{{id}}" style="display: none"></div>'
@@ -110,9 +106,16 @@ var spansTemplateText = ''
 + '      {{^}}'
 + '        {{description}}'
 + '      {{/ifLongDescription}}'
-+ '      {{#if index}}'
-+ '        {{! context map for index=0 is displayed in root context section above }}'
-+ '        <div style="margin-left: 1em">{{#contextMapHtml contextMap}}{{/contextMapHtml}}</div>'
++ '      {{#if contextMap}}'
++ '        <br>'
++ '        <a style="margin-left: 1em" href=""'
++ '            onclick="$(\'#cm_{{../../id}}_{{index}}\').toggle(); return false">'
++ '          context map'
++ '        </a>'
++ '        <br>'
++ '        <div id="cm_{{../../id}}_{{index}}" style="display: none">'
++ '          <div style="margin-left: 1em">{{#contextMapHtml contextMap}}{{/contextMapHtml}}</div>'
++ '        </div>'
 + '      {{/if}}'
 + '      {{#if stackTraceHash}}'
 + '        <a href="" onclick="viewStackTrace(\'{{stackTraceHash}}\'); return false">'
@@ -128,29 +131,10 @@ Handlebars.registerHelper('date', function(timestamp) {
 Handlebars.registerHelper('nanosToMillis', function(nanos) {
   return (nanos / 1000000).toFixed(1)
 })
-Handlebars.registerHelper('first', function(array, options) {
-  return options.fn(array[0])
-})
-Handlebars.registerHelper('contextMapLines', function(contextMap) {
-  function contextMapLines(contextMap) {
-    var ret = 0
-    for (var propName in contextMap) {
-      var propVal = contextMap[propName]
-      if (typeof propVal == 'object') {
-        ret += contextMapLines(propVal) + 1 // +1 because the map key is on its own line
-      } else {
-        ret += 1
-      }
-    }
-    return ret
-  }
-  return contextMapLines(contextMap)
-})
 Handlebars.registerHelper('contextMapHtml', function(contextMap) {
   function contextMapHtml(contextMap) {
     var ret = ''
-    for (var propName in contextMap) {
-      var propVal = contextMap[propName]
+    $.each(contextMap, function(propName, propVal) {
       ret += propName + ':'
       if (typeof propVal == 'object') {
         ret += '<br>'
@@ -160,7 +144,7 @@ Handlebars.registerHelper('contextMapHtml', function(contextMap) {
       } else {
         ret += ' ' + propVal + '<br>'
       }
-    }
+    })
     return ret
   }
   return contextMapHtml(contextMap)

@@ -203,24 +203,11 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
                 });
     }
 
-    private <V, T extends Throwable> V proceedAndRecordMetricData(String spanName,
-            CallableWithThrowable<V, T> callable) throws T {
-
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace == null) {
-            return callable.call();
-        } else {
-            boolean alreadyPresent = currentTrace.pushSpanWithoutDetail(spanName);
-            if (alreadyPresent) {
-                return callable.call();
-            } else {
-                long startTick = ticker.read();
-                try {
-                    return callable.call();
-                } finally {
-                    popSpanWithoutDetail(spanName, ticker.read() - startTick);
-                }
-            }
+    @Override
+    public void putTraceAttribute(String name, String value) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.putAttribute(name, Optional.fromNullable(value));
         }
     }
 
@@ -242,6 +229,22 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         doubleProperties.invalidateAll();
     }
 
+    private Object proceedAndDisableNested(ProceedingJoinPoint joinPoint) throws Throwable {
+        boolean previouslyDisabled = traceRegistry.isCurrentRootSpanDisabled();
+        try {
+            // disable current trace so that nested spans will not be captured even
+            // if tracing is re-enabled mid-trace
+            traceRegistry.setCurrentRootSpanDisabled(true);
+            return joinPoint.proceed();
+        } finally {
+            traceRegistry.setCurrentRootSpanDisabled(previouslyDisabled);
+        }
+    }
+
+    private boolean isInTrace() {
+        return traceRegistry.getCurrentTrace() != null;
+    }
+
     private Object proceedAndRecordSpanAndMetricData(String spanName, SpanDetail spanDetail,
             ProceedingJoinPoint joinPoint) throws Throwable {
 
@@ -257,19 +260,24 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         }
     }
 
-    private boolean isInTrace() {
-        return traceRegistry.getCurrentTrace() != null;
-    }
+    private <V, T extends Throwable> V proceedAndRecordMetricData(String spanName,
+            CallableWithThrowable<V, T> callable) throws T {
 
-    private Object proceedAndDisableNested(ProceedingJoinPoint joinPoint) throws Throwable {
-        boolean previouslyDisabled = traceRegistry.isCurrentRootSpanDisabled();
-        try {
-            // disable current trace so that nested spans will not be captured even
-            // if tracing is re-enabled mid-trace
-            traceRegistry.setCurrentRootSpanDisabled(true);
-            return joinPoint.proceed();
-        } finally {
-            traceRegistry.setCurrentRootSpanDisabled(previouslyDisabled);
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace == null) {
+            return callable.call();
+        } else {
+            boolean alreadyPresent = currentTrace.pushSpanWithoutDetail(spanName);
+            if (alreadyPresent) {
+                return callable.call();
+            } else {
+                long startTick = ticker.read();
+                try {
+                    return callable.call();
+                } finally {
+                    popSpanWithoutDetail(spanName, ticker.read() - startTick);
+                }
+            }
         }
     }
 

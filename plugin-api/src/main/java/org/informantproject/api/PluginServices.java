@@ -52,21 +52,10 @@ public abstract class PluginServices {
 
     public abstract boolean isEnabled();
 
-    // never returns null
-    //
-    // Can throw an exception if Informant has not finished starting up yet.
-    // For example, this affects the jdbc plugin because Informant uses jdbc internally during
-    // initialization to communicate to the embedded H2 database, and the jdbc plugin picks up these
-    // internal calls at which time Informant is not fully initialized.
-    //
-    // As long as calls to this method are called at some point after verifying isEnabled() then
-    // there is no problem.
     public abstract Optional<String> getStringProperty(String propertyName);
 
-    // see comment for getStringProperty()
     public abstract boolean getBooleanProperty(String propertyName);
 
-    // see comment for getStringProperty()
     public abstract Optional<Double> getDoubleProperty(String propertyName);
 
     public abstract Object executeRootSpan(String spanName,
@@ -81,7 +70,8 @@ public abstract class PluginServices {
     public abstract <V> V proceedAndRecordMetricData(String spanName,
             Callable<V> callable) throws Exception;
 
-    // see comment for getStringProperty()
+    public abstract void putTraceAttribute(String name, String value);
+
     public abstract RootSpanDetail getRootSpanDetail();
 
     public static PluginServices get(String pluginId) {
@@ -158,6 +148,8 @@ public abstract class PluginServices {
                 Callable<V> callable) throws Exception {
             return callable.call();
         }
+        @Override
+        public void putTraceAttribute(String name, String value) {}
         @Override
         public RootSpanDetail getRootSpanDetail() {
             return null;

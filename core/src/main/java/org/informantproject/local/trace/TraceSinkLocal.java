@@ -140,17 +140,18 @@ public class TraceSinkLocal implements TraceSink {
         if (username.isPresent()) {
             storedTrace.setUsername(username.get());
         }
-        // OptionalJsonSerializer is needed for serializing SpanContextMaps
+        // OptionalJsonSerializer is needed for serializing trace attributes and span context maps
         Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
                 new OptionalJsonSerializer()).create();
+        storedTrace.setAttributes(gson.toJson(trace.getAttributes()));
         storedTrace.setMetrics(getMetricsJson(trace, gson));
-        storedTrace.setContextMap(getContextMapJson(trace, gson));
         Map<String, String> stackTraces = new HashMap<String, String>();
         storedTrace.setSpans(getSpansJson(trace, stackTraces, captureTick, gson));
         stackTraceDao.storeStackTraces(stackTraces);
         storedTrace.setMergedStackTree(getMergedStackTreeJson(trace));
         return storedTrace;
     }
+
     public void shutdown() {
         logger.debug("shutdown()");
         executorService.shutdownNow();
@@ -171,7 +172,7 @@ public class TraceSinkLocal implements TraceSink {
         }
     }
 
-    public static String getContextMapJson(Trace trace, Gson gson) {
+    public static String getAttributesJson(Trace trace, Gson gson) {
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         // Span.getContextMap() may be creating the context map on the fly, so don't call it twice
         SpanContextMap contextMap = rootSpan.getContextMap();
@@ -189,10 +190,8 @@ public class TraceSinkLocal implements TraceSink {
             LargeStringBuilder sb = new LargeStringBuilder();
             JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
             jw.beginArray();
-            boolean skipContextMap = true;
             for (Span span : trace.getRootSpan().getSpans()) {
-                writeSpan(span, stackTraces, captureTick, skipContextMap, gson, jw, sb);
-                skipContextMap = false;
+                writeSpan(span, stackTraces, captureTick, gson, jw, sb);
             }
             jw.endArray();
             jw.close();
@@ -226,7 +225,7 @@ public class TraceSinkLocal implements TraceSink {
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
     private static void writeSpan(Span span, Map<String, String> stackTraces, long captureTick,
-            boolean skipContextMap, Gson gson, JsonWriter jw, Appendable sb) throws IOException {
+            Gson gson, JsonWriter jw, Appendable sb) throws IOException {
 
         if (span.getStartTick() > captureTick) {
             // this span started after the capture tick
@@ -256,7 +255,7 @@ public class TraceSinkLocal implements TraceSink {
         sb.append("\"");
         // Span.getContextMap() may be creating the context map on the fly, so don't call it twice
         SpanContextMap contextMap = span.getContextMap();
-        if (!skipContextMap && contextMap != null) {
+        if (contextMap != null) {
             sb.append(",\"contextMap\":");
             sb.append(gson.toJson(contextMap));
         }

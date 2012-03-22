@@ -32,8 +32,8 @@ public class StoredTrace {
     private boolean completed;
     private String description;
     private String username;
+    private String attributes;
     private String metrics;
-    private String contextMap;
     // using CharSequence so these potentially very large strings can be built using
     // LargeStringBuilder
     private CharSequence spans;
@@ -95,20 +95,20 @@ public class StoredTrace {
         this.username = username;
     }
 
+    public String getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(String attributes) {
+        this.attributes = attributes;
+    }
+
     public String getMetrics() {
         return metrics;
     }
 
     public void setMetrics(String metrics) {
         this.metrics = metrics;
-    }
-
-    public String getContextMap() {
-        return contextMap;
-    }
-
-    public void setContextMap(String contextMap) {
-        this.contextMap = contextMap;
     }
 
     public CharSequence getSpans() {
@@ -137,8 +137,8 @@ public class StoredTrace {
                 .add("completed", completed)
                 .add("description", description)
                 .add("username", username)
+                .add("attributes", attributes)
                 .add("metrics", metrics)
-                .add("contextMap", contextMap)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();
