@@ -24,7 +24,7 @@
     <dependency>
       <groupId>org.informantproject.shaded</groupId>
       <artifactId>shaded-aspectjrt</artifactId>
-      <version>1.6.11-SNAPSHOT</version>
+      <version>1.7.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
