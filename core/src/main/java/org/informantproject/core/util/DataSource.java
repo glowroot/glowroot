@@ -109,6 +109,7 @@ public class DataSource {
     public void compact() throws SQLException {
         synchronized (lock) {
             execute("shutdown compact");
+            preparedStatementCache.invalidateAll();
             connection = createConnection();
         }
     }
