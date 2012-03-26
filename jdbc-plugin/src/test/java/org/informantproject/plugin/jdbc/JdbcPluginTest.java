@@ -24,7 +24,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
-import java.util.List;
 
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
@@ -82,9 +81,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(2));
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription(), is("mock root span"));
@@ -100,9 +97,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(3));
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription(), is("mock root span"));
