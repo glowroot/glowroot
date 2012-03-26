@@ -50,10 +50,12 @@
 </style>
 <script type="text/javascript">
   var exportPage = true // this prevents export button from showing on traces
-  traces = {{#include traces}}
+  detailTrace = {{#include detailTrace}}
   $(document).ready(function() {
-    var html = tracesTemplate(traces)
-    $(html).appendTo('#traces')
+    var html = traceSummaryTemplate(detailTrace)
+    var detailHtml = traceDetailTemplate(detailTrace)
+    $(html).appendTo('#detailTrace')
+    $(detailHtml).appendTo('#detailTrace')
   })
 </script>
 </head>
@@ -62,7 +64,7 @@
     <span class="header-logo-external-font">Informant</span>
     <span class="header-page-name">Trace Export</span>
   </h1>
-  <div id="traces"></div>
+  <div id="detailTrace"></div>
   <div id="stacktracemodal" class="modal hide fade"
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">

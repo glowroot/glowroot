@@ -18,11 +18,19 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Informant | Traces</title>
+<title>Informant | Trace explorer</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
 <link rel="stylesheet" href="bootstrap/2.0.2/css/bootstrap.min.css" type="text/css" />
-<link rel="stylesheet" href="css/informant.css" type="text/css" />
 <link rel="stylesheet" href="jqueryui/1.8.17/ui-lightness/jquery-ui.all.css" type="text/css" />
+<link rel="stylesheet" href="qtip/2.0.0-nightly-20120303/jquery.qtip.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<style type="text/css">
+  /* always display vertical scrollbar so content doesn't resize when showing long trace detail */
+  html {
+    overflow: -moz-scrollbars-vertical;
+    overflow-y: scroll;
+  }
+</style>
 <script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
 <script type="text/javascript" src="bootstrap/2.0.2/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="jqueryui/1.8.17/jquery-ui.all.min.js"></script>
@@ -35,27 +43,25 @@
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.selection.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.navigate.min.js"></script>
 <script type="text/javascript" src="flot/0.7.1-informant-01/jquery.flot.resize.min.js"></script>
+<script type="text/javascript" src="spin/1.2.4/spin.min.js"></script>
+<script type="text/javascript" src="qtip/2.0.0-nightly-20120303/jquery.qtip.min.js"></script>
 <script type="text/javascript" src="js/traces.js"></script>
+<script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
   $(document).ready(function() {
-    var plot, selection, activeTraceDurations
+    var plot, storedTracePoints, activeTracePoints, currentItem, prospectiveItem, tooltipShowing
 
     var options = {
       legend: { show: false },
       series: {
         points: { show: true }
       },
+      grid: { hoverable: true, clickable: true },
       xaxis: { mode: 'time' },
       yaxis: { ticks: 10, zoomRange : false },
       zoom: { interactive: true, amount : 1.5 },
-      selection: { mode: 'xy' }
     }
-    function plotFullDate(date) {
-      var from = date.getTime()
-      var to = from + 24 * 60 * 60 * 1000; // from + 24 hours
-      getTraceDurations(from, to)
-    }
-    function plotResponseData(storedTraceDurations, activeTraceDurations, from, to) {
+    function plotResponseData(storedTracePoints, activeTracePoints, from, to) {
       var fromAsDate = new Date(from)
       fromAsDate.setHours(0,0,0,0)
       var zoomRangeFrom = fromAsDate.getTime()
@@ -67,22 +73,75 @@
       overrideOptions = {
         xaxis: { min : from, max : to, zoomRange : [ zoomRangeFrom, zoomRangeTo ] }
       }
-      plot = $.plot($('#placeholder'), [storedTraceDurations, activeTraceDurations],
+      plot = $.plot($('#placeholder'), [storedTracePoints, activeTracePoints],
           $.extend(true, {}, options, overrideOptions))
       updateTimeFilter()
-      selection = null
     }
-    $('#placeholder').bind("plotselected", function(event, ranges) {
-      selection = ranges
-    })
-    $('#placeholder').bind("plotunselected", function(event, ranges) {
-      selection = null
-    })
-    $('#placeholder').bind('plotzoom', function (event, plot) {
-      if (selection) {
-        plot.setSelection(selection)
+    function itemsEqual(plotItem1, plotItem2) {
+      if (!plotItem1 && !plotItem2) {
+        return true
+      } else if (!plotItem1) {
+        return false
+      } else if (!plotItem2) {
+        return false
+      } else {
+        return plotItem1.seriesIndex == plotItem2.seriesIndex && plotItem1.dataIndex
+            == plotItem2.dataIndex
       }
+    }
+    function hideTooltip() {
+      hideSpinner('#tooltipSpinner')
+      $('#placeholder').qtip('hide')
+      tooltipShowing = false
+    }
+    $('#placeholder').bind('plotzoom', function (event, plot) {
       updateTimeFilter()
+      if (currentItem) {
+        // highlight gets out of sync on zoom
+        plot.unhighlight()
+        plot.highlight(currentItem.seriesIndex, currentItem.dataIndex)
+        // leave the highlight, but cancel the tooltip since it is out of sync also, the user can
+        // get tooltip again by hovering over the highlighted data point
+        hideTooltip()
+      }
+    })
+    $('#placeholder').click(function() {
+      hideTooltip()
+    })
+    $(document).keyup(function(e) {
+      if (e.keyCode == 27 && currentItem) { // esc key
+        hideTooltip()
+      }
+    })
+    $('#placeholder').bind('plothover', function (event, pos, item) {
+      if (item && itemsEqual(item, currentItem) && !tooltipShowing) {
+        // this happens after a zoom when the data point is still highlighted but the tooltip has
+        // been hidden, and then the user hovers back over the same highlighted data point
+        // in this case just show the tooltip immediately
+        getTraceDetailTooltip(item)
+      } else if (item && !itemsEqual(item, currentItem)) {
+        if (itemsEqual(item, prospectiveItem)) {
+          // another handler is already waiting and will display the tooltip after the timeout below
+          return
+        }
+        prospectiveItem = item
+        // hover must last at least 100 milliseconds to prevent accidental hovers and unnecessary
+        // server requests
+        setTimeout(function() {
+          if (!itemsEqual(item, prospectiveItem)) {
+            // user moved on before 100 milliseconds, cancel the tooltip
+            return
+          }
+          currentItem = item
+          plot.unhighlight()
+          $('#placeholder').qtip('hide')
+          tooltipShowing = false
+          plot.highlight(item.series, item.datapoint)
+          getTraceDetailTooltip(item)
+        }, 100)
+      } else {
+        prospectiveItem = null
+      }
     })
     function updateTimeFilter() {
       var from = Math.floor(plot.getAxes().xaxis.min)
@@ -103,13 +162,14 @@
       fromAsDate.setHours(0,0,0,0)
       if ($('#dateFilter').datepicker('getDate').getTime() == fromAsDate.getTime()) {
         // dateFilter hasn't changed
-        getTraceDurations(from, to)
+        getTracePoints(from, to)
       } else {
         // dateFilter has changed
-        plotFullDate($('#dateFilter').datepicker('getDate'))
+        var date = $('#dateFilter').datepicker('getDate')
+        getTracePoints(date.getTime(), date.getTime() + 24 * 60 * 60 * 1000)
       }
     }
-    function getTraceDurations(from, to) {
+    function getTracePoints(from, to) {
       var queryString = 'from=' + from + '&to=' + to
       var durationLow = $('#durationLow').val() * 1000
       if (durationLow) {
@@ -125,74 +185,96 @@
         queryString += '&usernameComparator=' + usernameComparator
         queryString += '&username=' + username
       }
-      $.getJSON('/trace/durations?' + queryString, function(response) {
-        var storedTraceDurations = response.storedTraceDurations
-        activeTraceDurations = response.activeTraceDurations
+      $.getJSON('/trace/points?' + queryString, function(response) {
+        storedTracePoints = response.storedTracePoints
+        activeTracePoints = response.activeTracePoints
+        hideTooltip()
+        currentItem = null
+        $('#detailTab').html('')
         // shift for timezone
-        for (var i = 0; i < storedTraceDurations.length; i++) {
-          storedTraceDurations[i][0] -= new Date(storedTraceDurations[i][0]).getTimezoneOffset()
-              * 60 * 1000
+        for (var i = 0; i < storedTracePoints.length; i++) {
+          storedTracePoints[i][0] -= new Date(storedTracePoints[i][0]).getTimezoneOffset() * 60
+              * 1000
         }
-        for (var i = 0; i < activeTraceDurations.length; i++) {
-          activeTraceDurations[i][0] -= new Date(activeTraceDurations[i][0]).getTimezoneOffset()
-              * 60 * 1000
+        for (var i = 0; i < activeTracePoints.length; i++) {
+          activeTracePoints[i][0] -= new Date(activeTracePoints[i][0]).getTimezoneOffset() * 60
+              * 1000
         }
-        plotResponseData(storedTraceDurations, activeTraceDurations, from, to)
+        plotResponseData(storedTracePoints, activeTracePoints, from, to)
       })
-      $('#traces').html('')
     }
-    function getTraceDetails() {
-      var from, to, low, high
-      var extraIds = []
-      if (selection) {
-        from = selection.xaxis.from
-        to = selection.xaxis.to
-        // low, high are expected in milliseconds
-        low = selection.yaxis.from * 1000
-        high = selection.yaxis.to * 1000
-        // add live traces inside the selection
-        for (var i = 0; i < activeTraceDurations.length; i++) {
-          if (activeTraceDurations[i][0] >= selection.xaxis.from
-              && activeTraceDurations[i][0] <= selection.xaxis.to
-              && activeTraceDurations[i][1] >= selection.yaxis.from
-              && activeTraceDurations[i][1] <= selection.yaxis.to) {
-            extraIds.push(activeTraceDurations[i][2])
-          }
-        }
+    function getTraceDetailTooltip(item) {
+      var x = item.pageX
+      var y = item.pageY
+      var id
+      if (item.seriesIndex == 0) {
+        id = storedTracePoints[item.dataIndex][2]
       } else {
-        var axes = plot.getAxes()
-        from = axes.xaxis.min
-        to = axes.xaxis.max
-        // low, high are expected in milliseconds
-        low = axes.yaxis.min * 1000
-        high = axes.yaxis.max * 1000
-        // add live traces inside the current view
-        for (var i = 0; i < activeTraceDurations.length; i++) {
-          if (activeTraceDurations[i][0] >= axes.xaxis.min
-              && activeTraceDurations[i][0] <= axes.xaxis.max
-              && activeTraceDurations[i][1] >= axes.yaxis.min
-              && activeTraceDurations[i][1] <= axes.yaxis.max) {
-            extraIds.push(activeTraceDurations[i][2])
+        id = activeTracePoints[item.dataIndex][2]
+      }
+      var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 })
+      function displaySpinner() {
+        if (spinner) {
+          var html = '<div id="tooltipSpinner" style="display: inline-block; width: 35px;'
+            + ' height: 31px"></div>'
+          $('#placeholder').qtip({
+            content: {
+              text: html
+            },
+            position: {
+              target: [ x , y + 5 ],
+              viewport: $('#placeholder')
+            }
+          })
+          $('#placeholder').qtip('show')
+          spinner.spin($('#tooltipSpinner').get(0))
+        }
+      }
+      // small delay so that if there is an immediate response the spinner doesn't blink
+      setTimeout(displaySpinner, 100)
+      var currentItemForJson = currentItem
+      $.getJSON('/trace/summary/' + id, function(response) {
+        spinner.stop()
+        spinner = null
+        if (!itemsEqual(currentItem, currentItemForJson)) {
+          // too slow, the user has moved on to another point already
+          return
+        }
+        summaryTrace = response
+        var html = traceSummaryTemplate(summaryTrace)
+        var showDetailHtml = '<br><div style="color: #b12930" id="showDetailOuter">'
+            + '<a id="showDetail" href="">show detail</a></div>'
+        $('#placeholder').qtip({
+          content: {
+            text: html + showDetailHtml
+          },
+          position: {
+            my: 'bottom center',
+            target: [ x , y + 5 ],
+            viewport: $('#tooltipboundary')
+          },
+          hide: {
+            event: false
+          },
+          show: {
+            event: false
           }
-        }
-      }
-      // shift timezone
-      from += new Date(from).getTimezoneOffset() * 60 * 1000
-      to += new Date(to).getTimezoneOffset() * 60 * 1000
-      var query = 'from=' + Math.floor(from) + '&to=' + Math.ceil(to) + '&low=' + low + '&high='
-        + high
-      if (extraIds) {
-        query += "&extra_ids=" + extraIds
-      }
-      $.getJSON('/trace/details?' + query, function(response) {
-        traces = response
-        $('#traces').html('')
-        if (traces.length) {
-          html = tracesTemplate(traces)
-          $(html).appendTo('#traces')
-        } else {
-          $('#traces').html('no data')
-        }
+        })
+        $('#placeholder').qtip('show')
+        tooltipShowing = true
+        $('#showDetail').click(function() {
+          $.getJSON('/trace/detail/' + id, function(response) {
+            detailTrace = response
+            var html = traceSummaryTemplate(detailTrace)
+            var detailHtml = traceDetailTemplate(detailTrace)
+            hideTooltip()
+            $('#detailTab').html(html + detailHtml)
+            $('a[href="#detailTab"]').tab('show')
+            $('#showDetailOuter').css('font-style', 'italic')
+            $('#showDetailOuter').html('see detail tab below')
+          })
+          return false
+        })
       })
     }
     var today = new Date()
@@ -216,83 +298,97 @@
         $('#durationHighDiv').show()
       }
     })
-    $('#showDetails').click(function() {
-      getTraceDetails()
-    })
     $('#refreshButton').click(function() {
       refresh()
     })
-    plotFullDate(today)
+    $('#zoomOut').click(function() {
+      plot.zoomOut()
+      return false
+    })
+    getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000)
   })
 </script>
 </head>
 <body>
   <h1 class="header">
-    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Traces</span>
+    <a class="header-logo" href="/">
+      <!-- lack of spaces on this line is important -->
+      Informant</a><span class="header-page-name">Trace explorer
+      </span>
     <span class="header-see-also">see also: <a href="configuration.html">Configuration</a></span>
   </h1>
-  <form class="form-horizontal">
-    <fieldset>
-      <legend>Filters</legend>
-      <div class="control-group">
-        <label class="control-label" for="dateFilter">Date</label>
-        <div class="controls">
-          <input type="text" class="input-small" id="dateFilter">
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="timeFilter">Time</label>
-        <div class="controls">
-          <!-- TODO maybe bootstrap issue that padding-top is required for vertical alignment? -->
-          <span id="timeFilter" class="help-inline" style="padding-top: 5px">All day</span>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="durationBounds">Duration</label>
-        <div class="controls">
-          <select class="input-medium0" id="durationComparator">
-            <option value="greater">Greater than</option>
-            <option value="less">Less than</option>
-            <option value="between">Between</option>
-          </select>
-          <div id="durationLowDiv" class="input-append">
-            <input id="durationLow" class="input-small"
-              type="text"><span class="add-on">seconds</span>
-          </div>
-          <div id="durationAndDiv" class="input-append" style="display: none">and</div>
-          <div id="durationHighDiv" class="input-append" style="display: none">
-            <input id="durationHigh" class="input-small"
-              type="text"><span class="add-on">seconds</span>
-          </div>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="username">Username</label>
-        <div class="controls">
-          <select class="input-medium0" id="usernameComparator">
-            <option value="begins">Begins with</option>
-            <option value="equals">Equals</option>
-            <option value="contains">Contains</option>
-          </select>
-          <input type="text" class="input-small" id="username">
-        </div>
-      </div>
-      <div class="control-group">
-        <div class="controls">
-          <button id="refreshButton" type="button" class="btn">Refresh</button>
-        </div>
-      </div>
-    </fieldset>
-  </form>
   <br>
+  <div id="tooltipboundary" style="display: none; width: 100%; height: 10000px"></div>
   <div>
     <div id="placeholder" style="height: 300px"></div>
+    <div style="width: 100%; text-align: center; font-style: italic">
+      use mouse scroll wheel to zoom in and out
+      (or double click to zoom in and use this link to <a href="" id="zoomOut">zoom out</a>)
+    </div>
   </div>
   <br>
-  <button class="btn" id="showDetails">Show Details</button>
   <br>
-  <br>
-  <div id="traces"></div>
+  <ul id="tab" class="nav nav-tabs">
+    <li class="active"><a href="#filterTab" data-toggle="tab">Filter</a></li>
+    <li><a id="yak" href="#detailTab" data-toggle="tab">Detail</a></li>
+  </ul>
+  <div id="tabContent" class="tab-content">
+    <div class="tab-pane fade in active" id="filterTab">
+      <form class="form-horizontal">
+        <fieldset>
+          <div class="control-group">
+            <label class="control-label" for="dateFilter">Date</label>
+            <div class="controls">
+              <input type="text" class="input-small" id="dateFilter">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="timeFilter">Time</label>
+            <div class="controls">
+              <!-- maybe bootstrap issue that padding-top is required for vertical alignment? -->
+              <span id="timeFilter" class="help-inline" style="padding-top: 5px">All day</span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="durationBounds">Duration</label>
+            <div class="controls">
+              <select class="input-medium0" id="durationComparator">
+                <option value="greater">Greater than</option>
+                <option value="less">Less than</option>
+                <option value="between">Between</option>
+              </select>
+              <div id="durationLowDiv" class="input-append">
+                <input id="durationLow" class="input-small"
+                  type="text"><span class="add-on">seconds</span>
+              </div>
+              <div id="durationAndDiv" class="input-append" style="display: none">and</div>
+              <div id="durationHighDiv" class="input-append" style="display: none">
+                <input id="durationHigh" class="input-small"
+                  type="text"><span class="add-on">seconds</span>
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="username">Username</label>
+            <div class="controls">
+              <select class="input-medium0" id="usernameComparator">
+                <option value="begins">Begins with</option>
+                <option value="equals">Equals</option>
+                <option value="contains">Contains</option>
+              </select>
+              <input type="text" class="input-small" id="username">
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="controls">
+              <button id="refreshButton" type="button" class="btn">Refresh</button>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+    <div class="tab-pane fade" id="detailTab"></div>
+  </div>
   <div id="stacktracemodal" class="modal hide fade"
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">

@@ -18,8 +18,6 @@ package org.informantproject.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.util.List;
-
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.InformantContainer;
@@ -56,9 +54,9 @@ public class TraceMetricDataTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.get(0).getMetrics().size(), is(1));
-        assertThat(traces.get(0).getMetrics().get(0).getName(), is("mock root span"));
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getMetrics().size(), is(1));
+        assertThat(trace.getMetrics().get(0).getName(), is("mock root span"));
     }
 
     public static class ShouldGenerateTraceWithMetricData implements AppUnderTest,

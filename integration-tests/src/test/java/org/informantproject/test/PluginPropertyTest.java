@@ -18,7 +18,6 @@ package org.informantproject.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.util.List;
 import java.util.Random;
 
 import org.informantproject.api.Optional;
@@ -111,9 +110,8 @@ public class PluginPropertyTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        assertThat(traces.get(0).getDescription(), is("Level 1"));
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getDescription(), is("Level 1"));
     }
 
     @Test
@@ -129,9 +127,8 @@ public class PluginPropertyTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        assertThat(traces.get(0).getDescription(), is("Level One*"));
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getDescription(), is("Level One*"));
     }
 
     public static class SimpleApp implements AppUnderTest {

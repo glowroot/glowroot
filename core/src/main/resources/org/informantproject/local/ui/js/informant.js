@@ -25,10 +25,13 @@ function showAndFadeSuccessMessage(selector) {
     $(this).data('timeout', setTimeout(function() { $(outerThis).fadeOut(1000) }, 1000))
   })
 }
-function showSpinner(selector) {
+function showSpinner(selector, opts) {
+  if (arguments.length == 1) {
+    opts = { lines: 10, width: 4, radius: 8 }
+  }
   $(selector).each(function() {
     var data = $(this).data()
-    data.spinner = new Spinner({ lines: 10, width: 4, radius: 8 })
+    data.spinner = new Spinner(opts)
     var outerThis = this
     function displaySpinner() {
       // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
@@ -37,7 +40,7 @@ function showSpinner(selector) {
         data.spinner.spin(outerThis)
       }
     }
-    // small delay so that if there is an immediate page return it doesn't blink
+    // small delay so that if there is an immediate response the spinner doesn't blink
     setTimeout(displaySpinner, 100)
   })
 }

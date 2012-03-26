@@ -18,7 +18,6 @@ package org.informantproject.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -71,21 +70,20 @@ public class BasicTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        assertThat(traces.get(0).getDescription(), is("Level One"));
-        assertThat(traces.get(0).getAttributes().size(), is(0));
-        assertThat(traces.get(0).getSpans().size(), is(3));
-        Span span1 = traces.get(0).getSpans().get(0);
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getDescription(), is("Level One"));
+        assertThat(trace.getAttributes().size(), is(0));
+        assertThat(trace.getSpans().size(), is(3));
+        Span span1 = trace.getSpans().get(0);
         assertThat(span1.getDescription(), is("Level One"));
         assertThat(span1.getContextMap(), is(mapOf("arg1", "a", "arg2", "b",
                 "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
                         "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b"))));
-        Span span2 = traces.get(0).getSpans().get(1);
+        Span span2 = trace.getSpans().get(1);
         assertThat(span2.getDescription(), is("Level Two"));
         assertThat(span2.getContextMap(), is(mapOf("arg1", "ax", "arg2", "bx")));
-        Span span3 = traces.get(0).getSpans().get(2);
+        Span span3 = trace.getSpans().get(2);
         assertThat(span3.getDescription(), is("Level Three"));
         assertThat(span3.getContextMap(), is(mapOf("arg1", "axy", "arg2", "bxy")));
     }

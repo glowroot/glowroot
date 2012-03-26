@@ -96,3 +96,13 @@ a, a:hover {
 .input-medium0 {
   width:120px;
 }
+/* override properties on qtip tooltip from query.qtip.min.css */
+.ui-tooltip, .qtip {
+  max-width: 500px;
+  font-size: 12px;
+  line-height: 14px;
+}
+.second-line-indent {
+  padding-left: 20px;
+  text-indent: -20px;
+}

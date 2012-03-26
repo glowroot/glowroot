@@ -109,26 +109,28 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/webresources/handlebars/$1");
         uriMappings.put(Pattern.compile("^/spin/(.*)$"),
                 "org/informantproject/webresources/spin/$1");
+        uriMappings.put(Pattern.compile("^/qtip/(.*)$"),
+                "org/informantproject/webresources/qtip/$1");
     }
 
     @Inject
-    public HttpServer(@LocalHttpServerPort int port,
-            TraceDurationJsonService traceDurationJsonService,
-            TraceDetailJsonService traceDetailJsonService,
-            TraceExportHttpService traceExportJsonService,
+    public HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
+            TraceJsonService traceJsonService, TraceExportHttpService traceExportHttpService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
             PluginJsonService pluginJsonService) {
 
         super(port);
-        uriMappings.put(Pattern.compile("^/trace/export$"), traceExportJsonService);
+        uriMappings.put(Pattern.compile("^/trace/export/(.*)$"), traceExportHttpService);
         // the parentheses define the part of the match that is used to construct the args for
-        // calling the method in json service, e.g. /stacktrace/abc123 below calls the method
-        // getStackTrace("abc123") in TraceDurationJsonService
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/durations$"),
-                traceDurationJsonService, "getDurations"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/details$"),
-                traceDetailJsonService, "getDetails"));
+        // calling the method in json service, e.g. /trace/detail/abc123 below calls the method
+        // getDetail("abc123") in TraceJsonService
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/points$"),
+                tracePointJsonService, "getPoints"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/summary/(.*)$"),
+                traceJsonService, "getSummary"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/detail/(.*)$"),
+                traceJsonService, "getDetail"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/stacktrace/(.*)$"),
                 stackTraceJsonService, "getStackTrace"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/metrics/read$"),

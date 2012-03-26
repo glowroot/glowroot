@@ -13,72 +13,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var tracesTemplateText = ''
-+ '{{#each .}}'
-+ '<div>'
-+ '  {{#if active}}'
-+ '    <b>ACTIVE {{#if stuck}}/ STUCK{{/if}}</b><br>'
-+ '  {{^}}'
-+ '    {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}'
-+ '  {{/if}}'
+var traceSummaryTemplateText = ''
++ '{{#if active}}'
++ '  <b>ACTIVE {{#if stuck}}/ STUCK{{/if}}</b><br>'
++ '{{^}}'
++ '  {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}'
++ '{{/if}}'
++ '<div class="second-line-indent">'
 + '  {{description}}'
 + '  {{#if showExport}}'
 + '    <span style="width: 1em; display: inline-block"></span>'
-+ '    <a href="trace/export?id={{id}}">export</a>'
-+ '  {{/if}}<br>'
-+ '  start: {{date start}}<br>'
-+ '  duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
-+ '  {{#if username}}username: {{username}}<br>{{/if}}'
-+ '  {{#each attributes}}'
-+ '    {{name}}: {{value}}<br>'
-+ '  {{/each}}'
-+ '  breakdown:<br>'
-+ '  <table class="metrics-table" style="margin-left: 1em; border-spacing:0">'
-+ '    <thead>'
-+ '      <tr>'
-+ '        <td></td>'
-+ '        <td>total</td>'
-+ '        <td>min</td>'
-+ '        <td>max</td>'
-+ '        <td>count</td>'
-+ '      </tr>'
-+ '    </thead>'
-+ '    <tbody>'
-+ '      {{#each metrics}}'
-+ '        <tr>'
-+ '          <td style="text-align: left">{{name}}</td>'
-+ '          <td>{{nanosToMillis total}}</td>'
-+ '          <td>{{nanosToMillis min}}</td>'
-+ '          <td>{{nanosToMillis max}}</td>'
-+ '          <td>{{count}}</td>'
-+ '        </tr>'
-+ '      {{/each}}'
-+ '    </tbody>'
-+ '  </table>'
-+ '  {{#if spans}}'
-+ '    <a href="" onclick="toggleSpan(\'{{id}}\'); return false">spans</a> ({{spans.length}})<br>'
-+ '    <div id="sp_{{id}}" style="display: none"></div>'
++ '    <a href="trace/export/{{id}}">export</a>'
 + '  {{/if}}'
-+ '  {{#if mergedStackTree.sampleCount}}'
-+ '    <a href="" onclick="toggleMergedStackTree(\'{{id}}\'); return false">merged stack tree</a>'
-+ '    ({{mergedStackTree.sampleCount}})<br>'
-+ '    <div id="mst_outer_{{id}}" style="display: none; white-space: nowrap">'
-+ '      <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
-+ '          id="mst_filter_{{id}}"></select>'
-+ '      <br>'
-+ '      <div id="mst_uninteresting_outer_{{id}}" style="display: none">'
-+ '        <a style="margin-left: 1em" href="" id="mst_uninteresting_link_{{id}}"'
-+ '            onclick="toggleUninteresting(\'{{id}}\'); return false">'
-+ '          expand common base'
-+ '        </a>'
-+ '        <div id="mst_uninteresting_{{id}}" style="display: none"></div>'
-+ '      </div>'
-+ '      <div id="mst_interesting_{{id}}"></div>'
-+ '    </div>'
-+ '  {{/if}}'
-+ '  <br>'
 + '</div>'
++ 'start: {{date start}}<br>'
++ 'duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
++ '{{#if username}}<div class="second-line-indent">username: {{username}}</div>{{/if}}'
++ '{{#each attributes}}'
++ '  <div class="second-line-indent">{{name}}: {{value}}</div>'
 + '{{/each}}'
++ 'breakdown (in milliseconds):<br>'
++ '<table class="metrics-table" style="margin-left: 1em; border-spacing:0">'
++ '  <thead>'
++ '    <tr>'
++ '      <td></td>'
++ '      <td>total</td>'
++ '      <td>min</td>'
++ '      <td>max</td>'
++ '      <td>count</td>'
++ '    </tr>'
++ '  </thead>'
++ '  <tbody>'
++ '    {{#each metrics}}'
++ '      <tr>'
++ '        <td style="text-align: left">{{name}}</td>'
++ '        <td>{{nanosToMillis total}}</td>'
++ '        <td>{{nanosToMillis min}}</td>'
++ '        <td>{{nanosToMillis max}}</td>'
++ '        <td>{{count}}</td>'
++ '      </tr>'
++ '    {{/each}}'
++ '  </tbody>'
++ '</table>'
+var traceDetailTemplateText = ''
++ '{{#if spans}}'
++ '  <a href="" onclick="toggleSpan(\'{{id}}\'); return false">spans</a> ({{spans.length}})<br>'
++ '  <div id="sp_{{id}}" style="display: none"></div>'
++ '{{/if}}'
++ '{{#if mergedStackTree.sampleCount}}'
++ '  <a href="" onclick="toggleMergedStackTree(\'{{id}}\'); return false">merged stack tree</a>'
++ '  ({{mergedStackTree.sampleCount}})<br>'
++ '  <div id="mst_outer_{{id}}" style="display: none; white-space: nowrap">'
++ '    <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
++ '        id="mst_filter_{{id}}"></select>'
++ '    <br>'
++ '    <div id="mst_uninteresting_outer_{{id}}" style="display: none">'
++ '      <a style="margin-left: 1em" href="" id="mst_uninteresting_link_{{id}}"'
++ '          onclick="toggleUninteresting(\'{{id}}\'); return false">'
++ '        expand common base'
++ '      </a>'
++ '      <div id="mst_uninteresting_{{id}}" style="display: none"></div>'
++ '    </div>'
++ '    <div id="mst_interesting_{{id}}"></div>'
++ '  </div>'
++ '{{/if}}'
 var spansTemplateText = ''
 + '{{#spans}}'
 + '<div style="float: left; margin-left: 1em; width: 3em; text-align: right">'
@@ -170,26 +168,22 @@ Handlebars.registerHelper('short', function(description) {
 Handlebars.registerHelper('showExport', function() {
   return typeof exportPage == 'undefined'
 })
-var traces
-var tracesTemplate
+var summaryTrace
+var detailTrace
+var traceSummaryTemplate
+var traceDetailTemplate
 var spansTemplate
 $(document).ready(function() {
-  tracesTemplate = Handlebars.compile(tracesTemplateText)
+  traceSummaryTemplate = Handlebars.compile(traceSummaryTemplateText)
+  traceDetailTemplate = Handlebars.compile(traceDetailTemplateText)
   spansTemplate = Handlebars.compile(spansTemplateText)
 })
-function traceForId(id) {
-  for (var i = 0; i < traces.length; i++) {
-    if (traces[i].id == id) {
-      return traces[i]
-    }
-  }
-}
 function toggleSpan(id) {
   if ($('#sp_' + id).is(':visible')) {
     $('#sp_' + id).hide()
   } else {
     if (! $('#sp_' + id).html()) {
-      var html = spansTemplate(traceForId(id))
+      var html = spansTemplate(detailTrace)
       $(html).appendTo('#sp_' + id)
     }
     $('#sp_' + id).show()
@@ -205,7 +199,7 @@ function toggleUninteresting(id) {
   }
 }
 function toggleMergedStackTree(id) {
-  var rootNode = traceForId(id).mergedStackTree
+  var rootNode = detailTrace.mergedStackTree
   function curr(node, level, spanName) {
     var rootNodeSampleCount
     var nodeSampleCount
@@ -257,7 +251,7 @@ function toggleMergedStackTree(id) {
   } else {
     if (! $('#mst_' + id).html()) {
       // first time only, process merged stack tree and populate dropdown
-      processMergedStackTree(id)
+      processMergedStackTree()
       // build tree
       var tree = { name : '', childNodes : {} }
       $.each(rootNode.spanNameCounts, function(spanName, count) {
@@ -338,8 +332,8 @@ function toggleMergedStackTree(id) {
     $('#mst_outer_' + id).show()
   }
 }
-function processMergedStackTree(id) {
-  var rootNode = traceForId(id).mergedStackTree
+function processMergedStackTree() {
+  var rootNode = detailTrace.mergedStackTree
   function calculateSpanNameCounts(node) {
     var mergedCounts = {}
     if (node.leafThreadState) {

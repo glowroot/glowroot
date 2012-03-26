@@ -48,9 +48,9 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class TraceDurationJsonService implements JsonService {
+public class TracePointJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceDurationJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
 
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
@@ -61,7 +61,7 @@ public class TraceDurationJsonService implements JsonService {
     private final Clock clock;
 
     @Inject
-    public TraceDurationJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
+    public TracePointJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
             ConfigurationService configurationService, Ticker ticker, Clock clock) {
 
         this.traceDao = traceDao;
@@ -72,8 +72,8 @@ public class TraceDurationJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
-    public String getDurations(String message) throws IOException {
-        logger.debug("getDurations(): message={}", message);
+    public String getPoints(String message) throws IOException {
+        logger.debug("getChartPoints(): message={}", message);
         TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
         long requestAt = clock.currentTimeMillis();
         if (request.getFrom() < 0) {
@@ -127,11 +127,9 @@ public class TraceDurationJsonService implements JsonService {
                 }
             }
         }
-        String response = writeResponse(storedTraceDurations, activeTraces, capturedAt,
-                captureTick);
-        logger.debug("getDurations(): response={}", response);
-        return response;
+        return writeResponse(storedTraceDurations, activeTraces, capturedAt, captureTick);
     }
+
     private List<Trace> getActiveTraces(long low, long high) {
         List<Trace> activeTraces = new ArrayList<Trace>();
         long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configurationService
@@ -154,7 +152,7 @@ public class TraceDurationJsonService implements JsonService {
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
         jw.beginObject();
-        jw.name("activeTraceDurations").beginArray();
+        jw.name("activeTracePoints").beginArray();
         for (Trace activeTrace : activeTraces) {
             jw.beginArray();
             jw.value(capturedAt);
@@ -163,11 +161,12 @@ public class TraceDurationJsonService implements JsonService {
             jw.endArray();
         }
         jw.endArray();
-        jw.name("storedTraceDurations").beginArray();
+        jw.name("storedTracePoints").beginArray();
         for (StoredTraceDuration storedTraceDuration : storedTraceDurations) {
             jw.beginArray();
             jw.value(storedTraceDuration.getCapturedAt());
             jw.value(storedTraceDuration.getDuration() / 1000000000.0);
+            jw.value(storedTraceDuration.getId());
             jw.endArray();
         }
         jw.endArray();

@@ -49,16 +49,19 @@ public class ExpensiveCallAspect {
     public Object nestableAdvice(ProceedingJoinPoint joinPoint, ExpensiveCall expensive)
             throws Throwable {
 
-        return pluginServices.executeSpan("expensive", getSpanDetail(expensive), joinPoint);
+        // using different span names to create large number of metrics in breakdown summary
+        int count = counter.getAndIncrement();
+        return pluginServices.executeSpan("expensive " + (count % 10), getSpanDetail(expensive,
+                count), joinPoint);
     }
 
-    private SpanDetail getSpanDetail(final ExpensiveCall expensive) {
+    private SpanDetail getSpanDetail(final ExpensiveCall expensive, final int count) {
         return new SpanDetail() {
             public String getDescription() {
                 return expensive.getDescription();
             }
             public SpanContextMap getContextMap() {
-                if (counter.getAndIncrement() % 10 == 0) {
+                if (count % 10 == 0) {
                     return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
                             SpanContextMap.of("attr31", SpanContextMap.of("attr311", "value311",
                                     "attr312", "value312"), "attr32", "value32", "attr33",

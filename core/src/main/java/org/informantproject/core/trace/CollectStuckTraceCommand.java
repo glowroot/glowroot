@@ -17,6 +17,9 @@ package org.informantproject.core.trace;
 
 import java.lang.ref.WeakReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Designed to be scheduled and run as soon as the trace exceeds a given threshold.
  * 
@@ -26,6 +29,8 @@ import java.lang.ref.WeakReference;
  * @since 0.5
  */
 class CollectStuckTraceCommand implements Runnable {
+
+    private static final Logger logger = LoggerFactory.getLogger(CollectStuckTraceCommand.class);
 
     // since it's possible for this scheduled command to live for a while
     // after the trace has completed, a weak reference is used to make sure
@@ -45,6 +50,7 @@ class CollectStuckTraceCommand implements Runnable {
             // already completed
             return;
         }
+        logger.debug("run(): trace.id={}", trace.getId());
         if (trace.setStuck()) {
             // already marked as stuck
             return;

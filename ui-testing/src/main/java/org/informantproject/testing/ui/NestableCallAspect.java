@@ -60,14 +60,20 @@ public class NestableCallAspect {
         } else {
             pluginServices.putTraceAttribute("my first attribute", "hello world");
             pluginServices.putTraceAttribute("and second", "val");
-            return pluginServices.executeSpan("nestable", getSpanDetail(), joinPoint);
+            pluginServices.putTraceAttribute("and a very long attribute value", "abcdefghijklmnop"
+                    + "qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+            pluginServices.putTraceAttribute("and another", "a b c d e f g"
+                    + " h i j k l m n o p q r s t u v w x y z a b c d e f g h i j k l m n o p"
+                    + " q r s t u v w x y z");
+            return pluginServices.executeSpan("nestable and very long", getSpanDetail(), joinPoint);
         }
     }
 
     private RootSpanDetail getRootSpanDetail() {
         return new RootSpanDetail() {
             public String getDescription() {
-                return "Nestable";
+                return "Nestable with a very long description to test wrapping"
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
             }
             public SpanContextMap getContextMap() {
                 return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3",

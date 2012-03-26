@@ -18,7 +18,6 @@ package org.informantproject.test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -71,9 +70,8 @@ public class StuckTraceTest {
         // loop in order to not wait too little or too much
         Trace trace = null;
         for (int i = 0; i < 100; i++) {
-            List<Trace> traces = container.getInformant().getAllTraces();
-            if (traces.size() == 1) {
-                trace = traces.get(0);
+            trace = container.getInformant().getActiveTrace();
+            if (trace != null && trace.isStuck()) {
                 break;
             }
             Thread.sleep(50);
@@ -82,9 +80,9 @@ public class StuckTraceTest {
         assertThat(trace.isCompleted(), is(false));
         future.get();
         // should now be reported as unstuck
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.get(0).isStuck(), is(false));
-        assertThat(traces.get(0).isCompleted(), is(true));
+        trace = container.getInformant().getLastTrace();
+        assertThat(trace.isStuck(), is(false));
+        assertThat(trace.isCompleted(), is(true));
         // cleanup
         executorService.shutdown();
     }

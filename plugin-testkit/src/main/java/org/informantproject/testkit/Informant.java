@@ -16,7 +16,6 @@
 package org.informantproject.testkit;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.informantproject.testkit.Configuration.CoreConfiguration;
 import org.informantproject.testkit.Configuration.PluginConfiguration;
@@ -25,7 +24,8 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
@@ -87,15 +87,36 @@ public class Informant {
                 .getPropertiesJson());
     }
 
-    // returns all traces since since the last call to InformantContainer.executeAppUnderTest()
-    public List<Trace> getAllTraces() throws Exception {
-        return getTraces(baselineTime, System.currentTimeMillis());
+    public Trace getLastTrace() throws Exception {
+        String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
+                + Long.MAX_VALUE);
+        JsonArray points = new Gson().fromJson(pointsJson, JsonElement.class).getAsJsonObject()
+                .get("storedTracePoints").getAsJsonArray();
+        if (points.size() == 0) {
+            return null;
+        } else {
+            JsonArray values = points.get(points.size() - 1).getAsJsonArray();
+            String traceId = values.get(2).getAsString();
+            String traceDetailJson = get("/trace/detail/" + traceId);
+            return new Gson().fromJson(traceDetailJson, Trace.class);
+        }
     }
 
-    public List<Trace> getTraces(long from, long to) throws Exception {
-        String json = get("/trace/details?from=" + from + "&to=" + to + "&low=0&high="
+    public Trace getActiveTrace() throws Exception {
+        String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);
-        return new Gson().fromJson(json, new TypeToken<List<Trace>>() {}.getType());
+        JsonArray points = new Gson().fromJson(pointsJson, JsonElement.class).getAsJsonObject()
+                .get("activeTracePoints").getAsJsonArray();
+        if (points.size() == 0) {
+            return null;
+        } else if (points.size() > 1) {
+            throw new IllegalStateException("Unexpected number of active traces");
+        } else {
+            JsonArray values = points.get(0).getAsJsonArray();
+            String traceId = values.get(2).getAsString();
+            String traceDetailJson = get("/trace/detail/" + traceId);
+            return new Gson().fromJson(traceDetailJson, Trace.class);
+        }
     }
 
     public void deleteAllTraces() throws Exception {
