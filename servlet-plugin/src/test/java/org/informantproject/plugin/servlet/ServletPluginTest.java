@@ -20,7 +20,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
@@ -70,9 +69,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
         assertThat(span.getDescription(), is("GET /servletundertest"));
@@ -85,9 +82,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
         assertThat(span.getDescription(), is("GET /filtertest"));
@@ -100,9 +95,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         Span span = trace.getSpans().get(0);
         assertThat(span.getDescription(), is("GET /combotest"));
@@ -125,9 +118,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getUsername(), is("abc"));
     }
 
@@ -141,9 +132,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionUsernameAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getUsername(), is("abc"));
     }
 
@@ -157,9 +146,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionUsernameAttributeNull.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         // this is intentional, setting username attribute to null shouldn't clear out username for
         // that particular request (since the request was in fact, originally, for that username)
         assertThat(trace.getUsername(), is("something"));
@@ -175,9 +162,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getUsername(), is("xyz"));
     }
 
@@ -191,9 +176,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getUsername(), is("xyz"));
     }
 
@@ -207,9 +190,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace).get("testattr"), is("val"));
         assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
@@ -225,9 +206,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace).get("testattr"), is("val"));
         assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
@@ -243,9 +222,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
@@ -261,9 +238,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace).get("testattr"), is("val"));
@@ -279,9 +254,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace).get("testattr"), is("val"));
@@ -297,9 +270,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
@@ -315,9 +286,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace).containsValue("testattr"), is(false));
@@ -333,9 +302,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace).get("one.two"), is("three"));
         assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
@@ -351,9 +318,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace).get("one.two"), is("three"));
@@ -366,9 +331,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then
-        List<Trace> traces = container.getInformant().getAllTraces();
-        assertThat(traces.size(), is(1));
-        Trace trace = traces.get(0);
+        Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(1));
         assertThat(trace.getDescription(), is("GET /servletundertest"));
         assertThat((String) trace.getSpans().get(0).getContextMap().get("session id (at beginning"
