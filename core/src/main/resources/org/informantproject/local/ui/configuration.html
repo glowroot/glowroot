@@ -250,9 +250,17 @@
     <a class="header-logo" href="/">Informant</a><span class="header-page-name">Configuration</span>
     <span class="header-see-also">see also: <a href="traces.html">Traces</a></span>
   </h1>
-  <div class="btn-group">
-    <button id="enabled_on" class="btn btn-on">ON</button>
-    <button id="enabled_off" class="btn btn-off">OFF</button>
+  <div>
+    <span class="btn-group" style="display: inline-block; vertical-align: middle">
+      <button id="enabled_on" class="btn btn-on">ON</button>
+      <button id="enabled_off" class="btn btn-off">OFF</button>
+    </span>
+    <span id="enableComplete" class="button-success-message" style="line-height: 18px">
+      Enabled
+    </span>
+    <span id="disableComplete" class="button-success-message" style="color: gray">
+      Disabled
+    </span>
   </div>
   <br>
   <form class="well form-horizontal">
