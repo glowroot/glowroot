@@ -47,17 +47,17 @@ public class ImmutableCoreConfiguration {
     // TODO convert from millis to seconds, support 0.1, etc
     // 0 means log all traces, -1 means log no traces
     // (though stuck threshold can still be used in this case)
-    private int thresholdMillis = 30000;
+    private int thresholdMillis = 3000;
 
     // minimum is imposed because of StuckTraceCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stuck messages are gathered, should be minimum 100 milliseconds
-    private int stuckThresholdMillis = 600000;
+    private int stuckThresholdMillis = 180000;
 
     // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
-    private int stackTraceInitialDelayMillis = 5000;
+    private int stackTraceInitialDelayMillis = 1000;
 
-    private int stackTracePeriodMillis = 1000;
+    private int stackTracePeriodMillis = 100;
 
     // TODO this doesn't really make sense for Filters/servlets? or maybe just not top-level?
     // though even those might be interesting occasionally
@@ -66,11 +66,11 @@ public class ImmutableCoreConfiguration {
 
     // used to limit memory requirement, also used to help limit log file size,
     // 0 means don't capture any traces, -1 means no limit
-    private int maxSpansPerTrace = 1000;
+    private int maxSpansPerTrace = 5000;
 
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
-    private int rollingSizeMb = 100;
+    private int rollingSizeMb = 1000;
 
     private boolean warnOnSpanOutsideTrace = false;
 
