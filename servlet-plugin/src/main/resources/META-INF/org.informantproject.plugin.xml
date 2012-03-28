@@ -26,11 +26,26 @@
         <prompt>Session username attribute</prompt>
         <name>sessionUsernameAttribute</name>
         <type>string</type>
+        <description>
+          Session attribute to capture as the username of the trace.
+          Traces can be filtered by username in the trace explorer.
+          Nested paths are supported, e.g. something.user.username.
+          The attribute value is converted into a String if necessary via toString().
+        </description>
       </property>
       <property>
         <prompt>Session attributes</prompt>
         <name>sessionAttributes</name>
         <type>string</type>
+        <description>
+          Comma-separated list of http session attributes to capture in the servlet span's context
+          map.
+          These captured attributes are viewable under the servlet span for any trace in the trace
+          explorer.
+          Nested paths are supported, e.g. mainObject.nestedObject.displayName.
+          A special single value of '*' means capture all session attributes.
+          Attribute values are converted into Strings if necessary via toString().
+        </description>
       </property>
     </properties>
 </plugin>
