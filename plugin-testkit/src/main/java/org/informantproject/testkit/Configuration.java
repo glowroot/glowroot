@@ -62,7 +62,7 @@ public class Configuration {
 
     public static class CoreConfiguration {
         private int thresholdMillis;
-        private int stuckThresholdMillis;
+        private int stuckThresholdSeconds;
         private int stackTraceInitialDelayMillis;
         private int stackTracePeriodMillis;
         private int spanStackTraceThresholdMillis;
@@ -76,11 +76,11 @@ public class Configuration {
         public void setThresholdMillis(int thresholdMillis) {
             this.thresholdMillis = thresholdMillis;
         }
-        public int getStuckThresholdMillis() {
-            return stuckThresholdMillis;
+        public int getStuckThresholdSeconds() {
+            return stuckThresholdSeconds;
         }
-        public void setStuckThresholdMillis(int stuckThresholdMillis) {
-            this.stuckThresholdMillis = stuckThresholdMillis;
+        public void setStuckThresholdSeconds(int stuckThresholdSeconds) {
+            this.stuckThresholdSeconds = stuckThresholdSeconds;
         }
         public int getStackTraceInitialDelayMillis() {
             return stackTraceInitialDelayMillis;
@@ -126,7 +126,7 @@ public class Configuration {
         }
         @Override
         public int hashCode() {
-            return Objects.hashCode(thresholdMillis, stuckThresholdMillis,
+            return Objects.hashCode(thresholdMillis, stuckThresholdSeconds,
                     stackTraceInitialDelayMillis, stackTracePeriodMillis,
                     spanStackTraceThresholdMillis, maxSpansPerTrace,
                     rollingSizeMb, warnOnSpanOutsideTrace, metricPeriodMillis);
@@ -138,7 +138,7 @@ public class Configuration {
             }
             CoreConfiguration other = (CoreConfiguration) o;
             return Objects.equal(thresholdMillis, other.thresholdMillis)
-                    && Objects.equal(stuckThresholdMillis, other.stuckThresholdMillis)
+                    && Objects.equal(stuckThresholdSeconds, other.stuckThresholdSeconds)
                     && Objects.equal(stackTraceInitialDelayMillis,
                             other.stackTraceInitialDelayMillis)
                     && Objects.equal(stackTracePeriodMillis, other.stackTracePeriodMillis)

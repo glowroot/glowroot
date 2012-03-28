@@ -158,7 +158,7 @@
       setUpOnOffButton('', configuration.enabled, '/configuration/core')
       var coreConfiguration = configuration.coreConfiguration
       $('#thresholdMillis').val(coreConfiguration.thresholdMillis)
-      $('#stuckThresholdMillis').val(coreConfiguration.stuckThresholdMillis)
+      $('#stuckThresholdSeconds').val(coreConfiguration.stuckThresholdSeconds)
       $('#stackTraceInitialDelayMillis').val(coreConfiguration.stackTraceInitialDelayMillis)
       $('#stackTracePeriodMillis').val(coreConfiguration.stackTracePeriodMillis)
       $('#spanStackTraceThresholdMillis').val(coreConfiguration.spanStackTraceThresholdMillis)
@@ -200,7 +200,7 @@
   function updateCoreConfiguration() {
     var configuration = {
       'thresholdMillis': $('#thresholdMillis').val(),
-      'stuckThresholdMillis': $('#stuckThresholdMillis').val(),
+      'stuckThresholdSeconds': $('#stuckThresholdSeconds').val(),
       'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
       'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
       'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
@@ -279,11 +279,11 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="stuckThresholdMillis">Stuck threshold</label>
+        <label class="control-label" for="stuckThresholdSeconds">Stuck threshold</label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="stuckThresholdMillis"
-              type="text"><span class="add-on">milliseconds</span>
+            <input style="width: 6em" id="stuckThresholdSeconds"
+              type="text"><span class="add-on">seconds</span>
           </div>
           <div class="help-block">
             Any trace that exceeds this amount of time will be persisted to disk immediately (prior

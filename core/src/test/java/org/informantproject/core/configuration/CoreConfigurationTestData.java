@@ -33,8 +33,8 @@ public class CoreConfigurationTestData {
         // cover all fields
         builder = builder.setEnabled(!defaultCoreConfiguration.isEnabled());
         builder = builder.setThresholdMillis(defaultCoreConfiguration.getThresholdMillis() + 1);
-        builder = builder.setStuckThresholdMillis(defaultCoreConfiguration
-                .getStuckThresholdMillis() + 1);
+        builder = builder.setStuckThresholdSeconds(defaultCoreConfiguration
+                .getStuckThresholdSeconds() + 1);
         builder = builder.setStackTraceInitialDelayMillis(defaultCoreConfiguration
                 .getStackTraceInitialDelayMillis() + 1);
         builder = builder.setStackTracePeriodMillis(defaultCoreConfiguration

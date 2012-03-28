@@ -55,7 +55,7 @@ public class StuckTraceTest {
         // given
         CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
         coreConfiguration.setThresholdMillis(0);
-        coreConfiguration.setStuckThresholdMillis(100);
+        coreConfiguration.setStuckThresholdSeconds(1);
         container.getInformant().updateCoreConfiguration(coreConfiguration);
         // when
         ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
@@ -69,7 +69,9 @@ public class StuckTraceTest {
         // need to give container enough time to start up and for the trace to get stuck
         // loop in order to not wait too little or too much
         Trace trace = null;
-        for (int i = 0; i < 100; i++) {
+        // sleep a bit, no point in over polling
+        Thread.sleep(1000);
+        for (int i = 0; i < 10; i++) {
             trace = container.getInformant().getActiveTrace();
             if (trace != null && trace.isStuck()) {
                 break;
@@ -92,7 +94,7 @@ public class StuckTraceTest {
             rootSpanMarker();
         }
         public void rootSpanMarker() throws InterruptedException {
-            Thread.sleep(300);
+            Thread.sleep(1200);
         }
     }
 }

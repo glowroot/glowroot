@@ -51,7 +51,7 @@ public class ImmutableCoreConfiguration {
 
     // minimum is imposed because of StuckTraceCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stuck messages are gathered, should be minimum 100 milliseconds
-    private int stuckThresholdMillis = 180000;
+    private int stuckThresholdSeconds = 180;
 
     // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
@@ -84,8 +84,8 @@ public class ImmutableCoreConfiguration {
         return thresholdMillis;
     }
 
-    public int getStuckThresholdMillis() {
-        return stuckThresholdMillis;
+    public int getStuckThresholdSeconds() {
+        return stuckThresholdSeconds;
     }
 
     public int getStackTraceInitialDelayMillis() {
@@ -119,7 +119,7 @@ public class ImmutableCoreConfiguration {
     public String getPropertiesJson() {
         JsonObject propertiesJson = new JsonObject();
         propertiesJson.addProperty("thresholdMillis", thresholdMillis);
-        propertiesJson.addProperty("stuckThresholdMillis", stuckThresholdMillis);
+        propertiesJson.addProperty("stuckThresholdSeconds", stuckThresholdSeconds);
         propertiesJson.addProperty("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis);
         propertiesJson.addProperty("stackTracePeriodMillis", stackTracePeriodMillis);
         propertiesJson.addProperty("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis);
@@ -135,7 +135,7 @@ public class ImmutableCoreConfiguration {
         ToStringHelper toStringHelper = Objects.toStringHelper(this)
                 .add("enabed", enabled)
                 .add("thresholdMillis", thresholdMillis)
-                .add("stuckThresholdMillis", stuckThresholdMillis)
+                .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis)
                 .add("stackTracePeriodMillis", stackTracePeriodMillis)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
@@ -154,7 +154,7 @@ public class ImmutableCoreConfiguration {
         ImmutableCoreConfiguration other = (ImmutableCoreConfiguration) o;
         return Objects.equal(enabled, other.isEnabled())
                 && Objects.equal(thresholdMillis, other.getThresholdMillis())
-                && Objects.equal(stuckThresholdMillis, other.getStuckThresholdMillis())
+                && Objects.equal(stuckThresholdSeconds, other.getStuckThresholdSeconds())
                 && Objects.equal(stackTraceInitialDelayMillis,
                         other.getStackTraceInitialDelayMillis())
                 && Objects.equal(stackTracePeriodMillis, other.getStackTracePeriodMillis())
@@ -168,7 +168,7 @@ public class ImmutableCoreConfiguration {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(enabled, thresholdMillis, stuckThresholdMillis,
+        return Objects.hashCode(enabled, thresholdMillis, stuckThresholdSeconds,
                 stackTraceInitialDelayMillis, stackTracePeriodMillis,
                 spanStackTraceThresholdMillis, maxSpansPerTrace, rollingSizeMb,
                 warnOnSpanOutsideTrace, metricPeriodMillis);
@@ -184,7 +184,7 @@ public class ImmutableCoreConfiguration {
 
         private boolean enabled;
         private int thresholdMillis;
-        private int stuckThresholdMillis;
+        private int stuckThresholdSeconds;
         private int stackTraceInitialDelayMillis;
         private int stackTracePeriodMillis;
         private int spanStackTraceThresholdMillis;
@@ -200,7 +200,7 @@ public class ImmutableCoreConfiguration {
         public CoreConfigurationBuilder(ImmutableCoreConfiguration base) {
             enabled = base.enabled;
             thresholdMillis = base.thresholdMillis;
-            stuckThresholdMillis = base.stuckThresholdMillis;
+            stuckThresholdSeconds = base.stuckThresholdSeconds;
             stackTraceInitialDelayMillis = base.stackTraceInitialDelayMillis;
             stackTracePeriodMillis = base.stackTracePeriodMillis;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
@@ -214,7 +214,7 @@ public class ImmutableCoreConfiguration {
             ImmutableCoreConfiguration configuration = new ImmutableCoreConfiguration();
             configuration.enabled = enabled;
             configuration.thresholdMillis = thresholdMillis;
-            configuration.stuckThresholdMillis = stuckThresholdMillis;
+            configuration.stuckThresholdSeconds = stuckThresholdSeconds;
             configuration.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
             configuration.stackTracePeriodMillis = stackTracePeriodMillis;
             configuration.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
@@ -229,8 +229,8 @@ public class ImmutableCoreConfiguration {
             if (jsonObject.get("thresholdMillis") != null) {
                 setThresholdMillis(jsonObject.get("thresholdMillis").getAsInt());
             }
-            if (jsonObject.get("stuckThresholdMillis") != null) {
-                setStuckThresholdMillis(jsonObject.get("stuckThresholdMillis").getAsInt());
+            if (jsonObject.get("stuckThresholdSeconds") != null) {
+                setStuckThresholdSeconds(jsonObject.get("stuckThresholdSeconds").getAsInt());
             }
             if (jsonObject.get("stackTraceInitialDelayMillis") != null) {
                 setStackTraceInitialDelayMillis(jsonObject.get("stackTraceInitialDelayMillis")
@@ -267,8 +267,8 @@ public class ImmutableCoreConfiguration {
             return this;
         }
 
-        public CoreConfigurationBuilder setStuckThresholdMillis(int stuckThresholdMillis) {
-            this.stuckThresholdMillis = stuckThresholdMillis;
+        public CoreConfigurationBuilder setStuckThresholdSeconds(int stuckThresholdSeconds) {
+            this.stuckThresholdSeconds = stuckThresholdSeconds;
             return this;
         }
 

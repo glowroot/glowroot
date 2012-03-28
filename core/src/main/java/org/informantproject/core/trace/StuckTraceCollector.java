@@ -86,24 +86,25 @@ public class StuckTraceCollector implements Runnable {
     }
 
     // look for traces that will exceed the stuck threshold within the next polling interval and
-    // schedule stuck message generation to occur at the appropriate time(s)
+    // schedule stuck trace command to run at the appropriate time(s)
     private void runInternal() {
         ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
-        long currentTime = ticker.read();
-        if (configuration.getStuckThresholdMillis()
+        if (configuration.getStuckThresholdSeconds()
                 != ImmutableCoreConfiguration.THRESHOLD_DISABLED) {
             // stuck threshold is not disabled
-            long stuckMessageThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
-                    configuration.getStuckThresholdMillis() - CHECK_INTERVAL_MILLIS);
+            long stuckThresholdTick = ticker.read() - TimeUnit.SECONDS.toNanos(configuration
+                    .getStuckThresholdSeconds()) + TimeUnit.MILLISECONDS.toNanos(
+                    CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace is within CHECK_INTERVAL_MILLIS from hitting the stuck
                 // thread threshold and the stuck thread messaging hasn't already been scheduled
                 // then schedule it
-                if (NanoUtils.isLessThan(trace.getStartTick(), stuckMessageThresholdTime)
+                if (NanoUtils.isLessThan(trace.getStartTick(), stuckThresholdTick)
                         && trace.getStuckCommandScheduledFuture() == null) {
-                    // schedule stuck thread message
-                    long initialDelayMillis = Math.max(0, configuration.getStuckThresholdMillis()
-                            - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
+                    // schedule stuck thread
+                    long initialDelayMillis = Math.max(0, TimeUnit.SECONDS.toMillis(configuration
+                            .getStuckThresholdSeconds() - TimeUnit.NANOSECONDS.toMillis(trace
+                            .getDuration())));
                     CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
                             traceSink);
                     ScheduledFuture<?> stuckCommandScheduledFuture = scheduledExecutor.schedule(
