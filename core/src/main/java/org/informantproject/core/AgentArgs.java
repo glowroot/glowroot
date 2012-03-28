@@ -43,14 +43,14 @@ public class AgentArgs {
         dataDir = getDefaultDataDir();
         if (agentArgs != null) {
             for (String agentArg : agentArgs.split(",")) {
-                String[] agentArgParts = agentArg.split("=");
-                if (agentArgParts[0].equals("ui.port")) {
-                    setUiPort(agentArgParts[1]);
-                } else if (agentArgParts[0].equals("data.dir")) {
-                    setDataDir(new File(agentArgParts[1]));
+                String agentArgName = agentArg.substring(0, agentArg.indexOf(":"));
+                String agentArgValue = agentArg.substring(agentArg.indexOf(":") + 1);
+                if (agentArgName.equals("ui.port")) {
+                    setUiPort(agentArgValue);
+                } else if (agentArgName.equals("data.dir")) {
+                    setDataDir(new File(agentArgValue));
                 } else {
-                    throw new IllegalStateException("Unsupported agent arg '" + agentArgParts[0]
-                            + "'");
+                    throw new IllegalStateException("Unsupported agent arg '" + agentArgName + "'");
                 }
             }
         }
