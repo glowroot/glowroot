@@ -243,7 +243,7 @@
         summaryTrace = response
         var html = traceSummaryTemplate(summaryTrace)
         var showDetailHtml = '<br><div style="color: #b12930" id="showDetailOuter">'
-            + '<a id="showDetail" href="">show detail</a></div>'
+            + '<a id="showDetail" href="#">show detail</a></div>'
         $('#placeholder').qtip({
           content: {
             text: html + showDetailHtml
@@ -323,7 +323,7 @@
     <div id="placeholder" style="height: 300px"></div>
     <div style="width: 100%; text-align: center; font-style: italic">
       use mouse scroll wheel to zoom in and out
-      (or double click to zoom in and use this link to <a href="" id="zoomOut">zoom out</a>)
+      (or double click to zoom in and use this link to <a href="#" id="zoomOut">zoom out</a>)
     </div>
   </div>
   <br>
