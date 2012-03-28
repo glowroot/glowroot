@@ -32,7 +32,7 @@
     postingClearData = true
     var keepMillis = $('input:radio[name=keepMillis]:checked').val()
     var compact = $('#compact').is(':checked')
-    $.post('/misc/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
+    $.post('misc/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
       postingClearData = false
       hideSpinner('#clearButtonSpinner')
       showAndFadeSuccessMessage('#clearSuccessMessage')
@@ -45,7 +45,7 @@
 </head>
 <body>
   <h1 class="header">
-    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Misc</span>
+    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Misc</span>
     <span class="header-see-also">
       see also: <a href="traces.html">trace explorer</a>,
       <a href="configuration.html">configuration</a>

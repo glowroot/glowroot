@@ -87,7 +87,7 @@
     var installedTemplate = Handlebars.compile($('#installedTemplate').html())
     var installableTemplate = Handlebars.compile($('#installableTemplate').html())
 
-    $.getJSON('/plugin/packaged', function(packagedPlugins) {
+    $.getJSON('plugin/packaged', function(packagedPlugins) {
       if (packagedPlugins.length > 0) {
         $('#packagedSection').show()
         var html = packagedTemplate(packagedPlugins)
@@ -96,11 +96,11 @@
         $('#installedDescriptionWithPackage').show()
       }
     })
-    $.getJSON('/plugin/installed', function(installedPlugins) {
+    $.getJSON('plugin/installed', function(installedPlugins) {
       var html = installedTemplate(installedPlugins)
       $(html).appendTo('#installedPlugins')
     })
-    $.getJSON('/plugin/installable', function(installablePlugins) {
+    $.getJSON('plugin/installable', function(installablePlugins) {
       $('#installableSpinner').hide()
       installableSpinner.stop()
       installableSpinner = null
@@ -112,7 +112,7 @@
 </head>
 <body>
   <h1 class="header">
-    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Plugins</span>
+    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Plugins</span>
     <span class="header-see-also">
       see also: <a href="traces.html">trace explorer</a>,
       <a href="configuration.html">configuration</a>

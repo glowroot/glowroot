@@ -366,7 +366,7 @@ function processMergedStackTree() {
   calculateSpanNameCounts(rootNode)
 }
 function viewStackTrace(stackTraceHash) {
-  $.getJSON('/stacktrace/' + stackTraceHash, function(stackTraceElements) {
+  $.getJSON('stacktrace/' + stackTraceHash, function(stackTraceElements) {
     $('#stacktrace').html('')
     for (var i = 0; i < stackTraceElements.length; i++) {
       $('#stacktrace').append(stackTraceElements[i] + '<br>')

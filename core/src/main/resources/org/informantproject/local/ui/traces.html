@@ -185,7 +185,7 @@
         queryString += '&usernameComparator=' + usernameComparator
         queryString += '&username=' + username
       }
-      $.getJSON('/trace/points?' + queryString, function(response) {
+      $.getJSON('trace/points?' + queryString, function(response) {
         storedTracePoints = response.storedTracePoints
         activeTracePoints = response.activeTracePoints
         hideTooltip()
@@ -233,7 +233,7 @@
       // small delay so that if there is an immediate response the spinner doesn't blink
       setTimeout(displaySpinner, 100)
       var currentItemForJson = currentItem
-      $.getJSON('/trace/summary/' + id, function(response) {
+      $.getJSON('trace/summary/' + id, function(response) {
         spinner.stop()
         spinner = null
         if (!itemsEqual(currentItem, currentItemForJson)) {
@@ -263,7 +263,7 @@
         $('#placeholder').qtip('show')
         tooltipShowing = true
         $('#showDetail').click(function() {
-          $.getJSON('/trace/detail/' + id, function(response) {
+          $.getJSON('trace/detail/' + id, function(response) {
             detailTrace = response
             var html = traceSummaryTemplate(detailTrace)
             var detailHtml = traceDetailTemplate(detailTrace)
@@ -311,7 +311,7 @@
 </head>
 <body>
   <h1 class="header">
-    <a class="header-logo" href="/">
+    <a class="header-logo" href=".">
       <!-- lack of spaces on this line is important -->
       Informant</a><span class="header-page-name">Trace explorer
       </span>

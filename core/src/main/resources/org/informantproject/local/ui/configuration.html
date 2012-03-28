@@ -154,8 +154,8 @@
     })
   }
   function read() {
-    $.getJSON('/configuration/read', function(configuration) {
-      setUpOnOffButton('', configuration.enabled, '/configuration/core')
+    $.getJSON('configuration/read', function(configuration) {
+      setUpOnOffButton('', configuration.enabled, 'configuration/core')
       var coreConfiguration = configuration.coreConfiguration
       $('#thresholdMillis').val(coreConfiguration.thresholdMillis)
       $('#stuckThresholdSeconds').val(coreConfiguration.stuckThresholdSeconds)
@@ -182,7 +182,7 @@
         var html = pluginTemplate(plugin)
         $(html).appendTo('#plugins')
         setUpOnOffButton(escapeForSelector(plugin.id) + '_', configuration
-            .pluginConfiguration[plugin.id].enabled, '/configuration/plugin/' + plugin.id)
+            .pluginConfiguration[plugin.id].enabled, 'configuration/plugin/' + plugin.id)
         var pluginProperties = configuration.pluginConfiguration[plugin.id].properties
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
           var propertyDescriptors = plugin.propertyDescriptors[j]
@@ -207,7 +207,7 @@
       'maxSpansPerTrace': $('#maxSpansPerTrace').val(),
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
-    $.post('/configuration/core/properties', JSON.stringify(configuration), function() {
+    $.post('configuration/core/properties', JSON.stringify(configuration), function() {
       showAndFadeSuccessMessage('#saveComplete')
     })
   }
@@ -230,7 +230,7 @@
         configuration[propertyDescriptors.name] = value
       }
     }
-    $.post('/configuration/plugin/' + pluginId + '/properties', JSON.stringify(configuration),
+    $.post('configuration/plugin/' + pluginId + '/properties', JSON.stringify(configuration),
         function() {
           showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
         })
@@ -250,7 +250,7 @@
 </head>
 <body>
   <h1 class="header">
-    <a class="header-logo" href="/">Informant</a><span class="header-page-name">Configuration</span>
+    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Configuration</span>
     <span class="header-see-also">see also: <a href="traces.html">trace explorer</a></span>
   </h1>
   <div>
