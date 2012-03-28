@@ -33,13 +33,11 @@ import org.informantproject.shaded.google.common.collect.Iterables;
  */
 final class ServletPluginPropertyUtils {
 
-    // TODO support nested paths
     private static final String SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME =
             "sessionUsernameAttribute";
 
     // a special single value of "*" means capture all session attributes
     // this can be useful for finding the session attribute that represents the username
-    // TODO support nested paths
     // TODO support "*.*", "*.*.*", etc
     // TODO support partial wildcards, e.g. "context*"
     private static final String SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME = "sessionAttributes";
