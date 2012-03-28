@@ -49,6 +49,11 @@
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
               <input style="width: 12em" id="{{../../id}}_{{name}}" type="text">
+              {{#if description}}
+                <div class="help-block">
+                  {{description}}
+                </div>
+              {{/if}}
             </div>
           </div>
         {{/ifString}}
@@ -57,6 +62,11 @@
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
               <input id="{{../../id}}_{{name}}" type="checkbox" value="true">
+              {{#if description}}
+                <div class="help-block">
+                  {{description}}
+                </div>
+              {{/if}}
             </div>
           </div>
         {{/ifBoolean}}
@@ -65,6 +75,11 @@
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
               <input style="width: 6em" id="{{../../id}}_{{name}}" type="text">
+              {{#if description}}
+                <div class="help-block">
+                  {{description}}
+                </div>
+              {{/if}}
             </div>
           </div>
         {{/ifDouble}}
@@ -243,12 +258,16 @@
   <form class="well form-horizontal">
     <fieldset>
       <div class="control-group">
-        <label class="control-label" for="thresholdMillis">Threshold</label>
+        <label class="control-label" for="thresholdMillis">Main threshold</label>
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="thresholdMillis"
               type="text"><span class="add-on">milliseconds</span>
           </div>
+          <span class="help-block">
+            Any trace that exceeds this amount of time will be viewable in the trace explorer
+            immediately as an active trace and will be persisted to disk at its completion.
+          </span>
         </div>
       </div>
       <div class="control-group">
@@ -257,6 +276,11 @@
           <div class="input-append">
             <input style="width: 6em" id="stuckThresholdMillis"
               type="text"><span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            Any trace that exceeds this amount of time will be persisted to disk immediately (prior
+            to its completion). This is to guard against threads which get stuck forever (or at
+            least long enough and do enough harm to the jvm that it has to be restarted).
           </div>
         </div>
       </div>
@@ -269,14 +293,26 @@
             <input style="width: 6em" id="stackTraceInitialDelayMillis"
               type="text"><span class="add-on">milliseconds</span>
           </div>
+          <div class="help-block">
+            Once a trace exceeds this amount of time, stack traces of its thread will be captured
+            periodically and bound to the trace.
+            The interval between successive stack trace captures is defined by the property directly
+            below.
+            The stack traces captured for an individual trace are merged into a tree view and
+            provide a sample based profile of the time spent in various portions of the code.
+          </div>
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="stackTracePeriodMillis">Stack trace period</label>
+        <label class="control-label" for="stackTracePeriodMillis">Stack trace interval</label>
         <div class="controls">
           <div class="input-append">
             <input style="width: 6em" id="stackTracePeriodMillis"
               type="text"><span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            The interval at which thread stack traces are captured (once the trace exceeds the
+            initial delay threshold directly above).
           </div>
         </div>
       </div>
@@ -295,6 +331,14 @@
         <label class="control-label" for="maxSpansPerTrace">Max spans per trace</label>
         <div class="controls">
           <input style="width: 6em" id="maxSpansPerTrace" type="text">
+          <div class="help-block">
+            Maximum number of spans collected for a given trace.
+            Since spans are bound to their trace until the trace completes, this is useful for
+            limiting the memory requirement of very very long requests that collect potentially
+            hundreds of thousands of spans (e.g. large batch or background operations).
+            Also, the trace explorer is not really optimized for viewing super large numbers of
+            spans.
+          </div>
         </div>
       </div>
       <div class="control-group">
@@ -306,6 +350,12 @@
             <div id="rollingSizeHelp" class="help-block" style="display: none; margin-left: 1em">
               (actual rolling size <span id="actualRollingSizeMb"></span> MB)
             </div>
+          </div>
+          <div class="help-block">
+            Trace detail data (spans, merged stack tree) is persisted to disk as LZF-compressed json
+            data in a rolling data file to efficiently cap the growth of this large data.
+            (Trace summary data - capture time, duration, description, username, attributes, metrics
+            - is persisted to an H2 data file by the embedded H2 database engine.)
           </div>
         </div>
       </div>

@@ -23,20 +23,24 @@
     <version>0.5-SNAPSHOT</version>
     <properties>
       <property>
-        <prompt>Starred description</prompt>
-        <name>starredDescription</name>
+        <prompt>Do something</prompt>
+        <name>oneName</name>
         <type>boolean</type>
+        <default>true</default>
+        <description>Do you want to do something?</description>
       </property>
       <property>
-        <prompt>Alternate description</prompt>
-        <name>alternateDescription</name>
+        <prompt>Whatever you want</prompt>
+        <name>anotherName</name>
         <type>string</type>
+        <default>coding</default>
+        <description>More help text here and more and more and more.</description>
       </property>
       <property>
-        <prompt>Has default val</prompt>
-        <name>hasDefaultVal</name>
-        <type>string</type>
-        <default>one</default>
+        <prompt>For however long you want</prompt>
+        <name>thirdName</name>
+        <type>double</type>
+        <description>I'm quickly out of ideas.</description>
       </property>
     </properties>
 </plugin>
