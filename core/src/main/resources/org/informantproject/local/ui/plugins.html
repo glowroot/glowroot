@@ -92,6 +92,8 @@
         $('#packagedSection').show()
         var html = packagedTemplate(packagedPlugins)
         $(html).appendTo('#packagedPlugins')
+        $('#installedDescriptionWithoutPackage').hide()
+        $('#installedDescriptionWithPackage').show()
       }
     })
     $.getJSON('/plugin/installed', function(installedPlugins) {
@@ -118,15 +120,30 @@
   <br>
   <div id="packagedSection" style="display: none">
     <h3>Packaged Plugins</h3>
+    <p>
+      Plugins that were bundled with informant-core to create this Informant package
+    </p>
     <br>
     <div id="packagedPlugins"></div>
     <br>
   </div>
   <h3>Installed Plugins</h3>
+  <div id="installedDescriptionWithPackage" style="display: none">
+    <p>Additional plugins that were found on the classpath at startup</p>
+  </div>
+  <div id="installedDescriptionWithoutPackage">
+    <p>Plugins that were found on the classpath at startup</p>
+  </div>
   <br>
   <div id="installedPlugins"></div>
   <br>
   <h3>Installable Plugins</h3>
+  <p>
+    Plugins that have been deployed to
+    <a href="https://oss.sonatype.org/content/repositories/snapshots/org/informantproject/plugins/">
+    Sonatype OSS Maven Repository
+    </a>
+    (and that are not already installed)</p>
   <br>
   <div id="installablePlugins"></div>
   <div id="installableSpinner" style="width: 40px; height: 60px"></div>
