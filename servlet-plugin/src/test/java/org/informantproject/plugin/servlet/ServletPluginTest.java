@@ -181,6 +181,34 @@ public class ServletPluginTest {
     }
 
     @Test
+    public void testHasMissingSessionUsernameAttribute() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "missingusernameattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasSessionUsernameAttribute.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getUsername(), is(nullValue()));
+    }
+
+    @Test
+    public void testHasMissingNestedSessionUsernameAttributePath() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameone.missingtwo");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getUsername(), is(nullValue()));
+    }
+
+    @Test
     public void testHasSessionAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
@@ -322,6 +350,38 @@ public class ServletPluginTest {
         assertThat(trace.getSpans().size(), is(1));
         assertThat(getSessionAttributes(trace), is(nullValue()));
         assertThat(getUpdatedSessionAttributes(trace).get("one.two"), is("three"));
+    }
+
+    @Test
+    public void testHasMissingSessionAttribute() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "missingtestattr");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasSessionAttribute.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+    }
+
+    @Test
+    public void testHasMissingNestedSessionAttributePath() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("sessionAttributes", "one.missingtwo");
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(HasNestedSessionAttribute.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(getSessionAttributes(trace), is(nullValue()));
+        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
     }
 
     @Test
