@@ -221,6 +221,9 @@
         if (propertyDescriptors.type == 'boolean') {
           value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).is(
               ':checked')
+        } else if (propertyDescriptors.type == 'double') {
+          value = parseFloat($('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name))
+              .val())
         } else {
           value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).val()
         }
