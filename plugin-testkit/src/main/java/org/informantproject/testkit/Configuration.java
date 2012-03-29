@@ -41,7 +41,7 @@ import com.google.gson.JsonSerializer;
 public class Configuration {
 
     private boolean enabled;
-    private CoreConfiguration coreConfiguration;
+    private CoreProperties coreProperties;
     private Map<String, PluginConfiguration> pluginConfiguration;
 
     public boolean isEnabled() {
@@ -52,15 +52,15 @@ public class Configuration {
         this.enabled = enabled;
     }
 
-    public CoreConfiguration getCoreConfiguration() {
-        return coreConfiguration;
+    public CoreProperties getCoreProperties() {
+        return coreProperties;
     }
 
     public Map<String, PluginConfiguration> getPluginConfiguration() {
         return pluginConfiguration;
     }
 
-    public static class CoreConfiguration {
+    public static class CoreProperties {
         private int thresholdMillis;
         private int stuckThresholdSeconds;
         private int stackTraceInitialDelayMillis;
@@ -133,10 +133,10 @@ public class Configuration {
         }
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof CoreConfiguration)) {
+            if (!(o instanceof CoreProperties)) {
                 return false;
             }
-            CoreConfiguration other = (CoreConfiguration) o;
+            CoreProperties other = (CoreProperties) o;
             return Objects.equal(thresholdMillis, other.thresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, other.stuckThresholdSeconds)
                     && Objects.equal(stackTraceInitialDelayMillis,

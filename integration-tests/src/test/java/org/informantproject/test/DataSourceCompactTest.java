@@ -22,7 +22,7 @@ import static org.junit.Assert.assertThat;
 import java.io.File;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.junit.AfterClass;
@@ -50,9 +50,9 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
-        coreConfiguration.setThresholdMillis(0);
-        container.getInformant().updateCoreConfiguration(coreConfiguration);
+        CoreProperties coreProperties = container.getInformant().getCoreProperties();
+        coreProperties.setThresholdMillis(0);
+        container.getInformant().updateCoreProperties(coreProperties);
         File dbFile = new File(container.getInformant().get("/misc/dbFile"));
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);

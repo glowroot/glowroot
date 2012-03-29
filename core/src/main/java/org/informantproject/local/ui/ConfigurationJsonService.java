@@ -79,7 +79,7 @@ public class ConfigurationJsonService implements JsonService {
                 configurationService.getInstalledPluginDescriptors()));
         double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024;
         return "{\"enabled\":" + configurationService.getCoreConfiguration().isEnabled()
-                + ",\"coreConfiguration\":" + configurationService.getCoreConfiguration()
+                + ",\"coreProperties\":" + configurationService.getCoreConfiguration()
                         .getPropertiesJson() + ",\"pluginConfiguration\":" + configurationService
                         .getPluginConfigurationJson() + ",\"pluginDescriptors\":" + new Gson()
                         .toJson(pluginDescriptors) + ",\"actualRollingSizeMb\":" + rollingSizeMb

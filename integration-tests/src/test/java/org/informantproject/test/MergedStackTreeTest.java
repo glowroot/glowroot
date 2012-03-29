@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
@@ -49,11 +49,11 @@ public class MergedStackTreeTest {
     @Test
     public void shouldReadMergedStackTree() throws Exception {
         // given
-        CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
-        coreConfiguration.setThresholdMillis(0);
-        coreConfiguration.setStackTraceInitialDelayMillis(100);
-        coreConfiguration.setStackTracePeriodMillis(10);
-        container.getInformant().updateCoreConfiguration(coreConfiguration);
+        CoreProperties coreProperties = container.getInformant().getCoreProperties();
+        coreProperties.setThresholdMillis(0);
+        coreProperties.setStackTraceInitialDelayMillis(100);
+        coreProperties.setStackTracePeriodMillis(10);
+        container.getInformant().updateCoreProperties(coreProperties);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then

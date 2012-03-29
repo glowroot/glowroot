@@ -17,7 +17,7 @@ package org.informantproject.testkit;
 
 import java.io.IOException;
 
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.Configuration.PluginConfiguration;
 import org.informantproject.testkit.Configuration.PluginConfigurationJsonDeserializer;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -47,9 +47,9 @@ public class Informant {
     }
 
     public void setThresholdMillis(int thresholdMillis) throws Exception {
-        CoreConfiguration coreConfiguration = getCoreConfiguration();
-        coreConfiguration.setThresholdMillis(thresholdMillis);
-        updateCoreConfiguration(coreConfiguration);
+        CoreProperties coreProperties = getCoreProperties();
+        coreProperties.setThresholdMillis(thresholdMillis);
+        updateCoreProperties(coreProperties);
     }
 
     public String get(String path) throws Exception {
@@ -67,24 +67,21 @@ public class Informant {
         return validateAndReturnBody(response);
     }
 
-    public CoreConfiguration getCoreConfiguration() throws Exception {
-        return getConfiguration().getCoreConfiguration();
+    public CoreProperties getCoreProperties() throws Exception {
+        return getConfiguration().getCoreProperties();
     }
 
-    public void updateCoreConfiguration(CoreConfiguration coreConfiguration) throws Exception {
+    public void updateCoreProperties(CoreProperties properties) throws Exception {
         post("/configuration/core/properties", new GsonBuilder().serializeNulls().create().toJson(
-                coreConfiguration));
+                properties));
     }
 
     public PluginConfiguration getPluginConfiguration(String pluginId) throws Exception {
         return getConfiguration().getPluginConfiguration().get(pluginId);
     }
 
-    public void storePluginConfiguration(String pluginId, PluginConfiguration pluginConfiguration)
-            throws Exception {
-
-        post("/configuration/plugin/" + pluginId + "/properties", pluginConfiguration
-                .getPropertiesJson());
+    public void storePluginProperties(String pluginId, String propertiesJson) throws Exception {
+        post("/configuration/plugin/" + pluginId + "/properties", propertiesJson);
     }
 
     public Trace getLastTrace() throws Exception {

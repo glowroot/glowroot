@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
@@ -53,10 +53,10 @@ public class StuckTraceTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
-        coreConfiguration.setThresholdMillis(0);
-        coreConfiguration.setStuckThresholdSeconds(1);
-        container.getInformant().updateCoreConfiguration(coreConfiguration);
+        CoreProperties coreProperties = container.getInformant().getCoreProperties();
+        coreProperties.setThresholdMillis(0);
+        coreProperties.setStuckThresholdSeconds(1);
+        container.getInformant().updateCoreProperties(coreProperties);
         // when
         ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
         Future<Void> future = executorService.submit(new Callable<Void>() {

@@ -19,7 +19,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
@@ -48,9 +48,9 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadTraceMetricData() throws Exception {
         // given
-        CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
-        coreConfiguration.setThresholdMillis(0);
-        container.getInformant().updateCoreConfiguration(coreConfiguration);
+        CoreProperties coreProperties = container.getInformant().getCoreProperties();
+        coreProperties.setThresholdMillis(0);
+        container.getInformant().updateCoreProperties(coreProperties);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then

@@ -16,7 +16,7 @@
 package org.informantproject.testing.ui;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +34,12 @@ public class TraceUiMain {
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(UI_PORT);
         // set thresholds low so there will be lots of data to view
-        CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
-        coreConfiguration.setThresholdMillis(0);
-        coreConfiguration.setStackTraceInitialDelayMillis(100);
-        coreConfiguration.setStackTracePeriodMillis(10);
-        coreConfiguration.setSpanStackTraceThresholdMillis(100);
-        container.getInformant().updateCoreConfiguration(coreConfiguration);
+        CoreProperties coreProperties = container.getInformant().getCoreProperties();
+        coreProperties.setThresholdMillis(0);
+        coreProperties.setStackTraceInitialDelayMillis(100);
+        coreProperties.setStackTracePeriodMillis(10);
+        coreProperties.setSpanStackTraceThresholdMillis(100);
+        container.getInformant().updateCoreProperties(coreProperties);
         logger.info("view trace ui at localhost:" + UI_PORT + "/traces.html");
         container.executeAppUnderTest(GenerateTraces.class);
     }

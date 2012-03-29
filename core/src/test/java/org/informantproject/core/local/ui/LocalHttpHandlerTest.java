@@ -84,7 +84,7 @@ public class LocalHttpHandlerTest {
         // then
         String responseText = response.getResponseBody();
         JsonObject rootNode = new JsonParser().parse(responseText).getAsJsonObject();
-        String coreConfigurationJson = new Gson().toJson(rootNode.get("coreConfiguration"));
+        String coreConfigurationJson = new Gson().toJson(rootNode.get("coreProperties"));
         assertThat(coreConfigurationJson, is(randomCoreConfiguration.getPropertiesJson()));
     }
 }

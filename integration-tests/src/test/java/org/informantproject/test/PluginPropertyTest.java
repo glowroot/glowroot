@@ -61,7 +61,8 @@ public class PluginPropertyTest {
                 .getPluginConfiguration(PLUGIN_ID);
         randomPluginConfiguration.setProperty("alternateDescription", randomText);
         randomPluginConfiguration.setProperty("starredDescription", randomBoolean);
-        container.getInformant().storePluginConfiguration(PLUGIN_ID, randomPluginConfiguration);
+        container.getInformant().storePluginProperties(PLUGIN_ID, randomPluginConfiguration
+                .getPropertiesJson());
         // when
         PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
                 PLUGIN_ID);
@@ -87,11 +88,13 @@ public class PluginPropertyTest {
         PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
                 PLUGIN_ID);
         pluginConfiguration.setProperty("alternateDescription", "a non-null value");
-        container.getInformant().storePluginConfiguration(PLUGIN_ID, pluginConfiguration);
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
+                .getPropertiesJson());
         // when
         pluginConfiguration = container.getInformant().getPluginConfiguration(PLUGIN_ID);
         pluginConfiguration.setProperty("alternateDescription", null);
-        container.getInformant().storePluginConfiguration(PLUGIN_ID, pluginConfiguration);
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
+                .getPropertiesJson());
         // then
         pluginConfiguration = container.getInformant().getPluginConfiguration(PLUGIN_ID);
         assertThat(pluginConfiguration.getProperty("alternateDescription"), is(Optional.absent()));
@@ -105,8 +108,8 @@ public class PluginPropertyTest {
                 "org.informantproject:informant-integration-tests");
         pluginConfiguration.setProperty("alternateDescription", "Level 1");
         pluginConfiguration.setProperty("starredDescription", false);
-        container.getInformant().storePluginConfiguration(
-                "org.informantproject:informant-integration-tests", pluginConfiguration);
+        container.getInformant().storePluginProperties("org.informantproject"
+                + ":informant-integration-tests", pluginConfiguration.getPropertiesJson());
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
@@ -122,8 +125,8 @@ public class PluginPropertyTest {
                 "org.informantproject:informant-integration-tests");
         pluginConfiguration.setProperty("alternateDescription", null);
         pluginConfiguration.setProperty("starredDescription", true);
-        container.getInformant().storePluginConfiguration(
-                "org.informantproject:informant-integration-tests", pluginConfiguration);
+        container.getInformant().storePluginProperties("org.informantproject"
+                + ":informant-integration-tests", pluginConfiguration.getPropertiesJson());
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then

@@ -23,7 +23,7 @@ import java.util.Random;
 
 import org.informantproject.test.api.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreConfiguration;
+import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Span;
@@ -55,12 +55,12 @@ public class BasicTest {
     @Test
     public void shouldUpdateAndReadBackConfiguration() throws Exception {
         // given
-        CoreConfiguration randomCoreConfiguration = makeRandomCoreConfiguration();
-        container.getInformant().updateCoreConfiguration(randomCoreConfiguration);
+        CoreProperties randomCoreProperties = makeRandomCoreProperties();
+        container.getInformant().updateCoreProperties(randomCoreProperties);
         // when
-        CoreConfiguration coreConfiguration = container.getInformant().getCoreConfiguration();
+        CoreProperties coreProperties = container.getInformant().getCoreProperties();
         // then
-        assertThat(coreConfiguration, is(randomCoreConfiguration));
+        assertThat(coreProperties, is(randomCoreProperties));
     }
 
     @Test
@@ -88,17 +88,17 @@ public class BasicTest {
         assertThat(span3.getContextMap(), is(mapOf("arg1", "axy", "arg2", "bxy")));
     }
 
-    private static CoreConfiguration makeRandomCoreConfiguration() {
-        CoreConfiguration randomCoreConfiguration = new CoreConfiguration();
-        randomCoreConfiguration.setThresholdMillis(1000 + random.nextInt(60000));
-        randomCoreConfiguration.setStuckThresholdSeconds(1 + random.nextInt(60));
-        randomCoreConfiguration.setStackTraceInitialDelayMillis(1000 + random.nextInt(60000));
-        randomCoreConfiguration.setStackTracePeriodMillis(1000 + random.nextInt(60000));
-        randomCoreConfiguration.setMaxSpansPerTrace(1000 + random.nextInt(10000));
-        randomCoreConfiguration.setRollingSizeMb(100 + random.nextInt(10));
-        randomCoreConfiguration.setWarnOnSpanOutsideTrace(random.nextBoolean());
-        randomCoreConfiguration.setMetricPeriodMillis(1000 + random.nextInt(60000));
-        return randomCoreConfiguration;
+    private static CoreProperties makeRandomCoreProperties() {
+        CoreProperties randomCoreProperties = new CoreProperties();
+        randomCoreProperties.setThresholdMillis(1000 + random.nextInt(60000));
+        randomCoreProperties.setStuckThresholdSeconds(1 + random.nextInt(60));
+        randomCoreProperties.setStackTraceInitialDelayMillis(1000 + random.nextInt(60000));
+        randomCoreProperties.setStackTracePeriodMillis(1000 + random.nextInt(60000));
+        randomCoreProperties.setMaxSpansPerTrace(1000 + random.nextInt(10000));
+        randomCoreProperties.setRollingSizeMb(100 + random.nextInt(10));
+        randomCoreProperties.setWarnOnSpanOutsideTrace(random.nextBoolean());
+        randomCoreProperties.setMetricPeriodMillis(1000 + random.nextInt(60000));
+        return randomCoreProperties;
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {

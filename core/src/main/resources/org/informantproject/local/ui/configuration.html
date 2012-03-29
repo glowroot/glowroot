@@ -156,15 +156,15 @@
   function read() {
     $.getJSON('configuration/read', function(configuration) {
       setUpOnOffButton('', configuration.enabled, 'configuration/core')
-      var coreConfiguration = configuration.coreConfiguration
-      $('#thresholdMillis').val(coreConfiguration.thresholdMillis)
-      $('#stuckThresholdSeconds').val(coreConfiguration.stuckThresholdSeconds)
-      $('#stackTraceInitialDelayMillis').val(coreConfiguration.stackTraceInitialDelayMillis)
-      $('#stackTracePeriodMillis').val(coreConfiguration.stackTracePeriodMillis)
-      $('#spanStackTraceThresholdMillis').val(coreConfiguration.spanStackTraceThresholdMillis)
-      $('#maxSpansPerTrace').val(coreConfiguration.maxSpansPerTrace)
-      $('#rollingSizeMb').val(coreConfiguration.rollingSizeMb)
-      if (configuration.actualRollingSizeMb != coreConfiguration.rollingSizeMb) {
+      var coreProperties = configuration.coreProperties
+      $('#thresholdMillis').val(coreProperties.thresholdMillis)
+      $('#stuckThresholdSeconds').val(coreProperties.stuckThresholdSeconds)
+      $('#stackTraceInitialDelayMillis').val(coreProperties.stackTraceInitialDelayMillis)
+      $('#stackTracePeriodMillis').val(coreProperties.stackTracePeriodMillis)
+      $('#spanStackTraceThresholdMillis').val(coreProperties.spanStackTraceThresholdMillis)
+      $('#maxSpansPerTrace').val(coreProperties.maxSpansPerTrace)
+      $('#rollingSizeMb').val(coreProperties.rollingSizeMb)
+      if (configuration.actualRollingSizeMb != coreProperties.rollingSizeMb) {
         $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
         $('#rollingSizeHelp').css('display', 'inline-block')
       }
@@ -197,8 +197,8 @@
       }
     })
   }
-  function updateCoreConfiguration() {
-    var configuration = {
+  function updateCoreProperties() {
+    var properties = {
       'thresholdMillis': $('#thresholdMillis').val(),
       'stuckThresholdSeconds': $('#stuckThresholdSeconds').val(),
       'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
@@ -207,7 +207,7 @@
       'maxSpansPerTrace': $('#maxSpansPerTrace').val(),
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
-    $.post('configuration/core/properties', JSON.stringify(configuration), function() {
+    $.post('configuration/core/properties', JSON.stringify(properties), function() {
       showAndFadeSuccessMessage('#saveComplete')
     })
   }
@@ -371,7 +371,7 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn" onclick="updateCoreConfiguration()">Save changes</button>
+        <button type="button" class="btn" onclick="updateCoreProperties()">Save changes</button>
         <div id="saveComplete" class="button-success-message">Saved</div>
       </div>
     </fieldset>
