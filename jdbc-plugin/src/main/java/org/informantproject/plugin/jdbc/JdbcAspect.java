@@ -56,7 +56,8 @@ public class JdbcAspect {
 
     private static final String JDBC_PREPARE_SUMMARY_KEY = "jdbc prepare";
     private static final String JDBC_EXECUTE_SUMMARY_KEY = "jdbc execute";
-    private static final String JDBC_NEXT_SUMMARY_KEY = "jdbc next";
+    private static final String JDBC_RESULTSET_NEXT_SUMMARY_KEY = "jdbc resultset next";
+    private static final String JDBC_RESULTSET_VALUE_SUMMARY_KEY = "jdbc resultset value";
     private static final String JDBC_COMMIT_SUMMARY_KEY = "jdbc commit";
     private static final String JDBC_STATEMENT_CLOSE_SUMMARY_KEY = "jdbc statement close";
 
@@ -264,17 +265,28 @@ public class JdbcAspect {
         if (lastSpan == null) {
             // tracing must be disabled (e.g. exceeded trace limit per operation),
             // but metric data is still gathered
-            return (Boolean) pluginServices.proceedAndRecordMetricData(JDBC_NEXT_SUMMARY_KEY,
+            return (Boolean) pluginServices.proceedAndRecordMetricData(
+                    JDBC_RESULTSET_NEXT_SUMMARY_KEY,
                     joinPoint);
         }
         boolean currentRowValid = (Boolean) pluginServices.proceedAndRecordMetricData(
-                JDBC_NEXT_SUMMARY_KEY, joinPoint);
+                JDBC_RESULTSET_NEXT_SUMMARY_KEY, joinPoint);
         lastSpan.setHasPerformedNext();
         if (currentRowValid) {
             lastSpan.setNumRows(resultSet.getRow());
             // TODO also record time spent in next() into JdbcSpan
         }
         return currentRowValid;
+    }
+
+    @Pointcut("call(* java.sql.ResultSet.get*(int, ..)) || call(* java.sql.ResultSet.get*(String,"
+            + " ..))")
+    void resultSetValuePointcut() {}
+
+    @Around("inTrace() && resultSetValuePointcut() && !cflowbelow(resultSetValuePointcut())")
+    public Object resultSetValueAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        return pluginServices.proceedAndRecordMetricData(JDBC_RESULTSET_VALUE_SUMMARY_KEY,
+                joinPoint);
     }
 
     // ========= Transactions =========

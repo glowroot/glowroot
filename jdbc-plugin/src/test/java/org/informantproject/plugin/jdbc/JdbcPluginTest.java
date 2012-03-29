@@ -30,6 +30,7 @@ import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.Trace.Metric;
 import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -116,6 +117,24 @@ public class JdbcPluginTest {
                 "jdbc statement close")));
     }
 
+    @Test
+    public void testResultSetValueMetric() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        boolean found = false;
+        for (Metric metric : trace.getMetrics()) {
+            if (metric.getName().equals("jdbc resultset value")) {
+                found = true;
+                break;
+            }
+        }
+        assertThat(found, is(true));
+    }
+
     // TODO testPreparedStatement
     // select * from employee where name like ?
     // [john%]
@@ -162,6 +181,7 @@ public class JdbcPluginTest {
                 statement.execute("select * from employee");
                 ResultSet rs = statement.getResultSet();
                 while (rs.next()) {
+                    rs.getString(1);
                 }
             } finally {
                 statement.close();
