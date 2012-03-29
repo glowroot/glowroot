@@ -99,4 +99,15 @@ public class ConfigurationDaoCoreTest {
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         assertThat(coreConfiguration, is(randomCoreConfiguration));
     }
+
+    @Test
+    public void shouldTestCoreEnabled(ConfigurationDao configurationDao) {
+        // given
+        ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
+        configurationDao.storeCoreProperties(defaultCoreConfiguration.getPropertiesJson());
+        // when
+        ImmutableCoreConfiguration configuration = configurationDao.readCoreConfiguration();
+        // then
+        assertThat(configuration.isEnabled(), is(true));
+    }
 }

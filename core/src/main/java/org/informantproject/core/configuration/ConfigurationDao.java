@@ -91,7 +91,12 @@ class ConfigurationDao {
                         public ImmutableCoreConfiguration extractData(ResultSet resultSet)
                                 throws SQLException {
                             if (resultSet.next()) {
-                                boolean enabled = resultSet.getBoolean(1);
+                                Object enabledObject = resultSet.getObject(1);
+                                // default value for enabled is true
+                                boolean enabled = true;
+                                if (enabledObject != null) {
+                                    enabled = resultSet.getBoolean(1);
+                                }
                                 String json = resultSet.getString(2);
                                 return ImmutableCoreConfiguration.create(enabled, json);
                             } else {
@@ -180,7 +185,12 @@ class ConfigurationDao {
     private static ImmutablePluginConfiguration buildPluginConfiguration(
             PluginDescriptor pluginDescriptor, ResultSet resultSet) throws SQLException {
 
-        boolean enabled = resultSet.getBoolean(1);
+        Object enabledObject = resultSet.getObject(1);
+        // default value for enabled is true
+        boolean enabled = true;
+        if (enabledObject != null) {
+            enabled = resultSet.getBoolean(1);
+        }
         String json = resultSet.getString(2);
         if (json == null) {
             logger.error("configuration is null for plugin id '{}'", pluginDescriptor.getId());
