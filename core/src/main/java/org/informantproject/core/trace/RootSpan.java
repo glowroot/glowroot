@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.trace;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -23,9 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
-
-import edu.emory.mathcs.backport.java.util.Deque;
-import edu.emory.mathcs.backport.java.util.concurrent.LinkedBlockingDeque;
+import com.google.common.collect.Lists;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -41,7 +40,8 @@ public class RootSpan {
 
     private static final Logger logger = LoggerFactory.getLogger(RootSpan.class);
 
-    private final Deque spanStack = new LinkedBlockingDeque();
+    // spanStack doesn't need to be thread safe since it is only access by the trace thread
+    private final List<Span> spanStack = Lists.newArrayList();
 
     private final long startTick;
     private volatile long endTick;
@@ -89,7 +89,7 @@ public class RootSpan {
     }
 
     Span pushSpan(SpanDetail spanDetail) {
-        Span currentSpan = (Span) spanStack.getLast();
+        Span currentSpan = spanStack.get(spanStack.size() - 1);
         Span span = new Span(spanDetail, startTick, ticker.read(), size, currentSpan.getIndex(),
                 currentSpan.getLevel() + 1);
         pushSpanInternal(span);
@@ -115,13 +115,13 @@ public class RootSpan {
     }
 
     private void popSpanSafe(Span span) {
-        Span pop = (Span) spanStack.removeLast();
+        Span pop = spanStack.remove(spanStack.size() - 1);
         if (!pop.equals(span)) {
             // somehow(?) a pop was missed, this is just damage control
             logger.error("found '{}' at the top of the stack when expecting '{}'",
                     pop.getDescription(), span.getDescription());
             while (!spanStack.isEmpty() && !pop.equals(span)) {
-                pop = (Span) spanStack.removeLast();
+                pop = spanStack.remove(spanStack.size() - 1);
             }
             if (spanStack.isEmpty() && !pop.equals(span)) {
                 logger.error("popped entire stack, never found '{}'", span.getDescription());

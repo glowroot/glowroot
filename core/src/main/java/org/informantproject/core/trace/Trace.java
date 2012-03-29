@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,9 +40,6 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
-
-import edu.emory.mathcs.backport.java.util.Deque;
-import edu.emory.mathcs.backport.java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. servlet request).
@@ -77,7 +75,8 @@ public class Trace {
     private final RootSpan rootSpan;
 
     // used to prevent recording overlapping metric timings for the same span
-    private final Deque spanNameStack = new LinkedBlockingDeque();
+    //
+    private final List<String> spanNameStack = new CopyOnWriteArrayList<String>();
 
     // stack trace data constructed from sampled stack traces
     // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
@@ -201,20 +200,13 @@ public class Trace {
             // possible (don't want the expense of synchronization for every addition to the span
             // name stack, though this leaves open the possibility of the two being out of sync)
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-            @SuppressWarnings("unchecked")
             List<String> spanNames = Lists.newArrayList(spanNameStack);
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
             if (spanNames.isEmpty()) {
                 // trace has ended
                 return;
             }
-            List<String> uniqueSpanNames = Lists.newArrayList();
-            for (String spanName : spanNames) {
-                if (!uniqueSpanNames.contains(spanName)) {
-                    uniqueSpanNames.add(spanName);
-                }
-            }
-            mergedStackTreeSupplier.get().addStackTrace(threadInfo, uniqueSpanNames);
+            mergedStackTreeSupplier.get().addStackTrace(threadInfo, spanNames);
         }
     }
 
@@ -262,13 +254,13 @@ public class Trace {
     }
 
     private void popSpanNameSafe(String spanName) {
-        String poppedSpanName = (String) spanNameStack.removeLast();
+        String poppedSpanName = spanNameStack.remove(spanNameStack.size() - 1);
         if (!poppedSpanName.equals(spanName)) {
             // somehow(?) a pop was missed, this is just damage control
             logger.error("found '{}' at the top of the span name stack when expecting '{}'",
                     poppedSpanName, spanName);
             while (!spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
-                poppedSpanName = (String) spanNameStack.removeLast();
+                poppedSpanName = spanNameStack.remove(spanNameStack.size() - 1);
             }
             if (spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
                 logger.error("popped entire span name stack, never found '{}'", spanName);

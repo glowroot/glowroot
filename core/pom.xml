@@ -92,11 +92,6 @@
       <version>11.0.2</version>
     </dependency>
     <dependency>
-      <groupId>backport-util-concurrent</groupId>
-      <artifactId>backport-util-concurrent</artifactId>
-      <version>3.1</version>
-    </dependency>
-    <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.1</version>
@@ -248,16 +243,6 @@
                 <exclude>META-INF/license/**</exclude>
               </excludes>
             </filter>
-            <filter>
-              <!-- this is really only needed for the sources jar -->
-              <artifact>backport-util-concurrent:backport-util-concurrent</artifact>
-              <excludes>
-                <exclude>sun/**</exclude>
-                <exclude>LEGAL</exclude>
-                <exclude>license.html</exclude>
-                <exclude>README.html</exclude>
-              </excludes>
-            </filter>
           </filters>
           <relocations>
             <relocation>
@@ -295,12 +280,6 @@
             <relocation>
               <pattern>com.google.common</pattern>
               <shadedPattern>org.informantproject.shaded.google.common</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>edu.emory.mathcs.backport.java.util</pattern>
-              <shadedPattern>
-                org.informantproject.shaded.emory.mathcs.backport.java.util
-              </shadedPattern>
             </relocation>
             <relocation>
               <pattern>javax.annotation</pattern>
