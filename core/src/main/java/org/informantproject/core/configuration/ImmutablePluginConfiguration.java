@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 
 import org.informantproject.api.Optional;
 import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
+import org.informantproject.core.util.OptionalJsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -135,7 +137,9 @@ public class ImmutablePluginConfiguration {
     }
 
     public String getPropertiesJson() {
-        return new Gson().toJson(properties);
+        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
+                new OptionalJsonSerializer()).serializeNulls().create();
+        return gson.toJson(properties);
     }
 
     @Override
