@@ -62,7 +62,8 @@ public class ImmutableCoreConfiguration {
     // TODO this doesn't really make sense for Filters/servlets? or maybe just not top-level?
     // though even those might be interesting occasionally
     // TODO also re-think the name
-    private int spanStackTraceThresholdMillis = 5000;
+    // essentially disabled for now, this needs to be changed to a per-plugin property
+    private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
 
     // used to limit memory requirement, also used to help limit log file size,
     // 0 means don't capture any traces, -1 means no limit
