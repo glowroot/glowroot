@@ -54,13 +54,6 @@ public class JdbcAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcAspect.class);
 
-    private static final String JDBC_PREPARE_SUMMARY_KEY = "jdbc prepare";
-    private static final String JDBC_EXECUTE_SUMMARY_KEY = "jdbc execute";
-    private static final String JDBC_RESULTSET_NEXT_SUMMARY_KEY = "jdbc resultset next";
-    private static final String JDBC_RESULTSET_VALUE_SUMMARY_KEY = "jdbc resultset value";
-    private static final String JDBC_COMMIT_SUMMARY_KEY = "jdbc commit";
-    private static final String JDBC_STATEMENT_CLOSE_SUMMARY_KEY = "jdbc statement close";
-
     private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:jdbc-plugin");
@@ -84,11 +77,11 @@ public class JdbcAspect {
     // this pointcut isn't restricted to inTrace() because PreparedStatements must be tracked for
     // their entire life
     @Around("connectionPreparePointcut() && args(sql, ..)")
-    public Object connectionPrepareAdvice(ProceedingJoinPoint joinPoint, String sql)
+    public Object jdbcPrepareSpanMarker(ProceedingJoinPoint joinPoint, String sql)
             throws Throwable {
 
         PreparedStatement preparedStatement = (PreparedStatement) pluginServices
-                .proceedAndRecordMetricData(JDBC_PREPARE_SUMMARY_KEY, joinPoint);
+                .proceedAndRecordMetricData("jdbc prepare", joinPoint);
         statementMirrorCache.getOrCreatePreparedStatementMirror(preparedStatement, sql);
         return preparedStatement;
     }
@@ -176,26 +169,26 @@ public class JdbcAspect {
     // call occurs outside of a trace (assuming "warnOnSpanOutsideTrace" is enabled in Informant)
     @Around("isPluginEnabled() && statementExecutePointcut()"
             + " && !cflowbelow(statementExecutePointcut()) && target(statement) && args(sql, ..)")
-    public Object statementExecuteAdvice(ProceedingJoinPoint joinPoint, final Statement statement,
+    public Object jdbcExecuteSpanMarker1(ProceedingJoinPoint joinPoint, final Statement statement,
             final String sql) throws Throwable {
 
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(sql);
         statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
     }
 
     // record span and summary data for Statement.execute()
     @Around("inTrace() && preparedStatementExecutePointcut()"
             + " && !cflowbelow(preparedStatementExecutePointcut()) && target(preparedStatement)")
-    public Object preparedStatementExecuteAdvice(ProceedingJoinPoint joinPoint,
+    public Object jdbcExecuteSpanMarker2(ProceedingJoinPoint joinPoint,
             final PreparedStatement preparedStatement) throws Throwable {
 
         PreparedStatementMirror info = statementMirrorCache
                 .getPreparedStatementMirror(preparedStatement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
         info.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
     }
 
     // handle Statement.executeBatch()
@@ -208,19 +201,19 @@ public class JdbcAspect {
 
     @Around("inTrace() && statementExecuteBatchPointcut()"
             + " && !cflowbelow(statementExecuteBatchPointcut()) && target(statement)")
-    public Object statementExecuteBatchAdvice(ProceedingJoinPoint joinPoint, Statement statement)
+    public Object jdbcExecuteSpanMarker3(ProceedingJoinPoint joinPoint, Statement statement)
             throws Throwable {
 
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(statementMirror.getBatchedSqlCopy());
         statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
     }
 
     @Around("inTrace() && preparedStatementExecuteBatchPointcut()"
             + " && !cflowbelow(preparedStatementExecuteBatchPointcut())"
             + " && target(preparedStatement)")
-    public Object preparedStatementExecuteBatchAdvice(ProceedingJoinPoint joinPoint,
+    public Object jdbcExecuteSpanMarker4(ProceedingJoinPoint joinPoint,
             PreparedStatement preparedStatement) throws Throwable {
 
         PreparedStatementMirror info = statementMirrorCache
@@ -237,7 +230,7 @@ public class JdbcAspect {
             jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
         }
         info.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan(JDBC_EXECUTE_SUMMARY_KEY, jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
     }
 
     // ========= ResultSet =========
@@ -251,8 +244,8 @@ public class JdbcAspect {
     // capture aggregate timing data around calls to ResultSet.next()
     @Around("inTrace() && resultNextPointcut() && !cflowbelow(resultNextPointcut())"
             + " && target(resultSet)")
-    public boolean resultNextAdvice(ProceedingJoinPoint joinPoint, final ResultSet resultSet)
-            throws Throwable {
+    public boolean jdbcResultsetNextSpanMarker(ProceedingJoinPoint joinPoint,
+            final ResultSet resultSet) throws Throwable {
 
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(resultSet
                 .getStatement());
@@ -265,12 +258,11 @@ public class JdbcAspect {
         if (lastSpan == null) {
             // tracing must be disabled (e.g. exceeded trace limit per operation),
             // but metric data is still gathered
-            return (Boolean) pluginServices.proceedAndRecordMetricData(
-                    JDBC_RESULTSET_NEXT_SUMMARY_KEY,
+            return (Boolean) pluginServices.proceedAndRecordMetricData("jdbc resultset next",
                     joinPoint);
         }
         boolean currentRowValid = (Boolean) pluginServices.proceedAndRecordMetricData(
-                JDBC_RESULTSET_NEXT_SUMMARY_KEY, joinPoint);
+                "jdbc resultset next", joinPoint);
         lastSpan.setHasPerformedNext();
         if (currentRowValid) {
             lastSpan.setNumRows(resultSet.getRow());
@@ -284,9 +276,8 @@ public class JdbcAspect {
     void resultSetValuePointcut() {}
 
     @Around("inTrace() && resultSetValuePointcut() && !cflowbelow(resultSetValuePointcut())")
-    public Object resultSetValueAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
-        return pluginServices.proceedAndRecordMetricData(JDBC_RESULTSET_VALUE_SUMMARY_KEY,
-                joinPoint);
+    public Object jdbcResultsetValueSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
+        return pluginServices.proceedAndRecordMetricData("jdbc resultset value", joinPoint);
     }
 
     // ========= Transactions =========
@@ -300,7 +291,7 @@ public class JdbcAspect {
     // call occurs outside of a trace (assuming "warnOnSpanOutsideTrace" is enabled in Informant)
     @Around("isPluginEnabled() && connectionCommitPointcut()"
             + " && !cflowbelow(connectionCommitPointcut())")
-    public Object connectionCommitAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object jdbcCommitSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
         SpanDetail spanDetail = new SpanDetail() {
             public CharSequence getDescription() {
                 return "jdbc commit";
@@ -309,7 +300,7 @@ public class JdbcAspect {
                 return null;
             }
         };
-        return pluginServices.executeSpan(JDBC_COMMIT_SUMMARY_KEY, spanDetail, joinPoint);
+        return pluginServices.executeSpan("jdbc commit", spanDetail, joinPoint);
     }
 
     // ================== Statement Clearing ==================
@@ -335,7 +326,7 @@ public class JdbcAspect {
     void statementClosePointcut() {}
 
     @Around("statementClosePointcut() && !cflowbelow(statementClosePointcut())")
-    public void statementCloseAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
-        pluginServices.proceedAndRecordMetricData(JDBC_STATEMENT_CLOSE_SUMMARY_KEY, joinPoint);
+    public void jdbcStatementCloseSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
+        pluginServices.proceedAndRecordMetricData("jdbc statement close", joinPoint);
     }
 }
