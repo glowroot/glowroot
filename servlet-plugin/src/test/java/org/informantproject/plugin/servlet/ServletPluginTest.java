@@ -407,7 +407,8 @@ public class ServletPluginTest {
     }
 
     private void storePluginConfiguration(PluginConfiguration pluginConfiguration) throws Exception {
-        container.getInformant().storePluginConfiguration(PLUGIN_ID, pluginConfiguration);
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
+                .getPropertiesJson());
     }
 
     @SuppressWarnings("unchecked")
