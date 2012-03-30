@@ -52,8 +52,6 @@ import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
 @SuppressAjWarnings("adviceDidNotMatch")
 public class ServletAspect {
 
-    private static final String TOP_LEVEL_SERVLET_SUMMARY_KEY = "http request";
-
     private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
             new ThreadLocal<ServletSpanDetail>();
     private static final PluginServices pluginServices = PluginServices
@@ -84,7 +82,7 @@ public class ServletAspect {
     void topLevelPointcut() {}
 
     @Around("isPluginEnabled() && topLevelPointcut() && args(realRequest, ..)")
-    public void aroundTopLevelPointcut(ProceedingJoinPoint joinPoint, Object realRequest)
+    public void httpRequestSpanMarker(ProceedingJoinPoint joinPoint, Object realRequest)
             throws Throwable {
 
         HttpServletRequest request = HttpServletRequest.from(realRequest);
@@ -111,8 +109,7 @@ public class ServletAspect {
         }
         topLevelServletSpanDetail.set(spanDetail);
         try {
-            pluginServices.executeRootSpan(TOP_LEVEL_SERVLET_SUMMARY_KEY, spanDetail,
-                    joinPoint);
+            pluginServices.executeRootSpan("http request", spanDetail, joinPoint);
         } finally {
             topLevelServletSpanDetail.set(null);
         }
