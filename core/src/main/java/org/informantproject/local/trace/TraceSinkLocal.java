@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.informantproject.api.JsonCharSequence;
 import org.informantproject.api.LargeStringBuilder;
@@ -34,6 +36,7 @@ import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.MetricDataItem;
+import org.informantproject.core.trace.PluginServicesImpl;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceSink;
@@ -65,6 +68,8 @@ import com.google.inject.Singleton;
 public class TraceSinkLocal implements TraceSink {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSinkLocal.class);
+
+    private static final Pattern spanMarkerMethodPattern = Pattern.compile("(.*)SpanMarker[0-9]*");
 
     private final ExecutorService executorService = DaemonExecutors
             .newSingleThreadExecutor("Informant-StackCollector");
@@ -287,6 +292,8 @@ public class TraceSinkLocal implements TraceSink {
     private static void visitDepthFirst(LinkedList<Object> toVisit, JsonWriter jw)
             throws IOException {
 
+        List<String> spanNameStack = Lists.newArrayList();
+        Object previous = null;
         while (!toVisit.isEmpty()) {
             Object curr = toVisit.removeLast();
             if (curr instanceof MergedStackTreeNode) {
@@ -297,12 +304,20 @@ public class TraceSinkLocal implements TraceSink {
                 } else {
                     jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
                 }
+                String newSpanName = null;
+                if (previous instanceof MergedStackTreeNode) {
+                    newSpanName = getSpanName(currNode.getStackTraceElement(),
+                            ((MergedStackTreeNode) previous).getStackTraceElement());
+                    if (newSpanName != null) {
+                        spanNameStack.add(newSpanName);
+                    }
+                }
                 jw.name("sampleCount").value(currNode.getSampleCount());
                 if (currNode.isLeaf()) {
                     jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
                     jw.name("spanNames");
                     jw.beginArray();
-                    for (String spanName : currNode.getSpanNames()) {
+                    for (String spanName : spanNameStack) {
                         jw.value(spanName);
                     }
                     jw.endArray();
@@ -311,6 +326,9 @@ public class TraceSinkLocal implements TraceSink {
                 if (childNodes.isEmpty()) {
                     jw.endObject();
                 } else {
+                    if (newSpanName != null) {
+                        toVisit.add(JsonWriterOp.POP_SPAN_NAME);
+                    }
                     toVisit.add(JsonWriterOp.END_OBJECT);
                     jw.name("childNodes").beginArray();
                     toVisit.add(JsonWriterOp.END_ARRAY);
@@ -320,11 +338,59 @@ public class TraceSinkLocal implements TraceSink {
                 jw.endArray();
             } else if (curr == JsonWriterOp.END_OBJECT) {
                 jw.endObject();
+            } else if (curr == JsonWriterOp.POP_SPAN_NAME) {
+                spanNameStack.remove(spanNameStack.size() - 1);
             }
+            previous = curr;
+        }
+    }
+
+    private static String getSpanName(StackTraceElement curr, StackTraceElement previous) {
+        if (isNewSpan(curr, previous)) {
+            return getSpanNameFromMethodName(previous);
+        }
+        return null;
+    }
+
+    private static boolean isNewSpan(StackTraceElement curr, StackTraceElement previous) {
+        if (!curr.getClassName().equals(PluginServicesImpl.class.getName())) {
+            return false;
+        }
+        if (!curr.getMethodName().startsWith("execute") && !curr.getMethodName().startsWith(
+                "proceed")) {
+            // ignore other methods in PluginServicesImpl
+            return false;
+        }
+        if (previous.getClassName().equals(PluginServicesImpl.class.getName())) {
+            // ignore PluginServicesImpl calling itself
+            return false;
+        }
+        return true;
+    }
+
+    private static String getSpanNameFromMethodName(StackTraceElement stackTraceElement) {
+        Matcher matcher = spanMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
+        if (matcher.matches()) {
+            String spanName = matcher.group(1);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < spanName.length(); i++) {
+                char c = spanName.charAt(i);
+                if (Character.isUpperCase(c)) {
+                    sb.append(" ");
+                    sb.append(Character.toLowerCase(c));
+                } else {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
+        } else {
+            logger.warn("Informant plugin is not following SpanMarker method"
+                    + " naming convention: {}", stackTraceElement);
+            return null;
         }
     }
 
     private static enum JsonWriterOp {
-        END_OBJECT, END_ARRAY
+        END_OBJECT, END_ARRAY, POP_SPAN_NAME;
     }
 }

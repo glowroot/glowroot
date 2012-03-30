@@ -44,8 +44,8 @@ public class LevelOneAspect {
     void levelOnePointcut() {}
 
     @Around("isPluginEnabled() && levelOnePointcut() && args(arg1, arg2)")
-    public Object callAdvice(ProceedingJoinPoint joinPoint, final String arg1, final String arg2)
-            throws Throwable {
+    public Object levelOneSpanMarker(ProceedingJoinPoint joinPoint, final String arg1,
+            final String arg2) throws Throwable {
 
         RootSpanDetail rootSpanDetail = new RootSpanDetail() {
             public String getDescription() {

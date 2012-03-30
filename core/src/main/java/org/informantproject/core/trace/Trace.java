@@ -39,7 +39,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Lists;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. servlet request).
@@ -196,17 +195,9 @@ public class Trace {
     void captureStackTrace() {
         Thread thread = threadHolder.get();
         if (thread != null) {
-            // take a snapshot of the span name stack as close to the stack trace capture as
-            // possible (don't want the expense of synchronization for every addition to the span
-            // name stack, though this leaves open the possibility of the two being out of sync)
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-            List<String> spanNames = Lists.newArrayList(spanNameStack);
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
-            if (spanNames.isEmpty()) {
-                // trace has ended
-                return;
-            }
-            mergedStackTreeSupplier.get().addStackTrace(threadInfo, spanNames);
+            mergedStackTreeSupplier.get().addStackTrace(threadInfo);
         }
     }
 

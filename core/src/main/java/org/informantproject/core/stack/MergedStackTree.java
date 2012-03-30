@@ -64,15 +64,14 @@ public class MergedStackTree {
         }
     }
 
-    public void addStackTrace(ThreadInfo threadInfo, List<String> spanNames) {
+    public void addStackTrace(ThreadInfo threadInfo) {
         synchronized (lock) {
-            addToStackTree(threadInfo.getStackTrace(), threadInfo.getThreadState(), spanNames);
+            addToStackTree(threadInfo.getStackTrace(), threadInfo.getThreadState());
         }
     }
 
     // public for unit tests (otherwise could be private)
-    public void addToStackTree(StackTraceElement[] stackTraceElements, State threadState,
-            List<String> spanNames) {
+    public void addToStackTree(StackTraceElement[] stackTraceElements, State threadState) {
 
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
@@ -83,8 +82,8 @@ public class MergedStackTree {
             // check all child nodes
             boolean matchFound = false;
             for (MergedStackTreeNode childNode : nextChildNodes) {
-                if (matches(stackTraceElements[nextIndex], childNode, nextIndex == 0, threadState,
-                        spanNames)) {
+                if (matches(stackTraceElements[nextIndex], childNode, nextIndex == 0,
+                        threadState)) {
                     // match found, update lastMatchedNode and continue
                     childNode.incrementSampleCount();
                     lastMatchedNode = childNode;
@@ -103,7 +102,6 @@ public class MergedStackTree {
             if (i == 0) {
                 // leaf node
                 nextNode.setLeafThreadState(threadState);
-                nextNode.setSpanNames(spanNames);
             }
             if (lastMatchedNode == null) {
                 // new root node
@@ -116,14 +114,12 @@ public class MergedStackTree {
     }
 
     private static boolean matches(StackTraceElement stackTraceElement,
-            MergedStackTreeNode childNode, boolean leaf, State threadState,
-            List<String> spanNames) {
+            MergedStackTreeNode childNode, boolean leaf, State threadState) {
 
         if (childNode.isLeaf() && leaf) {
             // only consider thread state when matching the leaf node
             return stackTraceElement.equals(childNode.getStackTraceElement())
-                    && threadState == childNode.getLeafThreadState()
-                    && spanNames.equals(childNode.getSpanNames());
+                    && threadState == childNode.getLeafThreadState();
         } else if (!childNode.isLeaf() && !leaf) {
             return stackTraceElement.equals(childNode.getStackTraceElement());
         } else {

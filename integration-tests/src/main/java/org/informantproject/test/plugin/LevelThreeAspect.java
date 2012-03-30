@@ -48,8 +48,8 @@ public class LevelThreeAspect {
     void levelThreePointcut() {}
 
     @Around("isPluginEnabled() && levelThreePointcut() && args(arg1, arg2)")
-    public Object callAdvice(ProceedingJoinPoint joinPoint, final String arg1, final String arg2)
-            throws Throwable {
+    public Object levelThreeSpanMarker(ProceedingJoinPoint joinPoint, final String arg1,
+            final String arg2) throws Throwable {
 
         SpanDetail spanDetail = new SpanDetail() {
             public String getDescription() {

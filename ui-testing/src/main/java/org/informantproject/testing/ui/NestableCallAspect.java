@@ -56,7 +56,7 @@ public class NestableCallAspect {
     @Around("isPluginEnabled() && nestablePointcut()")
     public Object nestableAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
         if (pluginServices.getRootSpanDetail() == null) {
-            return pluginServices.executeRootSpan("nestable", getRootSpanDetail(), joinPoint);
+            return nestableSpanMarker(joinPoint);
         } else {
             pluginServices.putTraceAttribute("my first attribute", "hello world");
             pluginServices.putTraceAttribute("and second", "val");
@@ -65,8 +65,16 @@ public class NestableCallAspect {
             pluginServices.putTraceAttribute("and another", "a b c d e f g"
                     + " h i j k l m n o p q r s t u v w x y z a b c d e f g h i j k l m n o p"
                     + " q r s t u v w x y z");
-            return pluginServices.executeSpan("nestable and very long", getSpanDetail(), joinPoint);
+            return nestableAndVeryLongSpanMarker(joinPoint);
         }
+    }
+
+    private Object nestableSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
+        return pluginServices.executeRootSpan("nestable", getRootSpanDetail(), joinPoint);
+    }
+
+    private Object nestableAndVeryLongSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
+        return pluginServices.executeSpan("nestable and very long", getSpanDetail(), joinPoint);
     }
 
     private RootSpanDetail getRootSpanDetail() {

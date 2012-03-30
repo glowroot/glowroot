@@ -30,8 +30,6 @@ import com.google.inject.Inject;
  */
 public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter {
 
-    private static final String WEAVING_SUMMARY_KEY = "informant weaving";
-
     private final PluginServices pluginServices;
 
     @Inject
@@ -45,17 +43,25 @@ public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter
             final byte[] bytes) throws IllegalClassFormatException {
 
         try {
-            return pluginServices.proceedAndRecordMetricData(WEAVING_SUMMARY_KEY,
-                    new Callable<byte[]>() {
-                        public byte[] call() throws IllegalClassFormatException {
-                            return InformantClassFileTransformer.super.transform(loader, className,
-                                    classBeingRedefined, protectionDomain, bytes);
-                        }
-                    });
+            return informantWeavingSpanMarker(loader, className, classBeingRedefined,
+                    protectionDomain, bytes);
         } catch (IllegalClassFormatException e) {
             throw e;
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private byte[] informantWeavingSpanMarker(final ClassLoader loader, final String className,
+            final Class<?> classBeingRedefined, final ProtectionDomain protectionDomain,
+            final byte[] bytes) throws Exception {
+
+        return pluginServices.proceedAndRecordMetricData("informant weaving",
+                new Callable<byte[]>() {
+                    public byte[] call() throws IllegalClassFormatException {
+                        return InformantClassFileTransformer.super.transform(loader, className,
+                                classBeingRedefined, protectionDomain, bytes);
+                    }
+                });
     }
 }

@@ -17,10 +17,7 @@ package org.informantproject.core.stack;
 
 import java.lang.Thread.State;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * Element of {@link MergedStackTree}.
@@ -47,7 +44,6 @@ public class MergedStackTreeNode {
     //
     private volatile int sampleCount;
     private volatile State leafThreadState;
-    private volatile List<String> spanNames;
 
     // this is for creating a single synthetic root node above other root nodes when there are
     // multiple root nodes
@@ -70,10 +66,6 @@ public class MergedStackTreeNode {
 
     void setLeafThreadState(State leafThreadState) {
         this.leafThreadState = leafThreadState;
-    }
-
-    public void setSpanNames(List<String> spanNames) {
-        this.spanNames = ImmutableList.copyOf(spanNames);
     }
 
     // sampleCount is volatile to ensure visibility, but this method still needs to be called under
@@ -104,9 +96,5 @@ public class MergedStackTreeNode {
 
     public State getLeafThreadState() {
         return leafThreadState;
-    }
-
-    public List<String> getSpanNames() {
-        return spanNames;
     }
 }

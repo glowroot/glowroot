@@ -22,7 +22,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.lang.Thread.State;
-import java.util.ArrayList;
 
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.trace.Trace;
@@ -47,7 +46,7 @@ public class TraceSinkLocalTest {
             stackTraceElements[i] = new StackTraceElement(TraceSinkLocalTest.class.getName(),
                     "method" + i, "TraceDaoTest.java", 100 + 10 * i);
         }
-        mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE, new ArrayList<String>());
+        mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
         // when
         CharSequence mergedStackTreeJson = TraceSinkLocal.getMergedStackTreeJson(trace);
         // then don't blow up with StackOverflowError

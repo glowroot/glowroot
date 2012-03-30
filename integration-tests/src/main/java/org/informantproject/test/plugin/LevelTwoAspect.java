@@ -48,7 +48,8 @@ public class LevelTwoAspect {
     void levelTwoPointcut() {}
 
     @Around("isPluginEnabled() && levelTwoPointcut() && args(arg1, arg2)")
-    public Object callAdvice(ProceedingJoinPoint joinPoint, final String arg1, final String arg2)
+    public Object levelTwoSpanMarker(ProceedingJoinPoint joinPoint, final String arg1,
+            final String arg2)
             throws Throwable {
 
         SpanDetail spanDetail = new SpanDetail() {
