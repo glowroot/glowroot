@@ -86,6 +86,8 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/local/ui/plugins.html");
         uriMappings.put(Pattern.compile("^/misc.html$"),
                 "org/informantproject/local/ui/misc.html");
+        uriMappings.put(Pattern.compile("^/threaddump.html$"),
+                "org/informantproject/local/ui/threaddump.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
@@ -111,6 +113,8 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/webresources/spin/$1");
         uriMappings.put(Pattern.compile("^/qtip/(.*)$"),
                 "org/informantproject/webresources/qtip/$1");
+        uriMappings.put(Pattern.compile("^/favicon.ico$"),
+                "org/informantproject/local/ui/img/favicon.ico");
     }
 
     @Inject
@@ -118,7 +122,7 @@ public class HttpServer extends HttpServerBase {
             TraceJsonService traceJsonService, TraceExportHttpService traceExportHttpService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
-            PluginJsonService pluginJsonService) {
+            PluginJsonService pluginJsonService, ThreadDumpJsonService threadDumpJsonService) {
 
         super(port);
         uriMappings.put(Pattern.compile("^/trace/export/(.*)$"), traceExportHttpService);
@@ -161,6 +165,8 @@ public class HttpServer extends HttpServerBase {
                 + "/numPendingTraceWrites$"), miscJsonService, "getNumPendingTraceWrites"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/dbFile$"),
                 miscJsonService, "getDbFilePath"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/threaddump$"),
+                threadDumpJsonService, "getThreadDump"));
     }
     @Override
     protected HttpResponse handleRequest(HttpRequest request) throws IOException {

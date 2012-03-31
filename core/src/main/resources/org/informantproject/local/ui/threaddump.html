@@ -1,0 +1,71 @@
+<!doctype html>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Informant | Thread dump</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" href="bootstrap/2.0.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<script type="text/javascript" src="jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
+</head>
+<script id="threadDumpTemplate" type="text/x-handlebars-template">
+<pre>
+{{#each .}}
+"{{name}}"
+   java.lang.Thread.State: {{state}}
+{{#ifBlocked state}}        - blocked on {{lockName}}
+{{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
+{{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
+{{/each}}{{/each}}
+</pre>
+</script>
+<script type="text/javascript">
+Handlebars.registerHelper('ifBlocked', function(state, options) {
+  if (state == 'BLOCKED') {
+    return options.fn(this)
+  } else {
+    return options.inverse(this)
+  }
+})
+  Handlebars.registerHelper('ifWaiting', function(state, options) {
+    if (state == 'WAITING' || state == 'TIMED_WAITING') {
+      return options.fn(this)
+    } else {
+      return options.inverse(this)
+    }
+  })
+  var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html())
+  $(document).ready(function() {
+    $.getJSON('misc/threaddump', function(threads) {
+      var html = threadDumpTemplate(threads)
+      $(html).appendTo('#threaddump')
+    })
+  })
+</script>
+<body>
+  <h1 class="header">
+    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Thread dump</span>
+    <span class="header-see-also">
+      see also: <a href="traces.html">trace explorer</a>,
+      <a href="configuration.html">configuration</a>
+    </span>
+  </h1>
+  <div id="threaddump"></div>
+</body>
+</html>

@@ -51,14 +51,10 @@
       <a href="configuration.html">configuration</a>
     </span>
   </h1>
-  <form class="form-horizontal">
+  <div style="vertical-align: middle; font-size: 19px">Clear data</div>
+  <br>
+  <form class="well form-horizontal" style="margin-left: 40px">
     <fieldset>
-      <legend>
-        Summary data
-        <span style="padding-left: 15px; font-size: 15px; color:#999999">
-          (metric data and high level trace data)
-        </span>
-      </legend>
       <div class="control-group">
         <label class="control-label" for="keepMillis">Keep</label>
         <div class="controls">
@@ -83,6 +79,10 @@
         <label class="control-label" for="compact">Compact</label>
         <div class="controls">
           <input id="compact" type="checkbox" value="true">
+          <div class="help-block">
+            Compact the H2 data file that stores the trace summary data (capture time,
+            duration, description, username, attributes, metrics)
+          </div>
         </div>
       </div>
       <div class="form-actions">
@@ -92,5 +92,12 @@
       </div>
     </fieldset>
   </form>
+  <div style="vertical-align: middle; font-size: 19px">Thread dump</div>
+  <br>
+  <div class="well form-horizontal" style="margin-left: 40px">
+    <button type="button" class="btn" onclick="location.href = 'threaddump.html'">
+      Full thread dump
+    </button>
+  </div>
 </body>
 </html>
