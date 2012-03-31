@@ -52,6 +52,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
+import com.google.common.io.Resources;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -306,7 +307,8 @@ public class ConfigurationService {
             }
             Document document;
             try {
-                document = XmlDocuments.getValidatedDocument(resourceURL.openStream());
+                document = XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(
+                        resourceURL));
             } catch (SAXParseException f) {
                 logger.error("error reading/validating META-INF/org.informantproject.package.xml: "
                         + f.getMessage(), f);
@@ -343,7 +345,8 @@ public class ConfigurationService {
             List<PluginDescriptor> plugins = new ArrayList<PluginDescriptor>();
             while (e.hasMoreElements()) {
                 URL resourceURL = e.nextElement();
-                Document document = XmlDocuments.getValidatedDocument(resourceURL.openStream());
+                Document document = XmlDocuments.getValidatedDocument(Resources
+                        .newInputStreamSupplier(resourceURL));
                 Element root = document.getDocumentElement();
                 plugins.add(createPlugin(root));
             }

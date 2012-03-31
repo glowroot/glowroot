@@ -17,23 +17,23 @@ package org.informantproject.core.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
-import org.w3c.dom.ls.LSInput;
-import org.w3c.dom.ls.LSResourceResolver;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+import org.xml.sax.XMLReader;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.InputSupplier;
@@ -56,78 +56,50 @@ public class XmlDocuments {
         return builder.parse(inputStream);
     }
 
-    public static Document getValidatedDocument(InputStream inputStream)
+    public static Document getValidatedDocument(InputSupplier<InputStream> inputSupplier)
             throws ParserConfigurationException, SAXException, IOException {
 
-        Document document = getDocument(inputStream);
-        SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-        Schema schema = schemaFactory.newSchema();
-        Validator validator = schema.newValidator();
-        validator.setResourceResolver(new ResourceResolver());
-        validator.validate(new DOMSource(document));
-        return document;
+        // validate first with SAX
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        factory.setNamespaceAware(true);
+        factory.setValidating(true);
+        SAXParser parser = factory.newSAXParser();
+        parser.setProperty("http://java.sun.com/xml/jaxp/properties/schemaLanguage",
+                XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        XMLReader reader = parser.getXMLReader();
+        reader.setEntityResolver(new ResourceEntityResolver());
+        reader.setErrorHandler(new LoggingErrorHandler());
+        reader.parse(new InputSource(inputSupplier.getInput()));
+        // then return DOM
+        return getDocument(inputSupplier.getInput());
     }
 
-    public static class ResourceResolver implements LSResourceResolver {
-        public LSInput resolveResource(String type, String namespaceURI, String publicId,
-                String systemId, String baseURI) {
-
+    private static class ResourceEntityResolver implements EntityResolver {
+        public InputSource resolveEntity(String publicId, String systemId) throws IOException {
             String prefix = "http://www.informantproject.org/xsd/";
             if (systemId.startsWith(prefix)) {
                 String simpleName = systemId.substring(prefix.length());
-                return new Input(Resources.newReaderSupplier(Resources.getResource(
-                        "org/informantproject/core/schema/" + simpleName), Charsets.UTF_8));
+                return new InputSource(Resources.newReaderSupplier(Resources.getResource(
+                        "org/informantproject/core/schema/" + simpleName), Charsets.UTF_8)
+                        .getInput());
             } else {
-                logger.error("unexpected xml resource requested: type={}, namespaceURI={},"
-                        + " publicId={}, systemId={}, baseURI={}", new Object[] { namespaceURI,
-                        publicId, systemId, baseURI });
+                logger.error("unexpected xml resource requested: publicId={}, systemId={}",
+                        new Object[] { publicId, systemId });
                 return null;
             }
         }
     }
 
-    private static class Input implements LSInput {
-        private static Logger logger = LoggerFactory.getLogger(Input.class);
-        private final InputSupplier<? extends Reader> inputSupplier;
-        public Input(InputSupplier<? extends Reader> inputSupplier) {
-            this.inputSupplier = inputSupplier;
+    private static class LoggingErrorHandler implements ErrorHandler {
+        public void warning(SAXParseException e) throws SAXException {
+            logger.warn(e.getMessage(), e);
         }
-        public String getPublicId() {
-            return null;
+        public void error(SAXParseException e) throws SAXException {
+            logger.error(e.getMessage(), e);
         }
-        public void setPublicId(String publicId) {}
-        public String getSystemId() {
-            return null;
+        public void fatalError(SAXParseException e) throws SAXException {
+            logger.error(e.getMessage(), e);
+            throw e;
         }
-        public void setSystemId(String systemId) {}
-        public Reader getCharacterStream() {
-            try {
-                return inputSupplier.getInput();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return null;
-            }
-        }
-        public void setCharacterStream(Reader characterStream) {}
-        public InputStream getByteStream() {
-            return null;
-        }
-        public void setByteStream(InputStream byteStream) {}
-        public String getStringData() {
-            return null;
-        }
-        public void setStringData(String stringData) {}
-        public String getBaseURI() {
-            return null;
-        }
-        public void setBaseURI(String baseURI) {}
-        public String getEncoding() {
-            return null;
-        }
-        public void setEncoding(String encoding) {}
-        public boolean getCertifiedText() {
-            return false;
-        }
-        public void setCertifiedText(boolean certifiedText) {}
     }
 }

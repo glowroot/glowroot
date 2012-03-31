@@ -43,12 +43,16 @@
   </xs:complexType>
   <xs:simpleType name="GroupOrArtifactId">
     <xs:restriction base="xs:string">
-      <xs:pattern value="[a-z][a-z0-9.-]*" />
+      <!-- the regex is written a bit strangely because the jdk 5 schema validator complains about
+           the - in the valid regex [a-z0-9.-] -->
+      <xs:pattern value="[a-z]([a-z0-9.]|-)*" />
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="PropertyName">
     <xs:restriction base="xs:string">
-      <xs:pattern value="[A-Za-z][A-Za-z0-9.-_:]*" />
+      <!-- the regex is written a bit strangely because the jdk 5 schema validator complains about
+           the - in the valid regex [A-Za-z0-9._:-] -->
+      <xs:pattern value="[A-Za-z]([A-Za-z0-9._:]|-)*" />
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="PropertyType">
