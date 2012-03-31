@@ -62,11 +62,6 @@ public class ServletAspect {
         return pluginServices.isEnabled();
     }
 
-    @Pointcut("if()")
-    public static boolean inTrace() {
-        return pluginServices.getRootSpanDetail() != null;
-    }
-
     @Pointcut("execution(void javax.servlet.Filter.doFilter(javax.servlet.ServletRequest,"
             + " javax.servlet.ServletResponse, javax.servlet.FilterChain))")
     void filterPointcut() {}
@@ -122,7 +117,7 @@ public class ServletAspect {
     @Pointcut("call(* javax.servlet.ServletRequest.getParameter*(..))")
     void requestGetParameterPointcut() {}
 
-    @AfterReturning("isPluginEnabled() && inTrace() && requestGetParameterPointcut()"
+    @AfterReturning("isPluginEnabled() && requestGetParameterPointcut()"
             + " && !cflowbelow(requestGetParameterPointcut()) && target(realRequest)"
             + " && !within(org.informantproject.plugin.servlet.ServletAspect)")
     public void afterReturningRequestGetParameterPointcut(Object realRequest) {
@@ -145,7 +140,7 @@ public class ServletAspect {
             + " javax.servlet.http.HttpServletRequest.getSession(..))")
     void requestGetSessionPointcut() {}
 
-    @AfterReturning(pointcut = "isPluginEnabled() && inTrace() && requestGetSessionPointcut()"
+    @AfterReturning(pointcut = "isPluginEnabled() && requestGetSessionPointcut()"
             + " && !cflowbelow(requestGetSessionPointcut())", returning = "realSession")
     public void afterReturningRequestGetSession(Object realSession) {
         HttpSession session = HttpSession.from(realSession);
@@ -160,7 +155,7 @@ public class ServletAspect {
     @Pointcut("call(void javax.servlet.http.HttpSession.invalidate())")
     void sessionInvalidatePointcut() {}
 
-    @Before("isPluginEnabled() && inTrace() && sessionInvalidatePointcut()"
+    @Before("isPluginEnabled() && sessionInvalidatePointcut()"
             + " && !cflowbelow(sessionInvalidatePointcut()) && target(realSession)")
     public void beforeSessionInvalidatePointcut(Object realSession) {
         HttpSession session = HttpSession.from(realSession);
@@ -175,7 +170,7 @@ public class ServletAspect {
     @Pointcut("call(void javax.servlet.http.HttpSession.setAttribute(String, Object))")
     void sessionSetAttributePointcut() {}
 
-    @AfterReturning("isPluginEnabled() && inTrace() && sessionSetAttributePointcut()"
+    @AfterReturning("isPluginEnabled() && sessionSetAttributePointcut()"
             + " && !cflowbelow(sessionSetAttributePointcut()) && target(realSession)"
             + " && args(name, value)")
     public void afterReturningSessionSetAttributePointcut(Object realSession, String name,
@@ -194,7 +189,7 @@ public class ServletAspect {
     @Pointcut("call(void javax.servlet.http.HttpSession.removeAttribute(String))")
     void sessionRemoveAttributePointcut() {}
 
-    @AfterReturning("isPluginEnabled() && inTrace() && sessionRemoveAttributePointcut()"
+    @AfterReturning("isPluginEnabled() && sessionRemoveAttributePointcut()"
             + " && !cflowbelow(sessionRemoveAttributePointcut()) && target(realSession)"
             + " && args(name)")
     public void afterReturningSessionRemoveAttributePointcut(Object realSession, String name) {
