@@ -63,19 +63,14 @@ public class JdbcAspect {
         return pluginServices.isEnabled();
     }
 
-    @Pointcut("if()")
-    public static boolean inTrace() {
-        return pluginServices.isEnabled() && pluginServices.getRootSpanDetail() != null;
-    }
-
     // ===================== Statement Preparation =====================
 
     // capture the sql used to create the PreparedStatement
     @Pointcut("call(java.sql.PreparedStatement+ java.sql.Connection.prepare*(String, ..))")
     void connectionPreparePointcut() {}
 
-    // this pointcut isn't restricted to inTrace() because PreparedStatements must be tracked for
-    // their entire life
+    // this pointcut isn't restricted to isPluginEnabled() because PreparedStatements must be
+    // tracked for their entire life
     @Around("connectionPreparePointcut() && args(sql, ..)")
     public Object jdbcPrepareSpanMarker(ProceedingJoinPoint joinPoint, String sql)
             throws Throwable {
@@ -98,7 +93,7 @@ public class JdbcAspect {
     @Pointcut("call(void java.sql.PreparedStatement.setNull(int, *, ..))")
     void preparedStatementSetNullPointcut() {}
 
-    @AfterReturning("inTrace() && preparedStatementSetXPointcut()"
+    @AfterReturning("isPluginEnabled() && preparedStatementSetXPointcut()"
             + " && !cflowbelow(preparedStatementSetXPointcut()) && target(preparedStatement)"
             + " && args(parameterIndex, x, ..)")
     public void preparedStatementSetXAdvice(PreparedStatement preparedStatement,
@@ -119,7 +114,7 @@ public class JdbcAspect {
         }
     }
 
-    @AfterReturning("inTrace() && preparedStatementSetNullPointcut()"
+    @AfterReturning("isPluginEnabled() && preparedStatementSetNullPointcut()"
             + " && !cflowbelow(preparedStatementSetNullPointcut()) && target(preparedStatement)"
             + " && args(parameterIndex, ..)")
     public void preparedStatementSetNullAdvice(PreparedStatement preparedStatement,
@@ -135,7 +130,7 @@ public class JdbcAspect {
     @Pointcut("call(void java.sql.Statement.addBatch(String))")
     void statementAddBatchPointcut() {}
 
-    @AfterReturning("inTrace() && statementAddBatchPointcut()"
+    @AfterReturning("isPluginEnabled() && statementAddBatchPointcut()"
             + " && !cflowbelow(statementAddBatchPointcut()) && target(statement) && args(sql)")
     public void statementAddBatchAdvice(Statement statement, String sql) {
         statementMirrorCache.getStatementMirror(statement).addBatch(sql);
@@ -145,7 +140,7 @@ public class JdbcAspect {
     @Pointcut("call(void java.sql.PreparedStatement.addBatch())")
     void preparedStatementAddBatchPointcut() {}
 
-    @AfterReturning("inTrace() && preparedStatementAddBatchPointcut()"
+    @AfterReturning("isPluginEnabled() && preparedStatementAddBatchPointcut()"
             + " && !cflowbelow(preparedStatementAddBatchPointcut()) && target(preparedStatement)")
     public void preparedStatementAddBatchAdvice(PreparedStatement preparedStatement) {
         statementMirrorCache.getPreparedStatementMirror(preparedStatement).addBatch();
@@ -165,8 +160,6 @@ public class JdbcAspect {
     void preparedStatementExecutePointcut() {}
 
     // record call and summary data for Statement.execute()
-    // this pointcut isn't restricted to inTrace() so that Informant can log a warning if the jdbc
-    // call occurs outside of a trace (assuming "warnOnSpanOutsideTrace" is enabled in Informant)
     @Around("isPluginEnabled() && statementExecutePointcut()"
             + " && !cflowbelow(statementExecutePointcut()) && target(statement) && args(sql, ..)")
     public Object jdbcExecuteSpanMarker1(ProceedingJoinPoint joinPoint, final Statement statement,
@@ -179,7 +172,7 @@ public class JdbcAspect {
     }
 
     // record span and summary data for Statement.execute()
-    @Around("inTrace() && preparedStatementExecutePointcut()"
+    @Around("isPluginEnabled() && preparedStatementExecutePointcut()"
             + " && !cflowbelow(preparedStatementExecutePointcut()) && target(preparedStatement)")
     public Object jdbcExecuteSpanMarker2(ProceedingJoinPoint joinPoint,
             final PreparedStatement preparedStatement) throws Throwable {
@@ -199,7 +192,7 @@ public class JdbcAspect {
     @Pointcut("call(int[] java.sql.Statement.executeBatch()) && target(java.sql.PreparedStatement)")
     void preparedStatementExecuteBatchPointcut() {}
 
-    @Around("inTrace() && statementExecuteBatchPointcut()"
+    @Around("isPluginEnabled() && statementExecuteBatchPointcut()"
             + " && !cflowbelow(statementExecuteBatchPointcut()) && target(statement)")
     public Object jdbcExecuteSpanMarker3(ProceedingJoinPoint joinPoint, Statement statement)
             throws Throwable {
@@ -210,7 +203,7 @@ public class JdbcAspect {
         return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
     }
 
-    @Around("inTrace() && preparedStatementExecuteBatchPointcut()"
+    @Around("isPluginEnabled() && preparedStatementExecuteBatchPointcut()"
             + " && !cflowbelow(preparedStatementExecuteBatchPointcut())"
             + " && target(preparedStatement)")
     public Object jdbcExecuteSpanMarker4(ProceedingJoinPoint joinPoint,
@@ -242,7 +235,7 @@ public class JdbcAspect {
     void resultNextPointcut() {}
 
     // capture aggregate timing data around calls to ResultSet.next()
-    @Around("inTrace() && resultNextPointcut() && !cflowbelow(resultNextPointcut())"
+    @Around("isPluginEnabled() && resultNextPointcut() && !cflowbelow(resultNextPointcut())"
             + " && target(resultSet)")
     public boolean jdbcResultsetNextSpanMarker(ProceedingJoinPoint joinPoint,
             final ResultSet resultSet) throws Throwable {
@@ -275,7 +268,8 @@ public class JdbcAspect {
             + " ..))")
     void resultSetValuePointcut() {}
 
-    @Around("inTrace() && resultSetValuePointcut() && !cflowbelow(resultSetValuePointcut())")
+    @Around("isPluginEnabled() && resultSetValuePointcut() && !cflowbelow("
+            + "resultSetValuePointcut())")
     public Object jdbcResultsetValueSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
         return pluginServices.proceedAndRecordMetricData("jdbc resultset value", joinPoint);
     }
@@ -287,8 +281,6 @@ public class JdbcAspect {
     void connectionCommitPointcut() {}
 
     // record call and summary data for commits
-    // this pointcut isn't restricted to inTrace() so that Informant can log a warning if the jdbc
-    // call occurs outside of a trace (assuming "warnOnSpanOutsideTrace" is enabled in Informant)
     @Around("isPluginEnabled() && connectionCommitPointcut()"
             + " && !cflowbelow(connectionCommitPointcut())")
     public Object jdbcCommitSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -310,7 +302,7 @@ public class JdbcAspect {
     @Pointcut("call(void java.sql.Statement.clearBatch())")
     void statementClearBatchPointcut() {}
 
-    // this pointcut isn't restricted to inTrace() because
+    // this pointcut isn't restricted to isPluginEnabled() because
     // PreparedStatements must be tracked for their entire life
     @AfterReturning("statementClearBatchPointcut() && !cflowbelow(statementClearBatchPointcut())"
             + " && target(statement)")
