@@ -24,6 +24,7 @@ import java.sql.Statement;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
@@ -54,9 +55,20 @@ public class JdbcAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcAspect.class);
 
-    private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:jdbc-plugin");
+
+    private static final Metric prepareMetric = pluginServices.createMetric("jdbc prepare");
+    private static final Metric executeMetric = pluginServices.createMetric("jdbc execute");
+    private static final Metric resultSetNextMetric = pluginServices.createMetric(
+            "jdbc resultset next");
+    private static final Metric resultSetValueMetric = pluginServices.createMetric(
+            "jdbc resultset value");
+    private static final Metric commitMetric = pluginServices.createMetric("jdbc commit");
+    private static final Metric statementCloseMetric = pluginServices.createMetric(
+            "jdbc statement close");
+
+    private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -76,7 +88,7 @@ public class JdbcAspect {
             throws Throwable {
 
         PreparedStatement preparedStatement = (PreparedStatement) pluginServices
-                .proceedAndRecordMetricData("jdbc prepare", joinPoint);
+                .proceedAndRecordMetricData(prepareMetric, joinPoint);
         statementMirrorCache.getOrCreatePreparedStatementMirror(preparedStatement, sql);
         return preparedStatement;
     }
@@ -168,7 +180,7 @@ public class JdbcAspect {
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(sql);
         statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
     // record span and summary data for Statement.execute()
@@ -181,7 +193,7 @@ public class JdbcAspect {
                 .getPreparedStatementMirror(preparedStatement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
         info.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
     // handle Statement.executeBatch()
@@ -200,7 +212,7 @@ public class JdbcAspect {
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(statementMirror.getBatchedSqlCopy());
         statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
     @Around("isPluginEnabled() && preparedStatementExecuteBatchPointcut()"
@@ -223,7 +235,7 @@ public class JdbcAspect {
             jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
         }
         info.setLastJdbcSpanDetail(jdbcSpanDetail);
-        return pluginServices.executeSpan("jdbc execute", jdbcSpanDetail, joinPoint);
+        return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
     // ========= ResultSet =========
@@ -243,19 +255,19 @@ public class JdbcAspect {
         StatementMirror statementMirror = statementMirrorCache.getStatementMirror(resultSet
                 .getStatement());
         if (statementMirror == null) {
-            // this is not a statement execution, it is some other execution of ResultSet.next(),
-            // e.g. Connection.getMetaData().getTables().next()
+            // this is not a statement execution, it is some other execution of
+            // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
             return (Boolean) joinPoint.proceed();
         }
         JdbcSpanDetail lastSpan = statementMirror.getLastJdbcSpanDetail();
         if (lastSpan == null) {
             // tracing must be disabled (e.g. exceeded trace limit per operation),
             // but metric data is still gathered
-            return (Boolean) pluginServices.proceedAndRecordMetricData("jdbc resultset next",
+            return (Boolean) pluginServices.proceedAndRecordMetricData(resultSetNextMetric,
                     joinPoint);
         }
         boolean currentRowValid = (Boolean) pluginServices.proceedAndRecordMetricData(
-                "jdbc resultset next", joinPoint);
+                resultSetNextMetric, joinPoint);
         lastSpan.setHasPerformedNext();
         if (currentRowValid) {
             lastSpan.setNumRows(resultSet.getRow());
@@ -271,7 +283,7 @@ public class JdbcAspect {
     @Around("isPluginEnabled() && resultSetValuePointcut() && !cflowbelow("
             + "resultSetValuePointcut())")
     public Object jdbcResultsetValueSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        return pluginServices.proceedAndRecordMetricData("jdbc resultset value", joinPoint);
+        return pluginServices.proceedAndRecordMetricData(resultSetValueMetric, joinPoint);
     }
 
     // ========= Transactions =========
@@ -292,7 +304,7 @@ public class JdbcAspect {
                 return null;
             }
         };
-        return pluginServices.executeSpan("jdbc commit", spanDetail, joinPoint);
+        return pluginServices.executeSpan(commitMetric, spanDetail, joinPoint);
     }
 
     // ================== Statement Clearing ==================
@@ -319,6 +331,6 @@ public class JdbcAspect {
 
     @Around("statementClosePointcut() && !cflowbelow(statementClosePointcut())")
     public void jdbcStatementCloseSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        pluginServices.proceedAndRecordMetricData("jdbc statement close", joinPoint);
+        pluginServices.proceedAndRecordMetricData(statementCloseMetric, joinPoint);
     }
 }
