@@ -35,6 +35,7 @@ import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 import org.informantproject.shaded.aspectj.lang.annotation.AfterReturning;
 import org.informantproject.shaded.aspectj.lang.annotation.Around;
 import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
+import org.informantproject.shaded.aspectj.lang.annotation.DeclareParents;
 import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
 
@@ -68,7 +69,9 @@ public class JdbcAspect {
     private static final Metric statementCloseMetric = pluginServices.createMetric(
             "jdbc statement close");
 
-    private static final StatementMirrorCache statementMirrorCache = new StatementMirrorCache();
+    @SuppressWarnings("unused")
+    @DeclareParents(value = "java.sql.Statement+", defaultImpl = HasStatementMirrorImpl.class)
+    private HasStatementMirror dummyFieldForDeclareParentsDefinition;
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -89,7 +92,8 @@ public class JdbcAspect {
 
         PreparedStatement preparedStatement = (PreparedStatement) pluginServices
                 .proceedAndRecordMetricData(prepareMetric, joinPoint);
-        statementMirrorCache.getOrCreatePreparedStatementMirror(preparedStatement, sql);
+        ((HasStatementMirror) preparedStatement).setInformantStatementMirror(
+                new PreparedStatementMirror(sql));
         return preparedStatement;
     }
 
@@ -111,18 +115,16 @@ public class JdbcAspect {
     public void preparedStatementSetXAdvice(PreparedStatement preparedStatement,
             int parameterIndex, Object x) {
 
-        PreparedStatementMirror preparedStatementMirror = statementMirrorCache
-                .getPreparedStatementMirror(preparedStatement);
+        PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
         if (x instanceof InputStream || x instanceof Reader) {
-            preparedStatementMirror.setParameterValue(parameterIndex,
-                    new StreamingParameterValue(x));
+            mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
         } else if (x instanceof byte[]) {
-            boolean displayAsHex = JdbcPlugin.isDisplayBinaryParameterAsHex(preparedStatementMirror
-                    .getSql(), parameterIndex);
-            preparedStatementMirror.setParameterValue(parameterIndex, new ByteArrayParameterValue(
-                    (byte[]) x, displayAsHex));
+            boolean displayAsHex = JdbcPlugin.isDisplayBinaryParameterAsHex(mirror.getSql(),
+                    parameterIndex);
+            mirror.setParameterValue(parameterIndex, new ByteArrayParameterValue((byte[]) x,
+                    displayAsHex));
         } else {
-            preparedStatementMirror.setParameterValue(parameterIndex, x);
+            mirror.setParameterValue(parameterIndex, x);
         }
     }
 
@@ -132,8 +134,8 @@ public class JdbcAspect {
     public void preparedStatementSetNullAdvice(PreparedStatement preparedStatement,
             int parameterIndex) {
 
-        statementMirrorCache.getPreparedStatementMirror(preparedStatement).setParameterValue(
-                parameterIndex, new NullParameterValue());
+        getPreparedStatementMirror(preparedStatement).setParameterValue(parameterIndex,
+                new NullParameterValue());
     }
 
     // ================== Statement Batching ==================
@@ -145,7 +147,7 @@ public class JdbcAspect {
     @AfterReturning("isPluginEnabled() && statementAddBatchPointcut()"
             + " && !cflowbelow(statementAddBatchPointcut()) && target(statement) && args(sql)")
     public void statementAddBatchAdvice(Statement statement, String sql) {
-        statementMirrorCache.getStatementMirror(statement).addBatch(sql);
+        getStatementMirror(statement).addBatch(sql);
     }
 
     // handle PreparedStatement.addBatch()
@@ -155,7 +157,7 @@ public class JdbcAspect {
     @AfterReturning("isPluginEnabled() && preparedStatementAddBatchPointcut()"
             + " && !cflowbelow(preparedStatementAddBatchPointcut()) && target(preparedStatement)")
     public void preparedStatementAddBatchAdvice(PreparedStatement preparedStatement) {
-        statementMirrorCache.getPreparedStatementMirror(preparedStatement).addBatch();
+        getPreparedStatementMirror(preparedStatement).addBatch();
     }
 
     // =================== Statement Execution ===================
@@ -177,9 +179,9 @@ public class JdbcAspect {
     public Object jdbcExecuteSpanMarker1(ProceedingJoinPoint joinPoint, final Statement statement,
             final String sql) throws Throwable {
 
-        StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
+        StatementMirror mirror = getStatementMirror(statement);
         JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(sql);
-        statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
+        mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
         return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
@@ -189,10 +191,10 @@ public class JdbcAspect {
     public Object jdbcExecuteSpanMarker2(ProceedingJoinPoint joinPoint,
             final PreparedStatement preparedStatement) throws Throwable {
 
-        PreparedStatementMirror info = statementMirrorCache
-                .getPreparedStatementMirror(preparedStatement);
-        JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
-        info.setLastJdbcSpanDetail(jdbcSpanDetail);
+        PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
+        JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror
+                .getParametersCopy());
+        mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
         return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
@@ -209,9 +211,9 @@ public class JdbcAspect {
     public Object jdbcExecuteSpanMarker3(ProceedingJoinPoint joinPoint, Statement statement)
             throws Throwable {
 
-        StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
-        JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(statementMirror.getBatchedSqlCopy());
-        statementMirror.setLastJdbcSpanDetail(jdbcSpanDetail);
+        StatementMirror mirror = getStatementMirror(statement);
+        JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(mirror.getBatchedSqlCopy());
+        mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
         return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
@@ -221,20 +223,19 @@ public class JdbcAspect {
     public Object jdbcExecuteSpanMarker4(ProceedingJoinPoint joinPoint,
             PreparedStatement preparedStatement) throws Throwable {
 
-        PreparedStatementMirror info = statementMirrorCache
-                .getPreparedStatementMirror(preparedStatement);
+        PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
         JdbcSpanDetail jdbcSpanDetail;
-        if (info.isUsingBatchedParameters()) {
+        if (mirror.isUsingBatchedParameters()) {
             // make a copy of batchedArrays
-            jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getBatchedParametersCopy());
+            jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror.getBatchedParametersCopy());
         } else {
             // TODO is this branch necessary? is it possible to call
             // executeBatch() without calling addBatch() at least once?
-            logger.warn("executeBatch() was called on a PreparedStatement"
-                    + " without calling addBatch() first");
-            jdbcSpanDetail = new JdbcSpanDetail(info.getSql(), info.getParametersCopy());
+            logger.warn("executeBatch() was called on a PreparedStatement without calling"
+                    + " addBatch() first");
+            jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror.getParametersCopy());
         }
-        info.setLastJdbcSpanDetail(jdbcSpanDetail);
+        mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
         return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }
 
@@ -252,14 +253,13 @@ public class JdbcAspect {
     public boolean jdbcResultsetNextSpanMarker(ProceedingJoinPoint joinPoint,
             final ResultSet resultSet) throws Throwable {
 
-        StatementMirror statementMirror = statementMirrorCache.getStatementMirror(resultSet
-                .getStatement());
-        if (statementMirror == null) {
+        StatementMirror mirror = getStatementMirror(resultSet.getStatement());
+        if (mirror == null) {
             // this is not a statement execution, it is some other execution of
             // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
             return (Boolean) joinPoint.proceed();
         }
-        JdbcSpanDetail lastSpan = statementMirror.getLastJdbcSpanDetail();
+        JdbcSpanDetail lastSpan = mirror.getLastJdbcSpanDetail();
         if (lastSpan == null) {
             // tracing must be disabled (e.g. exceeded trace limit per operation),
             // but metric data is still gathered
@@ -319,9 +319,9 @@ public class JdbcAspect {
     @AfterReturning("statementClearBatchPointcut() && !cflowbelow(statementClearBatchPointcut())"
             + " && target(statement)")
     public void statementClearBatchAdvice(Statement statement) {
-        StatementMirror statementMirror = statementMirrorCache.getStatementMirror(statement);
-        statementMirror.clearBatch();
-        statementMirror.setLastJdbcSpanDetail(null);
+        StatementMirror mirror = getStatementMirror(statement);
+        mirror.clearBatch();
+        mirror.setLastJdbcSpanDetail(null);
     }
 
     // ================== Statement Closing ==================
@@ -332,5 +332,21 @@ public class JdbcAspect {
     @Around("statementClosePointcut() && !cflowbelow(statementClosePointcut())")
     public void jdbcStatementCloseSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
         pluginServices.proceedAndRecordMetricData(statementCloseMetric, joinPoint);
+    }
+
+    private static StatementMirror getStatementMirror(Statement statement) {
+        StatementMirror mirror = ((HasStatementMirror) statement).getInformantStatementMirror();
+        if (mirror == null) {
+            mirror = new StatementMirror();
+            ((HasStatementMirror) statement).setInformantStatementMirror(mirror);
+        }
+        return mirror;
+    }
+
+    private static PreparedStatementMirror getPreparedStatementMirror(
+            PreparedStatement preparedStatement) {
+
+        return (PreparedStatementMirror) ((HasStatementMirror) preparedStatement)
+                .getInformantStatementMirror();
     }
 }
