@@ -22,8 +22,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import org.informantproject.api.Logger;
-import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanContextMap;
@@ -53,8 +51,6 @@ import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
 @Aspect
 @SuppressAjWarnings("adviceDidNotMatch")
 public class JdbcAspect {
-
-    private static final Logger logger = LoggerFactory.getLogger(JdbcAspect.class);
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:jdbc-plugin");
@@ -225,17 +221,8 @@ public class JdbcAspect {
             PreparedStatement preparedStatement) throws Throwable {
 
         PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
-        JdbcSpanDetail jdbcSpanDetail;
-        if (mirror.isUsingBatchedParameters()) {
-            // make a copy of batchedArrays
-            jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror.getBatchedParametersCopy());
-        } else {
-            // TODO is this branch necessary? is it possible to call
-            // executeBatch() without calling addBatch() at least once?
-            logger.warn("executeBatch() was called on a PreparedStatement without calling"
-                    + " addBatch() first");
-            jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror.getParametersCopy());
-        }
+        JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror
+                .getBatchedParametersCopy());
         mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
         return pluginServices.executeSpan(executeMetric, jdbcSpanDetail, joinPoint);
     }

@@ -56,9 +56,13 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     public Collection<List<Object>> getBatchedParametersCopy() {
-        // batched parameters cannot be changed after calling addBatch(),
-        // so it is safe to not copy the inner list
-        return new ArrayList<List<Object>>(batchedParameters);
+        if (batchedParameters == null) {
+            return new ArrayList<List<Object>>();
+        } else {
+            // batched parameters cannot be changed after calling addBatch(),
+            // so it is safe to not copy the inner list
+            return new ArrayList<List<Object>>(batchedParameters);
+        }
     }
 
     public boolean isUsingBatchedParameters() {
