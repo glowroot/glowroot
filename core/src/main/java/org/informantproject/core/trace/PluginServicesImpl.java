@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -112,6 +113,12 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
+    public Metric createMetric(String name) {
+        // TODO globally unique MetricImpl per name
+        return new MetricImpl(name, ticker);
+    }
+
+    @Override
     public boolean isEnabled() {
         // this method should have as little overhead as possible so don't even call logger
         return this.enabled && !traceRegistry.isCurrentRootSpanDisabled();
@@ -136,23 +143,23 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public Object executeRootSpan(String spanName, RootSpanDetail rootSpanDetail,
+    public Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
             ProceedingJoinPoint joinPoint) throws Throwable {
 
-        logger.debug("executeRootSpan(): spanName={}", spanName);
+        logger.debug("executeRootSpan(): metric.name={}", metric.getName());
         ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
         // this should be the first check to avoid any additional overhead when tracing is disabled
         if (!configuration.isEnabled()) {
             return proceedAndDisableNested(joinPoint);
         }
-        return proceedAndRecordSpanAndMetricData(spanName, rootSpanDetail, joinPoint);
+        return proceedAndRecordSpanAndMetricData((MetricImpl) metric, rootSpanDetail, joinPoint);
     }
 
     @Override
-    public Object executeSpan(String spanName, SpanDetail spanDetail, ProceedingJoinPoint joinPoint)
+    public Object executeSpan(Metric metric, SpanDetail spanDetail, ProceedingJoinPoint joinPoint)
             throws Throwable {
 
-        logger.debug("executeSpan(): spanName={}", spanName);
+        logger.debug("executeSpan(): metric.name={}", metric.getName());
         ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
         // this should be the first check to avoid any additional overhead when tracing is disabled
         // (this conditional includes the edge case where tracing was disabled mid-trace)
@@ -167,23 +174,23 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         }
         if (traceRegistry.isCurrentRootSpanDisabled()) {
             // tracing was enabled after the current trace had started
-            return proceedAndRecordMetricData(spanName, joinPoint);
+            return proceedAndRecordMetricData(metric, joinPoint);
         }
         Trace currentTrace = traceRegistry.getCurrentTrace();
         // already checked isInTrace() above, so currentTrace != null
         if (configuration.getMaxSpansPerTrace() != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
                 && currentTrace.getRootSpan().getSize() >= configuration.getMaxSpansPerTrace()) {
             // the trace limit has been exceeded
-            return proceedAndRecordMetricData(spanName, joinPoint);
+            return proceedAndRecordMetricData(metric, joinPoint);
         }
-        return proceedAndRecordSpanAndMetricData(spanName, spanDetail, joinPoint);
+        return proceedAndRecordSpanAndMetricData((MetricImpl) metric, spanDetail, joinPoint);
     }
 
     @Override
-    public Object proceedAndRecordMetricData(String spanName, final ProceedingJoinPoint joinPoint)
+    public Object proceedAndRecordMetricData(Metric metric, final ProceedingJoinPoint joinPoint)
             throws Throwable {
 
-        return proceedAndRecordMetricData(spanName,
+        return proceedAndRecordMetricData((MetricImpl) metric,
                 new CallableWithThrowable<Object, Throwable>() {
                     public Object call() throws Throwable {
                         return joinPoint.proceed();
@@ -192,10 +199,10 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public <V> V proceedAndRecordMetricData(String spanName, final Callable<V> callable)
+    public <V> V proceedAndRecordMetricData(Metric metric, final Callable<V> callable)
             throws Exception {
 
-        return proceedAndRecordMetricData(spanName,
+        return proceedAndRecordMetricData((MetricImpl) metric,
                 new CallableWithThrowable<V, Exception>() {
                     public V call() throws Exception {
                         return callable.call();
@@ -245,54 +252,49 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         return traceRegistry.getCurrentTrace() != null;
     }
 
-    private Object proceedAndRecordSpanAndMetricData(String spanName, SpanDetail spanDetail,
+    private Object proceedAndRecordSpanAndMetricData(MetricImpl metric, SpanDetail spanDetail,
             ProceedingJoinPoint joinPoint) throws Throwable {
 
         // start span
-        Span span = pushSpan(spanName, spanDetail);
+        Span span = pushSpan(metric, spanDetail);
         try {
             return joinPoint.proceed();
         } finally {
             // minimizing the number of calls to the clock timer as they are relatively expensive
             long endTick = ticker.read();
             // pop span needs to be the last step (at least when this is a root span)
-            popSpan(spanName, span, endTick);
+            popSpan(metric, span, endTick);
         }
     }
 
-    private <V, T extends Throwable> V proceedAndRecordMetricData(String spanName,
+    private <V, T extends Throwable> V proceedAndRecordMetricData(MetricImpl metric,
             CallableWithThrowable<V, T> callable) throws T {
 
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
             return callable.call();
         } else {
-            boolean alreadyPresent = currentTrace.pushSpanWithoutDetail(spanName);
-            if (alreadyPresent) {
+            currentTrace.pushSpanWithoutDetail(metric);
+            try {
                 return callable.call();
-            } else {
-                long startTick = ticker.read();
-                try {
-                    return callable.call();
-                } finally {
-                    currentTrace.popSpanWithoutDetail(spanName, ticker.read() - startTick);
-                }
+            } finally {
+                currentTrace.popSpanWithoutDetail(metric);
             }
         }
     }
 
     // it is very important that calls to pushSpan() are wrapped in try block with
     // a finally block executing popSpan()
-    private Span pushSpan(String spanName, SpanDetail spanDetail) {
+    private Span pushSpan(MetricImpl metric, SpanDetail spanDetail) {
         // span limit is handled inside PluginServicesImpl
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
-            currentTrace = new Trace(spanName, spanDetail, clock, ticker);
+            currentTrace = new Trace(metric, spanDetail, clock, ticker);
             traceRegistry.setCurrentTrace(currentTrace);
             traceRegistry.addTrace(currentTrace);
             return currentTrace.getRootSpan().getRootSpan();
         } else {
-            return currentTrace.pushSpan(spanName, spanDetail);
+            return currentTrace.pushSpan(metric, spanDetail);
         }
     }
 
@@ -300,7 +302,7 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     // the span to pop is passed in just to make sure it is the one on top
     // (and if it is not the one on top, then pop until it is found, preventing
     // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    private void popSpan(String spanName, Span span, long endTick) {
+    private void popSpan(MetricImpl metric, Span span, long endTick) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         StackTraceElement[] stackTraceElements = null;
         if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(configurationService
@@ -308,9 +310,12 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
             stackTraceElements = Thread.currentThread().getStackTrace();
             // TODO remove last few stack trace elements?
         }
-        currentTrace.popSpan(spanName, span, endTick, stackTraceElements);
+        currentTrace.popSpan(metric, span, endTick, stackTraceElements);
         if (currentTrace.isCompleted()) {
             // the root span has been popped off
+            // since the metrics are bound to the thread, they need to be recorded and reset while
+            // still in the trace thread, before the thread is reused for another trace
+            currentTrace.resetThreadLocalMetrics();
             cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
             cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
             traceRegistry.setCurrentTrace(null);

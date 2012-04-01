@@ -15,6 +15,7 @@
  */
 package org.informantproject.test.plugin;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -33,6 +34,8 @@ public class LevelOneAspect {
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-integration-tests");
+
+    private static final Metric metric = pluginServices.createMetric("level one");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -71,6 +74,6 @@ public class LevelOneAspect {
                 return Optional.absent();
             }
         };
-        return pluginServices.executeRootSpan("level one", rootSpanDetail, joinPoint);
+        return pluginServices.executeRootSpan(metric, rootSpanDetail, joinPoint);
     }
 }

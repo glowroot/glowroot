@@ -163,7 +163,7 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public static String getMetricsJson(Trace trace, Gson gson) {
-        List<MetricDataItem> items = Lists.newArrayList(trace.getMetricData().getItems());
+        List<MetricDataItem> items = Lists.newArrayList(trace.getMetricDataItems());
         if (items.size() == 0) {
             return null;
         } else {

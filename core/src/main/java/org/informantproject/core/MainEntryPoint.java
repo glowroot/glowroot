@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -77,7 +78,8 @@ public final class MainEntryPoint {
         if (returnPluginServicesProxy.get()) {
             synchronized (returnPluginServicesProxy) {
                 if (returnPluginServicesProxy.get()) {
-                    PluginServicesProxy proxy = new PluginServicesProxy(pluginId);
+                    PluginServicesProxy proxy = new PluginServicesProxy(pluginId, injector
+                            .getInstance(Ticker.class));
                     pluginServicesProxies.add(proxy);
                     return proxy;
                 }

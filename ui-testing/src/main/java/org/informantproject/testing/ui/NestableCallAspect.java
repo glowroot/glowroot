@@ -18,6 +18,7 @@ package org.informantproject.testing.ui;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -45,6 +46,10 @@ public class NestableCallAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-ui-testing");
 
+    private static final Metric nestableMetric = pluginServices.createMetric("nestable");
+    private static final Metric nestableAndVeryLongMetric = pluginServices.createMetric(
+            "nestable and very long");
+
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
         return pluginServices.isEnabled();
@@ -70,11 +75,11 @@ public class NestableCallAspect {
     }
 
     private Object nestableSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        return pluginServices.executeRootSpan("nestable", getRootSpanDetail(), joinPoint);
+        return pluginServices.executeRootSpan(nestableMetric, getRootSpanDetail(), joinPoint);
     }
 
     private Object nestableAndVeryLongSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        return pluginServices.executeSpan("nestable and very long", getSpanDetail(), joinPoint);
+        return pluginServices.executeSpan(nestableAndVeryLongMetric, getSpanDetail(), joinPoint);
     }
 
     private RootSpanDetail getRootSpanDetail() {

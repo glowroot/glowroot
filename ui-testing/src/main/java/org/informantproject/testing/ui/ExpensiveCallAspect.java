@@ -17,6 +17,7 @@ package org.informantproject.testing.ui;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
@@ -34,6 +35,17 @@ public class ExpensiveCallAspect {
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-ui-testing");
+
+    private static final Metric expensive0Metric = pluginServices.createMetric("expensive0");
+    private static final Metric expensive1Metric = pluginServices.createMetric("expensive1");
+    private static final Metric expensive2Metric = pluginServices.createMetric("expensive2");
+    private static final Metric expensive3Metric = pluginServices.createMetric("expensive3");
+    private static final Metric expensive4Metric = pluginServices.createMetric("expensive4");
+    private static final Metric expensive5Metric = pluginServices.createMetric("expensive5");
+    private static final Metric expensive6Metric = pluginServices.createMetric("expensive6");
+    private static final Metric expensive7Metric = pluginServices.createMetric("expensive7");
+    private static final Metric expensive8Metric = pluginServices.createMetric("expensive8");
+    private static final Metric expensive9Metric = pluginServices.createMetric("expensive9");
 
     private static final AtomicInteger counter = new AtomicInteger();
 
@@ -96,52 +108,61 @@ public class ExpensiveCallAspect {
 
     private Object expensive0SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive0Metric, spanDetail, joinPoint);
     }
 
     private Object expensive1SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive1Metric, spanDetail, joinPoint);
     }
 
     private Object expensive2SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive2Metric, spanDetail, joinPoint);
     }
 
     private Object expensive3SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive3Metric, spanDetail, joinPoint);
     }
 
     private Object expensive4SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive4Metric, spanDetail, joinPoint);
     }
 
     private Object expensive5SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive5Metric, spanDetail, joinPoint);
     }
 
     private Object expensive6SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive6Metric, spanDetail, joinPoint);
     }
 
     private Object expensive7SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive7Metric, spanDetail, joinPoint);
     }
 
     private Object expensive8SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
+
+        return pluginServices.executeSpan(expensive8Metric, spanDetail, joinPoint);
     }
 
     private Object expensive9SpanMarker(ProceedingJoinPoint joinPoint, SpanDetail spanDetail)
             throws Throwable {
-        return pluginServices.executeSpan("expensive0", spanDetail, joinPoint);
-    }
 
+        return pluginServices.executeSpan(expensive9Metric, spanDetail, joinPoint);
+    }
 }

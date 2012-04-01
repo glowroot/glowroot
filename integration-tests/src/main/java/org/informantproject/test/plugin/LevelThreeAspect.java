@@ -15,6 +15,7 @@
  */
 package org.informantproject.test.plugin;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
@@ -32,6 +33,8 @@ public class LevelThreeAspect {
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-integration-tests");
+
+    private static final Metric metric = pluginServices.createMetric("level three");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -59,6 +62,6 @@ public class LevelThreeAspect {
                 return SpanContextMap.of("arg1", arg1, "arg2", arg2);
             }
         };
-        return pluginServices.executeSpan("level three", spanDetail, joinPoint);
+        return pluginServices.executeSpan(metric, spanDetail, joinPoint);
     }
 }

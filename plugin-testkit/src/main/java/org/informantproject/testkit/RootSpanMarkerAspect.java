@@ -15,6 +15,7 @@
  */
 package org.informantproject.testkit;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
@@ -34,12 +35,14 @@ public class RootSpanMarkerAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-plugin-testkit");
 
+    private static final Metric metric = pluginServices.createMetric("mock root span");
+
     @Pointcut("execution(void org.informantproject.testkit.RootSpanMarker.rootSpanMarker())")
     void rootSpanMarkerPointcut() {}
 
     @Around("rootSpanMarkerPointcut()")
     public void mockRootSpanSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        pluginServices.executeRootSpan("mock root span", new MockRootSpan(), joinPoint);
+        pluginServices.executeRootSpan(metric, new MockRootSpan(), joinPoint);
     }
 
     private static class MockRootSpan implements RootSpanDetail {

@@ -19,6 +19,7 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.concurrent.Callable;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.shaded.aspectj.weaver.loadtime.ClassPreProcessorAgentAdapter;
 
@@ -32,9 +33,12 @@ public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter
 
     private final PluginServices pluginServices;
 
+    private final Metric metric;
+
     @Inject
     public InformantClassFileTransformer(PluginServices pluginServices) {
         this.pluginServices = pluginServices;
+        metric = pluginServices.createMetric("informant weaving");
     }
 
     @Override
@@ -56,12 +60,11 @@ public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter
             final Class<?> classBeingRedefined, final ProtectionDomain protectionDomain,
             final byte[] bytes) throws Exception {
 
-        return pluginServices.proceedAndRecordMetricData("informant weaving",
-                new Callable<byte[]>() {
-                    public byte[] call() throws IllegalClassFormatException {
-                        return InformantClassFileTransformer.super.transform(loader, className,
-                                classBeingRedefined, protectionDomain, bytes);
-                    }
-                });
+        return pluginServices.proceedAndRecordMetricData(metric, new Callable<byte[]>() {
+            public byte[] call() throws IllegalClassFormatException {
+                return InformantClassFileTransformer.super.transform(loader, className,
+                        classBeingRedefined, protectionDomain, bytes);
+            }
+        });
     }
 }

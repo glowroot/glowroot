@@ -50,6 +50,8 @@ public abstract class PluginServices {
                 }
             });
 
+    public abstract Metric createMetric(String name);
+
     public abstract boolean isEnabled();
 
     public abstract Optional<String> getStringProperty(String propertyName);
@@ -58,16 +60,16 @@ public abstract class PluginServices {
 
     public abstract Optional<Double> getDoubleProperty(String propertyName);
 
-    public abstract Object executeRootSpan(String spanName,
-            RootSpanDetail rootSpanDetail, ProceedingJoinPoint joinPoint) throws Throwable;
-
-    public abstract Object executeSpan(String spanName, SpanDetail spanDetail,
+    public abstract Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
             ProceedingJoinPoint joinPoint) throws Throwable;
 
-    public abstract Object proceedAndRecordMetricData(String spanName,
+    public abstract Object executeSpan(Metric metric, SpanDetail spanDetail,
             ProceedingJoinPoint joinPoint) throws Throwable;
 
-    public abstract <V> V proceedAndRecordMetricData(String spanName,
+    public abstract Object proceedAndRecordMetricData(Metric metric,
+            ProceedingJoinPoint joinPoint) throws Throwable;
+
+    public abstract <V> V proceedAndRecordMetricData(Metric metric,
             Callable<V> callable) throws Exception;
 
     public abstract void putTraceAttribute(String name, String value);
@@ -113,6 +115,10 @@ public abstract class PluginServices {
 
     private static class NopPluginServices extends PluginServices {
         @Override
+        public Metric createMetric(String name) {
+            return null;
+        }
+        @Override
         public boolean isEnabled() {
             return false;
         }
@@ -129,23 +135,23 @@ public abstract class PluginServices {
             return null;
         }
         @Override
-        public Object executeRootSpan(String spanName, RootSpanDetail rootSpanDetail,
+        public Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
                 ProceedingJoinPoint joinPoint) throws Throwable {
             return joinPoint.proceed();
         }
         @Override
-        public Object executeSpan(String spanName, SpanDetail spanDetail,
+        public Object executeSpan(Metric metric, SpanDetail spanDetail,
                 ProceedingJoinPoint joinPoint) throws Throwable {
             return joinPoint.proceed();
         }
         @Override
-        public Object proceedAndRecordMetricData(String spanName,
-                ProceedingJoinPoint joinPoint) throws Throwable {
+        public Object proceedAndRecordMetricData(Metric metric, ProceedingJoinPoint joinPoint)
+                throws Throwable {
             return joinPoint.proceed();
         }
         @Override
-        public <V> V proceedAndRecordMetricData(String spanName,
-                Callable<V> callable) throws Exception {
+        public <V> V proceedAndRecordMetricData(Metric metric, Callable<V> callable)
+                throws Exception {
             return callable.call();
         }
         @Override

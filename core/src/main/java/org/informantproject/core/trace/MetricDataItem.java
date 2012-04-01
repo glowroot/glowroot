@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.trace;
 
+import com.google.common.base.Ticker;
+
 /**
  * Element of MetricData.
  * 
@@ -32,8 +34,15 @@ public class MetricDataItem {
     private volatile long max = Long.MIN_VALUE;
     private volatile long count;
 
-    MetricDataItem(String name) {
+    // these fields don't need to be thread safe since they are only accessed by the trace thread
+    private long startTick;
+    private int selfNestingLevel;
+
+    private final Ticker ticker;
+
+    MetricDataItem(String name, Ticker ticker) {
         this.name = name;
+        this.ticker = ticker;
     }
 
     public String getName() {
@@ -69,5 +78,33 @@ public class MetricDataItem {
         }
         count++;
         total += time;
+    }
+
+    void start() {
+        if (selfNestingLevel == 0) {
+            startTick = ticker.read();
+        }
+        selfNestingLevel++;
+    }
+
+    void start(long startTick) {
+        if (selfNestingLevel == 0) {
+            this.startTick = startTick;
+        }
+        selfNestingLevel++;
+    }
+
+    void stop() {
+        selfNestingLevel--;
+        if (selfNestingLevel == 0) {
+            recordData(ticker.read() - startTick);
+        }
+    }
+
+    void stop(long endTick) {
+        selfNestingLevel--;
+        if (selfNestingLevel == 0) {
+            recordData(endTick - startTick);
+        }
     }
 }

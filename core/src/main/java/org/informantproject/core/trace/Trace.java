@@ -19,11 +19,12 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -32,13 +33,12 @@ import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. servlet request).
@@ -50,8 +50,6 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 public class Trace {
-
-    private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -67,15 +65,14 @@ public class Trace {
     // (assumption is order of entry is order of importance)
     private final Queue<Attribute> attributes = new ConcurrentLinkedQueue<Attribute>();
 
-    // stores timing info so that summary metric data can be reported for a given trace
-    private final MetricData metricData = new MetricData();
+    // this doesn't need to be thread safe as it is only accessed by the trace thread
+    private final List<MetricImpl> metrics = Lists.newArrayList();
+    // this is mostly updated and rarely read, so seems like synchronized list is best collection
+    private final List<MetricDataItem> metricDataItems = Collections.synchronizedList(
+            new ArrayList<MetricDataItem>());
 
     // root span for this trace
     private final RootSpan rootSpan;
-
-    // used to prevent recording overlapping metric timings for the same span
-    //
-    private final List<String> spanNameStack = new CopyOnWriteArrayList<String>();
 
     // stack trace data constructed from sampled stack traces
     // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
@@ -97,12 +94,14 @@ public class Trace {
     private volatile ScheduledFuture<?> captureStackTraceScheduledFuture;
     private volatile ScheduledFuture<?> stuckCommandScheduledFuture;
 
-    Trace(String spanName, SpanDetail spanDetail, Clock clock, Ticker ticker) {
+    Trace(MetricImpl metric, SpanDetail spanDetail, Clock clock, Ticker ticker) {
         long startTimeMillis = clock.currentTimeMillis();
         id = new TraceUniqueId(startTimeMillis);
         startDate = new Date(startTimeMillis);
         rootSpan = new RootSpan(spanDetail, ticker);
-        spanNameStack.add(spanName);
+        metric.start(rootSpan.getStartTick());
+        metrics.add(metric);
+        metricDataItems.add(metric.get());
     }
 
     public Date getStartDate() {
@@ -143,8 +142,8 @@ public class Trace {
         return attributes;
     }
 
-    public MetricData getMetricData() {
-        return metricData;
+    public List<MetricDataItem> getMetricDataItems() {
+        return metricDataItems;
     }
 
     public RootSpan getRootSpan() {
@@ -161,6 +160,12 @@ public class Trace {
 
     public ScheduledFuture<?> getStuckCommandScheduledFuture() {
         return stuckCommandScheduledFuture;
+    }
+
+    public void resetThreadLocalMetrics() {
+        for (MetricImpl metric : metrics) {
+            metric.remove();
+        }
     }
 
     // returns previous value
@@ -201,62 +206,34 @@ public class Trace {
         }
     }
 
-    Span pushSpan(String spanName, SpanDetail spanDetail) {
-        spanNameStack.add(spanName);
-        return rootSpan.pushSpan(spanDetail);
+    Span pushSpan(MetricImpl metric, SpanDetail spanDetail) {
+        Span span = rootSpan.pushSpan(spanDetail);
+        if (!metric.start(span.getStartTick())) {
+            metrics.add(metric);
+            metricDataItems.add(metric.get());
+        }
+        return span;
     }
 
-    // this case (without detail) is optimized to only take ticker readings when necessary, in other
-    // words, when span name is the top-most such span name on the span name stack (whereas the case
-    // above - with detail - already takes ticker readings as part of span creation so no need for
-    // such optimization since the span duration can just be pulled from the span)
-    //
-    // be careful not to call popSpanWithoutDetail if this method returns true
-    boolean pushSpanWithoutDetail(String spanName) {
-        boolean alreadyPresent = spanNameStack.contains(spanName);
-        if (!alreadyPresent) {
-            spanNameStack.add(spanName);
-        }
-        return alreadyPresent;
-    }
+    // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
+    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
+    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
+    void popSpan(MetricImpl metric, Span span, long endTick,
+            StackTraceElement[] stackTraceElements) {
 
-    // typically pop() methods don't require the objects to pop, but for safety, the spanName and
-    // span to pop is passed in just to make sure they are the ones on top (and if not, then pop
-    // until they are found, preventing any nasty bugs from a missed pop, e.g. a trace never being
-    // marked as complete)
-    void popSpan(String spanName, Span span, long endTick, StackTraceElement[] stackTraceElements) {
-        popSpanNameSafe(spanName);
-        // unlike popSpanWithoutDetail, there is no guarantee here that this is a top-level span for
-        // the given span name, so this is checked before recording metric data
-        if (!spanNameStack.contains(spanName)) {
-            metricData.recordData(spanName, endTick - span.getStartTick());
-        }
+        metric.stop(endTick);
         rootSpan.popSpan(span, endTick, stackTraceElements);
     }
 
-    // typically pop() methods don't require the objects to pop, but for safety, the spanName is
-    // passed in just to make sure it is the one on top (and if not, then pop until it is found,
-    // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
-    //
-    // be careful not to call this method if pushSpanWithoutDetail returned true
-    void popSpanWithoutDetail(String spanName, long duration) {
-        popSpanNameSafe(spanName);
-        metricData.recordData(spanName, duration);
+    void pushSpanWithoutDetail(MetricImpl metric) {
+        if (!metric.start()) {
+            metrics.add(metric);
+            metricDataItems.add(metric.get());
+        }
     }
 
-    private void popSpanNameSafe(String spanName) {
-        String poppedSpanName = spanNameStack.remove(spanNameStack.size() - 1);
-        if (!poppedSpanName.equals(spanName)) {
-            // somehow(?) a pop was missed, this is just damage control
-            logger.error("found '{}' at the top of the span name stack when expecting '{}'",
-                    poppedSpanName, spanName);
-            while (!spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
-                poppedSpanName = spanNameStack.remove(spanNameStack.size() - 1);
-            }
-            if (spanNameStack.isEmpty() && !poppedSpanName.equals(spanName)) {
-                logger.error("popped entire span name stack, never found '{}'", spanName);
-            }
-        }
+    void popSpanWithoutDetail(MetricImpl metric) {
+        metric.stop();
     }
 
     public static class Attribute {

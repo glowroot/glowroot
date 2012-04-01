@@ -17,12 +17,16 @@ package org.informantproject.core;
 
 import java.util.concurrent.Callable;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.SpanDetail;
+import org.informantproject.core.trace.MetricImpl;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
+
+import com.google.common.base.Ticker;
 
 /**
  * Plugins may get instantiated by aspectj and request their PluginServices before Informant has
@@ -35,10 +39,22 @@ import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 class PluginServicesProxy extends PluginServices {
 
     private final String pluginId;
+    private final Ticker ticker;
+
     private volatile PluginServices pluginServices;
 
-    public PluginServicesProxy(String pluginId) {
+    public PluginServicesProxy(String pluginId, Ticker ticker) {
         this.pluginId = pluginId;
+        this.ticker = ticker;
+    }
+
+    @Override
+    public Metric createMetric(String name) {
+        if (pluginServices == null) {
+            return new MetricImpl(name, ticker);
+        } else {
+            return pluginServices.createMetric(name);
+        }
     }
 
     @Override
@@ -81,46 +97,45 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Object executeRootSpan(String spanName, RootSpanDetail rootSpanDetail,
+    public Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
             ProceedingJoinPoint joinPoint) throws Throwable {
 
         if (pluginServices == null) {
             return joinPoint.proceed();
         } else {
-            return pluginServices.executeRootSpan(spanName, rootSpanDetail, joinPoint);
+            return pluginServices.executeRootSpan(metric, rootSpanDetail, joinPoint);
         }
     }
 
     @Override
-    public Object executeSpan(String spanName, SpanDetail spanDetail,
-            ProceedingJoinPoint joinPoint) throws Throwable {
-
-        if (pluginServices == null) {
-            return joinPoint.proceed();
-        } else {
-            return pluginServices.executeSpan(spanName, spanDetail, joinPoint);
-        }
-    }
-
-    @Override
-    public Object proceedAndRecordMetricData(String spanName, ProceedingJoinPoint joinPoint)
+    public Object executeSpan(Metric metric, SpanDetail spanDetail, ProceedingJoinPoint joinPoint)
             throws Throwable {
 
         if (pluginServices == null) {
             return joinPoint.proceed();
         } else {
-            return pluginServices.proceedAndRecordMetricData(spanName, joinPoint);
+            return pluginServices.executeSpan(metric, spanDetail, joinPoint);
         }
     }
 
     @Override
-    public <V> V proceedAndRecordMetricData(String spanName,
-            Callable<V> callable) throws Exception {
+    public Object proceedAndRecordMetricData(Metric metric, ProceedingJoinPoint joinPoint)
+            throws Throwable {
+
+        if (pluginServices == null) {
+            return joinPoint.proceed();
+        } else {
+            return pluginServices.proceedAndRecordMetricData(metric, joinPoint);
+        }
+    }
+
+    @Override
+    public <V> V proceedAndRecordMetricData(Metric metric, Callable<V> callable) throws Exception {
 
         if (pluginServices == null) {
             return callable.call();
         } else {
-            return pluginServices.proceedAndRecordMetricData(spanName, callable);
+            return pluginServices.proceedAndRecordMetricData(metric, callable);
         }
     }
 
