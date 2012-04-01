@@ -246,10 +246,10 @@ public class JdbcAspect {
 
     // capture the row number any time the cursor is moved through the result set
     @Pointcut("execution(boolean java.sql.ResultSet.next())")
-    void resultNextPointcut() {}
+    void resultSetNextPointcut() {}
 
     // capture aggregate timing data around executions of ResultSet.next()
-    @Around("isPluginEnabled() && resultNextPointcut() && !cflowbelow(resultNextPointcut())"
+    @Around("isPluginEnabled() && resultSetNextPointcut() && !cflowbelow(resultSetNextPointcut())"
             + " && target(resultSet)")
     public boolean jdbcResultsetNextSpanMarker(ProceedingJoinPoint joinPoint,
             final ResultSet resultSet) throws Throwable {
