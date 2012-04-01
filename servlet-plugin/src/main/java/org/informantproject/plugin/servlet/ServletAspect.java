@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.SpanDetail;
@@ -54,8 +55,11 @@ public class ServletAspect {
 
     private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
             new ThreadLocal<ServletSpanDetail>();
+
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:servlet-plugin");
+
+    private static final Metric metric = pluginServices.createMetric("http request");
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -104,7 +108,7 @@ public class ServletAspect {
         }
         topLevelServletSpanDetail.set(spanDetail);
         try {
-            pluginServices.executeRootSpan("http request", spanDetail, joinPoint);
+            pluginServices.executeRootSpan(metric, spanDetail, joinPoint);
         } finally {
             topLevelServletSpanDetail.set(null);
         }
