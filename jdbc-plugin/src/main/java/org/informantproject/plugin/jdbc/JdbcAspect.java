@@ -81,7 +81,7 @@ public class JdbcAspect {
     // ===================== Statement Preparation =====================
 
     // capture the sql used to create the PreparedStatement
-    @Pointcut("call(java.sql.PreparedStatement+ java.sql.Connection.prepare*(String, ..))")
+    @Pointcut("execution(java.sql.PreparedStatement+ java.sql.Connection.prepare*(String, ..))")
     void connectionPreparePointcut() {}
 
     // this pointcut isn't restricted to isPluginEnabled() because PreparedStatements must be
@@ -102,11 +102,11 @@ public class JdbcAspect {
     // capture the parameters that are bound to the PreparedStatement except
     // parameters bound via setNull(..)
     // see special case to handle setNull(..)
-    @Pointcut("call(void java.sql.PreparedStatement.set*(int, *, ..))"
+    @Pointcut("execution(void java.sql.PreparedStatement.set*(int, *, ..))"
             + " && !preparedStatementSetNullPointcut()")
     void preparedStatementSetXPointcut() {}
 
-    @Pointcut("call(void java.sql.PreparedStatement.setNull(int, *, ..))")
+    @Pointcut("execution(void java.sql.PreparedStatement.setNull(int, *, ..))")
     void preparedStatementSetNullPointcut() {}
 
     @AfterReturning("isPluginEnabled() && preparedStatementSetXPointcut()"
@@ -141,7 +141,7 @@ public class JdbcAspect {
     // ================== Statement Batching ==================
 
     // handle Statement.addBatch(String)
-    @Pointcut("call(void java.sql.Statement.addBatch(String))")
+    @Pointcut("execution(void java.sql.Statement.addBatch(String))")
     void statementAddBatchPointcut() {}
 
     @AfterReturning("isPluginEnabled() && statementAddBatchPointcut()"
@@ -151,7 +151,7 @@ public class JdbcAspect {
     }
 
     // handle PreparedStatement.addBatch()
-    @Pointcut("call(void java.sql.PreparedStatement.addBatch())")
+    @Pointcut("execution(void java.sql.PreparedStatement.addBatch())")
     void preparedStatementAddBatchPointcut() {}
 
     @AfterReturning("isPluginEnabled() && preparedStatementAddBatchPointcut()"
@@ -163,17 +163,17 @@ public class JdbcAspect {
     // =================== Statement Execution ===================
 
     // pointcut for executing Statement
-    @Pointcut("call(* java.sql.Statement.execute*(String, ..))")
+    @Pointcut("execution(* java.sql.Statement.execute*(String, ..))")
     void statementExecutePointcut() {}
 
     // pointcut for executing PreparedStatement
     // executeBatch is excluded since it is handled separately (below)
-    @Pointcut("call(* java.sql.PreparedStatement.execute())"
-            + " || call(* java.sql.PreparedStatement.executeQuery())"
-            + " || call(* java.sql.PreparedStatement.executeUpdate())")
+    @Pointcut("execution(* java.sql.PreparedStatement.execute())"
+            + " || execution(* java.sql.PreparedStatement.executeQuery())"
+            + " || execution(* java.sql.PreparedStatement.executeUpdate())")
     void preparedStatementExecutePointcut() {}
 
-    // record call and summary data for Statement.execute()
+    // record execution and summary data for Statement.execute()
     @Around("isPluginEnabled() && statementExecutePointcut()"
             + " && !cflowbelow(statementExecutePointcut()) && target(statement) && args(sql, ..)")
     public Object jdbcExecuteSpanMarker1(ProceedingJoinPoint joinPoint, final Statement statement,
@@ -199,11 +199,12 @@ public class JdbcAspect {
     }
 
     // handle Statement.executeBatch()
-    @Pointcut("call(int[] java.sql.Statement.executeBatch())"
+    @Pointcut("execution(int[] java.sql.Statement.executeBatch())"
             + " && !target(java.sql.PreparedStatement)")
     void statementExecuteBatchPointcut() {}
 
-    @Pointcut("call(int[] java.sql.Statement.executeBatch()) && target(java.sql.PreparedStatement)")
+    @Pointcut("execution(int[] java.sql.Statement.executeBatch())"
+            + " && target(java.sql.PreparedStatement)")
     void preparedStatementExecuteBatchPointcut() {}
 
     @Around("isPluginEnabled() && statementExecuteBatchPointcut()"
@@ -244,10 +245,10 @@ public class JdbcAspect {
     // It doesn't currently support ResultSet.relative(), absolute(), last().
 
     // capture the row number any time the cursor is moved through the result set
-    @Pointcut("call(boolean java.sql.ResultSet.next())")
+    @Pointcut("execution(boolean java.sql.ResultSet.next())")
     void resultNextPointcut() {}
 
-    // capture aggregate timing data around calls to ResultSet.next()
+    // capture aggregate timing data around executions of ResultSet.next()
     @Around("isPluginEnabled() && resultNextPointcut() && !cflowbelow(resultNextPointcut())"
             + " && target(resultSet)")
     public boolean jdbcResultsetNextSpanMarker(ProceedingJoinPoint joinPoint,
@@ -276,8 +277,8 @@ public class JdbcAspect {
         return currentRowValid;
     }
 
-    @Pointcut("call(* java.sql.ResultSet.get*(int, ..)) || call(* java.sql.ResultSet.get*(String,"
-            + " ..))")
+    @Pointcut("execution(* java.sql.ResultSet.get*(int, ..)) || execution(* java.sql.ResultSet"
+            + ".get*(String, ..))")
     void resultSetValuePointcut() {}
 
     @Around("isPluginEnabled() && resultSetValuePointcut() && !cflowbelow("
@@ -289,10 +290,10 @@ public class JdbcAspect {
     // ========= Transactions =========
 
     // pointcut for committing a transaction
-    @Pointcut("call(* java.sql.Connection.commit())")
+    @Pointcut("execution(* java.sql.Connection.commit())")
     void connectionCommitPointcut() {}
 
-    // record call and summary data for commits
+    // record execution and summary data for commits
     @Around("isPluginEnabled() && connectionCommitPointcut()"
             + " && !cflowbelow(connectionCommitPointcut())")
     public Object jdbcCommitSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -311,7 +312,7 @@ public class JdbcAspect {
 
     // Statement.clearBatch() can be used to re-initiate a prepared statement
     // that has been cached from a previous usage
-    @Pointcut("call(void java.sql.Statement.clearBatch())")
+    @Pointcut("execution(void java.sql.Statement.clearBatch())")
     void statementClearBatchPointcut() {}
 
     // this pointcut isn't restricted to isPluginEnabled() because
@@ -326,7 +327,7 @@ public class JdbcAspect {
 
     // ================== Statement Closing ==================
 
-    @Pointcut("call(void java.sql.Statement.close())")
+    @Pointcut("execution(void java.sql.Statement.close())")
     void statementClosePointcut() {}
 
     @Around("statementClosePointcut() && !cflowbelow(statementClosePointcut())")
