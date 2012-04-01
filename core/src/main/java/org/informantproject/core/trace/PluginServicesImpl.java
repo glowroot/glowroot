@@ -275,7 +275,7 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
                 try {
                     return callable.call();
                 } finally {
-                    popSpanWithoutDetail(spanName, ticker.read() - startTick);
+                    currentTrace.popSpanWithoutDetail(spanName, ticker.read() - startTick);
                 }
             }
         }
@@ -317,11 +317,6 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
             traceRegistry.removeTrace(currentTrace);
             traceSink.onCompletedTrace(currentTrace);
         }
-    }
-
-    private void popSpanWithoutDetail(String spanName, long duration) {
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        currentTrace.popSpanWithoutDetail(spanName, duration);
     }
 
     private static void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {
