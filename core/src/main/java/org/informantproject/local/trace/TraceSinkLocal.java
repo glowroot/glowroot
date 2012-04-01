@@ -152,7 +152,9 @@ public class TraceSinkLocal implements TraceSink {
         storedTrace.setMetrics(getMetricsJson(trace, gson));
         Map<String, String> stackTraces = new HashMap<String, String>();
         storedTrace.setSpans(getSpansJson(trace, stackTraces, captureTick, gson));
-        stackTraceDao.storeStackTraces(stackTraces);
+        if (!stackTraces.isEmpty()) {
+            stackTraceDao.storeStackTraces(stackTraces);
+        }
         storedTrace.setMergedStackTree(getMergedStackTreeJson(trace));
         return storedTrace;
     }

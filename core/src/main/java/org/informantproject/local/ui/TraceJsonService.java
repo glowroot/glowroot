@@ -127,7 +127,9 @@ public class TraceJsonService implements JsonService {
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         Map<String, String> stackTraces = new HashMap<String, String>();
         writeActiveTrace(activeTrace, stackTraces, captureTick, jw, sb, includeDetail);
-        stackTraceDao.storeStackTraces(stackTraces);
+        if (!stackTraces.isEmpty()) {
+            stackTraceDao.storeStackTraces(stackTraces);
+        }
         jw.close();
         return sb.build().toString();
     }
