@@ -47,5 +47,15 @@
           Attribute values are converted into Strings if necessary via toString().
         </description>
       </property>
+      <property>
+        <prompt>Capture startup</prompt>
+        <name>captureStartup</name>
+        <type>boolean</type>
+        <description>
+          Capture servlet startup time associated with
+          javax.servlet.ServletContextListener.contextInitialized(),
+          javax.servlet.Servlet.init() and javax.servlet.Filter.init().
+        </description>
+      </property>
     </properties>
 </plugin>

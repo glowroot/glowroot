@@ -23,6 +23,8 @@ import java.util.Set;
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 import org.informantproject.shaded.aspectj.lang.annotation.AfterReturning;
@@ -53,13 +55,16 @@ import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
 @SuppressAjWarnings("adviceDidNotMatch")
 public class ServletAspect {
 
-    private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
-            new ThreadLocal<ServletSpanDetail>();
+    private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:servlet-plugin");
 
-    private static final Metric metric = pluginServices.createMetric("http request");
+    private static final Metric requestMetric = pluginServices.createMetric("http request");
+    private static final Metric startupMetric = pluginServices.createMetric("servlet startup");
+
+    private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
+            new ThreadLocal<ServletSpanDetail>();
 
     @Pointcut("if()")
     public static boolean isPluginEnabled() {
@@ -108,7 +113,7 @@ public class ServletAspect {
         }
         topLevelServletSpanDetail.set(spanDetail);
         try {
-            pluginServices.executeRootSpan(metric, spanDetail, joinPoint);
+            pluginServices.executeRootSpan(requestMetric, spanDetail, joinPoint);
         } finally {
             topLevelServletSpanDetail.set(null);
         }
@@ -202,9 +207,62 @@ public class ServletAspect {
         afterReturningSessionSetAttributePointcut(realSession, name, null);
     }
 
+    /*
+     * ================== Startup ==================
+     */
+
+    @Pointcut("execution(void javax.servlet.ServletContextListener.contextInitialized("
+            + "javax.servlet.ServletContextEvent))")
+    void contextInitializedPointcut() {}
+
+    @Around("contextInitializedPointcut() && !cflowbelow(contextInitializedPointcut())"
+            + " && target(listener)")
+    public void servetStartupSpanMarker(ProceedingJoinPoint joinPoint, Object listener)
+            throws Throwable {
+
+        if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
+            RootSpanDetail rootSpanDetail = new StartupRootSpanDetail(
+                    "servlet context initialized (" + listener.getClass().getName() + ")");
+            pluginServices.executeRootSpan(startupMetric, rootSpanDetail, joinPoint);
+        } else {
+            joinPoint.proceed();
+        }
+    }
+
+    @Pointcut("execution(void javax.servlet.Servlet.init(javax.servlet.ServletConfig))")
+    void servletInitPointcut() {}
+
+    @Around("servletInitPointcut() && !cflowbelow(servletInitPointcut()) && target(servlet)")
+    public void servetStartupSpanMarker2(ProceedingJoinPoint joinPoint, Object servlet)
+            throws Throwable {
+
+        if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
+            RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("servlet init ("
+                    + servlet.getClass().getName() + ")");
+            pluginServices.executeRootSpan(startupMetric, rootSpanDetail, joinPoint);
+        } else {
+            joinPoint.proceed();
+        }
+    }
+
+    @Pointcut("execution(void javax.servlet.Filter.init(javax.servlet.FilterConfig))")
+    void filterInitPointcut() {}
+
+    @Around("filterInitPointcut() && !cflowbelow(filterInitPointcut()) && target(filter)")
+    public void servetStartupSpanMarker3(ProceedingJoinPoint joinPoint, Object filter)
+            throws Throwable {
+
+        if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
+            RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("filter init ("
+                    + filter.getClass().getName() + ")");
+            pluginServices.executeRootSpan(startupMetric, rootSpanDetail, joinPoint);
+        } else {
+            joinPoint.proceed();
+        }
+    }
+
     private void updateUsernameIfApplicable(ServletSpanDetail spanDetail, String name,
-            Object value,
-            HttpSession session) {
+            Object value, HttpSession session) {
 
         if (value == null) {
             // if username value is set to null, don't clear it
@@ -331,6 +389,22 @@ public class ServletAspect {
             } else {
                 return Optional.absent();
             }
+        }
+    }
+
+    private final class StartupRootSpanDetail implements RootSpanDetail {
+        private final String description;
+        private StartupRootSpanDetail(String description) {
+            this.description = description;
+        }
+        public String getDescription() {
+            return description;
+        }
+        public SpanContextMap getContextMap() {
+            return null;
+        }
+        public Optional<String> getUsername() {
+            return Optional.absent();
         }
     }
 }

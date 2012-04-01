@@ -23,7 +23,15 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -402,11 +410,61 @@ public class ServletPluginTest {
         assertThat(span.getDescription(), is("GET /servletundertest"));
     }
 
+    @Test
+    public void testServletContextInitialized() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("captureStartup", true);
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(TestServletContextListener.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getDescription(), is("servlet context initialized ("
+                + TestServletContextListener.class.getName() + ")"));
+    }
+
+    @Test
+    public void testServletInit() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("captureStartup", true);
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(TestServletInit.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getDescription(), is("servlet init (" + TestServletInit.class.getName()
+                + ")"));
+    }
+
+    @Test
+    public void testFilterInit() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        PluginConfiguration pluginConfiguration = getPluginConfiguration();
+        pluginConfiguration.setProperty("captureStartup", true);
+        storePluginConfiguration(pluginConfiguration);
+        // when
+        container.executeAppUnderTest(TestFilterInit.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getDescription(), is("filter init (" + TestFilterInit.class.getName()
+                + ")"));
+    }
+
     private PluginConfiguration getPluginConfiguration() throws Exception {
         return container.getInformant().getPluginConfiguration(PLUGIN_ID);
     }
 
-    private void storePluginConfiguration(PluginConfiguration pluginConfiguration) throws Exception {
+    private void storePluginConfiguration(PluginConfiguration pluginConfiguration)
+            throws Exception {
+
         container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
                 .getPropertiesJson());
     }
@@ -444,6 +502,35 @@ public class ServletPluginTest {
             MockFilterChain chain = new MockFilterChain();
             filter.doFilter(request, response, chain);
         }
+    }
+
+    public static class TestServletContextListener implements AppUnderTest, ServletContextListener {
+        public void executeApp() {
+            contextInitialized(null);
+        }
+        public void contextInitialized(ServletContextEvent sce) {}
+        public void contextDestroyed(ServletContextEvent sce) {}
+    }
+
+    @SuppressWarnings("serial")
+    public static class TestServletInit extends HttpServlet implements AppUnderTest {
+        public void executeApp() {
+            init(null);
+        }
+        @Override
+        public void init(ServletConfig config) {}
+    }
+
+    public static class TestFilterInit implements AppUnderTest, Filter {
+        public void executeApp() {
+            init(null);
+        }
+        public void init(FilterConfig filterConfig) {
+
+        }
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                throws IOException, ServletException {}
+        public void destroy() {}
     }
 
     @SuppressWarnings("serial")
