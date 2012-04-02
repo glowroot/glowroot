@@ -16,8 +16,7 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,6 +35,7 @@ import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.MetricDataItem;
+import org.informantproject.core.trace.MetricDataItem.Snapshot;
 import org.informantproject.core.trace.PluginServicesImpl;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
@@ -46,10 +46,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
+import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -165,17 +169,22 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public static String getMetricsJson(Trace trace, Gson gson) {
-        List<MetricDataItem> items = Lists.newArrayList(trace.getMetricDataItems());
-        if (items.size() == 0) {
+        Collection<Snapshot> items = Collections2.transform(trace.getMetricDataItems(),
+                new Function<MetricDataItem, Snapshot>() {
+                    public Snapshot apply(MetricDataItem item) {
+                        return item.copyOf();
+                    }
+                });
+        if (items.isEmpty()) {
             return null;
         } else {
-            Collections.sort(items, new Comparator<MetricDataItem>() {
-                public int compare(MetricDataItem item1, MetricDataItem item2) {
-                    // can't just subtract totals and cast to int because of int overflow
-                    return item1.getTotal() >= item2.getTotal() ? -1 : 1;
+            Ordering<Snapshot> byTotalOrdering = new Ordering<Snapshot>() {
+                @Override
+                public int compare(Snapshot left, Snapshot right) {
+                    return Longs.compare(left.getTotal(), right.getTotal());
                 }
-            });
-            return gson.toJson(items);
+            };
+            return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
         }
     }
 

@@ -34,9 +34,8 @@ public class MetricDataItem {
     private volatile long max = Long.MIN_VALUE;
     private volatile long count;
 
-    // these fields don't need to be thread safe since they are only accessed by the trace thread
-    private long startTick;
-    private int selfNestingLevel;
+    private volatile int selfNestingLevel;
+    private volatile long startTick;
 
     private final Ticker ticker;
 
@@ -67,6 +66,33 @@ public class MetricDataItem {
 
     public long getCount() {
         return count;
+    }
+
+    public Snapshot copyOf() {
+        // try to grab a quick, consistent snapshot, but no guarantees if trace is active
+        Snapshot copy = new Snapshot();
+        copy.name = name;
+        copy.total = total;
+        copy.min = min;
+        copy.max = max;
+        copy.count = count;
+
+        if (selfNestingLevel > 0) {
+            copy.active = true;
+            long currentTick = ticker.read();
+            long curr = currentTick - startTick;
+            copy.total += curr;
+            if (min == Long.MAX_VALUE) {
+                copy.min = curr;
+                copy.minActive = true;
+            }
+            if (curr > max) {
+                copy.max = curr;
+                copy.maxActive = true;
+            }
+            copy.count++;
+        }
+        return copy;
     }
 
     void recordData(long time) {
@@ -105,6 +131,41 @@ public class MetricDataItem {
         selfNestingLevel--;
         if (selfNestingLevel == 0) {
             recordData(endTick - startTick);
+        }
+    }
+
+    public static class Snapshot {
+        private String name;
+        private long total;
+        private long min;
+        private long max;
+        private long count;
+        private boolean active;
+        private boolean minActive;
+        private boolean maxActive;
+        public String getName() {
+            return name;
+        }
+        public long getTotal() {
+            return total;
+        }
+        public long getMin() {
+            return min;
+        }
+        public long getMax() {
+            return max;
+        }
+        public long getCount() {
+            return count;
+        }
+        public boolean isActive() {
+            return active;
+        }
+        public boolean isMinActive() {
+            return minActive;
+        }
+        public boolean isMaxActive() {
+            return maxActive;
         }
     }
 }
