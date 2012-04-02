@@ -22,6 +22,8 @@ import java.util.concurrent.Callable;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.shaded.aspectj.weaver.loadtime.ClassPreProcessorAgentAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
@@ -30,6 +32,9 @@ import com.google.inject.Inject;
  * @since 0.5
  */
 public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter {
+
+    private static final Logger logger = LoggerFactory.getLogger(
+            InformantClassFileTransformer.class);
 
     private final PluginServices pluginServices;
 
@@ -47,8 +52,12 @@ public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter
             final byte[] bytes) throws IllegalClassFormatException {
 
         try {
-            return informantWeavingSpanMarker(loader, className, classBeingRedefined,
-                    protectionDomain, bytes);
+            byte[] transformedBytes = informantWeavingSpanMarker(loader, className,
+                    classBeingRedefined, protectionDomain, bytes);
+            if (transformedBytes != null && transformedBytes != bytes) {
+                logger.debug("transform(): transformed {}", className);
+            }
+            return transformedBytes;
         } catch (IllegalClassFormatException e) {
             throw e;
         } catch (Exception e) {
