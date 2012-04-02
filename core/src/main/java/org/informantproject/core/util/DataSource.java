@@ -17,7 +17,6 @@ package org.informantproject.core.util;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,11 +27,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import org.h2.Driver;
+import org.h2.jdbc.JdbcConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,9 +82,6 @@ public class DataSource {
         } else {
             this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
         }
-        // loading driver via api, primarily as the inverse of Driver.unload() (see below) which is
-        // needed to prevent unit tests from getting PermGen OutOfMemoryError
-        Driver.load();
         try {
             connection = createConnection();
         } catch (SQLException e) {
@@ -96,10 +93,6 @@ public class DataSource {
     public void close() throws SQLException {
         logger.debug("close()");
         connection.close();
-        // unloading driver primarily for unit tests which run many times, each in a separate class
-        // loader, and so the H2 drivers stack up and hold onto their respective class loaders which
-        // leads to PermGen OutOfMemoryError
-        Driver.unload();
     }
 
     public File getDbFile() {
@@ -382,7 +375,12 @@ public class DataSource {
     private Connection createConnection() throws SQLException {
         String dbPath = dbFile.getPath();
         dbPath = dbPath.substring(0, dbPath.length() - ".h2.db".length());
-        return DriverManager.getConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", "sa", "");
+        Properties props = new Properties();
+        props.setProperty("user", "sa");
+        props.setProperty("password", "");
+        // do not use java.sql.DriverManager or org.h2.Driver because these register the driver
+        // globally with the JVM
+        return new JdbcConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", props);
     }
 
     public interface ConnectionCallback<T> {
