@@ -76,12 +76,28 @@ public class Informant {
                 properties));
     }
 
+    public void disableCore() throws Exception {
+        get("/configuration/core/disable");
+    }
+
+    public void enableCore() throws Exception {
+        get("/configuration/core/enable");
+    }
+
     public PluginConfiguration getPluginConfiguration(String pluginId) throws Exception {
         return getConfiguration().getPluginConfiguration().get(pluginId);
     }
 
     public void storePluginProperties(String pluginId, String propertiesJson) throws Exception {
         post("/configuration/plugin/" + pluginId + "/properties", propertiesJson);
+    }
+
+    public void disablePlugin(String pluginId) throws Exception {
+        get("/configuration/plugin/" + pluginId + "/disable");
+    }
+
+    public void enablePlugin(String pluginId) throws Exception {
+        get("/configuration/plugin/" + pluginId + "/enable");
     }
 
     public Trace getLastTrace() throws Exception {
