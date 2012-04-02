@@ -230,7 +230,6 @@
             <filter>
               <artifact>com.h2database:h2</artifact>
               <excludes>
-                <exclude>android/**</exclude>
                 <exclude>META-INF/**</exclude>
               </excludes>
             </filter>
