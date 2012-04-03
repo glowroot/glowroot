@@ -22,7 +22,6 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
@@ -78,7 +77,16 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     public int getPort() throws Exception {
         objectOut.writeObject(SocketCommandProcessor.GET_PORT_COMMAND);
-        return (Integer) objectIn.readObject();
+        return (Integer) getNextNonPingValue();
+    }
+
+    private Object getNextNonPingValue() throws Exception {
+        while (true) {
+            Object value = objectIn.readObject();
+            if (value == null || !value.equals(SocketHeartbeat.PING_COMMAND)) {
+                return value;
+            }
+        }
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
@@ -87,7 +95,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         objectOut.writeObject(SocketCommandProcessor.EXECUTE_APP_COMMAND);
         objectOut.writeObject(appUnderTestClass.getName());
         objectOut.writeObject(threadName);
-        objectIn.readObject();
+        getNextNonPingValue();
     }
 
     public void shutdownImpl() throws Exception {
@@ -100,11 +108,12 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     public static void main(String[] args) {
         try {
-            DaemonExecutors.newSingleThreadScheduledExecutor("TimeoutAction").schedule(
-                    new TimeoutAction(), 60, TimeUnit.SECONDS);
             int port = Integer.parseInt(args[0]);
             Socket socket = new Socket((String) null, port);
-            new Thread(new SocketCommandProcessor(socket)).start();
+            ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
+            new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
+            new Thread(new SocketHeartbeat(objectOut)).start();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
@@ -120,11 +129,5 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         }
         throw new IllegalStateException("Unable to find informant-core.jar on the classpath: "
                 + classpath);
-    }
-
-    private static class TimeoutAction implements Runnable {
-        public void run() {
-            System.exit(1);
-        }
     }
 }

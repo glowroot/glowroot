@@ -18,7 +18,7 @@ package org.informantproject.testkit;
 import java.io.EOFException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.Socket;
+import java.util.concurrent.ExecutionException;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
@@ -32,13 +32,16 @@ class SocketCommandProcessor implements Runnable {
 
     public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
     public static final String GET_PORT_COMMAND = "GET_PORT";
+    public static final String PING_COMMAND = "PING";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
-    private final Socket socket;
+    private final ObjectInputStream objectIn;
+    private final ObjectOutputStream objectOut;
 
-    SocketCommandProcessor(Socket socket) {
-        this.socket = socket;
+    SocketCommandProcessor(ObjectInputStream objectIn, ObjectOutputStream objectOut) {
+        this.objectIn = objectIn;
+        this.objectOut = objectOut;
     }
 
     public void run() {
@@ -48,17 +51,20 @@ class SocketCommandProcessor implements Runnable {
             // socket was closed, terminate gracefully
             System.exit(0);
         } catch (Throwable e) {
+            // this may not get logged if test jvm has been terminated already
             logger.error(e.getMessage(), e);
+            System.exit(0);
         }
     }
 
     private void runInternal() throws Exception {
-        ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         while (true) {
             String commandName = (String) objectIn.readObject();
             if (commandName.equals(GET_PORT_COMMAND)) {
-                objectOut.writeObject(MainEntryPoint.getPort());
+                // sychronizing with SocketHeartbeat
+                synchronized (objectOut) {
+                    objectOut.writeObject(MainEntryPoint.getPort());
+                }
             } else if (commandName.equals(EXECUTE_APP_COMMAND)) {
                 String appClassName = (String) objectIn.readObject();
                 String threadName = (String) objectIn.readObject();
@@ -67,10 +73,16 @@ class SocketCommandProcessor implements Runnable {
                 Thread.currentThread().setName(threadName);
                 try {
                     executeApp(appClass);
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
+                    throw new ExecutionException(t);
                 } finally {
                     Thread.currentThread().setName(previousThreadName);
                 }
-                objectOut.writeObject("ok");
+                // sychronizing with SocketHeartbeat
+                synchronized (objectOut) {
+                    objectOut.writeObject("ok");
+                }
             } else {
                 throw new IllegalStateException("Unexpected command '" + commandName + "'");
             }
