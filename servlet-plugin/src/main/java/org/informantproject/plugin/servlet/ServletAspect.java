@@ -123,21 +123,42 @@ public class ServletAspect {
      * ================== Http Servlet Request Parameters ==================
      */
 
-    @Pointcut("call(* javax.servlet.ServletRequest.getParameter*(..))")
+    @Pointcut("execution(* javax.servlet.ServletRequest.getParameter*(..))")
     void requestGetParameterPointcut() {}
 
-    @AfterReturning("isPluginEnabled() && requestGetParameterPointcut()"
-            + " && !cflowbelow(requestGetParameterPointcut()) && target(realRequest)"
-            + " && !within(org.informantproject.plugin.servlet.ServletAspect)")
-    public void afterReturningRequestGetParameterPointcut(Object realRequest) {
-        HttpServletRequest request = HttpServletRequest.from(realRequest);
-        // only now is it safe to get parameters (if parameters are retrieved before this, it could
-        // prevent a servlet from choosing to read the underlying stream instead of using the
-        // getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
-        ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
-        if (spanDetail != null && !spanDetail.isRequestParameterMapCaptured()) {
-            // this request is being traced and the request parameter map hasn't been captured yet
-            spanDetail.captureRequestParameterMap(request.getParameterMap());
+    private static final ThreadLocal<Boolean> inRequestGetParameterPointcut =
+            new BooleanThreadLocal();
+
+    @Pointcut("if()")
+    public static boolean notInRequestGetParameterPointcut() {
+        return !inRequestGetParameterPointcut.get();
+    }
+
+    @Around("isPluginEnabled() && requestGetParameterPointcut()"
+            + " && notInRequestGetParameterPointcut() && target(realRequest)")
+    public Object aroundRequestGetParameterPointcut(ProceedingJoinPoint joinPoint,
+            Object realRequest) throws Throwable {
+
+        inRequestGetParameterPointcut.set(true);
+        try {
+            return joinPoint.proceed();
+        } finally {
+            // only now is it safe to get parameters (if parameters are retrieved before this, it
+            // could prevent a servlet from choosing to read the underlying stream instead of using
+            // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
+            try {
+                ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
+                if (spanDetail != null && !spanDetail.isRequestParameterMapCaptured()) {
+                    // this request is being traced and the request parameter map hasn't been
+                    // captured
+                    // yet
+                    HttpServletRequest request = HttpServletRequest.from(realRequest);
+                    spanDetail.captureRequestParameterMap(request.getParameterMap());
+                }
+            } finally {
+                // taking no chances on re-setting thread local (thus the second try/finally)
+                inRequestGetParameterPointcut.set(false);
+            }
         }
     }
 
@@ -145,7 +166,7 @@ public class ServletAspect {
      * ================== Http Session Attributes ==================
      */
 
-    @Pointcut("call(javax.servlet.http.HttpSession"
+    @Pointcut("execution(javax.servlet.http.HttpSession"
             + " javax.servlet.http.HttpServletRequest.getSession(..))")
     void requestGetSessionPointcut() {}
 
@@ -161,7 +182,7 @@ public class ServletAspect {
             spanDetail.setSessionIdUpdatedValue(session.getId());
         }
     }
-    @Pointcut("call(void javax.servlet.http.HttpSession.invalidate())")
+    @Pointcut("execution(void javax.servlet.http.HttpSession.invalidate())")
     void sessionInvalidatePointcut() {}
 
     @Before("isPluginEnabled() && sessionInvalidatePointcut()"
@@ -176,7 +197,7 @@ public class ServletAspect {
 
     // TODO support deprecated HttpSession.putValue()
 
-    @Pointcut("call(void javax.servlet.http.HttpSession.setAttribute(String, Object))")
+    @Pointcut("execution(void javax.servlet.http.HttpSession.setAttribute(String, Object))")
     void sessionSetAttributePointcut() {}
 
     @AfterReturning("isPluginEnabled() && sessionSetAttributePointcut()"
@@ -195,7 +216,7 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut("call(void javax.servlet.http.HttpSession.removeAttribute(String))")
+    @Pointcut("execution(void javax.servlet.http.HttpSession.removeAttribute(String))")
     void sessionRemoveAttributePointcut() {}
 
     @AfterReturning("isPluginEnabled() && sessionRemoveAttributePointcut()"
@@ -405,6 +426,13 @@ public class ServletAspect {
         }
         public Optional<String> getUsername() {
             return Optional.absent();
+        }
+    }
+
+    private static class BooleanThreadLocal extends ThreadLocal<Boolean> {
+        @Override
+        protected Boolean initialValue() {
+            return false;
         }
     }
 }

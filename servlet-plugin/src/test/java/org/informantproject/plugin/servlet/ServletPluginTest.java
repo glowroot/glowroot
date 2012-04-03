@@ -110,10 +110,13 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testRequestParameters() {
-        // TODO build out this unit test
-        // use "combination" filter / servlet, because there was a previous bug due to this
-        // with TC request parameters
+    public void testRequestParameters() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(GetParameters.class);
+        // then don't fall into an infinite loop! (yes, at one time it did)
+        container.getInformant().getLastTrace();
     }
 
     @Test
@@ -531,6 +534,14 @@ public class ServletPluginTest {
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {}
         public void destroy() {}
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetParameters extends ServletUnderTest {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getParameter("xy");
+        }
     }
 
     @SuppressWarnings("serial")
