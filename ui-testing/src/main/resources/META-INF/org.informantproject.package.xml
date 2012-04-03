@@ -34,7 +34,7 @@
           <prompt>Test with hidden</prompt>
           <name>testWithHidden</name>
           <type>string</type>
-          <default>true</default>
+          <default>a hidden default</default>
           <hidden>true</hidden>
         </property>
       </properties>

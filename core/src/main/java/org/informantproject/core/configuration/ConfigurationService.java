@@ -177,13 +177,15 @@ public class ConfigurationService {
     public void storePluginConfiguration(String pluginId, JsonObject propertiesJson) {
         synchronized (updateLock) {
             // start with existing plugin configuration
-            PluginConfigurationBuilder builder = new PluginConfigurationBuilder(
-                    pluginDescriptors.get(pluginId), pluginConfigurations.get(pluginId));
+            PluginDescriptor pluginDescriptor = pluginDescriptors.get(pluginId);
+            PluginConfigurationBuilder builder = new PluginConfigurationBuilder(pluginDescriptor,
+                    pluginConfigurations.get(pluginId));
             // overlay updated properties
             builder.setProperties(propertiesJson);
             ImmutablePluginConfiguration pluginConfiguration = builder.build();
+            // only store non-hidden properties
             configurationDao.storePluginProperties(pluginId, pluginConfiguration
-                    .getPropertiesJson());
+                    .getNonHiddenPropertiesJson(pluginDescriptor));
             pluginConfigurations.put(pluginId, pluginConfiguration);
         }
         // it is safe to send the notification to the listeners outside of the update lock because

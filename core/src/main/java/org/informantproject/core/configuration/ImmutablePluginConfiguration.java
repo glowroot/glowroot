@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.configuration;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +24,6 @@ import java.util.Map.Entry;
 
 import org.informantproject.api.Optional;
 import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
-import org.informantproject.core.util.OptionalJsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +31,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.Maps;
+import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonWriter;
 
 /**
  * Immutable structure to hold the current configuration for Plugins.
@@ -136,10 +137,41 @@ public class ImmutablePluginConfiguration {
         }
     }
 
-    public String getPropertiesJson() {
-        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
-                new OptionalJsonSerializer()).serializeNulls().create();
-        return gson.toJson(properties);
+    public String getNonHiddenPropertiesJson(PluginDescriptor pluginDescriptor) {
+        StringBuilder sb = new StringBuilder();
+        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+        try {
+            jw.beginObject();
+            for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
+                if (property.isHidden()) {
+                    continue;
+                }
+                Object value = properties.get(property.getName());
+                if (value instanceof Optional) {
+                    if (((Optional<?>) value).isPresent()) {
+                        value = ((Optional<?>) value).get();
+                    } else {
+                        continue;
+                    }
+                }
+                jw.name(property.getName());
+                if (value instanceof String) {
+                    jw.value((String) value);
+                } else if (value instanceof Boolean) {
+                    jw.value((Boolean) value);
+                } else if (value instanceof Double) {
+                    jw.value((Double) value);
+                } else {
+                    logger.error("unexpected property value type '{}'", value.getClass().getName());
+                }
+            }
+            jw.endObject();
+            jw.close();
+            return sb.toString();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return "{}";
+        }
     }
 
     @Override
@@ -233,8 +265,9 @@ public class ImmutablePluginConfiguration {
             }
             if (property.get().isHidden()) {
                 if (!ignoreExtraProperties) {
-                    logger.error("cannot set hidden property, these can only be set by via org"
-                            + ".informantproject.plugin.xml or org.informantproject.package.xml");
+                    logger.error("cannot set hidden property '{}' with value '{}', hidden"
+                            + " properties can only be set by via org.informantproject.plugin"
+                            + ".xml or org.informantproject.package.xml", name, value);
                 }
                 return this;
             }
