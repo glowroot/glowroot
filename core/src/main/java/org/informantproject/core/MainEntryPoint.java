@@ -69,9 +69,10 @@ public final class MainEntryPoint {
         logger.debug("premain(): agentArgs={}", agentArgs);
         start(new AgentArgs(agentArgs));
         // start the AspectJ load-time weaving agent
+        setAspectjTraceFactory();
         setAspectjAopXmlSearchPath();
         PluginServices pluginServices = createPluginServices("org.informantproject:informant-core");
-        instrumentation.addTransformer(new InformantClassFileTransformer(pluginServices));
+        instrumentation.addTransformer(new AspectjClassFileTransformer(pluginServices));
     }
 
     public static PluginServices createPluginServices(String pluginId) {
@@ -98,6 +99,9 @@ public final class MainEntryPoint {
 
     public static void start(AgentArgs agentArgs) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
+        // this is primarily needed for LTW with javaagent, but included here also for consistency
+        // in unit tests that run with IsolatedWeavingClassLoader
+        setAspectjTraceFactory();
         synchronized (lock) {
             if (injector != null) {
                 throw new IllegalStateException("Informant is already started");
@@ -149,5 +153,10 @@ public final class MainEntryPoint {
         }
         System.setProperty("org.informantproject.shaded.aspectj.weaver.loadtime.configuration",
                 Joiner.on(";").join(resourceNames));
+    }
+
+    private static void setAspectjTraceFactory() {
+        System.setProperty("org.informantproject.shaded.aspectj.tracing.factory",
+                AspectjTraceFactory.class.getName());
     }
 }

@@ -31,17 +31,16 @@ import com.google.inject.Inject;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter {
+public class AspectjClassFileTransformer extends ClassPreProcessorAgentAdapter {
 
-    private static final Logger logger = LoggerFactory.getLogger(
-            InformantClassFileTransformer.class);
+    private static final Logger logger = LoggerFactory.getLogger(AspectjClassFileTransformer.class);
 
     private final PluginServices pluginServices;
 
     private final Metric metric;
 
     @Inject
-    public InformantClassFileTransformer(PluginServices pluginServices) {
+    public AspectjClassFileTransformer(PluginServices pluginServices) {
         this.pluginServices = pluginServices;
         metric = pluginServices.createMetric("informant weaving");
     }
@@ -71,7 +70,7 @@ public class InformantClassFileTransformer extends ClassPreProcessorAgentAdapter
 
         return pluginServices.proceedAndRecordMetricData(metric, new Callable<byte[]>() {
             public byte[] call() throws IllegalClassFormatException {
-                return InformantClassFileTransformer.super.transform(loader, className,
+                return AspectjClassFileTransformer.super.transform(loader, className,
                         classBeingRedefined, protectionDomain, bytes);
             }
         });
