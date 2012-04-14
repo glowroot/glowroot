@@ -47,7 +47,7 @@ public class LocalHttpHandlerTest {
     @Before
     public void before() {
         preExistingThreads = ThreadChecker.currentThreadList();
-        MainEntryPoint.start();
+        MainEntryPoint.start("ui.port:0");
         asyncHttpClient = new AsyncHttpClient();
     }
 
@@ -73,12 +73,12 @@ public class LocalHttpHandlerTest {
         // given
         ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
                 .getRandomCoreConfiguration();
-        BoundRequestBuilder updateRequest = asyncHttpClient
-                .preparePost("http://localhost:4000/configuration/core/properties");
+        BoundRequestBuilder updateRequest = asyncHttpClient.preparePost("http://localhost:"
+                + MainEntryPoint.getPort() + "/configuration/core/properties");
         updateRequest.setBody(randomCoreConfiguration.getPropertiesJson());
         updateRequest.execute().get();
-        BoundRequestBuilder readRequest = asyncHttpClient
-                .prepareGet("http://localhost:4000/configuration/read");
+        BoundRequestBuilder readRequest = asyncHttpClient.prepareGet("http://localhost:"
+                + MainEntryPoint.getPort() + "/configuration/read");
         // when
         Response response = readRequest.execute().get();
         // then
