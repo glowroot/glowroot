@@ -193,7 +193,6 @@ class ConfigurationDao {
         }
         String json = resultSet.getString(2);
         if (json == null) {
-            logger.error("configuration is null for plugin id '{}'", pluginDescriptor.getId());
             return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
         }
         JsonElement propertiesElement;
