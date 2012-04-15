@@ -33,22 +33,24 @@ import org.informantproject.api.SpanDetail;
  * 2. None of the elements in these arrays / collections should be modified after construction.
  * 
  * 3. There should be some kind of coordination between the threads to ensure visibility of the
- * objects in these arrays / collections. In our case, one thread is putting the JdbcSpanDetail on
- * to a concurrent queue (right after construction) and the only way another thread can get access
- * to it is by pulling it off of the queue. The concurrent queue stores the instance in a volatile
- * field and so the coordination of the first thread writing to that volatile field and the second
- * thread reading from that volatile field ensures a happens-before relationship which guarantees
- * that the second thread sees everything that was done to the objects in the parameters array prior
- * to the first thread putting the span into the concurrent queue.
+ * objects in these arrays / collections. In Informant's case, one thread is putting the
+ * JdbcSpanDetail on to a concurrent queue (right after construction) and the only way another
+ * thread can get access to it is by reading it from the queue. The concurrent queue stores the
+ * instance in a volatile field and so the coordination of the first thread writing to that volatile
+ * field and the second thread reading from that volatile field ensures a happens-before
+ * relationship which guarantees that the second thread sees everything that was done to the objects
+ * in the parameters array prior to the first thread putting the span into the concurrent queue.
  * 
- * hasPerformedNext and numRows are marked volatile to ensure visibility to other threads since they
- * are updated after putting the JdbcSpanDetail on to the queue and so these updates cannot
- * piggyback on the happens-before relationship created by queuing / dequeuing.
+ * numRows is marked volatile to ensure visibility to other threads since it is updated after
+ * putting the JdbcSpanDetail on to the concurrent queue and so these updates cannot piggyback on
+ * the happens-before relationship created by the concurrent queue.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 class JdbcSpanDetail implements SpanDetail {
+
+    private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
 
     private final String sql;
 
@@ -59,8 +61,7 @@ class JdbcSpanDetail implements SpanDetail {
     // this is only used for batching of non-PreparedStatements
     private final Collection<String> batchedSqls;
 
-    private volatile boolean hasPerformedNext;
-    private volatile int numRows;
+    private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
     JdbcSpanDetail(String sql) {
         this.sql = sql;
@@ -110,7 +111,7 @@ class JdbcSpanDetail implements SpanDetail {
                 appendParameters(sb, oneParameters);
             }
         }
-        if (hasPerformedNext) {
+        if (numRows != NEXT_HAS_NOT_BEEN_CALLED) {
             appendRowCount(sb);
         }
         return sb.build();
@@ -122,7 +123,9 @@ class JdbcSpanDetail implements SpanDetail {
     }
 
     void setHasPerformedNext() {
-        hasPerformedNext = true;
+        if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
+            numRows = 0;
+        }
     }
 
     void setNumRows(int numRows) {
@@ -170,7 +173,7 @@ class JdbcSpanDetail implements SpanDetail {
                 sb.append((String) parameter);
                 sb.append("\'");
             } else {
-                sb.append(parameter.toString());
+                sb.append(String.valueOf(parameter));
             }
             first = false;
         }

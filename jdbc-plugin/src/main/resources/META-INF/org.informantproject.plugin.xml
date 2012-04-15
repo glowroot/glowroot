@@ -21,4 +21,7 @@
     <groupId>org.informantproject.plugins</groupId>
     <artifactId>jdbc-plugin</artifactId>
     <version>0.5-SNAPSHOT</version>
+    <aspects>
+      <aspect>org.informantproject.plugin.jdbc.JdbcAspect</aspect>
+    </aspects>
 </plugin>

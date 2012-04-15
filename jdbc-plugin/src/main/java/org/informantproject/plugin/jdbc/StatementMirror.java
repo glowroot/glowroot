@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ class StatementMirror {
     // once it is out of scope
     // (and no longer strongly referenced via the current trace)
     // TODO clear this immediately on Statement.close()?
+    //
+    // TODO is it ok for this to be non-volatile?
     private WeakReference<JdbcSpanDetail> lastJdbcSpanDetail;
 
     void addBatch(String sql) {
