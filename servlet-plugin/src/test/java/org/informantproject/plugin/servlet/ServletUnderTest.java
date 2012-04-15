@@ -15,6 +15,8 @@
  */
 package org.informantproject.plugin.servlet;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,7 +39,7 @@ public class ServletUnderTest extends HttpServlet implements AppUnderTest {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/servletundertest");
         MockHttpServletResponse response = new MockHttpServletResponse();
         before(request, response);
-        service(request, response);
+        service((ServletRequest) request, (ServletResponse) response);
     }
 
     @SuppressWarnings("unused")

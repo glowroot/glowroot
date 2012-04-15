@@ -44,12 +44,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.informantproject.shaded</groupId>
-      <artifactId>shaded-aspectjrt</artifactId>
-      <version>1.7.0-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <!--
         using shaded-guava dependency to take advantage of
         the guava library already included in the Informant jar

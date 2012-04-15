@@ -37,11 +37,11 @@ public class PathUtil {
             .newBuilder().weakKeys().weakValues()
             .build(new CacheLoader<Class<?>, LoadingCache<String, Method>>() {
                 @Override
-                public LoadingCache<String, Method> load(final Class<?> clazz) throws Exception {
+                public LoadingCache<String, Method> load(final Class<?> type) throws Exception {
                     return CacheBuilder.newBuilder().build(new CacheLoader<String, Method>() {
                         @Override
                         public Method load(String path) throws Exception {
-                            return clazz.getMethod("get" + Character.toUpperCase(path.charAt(0))
+                            return type.getMethod("get" + Character.toUpperCase(path.charAt(0))
                                     + path.substring(1));
                         }
                     });

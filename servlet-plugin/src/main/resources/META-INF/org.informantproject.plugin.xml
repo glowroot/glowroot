@@ -58,4 +58,7 @@
         </description>
       </property>
     </properties>
+    <aspects>
+      <aspect>org.informantproject.plugin.servlet.ServletAspect</aspect>
+    </aspects>
 </plugin>

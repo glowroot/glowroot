@@ -24,15 +24,19 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.shaded.aspectj.lang.annotation.AfterReturning;
-import org.informantproject.shaded.aspectj.lang.annotation.Around;
-import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
-import org.informantproject.shaded.aspectj.lang.annotation.Before;
-import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
-import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectMethodArg;
+import org.informantproject.api.weaving.InjectReturn;
+import org.informantproject.api.weaving.InjectTarget;
+import org.informantproject.api.weaving.InjectTraveler;
+import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.OnAfter;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.OnReturn;
+import org.informantproject.api.weaving.Pointcut;
 
 /**
  * Defines pointcuts and captures data on
@@ -52,7 +56,6 @@ import org.informantproject.shaded.aspectj.lang.annotation.SuppressAjWarnings;
  */
 // TODO add support for async servlets (servlet 3.0)
 @Aspect
-@SuppressAjWarnings("adviceDidNotMatch")
 public class ServletAspect {
 
     private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
@@ -60,62 +63,84 @@ public class ServletAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:servlet-plugin");
 
-    private static final Metric requestMetric = pluginServices.createMetric("http request");
-    private static final Metric startupMetric = pluginServices.createMetric("servlet startup");
-
     private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
             new ThreadLocal<ServletSpanDetail>();
 
-    @Pointcut("if()")
-    public static boolean isPluginEnabled() {
-        return pluginServices.isEnabled();
+    @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service", methodArgs = {
+            "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
+            metricName = "http request")
+    public static class ServletAdvice {
+        private static final Metric metric = pluginServices.getMetric(ServletAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            // only enabled if it is not contained in another servlet or filter span
+            return pluginServices.isEnabled() && topLevelServletSpanDetail.get() == null;
+        }
+        @OnBefore
+        public static Span onBefore(@InjectMethodArg Object realRequest) {
+            HttpServletRequest request = HttpServletRequest.from(realRequest);
+            // request parameter map is collected in afterReturningRequestGetParameterPointcut()
+            // session info is collected here if the request already has a session
+            ServletSpanDetail spanDetail;
+            // passing "false" so it won't create a session if the request doesn't already have one
+            HttpSession session = request.getSession(false);
+            if (session == null) {
+                spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
+                        Optional.absent(String.class), null, null);
+            } else {
+                Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
+                        .getSessionUsernameAttributePath();
+                Optional<String> username = Optional.absent();
+                if (sessionUsernameAttributePath.isPresent()) {
+                    username = getSessionAttributeTextValue(session, sessionUsernameAttributePath
+                            .get());
+                }
+                spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
+                        username, session.getId(), getSessionAttributes(session));
+            }
+            topLevelServletSpanDetail.set(spanDetail);
+            return pluginServices.startRootSpan(metric, spanDetail);
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            pluginServices.endSpan(span);
+            topLevelServletSpanDetail.set(null);
+        }
     }
 
-    @Pointcut("execution(void javax.servlet.Filter.doFilter(javax.servlet.ServletRequest,"
-            + " javax.servlet.ServletResponse, javax.servlet.FilterChain))")
-    void filterPointcut() {}
-
-    @Pointcut("execution(void javax.servlet.Servlet.service(javax.servlet.ServletRequest,"
-            + " javax.servlet.ServletResponse)) || execution(void javax.servlet.http.HttpServlet"
-            + ".do*(javax.servlet.http.HttpServletRequest,"
-            + " javax.servlet.http.HttpServletResponse))")
-    void servletPointcut() {}
-
-    @Pointcut("(filterPointcut() || servletPointcut()) && !cflowbelow(filterPointcut())"
-            + " && !cflowbelow(servletPointcut())")
-    void topLevelPointcut() {}
-
-    @Around("isPluginEnabled() && topLevelPointcut() && args(realRequest, ..)")
-    public void httpRequestSpanMarker(ProceedingJoinPoint joinPoint, Object realRequest)
-            throws Throwable {
-
-        HttpServletRequest request = HttpServletRequest.from(realRequest);
-        // capture more expensive data (request parameter map and session info) for the top
-        // level filter/servlet pointcut
-        // request parameter map is collected in afterReturningRequestGetParameterPointcut()
-        // session info is collected here if the request already has a session
-        ServletSpanDetail spanDetail;
-        // passing "false" so it won't create a session if the request doesn't already have one
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
-                    Optional.absent(String.class), null, null);
-        } else {
-            Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
-                    .getSessionUsernameAttributePath();
-            Optional<String> username = Optional.absent();
-            if (sessionUsernameAttributePath.isPresent()) {
-                username = getSessionAttributeTextValue(session, sessionUsernameAttributePath
-                        .get());
-            }
-            spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
-                    username, session.getId(), getSessionAttributes(session));
+    @Pointcut(typeName = "javax.servlet.http.HttpServlet", methodName = "/do.*/", methodArgs = {
+            "javax.servlet.http.HttpServletRequest", "javax.servlet.http.HttpServletResponse" },
+            metricName = "http request")
+    public static class HttpServletAdvice extends ServletAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return ServletAdvice.isEnabled();
         }
-        topLevelServletSpanDetail.set(spanDetail);
-        try {
-            pluginServices.executeRootSpan(requestMetric, spanDetail, joinPoint);
-        } finally {
-            topLevelServletSpanDetail.set(null);
+        @OnBefore
+        public static Span onBefore(@InjectMethodArg Object realRequest) {
+            return ServletAdvice.onBefore(realRequest);
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            ServletAdvice.onAfter(span);
+        }
+    }
+
+    @Pointcut(typeName = "javax.servlet.Filter", methodName = "doFilter", methodArgs = {
+            "javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
+            "javax.servlet.FilterChain" }, metricName = "http request")
+    public static class FilterAdvice extends ServletAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return ServletAdvice.isEnabled();
+        }
+        @OnBefore
+        public static Span onBefore(@InjectMethodArg Object realRequest) {
+            return ServletAdvice.onBefore(realRequest);
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            ServletAdvice.onAfter(span);
         }
     }
 
@@ -123,26 +148,22 @@ public class ServletAspect {
      * ================== Http Servlet Request Parameters ==================
      */
 
-    @Pointcut("execution(* javax.servlet.ServletRequest.getParameter*(..))")
-    void requestGetParameterPointcut() {}
-
     private static final ThreadLocal<Boolean> inRequestGetParameterPointcut =
             new BooleanThreadLocal();
 
-    @Pointcut("if()")
-    public static boolean notInRequestGetParameterPointcut() {
-        return !inRequestGetParameterPointcut.get();
-    }
-
-    @Around("isPluginEnabled() && requestGetParameterPointcut()"
-            + " && notInRequestGetParameterPointcut() && target(realRequest)")
-    public Object aroundRequestGetParameterPointcut(ProceedingJoinPoint joinPoint,
-            Object realRequest) throws Throwable {
-
-        inRequestGetParameterPointcut.set(true);
-        try {
-            return joinPoint.proceed();
-        } finally {
+    @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "/getParameter.*/",
+            methodArgs = { ".." })
+    public static class GetParameterAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnAfter
+        public static void onAfter(@InjectTarget Object realRequest) {
+            if (inRequestGetParameterPointcut.get()) {
+                return;
+            }
+            inRequestGetParameterPointcut.set(true);
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
@@ -150,8 +171,7 @@ public class ServletAspect {
                 ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
                 if (spanDetail != null && !spanDetail.isRequestParameterMapCaptured()) {
                     // this request is being traced and the request parameter map hasn't been
-                    // captured
-                    // yet
+                    // captured yet
                     HttpServletRequest request = HttpServletRequest.from(realRequest);
                     spanDetail.captureRequestParameterMap(request.getParameterMap());
                 }
@@ -166,123 +186,166 @@ public class ServletAspect {
      * ================== Http Session Attributes ==================
      */
 
-    @Pointcut("execution(javax.servlet.http.HttpSession"
-            + " javax.servlet.http.HttpServletRequest.getSession(..))")
-    void requestGetSessionPointcut() {}
-
-    @AfterReturning(pointcut = "isPluginEnabled() && requestGetSessionPointcut()"
-            + " && !cflowbelow(requestGetSessionPointcut())", returning = "realSession")
-    public void afterReturningRequestGetSession(Object realSession) {
-        HttpSession session = HttpSession.from(realSession);
-        // either getSession(), getSession(true) or getSession(false) has triggered this pointcut
-        // after calls to the first two, a new session may have been created
-        // (the third one could be ignored but is harmless)
-        ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
-        if (spanDetail != null && session != null && session.isNew()) {
-            spanDetail.setSessionIdUpdatedValue(session.getId());
+    @Pointcut(typeName = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
+            methodArgs = { ".." })
+    public static class GetSessionAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnReturn
+        public static void onReturn(@InjectReturn Object realSession) {
+            HttpSession session = HttpSession.from(realSession);
+            // either getSession(), getSession(true) or getSession(false) has triggered this
+            // pointcut
+            // after calls to the first two (no-arg, and passing true), a new session may have been
+            // created (the third one -- passing false -- could be ignored but is harmless)
+            ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
+            if (spanDetail != null && session != null && session.isNew()) {
+                spanDetail.setSessionIdUpdatedValue(session.getId());
+            }
         }
     }
-    @Pointcut("execution(void javax.servlet.http.HttpSession.invalidate())")
-    void sessionInvalidatePointcut() {}
 
-    @Before("isPluginEnabled() && sessionInvalidatePointcut()"
-            + " && !cflowbelow(sessionInvalidatePointcut()) && target(realSession)")
-    public void beforeSessionInvalidatePointcut(Object realSession) {
-        HttpSession session = HttpSession.from(realSession);
-        ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
-        if (spanDetail != null) {
-            spanDetail.setSessionIdUpdatedValue("");
+    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "invalidate")
+    public static class SessionInvalidateAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static void onBefore(@InjectTarget Object realSession) {
+            HttpSession session = HttpSession.from(realSession);
+            ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
+            if (spanDetail != null) {
+                spanDetail.setSessionIdUpdatedValue("");
+            }
         }
     }
 
     // TODO support deprecated HttpSession.putValue()
 
-    @Pointcut("execution(void javax.servlet.http.HttpSession.setAttribute(String, Object))")
-    void sessionSetAttributePointcut() {}
+    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "setAttribute",
+            methodArgs = { "java.lang.String", "java.lang.Object" })
+    public static class SetAttributeAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnAfter
+        public static void onAfter(@InjectTarget Object realSession, @InjectMethodArg String name,
+                @InjectMethodArg Object value) {
 
-    @AfterReturning("isPluginEnabled() && sessionSetAttributePointcut()"
-            + " && !cflowbelow(sessionSetAttributePointcut()) && target(realSession)"
-            + " && args(name, value)")
-    public void afterReturningSessionSetAttributePointcut(Object realSession, String name,
-            Object value) {
-
-        HttpSession session = HttpSession.from(realSession);
-        // name is non-null per HttpSession.setAttribute() javadoc, but value may be null (which per
-        // the javadoc is the same as calling removeAttribute()
-        ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
-        if (spanDetail != null) {
-            updateUsernameIfApplicable(spanDetail, name, value, session);
-            updateSessionAttributesIfApplicable(spanDetail, name, value, session);
+            HttpSession session = HttpSession.from(realSession);
+            // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
+            // (which per the javadoc is the same as calling removeAttribute())
+            ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
+            if (spanDetail != null) {
+                updateUsernameIfApplicable(spanDetail, name, value, session);
+                updateSessionAttributesIfApplicable(spanDetail, name, value, session);
+            }
         }
     }
 
-    @Pointcut("execution(void javax.servlet.http.HttpSession.removeAttribute(String))")
-    void sessionRemoveAttributePointcut() {}
-
-    @AfterReturning("isPluginEnabled() && sessionRemoveAttributePointcut()"
-            + " && !cflowbelow(sessionRemoveAttributePointcut()) && target(realSession)"
-            + " && args(name)")
-    public void afterReturningSessionRemoveAttributePointcut(Object realSession, String name) {
-        // calling HttpSession.setAttribute() with null value is the same as calling
-        // removeAttribute(), per the setAttribute() javadoc
-        afterReturningSessionSetAttributePointcut(realSession, name, null);
+    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
+            methodArgs = { "java.lang.String" })
+    public static class RemoveAttributeAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnAfter
+        public static void onAfter(@InjectTarget Object realSession, @InjectMethodArg String name) {
+            // calling HttpSession.setAttribute() with null value is the same as calling
+            // removeAttribute(), per the setAttribute() javadoc
+            SetAttributeAdvice.onAfter(realSession, name, null);
+        }
     }
 
     /*
      * ================== Startup ==================
      */
 
-    @Pointcut("execution(void javax.servlet.ServletContextListener.contextInitialized("
-            + "javax.servlet.ServletContextEvent))")
-    void contextInitializedPointcut() {}
-
-    @Around("contextInitializedPointcut() && !cflowbelow(contextInitializedPointcut())"
-            + " && target(listener)")
-    public void servetStartupSpanMarker(ProceedingJoinPoint joinPoint, Object listener)
-            throws Throwable {
-
-        if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-            RootSpanDetail rootSpanDetail = new StartupRootSpanDetail(
-                    "servlet context initialized (" + listener.getClass().getName() + ")");
-            pluginServices.executeRootSpan(startupMetric, rootSpanDetail, joinPoint);
-        } else {
-            joinPoint.proceed();
+    @Pointcut(typeName = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
+            methodArgs = { "javax.servlet.ServletContextEvent" }, metricName = "servlet startup")
+    public static class ContextInitializedAdvice {
+        private static final Metric metric = pluginServices.getMetric(
+                ContextInitializedAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static Span onBefore(@InjectTarget Object listener) {
+            if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
+                RootSpanDetail rootSpanDetail = new StartupRootSpanDetail(
+                        "servlet context initialized (" + listener.getClass().getName() + ")");
+                return pluginServices.startRootSpan(metric, rootSpanDetail);
+            } else {
+                return null;
+            }
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            if (span != null) {
+                pluginServices.endSpan(span);
+            }
         }
     }
 
-    @Pointcut("execution(void javax.servlet.Servlet.init(javax.servlet.ServletConfig))")
-    void servletInitPointcut() {}
-
-    @Around("servletInitPointcut() && !cflowbelow(servletInitPointcut()) && target(servlet)")
-    public void servetStartupSpanMarker2(ProceedingJoinPoint joinPoint, Object servlet)
-            throws Throwable {
-
-        if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-            RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("servlet init ("
-                    + servlet.getClass().getName() + ")");
-            pluginServices.executeRootSpan(startupMetric, rootSpanDetail, joinPoint);
-        } else {
-            joinPoint.proceed();
+    @Pointcut(typeName = "javax.servlet.Servlet", methodName = "init",
+            methodArgs = { "javax.servlet.ServletConfig" }, metricName = "servlet startup")
+    public static class ServletInitAdvice {
+        private static final Metric metric = pluginServices.getMetric(ServletInitAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static Span onBefore(@InjectTarget Object servlet) {
+            if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
+                RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("servlet init ("
+                        + servlet.getClass().getName() + ")");
+                return pluginServices.startRootSpan(metric, rootSpanDetail);
+            } else {
+                return null;
+            }
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            if (span != null) {
+                pluginServices.endSpan(span);
+            }
         }
     }
 
-    @Pointcut("execution(void javax.servlet.Filter.init(javax.servlet.FilterConfig))")
-    void filterInitPointcut() {}
-
-    @Around("filterInitPointcut() && !cflowbelow(filterInitPointcut()) && target(filter)")
-    public void servetStartupSpanMarker3(ProceedingJoinPoint joinPoint, Object filter)
-            throws Throwable {
-
-        if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-            RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("filter init ("
-                    + filter.getClass().getName() + ")");
-            pluginServices.executeRootSpan(startupMetric, rootSpanDetail, joinPoint);
-        } else {
-            joinPoint.proceed();
+    @Pointcut(typeName = "javax.servlet.Filter", methodName = "init",
+            methodArgs = { "javax.servlet.FilterConfig" }, metricName = "servlet startup")
+    public static class FilterInitAdvice {
+        private static final Metric metric = pluginServices.getMetric(FilterInitAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static Span onBefore(@InjectTarget Object filter) {
+            if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
+                RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("filter init ("
+                        + filter.getClass().getName() + ")");
+                return pluginServices.startRootSpan(metric, rootSpanDetail);
+            } else {
+                return null;
+            }
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            if (span != null) {
+                pluginServices.endSpan(span);
+            }
         }
     }
 
-    private void updateUsernameIfApplicable(ServletSpanDetail spanDetail, String name,
+    private static void updateUsernameIfApplicable(ServletSpanDetail spanDetail, String name,
             Object value, HttpSession session) {
 
         if (value == null) {
@@ -303,7 +366,8 @@ public class ServletAspect {
         }
     }
 
-    private void updateSessionAttributesIfApplicable(ServletSpanDetail spanDetail, String name,
+    private static void updateSessionAttributesIfApplicable(ServletSpanDetail spanDetail,
+            String name,
             Object value, HttpSession session) {
 
         if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
@@ -413,7 +477,7 @@ public class ServletAspect {
         }
     }
 
-    private final class StartupRootSpanDetail implements RootSpanDetail {
+    private static final class StartupRootSpanDetail implements RootSpanDetail {
         private final String description;
         private StartupRootSpanDetail(String description) {
             this.description = description;

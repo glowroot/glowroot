@@ -440,7 +440,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestServletInit.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getSpans().size(), is(2));
         assertThat(trace.getDescription(), is("servlet init (" + TestServletInit.class.getName()
                 + ")"));
     }
@@ -517,11 +517,15 @@ public class ServletPluginTest {
 
     @SuppressWarnings("serial")
     public static class TestServletInit extends HttpServlet implements AppUnderTest {
-        public void executeApp() {
+        public void executeApp() throws ServletException {
             init(null);
         }
         @Override
-        public void init(ServletConfig config) {}
+        public void init(ServletConfig config) throws ServletException {
+            // calling super to make sure it doesn't end up in an infinite loop (this happened once
+            // before due to bug in weaver)
+            super.init(config);
+        }
     }
 
     public static class TestFilterInit implements AppUnderTest, Filter {
