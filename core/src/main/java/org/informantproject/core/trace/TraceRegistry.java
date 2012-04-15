@@ -37,30 +37,12 @@ public class TraceRegistry {
     // active running trace being executed by the current thread
     private final ThreadLocal<Trace> currentTraceHolder = new ThreadLocal<Trace>();
 
-    // this is used to disable tracing of the current root span
-    // it is used in case tracing is later enabled while this root span is still active
-    // in which case tracing should stay disabled for the root span
-    private final ThreadLocal<Boolean> currentRootSpanDisabledHolder = new ThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
-
     Trace getCurrentTrace() {
         return currentTraceHolder.get();
     }
 
     void setCurrentTrace(Trace trace) {
         currentTraceHolder.set(trace);
-    }
-
-    boolean isCurrentRootSpanDisabled() {
-        return currentRootSpanDisabledHolder.get();
-    }
-
-    void setCurrentRootSpanDisabled(boolean disabled) {
-        currentRootSpanDisabledHolder.set(disabled);
     }
 
     void addTrace(Trace trace) {

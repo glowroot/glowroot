@@ -16,6 +16,7 @@
 package org.informantproject.test;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
 import java.util.Map;
@@ -86,6 +87,8 @@ public class BasicTest {
         Span span3 = trace.getSpans().get(2);
         assertThat(span3.getDescription(), is("Level Three"));
         assertThat(span3.getContextMap(), is(mapOf("arg1", "axy", "arg2", "bxy")));
+        // offset is measured in nanoseconds so there's no way this should be 0
+        assertThat(span3.getOffset(), is(greaterThan(0L)));
     }
 
     private static CoreProperties makeRandomCoreProperties() {

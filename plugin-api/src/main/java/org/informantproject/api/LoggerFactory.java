@@ -56,8 +56,8 @@ public class LoggerFactory {
 
     private LoggerFactory() {}
 
-    public static Logger getLogger(Class<?> clazz) {
-        return iLoggerFactory.getLogger(clazz.getName());
+    public static Logger getLogger(Class<?> type) {
+        return iLoggerFactory.getLogger(type.getName());
     }
 
     public interface ILoggerFactory {

@@ -16,8 +16,6 @@
 package org.informantproject.core.trace;
 
 import org.informantproject.api.Metric;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 
@@ -27,10 +25,8 @@ import com.google.common.base.Ticker;
  */
 public class MetricImpl implements Metric {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricImpl.class);
-
     private final String name;
-    private final ThreadLocal<MetricDataItem> metricDataItem = new ThreadLocal<MetricDataItem>();
+    private final ThreadLocal<TraceMetricImpl> traceMetric = new ThreadLocal<TraceMetricImpl>();
 
     private final Ticker ticker;
 
@@ -43,55 +39,37 @@ public class MetricImpl implements Metric {
         return name;
     }
 
-    boolean start() {
-        MetricDataItem item = metricDataItem.get();
+    TraceMetricImpl start() {
+        TraceMetricImpl item = traceMetric.get();
         if (item == null) {
-            item = new MetricDataItem(name, ticker);
+            item = new TraceMetricImpl(name, ticker);
             item.start();
-            metricDataItem.set(item);
-            return false;
+            traceMetric.set(item);
+            return item;
         } else {
             item.start();
-            return true;
+            return item;
         }
     }
 
-    boolean start(long startTick) {
-        MetricDataItem item = metricDataItem.get();
+    TraceMetricImpl start(long startTick) {
+        TraceMetricImpl item = traceMetric.get();
         if (item == null) {
-            item = new MetricDataItem(name, ticker);
+            item = new TraceMetricImpl(name, ticker);
             item.start(startTick);
-            metricDataItem.set(item);
-            return false;
+            traceMetric.set(item);
+            return item;
         } else {
             item.start(startTick);
-            return true;
+            return item;
         }
     }
 
-    void stop() {
-        MetricDataItem item = metricDataItem.get();
-        if (item == null) {
-            logger.error("stop(): thread local is null");
-        } else {
-            item.stop();
-        }
-    }
-
-    void stop(long endTick) {
-        MetricDataItem item = metricDataItem.get();
-        if (item == null) {
-            logger.error("stop(): thread local is null");
-        } else {
-            item.stop(endTick);
-        }
-    }
-
-    MetricDataItem get() {
-        return metricDataItem.get();
+    TraceMetricImpl get() {
+        return traceMetric.get();
     }
 
     void remove() {
-        metricDataItem.remove();
+        traceMetric.remove();
     }
 }

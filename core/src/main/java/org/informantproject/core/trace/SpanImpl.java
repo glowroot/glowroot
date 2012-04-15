@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.trace;
 
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
 
@@ -27,7 +28,7 @@ import org.informantproject.api.SpanDetail;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class Span {
+public final class SpanImpl implements Span {
 
     private final SpanDetail spanDetail;
 
@@ -42,10 +43,13 @@ public final class Span {
     // level is just a convenience for output
     private final int level;
 
+    // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
+    private final TraceMetricImpl traceMetric;
+
     private volatile StackTraceElement[] stackTraceElements;
 
-    Span(SpanDetail spanDetail, long traceStartTick, long startTick, int index, int parentIndex,
-            int level) {
+    SpanImpl(SpanDetail spanDetail, long traceStartTick, long startTick, int index,
+            int parentIndex, int level, TraceMetricImpl traceMetric) {
 
         this.spanDetail = spanDetail;
         this.traceStartTick = traceStartTick;
@@ -53,6 +57,7 @@ public final class Span {
         this.index = index;
         this.parentIndex = parentIndex;
         this.level = level;
+        this.traceMetric = traceMetric;
     }
 
     public CharSequence getDescription() {
@@ -94,6 +99,10 @@ public final class Span {
 
     public StackTraceElement[] getStackTraceElements() {
         return stackTraceElements;
+    }
+
+    TraceMetricImpl getTraceMetric() {
+        return traceMetric;
     }
 
     void setEndTick(long endTick) {

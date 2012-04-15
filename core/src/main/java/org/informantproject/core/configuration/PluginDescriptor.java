@@ -19,11 +19,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.informantproject.api.Optional;
+import org.informantproject.api.weaving.Mixin;
+import org.informantproject.core.weaving.Advice;
+import org.informantproject.core.weaving.Weaver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -39,17 +43,37 @@ public class PluginDescriptor {
     private final String artifactId;
     private final String version;
     private final List<PropertyDescriptor> propertyDescriptors;
+    // marked transient for gson serialization
+    private final transient List<Mixin> mixins;
+    // marked transient for gson serialization
+    private final transient List<Advice> advisors;
 
     private final Map<String, PropertyDescriptor> propertyDescriptorsByName;
 
     public PluginDescriptor(String name, String groupId, String artifactId, String version,
-            List<PropertyDescriptor> propertyDescriptors) {
+            List<PropertyDescriptor> propertyDescriptors, List<String> aspects) {
 
         this.name = name;
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.propertyDescriptors = ImmutableList.copyOf(propertyDescriptors);
+        List<Mixin> mixins = Lists.newArrayList();
+        List<Advice> advisors = Lists.newArrayList();
+        for (String aspect : aspects) {
+            try {
+                // don't initialize the aspect since that will trigger static initializers which
+                // will probably call PluginServices.get()
+                Class<?> aspectClass = Class.forName(aspect, false, PluginDescriptor.class
+                        .getClassLoader());
+                advisors.addAll(Weaver.getAdvisors(aspectClass));
+                mixins.addAll(Weaver.getMixins(aspectClass));
+            } catch (ClassNotFoundException e) {
+                continue;
+            }
+        }
+        this.mixins = ImmutableList.copyOf(mixins);
+        this.advisors = ImmutableList.copyOf(advisors);
         propertyDescriptorsByName = Maps.newHashMap();
         for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
             propertyDescriptorsByName.put(propertyDescriptor.getName(), propertyDescriptor);
@@ -78,6 +102,14 @@ public class PluginDescriptor {
 
     public List<PropertyDescriptor> getPropertyDescriptors() {
         return propertyDescriptors;
+    }
+
+    public List<Mixin> getMixins() {
+        return mixins;
+    }
+
+    public List<Advice> getAdvisors() {
+        return advisors;
     }
 
     public Optional<PropertyDescriptor> getPropertyDescriptor(String propertyName) {

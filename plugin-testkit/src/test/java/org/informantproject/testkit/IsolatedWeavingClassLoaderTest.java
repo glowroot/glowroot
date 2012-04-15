@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,13 @@ package org.informantproject.testkit;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.informantproject.api.weaving.Mixin;
+import org.informantproject.core.weaving.Advice;
+import org.informantproject.core.weaving.IsolatedWeavingClassLoader;
+import org.informantproject.core.weaving.Weaver;
 import org.junit.Test;
 
 /**
@@ -29,7 +36,9 @@ public class IsolatedWeavingClassLoaderTest {
     @Test
     public void shouldGetIsolatedAndWovenValue() throws Exception {
         ValueHolderImpl.value = "changed-value";
-        ClassLoader isolatedClassLoader = new IsolatedWeavingClassLoader(ValueHolder.class);
+        List<Advice> advisors = Weaver.getAdvisors(ValueHolderAspect.class);
+        ClassLoader isolatedClassLoader = new IsolatedWeavingClassLoader(new ArrayList<Mixin>(),
+                advisors, ValueHolder.class);
         ValueHolder valueHolder = (ValueHolder) Class.forName(ValueHolderImpl.class.getName(),
                 true, isolatedClassLoader).newInstance();
         assertThat(valueHolder.get(), is("original-value/aspect-was-here"));

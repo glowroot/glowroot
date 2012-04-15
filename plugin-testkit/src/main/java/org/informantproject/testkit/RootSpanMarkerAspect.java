@@ -19,11 +19,14 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.shaded.aspectj.lang.annotation.Around;
-import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
-import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectTraveler;
+import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.OnAfter;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.Pointcut;
 
 /**
  * @author Trask Stalnaker
@@ -35,14 +38,22 @@ public class RootSpanMarkerAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-plugin-testkit");
 
-    private static final Metric metric = pluginServices.createMetric("mock root span");
-
-    @Pointcut("execution(void org.informantproject.testkit.RootSpanMarker.rootSpanMarker())")
-    void rootSpanMarkerPointcut() {}
-
-    @Around("rootSpanMarkerPointcut()")
-    public void mockRootSpanSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        pluginServices.executeRootSpan(metric, new MockRootSpan(), joinPoint);
+    @Pointcut(typeName = "org.informantproject.testkit.RootSpanMarker",
+            methodName = "rootSpanMarker", metricName = "mock root span")
+    public static class RootSpanMarkerAdvice {
+        private static final Metric metric = pluginServices.getMetric(RootSpanMarkerAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static Span onBefore() {
+            return pluginServices.startRootSpan(metric, new MockRootSpan());
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            pluginServices.endSpan(span);
+        }
     }
 
     private static class MockRootSpan implements RootSpanDetail {

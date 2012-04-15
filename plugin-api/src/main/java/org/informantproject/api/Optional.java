@@ -36,9 +36,9 @@ public abstract class Optional<T> {
         return (Optional<T>) Absent.INSTANCE;
     }
 
-    // this version is necessary sometimes to avoid unchecked casting
+    // this version can be helpful to avoid unchecked casting
     @SuppressWarnings({ "unchecked", "unused" })
-    public static <T> Optional<T> absent(Class<T> clazz) {
+    public static <T> Optional<T> absent(Class<T> type) {
         return (Optional<T>) Absent.INSTANCE;
     }
 

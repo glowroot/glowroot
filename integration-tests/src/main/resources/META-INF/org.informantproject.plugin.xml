@@ -39,4 +39,9 @@
         <default>one</default>
       </property>
     </properties>
+    <aspects>
+      <aspect>org.informantproject.test.plugin.LevelOneAspect</aspect>
+      <aspect>org.informantproject.test.plugin.LevelTwoAspect</aspect>
+      <aspect>org.informantproject.test.plugin.LevelThreeAspect</aspect>
+    </aspects>
 </plugin>

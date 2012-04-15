@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.informantproject.api.LargeStringBuilder;
 import org.informantproject.api.Optional;
-import org.informantproject.core.trace.Span;
+import org.informantproject.core.trace.SpanImpl;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.OptionalJsonSerializer;
@@ -182,7 +182,7 @@ public class TraceJsonService implements JsonService {
         jw.name("stuck").value(activeTrace.isStuck());
         jw.name("duration").value(activeTrace.getDuration());
         jw.name("completed").value(false);
-        Span rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
+        SpanImpl rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
         jw.name("description").value(rootSpan.getDescription().toString());
         Optional<String> username = activeTrace.getUsername();
         if (username.isPresent()) {

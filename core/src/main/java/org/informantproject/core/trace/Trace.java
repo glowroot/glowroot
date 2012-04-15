@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.informantproject.api.Optional;
 import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
@@ -68,8 +69,8 @@ public class Trace {
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricImpl> metrics = Lists.newArrayList();
     // this is mostly updated and rarely read, so seems like synchronized list is best collection
-    private final List<MetricDataItem> metricDataItems = Collections.synchronizedList(
-            new ArrayList<MetricDataItem>());
+    private final List<TraceMetricImpl> traceMetrics = Collections.synchronizedList(
+            new ArrayList<TraceMetricImpl>());
 
     // root span for this trace
     private final RootSpan rootSpan;
@@ -94,14 +95,18 @@ public class Trace {
     private volatile ScheduledFuture<?> captureStackTraceScheduledFuture;
     private volatile ScheduledFuture<?> stuckCommandScheduledFuture;
 
+    private final Ticker ticker;
+
     Trace(MetricImpl metric, SpanDetail spanDetail, Clock clock, Ticker ticker) {
+        this.ticker = ticker;
         long startTimeMillis = clock.currentTimeMillis();
         id = new TraceUniqueId(startTimeMillis);
         startDate = new Date(startTimeMillis);
-        rootSpan = new RootSpan(spanDetail, ticker);
-        metric.start(rootSpan.getStartTick());
+        long startTick = ticker.read();
+        TraceMetricImpl traceMetric = metric.start(startTick);
+        rootSpan = new RootSpan(spanDetail, traceMetric, startTick, ticker);
         metrics.add(metric);
-        metricDataItems.add(metric.get());
+        traceMetrics.add(traceMetric);
     }
 
     public Date getStartDate() {
@@ -142,8 +147,8 @@ public class Trace {
         return attributes;
     }
 
-    public List<MetricDataItem> getMetricDataItems() {
-        return metricDataItems;
+    public List<TraceMetricImpl> getTraceMetrics() {
+        return traceMetrics;
     }
 
     public RootSpan getRootSpan() {
@@ -207,10 +212,13 @@ public class Trace {
     }
 
     Span pushSpan(MetricImpl metric, SpanDetail spanDetail) {
-        Span span = rootSpan.pushSpan(spanDetail);
-        if (!metric.start(span.getStartTick())) {
+        long startTick = ticker.read();
+        TraceMetricImpl traceMetric = metric.start(startTick);
+        SpanImpl span = rootSpan.pushSpan(startTick, spanDetail, traceMetric);
+        if (traceMetric.isFirstStart()) {
             metrics.add(metric);
-            metricDataItems.add(metric.get());
+            traceMetrics.add(metric.get());
+            traceMetric.firstStartSeen();
         }
         return span;
     }
@@ -218,22 +226,19 @@ public class Trace {
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(MetricImpl metric, Span span, long endTick,
-            StackTraceElement[] stackTraceElements) {
-
-        metric.stop(endTick);
+    void popSpan(SpanImpl span, long endTick, StackTraceElement[] stackTraceElements) {
         rootSpan.popSpan(span, endTick, stackTraceElements);
+        span.getTraceMetric().stop(endTick);
     }
 
-    void pushSpanWithoutDetail(MetricImpl metric) {
-        if (!metric.start()) {
+    TraceMetricImpl startTraceMetric(MetricImpl metric) {
+        TraceMetricImpl traceMetric = metric.start();
+        if (traceMetric.isFirstStart()) {
             metrics.add(metric);
-            metricDataItems.add(metric.get());
+            traceMetrics.add(metric.get());
+            traceMetric.firstStartSeen();
         }
-    }
-
-    void popSpanWithoutDetail(MetricImpl metric) {
-        metric.stop();
+        return traceMetric;
     }
 
     public static class Attribute {

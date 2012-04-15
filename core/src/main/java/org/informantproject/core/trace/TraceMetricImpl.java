@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.trace;
 
+import org.informantproject.api.TraceMetric;
+
 import com.google.common.base.Ticker;
 
 /**
@@ -25,21 +27,30 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MetricDataItem {
+public class TraceMetricImpl implements TraceMetric {
 
     private final String name;
     // nanosecond rollover (292 years) isn't a concern for total time on a single trace
-    private volatile long total;
-    private volatile long min = Long.MAX_VALUE;
-    private volatile long max = Long.MIN_VALUE;
-    private volatile long count;
+    private long total;
+    private long min = Long.MAX_VALUE;
+    private long max = Long.MIN_VALUE;
+    private long count;
 
+    private long startTick;
+    // selfNestingLevel is written after any non-volatile fields are written and it is read before
+    // any non-volatile fields are read, creating a memory barrier and making the latest values of
+    // the non-volatile fields visible to the reading thread
     private volatile int selfNestingLevel;
-    private volatile long startTick;
+    // this field cannot piggyback on the volatility of selfNestingLevel like the others, but that
+    // is ok since it is primarily read (cheap for volatile) and rarely updated ('expensive' for
+    // volatile)
+    private volatile boolean firstStart = true;
+    // only accessed by trace thread
+    private long pauseTick;
 
     private final Ticker ticker;
 
-    MetricDataItem(String name, Ticker ticker) {
+    TraceMetricImpl(String name, Ticker ticker) {
         this.name = name;
         this.ticker = ticker;
     }
@@ -68,8 +79,23 @@ public class MetricDataItem {
         return count;
     }
 
+    boolean isFirstStart() {
+        return firstStart;
+    }
+
+    void firstStartSeen() {
+        firstStart = false;
+    }
+
+    // safe to be called from another thread
     public Snapshot copyOf() {
-        // try to grab a quick, consistent snapshot, but no guarantees if trace is active
+        // try to grab a quick, consistent snapshot, but no guarantees on consistency if trace is
+        // active
+
+        // selfNestingLevel is read first since it is used as a memory barrier so that the
+        // non-volatile fields below will be visible to this threads
+        boolean active = selfNestingLevel > 0;
+
         Snapshot copy = new Snapshot();
         copy.name = name;
         copy.total = total;
@@ -77,7 +103,7 @@ public class MetricDataItem {
         copy.max = max;
         copy.count = count;
 
-        if (selfNestingLevel > 0) {
+        if (active) {
             copy.active = true;
             long currentTick = ticker.read();
             long curr = currentTick - startTick;
@@ -95,7 +121,60 @@ public class MetricDataItem {
         return copy;
     }
 
-    void recordData(long time) {
+    void start() {
+        if (selfNestingLevel == 0) {
+            startTick = ticker.read();
+        }
+        // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
+        // as a memory barrier so startTick will be visible to other threads in copyOf()
+        selfNestingLevel++;
+    }
+
+    void start(long startTick) {
+        if (selfNestingLevel == 0) {
+            this.startTick = startTick;
+        }
+        // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
+        // as a memory barrier so startTick will be visible to other threads in copyOf()
+        selfNestingLevel++;
+    }
+
+    public void stop() {
+        if (selfNestingLevel == 1) {
+            recordData(ticker.read() - startTick);
+        }
+        // selfNestingLevel is decremented after recording data since it is used as a memory barrier
+        // so that all updated fields will be visible to other threads in copyOf()
+        selfNestingLevel--;
+    }
+
+    void stop(long endTick) {
+        if (selfNestingLevel == 1) {
+            recordData(endTick - startTick);
+        }
+        // selfNestingLevel is decremented after recording data since it is volatile and creates a
+        // memory barrier so that all updated fields will be visible to other threads in copyOf()
+        selfNestingLevel--;
+    }
+
+    // this is kind of hacky, only meant to be used by "informant weaving" metric
+    public void pause() {
+        pauseTick = ticker.read();
+        // selfNestingLevel is incremented (sort of unnecessarily) so that resume() can decrement
+        // it (also sort of unnecessarily) to create memory barrier so that startTick will be
+        // visible to other threads calling copyOf()
+        selfNestingLevel++;
+    }
+
+    public void resume() {
+        long pauseTicks = ticker.read() - pauseTick;
+        startTick += pauseTicks;
+        // selfNestingLevel is decremented (sort of unnecessarily) to create memory barrier so that
+        // startTick will be visible to other threads calling copyOf()
+        selfNestingLevel--;
+    }
+
+    private void recordData(long time) {
         if (time > max) {
             max = time;
         }
@@ -104,34 +183,6 @@ public class MetricDataItem {
         }
         count++;
         total += time;
-    }
-
-    void start() {
-        if (selfNestingLevel == 0) {
-            startTick = ticker.read();
-        }
-        selfNestingLevel++;
-    }
-
-    void start(long startTick) {
-        if (selfNestingLevel == 0) {
-            this.startTick = startTick;
-        }
-        selfNestingLevel++;
-    }
-
-    void stop() {
-        selfNestingLevel--;
-        if (selfNestingLevel == 0) {
-            recordData(ticker.read() - startTick);
-        }
-    }
-
-    void stop(long endTick) {
-        selfNestingLevel--;
-        if (selfNestingLevel == 0) {
-            recordData(endTick - startTick);
-        }
     }
 
     public static class Snapshot {

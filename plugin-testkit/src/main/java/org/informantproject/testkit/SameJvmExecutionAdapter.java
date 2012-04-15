@@ -15,11 +15,18 @@
  */
 package org.informantproject.testkit;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.MainEntryPoint;
-import org.informantproject.shaded.aspectj.bridge.context.CompilationAndWeavingContext;
+import org.informantproject.core.configuration.PluginDescriptor;
+import org.informantproject.core.configuration.Plugins;
+import org.informantproject.core.weaving.Advice;
+import org.informantproject.core.weaving.IsolatedWeavingClassLoader;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
+
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -30,11 +37,14 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     private IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
     SameJvmExecutionAdapter(String agentArgs) throws Exception {
-        isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(AppUnderTest.class,
-                RunnableWithStringArg.class);
-        // the custom aop.xml path (e.g. ...aop.xml;...aop.1.xml;...aop.2.xml) must be set as a
-        // System property before instantiating anything via the isolated weaving class loader
-        MainEntryPoint.setAspectjAopXmlSearchPath();
+        List<Mixin> mixins = Lists.newArrayList();
+        List<Advice> advisors = Lists.newArrayList();
+        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
+            mixins.addAll(plugin.getMixins());
+            advisors.addAll(plugin.getAdvisors());
+        }
+        isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
+                AppUnderTest.class, RunnableWithStringArg.class);
         isolatedWeavingClassLoader.newInstance(StartContainer.class,
                 RunnableWithStringArg.class).run(agentArgs);
     }
@@ -64,13 +74,6 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
         isolatedWeavingClassLoader = null;
-        // AspectJ has a memory leak that prevents the IsolatedWeavingClassLoader from being
-        // released, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=373195
-        // the sequence of calls below clears the map that is retaining the Threads which are in
-        // turn retaining their context class loaders
-        CompilationAndWeavingContext.setMultiThreaded(false);
-        CompilationAndWeavingContext.reset();
-        CompilationAndWeavingContext.setMultiThreaded(true);
     }
 
     public interface RunnableWithStringArg {

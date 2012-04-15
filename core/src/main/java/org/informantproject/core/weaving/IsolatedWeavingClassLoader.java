@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.testkit;
+package org.informantproject.core.weaving;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.informantproject.shaded.aspectj.weaver.loadtime.WeavingURLClassLoader;
+import org.informantproject.api.weaving.Mixin;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 
@@ -29,22 +31,22 @@ import com.google.common.io.Closeables;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
+// this is only used for testing
+@VisibleForTesting
+public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private final Class<?>[] bridgeClasses;
+    private final Weaver weaver;
     // guarded by 'this'
     private final Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
 
-    // in some cases an explicit bridge class isn't needed since all "java." classes can be used as
-    // bridge classes
-    public IsolatedWeavingClassLoader() {
-        this(new Class<?>[0]);
-    }
-
     // bridge classes can be either interfaces or base classes
-    public IsolatedWeavingClassLoader(Class<?>... bridgeClasses) {
+    public IsolatedWeavingClassLoader(List<Mixin> mixins, List<Advice> advisors,
+            Class<?>... bridgeClasses) {
+
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = bridgeClasses;
+        weaver = new Weaver(mixins, advisors, this);
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -80,17 +82,14 @@ class IsolatedWeavingClassLoader extends WeavingURLClassLoader {
         } finally {
             Closeables.closeQuietly(input);
         }
+        b = weaver.weave(b, null);
         if (name.indexOf('.') != -1) {
             String packageName = name.substring(0, name.lastIndexOf('.'));
             if (getPackage(packageName) == null) {
                 definePackage(packageName, null, null, null, null, null, null, null);
             }
         }
-        try {
-            return defineClass(name, b, null);
-        } catch (IOException e) {
-            throw new ClassNotFoundException(name, e);
-        }
+        return super.defineClass(name, b, 0, b.length);
     }
 
     @Override

@@ -17,9 +17,6 @@ package org.informantproject.api;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
-
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -50,7 +47,7 @@ public abstract class PluginServices {
                 }
             });
 
-    public abstract Metric createMetric(String name);
+    public abstract Metric getMetric(Class<?> adviceClass);
 
     public abstract boolean isEnabled();
 
@@ -60,17 +57,15 @@ public abstract class PluginServices {
 
     public abstract Optional<Double> getDoubleProperty(String propertyName);
 
-    public abstract Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
-            ProceedingJoinPoint joinPoint) throws Throwable;
+    public abstract Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail);
 
-    public abstract Object executeSpan(Metric metric, SpanDetail spanDetail,
-            ProceedingJoinPoint joinPoint) throws Throwable;
+    public abstract Span startSpan(Metric metric, SpanDetail spanDetail);
 
-    public abstract Object proceedAndRecordMetricData(Metric metric,
-            ProceedingJoinPoint joinPoint) throws Throwable;
+    public abstract void endSpan(Span span);
 
-    public abstract <V> V proceedAndRecordMetricData(Metric metric,
-            Callable<V> callable) throws Exception;
+    public abstract TraceMetric startMetric(Metric metric);
+
+    public abstract void endMetric(TraceMetric traceMetric);
 
     public abstract void putTraceAttribute(String name, String value);
 
@@ -115,7 +110,7 @@ public abstract class PluginServices {
 
     private static class NopPluginServices extends PluginServices {
         @Override
-        public Metric createMetric(String name) {
+        public Metric getMetric(Class<?> adviceClass) {
             return null;
         }
         @Override
@@ -124,7 +119,7 @@ public abstract class PluginServices {
         }
         @Override
         public Optional<String> getStringProperty(String propertyName) {
-            return null;
+            return Optional.absent();
         }
         @Override
         public boolean getBooleanProperty(String propertyName) {
@@ -132,28 +127,24 @@ public abstract class PluginServices {
         }
         @Override
         public Optional<Double> getDoubleProperty(String propertyName) {
+            return Optional.absent();
+        }
+        @Override
+        public Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail) {
             return null;
         }
         @Override
-        public Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
-                ProceedingJoinPoint joinPoint) throws Throwable {
-            return joinPoint.proceed();
+        public Span startSpan(Metric metric, SpanDetail spanDetail) {
+            return null;
         }
         @Override
-        public Object executeSpan(Metric metric, SpanDetail spanDetail,
-                ProceedingJoinPoint joinPoint) throws Throwable {
-            return joinPoint.proceed();
+        public void endSpan(Span span) {}
+        @Override
+        public TraceMetric startMetric(Metric metric) {
+            return null;
         }
         @Override
-        public Object proceedAndRecordMetricData(Metric metric, ProceedingJoinPoint joinPoint)
-                throws Throwable {
-            return joinPoint.proceed();
-        }
-        @Override
-        public <V> V proceedAndRecordMetricData(Metric metric, Callable<V> callable)
-                throws Exception {
-            return callable.call();
-        }
+        public void endMetric(TraceMetric traceMetric) {}
         @Override
         public void putTraceAttribute(String name, String value) {}
         @Override

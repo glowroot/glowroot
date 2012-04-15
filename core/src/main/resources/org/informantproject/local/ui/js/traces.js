@@ -200,12 +200,12 @@ function toggleUninteresting(id) {
 }
 function toggleMergedStackTree(id) {
   var rootNode = detailTrace.mergedStackTree
-  function curr(node, level, spanName) {
+  function curr(node, level, metricName) {
     var rootNodeSampleCount
     var nodeSampleCount
-    if (spanName) {
-      rootNodeSampleCount = rootNode.spanNameCounts[spanName] || 0
-      nodeSampleCount = node.spanNameCounts[spanName] || 0
+    if (metricName) {
+      rootNodeSampleCount = rootNode.metricNameCounts[metricName] || 0
+      nodeSampleCount = node.metricNameCounts[metricName] || 0
       if (nodeSampleCount == 0) {
         return ''
       }
@@ -234,14 +234,14 @@ function toggleMergedStackTree(id) {
       var childNodes = node.childNodes
       // order child nodes by sampleCount (descending)
       childNodes.sort(function(a, b) {
-        if (spanName) {
-          return (b.spanNameCounts[spanName] || 0) - (a.spanNameCounts[spanName] || 0)
+        if (metricName) {
+          return (b.metricNameCounts[metricName] || 0) - (a.metricNameCounts[metricName] || 0)
         } else {
           return b.sampleCount - a.sampleCount
         }
       })
       for (var i = 0; i < childNodes.length; i++) {
-        ret += curr(childNodes[i], level, spanName)
+        ret += curr(childNodes[i], level, metricName)
       }
     }
     return ret
@@ -254,10 +254,10 @@ function toggleMergedStackTree(id) {
       processMergedStackTree()
       // build tree
       var tree = { name : '', childNodes : {} }
-      $.each(rootNode.spanNameCounts, function(spanName, count) {
+      $.each(rootNode.metricNameCounts, function(metricName, count) {
         // only really need to look at leafs (' / other') to hit all nodes
-        if (spanName.match(/ \/ other$/)) {
-          var parts = spanName.split(' / ')
+        if (metricName.match(/ \/ other$/)) {
+          var parts = metricName.split(' / ')
           var node = tree
           var partialName = ''
           $.each(parts, function(i, part) {
@@ -280,7 +280,7 @@ function toggleMergedStackTree(id) {
           childNodes.push(childNode)
         })
         childNodes.sort(function(a, b) {
-          return rootNode.spanNameCounts[b.name] - rootNode.spanNameCounts[a.name]
+          return rootNode.metricNameCounts[b.name] - rootNode.metricNameCounts[a.name]
         })
         if (childNodes.length == 1 && childNodes[0].name.match(/ \/ other$/)) {
           // skip if single 'other' node (in which case it will be represented by current node)
@@ -298,7 +298,7 @@ function toggleMergedStackTree(id) {
       $('#mst_filter_' + id).html('')
       $.each(orderedNodes, function(i, node) {
         $('#mst_filter_' + id).append($('<option />').val(node.name).text(node.name + ' ('
-            + rootNode.spanNameCounts[node.name] + ')'))
+            + rootNode.metricNameCounts[node.name] + ')'))
       })
       var i = 0
       var interestingRootNode = rootNode
@@ -334,15 +334,15 @@ function toggleMergedStackTree(id) {
 }
 function processMergedStackTree() {
   var rootNode = detailTrace.mergedStackTree
-  function calculateSpanNameCounts(node) {
+  function calculateMetricNameCounts(node) {
     var mergedCounts = {}
     if (node.leafThreadState) {
       var partial = ''
-      $.each(node.spanNames, function(i, spanName) {
+      $.each(node.metricNames, function(i, metricName) {
         if (i > 0) {
           partial += ' / '
         }
-        partial += spanName
+        partial += metricName
         mergedCounts[partial] = node.sampleCount
       })
       mergedCounts[partial + ' / other'] = node.sampleCount
@@ -350,20 +350,20 @@ function processMergedStackTree() {
     if (node.childNodes) {
       var childNodes = node.childNodes
       for (var i = 0; i < childNodes.length; i++) {
-        var spanNameCounts = calculateSpanNameCounts(childNodes[i])
-        $.each(spanNameCounts, function(spanName, count) {
-          if (mergedCounts[spanName]) {
-            mergedCounts[spanName] += count
+        var metricNameCounts = calculateMetricNameCounts(childNodes[i])
+        $.each(metricNameCounts, function(metricName, count) {
+          if (mergedCounts[metricName]) {
+            mergedCounts[metricName] += count
           } else {
-            mergedCounts[spanName] = count
+            mergedCounts[metricName] = count
           }
         })
       }
     }
-    node.spanNameCounts = mergedCounts
+    node.metricNameCounts = mergedCounts
     return mergedCounts
   }
-  calculateSpanNameCounts(rootNode)
+  calculateMetricNameCounts(rootNode)
 }
 function viewStackTrace(stackTraceHash) {
   $.getJSON('stacktrace/' + stackTraceHash, function(stackTraceElements) {

@@ -38,12 +38,18 @@
           <hidden>true</hidden>
         </property>
       </properties>
+      <aspects>
+        <aspect></aspect>
+      </aspects>
     </plugin>
     <plugin>
       <name>Test 2</name>
       <groupId>org.informantproject.plugins.test2</groupId>
       <artifactId>test2-plugin</artifactId>
       <version>0.5.2-SNAPSHOT</version>
+      <aspects>
+        <aspect></aspect>
+      </aspects>
     </plugin>
   </plugins>
 </package>

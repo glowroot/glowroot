@@ -23,15 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.informantproject.api.PluginServices;
+import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
+import org.informantproject.core.weaving.InformantClassFileTransformer;
 import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -68,19 +67,17 @@ public final class MainEntryPoint {
     public static void premain(String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
         start(new AgentArgs(agentArgs));
-        // start the AspectJ load-time weaving agent
-        setAspectjTraceFactory();
-        setAspectjAopXmlSearchPath();
+        Ticker ticker = injector.getInstance(Ticker.class);
         PluginServices pluginServices = createPluginServices("org.informantproject:informant-core");
-        instrumentation.addTransformer(new AspectjClassFileTransformer(pluginServices));
+        instrumentation.addTransformer(new InformantClassFileTransformer(pluginServices, ticker));
     }
 
     public static PluginServices createPluginServices(String pluginId) {
         if (returnPluginServicesProxy.get()) {
             synchronized (returnPluginServicesProxy) {
                 if (returnPluginServicesProxy.get()) {
-                    PluginServicesProxy proxy = new PluginServicesProxy(pluginId, injector
-                            .getInstance(Ticker.class));
+                    MetricCache metricCache = injector.getInstance(MetricCache.class);
+                    PluginServicesProxy proxy = new PluginServicesProxy(pluginId, metricCache);
                     pluginServicesProxies.add(proxy);
                     return proxy;
                 }
@@ -99,9 +96,6 @@ public final class MainEntryPoint {
 
     public static void start(AgentArgs agentArgs) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
-        // this is primarily needed for LTW with javaagent, but included here also for consistency
-        // in unit tests that run with IsolatedWeavingClassLoader
-        setAspectjTraceFactory();
         synchronized (lock) {
             if (injector != null) {
                 throw new IllegalStateException("Informant is already started");
@@ -132,31 +126,5 @@ public final class MainEntryPoint {
             InformantModule.shutdown(injector);
             injector = null;
         }
-    }
-
-    @VisibleForTesting
-    public static void setAspectjAopXmlSearchPath() {
-        // when an informant package is created (e.g. informant-for-web), the
-        // META-INF/org.informantproject.aop.xml files from each plugin are renamed slightly
-        // so that they can coexist with each other inside a single jar
-        // (e.g. META-INF/org.informantproject.aop.1.xml, ...)
-        List<String> resourceNames = Lists.newArrayList("META-INF/org.informantproject.aop.xml");
-        int i = 1;
-        while (true) {
-            String resourceName = "META-INF/org.informantproject.aop." + i + ".xml";
-            if (ClassLoader.getSystemResource(resourceName) == null) {
-                break;
-            } else {
-                resourceNames.add(resourceName);
-                i++;
-            }
-        }
-        System.setProperty("org.informantproject.shaded.aspectj.weaver.loadtime.configuration",
-                Joiner.on(";").join(resourceNames));
-    }
-
-    private static void setAspectjTraceFactory() {
-        System.setProperty("org.informantproject.shaded.aspectj.tracing.factory",
-                AspectjTraceFactory.class.getName());
     }
 }

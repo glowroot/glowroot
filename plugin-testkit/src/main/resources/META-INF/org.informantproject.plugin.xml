@@ -21,4 +21,7 @@
     <groupId>org.informantproject</groupId>
     <artifactId>informant-plugin-testkit</artifactId>
     <version>0.5-SNAPSHOT</version>
+    <aspects>
+      <aspect>org.informantproject.testkit.RootSpanMarkerAspect</aspect>
+    </aspects>
 </plugin>

@@ -115,8 +115,6 @@ public class PackagerMojo extends AbstractMojo {
      */
     private PluginConfiguration[] plugins;
 
-    private int aopXmlCounter = 1;
-
     public void execute() throws MojoExecutionException {
         try {
             executeInternal();
@@ -189,9 +187,7 @@ public class PackagerMojo extends AbstractMojo {
         Set<String> seenDirectories = Sets.newHashSet();
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (Artifact artifact : artifacts) {
-            boolean informantCore = artifact.getGroupId().equals("org.informantproject")
-                    && artifact.getArtifactId().equals("informant-core");
-            explode(artifact.getFile(), jarOut, seenDirectories, pluginDescriptors, informantCore);
+            explode(artifact.getFile(), jarOut, seenDirectories, pluginDescriptors);
         }
         validateConfigurationForDuplicates();
         for (PluginConfiguration pluginConfiguration : plugins) {
@@ -217,7 +213,7 @@ public class PackagerMojo extends AbstractMojo {
     }
 
     private void explode(File jarFile, JarOutputStream jarOut, Set<String> seenDirectories,
-            List<PluginDescriptor> pluginDescriptors, boolean informantCore) throws IOException,
+            List<PluginDescriptor> pluginDescriptors) throws IOException,
             ParserConfigurationException, SAXException {
 
         JarInputStream jarIn = new JarInputStream(new FileInputStream(jarFile));
@@ -226,20 +222,12 @@ public class PackagerMojo extends AbstractMojo {
             if (jarEntry.isDirectory() && !seenDirectories.add(jarEntry.getName())) {
                 continue;
             }
-            if (jarEntry.getName().equals("META-INF/org.informantproject.plugin"
-                    + ".xml")) {
+            if (jarEntry.getName().equals("META-INF/org.informantproject.plugin.xml")) {
                 Document document = getDocument(new ByteArrayInputStream(ByteStreams.toByteArray(
                         jarIn)));
                 PluginDescriptor pluginDescriptor = createPluginDescriptor(document
                         .getDocumentElement());
                 pluginDescriptors.add(pluginDescriptor);
-            } else if (!informantCore && jarEntry.getName().equals(
-                    "META-INF/org.informantproject.aop.xml")) {
-                JarEntry jarOutEntry = new JarEntry("META-INF/org.informantproject.aop."
-                        + aopXmlCounter + ".xml");
-                aopXmlCounter++;
-                jarOut.putNextEntry(jarOutEntry);
-                ByteStreams.copy(jarIn, jarOut);
             } else {
                 JarEntry jarOutEntry = new JarEntry(jarEntry.getName());
                 jarOut.putNextEntry(jarOutEntry);
@@ -330,6 +318,11 @@ public class PackagerMojo extends AbstractMojo {
             out.println("      <artifactId>" + pluginDescriptor.getArtifactId() + "</artifactId>");
             out.println("      <version>" + pluginDescriptor.getVersion() + "</version>");
             writeProperties(out, pluginDescriptor);
+            out.println("      <aspects>");
+            for (String aspect : pluginDescriptor.getAspects()) {
+                out.println("        <aspect>" + aspect + "</aspect>");
+            }
+            out.println("      </aspects>");
             out.println("    </plugin>");
         }
         out.println("  </plugins>");
@@ -425,13 +418,19 @@ public class PackagerMojo extends AbstractMojo {
             NodeList propertyNodes = ((Element) propertiesNodes.item(0))
                     .getElementsByTagName("property");
             for (int i = 0; i < propertyNodes.getLength(); i++) {
-                properties.add(createProperty((Element) propertyNodes.item(i)));
+                properties.add(createPropertyDescriptor((Element) propertyNodes.item(i)));
             }
         }
-        return new PluginDescriptor(name, groupId, artifactId, version, properties);
+        List<String> aspects = Lists.newArrayList();
+        NodeList aspectsNodes = pluginElement.getElementsByTagName("aspects");
+        NodeList aspectNodes = ((Element) aspectsNodes.item(0)).getElementsByTagName("aspect");
+        for (int i = 0; i < aspectNodes.getLength(); i++) {
+            aspects.add(aspectNodes.item(i).getTextContent());
+        }
+        return new PluginDescriptor(name, groupId, artifactId, version, properties, aspects);
     }
 
-    private static PropertyDescriptor createProperty(Element propertyElement) {
+    private static PropertyDescriptor createPropertyDescriptor(Element propertyElement) {
         String prompt = propertyElement.getElementsByTagName("prompt").item(0).getTextContent();
         String name = propertyElement.getElementsByTagName("name").item(0).getTextContent();
         String type = propertyElement.getElementsByTagName("type").item(0).getTextContent();

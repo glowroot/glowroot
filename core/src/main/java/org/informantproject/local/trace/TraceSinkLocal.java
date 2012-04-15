@@ -34,11 +34,10 @@ import org.informantproject.api.SpanContextMap;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.stack.MergedStackTreeNode;
-import org.informantproject.core.trace.MetricDataItem;
-import org.informantproject.core.trace.MetricDataItem.Snapshot;
-import org.informantproject.core.trace.PluginServicesImpl;
-import org.informantproject.core.trace.Span;
+import org.informantproject.core.trace.SpanImpl;
 import org.informantproject.core.trace.Trace;
+import org.informantproject.core.trace.TraceMetricImpl;
+import org.informantproject.core.trace.TraceMetricImpl.Snapshot;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.OptionalJsonSerializer;
@@ -73,7 +72,8 @@ public class TraceSinkLocal implements TraceSink {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSinkLocal.class);
 
-    private static final Pattern spanMarkerMethodPattern = Pattern.compile("(.*)SpanMarker[0-9]*");
+    private static final Pattern metricMarkerMethodPattern = Pattern.compile(
+            "^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
     private final ExecutorService executorService = DaemonExecutors
             .newSingleThreadExecutor("Informant-StackCollector");
@@ -143,7 +143,7 @@ public class TraceSinkLocal implements TraceSink {
             storedTrace.setDuration(captureTick - trace.getStartTick());
             storedTrace.setCompleted(false);
         }
-        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        SpanImpl rootSpan = trace.getRootSpan().getSpans().iterator().next();
         storedTrace.setDescription(rootSpan.getDescription().toString());
         Optional<String> username = trace.getUsername();
         if (username.isPresent()) {
@@ -169,9 +169,9 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public static String getMetricsJson(Trace trace, Gson gson) {
-        Collection<Snapshot> items = Collections2.transform(trace.getMetricDataItems(),
-                new Function<MetricDataItem, Snapshot>() {
-                    public Snapshot apply(MetricDataItem item) {
+        Collection<Snapshot> items = Collections2.transform(trace.getTraceMetrics(),
+                new Function<TraceMetricImpl, Snapshot>() {
+                    public Snapshot apply(TraceMetricImpl item) {
                         return item.copyOf();
                     }
                 });
@@ -189,7 +189,7 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public static String getAttributesJson(Trace trace, Gson gson) {
-        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        SpanImpl rootSpan = trace.getRootSpan().getSpans().iterator().next();
         // Span.getContextMap() may be creating the context map on the fly, so don't call it twice
         SpanContextMap contextMap = rootSpan.getContextMap();
         if (contextMap == null) {
@@ -206,7 +206,7 @@ public class TraceSinkLocal implements TraceSink {
             LargeStringBuilder sb = new LargeStringBuilder();
             JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
             jw.beginArray();
-            for (Span span : trace.getRootSpan().getSpans()) {
+            for (SpanImpl span : trace.getRootSpan().getSpans()) {
                 writeSpan(span, stackTraces, captureTick, gson, jw, sb);
             }
             jw.endArray();
@@ -240,7 +240,7 @@ public class TraceSinkLocal implements TraceSink {
     // timings for traces that are still active are normalized to the capture tick in order to
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
-    private static void writeSpan(Span span, Map<String, String> stackTraces, long captureTick,
+    private static void writeSpan(SpanImpl span, Map<String, String> stackTraces, long captureTick,
             Gson gson, JsonWriter jw, Appendable sb) throws IOException {
 
         if (span.getStartTick() > captureTick) {
@@ -303,44 +303,39 @@ public class TraceSinkLocal implements TraceSink {
     private static void visitDepthFirst(LinkedList<Object> toVisit, JsonWriter jw)
             throws IOException {
 
-        List<String> spanNameStack = Lists.newArrayList();
-        Object previous = null;
+        List<String> metricNameStack = Lists.newArrayList();
         while (!toVisit.isEmpty()) {
             Object curr = toVisit.removeLast();
             if (curr instanceof MergedStackTreeNode) {
                 MergedStackTreeNode currNode = (MergedStackTreeNode) curr;
                 jw.beginObject();
+                toVisit.add(JsonWriterOp.END_OBJECT);
                 if (currNode.isSyntheticRoot()) {
                     jw.name("stackTraceElement").value("<multiple root nodes>");
                 } else {
                     jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
                 }
-                String newSpanName = null;
-                if (previous instanceof MergedStackTreeNode) {
-                    newSpanName = getSpanName(currNode.getStackTraceElement(),
-                            ((MergedStackTreeNode) previous).getStackTraceElement());
-                    if (newSpanName != null) {
-                        spanNameStack.add(newSpanName);
+                String newMetricName = getMetricName(currNode.getStackTraceElement());
+                if (newMetricName != null) {
+                    // filter out successive duplicates which are common from weaving groups of
+                    // overloaded methods
+                    if (!newMetricName.equals(top(metricNameStack))) {
+                        metricNameStack.add(newMetricName);
+                        toVisit.add(JsonWriterOp.POP_METRIC_NAME);
                     }
                 }
                 jw.name("sampleCount").value(currNode.getSampleCount());
                 if (currNode.isLeaf()) {
                     jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
-                    jw.name("spanNames");
+                    jw.name("metricNames");
                     jw.beginArray();
-                    for (String spanName : spanNameStack) {
-                        jw.value(spanName);
+                    for (String metricName : metricNameStack) {
+                        jw.value(metricName);
                     }
                     jw.endArray();
                 }
                 List<MergedStackTreeNode> childNodes = Lists.newArrayList(currNode.getChildNodes());
-                if (childNodes.isEmpty()) {
-                    jw.endObject();
-                } else {
-                    if (newSpanName != null) {
-                        toVisit.add(JsonWriterOp.POP_SPAN_NAME);
-                    }
-                    toVisit.add(JsonWriterOp.END_OBJECT);
+                if (!childNodes.isEmpty()) {
                     jw.name("childNodes").beginArray();
                     toVisit.add(JsonWriterOp.END_ARRAY);
                     toVisit.addAll(Lists.reverse(childNodes));
@@ -349,59 +344,34 @@ public class TraceSinkLocal implements TraceSink {
                 jw.endArray();
             } else if (curr == JsonWriterOp.END_OBJECT) {
                 jw.endObject();
-            } else if (curr == JsonWriterOp.POP_SPAN_NAME) {
-                spanNameStack.remove(spanNameStack.size() - 1);
+            } else if (curr == JsonWriterOp.POP_METRIC_NAME) {
+                metricNameStack.remove(metricNameStack.size() - 1);
             }
-            previous = curr;
         }
     }
 
-    private static String getSpanName(StackTraceElement curr, StackTraceElement previous) {
-        if (isNewSpan(curr, previous)) {
-            return getSpanNameFromMethodName(previous);
-        }
-        return null;
-    }
-
-    private static boolean isNewSpan(StackTraceElement curr, StackTraceElement previous) {
-        if (!curr.getClassName().equals(PluginServicesImpl.class.getName())) {
-            return false;
-        }
-        if (!curr.getMethodName().startsWith("execute") && !curr.getMethodName().startsWith(
-                "proceed")) {
-            // ignore other methods in PluginServicesImpl
-            return false;
-        }
-        if (previous.getClassName().equals(PluginServicesImpl.class.getName())) {
-            // ignore PluginServicesImpl calling itself
-            return false;
-        }
-        return true;
-    }
-
-    private static String getSpanNameFromMethodName(StackTraceElement stackTraceElement) {
-        Matcher matcher = spanMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
-        if (matcher.matches()) {
-            String spanName = matcher.group(1);
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < spanName.length(); i++) {
-                char c = spanName.charAt(i);
-                if (Character.isUpperCase(c)) {
-                    sb.append(" ");
-                    sb.append(Character.toLowerCase(c));
-                } else {
-                    sb.append(c);
-                }
-            }
-            return sb.toString();
+    private static String top(List<String> stack) {
+        if (stack.isEmpty()) {
+            return null;
         } else {
-            logger.warn("Informant plugin is not following SpanMarker method"
-                    + " naming convention: {}", stackTraceElement);
+            return stack.get(stack.size() - 1);
+        }
+    }
+
+    private static String getMetricName(StackTraceElement stackTraceElement) {
+        return getMetricNameFromMethodName(stackTraceElement);
+    }
+
+    private static String getMetricNameFromMethodName(StackTraceElement stackTraceElement) {
+        Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
+        if (matcher.matches()) {
+            return matcher.group(1).replace("$", " ");
+        } else {
             return null;
         }
     }
 
     private static enum JsonWriterOp {
-        END_OBJECT, END_ARRAY, POP_SPAN_NAME;
+        END_OBJECT, END_ARRAY, POP_METRIC_NAME;
     }
 }

@@ -19,11 +19,14 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.shaded.aspectj.lang.annotation.Around;
-import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
-import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectTraveler;
+import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.OnAfter;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.Pointcut;
 
 /**
  * @author Trask Stalnaker
@@ -35,45 +38,49 @@ public class LevelOneAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-integration-tests");
 
-    private static final Metric metric = pluginServices.createMetric("level one");
+    @Pointcut(typeName = "org.informantproject.test.api.LevelOne", methodName = "call",
+            methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level one")
+    public static class LevelOneAdvice {
 
-    @Pointcut("if()")
-    public static boolean isPluginEnabled() {
-        return pluginServices.isEnabled();
-    }
+        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice.class);
 
-    @Pointcut("call(void org.informantproject.test.api.LevelOne.call(java.lang.String,"
-            + " java.lang.String))")
-    void levelOnePointcut() {}
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
 
-    @Around("isPluginEnabled() && levelOnePointcut() && args(arg1, arg2)")
-    public Object levelOneSpanMarker(ProceedingJoinPoint joinPoint, final String arg1,
-            final String arg2) throws Throwable {
-
-        RootSpanDetail rootSpanDetail = new RootSpanDetail() {
-            public String getDescription() {
-                String description = pluginServices.getStringProperty("alternateDescription").or(
-                        "Level One");
-                if (pluginServices.getBooleanProperty("starredDescription")) {
-                    return description + "*";
-                } else {
-                    return description;
+        @OnBefore
+        public static Span onBefore(final String arg1, final String arg2) {
+            RootSpanDetail rootSpanDetail = new RootSpanDetail() {
+                public String getDescription() {
+                    String description = pluginServices.getStringProperty("alternateDescription")
+                            .or("Level One");
+                    if (pluginServices.getBooleanProperty("starredDescription")) {
+                        return description + "*";
+                    } else {
+                        return description;
+                    }
                 }
-            }
-            public SpanContextMap getContextMap() {
-                SpanContextMap contextMap = SpanContextMap.of("arg1", arg1, "arg2", arg2);
-                SpanContextMap nestedContextMap = SpanContextMap.of("nestedkey11", arg1,
-                        "nestedkey12", arg2, "subnested1",
-                        SpanContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
-                contextMap.put("nested1", nestedContextMap);
-                contextMap.put("nested2",
-                        SpanContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                return contextMap;
-            }
-            public Optional<String> getUsername() {
-                return Optional.absent();
-            }
-        };
-        return pluginServices.executeRootSpan(metric, rootSpanDetail, joinPoint);
+                public SpanContextMap getContextMap() {
+                    SpanContextMap contextMap = SpanContextMap.of("arg1", arg1, "arg2", arg2);
+                    SpanContextMap nestedContextMap = SpanContextMap.of("nestedkey11", arg1,
+                            "nestedkey12", arg2, "subnested1",
+                            SpanContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
+                    contextMap.put("nested1", nestedContextMap);
+                    contextMap.put("nested2",
+                            SpanContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
+                    return contextMap;
+                }
+                public Optional<String> getUsername() {
+                    return Optional.absent();
+                }
+            };
+            return pluginServices.startRootSpan(metric, rootSpanDetail);
+        }
+
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            pluginServices.endSpan(span);
+        }
     }
 }

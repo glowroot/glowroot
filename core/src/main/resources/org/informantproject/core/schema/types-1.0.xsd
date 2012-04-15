@@ -29,9 +29,26 @@
           </xs:sequence>
         </xs:complexType>
       </xs:element>
+      <xs:element name="aspects">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="aspect" maxOccurs="unbounded" type="xs:string" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
     </xs:all>
   </xs:complexType>
   <xs:complexType name="Property">
+    <xs:all>
+      <xs:element name="prompt" type="xs:string" />
+      <xs:element name="name" type="PropertyName" />
+      <xs:element name="type" type="PropertyType" />
+      <xs:element name="default" type="xs:string" minOccurs="0" />
+      <xs:element name="hidden" type="xs:boolean" minOccurs="0" default="false" />
+      <xs:element name="description" type="xs:string" minOccurs="0" />
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="Aspect">
     <xs:all>
       <xs:element name="prompt" type="xs:string" />
       <xs:element name="name" type="PropertyName" />

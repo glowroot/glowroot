@@ -16,12 +16,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.informantproject.shaded</groupId>
-      <artifactId>shaded-aspectjrt</artifactId>
-      <version>1.7.0-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>11.0.2</version>

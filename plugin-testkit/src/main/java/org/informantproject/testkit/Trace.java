@@ -122,6 +122,9 @@ public class Trace {
         private long min;
         private long max;
         private long count;
+        private boolean active;
+        private boolean minActive;
+        private boolean maxActive;
 
         public String getName() {
             return name;
@@ -138,6 +141,15 @@ public class Trace {
         public long getCount() {
             return count;
         }
+        public boolean isActive() {
+            return active;
+        }
+        public boolean isMinActive() {
+            return minActive;
+        }
+        public boolean isMaxActive() {
+            return maxActive;
+        }
 
         @Override
         public String toString() {
@@ -147,6 +159,9 @@ public class Trace {
                     .add("min", min)
                     .add("max", max)
                     .add("count", count)
+                    .add("isActive", active)
+                    .add("minActive", minActive)
+                    .add("maxActive", maxActive)
                     .toString();
         }
     }

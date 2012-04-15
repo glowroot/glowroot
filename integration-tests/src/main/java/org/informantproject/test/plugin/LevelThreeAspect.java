@@ -17,12 +17,15 @@ package org.informantproject.test.plugin;
 
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.shaded.aspectj.lang.annotation.Around;
-import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
-import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectTraveler;
+import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.OnAfter;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.Pointcut;
 
 /**
  * @author Trask Stalnaker
@@ -34,34 +37,33 @@ public class LevelThreeAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-integration-tests");
 
-    private static final Metric metric = pluginServices.createMetric("level three");
+    @Pointcut(typeName = "org.informantproject.test.api.LevelThree", methodName = "call",
+            methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level three")
+    public static class LevelThreeAdvice {
 
-    @Pointcut("if()")
-    public static boolean isPluginEnabled() {
-        return pluginServices.isEnabled();
-    }
+        private static final Metric metric = pluginServices.getMetric(LevelThreeAdvice.class);
 
-    @Pointcut("if()")
-    public static boolean inTrace() {
-        return pluginServices.getRootSpanDetail() != null;
-    }
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
 
-    @Pointcut("call(void org.informantproject.test.api.LevelThree.call(java.lang.String,"
-            + " java.lang.String))")
-    void levelThreePointcut() {}
+        @OnBefore
+        public static Span onBefore(final String arg1, final String arg2) {
+            SpanDetail spanDetail = new SpanDetail() {
+                public String getDescription() {
+                    return "Level Three";
+                }
+                public SpanContextMap getContextMap() {
+                    return SpanContextMap.of("arg1", arg1, "arg2", arg2);
+                }
+            };
+            return pluginServices.startSpan(metric, spanDetail);
+        }
 
-    @Around("isPluginEnabled() && levelThreePointcut() && args(arg1, arg2)")
-    public Object levelThreeSpanMarker(ProceedingJoinPoint joinPoint, final String arg1,
-            final String arg2) throws Throwable {
-
-        SpanDetail spanDetail = new SpanDetail() {
-            public String getDescription() {
-                return "Level Three";
-            }
-            public SpanContextMap getContextMap() {
-                return SpanContextMap.of("arg1", arg1, "arg2", arg2);
-            }
-        };
-        return pluginServices.executeSpan(metric, spanDetail, joinPoint);
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            pluginServices.endSpan(span);
+        }
     }
 }

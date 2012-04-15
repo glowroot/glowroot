@@ -15,18 +15,15 @@
  */
 package org.informantproject.core;
 
-import java.util.concurrent.Callable;
-
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanDetail;
-import org.informantproject.core.trace.MetricImpl;
+import org.informantproject.api.TraceMetric;
+import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-
-import com.google.common.base.Ticker;
 
 /**
  * Plugins may get instantiated by aspectj and request their PluginServices before Informant has
@@ -39,22 +36,18 @@ import com.google.common.base.Ticker;
 class PluginServicesProxy extends PluginServices {
 
     private final String pluginId;
-    private final Ticker ticker;
+    private final MetricCache metricCache;
 
     private volatile PluginServices pluginServices;
 
-    public PluginServicesProxy(String pluginId, Ticker ticker) {
+    public PluginServicesProxy(String pluginId, MetricCache metricCache) {
         this.pluginId = pluginId;
-        this.ticker = ticker;
+        this.metricCache = metricCache;
     }
 
     @Override
-    public Metric createMetric(String name) {
-        if (pluginServices == null) {
-            return new MetricImpl(name, ticker);
-        } else {
-            return pluginServices.createMetric(name);
-        }
+    public Metric getMetric(Class<?> adviceClass) {
+        return metricCache.getMetric(adviceClass);
     }
 
     @Override
@@ -97,45 +90,52 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Object executeRootSpan(Metric metric, RootSpanDetail rootSpanDetail,
-            ProceedingJoinPoint joinPoint) throws Throwable {
-
+    public Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail) {
         if (pluginServices == null) {
-            return joinPoint.proceed();
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.executeRootSpan(metric, rootSpanDetail, joinPoint);
+            return pluginServices.startRootSpan(metric, rootSpanDetail);
         }
     }
 
     @Override
-    public Object executeSpan(Metric metric, SpanDetail spanDetail, ProceedingJoinPoint joinPoint)
-            throws Throwable {
-
+    public Span startSpan(Metric metric, SpanDetail spanDetail) {
         if (pluginServices == null) {
-            return joinPoint.proceed();
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.executeSpan(metric, spanDetail, joinPoint);
+            return pluginServices.startSpan(metric, spanDetail);
         }
     }
 
     @Override
-    public Object proceedAndRecordMetricData(Metric metric, ProceedingJoinPoint joinPoint)
-            throws Throwable {
-
+    public void endSpan(Span span) {
         if (pluginServices == null) {
-            return joinPoint.proceed();
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.proceedAndRecordMetricData(metric, joinPoint);
+            pluginServices.endSpan(span);
         }
     }
 
     @Override
-    public <V> V proceedAndRecordMetricData(Metric metric, Callable<V> callable) throws Exception {
-
+    public TraceMetric startMetric(Metric metric) {
         if (pluginServices == null) {
-            return callable.call();
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.proceedAndRecordMetricData(metric, callable);
+            return pluginServices.startMetric(metric);
+        }
+    }
+
+    @Override
+    public void endMetric(TraceMetric traceMetric) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            pluginServices.endMetric(traceMetric);
         }
     }
 

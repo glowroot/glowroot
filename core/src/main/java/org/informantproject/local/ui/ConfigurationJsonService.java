@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.PluginDescriptor;
+import org.informantproject.core.configuration.Plugins;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
@@ -75,8 +76,7 @@ public class ConfigurationJsonService implements JsonService {
     public String getConfiguration() {
         logger.debug("getConfiguration()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
-                configurationService.getPackagedPluginDescriptors(),
-                configurationService.getInstalledPluginDescriptors()));
+                Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
         double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024;
         return "{\"enabled\":" + configurationService.getCoreConfiguration().isEnabled()
                 + ",\"coreProperties\":" + configurationService.getCoreConfiguration()

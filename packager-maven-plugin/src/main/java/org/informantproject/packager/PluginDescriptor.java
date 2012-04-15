@@ -28,15 +28,17 @@ public class PluginDescriptor {
     private final String artifactId;
     private final String version;
     private final List<PropertyDescriptor> properties;
+    private final List<String> aspects;
 
     public PluginDescriptor(String name, String groupId, String artifactId, String version,
-            List<PropertyDescriptor> properties) {
+            List<PropertyDescriptor> properties, List<String> aspects) {
 
         this.name = name;
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.properties = properties;
+        this.aspects = aspects;
     }
 
     public String getId() {
@@ -61,6 +63,10 @@ public class PluginDescriptor {
 
     public List<PropertyDescriptor> getProperties() {
         return properties;
+    }
+
+    public List<String> getAspects() {
+        return aspects;
     }
 
     public static class PropertyDescriptor {

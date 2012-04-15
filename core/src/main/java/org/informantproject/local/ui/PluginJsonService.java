@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.PluginDescriptor;
 import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
+import org.informantproject.core.configuration.Plugins;
 import org.informantproject.core.util.XmlDocuments;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
@@ -63,7 +63,6 @@ public class PluginJsonService implements JsonService {
     private static final String INSTALLABLE_PLUGINS_URL = "oss.sonatype.org/content/repositories"
             + "/snapshots/org/informantproject/plugins/";
 
-    private final ConfigurationService configurationService;
     private final AsyncHttpClient asyncHttpClient;
 
     // expire the list of installable plugins every hour in order to pick up new installable plugins
@@ -75,10 +74,7 @@ public class PluginJsonService implements JsonService {
             }, 3600, TimeUnit.SECONDS);
 
     @Inject
-    public PluginJsonService(ConfigurationService configurationService,
-            AsyncHttpClient asyncHttpClient) {
-
-        this.configurationService = configurationService;
+    public PluginJsonService(AsyncHttpClient asyncHttpClient) {
         this.asyncHttpClient = asyncHttpClient;
     }
 
@@ -87,22 +83,20 @@ public class PluginJsonService implements JsonService {
         // informant and a set of plugins can be packaged together in a single jar in order to
         // simplify distribution and installation. any plugins packaged with informant cannot be
         // uninstalled
-        return new Gson().toJson(configurationService.getPackagedPluginDescriptors());
+        return new Gson().toJson(Plugins.getPackagedPluginDescriptors());
     }
 
     // called dynamically from HttpServer
     public String getInstalledPlugins() {
-        return new Gson().toJson(configurationService.getInstalledPluginDescriptors());
+        return new Gson().toJson(Plugins.getInstalledPluginDescriptors());
     }
 
     // called dynamically from HttpServer
     public String getInstallablePlugins() {
         List<PluginDescriptor> notAlreadyInstalled = Lists.newArrayList(installablePlugins.get());
         // this works because Plugin.equals() is defined only in terms of groupId and artifactId
-        Iterables.removeAll(notAlreadyInstalled,
-                configurationService.getPackagedPluginDescriptors());
-        Iterables.removeAll(notAlreadyInstalled,
-                configurationService.getInstalledPluginDescriptors());
+        Iterables.removeAll(notAlreadyInstalled, Plugins.getPackagedPluginDescriptors());
+        Iterables.removeAll(notAlreadyInstalled, Plugins.getInstalledPluginDescriptors());
         return new Gson().toJson(notAlreadyInstalled);
     }
 
@@ -135,8 +129,8 @@ public class PluginJsonService implements JsonService {
                         .getResponseBody();
                 String version = getVersionFromMetadata(metadata);
                 installablePlugins.add(new PluginDescriptor(artifactId,
-                        "org.informantproject.plugins",
-                        artifactId, version, new ArrayList<PropertyDescriptor>()));
+                        "org.informantproject.plugins", artifactId, version,
+                        new ArrayList<PropertyDescriptor>(), new ArrayList<String>()));
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             } catch (InterruptedException e) {
@@ -149,8 +143,7 @@ public class PluginJsonService implements JsonService {
                 logger.error(e.getMessage(), e);
             }
         }
-        Iterables.removeAll(installablePlugins,
-                configurationService.getInstalledPluginDescriptors());
+        Iterables.removeAll(installablePlugins, Plugins.getInstalledPluginDescriptors());
         return installablePlugins;
     }
 

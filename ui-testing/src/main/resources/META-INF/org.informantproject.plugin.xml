@@ -43,4 +43,8 @@
         <description>I'm quickly out of ideas.</description>
       </property>
     </properties>
+    <aspects>
+      <aspect>org.informantproject.testing.ui.NestableCallAspect</aspect>
+      <aspect>org.informantproject.testing.ui.ExpensiveCallAspect</aspect>
+    </aspects>
 </plugin>

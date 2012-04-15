@@ -22,12 +22,15 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.RootSpanDetail;
+import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.shaded.aspectj.lang.annotation.Around;
-import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
-import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectTraveler;
+import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.OnAfter;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.Pointcut;
 
 import com.google.common.collect.ImmutableList;
 
@@ -46,43 +49,50 @@ public class NestableCallAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-ui-testing");
 
-    private static final Metric nestableMetric = pluginServices.createMetric("nestable");
-    private static final Metric nestableAndVeryLongMetric = pluginServices.createMetric(
-            "nestable and very long");
-
-    @Pointcut("if()")
-    public static boolean isPluginEnabled() {
-        return pluginServices.isEnabled();
-    }
-
-    @Pointcut("call(void org.informantproject.testing.ui.NestableCall.execute())")
-    void nestablePointcut() {}
-
-    @Around("isPluginEnabled() && nestablePointcut()")
-    public Object nestableAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (pluginServices.getRootSpanDetail() == null) {
-            return nestableSpanMarker(joinPoint);
-        } else {
-            pluginServices.putTraceAttribute("my first attribute", "hello world");
-            pluginServices.putTraceAttribute("and second", "val");
-            pluginServices.putTraceAttribute("and a very long attribute value", "abcdefghijklmnop"
-                    + "qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
-            pluginServices.putTraceAttribute("and another", "a b c d e f g"
-                    + " h i j k l m n o p q r s t u v w x y z a b c d e f g h i j k l m n o p"
-                    + " q r s t u v w x y z");
-            return nestableAndVeryLongSpanMarker(joinPoint);
+    @Pointcut(typeName = "org.informantproject.testing.ui.NestableCall", methodName = "execute",
+            metricName = "nestable")
+    public static class LevelOneAdvice {
+        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled() && pluginServices.getRootSpanDetail() == null;
+        }
+        @OnBefore
+        public static Span onBefore() {
+            return pluginServices.startRootSpan(metric, getRootSpanDetail());
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            pluginServices.endSpan(span);
         }
     }
 
-    private Object nestableSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        return pluginServices.executeRootSpan(nestableMetric, getRootSpanDetail(), joinPoint);
+    @Pointcut(typeName = "org.informantproject.testing.ui.NestableCall", methodName = "execute",
+            metricName = "nestable and very long")
+    public static class LevelOneLongMetricAdvice {
+        private static final Metric metric = pluginServices.getMetric(
+                LevelOneLongMetricAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled() && pluginServices.getRootSpanDetail() != null;
+        }
+        @OnBefore
+        public static Span onBefore() {
+            pluginServices.putTraceAttribute("my first attribute", "hello world");
+            pluginServices.putTraceAttribute("and second", "val");
+            pluginServices.putTraceAttribute("and a very long attribute value", "abcdefghijkl"
+                    + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+            pluginServices.putTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
+                    + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
+            return pluginServices.startSpan(metric, getSpanDetail());
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler Span span) {
+            pluginServices.endSpan(span);
+        }
     }
 
-    private Object nestableAndVeryLongSpanMarker(ProceedingJoinPoint joinPoint) throws Throwable {
-        return pluginServices.executeSpan(nestableAndVeryLongMetric, getSpanDetail(), joinPoint);
-    }
-
-    private RootSpanDetail getRootSpanDetail() {
+    private static RootSpanDetail getRootSpanDetail() {
         return new RootSpanDetail() {
             public String getDescription() {
                 return "Nestable with a very long description to test wrapping"
@@ -91,7 +101,8 @@ public class NestableCallAspect {
             public SpanContextMap getContextMap() {
                 return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
                         SpanContextMap.of("attr31", SpanContextMap.of("attr311", "value311",
-                                "attr312", "value312"), "attr32", "value32", "attr33", "value33"));
+                                "attr312", "value312"), "attr32", "value32", "attr33",
+                                "value33"));
             }
             public Optional<String> getUsername() {
                 return USERNAMES.get(counter.getAndIncrement() % 4);
@@ -99,7 +110,7 @@ public class NestableCallAspect {
         };
     }
 
-    private SpanDetail getSpanDetail() {
+    private static SpanDetail getSpanDetail() {
         return new SpanDetail() {
             public String getDescription() {
                 return "Nestable";

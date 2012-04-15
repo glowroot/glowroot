@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.informantproject.testkit;
 
-import org.informantproject.shaded.aspectj.lang.ProceedingJoinPoint;
-import org.informantproject.shaded.aspectj.lang.annotation.Around;
-import org.informantproject.shaded.aspectj.lang.annotation.Aspect;
-import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectReturn;
+import org.informantproject.api.weaving.OnReturn;
+import org.informantproject.api.weaving.Pointcut;
 
 /**
  * @author Trask Stalnaker
@@ -27,11 +27,11 @@ import org.informantproject.shaded.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class ValueHolderAspect {
 
-    @Pointcut("execution(String org.informantproject.testkit.ValueHolder.get())")
-    void valueHolderGetPointcut() {}
-
-    @Around("valueHolderGetPointcut()")
-    public String aroundValueHolderGetPointcut(ProceedingJoinPoint joinPoint) throws Throwable {
-        return joinPoint.proceed() + "/aspect-was-here";
+    @Pointcut(typeName = "org.informantproject.testkit.ValueHolder", methodName = "get")
+    public static class ValueHolderAdvice {
+        @OnReturn
+        public static String onReturn(@InjectReturn String returnValue) {
+            return returnValue + "/aspect-was-here";
+        }
     }
 }
