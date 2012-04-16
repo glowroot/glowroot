@@ -230,7 +230,7 @@ public class ImmutablePluginConfiguration {
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
                 if (property.getDefault() != null) {
                     properties.put(property.getName(), Optional.of(property.getDefault()));
-                } else if (property.getType().equals(Boolean.class)) {
+                } else if (property.getJavaClass() == Boolean.class) {
                     properties.put(property.getName(), Optional.of(false));
                 } else {
                     properties.put(property.getName(), Optional.absent());
@@ -279,7 +279,7 @@ public class ImmutablePluginConfiguration {
                 }
                 return this;
             }
-            if (value == null && property.get().getType().equals(Boolean.class)) {
+            if (value == null && property.get().getJavaClass() == Boolean.class) {
                 logger.error("boolean property types do not accept null values");
                 properties.put(name, Optional.of(false));
             } else {

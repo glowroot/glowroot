@@ -22,22 +22,20 @@ import java.util.concurrent.TimeUnit;
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.PluginServices.ConfigurationListener;
 import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.Span;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.api.TraceMetric;
 import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ConfigurationService.ConfigurationListener;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
+import org.informantproject.core.configuration.ImmutablePluginConfiguration;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
@@ -65,36 +63,9 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     // plugin's org.informantproject.plugin.xml
     private final String pluginId;
 
-    // cache enabled status and plugin properties for slightly faster lookup (and for not having to
-    // convert guava Optional to informant Optional every time)
-    private volatile boolean enabled;
-
-    private final LoadingCache<String, Optional<String>> stringProperties = CacheBuilder
-            .newBuilder().build(new CacheLoader<String, Optional<String>>() {
-                @Override
-                public Optional<String> load(String propertyName) throws Exception {
-                    return configurationService.getPluginConfiguration(pluginId).getStringProperty(
-                            propertyName);
-                }
-            });
-
-    private final LoadingCache<String, Boolean> booleanProperties = CacheBuilder
-            .newBuilder().build(new CacheLoader<String, Boolean>() {
-                @Override
-                public Boolean load(String propertyName) throws Exception {
-                    return configurationService.getPluginConfiguration(pluginId)
-                            .getBooleanProperty(propertyName);
-                }
-            });
-
-    private final LoadingCache<String, Optional<Double>> doubleProperties = CacheBuilder
-            .newBuilder().build(new CacheLoader<String, Optional<Double>>() {
-                @Override
-                public Optional<Double> load(String propertyName) throws Exception {
-                    return configurationService.getPluginConfiguration(pluginId).getDoubleProperty(
-                            propertyName);
-                }
-            });
+    // cache for fast read access
+    private volatile ImmutableCoreConfiguration coreConfiguration;
+    private volatile ImmutablePluginConfiguration pluginConfiguration;
 
     @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
@@ -111,8 +82,8 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         // add configuration listener first before caching configuration properties to avoid a
         // (remotely) possible race condition
         configurationService.addConfigurationListener(this);
-        enabled = configurationService.getCoreConfiguration().isEnabled() && configurationService
-                .getPluginConfiguration(pluginId).isEnabled();
+        coreConfiguration = configurationService.getCoreConfiguration();
+        pluginConfiguration = configurationService.getPluginConfiguration(pluginId);
     }
 
     @Override
@@ -122,22 +93,27 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
 
     @Override
     public boolean isEnabled() {
-        return this.enabled;
+        return coreConfiguration.isEnabled() && pluginConfiguration.isEnabled();
     }
 
     @Override
     public Optional<String> getStringProperty(String propertyName) {
-        return stringProperties.getUnchecked(propertyName);
+        return pluginConfiguration.getStringProperty(propertyName);
     }
 
     @Override
     public boolean getBooleanProperty(String propertyName) {
-        return booleanProperties.getUnchecked(propertyName);
+        return pluginConfiguration.getBooleanProperty(propertyName);
     }
 
     @Override
     public Optional<Double> getDoubleProperty(String propertyName) {
-        return doubleProperties.getUnchecked(propertyName);
+        return pluginConfiguration.getDoubleProperty(propertyName);
+    }
+
+    @Override
+    public void registerConfigurationListener(ConfigurationListener listener) {
+        configurationService.addConfigurationListener(listener);
     }
 
     @Override
@@ -207,11 +183,8 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     public void onChange() {
-        enabled = configurationService.getCoreConfiguration().isEnabled() && configurationService
-                .getPluginConfiguration(pluginId).isEnabled();
-        stringProperties.invalidateAll();
-        booleanProperties.invalidateAll();
-        doubleProperties.invalidateAll();
+        coreConfiguration = configurationService.getCoreConfiguration();
+        pluginConfiguration = configurationService.getPluginConfiguration(pluginId);
     }
 
     private void endSpanAndMetric(SpanImpl span) {
@@ -228,10 +201,9 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
             traceRegistry.addTrace(currentTrace);
             return currentTrace.getRootSpan().getRootSpan();
         } else {
-            ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
-            if (configuration.getMaxSpansPerTrace()
-                        != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
-                    && currentTrace.getRootSpan().getSize() >= configuration.getMaxSpansPerTrace()) {
+            int maxSpansPerTrace = coreConfiguration.getMaxSpansPerTrace();
+            if (maxSpansPerTrace != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
+                    && currentTrace.getRootSpan().getSize() >= maxSpansPerTrace) {
                 // the trace limit has been exceeded
                 TraceMetricImpl traceMetric = startMetric(metric);
                 return new LimitDisabledSpan(traceMetric);
@@ -248,8 +220,8 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     private void popSpan(SpanImpl span, long endTick) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         StackTraceElement[] stackTraceElements = null;
-        if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(configurationService
-                .getCoreConfiguration().getSpanStackTraceThresholdMillis())) {
+        if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfiguration
+                .getSpanStackTraceThresholdMillis())) {
             stackTraceElements = Thread.currentThread().getStackTrace();
             // TODO remove last few stack trace elements?
         }

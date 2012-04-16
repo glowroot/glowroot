@@ -25,8 +25,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.informantproject.api.PluginServices.ConfigurationListener;
 import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ConfigurationService.ConfigurationListener;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

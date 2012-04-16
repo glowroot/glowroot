@@ -49,6 +49,8 @@ public abstract class PluginServices {
 
     public abstract Metric getMetric(Class<?> adviceClass);
 
+    public abstract void registerConfigurationListener(ConfigurationListener listener);
+
     public abstract boolean isEnabled();
 
     public abstract Optional<String> getStringProperty(String propertyName);
@@ -108,6 +110,13 @@ public abstract class PluginServices {
         }
     }
 
+    public interface ConfigurationListener {
+        // the new configuration is not passed to onChange so that the receiver has to get the
+        // latest which avoids race condition worries that two updates may get sent to the receiver
+        // in the wrong order
+        void onChange();
+    }
+
     private static class NopPluginServices extends PluginServices {
         @Override
         public Metric getMetric(Class<?> adviceClass) {
@@ -129,6 +138,8 @@ public abstract class PluginServices {
         public Optional<Double> getDoubleProperty(String propertyName) {
             return Optional.absent();
         }
+        @Override
+        public void registerConfigurationListener(ConfigurationListener listener) {}
         @Override
         public Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail) {
             return null;

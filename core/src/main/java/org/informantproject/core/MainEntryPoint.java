@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.informantproject.api.PluginServices;
+import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.weaving.InformantClassFileTransformer;
@@ -47,6 +48,8 @@ import com.google.inject.Injector;
  */
 public final class MainEntryPoint {
 
+    public static final String INFORMANT_CORE_PLUGIN_ID = "org.informantproject:informant-core";
+
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
     private static volatile Injector injector;
@@ -60,7 +63,7 @@ public final class MainEntryPoint {
     @GuardedBy("returnPluginServicesProxy")
     private static final List<PluginServicesProxy> pluginServicesProxies =
             new ArrayList<PluginServicesProxy>();
-    private static volatile AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
+    private static final AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
 
     private MainEntryPoint() {}
 
@@ -68,7 +71,7 @@ public final class MainEntryPoint {
         logger.debug("premain(): agentArgs={}", agentArgs);
         start(new AgentArgs(agentArgs));
         Ticker ticker = injector.getInstance(Ticker.class);
-        PluginServices pluginServices = createPluginServices("org.informantproject:informant-core");
+        PluginServices pluginServices = createPluginServices(INFORMANT_CORE_PLUGIN_ID);
         instrumentation.addTransformer(new InformantClassFileTransformer(pluginServices, ticker));
     }
 
@@ -106,7 +109,8 @@ public final class MainEntryPoint {
         returnPluginServicesProxy.set(false);
         synchronized (returnPluginServicesProxy) {
             for (PluginServicesProxy proxy : pluginServicesProxies) {
-                proxy.start(injector.getInstance(PluginServicesImplFactory.class));
+                proxy.start(injector.getInstance(PluginServicesImplFactory.class), injector
+                        .getInstance(ConfigurationService.class));
             }
             // don't need reference to these proxies anymore, may as well clean up
             pluginServicesProxies.clear();

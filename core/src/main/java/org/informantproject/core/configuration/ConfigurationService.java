@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.informantproject.api.Optional;
+import org.informantproject.api.PluginServices.ConfigurationListener;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration.CoreConfigurationBuilder;
 import org.informantproject.core.configuration.ImmutablePluginConfiguration.PluginConfigurationBuilder;
 import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
@@ -128,8 +129,8 @@ public class ConfigurationService {
     public void setPluginEnabled(String pluginId, boolean enabled) {
         configurationDao.setPluginEnabled(pluginId, enabled);
         synchronized (updateLock) {
-            PluginConfigurationBuilder builder = new PluginConfigurationBuilder(
-                    Plugins.getDescriptor(pluginId), pluginConfigurations.get(pluginId));
+            PluginConfigurationBuilder builder = new PluginConfigurationBuilder(Plugins
+                    .getDescriptor(pluginId), pluginConfigurations.get(pluginId));
             builder.setEnabled(enabled);
             pluginConfigurations.put(pluginId, builder.build());
         }
@@ -235,12 +236,5 @@ public class ConfigurationService {
                         + " been caught by schema validation");
             }
         }
-    }
-
-    public interface ConfigurationListener {
-        // the new configuration is not passed to onChange so that the receiver has to get the
-        // latest which avoids race condition worries that two updates may get sent to the receiver
-        // in the wrong order
-        void onChange();
     }
 }

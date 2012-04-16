@@ -15,6 +15,9 @@
  */
 package org.informantproject.core;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
@@ -22,6 +25,7 @@ import org.informantproject.api.RootSpanDetail;
 import org.informantproject.api.Span;
 import org.informantproject.api.SpanDetail;
 import org.informantproject.api.TraceMetric;
+import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 
@@ -37,6 +41,9 @@ class PluginServicesProxy extends PluginServices {
 
     private final String pluginId;
     private final MetricCache metricCache;
+
+    private final List<ConfigurationListener> pendingListeners =
+            new CopyOnWriteArrayList<ConfigurationListener>();
 
     private volatile PluginServices pluginServices;
 
@@ -87,6 +94,11 @@ class PluginServicesProxy extends PluginServices {
         } else {
             return pluginServices.getDoubleProperty(propertyName);
         }
+    }
+
+    @Override
+    public void registerConfigurationListener(ConfigurationListener listener) {
+        pendingListeners.add(listener);
     }
 
     @Override
@@ -159,7 +171,15 @@ class PluginServicesProxy extends PluginServices {
         }
     }
 
-    void start(PluginServicesImplFactory pluginServicesImplFactory) {
+    void start(PluginServicesImplFactory pluginServicesImplFactory,
+            ConfigurationService configurationService) {
+
         this.pluginServices = pluginServicesImplFactory.create(pluginId);
+        // not that proxy points to the real PluginServices, register the pending listeners and
+        // notify them that configuration values are available from its (cached) PluginServices
+        for (ConfigurationListener pendingListener : pendingListeners) {
+            configurationService.addConfigurationListener(pendingListener);
+            pendingListener.onChange();
+        }
     }
 }
