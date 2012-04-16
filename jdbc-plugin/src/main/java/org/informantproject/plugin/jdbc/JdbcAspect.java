@@ -28,6 +28,7 @@ import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.PluginServices.ConfigurationListener;
 import org.informantproject.api.Span;
 import org.informantproject.api.SpanContextMap;
 import org.informantproject.api.SpanDetail;
@@ -278,13 +279,31 @@ public class JdbcAspect {
             metricName = "jdbc resultset next")
     public static class ResultSetNextAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetNextAdvice.class);
+        private static volatile boolean pluginEnabled;
+        private static volatile boolean metricEnabled;
+        static {
+            pluginServices.registerConfigurationListener(new ConfigurationListener() {
+                public void onChange() {
+                    pluginEnabled = pluginServices.isEnabled();
+                    metricEnabled = pluginEnabled && pluginServices.getBooleanProperty(
+                            "captureResultSetNext");
+                }
+            });
+            pluginEnabled = pluginServices.isEnabled();
+            metricEnabled = pluginEnabled && pluginServices.getBooleanProperty(
+                    "captureResultSetNext");
+        }
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginEnabled;
         }
         @OnBefore
         public static TraceMetric onBefore() {
-            return pluginServices.startMetric(metric);
+            if (metricEnabled) {
+                return pluginServices.startMetric(metric);
+            } else {
+                return null;
+            }
         }
         @OnReturn
         public static void onReturn(@InjectReturn boolean currentRowValid,
@@ -314,7 +333,9 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            pluginServices.endMetric(traceMetric);
+            if (traceMetric != null) {
+                pluginServices.endMetric(traceMetric);
+            }
         }
     }
 
@@ -322,9 +343,20 @@ public class JdbcAspect {
             ".." }, metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
+        private static volatile boolean metricEnabled;
+        static {
+            pluginServices.registerConfigurationListener(new ConfigurationListener() {
+                public void onChange() {
+                    metricEnabled = pluginServices.isEnabled() && pluginServices
+                            .getBooleanProperty("captureResultSetGet");
+                }
+            });
+            metricEnabled = pluginServices.isEnabled() && pluginServices.getBooleanProperty(
+                    "captureResultSetGet");
+        }
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return metricEnabled;
         }
         @OnBefore
         public static TraceMetric onBefore() {
@@ -341,9 +373,20 @@ public class JdbcAspect {
             metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice2 {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice2.class);
+        private static volatile boolean metricEnabled;
+        static {
+            pluginServices.registerConfigurationListener(new ConfigurationListener() {
+                public void onChange() {
+                    metricEnabled = pluginServices.isEnabled() && pluginServices
+                            .getBooleanProperty("captureResultSetGet");
+                }
+            });
+            metricEnabled = pluginServices.isEnabled() && pluginServices.getBooleanProperty(
+                    "captureResultSetGet");
+        }
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return metricEnabled;
         }
         @OnBefore
         public static TraceMetric onBefore() {

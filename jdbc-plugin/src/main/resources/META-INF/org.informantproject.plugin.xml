@@ -21,6 +21,31 @@
     <groupId>org.informantproject.plugins</groupId>
     <artifactId>jdbc-plugin</artifactId>
     <version>0.5-SNAPSHOT</version>
+    <properties>
+      <property>
+        <prompt>Capture timing metrics for ResultSet.next()</prompt>
+        <name>captureResultSetNext</name>
+        <type>boolean</type>
+        <default>true</default>
+        <description>
+          Capture timing metrics for executions of ResultSet.next() to read the next record in a
+          result set. This defaults to true since the timing for this metric is a good indication of
+          jdbc fetch size issues and database latency, but it can be disabled if it is common to
+          return millions of records and the overhead of System.nanoTime() becomes relevant.
+        </description>
+      </property>
+      <property>
+        <prompt>Capture timing metrics for ResultSet.get*()</prompt>
+        <name>captureResultSetGet</name>
+        <type>boolean</type>
+        <description>
+          Capture timing metrics for executions of ResultSet.get*() to read the individual column
+          values out of a result set record. This defaults to false since the number of calls can be
+          excessive and generally ResultSet.next() captures more interesting info with less
+          overhead.
+        </description>
+      </property>
+    </properties>
     <aspects>
       <aspect>org.informantproject.plugin.jdbc.JdbcAspect</aspect>
     </aspects>

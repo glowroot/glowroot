@@ -102,7 +102,7 @@ public class JdbcPluginPerformanceMain {
     private static InformantContainer setUpContainer() throws Exception {
         InformantContainer container = InformantContainer.create();
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        coreProperties.setThresholdMillis(0);
+        coreProperties.setThresholdMillis(60000);
         coreProperties.setStackTraceInitialDelayMillis(60000);
         container.getInformant().updateCoreProperties(coreProperties);
         return container;
