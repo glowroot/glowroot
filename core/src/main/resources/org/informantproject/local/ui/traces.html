@@ -118,7 +118,8 @@
         // this happens after a zoom when the data point is still highlighted but the tooltip has
         // been hidden, and then the user hovers back over the same highlighted data point
         // in this case just show the tooltip immediately
-        getTraceDetailTooltip(item)
+        tooltipShowing = true
+        showTraceDetailTooltip(item)
       } else if (item && !itemsEqual(item, currentItem)) {
         if (itemsEqual(item, prospectiveItem)) {
           // another handler is already waiting and will display the tooltip after the timeout below
@@ -135,9 +136,9 @@
           currentItem = item
           plot.unhighlight()
           $('#placeholder').qtip('hide')
-          tooltipShowing = false
           plot.highlight(item.series, item.datapoint)
-          getTraceDetailTooltip(item)
+          tooltipShowing = true
+          showTraceDetailTooltip(item)
         }, 100)
       } else {
         prospectiveItem = null
@@ -203,7 +204,7 @@
         plotResponseData(storedTracePoints, activeTracePoints, from, to)
       })
     }
-    function getTraceDetailTooltip(item) {
+    function showTraceDetailTooltip(item) {
       var x = item.pageX
       var y = item.pageY
       var id
@@ -261,7 +262,6 @@
           }
         })
         $('#placeholder').qtip('show')
-        tooltipShowing = true
         $('#showDetail').click(function() {
           $.getJSON('trace/detail/' + id, function(response) {
             detailTrace = response
