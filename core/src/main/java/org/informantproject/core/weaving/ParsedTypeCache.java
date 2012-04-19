@@ -18,6 +18,7 @@ package org.informantproject.core.weaving;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import org.informantproject.api.Optional;
 import org.informantproject.core.weaving.ParsedType.ParsedMethod;
@@ -29,12 +30,10 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * @author Trask Stalnaker
@@ -46,13 +45,9 @@ public class ParsedTypeCache {
 
     private final ClassLoader loader;
 
-    private final LoadingCache<String, List<ParsedType>> typeHierarchies = CacheBuilder
-            .newBuilder().build(new CacheLoader<String, List<ParsedType>>() {
-                @Override
-                public List<ParsedType> load(String typeName) throws Exception {
-                    return loadTypeHierarchy(typeName);
-                }
-            });
+    // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
+    // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
+    private final Map<String, List<ParsedType>> typeHierarchies = Maps.newConcurrentMap();
 
     public ParsedTypeCache(ClassLoader loader) {
         this.loader = loader;
@@ -62,7 +57,13 @@ public class ParsedTypeCache {
         if (typeName == null || typeName.equals("java/lang/Object")) {
             return ImmutableList.of();
         }
-        return typeHierarchies.getUnchecked(typeName);
+        List<ParsedType> typeHierarchy = typeHierarchies.get(typeName);
+        if (typeHierarchy == null) {
+            // just a cache, ok if two threads happen to instantiate and store in parallel
+            typeHierarchy = loadTypeHierarchy(typeName);
+            typeHierarchies.put(typeName, typeHierarchy);
+        }
+        return typeHierarchy;
     }
 
     // TODO is it worth removing duplicates from resulting type hierarchy list?

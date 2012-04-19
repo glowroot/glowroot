@@ -19,6 +19,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -31,11 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
 
 /**
@@ -51,13 +50,11 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private final List<Mixin> mixins;
     private final List<Advice> advisors;
 
-    private final LoadingCache<ClassLoader, Weaver> weaver = CacheBuilder.newBuilder().weakKeys()
-            .build(new CacheLoader<ClassLoader, Weaver>() {
-                @Override
-                public Weaver load(ClassLoader loader) throws Exception {
-                    return new Weaver(mixins, advisors, loader);
-                }
-            });
+    // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
+    // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
+    //
+    // weak keys to prevent retention of class loaders
+    private final ConcurrentMap<ClassLoader, Weaver> weavers = new MapMaker().weakKeys().makeMap();
 
     private final Metric metric;
 
@@ -93,7 +90,13 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
 
         TraceMetric traceMetric = pluginServices.startMetric(metric);
         try {
-            byte[] transformedBytes = weaver.getUnchecked(loader).weave(bytes, protectionDomain);
+            Weaver weaver = weavers.get(loader);
+            if (weaver == null) {
+                // just a cache, ok if two threads happen to instantiate and store in parallel
+                weaver = new Weaver(mixins, advisors, loader);
+                weavers.put(loader, weaver);
+            }
+            byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
             if (transformedBytes != null && transformedBytes != bytes) {
                 logger.debug("transform(): transformed {}", className);
             }

@@ -17,11 +17,9 @@ package org.informantproject.api;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.concurrent.ExecutionException;
+import java.util.Map;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.collect.MapMaker;
 
 /**
  * Designed to be statically cached. A single UnresolvedMethod instance works across multiple class
@@ -39,25 +37,13 @@ public class UnresolvedMethod {
     private final Class<?>[] parameterTypes;
     private final String[] unresolvedParameterTypes;
 
-    // weak keys and weak values out of concern for possible retention cycle between ClassLoader and
-    // Method
-    private final LoadingCache<ClassLoader, Method> resolvedMethods = CacheBuilder.newBuilder()
-            .weakKeys().weakValues().build(new CacheLoader<ClassLoader, Method>() {
-                @Override
-                public Method load(ClassLoader classLoader) throws ClassNotFoundException,
-                        NoSuchMethodException, SecurityException {
-                    Class<?> resolvedClass = classLoader.loadClass(unresolvedClass);
-                    if (parameterTypes != null) {
-                        return resolvedClass.getMethod(name, parameterTypes);
-                    } else {
-                        Class<?>[] parameterTypes = new Class<?>[unresolvedParameterTypes.length];
-                        for (int i = 0; i < unresolvedParameterTypes.length; i++) {
-                            parameterTypes[i] = classLoader.loadClass(unresolvedParameterTypes[i]);
-                        }
-                        return resolvedClass.getMethod(name, parameterTypes);
-                    }
-                }
-            });
+    // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
+    // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
+    //
+    // TODO weak keys and weak values out of concern for possible retention cycle between
+    // ClassLoader and Method
+    private final Map<ClassLoader, Method> resolvedMethods = new MapMaker().weakKeys().weakValues()
+            .makeMap();
 
     public UnresolvedMethod(String unresolvedClass, String name) {
         this.unresolvedClass = unresolvedClass;
@@ -83,15 +69,56 @@ public class UnresolvedMethod {
     }
 
     public Object invoke(Object target, Object... parameters) {
-        Method method;
+        Method method = getResolvedMethod(target.getClass().getClassLoader());
+        return invoke(method, target, parameters);
+    }
+
+    public Object invokeStatic(ClassLoader loader, Object... parameters) {
+        Method method = getResolvedMethod(loader);
+        return invoke(method, null, parameters);
+    }
+
+    private Method getResolvedMethod(ClassLoader loader) {
+        Method method = resolvedMethods.get(loader);
+        if (method == null) {
+            // just a cache, ok if two threads happen to load and store in parallel
+            method = loadResolvedMethod(loader);
+            resolvedMethods.put(loader, method);
+        }
+        return method;
+    }
+
+    private Method loadResolvedMethod(ClassLoader loader) {
         try {
-            method = resolvedMethods.get(target.getClass().getClassLoader());
-        } catch (ExecutionException e) {
+            Class<?> resolvedClass = loader.loadClass(unresolvedClass);
+            if (parameterTypes != null) {
+                return resolvedClass.getMethod(name, parameterTypes);
+            } else {
+                Class<?>[] parameterTypes = new Class<?>[unresolvedParameterTypes.length];
+                for (int i = 0; i < unresolvedParameterTypes.length; i++) {
+                    parameterTypes[i] = loader.loadClass(unresolvedParameterTypes[i]);
+                }
+                return resolvedClass.getMethod(name, parameterTypes);
+            }
+        } catch (ClassNotFoundException e) {
+            // TODO bug in a plugin shouldn't be fatal to informant
+            logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
+            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
+                    e.getCause());
+        } catch (SecurityException e) {
+            // TODO bug in a plugin shouldn't be fatal to informant
+            logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
+            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
+                    e.getCause());
+        } catch (NoSuchMethodException e) {
             // TODO bug in a plugin shouldn't be fatal to informant
             logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
             throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
                     e.getCause());
         }
+    }
+
+    private Object invoke(Method method, Object target, Object... parameters) {
         try {
             return method.invoke(target, parameters);
         } catch (IllegalArgumentException e) {
@@ -109,30 +136,4 @@ public class UnresolvedMethod {
         }
     }
 
-    public Object invokeStatic(ClassLoader classLoader, Object... parameters) {
-        Method method;
-        try {
-            method = resolvedMethods.get(classLoader);
-        } catch (ExecutionException e) {
-            // TODO bug in a plugin shouldn't be fatal to informant
-            logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
-                    e.getCause());
-        }
-        try {
-            return method.invoke(null, parameters);
-        } catch (IllegalArgumentException e) {
-            // TODO bug in a plugin shouldn't be fatal to informant
-            logger.error("fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            // TODO bug in a plugin shouldn't be fatal to informant
-            logger.error("fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(), e);
-        } catch (InvocationTargetException e) {
-            // TODO bug in a plugin shouldn't be fatal to informant
-            logger.error("fatal error occurred: " + e.getMessage(), e);
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(), e);
-        }
-    }
 }
