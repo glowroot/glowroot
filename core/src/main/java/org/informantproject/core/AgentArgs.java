@@ -48,7 +48,12 @@ public class AgentArgs {
                 if (agentArgName.equals("ui.port")) {
                     setUiPort(agentArgValue);
                 } else if (agentArgName.equals("data.dir")) {
-                    setDataDir(new File(agentArgValue));
+                    File dataDir = new File(agentArgValue);
+                    if (dataDir.isAbsolute()) {
+                        setDataDir(dataDir);
+                    } else {
+                        setDataDir(new File(getDefaultDataDir(), dataDir.getPath()));
+                    }
                 } else {
                     throw new IllegalStateException("Unsupported agent arg '" + agentArgName + "'");
                 }

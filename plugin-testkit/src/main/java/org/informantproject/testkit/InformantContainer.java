@@ -79,7 +79,7 @@ public class InformantContainer {
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
             executionAdapter = new ExternalJvmExecutionAdapter("data.dir:" + dataDir
-                    + ",ui.port:" + uiPort);
+                    .getAbsolutePath() + ",ui.port:" + uiPort);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using same JVM app container");
