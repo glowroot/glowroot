@@ -17,14 +17,12 @@ package org.informantproject.core.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.io.Writer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Charsets;
 import com.ning.compress.lzf.LZFDecoder;
 import com.ning.compress.lzf.LZFOutputStream;
 
@@ -38,7 +36,7 @@ public class RollingFile {
 
     private final File rollingFile;
     private final RollingOutputStream rollingOut;
-    private final Writer compressedOut;
+    private final OutputStream compressedOut;
 
     // guarded by lock
     private RandomAccessFile inFile;
@@ -49,42 +47,22 @@ public class RollingFile {
     public RollingFile(File rollingFile, int requestedRollingSizeKb) throws IOException {
         this.rollingFile = rollingFile;
         rollingOut = new RollingOutputStream(rollingFile, requestedRollingSizeKb);
-        compressedOut = new OutputStreamWriter(new LZFOutputStream(rollingOut), Charsets.UTF_8);
+        compressedOut = new LZFOutputStream(rollingOut);
         inFile = new RandomAccessFile(rollingFile, "r");
     }
 
     // TODO handle exceptions better
-    public FileBlock write(CharSequence s) throws IOException {
+    public FileBlock write(ByteStream byteStream) throws IOException {
         synchronized (lock) {
             rollingOut.startBlock();
-            compressedOut.write(s.toString());
+            byteStream.writeTo(compressedOut);
             compressedOut.flush();
             return rollingOut.endBlock();
         }
     }
 
-    public String read(FileBlock block) throws IOException, FileBlockNoLongerExists {
-        if (block.getLength() > Integer.MAX_VALUE) {
-            logger.error("cannot read more than Integer.MAX_VALUE bytes", new Throwable());
-        }
-        synchronized (lock) {
-            if (!rollingOut.stillExists(block)) {
-                throw new FileBlockNoLongerExists();
-            }
-            long filePosition = rollingOut.convertToFilePosition(block.getStartIndex());
-            inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
-            byte[] bytes = new byte[(int) block.getLength()];
-            long remaining = rollingOut.getRollingSizeBytes() - filePosition;
-            if (block.getLength() > remaining) {
-                RandomAccessFileUtil.readFully(inFile, bytes, 0, (int) remaining);
-                inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES);
-                RandomAccessFileUtil.readFully(inFile, bytes, (int) remaining,
-                        (int) (block.getLength() - remaining));
-            } else {
-                RandomAccessFileUtil.readFully(inFile, bytes);
-            }
-            return new String(LZFDecoder.decode(bytes), Charsets.UTF_8.name());
-        }
+    public ByteStream read(FileBlock block) {
+        return new FileBlockByteStream(block);
     }
 
     public void resize(int newRollingSizeKb) throws IOException {
@@ -108,6 +86,45 @@ public class RollingFile {
         }
     }
 
-    @SuppressWarnings("serial")
-    public static class FileBlockNoLongerExists extends Exception {}
+    private class FileBlockByteStream extends ByteStream {
+
+        private final FileBlock block;
+        private boolean end;
+
+        private FileBlockByteStream(FileBlock block) {
+            this.block = block;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return !end;
+        }
+
+        @Override
+        public byte[] next() throws IOException {
+            if (block.getLength() > Integer.MAX_VALUE) {
+                logger.error("cannot read more than Integer.MAX_VALUE bytes", new Throwable());
+            }
+            synchronized (lock) {
+                if (!rollingOut.stillExists(block)) {
+                    // TODO handle not exists case better?
+                    return new byte[0];
+                }
+                long filePosition = rollingOut.convertToFilePosition(block.getStartIndex());
+                inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
+                byte[] bytes = new byte[(int) block.getLength()];
+                long remaining = rollingOut.getRollingSizeBytes() - filePosition;
+                if (block.getLength() > remaining) {
+                    RandomAccessFileUtil.readFully(inFile, bytes, 0, (int) remaining);
+                    inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES);
+                    RandomAccessFileUtil.readFully(inFile, bytes, (int) remaining,
+                            (int) (block.getLength() - remaining));
+                } else {
+                    RandomAccessFileUtil.readFully(inFile, bytes);
+                }
+                end = true;
+                return LZFDecoder.decode(bytes);
+            }
+        }
+    }
 }

@@ -15,7 +15,10 @@
  */
 package org.informantproject.local.trace;
 
+import org.informantproject.core.util.ByteStream;
+
 import com.google.common.base.Objects;
+import com.google.common.base.Objects.ToStringHelper;
 
 /**
  * Structure used as part of the response to "/trace/details".
@@ -36,8 +39,12 @@ public class StoredTrace {
     private String metrics;
     // using CharSequence so these potentially very large strings can be built using
     // LargeStringBuilder
-    private CharSequence spans;
-    private CharSequence mergedStackTree;
+    private ByteStream spans;
+    private ByteStream mergedStackTree;
+    // file block ids are stored temporarily in TraceDao while reading the stored trace from the
+    // database so that reading from the rolling file can occur outside of the jdbc connection
+    private String spansFileBlockId;
+    private String mergedStackTreeFileBlockId;
 
     public String getId() {
         return id;
@@ -111,25 +118,41 @@ public class StoredTrace {
         this.metrics = metrics;
     }
 
-    public CharSequence getSpans() {
+    public ByteStream getSpans() {
         return spans;
     }
 
-    public void setSpans(CharSequence spans) {
+    public void setSpans(ByteStream spans) {
         this.spans = spans;
     }
 
-    public CharSequence getMergedStackTree() {
+    public ByteStream getMergedStackTree() {
         return mergedStackTree;
     }
 
-    public void setMergedStackTree(CharSequence mergedStackTree) {
+    public void setMergedStackTree(ByteStream mergedStackTree) {
         this.mergedStackTree = mergedStackTree;
+    }
+
+    String getSpansFileBlockId() {
+        return spansFileBlockId;
+    }
+
+    void setSpansFileBlockId(String spansFileBlockId) {
+        this.spansFileBlockId = spansFileBlockId;
+    }
+
+    String getMergedStackTreeFileBlockId() {
+        return mergedStackTreeFileBlockId;
+    }
+
+    void setMergedStackTreeFileBlockId(String mergedStackTreeFileBlockId) {
+        this.mergedStackTreeFileBlockId = mergedStackTreeFileBlockId;
     }
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        ToStringHelper toStringHelper = Objects.toStringHelper(this)
                 .add("id", id)
                 .add("startAt", startAt)
                 .add("stuck", stuck)
@@ -138,9 +161,13 @@ public class StoredTrace {
                 .add("description", description)
                 .add("username", username)
                 .add("attributes", attributes)
-                .add("metrics", metrics)
-                .add("spans", spans)
-                .add("mergedStackTree", mergedStackTree)
-                .toString();
+                .add("metrics", metrics);
+        if (spansFileBlockId != null) {
+            toStringHelper.add("spansFileBlockId", spansFileBlockId);
+        }
+        if (spansFileBlockId != null) {
+            toStringHelper.add("mergedStackTreeFileBlockId", mergedStackTreeFileBlockId);
+        }
+        return toStringHelper.toString();
     }
 }

@@ -18,13 +18,9 @@ package org.informantproject.api;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
-import java.io.Reader;
 import java.util.Random;
 
 import org.junit.Test;
-
-import com.google.common.io.CharStreams;
 
 /**
  * @author Trask Stalnaker
@@ -49,38 +45,20 @@ public class LargeStringBuilderTest {
     }
 
     @Test
-    public void shouldReadIntoCharArray() throws IOException {
+    public void shouldReadLargeString() {
         // given
-        CharSequence s = getLargeCharSequence(10, 100);
+        final int nChunks = 100;
+        final int chunkSize = 100;
+        LargeStringBuilder lsb = new LargeStringBuilder();
+        StringBuilder sb = new StringBuilder();
         // when
-        char[] cbuf1 = new char[s.length() / 2];
-        Reader in = ((LargeCharSequence) s).asReader();
-        int n1 = in.read(cbuf1);
-        String t1 = new String(cbuf1, 0, n1);
-        char[] cbuf2 = new char[s.length() / 2];
-        int n2 = in.read(cbuf2);
-        String t2 = new String(cbuf2, 0, n2);
-        // then
-        assertThat(t1 + t2, is(s.toString()));
-    }
-
-    @Test
-    public void shouldReadLargeString() throws IOException {
-        // given
-        CharSequence s = getLargeCharSequence(100, 100);
-        // when
-        String t = CharStreams.toString(((LargeCharSequence) s).asReader());
-        // then
-        assertThat(t, is(s.toString()));
-    }
-
-    private CharSequence getLargeCharSequence(int nChunks, int chunkSize) {
-        LargeStringBuilder sb = new LargeStringBuilder();
         for (int i = 0; i < nChunks; i++) {
-            sb.append(generateRandomString(chunkSize));
+            String randomString = generateRandomString(chunkSize);
+            lsb.append(randomString);
+            sb.append(randomString);
         }
-        CharSequence s = sb.build();
-        return s;
+        // then
+        assertThat(lsb.toString(), is(sb.toString()));
     }
 
     public String generateRandomString(int length) {

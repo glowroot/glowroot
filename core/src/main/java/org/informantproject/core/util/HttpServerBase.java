@@ -43,6 +43,7 @@ import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
@@ -88,6 +89,7 @@ public abstract class HttpServerBase {
                 pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
                 pipeline.addLast("encoder", new HttpResponseEncoder());
                 pipeline.addLast("deflater", new HttpContentCompressor());
+                pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
                 pipeline.addLast("handler", new SimpleHttpHandlerWrapper());
                 return pipeline;
             }
@@ -121,8 +123,8 @@ public abstract class HttpServerBase {
         bootstrap.releaseExternalResources();
     }
 
-    protected abstract HttpResponse handleRequest(HttpRequest request) throws IOException,
-            InterruptedException;
+    protected abstract HttpResponse handleRequest(HttpRequest request, Channel channel)
+            throws IOException, InterruptedException;
 
     private class SimpleHttpHandlerWrapper extends SimpleChannelUpstreamHandler {
         @Override
@@ -136,7 +138,11 @@ public abstract class HttpServerBase {
 
             HttpRequest request = (HttpRequest) e.getMessage();
             logger.debug("messageReceived(): request.uri={}", request.getUri());
-            HttpResponse response = handleRequest(request);
+            HttpResponse response = handleRequest(request, e.getChannel());
+            if (response == null) {
+                // streaming response
+                return;
+            }
             boolean keepAlive = HttpHeaders.isKeepAlive(request);
             if (keepAlive) {
                 // add content-length header only for keep-alive connections
@@ -154,8 +160,9 @@ public abstract class HttpServerBase {
             if (e.getCause() instanceof InterruptedException) {
                 // ignore, probably just termination
             } else {
-                if (e.getCause() instanceof IOException && e.getCause().getMessage()
-                        .equals("An existing connection was forcibly closed by the remote host")) {
+                if (e.getCause() instanceof IOException && e.getCause().getMessage() != null
+                        && e.getCause().getMessage().equals("An existing connection was forcibly"
+                                + " closed by the remote host")) {
                     // ignore, just a browser disconnect
                 } else {
                     logger.error(e.getCause().getMessage(), e.getCause());

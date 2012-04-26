@@ -19,6 +19,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -33,7 +34,7 @@ import com.google.common.base.Charsets;
 public class EchoHttpServer extends HttpServerBase {
 
     @Override
-    public HttpResponse handleRequest(HttpRequest request) {
+    public HttpResponse handleRequest(HttpRequest request, Channel channel) {
         String content = request.getContent().toString(Charsets.ISO_8859_1);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(content, Charsets.ISO_8859_1));

@@ -32,7 +32,6 @@ import org.informantproject.core.util.DataSource.RowMapper;
 import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockId;
 import org.informantproject.core.util.RollingFile;
-import org.informantproject.core.util.RollingFile.FileBlockNoLongerExists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +115,8 @@ public class TraceDao {
         String mergedStackTreeBlockId = null;
         if (storedTrace.getMergedStackTree() != null) {
             try {
-                mergedStackTreeBlockId = rollingFile.write(storedTrace.getMergedStackTree())
+                mergedStackTreeBlockId = rollingFile.write(
+                        storedTrace.getMergedStackTree())
                         .getId();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
@@ -248,36 +248,34 @@ public class TraceDao {
 
     private void fillInRollingFileData(List<StoredTrace> storedTraces) {
         for (StoredTrace storedTrace : storedTraces) {
-            fillInRollingFileData(storedTrace);
+            fillInRollingFileSpan(storedTrace);
+            fillInRollingFileMergedStackTree(storedTrace);
         }
     }
 
-    private void fillInRollingFileData(StoredTrace storedTrace) {
-        if (storedTrace.getSpans() != null) {
-            String sp = null;
+    private void fillInRollingFileSpan(StoredTrace storedTrace) {
+        if (storedTrace.getSpansFileBlockId() != null) {
+            FileBlock block;
             try {
-                sp = rollingFile.read(new FileBlock(storedTrace.getSpans().toString()));
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
+                block = new FileBlock(storedTrace.getSpansFileBlockId());
             } catch (InvalidBlockId e) {
                 logger.error(e.getMessage(), e);
-            } catch (FileBlockNoLongerExists e) {
+                return;
             }
-            storedTrace.setSpans(sp);
+            storedTrace.setSpans(rollingFile.read(block));
         }
-        if (storedTrace.getMergedStackTree() != null) {
-            String mst = null;
+    }
+
+    private void fillInRollingFileMergedStackTree(StoredTrace storedTrace) {
+        if (storedTrace.getMergedStackTreeFileBlockId() != null) {
+            FileBlock block;
             try {
-                mst = rollingFile.read(new FileBlock(storedTrace.getMergedStackTree()
-                        .toString()));
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
+                block = new FileBlock(storedTrace.getMergedStackTreeFileBlockId());
             } catch (InvalidBlockId e) {
                 logger.error(e.getMessage(), e);
-            } catch (FileBlockNoLongerExists e) {
-                // TODO provide user message in this case
+                return;
             }
-            storedTrace.setMergedStackTree(mst);
+            storedTrace.setMergedStackTree(rollingFile.read(block));
         }
     }
 
@@ -358,8 +356,8 @@ public class TraceDao {
             storedTrace.setAttributes(resultSet.getString(columnIndex++));
             storedTrace.setMetrics(resultSet.getString(columnIndex++));
             // wait and read from rolling file outside of jdbc connection
-            storedTrace.setSpans(resultSet.getString(columnIndex++));
-            storedTrace.setMergedStackTree(resultSet.getString(columnIndex++));
+            storedTrace.setSpansFileBlockId(resultSet.getString(columnIndex++));
+            storedTrace.setMergedStackTreeFileBlockId(resultSet.getString(columnIndex++));
             return storedTrace;
         }
     }

@@ -22,18 +22,22 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.Writer;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.informantproject.api.Optional;
+import org.informantproject.core.util.ByteStream;
+import org.informantproject.local.trace.TraceCommonJsonService;
 import org.informantproject.local.ui.HttpServer.HttpService;
-import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -41,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Closeables;
 import com.google.inject.Inject;
@@ -57,20 +62,21 @@ public class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
 
-    private final TraceJsonService traceJsonService;
+    private final TraceCommonJsonService traceCommonJsonService;
 
     @Inject
-    public TraceExportHttpService(TraceJsonService traceJsonService) {
-        this.traceJsonService = traceJsonService;
+    public TraceExportHttpService(TraceCommonJsonService traceCommonJsonService) {
+        this.traceCommonJsonService = traceCommonJsonService;
     }
 
-    public HttpResponse handleRequest(HttpRequest request) throws IOException {
+    public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf("/") + 1);
         logger.debug("handleRequest(): id={}", id);
-        Optional<String> traceJson = traceJsonService.getStoredOrActiveTraceJson(id, true);
+        Optional<ByteStream> traceBuffer = traceCommonJsonService.getStoredOrActiveTraceJson(id,
+                true);
         // TODO handle stackTraces
-        if (!traceJson.isPresent()) {
+        if (!traceBuffer.isPresent()) {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String filename = "trace-" + id;
@@ -79,28 +85,33 @@ public class TraceExportHttpService implements HttpService {
         Pattern pattern = Pattern.compile("\\{\\{#include ([^}]+)\\}\\}");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipOutputStream out = new ZipOutputStream(baos);
-        out.putNextEntry(new ZipEntry(filename + ".html"));
-        Writer writer = new OutputStreamWriter(out, Charsets.UTF_8);
+        List<ByteStream> byteStreams = Lists.newArrayList();
         while (matcher.find()) {
-            writer.append(templateContent.substring(curr, matcher.start()));
+            byteStreams.add(ByteStream.of(templateContent.substring(curr, matcher.start())));
             String include = matcher.group(1);
             if (include.equals("detailTrace")) {
-                writer.append(traceJson.get());
+                byteStreams.add(traceBuffer.get());
             } else {
-                writer.append(getResourceContent(include));
+                // TODO stream resource content as ByteStream
+                byteStreams.add(ByteStream.of(getResourceContent(include)));
             }
             curr = matcher.end();
         }
-        writer.append(templateContent.substring(curr));
-        writer.close();
+        byteStreams.add(ByteStream.of(templateContent.substring(curr)));
 
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.setContent(ChannelBuffers.copiedBuffer(baos.toByteArray()));
         response.setHeader(Names.CONTENT_TYPE, "application/zip");
+        if (HttpHeaders.isKeepAlive(request)) {
+            // keep alive is not supported to avoid having to calculate content length
+            response.setHeader(Names.CONNECTION, "close");
+        }
         response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".zip");
-        return response;
+        channel.write(response);
+        ExportByteStream exportByteStream = new ExportByteStream(ByteStream.of(byteStreams), filename);
+        ChannelFuture f = channel.write(exportByteStream.toChunkedInput());
+        f.addListener(ChannelFutureListener.CLOSE);
+        // return null to indicate streaming
+        return null;
     }
 
     private String getResourceContent(String path) throws IOException {
@@ -110,6 +121,39 @@ public class TraceExportHttpService implements HttpService {
             return CharStreams.toString(in);
         } finally {
             Closeables.closeQuietly(in);
+        }
+    }
+
+    private static class ExportByteStream extends ByteStream {
+
+        private final ByteStream byteStream;
+        private final ByteArrayOutputStream baos;
+        private final ZipOutputStream zipOut;
+
+        private ExportByteStream(ByteStream byteStream, String filename) throws IOException {
+            this.byteStream = byteStream;
+            baos = new ByteArrayOutputStream();
+            zipOut = new ZipOutputStream(baos);
+            zipOut.putNextEntry(new ZipEntry(filename + ".html"));
+        }
+
+        @Override
+        public boolean hasNext() {
+            return byteStream.hasNext();
+        }
+
+        @Override
+        public byte[] next() throws IOException {
+            zipOut.write(byteStream.next());
+            zipOut.flush();
+            if (!byteStream.hasNext()) {
+                // need to close zip output stream in the final chunk
+                zipOut.close();
+            }
+            // toByteArray returns a copy so it's ok to reset the ByteArrayOutputStream afterwards
+            byte[] bytes = baos.toByteArray();
+            baos.reset();
+            return bytes;
         }
     }
 }

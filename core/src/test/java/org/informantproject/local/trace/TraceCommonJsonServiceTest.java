@@ -21,20 +21,23 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.Thread.State;
 
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.trace.Trace;
+import org.informantproject.core.util.ByteStream;
 import org.junit.Test;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceSinkLocalTest {
+public class TraceCommonJsonServiceTest {
 
     @Test
-    public void shouldStoreVeryLargeMergedStackTree() {
+    public void shouldStoreVeryLargeMergedStackTree() throws IOException {
         // given
         MergedStackTree mergedStackTree = new MergedStackTree();
         Trace trace = mock(Trace.class);
@@ -43,14 +46,16 @@ public class TraceSinkLocalTest {
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
         for (int i = 0; i < stackTraceElements.length; i++) {
-            stackTraceElements[i] = new StackTraceElement(TraceSinkLocalTest.class.getName(),
+            stackTraceElements[i] = new StackTraceElement(TraceCommonJsonServiceTest.class.getName(),
                     "method" + i, "TraceDaoTest.java", 100 + 10 * i);
         }
         mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
         // when
-        CharSequence mergedStackTreeJson = TraceSinkLocal.getMergedStackTreeJson(trace);
+        ByteStream mergedStackTreeByteStream = TraceCommonJsonService.getMergedStackTree(trace);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        mergedStackTreeByteStream.writeTo(baos);
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)
-        assertThat(mergedStackTreeJson.length(), is(greaterThan(1000000)));
+        assertThat(baos.size(), is(greaterThan(1000000)));
     }
 }

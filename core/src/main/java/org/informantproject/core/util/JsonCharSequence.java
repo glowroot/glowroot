@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.api;
+package org.informantproject.core.util;
 
 /**
  * @author Trask Stalnaker
@@ -25,7 +25,7 @@ public class JsonCharSequence implements CharSequence {
     private final int escapedSize;
     private StringBuilder escaped;
 
-    private JsonCharSequence(CharSequence csq, int escapedSize) {
+    public JsonCharSequence(CharSequence csq, int escapedSize) {
         this.csq = csq;
         this.escapedSize = escapedSize;
     }
@@ -48,26 +48,15 @@ public class JsonCharSequence implements CharSequence {
         return escaped.subSequence(start, end);
     }
 
-    public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
+    @Override
+    public String toString() {
         if (escaped == null) {
             escaped = escaped(csq);
         }
-        escaped.getChars(srcBegin, srcEnd, dst, dstBegin);
+        return escaped.toString();
     }
 
-    public static CharSequence escapeJson(CharSequence csq) {
-        if (csq instanceof LargeCharSequence) {
-            return ((LargeCharSequence) csq).escapeJson();
-        }
-        int escapedSize = escapedSize(csq);
-        if (escapedSize == csq.length()) {
-            return csq;
-        } else {
-            return new JsonCharSequence(csq, escapedSize);
-        }
-    }
-
-    private static int escapedSize(CharSequence csq) {
+    static int escapedSize(CharSequence csq) {
         int len = 0;
         for (int i = 0; i < csq.length(); i++) {
             char c = csq.charAt(i);

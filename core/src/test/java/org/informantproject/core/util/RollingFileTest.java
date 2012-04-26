@@ -18,12 +18,14 @@ package org.informantproject.core.util;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
-import org.informantproject.core.util.FileBlock;
-import org.informantproject.core.util.RollingFile;
 import org.junit.Test;
+
+import com.google.common.base.Charsets;
 
 /**
  * @author Trask Stalnaker
@@ -38,9 +40,9 @@ public class RollingFileTest {
         RollingFile rollingFile = new RollingFile(file, 1);
         String text = "0123456789";
         // when
-        FileBlock block = rollingFile.write(text);
+        FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
-        String text2 = rollingFile.read(block);
+        String text2 = toString(rollingFile.read(block));
         assertThat(text2, is(text));
     }
 
@@ -56,11 +58,11 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(text);
+        rollingFile.write(ByteStream.of(text));
         // when
-        FileBlock block = rollingFile.write(text);
+        FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
-        String text2 = rollingFile.read(block);
+        String text2 = toString(rollingFile.read(block));
         assertThat(text2, is(text));
     }
 
@@ -76,12 +78,12 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(text);
-        rollingFile.write(text);
+        rollingFile.write(ByteStream.of(text));
+        rollingFile.write(ByteStream.of(text));
         // when
-        FileBlock block = rollingFile.write(text);
+        FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
-        String text2 = rollingFile.read(block);
+        String text2 = toString(rollingFile.read(block));
         assertThat(text2, is(text));
     }
 
@@ -111,14 +113,20 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(text);
-        rollingFile.write(text);
-        rollingFile.write(text);
-        FileBlock block = rollingFile.write(text);
+        rollingFile.write(ByteStream.of(text));
+        rollingFile.write(ByteStream.of(text));
+        rollingFile.write(ByteStream.of(text));
+        FileBlock block = rollingFile.write(ByteStream.of(text));
         // when
         rollingFile.resize(newRollingSizeKb);
         // then
-        String text2 = rollingFile.read(block);
+        String text2 = toString(rollingFile.read(block));
         assertThat(text2, is(text));
+    }
+
+    private static String toString(ByteStream byteStream) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byteStream.writeTo(baos);
+        return new String(baos.toByteArray(), Charsets.UTF_8.name());
     }
 }

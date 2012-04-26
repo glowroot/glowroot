@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 
 import org.informantproject.core.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -119,22 +120,23 @@ public class HttpServer extends HttpServerBase {
 
     @Inject
     public HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
-            TraceJsonService traceJsonService, TraceExportHttpService traceExportHttpService,
+            TraceSummaryJsonService traceSummaryJsonService,
+            TraceDetailHttpService traceDetailJsonService,
+            TraceExportHttpService traceExportHttpService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
             PluginJsonService pluginJsonService, ThreadDumpJsonService threadDumpJsonService) {
 
         super(port);
-        uriMappings.put(Pattern.compile("^/trace/export/(.*)$"), traceExportHttpService);
+        uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
+        uriMappings.put(Pattern.compile("^/trace/detail/.*$"), traceDetailJsonService);
         // the parentheses define the part of the match that is used to construct the args for
         // calling the method in json service, e.g. /trace/detail/abc123 below calls the method
         // getDetail("abc123") in TraceJsonService
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/points$"),
                 tracePointJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/summary/(.*)$"),
-                traceJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/detail/(.*)$"),
-                traceJsonService, "getDetail"));
+                traceSummaryJsonService, "getSummary"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/stacktrace/(.*)$"),
                 stackTraceJsonService, "getStackTrace"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/metrics/read$"),
@@ -169,7 +171,7 @@ public class HttpServer extends HttpServerBase {
                 threadDumpJsonService, "getThreadDump"));
     }
     @Override
-    protected HttpResponse handleRequest(HttpRequest request) throws IOException {
+    protected HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
@@ -178,7 +180,8 @@ public class HttpServer extends HttpServerBase {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
                 if (uriMappingEntry.getValue() instanceof HttpService) {
-                    return ((HttpService) uriMappingEntry.getValue()).handleRequest(request);
+                    return ((HttpService) uriMappingEntry.getValue()).handleRequest(request,
+                            channel);
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
@@ -292,6 +295,10 @@ public class HttpServer extends HttpServerBase {
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        } else if (responseText instanceof byte[]) {
+            response = new DefaultHttpResponse(HTTP_1_1, OK);
+            response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
+            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         } else {
             logger.error("unexpected type of json service response '{}'",
                     responseText.getClass().getName());
@@ -369,7 +376,7 @@ public class HttpServer extends HttpServerBase {
     public interface JsonService {}
 
     public interface HttpService {
-        HttpResponse handleRequest(HttpRequest request) throws IOException;
+        HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException;
     }
 
     @SuppressWarnings("serial")
