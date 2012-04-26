@@ -30,7 +30,7 @@ public class LargeStringBuilder implements Appendable {
     private static final int BLOCK_SIZE = 200;
 
     final List<CharSequence> csqs = new ArrayList<CharSequence>();
-    private StringBuilder curr;
+    private final StringBuilder curr = new StringBuilder(BLOCK_SIZE);
     int count;
 
     // part of the contract is that char sequences should not be modified after appending
@@ -38,18 +38,12 @@ public class LargeStringBuilder implements Appendable {
     // but is an issue with mutable char sequences like StringBuilder and StringBuffer
     public LargeStringBuilder append(CharSequence csq) {
         if (csq.length() >= LARGE_THRESHOLD) {
-            if (curr != null) {
-                csqs.add(curr);
-                curr = null;
-            }
+            flush();
             csqs.add(csq);
         } else {
-            if (curr == null) {
-                curr = new StringBuilder(BLOCK_SIZE);
-            }
             if (curr.length() + csq.length() > BLOCK_SIZE) {
-                csqs.add(curr);
-                curr = new StringBuilder(BLOCK_SIZE);
+                csqs.add(curr.toString());
+                curr.setLength(0);
             }
             curr.append(csq);
         }
@@ -63,12 +57,9 @@ public class LargeStringBuilder implements Appendable {
     }
 
     public Appendable append(char c) throws IOException {
-        if (curr == null) {
-            curr = new StringBuilder(BLOCK_SIZE);
-        }
         if (curr.length() + 1 > BLOCK_SIZE) {
-            csqs.add(curr);
-            curr = new StringBuilder(BLOCK_SIZE);
+            csqs.add(curr.toString());
+            curr.setLength(0);
         }
         curr.append(c);
         count++;
@@ -76,11 +67,15 @@ public class LargeStringBuilder implements Appendable {
     }
 
     public CharSequence build() {
-        if (curr != null) {
-            csqs.add(curr);
-            curr = null;
-        }
+        flush();
         return new LargeCharSequence(csqs, count);
+    }
+
+    private void flush() {
+        if (curr != null) {
+            csqs.add(curr.toString());
+            curr.setLength(0);
+        }
     }
 
     @Override
