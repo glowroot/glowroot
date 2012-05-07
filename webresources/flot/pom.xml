@@ -16,7 +16,7 @@
     http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-pom-syntax.html
     #pom-reationships-sect-versions
   -->
-  <version>0.7.1-informant-01-SNAPSHOT</version>
+  <version>0.7-1-SNAPSHOT</version>
 
   <name>Flot Javascript Library (packaged for Informant)</name>
   <description>
