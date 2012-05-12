@@ -55,9 +55,9 @@ public class ImmutableCoreConfiguration {
 
     // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
-    private int stackTraceInitialDelayMillis = 1000;
+    private int profilerInitialDelayMillis = 1000;
 
-    private int stackTracePeriodMillis = 100;
+    private int profilerIntervalMillis = 100;
 
     // TODO this doesn't really make sense for Filters/servlets? or maybe just not top-level?
     // though even those might be interesting occasionally
@@ -67,13 +67,13 @@ public class ImmutableCoreConfiguration {
 
     // used to limit memory requirement, also used to help limit log file size,
     // 0 means don't capture any traces, -1 means no limit
-    private int maxTraceEntries = 5000;
+    private int maxEntries = 5000;
 
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
     private int rollingSizeMb = 1000;
 
-    private boolean warnOnSpanOutsideTrace = false;
+    private boolean warnOnEntryOutsideTrace = false;
 
     private int metricPeriodMillis = 15000;
 
@@ -89,28 +89,28 @@ public class ImmutableCoreConfiguration {
         return stuckThresholdSeconds;
     }
 
-    public int getStackTraceInitialDelayMillis() {
-        return stackTraceInitialDelayMillis;
+    public int getProfilerInitialDelayMillis() {
+        return profilerInitialDelayMillis;
     }
 
-    public int getStackTracePeriodMillis() {
-        return stackTracePeriodMillis;
+    public int getProfilerIntervalMillis() {
+        return profilerIntervalMillis;
     }
 
     public int getSpanStackTraceThresholdMillis() {
         return spanStackTraceThresholdMillis;
     }
 
-    public int getMaxTraceEntries() {
-        return maxTraceEntries;
+    public int getMaxEntries() {
+        return maxEntries;
     }
 
     public int getRollingSizeMb() {
         return rollingSizeMb;
     }
 
-    public boolean isWarnOnSpanOutsideTrace() {
-        return warnOnSpanOutsideTrace;
+    public boolean isWarnOnEntryOutsideTrace() {
+        return warnOnEntryOutsideTrace;
     }
 
     public int getMetricPeriodMillis() {
@@ -121,12 +121,12 @@ public class ImmutableCoreConfiguration {
         JsonObject propertiesJson = new JsonObject();
         propertiesJson.addProperty("thresholdMillis", thresholdMillis);
         propertiesJson.addProperty("stuckThresholdSeconds", stuckThresholdSeconds);
-        propertiesJson.addProperty("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis);
-        propertiesJson.addProperty("stackTracePeriodMillis", stackTracePeriodMillis);
+        propertiesJson.addProperty("profilerInitialDelayMillis", profilerInitialDelayMillis);
+        propertiesJson.addProperty("profilerIntervalMillis", profilerIntervalMillis);
         propertiesJson.addProperty("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis);
-        propertiesJson.addProperty("maxTraceEntries", maxTraceEntries);
+        propertiesJson.addProperty("maxEntries", maxEntries);
         propertiesJson.addProperty("rollingSizeMb", rollingSizeMb);
-        propertiesJson.addProperty("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace);
+        propertiesJson.addProperty("warnOnEntryOutsideTrace", warnOnEntryOutsideTrace);
         propertiesJson.addProperty("metricPeriodMillis", metricPeriodMillis);
         return new Gson().toJson(propertiesJson);
     }
@@ -137,12 +137,12 @@ public class ImmutableCoreConfiguration {
                 .add("enabed", enabled)
                 .add("thresholdMillis", thresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
-                .add("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis)
-                .add("stackTracePeriodMillis", stackTracePeriodMillis)
+                .add("profilerInitialDelayMillis", profilerInitialDelayMillis)
+                .add("profilerIntervalMillis", profilerIntervalMillis)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
-                .add("maxTraceEntries", maxTraceEntries)
+                .add("maxEntries", maxEntries)
                 .add("rollingSizeMb", rollingSizeMb)
-                .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
+                .add("warnOnEntryOutsideTrace", warnOnEntryOutsideTrace)
                 .add("metricPeriodMillis", metricPeriodMillis);
         return toStringHelper.toString();
     }
@@ -156,23 +156,23 @@ public class ImmutableCoreConfiguration {
         return Objects.equal(enabled, other.isEnabled())
                 && Objects.equal(thresholdMillis, other.getThresholdMillis())
                 && Objects.equal(stuckThresholdSeconds, other.getStuckThresholdSeconds())
-                && Objects.equal(stackTraceInitialDelayMillis,
-                        other.getStackTraceInitialDelayMillis())
-                && Objects.equal(stackTracePeriodMillis, other.getStackTracePeriodMillis())
-                && Objects.equal(spanStackTraceThresholdMillis,
-                        other.getSpanStackTraceThresholdMillis())
-                && Objects.equal(maxTraceEntries, other.getMaxTraceEntries())
+                && Objects.equal(profilerInitialDelayMillis, other
+                        .getProfilerInitialDelayMillis())
+                && Objects.equal(profilerIntervalMillis, other.getProfilerIntervalMillis())
+                && Objects.equal(spanStackTraceThresholdMillis, other
+                        .getSpanStackTraceThresholdMillis())
+                && Objects.equal(maxEntries, other.getMaxEntries())
                 && Objects.equal(rollingSizeMb, other.getRollingSizeMb())
-                && Objects.equal(warnOnSpanOutsideTrace, other.isWarnOnSpanOutsideTrace())
+                && Objects.equal(warnOnEntryOutsideTrace, other.isWarnOnEntryOutsideTrace())
                 && Objects.equal(metricPeriodMillis, other.getMetricPeriodMillis());
     }
 
     @Override
     public int hashCode() {
         return Objects.hashCode(enabled, thresholdMillis, stuckThresholdSeconds,
-                stackTraceInitialDelayMillis, stackTracePeriodMillis,
-                spanStackTraceThresholdMillis, maxTraceEntries, rollingSizeMb,
-                warnOnSpanOutsideTrace, metricPeriodMillis);
+                profilerInitialDelayMillis, profilerIntervalMillis,
+                spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
+                warnOnEntryOutsideTrace, metricPeriodMillis);
     }
 
     static ImmutableCoreConfiguration create(boolean enabled, String propertiesJson) {
@@ -186,12 +186,12 @@ public class ImmutableCoreConfiguration {
         private boolean enabled;
         private int thresholdMillis;
         private int stuckThresholdSeconds;
-        private int stackTraceInitialDelayMillis;
-        private int stackTracePeriodMillis;
+        private int profilerInitialDelayMillis;
+        private int profilerIntervalMillis;
         private int spanStackTraceThresholdMillis;
-        private int maxTraceEntries;
+        private int maxEntries;
         private int rollingSizeMb;
-        private boolean warnOnSpanOutsideTrace;
+        private boolean warnOnEntryOutsideTrace;
         private int metricPeriodMillis;
 
         public CoreConfigurationBuilder() {
@@ -202,12 +202,12 @@ public class ImmutableCoreConfiguration {
             enabled = base.enabled;
             thresholdMillis = base.thresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
-            stackTraceInitialDelayMillis = base.stackTraceInitialDelayMillis;
-            stackTracePeriodMillis = base.stackTracePeriodMillis;
+            profilerInitialDelayMillis = base.profilerInitialDelayMillis;
+            profilerIntervalMillis = base.profilerIntervalMillis;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
-            maxTraceEntries = base.maxTraceEntries;
+            maxEntries = base.maxEntries;
             rollingSizeMb = base.rollingSizeMb;
-            warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
+            warnOnEntryOutsideTrace = base.warnOnEntryOutsideTrace;
             metricPeriodMillis = base.metricPeriodMillis;
         }
 
@@ -216,12 +216,12 @@ public class ImmutableCoreConfiguration {
             configuration.enabled = enabled;
             configuration.thresholdMillis = thresholdMillis;
             configuration.stuckThresholdSeconds = stuckThresholdSeconds;
-            configuration.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
-            configuration.stackTracePeriodMillis = stackTracePeriodMillis;
+            configuration.profilerInitialDelayMillis = profilerInitialDelayMillis;
+            configuration.profilerIntervalMillis = profilerIntervalMillis;
             configuration.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
-            configuration.maxTraceEntries = maxTraceEntries;
+            configuration.maxEntries = maxEntries;
             configuration.rollingSizeMb = rollingSizeMb;
-            configuration.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
+            configuration.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
             configuration.metricPeriodMillis = metricPeriodMillis;
             return configuration;
         }
@@ -233,25 +233,26 @@ public class ImmutableCoreConfiguration {
             if (jsonObject.get("stuckThresholdSeconds") != null) {
                 setStuckThresholdSeconds(jsonObject.get("stuckThresholdSeconds").getAsInt());
             }
-            if (jsonObject.get("stackTraceInitialDelayMillis") != null) {
-                setStackTraceInitialDelayMillis(jsonObject.get("stackTraceInitialDelayMillis")
+            if (jsonObject.get("profilerInitialDelayMillis") != null) {
+                setProfilerInitialDelayMillis(jsonObject.get("profilerInitialDelayMillis")
                         .getAsInt());
             }
-            if (jsonObject.get("stackTracePeriodMillis") != null) {
-                setStackTracePeriodMillis(jsonObject.get("stackTracePeriodMillis").getAsInt());
+            if (jsonObject.get("profilerIntervalMillis") != null) {
+                setProfilerIntervalMillis(jsonObject.get("profilerIntervalMillis").getAsInt());
             }
             if (jsonObject.get("spanStackTraceThresholdMillis") != null) {
                 setSpanStackTraceThresholdMillis(jsonObject.get("spanStackTraceThresholdMillis")
                         .getAsInt());
             }
-            if (jsonObject.get("maxTraceEntries") != null) {
-                setMaxTraceEntries(jsonObject.get("maxTraceEntries").getAsInt());
+            if (jsonObject.get("maxEntries") != null) {
+                setMaxEntries(jsonObject.get("maxEntries").getAsInt());
             }
             if (jsonObject.get("rollingSizeMb") != null) {
                 setRollingSizeMb(jsonObject.get("rollingSizeMb").getAsInt());
             }
-            if (jsonObject.get("warnOnSpanOutsideTrace") != null) {
-                setWarnOnSpanOutsideTrace(jsonObject.get("warnOnSpanOutsideTrace").getAsBoolean());
+            if (jsonObject.get("warnOnEntryOutsideTrace") != null) {
+                setWarnOnEntryOutsideTrace(jsonObject.get("warnOnEntryOutsideTrace")
+                        .getAsBoolean());
             }
             if (jsonObject.get("metricPeriodMillis") != null) {
                 setMetricPeriodMillis(jsonObject.get("metricPeriodMillis").getAsInt());
@@ -273,25 +274,27 @@ public class ImmutableCoreConfiguration {
             return this;
         }
 
-        public CoreConfigurationBuilder setStackTraceInitialDelayMillis(
-                int stackTraceInitialDelayMillis) {
-            this.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
+        public CoreConfigurationBuilder setProfilerInitialDelayMillis(
+                int profilerInitialDelayMillis) {
+
+            this.profilerInitialDelayMillis = profilerInitialDelayMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setStackTracePeriodMillis(int stackTracePeriodMillis) {
-            this.stackTracePeriodMillis = stackTracePeriodMillis;
+        public CoreConfigurationBuilder setProfilerIntervalMillis(int profilerIntervalMillis) {
+            this.profilerIntervalMillis = profilerIntervalMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setSpanStackTraceThresholdMillis(int
-                spanStackTraceThresholdMillis) {
+        public CoreConfigurationBuilder setSpanStackTraceThresholdMillis(
+                int spanStackTraceThresholdMillis) {
+
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setMaxTraceEntries(int maxTraceEntries) {
-            this.maxTraceEntries = maxTraceEntries;
+        public CoreConfigurationBuilder setMaxEntries(int maxEntries) {
+            this.maxEntries = maxEntries;
             return this;
         }
 
@@ -300,8 +303,10 @@ public class ImmutableCoreConfiguration {
             return this;
         }
 
-        public CoreConfigurationBuilder setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
-            this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
+        public CoreConfigurationBuilder setWarnOnEntryOutsideTrace(
+                boolean warnOnEntryOutsideTrace) {
+
+            this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
             return this;
         }
 

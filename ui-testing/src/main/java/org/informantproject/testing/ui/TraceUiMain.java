@@ -36,8 +36,8 @@ public class TraceUiMain {
         // set thresholds low so there will be lots of data to view
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
         coreProperties.setThresholdMillis(0);
-        coreProperties.setStackTraceInitialDelayMillis(100);
-        coreProperties.setStackTracePeriodMillis(10);
+        coreProperties.setProfilerInitialDelayMillis(100);
+        coreProperties.setProfilerIntervalMillis(10);
         coreProperties.setSpanStackTraceThresholdMillis(100);
         container.getInformant().updateCoreProperties(coreProperties);
         logger.info("view trace ui at localhost:" + UI_PORT + "/traces.html");

@@ -63,12 +63,12 @@ public class Configuration {
     public static class CoreProperties {
         private int thresholdMillis;
         private int stuckThresholdSeconds;
-        private int stackTraceInitialDelayMillis;
-        private int stackTracePeriodMillis;
+        private int profilerInitialDelayMillis;
+        private int profilerIntervalMillis;
         private int spanStackTraceThresholdMillis;
-        private int maxTraceEntries;
+        private int maxEntries;
         private int rollingSizeMb;
-        private boolean warnOnSpanOutsideTrace;
+        private boolean warnOnEntryOutsideTrace;
         private int metricPeriodMillis;
         public int getThresholdMillis() {
             return thresholdMillis;
@@ -82,17 +82,17 @@ public class Configuration {
         public void setStuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
         }
-        public int getStackTraceInitialDelayMillis() {
-            return stackTraceInitialDelayMillis;
+        public int getProfilerInitialDelayMillis() {
+            return profilerInitialDelayMillis;
         }
-        public void setStackTraceInitialDelayMillis(int stackTraceInitialDelayMillis) {
-            this.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
+        public void setProfilerInitialDelayMillis(int profilerInitialDelayMillis) {
+            this.profilerInitialDelayMillis = profilerInitialDelayMillis;
         }
-        public int getStackTracePeriodMillis() {
-            return stackTracePeriodMillis;
+        public int getProfilerIntervalMillis() {
+            return profilerIntervalMillis;
         }
-        public void setStackTracePeriodMillis(int stackTracePeriodMillis) {
-            this.stackTracePeriodMillis = stackTracePeriodMillis;
+        public void setProfilerIntervalMillis(int profilerIntervalMillis) {
+            this.profilerIntervalMillis = profilerIntervalMillis;
         }
         public int getSpanStackTraceThresholdMillis() {
             return spanStackTraceThresholdMillis;
@@ -100,11 +100,11 @@ public class Configuration {
         public void setSpanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         }
-        public int getMaxTraceEntries() {
-            return maxTraceEntries;
+        public int getMaxEntries() {
+            return maxEntries;
         }
-        public void setMaxTraceEntries(int maxTraceEntries) {
-            this.maxTraceEntries = maxTraceEntries;
+        public void setMaxEntries(int maxEntries) {
+            this.maxEntries = maxEntries;
         }
         public int getRollingSizeMb() {
             return rollingSizeMb;
@@ -112,11 +112,11 @@ public class Configuration {
         public void setRollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
         }
-        public boolean isWarnOnSpanOutsideTrace() {
-            return warnOnSpanOutsideTrace;
+        public boolean isWarnOnEntryOutsideTrace() {
+            return warnOnEntryOutsideTrace;
         }
-        public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
-            this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
+        public void setWarnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
+            this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
         }
         public int getMetricPeriodMillis() {
             return metricPeriodMillis;
@@ -127,9 +127,9 @@ public class Configuration {
         @Override
         public int hashCode() {
             return Objects.hashCode(thresholdMillis, stuckThresholdSeconds,
-                    stackTraceInitialDelayMillis, stackTracePeriodMillis,
-                    spanStackTraceThresholdMillis, maxTraceEntries,
-                    rollingSizeMb, warnOnSpanOutsideTrace, metricPeriodMillis);
+                    profilerInitialDelayMillis, profilerIntervalMillis,
+                    spanStackTraceThresholdMillis, maxEntries,
+                    rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
         }
         @Override
         public boolean equals(Object o) {
@@ -139,14 +139,13 @@ public class Configuration {
             CoreProperties other = (CoreProperties) o;
             return Objects.equal(thresholdMillis, other.thresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, other.stuckThresholdSeconds)
-                    && Objects.equal(stackTraceInitialDelayMillis,
-                            other.stackTraceInitialDelayMillis)
-                    && Objects.equal(stackTracePeriodMillis, other.stackTracePeriodMillis)
+                    && Objects.equal(profilerInitialDelayMillis, other.profilerInitialDelayMillis)
+                    && Objects.equal(profilerIntervalMillis, other.profilerIntervalMillis)
                     && Objects.equal(spanStackTraceThresholdMillis,
                             other.spanStackTraceThresholdMillis)
-                    && Objects.equal(maxTraceEntries, other.maxTraceEntries)
+                    && Objects.equal(maxEntries, other.maxEntries)
                     && Objects.equal(rollingSizeMb, other.rollingSizeMb)
-                    && Objects.equal(warnOnSpanOutsideTrace, other.warnOnSpanOutsideTrace)
+                    && Objects.equal(warnOnEntryOutsideTrace, other.warnOnEntryOutsideTrace)
                     && Objects.equal(metricPeriodMillis, other.metricPeriodMillis);
         }
     }

@@ -35,13 +35,13 @@ public class CoreConfigurationTestData {
         builder = builder.setThresholdMillis(defaultCoreConfiguration.getThresholdMillis() + 1);
         builder = builder.setStuckThresholdSeconds(defaultCoreConfiguration
                 .getStuckThresholdSeconds() + 1);
-        builder = builder.setStackTraceInitialDelayMillis(defaultCoreConfiguration
-                .getStackTraceInitialDelayMillis() + 1);
-        builder = builder.setStackTracePeriodMillis(defaultCoreConfiguration
-                .getStackTracePeriodMillis() + 1);
-        builder = builder.setMaxTraceEntries(defaultCoreConfiguration.getMaxTraceEntries() + 1);
-        builder = builder.setWarnOnSpanOutsideTrace(!defaultCoreConfiguration
-                .isWarnOnSpanOutsideTrace());
+        builder = builder.setProfilerInitialDelayMillis(defaultCoreConfiguration
+                .getProfilerInitialDelayMillis() + 1);
+        builder = builder.setProfilerIntervalMillis(defaultCoreConfiguration
+                .getProfilerIntervalMillis() + 1);
+        builder = builder.setMaxEntries(defaultCoreConfiguration.getMaxEntries() + 1);
+        builder = builder.setWarnOnEntryOutsideTrace(!defaultCoreConfiguration
+                .isWarnOnEntryOutsideTrace());
 
         return builder.build();
     }

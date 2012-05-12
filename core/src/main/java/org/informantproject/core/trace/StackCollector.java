@@ -92,11 +92,11 @@ public class StackCollector implements Runnable {
     private void runInternal() {
         ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
         long currentTime = ticker.read();
-        if (configuration.getStackTraceInitialDelayMillis()
+        if (configuration.getProfilerInitialDelayMillis()
                 != ImmutableCoreConfiguration.THRESHOLD_DISABLED) {
             // stack trace threshold is not disabled
             long stackTraceThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
-                    configuration.getStackTraceInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
+                    configuration.getProfilerInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace will exceed the stack trace initial delay threshold before the next
                 // scheduled execution of this repeating Runnable (in other words, it is within
@@ -107,12 +107,12 @@ public class StackCollector implements Runnable {
 
                     // schedule stack traces to be taken every X seconds
                     long initialDelayMillis = Math.max(0,
-                            configuration.getStackTraceInitialDelayMillis()
+                            configuration.getProfilerInitialDelayMillis()
                                     - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
                     CollectStackCommand command = new CollectStackCommand(trace);
                     ScheduledFuture<?> captureStackTraceScheduledFuture = scheduledExecutor
                             .scheduleWithFixedDelay(command, initialDelayMillis,
-                                    configuration.getStackTracePeriodMillis(),
+                                    configuration.getProfilerIntervalMillis(),
                                     TimeUnit.MILLISECONDS);
                     trace.setCaptureStackTraceScheduledFuture(captureStackTraceScheduledFuture);
                 } else {

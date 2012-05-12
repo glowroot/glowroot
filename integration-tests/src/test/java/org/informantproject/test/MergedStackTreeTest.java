@@ -51,8 +51,8 @@ public class MergedStackTreeTest {
         // given
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
         coreProperties.setThresholdMillis(0);
-        coreProperties.setStackTraceInitialDelayMillis(100);
-        coreProperties.setStackTracePeriodMillis(10);
+        coreProperties.setProfilerInitialDelayMillis(100);
+        coreProperties.setProfilerIntervalMillis(10);
         container.getInformant().updateCoreProperties(coreProperties);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);

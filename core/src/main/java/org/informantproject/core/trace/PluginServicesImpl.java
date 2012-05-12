@@ -174,9 +174,9 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
             traceRegistry.addTrace(currentTrace);
             return new SpanStopwatch(currentTrace.getRootSpan().getRootSpan());
         } else {
-            int maxTraceEntries = coreConfiguration.getMaxTraceEntries();
-            if (maxTraceEntries != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
-                    && currentTrace.getRootSpan().getSize() >= maxTraceEntries) {
+            int maxEntries = coreConfiguration.getMaxEntries();
+            if (maxEntries != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
+                    && currentTrace.getRootSpan().getSize() >= maxEntries) {
                 // the trace limit has been exceeded
                 return metric.start();
             } else {

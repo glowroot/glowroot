@@ -95,11 +95,11 @@ public class BasicTest {
         CoreProperties randomCoreProperties = new CoreProperties();
         randomCoreProperties.setThresholdMillis(1000 + random.nextInt(60000));
         randomCoreProperties.setStuckThresholdSeconds(1 + random.nextInt(60));
-        randomCoreProperties.setStackTraceInitialDelayMillis(1000 + random.nextInt(60000));
-        randomCoreProperties.setStackTracePeriodMillis(1000 + random.nextInt(60000));
-        randomCoreProperties.setMaxTraceEntries(1000 + random.nextInt(10000));
+        randomCoreProperties.setProfilerInitialDelayMillis(1000 + random.nextInt(60000));
+        randomCoreProperties.setProfilerIntervalMillis(1000 + random.nextInt(60000));
+        randomCoreProperties.setMaxEntries(1000 + random.nextInt(10000));
         randomCoreProperties.setRollingSizeMb(100 + random.nextInt(10));
-        randomCoreProperties.setWarnOnSpanOutsideTrace(random.nextBoolean());
+        randomCoreProperties.setWarnOnEntryOutsideTrace(random.nextBoolean());
         randomCoreProperties.setMetricPeriodMillis(1000 + random.nextInt(60000));
         return randomCoreProperties;
     }

@@ -159,10 +159,10 @@
       var coreProperties = configuration.coreProperties
       $('#thresholdMillis').val(coreProperties.thresholdMillis)
       $('#stuckThresholdSeconds').val(coreProperties.stuckThresholdSeconds)
-      $('#stackTraceInitialDelayMillis').val(coreProperties.stackTraceInitialDelayMillis)
-      $('#stackTracePeriodMillis').val(coreProperties.stackTracePeriodMillis)
+      $('#profilerInitialDelayMillis').val(coreProperties.profilerInitialDelayMillis)
+      $('#profilerIntervalMillis').val(coreProperties.profilerIntervalMillis)
       $('#spanStackTraceThresholdMillis').val(coreProperties.spanStackTraceThresholdMillis)
-      $('#maxTraceEntries').val(coreProperties.maxTraceEntries)
+      $('#maxEntries').val(coreProperties.maxEntries)
       $('#rollingSizeMb').val(coreProperties.rollingSizeMb)
       if (configuration.actualRollingSizeMb != coreProperties.rollingSizeMb) {
         $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
@@ -201,10 +201,10 @@
     var properties = {
       'thresholdMillis': $('#thresholdMillis').val(),
       'stuckThresholdSeconds': $('#stuckThresholdSeconds').val(),
-      'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
-      'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
+      'profilerInitialDelayMillis': $('#profilerInitialDelayMillis').val(),
+      'profilerIntervalMillis': $('#profilerIntervalMillis').val(),
       'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
-      'maxTraceEntries': $('#maxTraceEntries').val(),
+      'maxEntries': $('#maxEntries').val(),
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
     $.post('configuration/core/properties', JSON.stringify(properties), function() {
@@ -296,17 +296,17 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="stackTraceInitialDelayMillis">
-          Stack trace initial delay
+        <label class="control-label" for="profilerInitialDelayMillis">
+          Sampling profiler initial delay
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="stackTraceInitialDelayMillis"
+            <input style="width: 6em" id="profilerInitialDelayMillis"
               type="text"><span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
-            Once a trace exceeds this amount of time, stack traces of its thread will be captured
-            periodically and bound to the trace.
+            Once a trace exceeds this amount of time, the sampling profiler captures stack traces
+            periodically.
             The interval between successive stack trace captures is defined by the property directly
             below.
             The stack traces captured for an individual trace are merged into a tree view and
@@ -315,15 +315,17 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="stackTracePeriodMillis">Stack trace interval</label>
+        <label class="control-label" for="profilerIntervalMillis">
+          Sampling profiler interval
+        </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="stackTracePeriodMillis"
+            <input style="width: 6em" id="profilerIntervalMillis"
               type="text"><span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
-            The interval at which thread stack traces are captured (once the trace exceeds the
-            initial delay threshold directly above).
+            The interval at which the sampling profiler captures stack traces (once a trace exceeds
+            the initial delay directly above).
           </div>
         </div>
       </div>
@@ -339,9 +341,9 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="maxTraceEntries">Max trace entries</label>
+        <label class="control-label" for="maxEntries">Max trace entries</label>
         <div class="controls">
-          <input style="width: 6em" id="maxTraceEntries" type="text">
+          <input style="width: 6em" id="maxEntries" type="text">
           <div class="help-block">
             Maximum number of trace entries collected for a given trace. This is useful for limiting
             the memory requirement of very very long traces that capture potentially hundreds of

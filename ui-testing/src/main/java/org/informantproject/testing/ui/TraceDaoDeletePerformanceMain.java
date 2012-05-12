@@ -39,8 +39,8 @@ public class TraceDaoDeletePerformanceMain {
         // set thresholds low so there will be lots of data to view
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
         coreProperties.setThresholdMillis(0);
-        coreProperties.setStackTraceInitialDelayMillis(100);
-        coreProperties.setStackTracePeriodMillis(10);
+        coreProperties.setProfilerInitialDelayMillis(100);
+        coreProperties.setProfilerIntervalMillis(10);
         container.getInformant().updateCoreProperties(coreProperties);
         container.executeAppUnderTest(GenerateTraces.class);
         int pendingWrites = container.getInformant().getNumPendingTraceWrites();
