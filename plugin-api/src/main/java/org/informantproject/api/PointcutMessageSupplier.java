@@ -15,27 +15,31 @@
  */
 package org.informantproject.api;
 
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MessageSpanDetail implements SpanDetail {
+public class PointcutMessageSupplier extends Supplier<Message> {
 
-    private final String format;
+    private final String template;
     private final Object[] args;
-    // span is only accessed by the trace thread so doesn't need to be volatile
-    private Span span;
+    // stopwatch is only accessed by the trace thread so doesn't need to be volatile
+    private Stopwatch stopwatch;
     private volatile boolean hasReturnValue;
     private volatile Object returnValue;
     private volatile Throwable throwable;
 
-    public MessageSpanDetail(String format, Object... args) {
-        this.format = format;
+    public PointcutMessageSupplier(String template, Object... args) {
+        this.template = template;
         this.args = args;
     }
 
-    public void setSpan(Span span) {
-        this.span = span;
+    public void setStopwatch(Stopwatch stopwatch) {
+        this.stopwatch = stopwatch;
     }
 
     public void setReturnValue(Object returnValue) {
@@ -47,22 +51,23 @@ public class MessageSpanDetail implements SpanDetail {
         this.throwable = throwable;
     }
 
-    public Span getSpan() {
-        return span;
+    public Stopwatch getStopwatch() {
+        return stopwatch;
     }
 
-    public String getDescription() {
+    @Override
+    public Message get() {
         if (hasReturnValue) {
-            return String.format(format, args) + " => " + String.valueOf(returnValue);
+            List<Object> messageArgs = Lists.newArrayList(args);
+            messageArgs.add(returnValue);
+            return Message.of(template + " => {{returnValue}}", messageArgs);
         } else if (throwable != null) {
-            return String.format(format, args) + " => " + throwable.getClass().getName() + ": "
-                    + throwable.getMessage();
+            List<Object> messageArgs = Lists.newArrayList(args);
+            messageArgs.add(throwable.getClass().getName());
+            messageArgs.add(throwable.getMessage());
+            return Message.of(template + " => {{throwable}}: {{throwableMessage}}", messageArgs);
         } else {
-            return String.format(format, args);
+            return Message.of(template, args);
         }
-    }
-
-    public SpanContextMap getContextMap() {
-        return null;
     }
 }

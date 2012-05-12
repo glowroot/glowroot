@@ -15,12 +15,12 @@
  */
 package org.informantproject.test.plugin;
 
+import org.informantproject.api.ContextMap;
+import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
-import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
+import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -50,37 +50,30 @@ public class LevelOneAspect {
         }
 
         @OnBefore
-        public static Span onBefore(final String arg1, final String arg2) {
-            RootSpanDetail rootSpanDetail = new RootSpanDetail() {
-                public String getDescription() {
-                    String description = pluginServices.getStringProperty("alternateDescription")
-                            .or("Level One");
+        public static Stopwatch onBefore(final String arg1, final String arg2) {
+            Supplier<Message> messageSupplier = new Supplier<Message>() {
+                @Override
+                public Message get() {
+                    String traceDescription = pluginServices.getStringProperty(
+                            "alternateDescription").or("Level One");
                     if (pluginServices.getBooleanProperty("starredDescription")) {
-                        return description + "*";
-                    } else {
-                        return description;
+                        traceDescription += "*";
                     }
-                }
-                public SpanContextMap getContextMap() {
-                    SpanContextMap contextMap = SpanContextMap.of("arg1", arg1, "arg2", arg2);
-                    SpanContextMap nestedContextMap = SpanContextMap.of("nestedkey11", arg1,
-                            "nestedkey12", arg2, "subnested1",
-                            SpanContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
-                    contextMap.put("nested1", nestedContextMap);
-                    contextMap.put("nested2",
-                            SpanContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return contextMap;
-                }
-                public Optional<String> getUsername() {
-                    return Optional.absent();
+                    ContextMap context = ContextMap.of("arg1", arg1, "arg2", arg2);
+                    ContextMap nestedContext = ContextMap.of("nestedkey11", arg1, "nestedkey12",
+                            arg2, "subnested1",
+                            ContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
+                    context.put("nested1", nestedContext);
+                    context.put("nested2", ContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
+                    return Message.withContext(traceDescription, context);
                 }
             };
-            return pluginServices.startRootSpan(metric, rootSpanDetail);
+            return pluginServices.startTrace(messageSupplier, metric);
         }
 
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 }

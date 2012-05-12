@@ -24,7 +24,7 @@ import java.io.File;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.RootSpanMarker;
+import org.informantproject.testkit.TraceMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,12 +62,12 @@ public class DataSourceCompactTest {
         assertThat(dbFile.length(), is(lessThan(preCompactionDbSize)));
     }
 
-    public static class GenerateLotsOfTraces implements AppUnderTest, RootSpanMarker {
+    public static class GenerateLotsOfTraces implements AppUnderTest, TraceMarker {
         public void executeApp() throws InterruptedException {
             for (int i = 0; i < 100; i++) {
-                rootSpanMarker();
+                traceMarker();
             }
         }
-        public void rootSpanMarker() {}
+        public void traceMarker() {}
     }
 }

@@ -16,13 +16,14 @@
 package org.informantproject.test;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.TraceMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,16 +56,18 @@ public class TraceMetricDataTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getMetrics().size(), is(1));
-        assertThat(trace.getMetrics().get(0).getName(), is("mock root span"));
+        // when running in external jvm (via javaagent), the additional "informant weaving" metric
+        // is present also
+        assertThat(trace.getMetrics().size(), is(greaterThanOrEqualTo(1)));
+        assertThat(trace.getMetrics().get(0).getName(), is("mock trace marker"));
     }
 
     public static class ShouldGenerateTraceWithMetricData implements AppUnderTest,
-            RootSpanMarker {
+            TraceMarker {
         public void executeApp() throws InterruptedException {
-            rootSpanMarker();
+            traceMarker();
         }
-        public void rootSpanMarker() throws InterruptedException {
+        public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
         }
     }

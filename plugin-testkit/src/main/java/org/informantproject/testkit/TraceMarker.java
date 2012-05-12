@@ -13,20 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.api;
+package org.informantproject.testkit;
 
 /**
- * Root spans also have the option of providing a username. This is often a very useful piece of
- * information to have in the trace, and it will be exposed as a filtering option in the future,
- * e.g. to persist all traces for a given username, which could be used for debugging an issue for a
- * specific user while not slowing down the system by persisting traces for all users.
- * 
- * The notes about {@link #getDescription()} and {@link #getContextMap()} being as lazy as possible
- * are also relevant for {@link #getUsername()}
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface RootSpanDetail extends SpanDetail {
-    Optional<String> getUsername();
+public interface TraceMarker {
+    void traceMarker() throws Exception;
 }

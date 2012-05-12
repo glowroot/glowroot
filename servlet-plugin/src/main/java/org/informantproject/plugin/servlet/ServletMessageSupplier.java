@@ -20,15 +20,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.informantproject.api.ContextMap;
+import org.informantproject.api.Message;
 import org.informantproject.api.Optional;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.SpanContextMap;
+import org.informantproject.api.Supplier;
 
 /**
  * Servlet span captured by AspectJ pointcut.
  * 
- * Similar thread safety issues as {@link JdbcSpanDetail}, see documentation in that class for more
- * info.
+ * Similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
+ * more info.
  * 
  * This span gets to piggyback on the happens-before relationships created by putting other spans
  * into the concurrent queue which ensures that session state is visible at least up to the start of
@@ -37,7 +38,7 @@ import org.informantproject.api.SpanContextMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ServletSpanDetail implements RootSpanDetail {
+class ServletMessageSupplier extends Supplier<Message> {
 
     // TODO allow additional notation for session attributes to capture, e.g.
     // +currentControllerContext.key which would denote to capture the value of that attribute at
@@ -60,8 +61,6 @@ class ServletSpanDetail implements RootSpanDetail {
     private final String requestURI;
     private volatile Map<String, String[]> requestParameterMap;
 
-    private volatile Optional<String> username = Optional.absent();
-
     // the initial value is the sessionId as it was present at the beginning of the request
     private final String sessionIdInitialValue;
 
@@ -76,12 +75,11 @@ class ServletSpanDetail implements RootSpanDetail {
 
     private volatile Map<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletSpanDetail(String requestMethod, String requestURI, Optional<String> username,
-            String sessionId, Map<String, String> sessionAttributeMap) {
+    ServletMessageSupplier(String requestMethod, String requestURI, String sessionId,
+            Map<String, String> sessionAttributeMap) {
 
         this.requestMethod = requestMethod;
         this.requestURI = requestURI;
-        this.username = username;
         this.sessionIdInitialValue = sessionId;
         if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
             this.sessionAttributeInitialValueMap = null;
@@ -90,19 +88,12 @@ class ServletSpanDetail implements RootSpanDetail {
         }
     }
 
-    public String getDescription() {
-        return requestMethod + " " + requestURI;
-    }
-
-    public SpanContextMap getContextMap() {
-        SpanContextMap context = new SpanContextMap();
+    @Override
+    public Message get() {
+        ContextMap context = new ContextMap();
         addRequestContext(context);
         addHttpSessionContext(context);
-        return context;
-    }
-
-    public Optional<String> getUsername() {
-        return username;
+        return Message.withContext(requestMethod + " " + requestURI, context);
     }
 
     boolean isRequestParameterMapCaptured() {
@@ -117,10 +108,6 @@ class ServletSpanDetail implements RootSpanDetail {
             map.put((String) entry.getKey(), (String[]) entry.getValue());
         }
         this.requestParameterMap = map;
-    }
-
-    void setUsername(Optional<String> username) {
-        this.username = username;
     }
 
     void setSessionIdUpdatedValue(String sessionId) {
@@ -142,9 +129,9 @@ class ServletSpanDetail implements RootSpanDetail {
         return sessionIdUpdatedValue;
     }
 
-    private void addRequestContext(SpanContextMap context) {
+    private void addRequestContext(ContextMap context) {
         if (requestParameterMap != null && !requestParameterMap.isEmpty()) {
-            SpanContextMap nestedContext = new SpanContextMap();
+            ContextMap nestedContext = new ContextMap();
             for (String parameterName : requestParameterMap.keySet()) {
                 String[] values = requestParameterMap.get(parameterName);
                 for (String value : values) {
@@ -155,7 +142,7 @@ class ServletSpanDetail implements RootSpanDetail {
         }
     }
 
-    private void addHttpSessionContext(SpanContextMap context) {
+    private void addHttpSessionContext(ContextMap context) {
         if (sessionIdUpdatedValue != null) {
             context.put("session id (at beginning of this request)", sessionIdInitialValue);
             context.put("session id (updated during this request)", sessionIdUpdatedValue);
@@ -174,7 +161,7 @@ class ServletSpanDetail implements RootSpanDetail {
                     getSessionAttributeUpdatedValues());
         } else if (sessionAttributeUpdatedValueMap != null) {
             // session attributes were updated mid-request
-            SpanContextMap initialValuesNestedContext = getSessionAttributeInitialValues();
+            ContextMap initialValuesNestedContext = getSessionAttributeInitialValues();
             // add empty values into initial values for any updated attributes that are not already
             // present in initial values nested context
             for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
@@ -194,9 +181,9 @@ class ServletSpanDetail implements RootSpanDetail {
         }
     }
 
-    private SpanContextMap getSessionAttributeInitialValues() {
+    private ContextMap getSessionAttributeInitialValues() {
         // create nested context with session attribute initial values
-        SpanContextMap nestedContext = new SpanContextMap();
+        ContextMap nestedContext = new ContextMap();
         for (Entry<String, String> entry : sessionAttributeInitialValueMap.entrySet()) {
             if (entry.getValue() != null) {
                 nestedContext.put(entry.getKey(), entry.getValue());
@@ -205,9 +192,9 @@ class ServletSpanDetail implements RootSpanDetail {
         return nestedContext;
     }
 
-    private SpanContextMap getSessionAttributeUpdatedValues() {
+    private ContextMap getSessionAttributeUpdatedValues() {
         // create nested context with session attribute updated values
-        SpanContextMap nestedContext = new SpanContextMap();
+        ContextMap nestedContext = new ContextMap();
         for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap.entrySet()) {
             if (entry.getValue() != null) {
                 nestedContext.putString(entry.getKey(), entry.getValue());

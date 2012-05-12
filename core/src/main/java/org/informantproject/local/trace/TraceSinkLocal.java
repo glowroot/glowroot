@@ -20,10 +20,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.Message;
 import org.informantproject.api.Optional;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
-import org.informantproject.core.trace.SpanImpl;
+import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
@@ -125,9 +126,10 @@ public class TraceSinkLocal implements TraceSink {
             storedTrace.setDuration(captureTick - trace.getStartTick());
             storedTrace.setCompleted(false);
         }
-        SpanImpl rootSpan = trace.getRootSpan().getSpans().iterator().next();
-        storedTrace.setDescription(rootSpan.getDescription().toString());
-        Optional<String> username = trace.getUsername();
+        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        Message message = rootSpan.getMessageSupplier().get();
+        storedTrace.setDescription(message.getText());
+        Optional<String> username = trace.getUsername().get();
         if (username.isPresent()) {
             storedTrace.setUsername(username.get());
         }

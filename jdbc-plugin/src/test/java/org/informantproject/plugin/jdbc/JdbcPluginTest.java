@@ -31,10 +31,10 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.PluginConfiguration;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.RootSpanMarker;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Metric;
 import org.informantproject.testkit.Trace.Span;
+import org.informantproject.testkit.TraceMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,7 +90,7 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(2));
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock root span"));
+        assertThat(rootSpan.getDescription(), is("mock trace marker"));
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getDescription(), is("jdbc execution: select * from employee"
                 + " => 1 row"));
@@ -106,7 +106,7 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(2));
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock root span"));
+        assertThat(rootSpan.getDescription(), is("mock trace marker"));
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getDescription(), is("jdbc execution: select * from employee"
                 + " where name like ? ['john%'] => 1 row"));
@@ -122,7 +122,7 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(3));
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock root span"));
+        assertThat(rootSpan.getDescription(), is("mock trace marker"));
         Span jdbcInsertSpan = trace.getSpans().get(1);
         assertThat(jdbcInsertSpan.getDescription(), is("jdbc execution: insert into employee"
                 + " (name) values ('john doe')"));
@@ -131,7 +131,7 @@ public class JdbcPluginTest {
         assertThat(trace.getMetrics().size(), is(4));
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
-        assertThat(trace.getMetrics().get(0).getName(), is("mock root span"));
+        assertThat(trace.getMetrics().get(0).getName(), is("mock trace marker"));
         HashSet<String> metricNames = Sets.newHashSet(trace.getMetrics().get(1).getName(),
                 trace.getMetrics().get(2).getName(), trace.getMetrics().get(3).getName());
         assertThat(metricNames, is(Sets.newHashSet("jdbc execute", "jdbc commit",
@@ -171,10 +171,10 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans().size(), is(2));
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock root span"));
+        assertThat(rootSpan.getDescription(), is("mock trace marker"));
         // h2 calls prepared statement execute underneath jdbc metadata but other drivers may not
         assertThat(trace.getMetrics().size(), is(greaterThanOrEqualTo(2)));
-        assertThat(trace.getMetrics().get(0).getName(), is("mock root span"));
+        assertThat(trace.getMetrics().get(0).getName(), is("mock trace marker"));
         assertThat(trace.getMetrics().get(1).getName(), is("jdbc metadata"));
     }
 
@@ -207,18 +207,18 @@ public class JdbcPluginTest {
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest,
-            RootSpanMarker {
+            TraceMarker {
 
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
-                rootSpanMarker();
+                traceMarker();
             } finally {
                 connection.close();
             }
         }
-        public void rootSpanMarker() throws Exception {
+        public void traceMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -233,18 +233,18 @@ public class JdbcPluginTest {
     }
 
     public static class ExecutePreparedStatementAndIterateOverResults implements AppUnderTest,
-            RootSpanMarker {
+            TraceMarker {
 
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
-                rootSpanMarker();
+                traceMarker();
             } finally {
                 connection.close();
             }
         }
-        public void rootSpanMarker() throws Exception {
+        public void traceMarker() throws Exception {
             PreparedStatement preparedStatement = connection.prepareStatement(
                     "select * from employee where name like ?");
             preparedStatement.setString(1, "john%");
@@ -260,18 +260,18 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteJdbcCommit implements AppUnderTest, RootSpanMarker {
+    public static class ExecuteJdbcCommit implements AppUnderTest, TraceMarker {
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
             try {
-                rootSpanMarker();
+                traceMarker();
             } finally {
                 connection.close();
             }
         }
-        public void rootSpanMarker() throws Exception {
+        public void traceMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.execute("insert into employee (name) values ('john doe')");
@@ -282,18 +282,18 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class AccessMetaData implements AppUnderTest, RootSpanMarker {
+    public static class AccessMetaData implements AppUnderTest, TraceMarker {
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
             try {
-                rootSpanMarker();
+                traceMarker();
             } finally {
                 connection.close();
             }
         }
-        public void rootSpanMarker() throws Exception {
+        public void traceMarker() throws Exception {
             connection.getMetaData().getTables(null, null, null, null);
         }
     }

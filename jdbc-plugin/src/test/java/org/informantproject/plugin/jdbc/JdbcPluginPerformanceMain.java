@@ -27,7 +27,7 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.RootSpanMarker;
+import org.informantproject.testkit.TraceMarker;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Metric;
 
@@ -103,7 +103,7 @@ public class JdbcPluginPerformanceMain {
         InformantContainer container = InformantContainer.create();
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
         coreProperties.setThresholdMillis(60000);
-        coreProperties.setStackTraceInitialDelayMillis(60000);
+        coreProperties.setProfilerInitialDelayMillis(60000);
         container.getInformant().updateCoreProperties(coreProperties);
         return container;
     }
@@ -123,7 +123,7 @@ public class JdbcPluginPerformanceMain {
     }
 
     public static class ExecuteJdbcSelectAndIterateOverResults implements AppUnderTest,
-            RootSpanMarker {
+            TraceMarker {
 
         private Connection connection;
         public void executeApp() throws Exception {
@@ -131,7 +131,7 @@ public class JdbcPluginPerformanceMain {
             try {
                 for (int i = 0; i < 1000; i++) {
                     long startTick = System.nanoTime();
-                    rootSpanMarker();
+                    traceMarker();
                     System.out.format("%d milliseconds%n", (System.nanoTime() - startTick)
                             / 1000000);
                 }
@@ -139,7 +139,7 @@ public class JdbcPluginPerformanceMain {
                 connection.close();
             }
         }
-        public void rootSpanMarker() throws Exception {
+        public void traceMarker() throws Exception {
             inner();
         }
         private void inner() throws SQLException {

@@ -19,14 +19,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigurationListener;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanDetail;
-import org.informantproject.api.TraceMetric;
+import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Supplier;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.configuration.ImmutablePluginConfiguration;
@@ -117,50 +116,29 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail) {
-        return startSpan(traceRegistry.getCurrentTrace(), (MetricImpl) metric, rootSpanDetail);
+    public Stopwatch startTrace(Supplier<Message> messageSupplier, Metric metric) {
+        return startSpan(traceRegistry.getCurrentTrace(), (MetricImpl) metric, messageSupplier);
     }
 
     @Override
-    public Span startSpan(Metric metric, SpanDetail spanDetail) {
+    public Stopwatch startEntry(Supplier<Message> messageSupplier, Metric metric) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
-            return IgnoreSpan.INSTANCE;
+            return NopStopwatch.INSTANCE;
         } else {
-            return startSpan(currentTrace, (MetricImpl) metric, spanDetail);
+            return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
         }
     }
 
     @Override
-    public void endSpan(Span span) {
-        if (span instanceof SpanImpl) {
-            endSpanAndMetric((SpanImpl) span);
-        } else if (span instanceof LimitDisabledSpan) {
-            endMetric(((LimitDisabledSpan) span).traceMetric);
-        } else if (span instanceof IgnoreSpan) {
-            // do nothing
-        } else {
-            logger.error("unexpected span type '{}'", span.getClass().getName());
-        }
-    }
-
-    @Override
-    public TraceMetricImpl startMetric(Metric metric) {
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace == null) {
-            // TODO return global collector?
-            return null;
-        } else {
-            return currentTrace.startTraceMetric((MetricImpl) metric);
-        }
-    }
-
-    @Override
-    public void endMetric(TraceMetric traceMetric) {
-        if (traceMetric != null) {
-            // TODO in the future a global collector will be passed instead of null and no
-            // conditional will be needed
-            ((TraceMetricImpl) traceMetric).stop();
+    public void setUsername(final Supplier<Optional<String>> username) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.setUsername(new com.google.common.base.Supplier<Optional<String>>() {
+                public Optional<String> get() {
+                    return username.get();
+                }
+            });
         }
     }
 
@@ -173,12 +151,12 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public RootSpanDetail getRootSpanDetail() {
+    public Supplier<Message> getRootMessageSupplier() {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             return null;
         } else {
-            return (RootSpanDetail) trace.getRootSpan().getRootSpan().getSpanDetail();
+            return trace.getRootSpan().getRootSpan().getMessageSupplier();
         }
     }
 
@@ -187,84 +165,76 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         pluginConfiguration = configurationService.getPluginConfiguration(pluginId);
     }
 
-    private void endSpanAndMetric(SpanImpl span) {
-        // minimizing the number of calls to the clock timer as they are relatively expensive
-        long endTick = ticker.read();
-        // pop span needs to be the last step (at least when this is a root span)
-        popSpan(span, endTick);
-    }
+    private Stopwatch startSpan(Trace currentTrace, MetricImpl metric,
+            Supplier<Message> messageSupplier) {
 
-    private Span startSpan(Trace currentTrace, MetricImpl metric, SpanDetail spanDetail) {
         if (currentTrace == null) {
-            currentTrace = new Trace(metric, spanDetail, clock, ticker);
+            currentTrace = new Trace(metric, messageSupplier, clock, ticker);
             traceRegistry.setCurrentTrace(currentTrace);
             traceRegistry.addTrace(currentTrace);
-            return currentTrace.getRootSpan().getRootSpan();
+            return new SpanStopwatch(currentTrace.getRootSpan().getRootSpan());
         } else {
-            int maxSpansPerTrace = coreConfiguration.getMaxSpansPerTrace();
-            if (maxSpansPerTrace != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
-                    && currentTrace.getRootSpan().getSize() >= maxSpansPerTrace) {
+            int maxTraceEntries = coreConfiguration.getMaxTraceEntries();
+            if (maxTraceEntries != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
+                    && currentTrace.getRootSpan().getSize() >= maxTraceEntries) {
                 // the trace limit has been exceeded
-                TraceMetricImpl traceMetric = startMetric(metric);
-                return new LimitDisabledSpan(traceMetric);
+                return metric.start();
             } else {
-                return currentTrace.pushSpan(metric, spanDetail);
+                return new SpanStopwatch(currentTrace.pushSpan(metric, messageSupplier));
             }
         }
     }
 
-    // typically pop() methods don't require the span to pop, but for safety,
-    // the span to pop is passed in just to make sure it is the one on top
-    // (and if it is not the one on top, then pop until it is found, preventing
-    // any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    private void popSpan(SpanImpl span, long endTick) {
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        StackTraceElement[] stackTraceElements = null;
-        if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfiguration
-                .getSpanStackTraceThresholdMillis())) {
-            stackTraceElements = Thread.currentThread().getStackTrace();
-            // TODO remove last few stack trace elements?
+    private class SpanStopwatch implements Stopwatch {
+        private final Span span;
+        private SpanStopwatch(Span span) {
+            this.span = span;
         }
-        currentTrace.popSpan(span, endTick, stackTraceElements);
-        if (currentTrace.isCompleted()) {
-            // the root span has been popped off
-            // since the metrics are bound to the thread, they need to be recorded and reset while
-            // still in the trace thread, before the thread is reused for another trace
-            currentTrace.resetThreadLocalMetrics();
-            cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
-            cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
-            traceRegistry.setCurrentTrace(null);
-            traceRegistry.removeTrace(currentTrace);
-            traceSink.onCompletedTrace(currentTrace);
+        public void stop() {
+            // minimizing the number of calls to the clock timer as they are relatively expensive
+            long endTick = ticker.read();
+            Trace currentTrace = traceRegistry.getCurrentTrace();
+            StackTraceElement[] stackTraceElements = null;
+            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfiguration
+                    .getSpanStackTraceThresholdMillis())) {
+                stackTraceElements = Thread.currentThread().getStackTrace();
+                // TODO remove last few stack trace elements?
+            }
+            currentTrace.popSpan(span, endTick, stackTraceElements);
+            if (currentTrace.isCompleted()) {
+                // the root span has been popped off
+                // since the metrics are bound to the thread, they need to be recorded and reset
+                // while
+                // still in the trace thread, before the thread is reused for another trace
+                currentTrace.resetThreadLocalMetrics();
+                cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
+                cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
+                traceRegistry.setCurrentTrace(null);
+                traceRegistry.removeTrace(currentTrace);
+                traceSink.onCompletedTrace(currentTrace);
+            }
         }
-    }
-
-    private static void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {
-        if (scheduledFuture == null) {
-            return;
-        }
-        boolean success = scheduledFuture.cancel(false);
-        if (!success) {
-            // execution failed due to an error (probably programming error)
-            try {
-                scheduledFuture.get();
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage(), e);
-            } catch (ExecutionException e) {
-                logger.error(e.getMessage(), e.getCause());
+        private void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+            if (scheduledFuture == null) {
+                return;
+            }
+            boolean success = scheduledFuture.cancel(false);
+            if (!success) {
+                // execution failed due to an error (probably programming error)
+                try {
+                    scheduledFuture.get();
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage(), e);
+                } catch (ExecutionException e) {
+                    logger.error(e.getMessage(), e.getCause());
+                }
             }
         }
     }
 
-    private static class LimitDisabledSpan implements Span {
-        private final TraceMetricImpl traceMetric;
-        private LimitDisabledSpan(TraceMetricImpl traceMetric) {
-            this.traceMetric = traceMetric;
-        }
-    }
-
-    private static class IgnoreSpan implements Span {
-        private static final IgnoreSpan INSTANCE = new IgnoreSpan();
+    private static class NopStopwatch implements Stopwatch {
+        private static final NopStopwatch INSTANCE = new NopStopwatch();
+        public void stop() {}
     }
 
     public interface PluginServicesImplFactory {

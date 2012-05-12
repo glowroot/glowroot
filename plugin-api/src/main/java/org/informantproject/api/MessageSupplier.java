@@ -19,4 +19,23 @@ package org.informantproject.api;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Span {}
+public abstract class MessageSupplier {
+
+    public static Supplier<Message> of(String message) {
+        return Supplier.of(Message.of(message));
+    }
+
+    public static Supplier<Message> of(String template, Object... args) {
+        return Supplier.of(Message.of(template, args));
+    }
+
+    public static Supplier<Message> withContext(String message, ContextMap context) {
+        return Supplier.of(Message.of(message, context));
+    }
+
+    public static Supplier<Message> withContextMap(String template, Object[] args,
+            ContextMap context) {
+
+        return Supplier.of(Message.of(template, args, context));
+    }
+}

@@ -20,13 +20,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
+import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectReturn;
@@ -63,8 +63,8 @@ public class ServletAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:servlet-plugin");
 
-    private static final ThreadLocal<ServletSpanDetail> topLevelServletSpanDetail =
-            new ThreadLocal<ServletSpanDetail>();
+    private static final ThreadLocal<ServletMessageSupplier> topLevelServletMessageSupplier =
+            new ThreadLocal<ServletMessageSupplier>();
 
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service", methodArgs = {
             "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
@@ -74,37 +74,43 @@ public class ServletAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
-            return pluginServices.isEnabled() && topLevelServletSpanDetail.get() == null;
+            return pluginServices.isEnabled() && topLevelServletMessageSupplier.get() == null;
         }
         @OnBefore
-        public static Span onBefore(@InjectMethodArg Object realRequest) {
+        public static Stopwatch onBefore(@InjectMethodArg Object realRequest) {
             HttpServletRequest request = HttpServletRequest.from(realRequest);
             // request parameter map is collected in afterReturningRequestGetParameterPointcut()
             // session info is collected here if the request already has a session
-            ServletSpanDetail spanDetail;
+            ServletMessageSupplier messageSupplier;
             // passing "false" so it won't create a session if the request doesn't already have one
             HttpSession session = request.getSession(false);
             if (session == null) {
-                spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
-                        Optional.absent(String.class), null, null);
+                messageSupplier = new ServletMessageSupplier(request.getMethod(),
+                        request.getRequestURI(),
+                        null, null);
             } else {
+                messageSupplier = new ServletMessageSupplier(request.getMethod(),
+                        request.getRequestURI(),
+                        session.getId(), getSessionAttributes(session));
+            }
+            topLevelServletMessageSupplier.set(messageSupplier);
+            Stopwatch stopwatch = pluginServices.startTrace(messageSupplier, metric);
+            if (session != null) {
                 Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
                         .getSessionUsernameAttributePath();
-                Optional<String> username = Optional.absent();
                 if (sessionUsernameAttributePath.isPresent()) {
-                    username = getSessionAttributeTextValue(session, sessionUsernameAttributePath
-                            .get());
+                    // capture username now, don't use a lazy supplier
+                    Optional<String> username = getSessionAttributeTextValue(session,
+                            sessionUsernameAttributePath.get());
+                    pluginServices.setUsername(Supplier.of(username));
                 }
-                spanDetail = new ServletSpanDetail(request.getMethod(), request.getRequestURI(),
-                        username, session.getId(), getSessionAttributes(session));
             }
-            topLevelServletSpanDetail.set(spanDetail);
-            return pluginServices.startRootSpan(metric, spanDetail);
+            return stopwatch;
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
-            topLevelServletSpanDetail.set(null);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
+            topLevelServletMessageSupplier.set(null);
         }
     }
 
@@ -117,12 +123,12 @@ public class ServletAspect {
             return ServletAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectMethodArg Object realRequest) {
+        public static Stopwatch onBefore(@InjectMethodArg Object realRequest) {
             return ServletAdvice.onBefore(realRequest);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            ServletAdvice.onAfter(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            ServletAdvice.onAfter(stopwatch);
         }
     }
 
@@ -135,12 +141,12 @@ public class ServletAspect {
             return ServletAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectMethodArg Object realRequest) {
+        public static Stopwatch onBefore(@InjectMethodArg Object realRequest) {
             return ServletAdvice.onBefore(realRequest);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            ServletAdvice.onAfter(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            ServletAdvice.onAfter(stopwatch);
         }
     }
 
@@ -168,12 +174,12 @@ public class ServletAspect {
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
             try {
-                ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
-                if (spanDetail != null && !spanDetail.isRequestParameterMapCaptured()) {
+                ServletMessageSupplier messageSupplier = topLevelServletMessageSupplier.get();
+                if (messageSupplier != null && !messageSupplier.isRequestParameterMapCaptured()) {
                     // this request is being traced and the request parameter map hasn't been
                     // captured yet
                     HttpServletRequest request = HttpServletRequest.from(realRequest);
-                    spanDetail.captureRequestParameterMap(request.getParameterMap());
+                    messageSupplier.captureRequestParameterMap(request.getParameterMap());
                 }
             } finally {
                 // taking no chances on re-setting thread local (thus the second try/finally)
@@ -200,9 +206,9 @@ public class ServletAspect {
             // pointcut
             // after calls to the first two (no-arg, and passing true), a new session may have been
             // created (the third one -- passing false -- could be ignored but is harmless)
-            ServletSpanDetail spanDetail = topLevelServletSpanDetail.get();
-            if (spanDetail != null && session != null && session.isNew()) {
-                spanDetail.setSessionIdUpdatedValue(session.getId());
+            ServletMessageSupplier messageSupplier = topLevelServletMessageSupplier.get();
+            if (messageSupplier != null && session != null && session.isNew()) {
+                messageSupplier.setSessionIdUpdatedValue(session.getId());
             }
         }
     }
@@ -216,9 +222,9 @@ public class ServletAspect {
         @OnBefore
         public static void onBefore(@InjectTarget Object realSession) {
             HttpSession session = HttpSession.from(realSession);
-            ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
-            if (spanDetail != null) {
-                spanDetail.setSessionIdUpdatedValue("");
+            ServletMessageSupplier messageSupplier = getRootServletMessageSupplier(session);
+            if (messageSupplier != null) {
+                messageSupplier.setSessionIdUpdatedValue("");
             }
         }
     }
@@ -239,10 +245,10 @@ public class ServletAspect {
             HttpSession session = HttpSession.from(realSession);
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
-            ServletSpanDetail spanDetail = getRootServletSpanDetail(session);
-            if (spanDetail != null) {
-                updateUsernameIfApplicable(spanDetail, name, value, session);
-                updateSessionAttributesIfApplicable(spanDetail, name, value, session);
+            ServletMessageSupplier messageSupplier = getRootServletMessageSupplier(session);
+            if (messageSupplier != null) {
+                updateUsernameIfApplicable(name, value, session);
+                updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
             }
         }
     }
@@ -276,19 +282,18 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Object listener) {
+        public static Stopwatch onBefore(@InjectTarget Object listener) {
             if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-                RootSpanDetail rootSpanDetail = new StartupRootSpanDetail(
-                        "servlet context initialized (" + listener.getClass().getName() + ")");
-                return pluginServices.startRootSpan(metric, rootSpanDetail);
+                return pluginServices.startTrace(MessageSupplier.of("servlet context initialized"
+                        + " ({{listener}})", listener.getClass().getName()), metric);
             } else {
                 return null;
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            if (span != null) {
-                pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            if (stopwatch != null) {
+                stopwatch.stop();
             }
         }
     }
@@ -302,19 +307,18 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Object servlet) {
+        public static Stopwatch onBefore(@InjectTarget Object servlet) {
             if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-                RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("servlet init ("
-                        + servlet.getClass().getName() + ")");
-                return pluginServices.startRootSpan(metric, rootSpanDetail);
+                return pluginServices.startTrace(MessageSupplier.of("servlet init ({{filter}})",
+                        servlet.getClass().getName()), metric);
             } else {
                 return null;
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            if (span != null) {
-                pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            if (stopwatch != null) {
+                stopwatch.stop();
             }
         }
     }
@@ -328,26 +332,23 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Object filter) {
+        public static Stopwatch onBefore(@InjectTarget Object filter) {
             if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-                RootSpanDetail rootSpanDetail = new StartupRootSpanDetail("filter init ("
-                        + filter.getClass().getName() + ")");
-                return pluginServices.startRootSpan(metric, rootSpanDetail);
+                return pluginServices.startTrace(MessageSupplier.of("filter init ({{filter}})",
+                        filter.getClass().getName()), metric);
             } else {
                 return null;
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            if (span != null) {
-                pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            if (stopwatch != null) {
+                stopwatch.stop();
             }
         }
     }
 
-    private static void updateUsernameIfApplicable(ServletSpanDetail spanDetail, String name,
-            Object value, HttpSession session) {
-
+    private static void updateUsernameIfApplicable(String name, Object value, HttpSession session) {
         if (value == null) {
             // if username value is set to null, don't clear it
             return;
@@ -355,27 +356,32 @@ public class ServletAspect {
         Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
                 .getSessionUsernameAttributePath();
         if (sessionUsernameAttributePath.isPresent()) {
+            // capture username now, don't use a lazy supplier
             if (sessionUsernameAttributePath.get().equals(name)) {
                 // it's unlikely, but possible, that toString() returns null
-                spanDetail.setUsername(Optional.fromNullable(value.toString()));
+                pluginServices.setUsername(Supplier.of(Optional.fromNullable(value.toString())));
             } else if (sessionUsernameAttributePath.get().startsWith(name + ".")) {
                 Optional<String> val = getSessionAttributeTextValue(session,
                         sessionUsernameAttributePath.get());
-                spanDetail.setUsername(val);
+                if (val.isPresent()) {
+                    // if username is absent, don't clear it
+                    pluginServices.setUsername(Supplier.of(val));
+                }
             }
         }
     }
 
-    private static void updateSessionAttributesIfApplicable(ServletSpanDetail spanDetail,
+    private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
             String name,
             Object value, HttpSession session) {
 
         if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
             if (value == null) {
-                spanDetail.putSessionAttributeChangedValue(name, Optional.absent(String.class));
+                messageSupplier
+                        .putSessionAttributeChangedValue(name, Optional.absent(String.class));
             } else {
                 // it's unlikely, but possible, that toString() returns null
-                spanDetail.putSessionAttributeChangedValue(name, Optional.fromNullable(value
+                messageSupplier.putSessionAttributeChangedValue(name, Optional.fromNullable(value
                         .toString()));
             }
         } else if (ServletPluginPropertyUtils.getSessionAttributeNames().contains(name)) {
@@ -383,44 +389,46 @@ public class ServletAspect {
             for (String path : ServletPluginPropertyUtils.getSessionAttributePaths()) {
                 if (path.equals(name)) {
                     if (value == null) {
-                        spanDetail.putSessionAttributeChangedValue(path, Optional.absent(
+                        messageSupplier.putSessionAttributeChangedValue(path, Optional.absent(
                                 String.class));
                     } else {
                         // it's unlikely, but possible, that toString() returns null
-                        spanDetail.putSessionAttributeChangedValue(path, Optional.fromNullable(
-                                value.toString()));
+                        messageSupplier.putSessionAttributeChangedValue(path,
+                                Optional.fromNullable(
+                                        value.toString()));
                     }
                 } else if (path.startsWith(name + ".")) {
                     if (value == null) {
                         // no need to navigate path since it will always be Optional.absent()
-                        spanDetail.putSessionAttributeChangedValue(path, Optional.absent(
+                        messageSupplier.putSessionAttributeChangedValue(path, Optional.absent(
                                 String.class));
                     } else {
                         Optional<String> val = getSessionAttributeTextValue(session, path);
-                        spanDetail.putSessionAttributeChangedValue(path, val);
+                        messageSupplier.putSessionAttributeChangedValue(path, val);
                     }
                 }
             }
         }
     }
 
-    private static ServletSpanDetail getRootServletSpanDetail(HttpSession session) {
-        SpanDetail rootSpanDetail = pluginServices.getRootSpanDetail();
-        if (!(rootSpanDetail instanceof ServletSpanDetail)) {
+    private static ServletMessageSupplier getRootServletMessageSupplier(HttpSession session) {
+        Supplier<Message> rootMessageSupplier = pluginServices.getRootMessageSupplier();
+        if (!(rootMessageSupplier instanceof ServletMessageSupplier)) {
             return null;
         }
-        ServletSpanDetail rootServletSpanDetail = (ServletSpanDetail) rootSpanDetail;
+        ServletMessageSupplier rootServletMessageSupplier =
+                (ServletMessageSupplier) rootMessageSupplier;
         String sessionId;
-        if (rootServletSpanDetail.getSessionIdUpdatedValue() != null) {
-            sessionId = rootServletSpanDetail.getSessionIdUpdatedValue();
+        if (rootServletMessageSupplier.getSessionIdUpdatedValue() != null) {
+            sessionId = rootServletMessageSupplier.getSessionIdUpdatedValue();
         } else {
-            sessionId = rootServletSpanDetail.getSessionIdInitialValue();
+            sessionId = rootServletMessageSupplier.getSessionIdInitialValue();
         }
         if (!session.getId().equals(sessionId)) {
-            // the target session for this pointcut is not the same as the SpanDetail
+            // the target session for this pointcut is not the same as the MessageSupplier
             return null;
         }
-        return rootServletSpanDetail;
+        return rootServletMessageSupplier;
     }
 
     private static Map<String, String> getSessionAttributes(HttpSession session) {
@@ -474,22 +482,6 @@ public class ServletAspect {
             } else {
                 return Optional.absent();
             }
-        }
-    }
-
-    private static final class StartupRootSpanDetail implements RootSpanDetail {
-        private final String description;
-        private StartupRootSpanDetail(String description) {
-            this.description = description;
-        }
-        public String getDescription() {
-            return description;
-        }
-        public SpanContextMap getContextMap() {
-            return null;
-        }
-        public Optional<String> getUsername() {
-            return Optional.absent();
         }
     }
 

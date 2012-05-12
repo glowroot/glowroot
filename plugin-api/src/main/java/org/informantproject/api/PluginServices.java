@@ -18,6 +18,9 @@ package org.informantproject.api;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -59,19 +62,15 @@ public abstract class PluginServices {
 
     public abstract Optional<Double> getDoubleProperty(String propertyName);
 
-    public abstract Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail);
+    public abstract Stopwatch startTrace(Supplier<Message> message, Metric metric);
 
-    public abstract Span startSpan(Metric metric, SpanDetail spanDetail);
+    public abstract Stopwatch startEntry(Supplier<Message> message, Metric metric);
 
-    public abstract void endSpan(Span span);
-
-    public abstract TraceMetric startMetric(Metric metric);
-
-    public abstract void endMetric(TraceMetric traceMetric);
+    public abstract void setUsername(Supplier<Optional<String>> username);
 
     public abstract void putTraceAttribute(String name, String value);
 
-    public abstract RootSpanDetail getRootSpanDetail();
+    public abstract Supplier<Message> getRootMessageSupplier();
 
     public static PluginServices get(String pluginId) {
         return pluginServices.getUnchecked(pluginId);
@@ -141,25 +140,19 @@ public abstract class PluginServices {
         @Override
         public void registerConfigurationListener(ConfigurationListener listener) {}
         @Override
-        public Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail) {
+        public Stopwatch startTrace(Supplier<Message> message, Metric metric) {
             return null;
         }
         @Override
-        public Span startSpan(Metric metric, SpanDetail spanDetail) {
+        public Stopwatch startEntry(Supplier<Message> message, Metric metric) {
             return null;
         }
         @Override
-        public void endSpan(Span span) {}
-        @Override
-        public TraceMetric startMetric(Metric metric) {
-            return null;
-        }
-        @Override
-        public void endMetric(TraceMetric traceMetric) {}
+        public void setUsername(Supplier<Optional<String>> username) {}
         @Override
         public void putTraceAttribute(String name, String value) {}
         @Override
-        public RootSpanDetail getRootSpanDetail() {
+        public Supplier<Message> getRootMessageSupplier() {
             return null;
         }
     }

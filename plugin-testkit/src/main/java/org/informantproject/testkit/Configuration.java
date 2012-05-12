@@ -66,7 +66,7 @@ public class Configuration {
         private int stackTraceInitialDelayMillis;
         private int stackTracePeriodMillis;
         private int spanStackTraceThresholdMillis;
-        private int maxSpansPerTrace;
+        private int maxTraceEntries;
         private int rollingSizeMb;
         private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
@@ -100,11 +100,11 @@ public class Configuration {
         public void setSpanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         }
-        public int getMaxSpansPerTrace() {
-            return maxSpansPerTrace;
+        public int getMaxTraceEntries() {
+            return maxTraceEntries;
         }
-        public void setMaxSpansPerTrace(int maxSpansPerTrace) {
-            this.maxSpansPerTrace = maxSpansPerTrace;
+        public void setMaxTraceEntries(int maxTraceEntries) {
+            this.maxTraceEntries = maxTraceEntries;
         }
         public int getRollingSizeMb() {
             return rollingSizeMb;
@@ -128,7 +128,7 @@ public class Configuration {
         public int hashCode() {
             return Objects.hashCode(thresholdMillis, stuckThresholdSeconds,
                     stackTraceInitialDelayMillis, stackTracePeriodMillis,
-                    spanStackTraceThresholdMillis, maxSpansPerTrace,
+                    spanStackTraceThresholdMillis, maxTraceEntries,
                     rollingSizeMb, warnOnSpanOutsideTrace, metricPeriodMillis);
         }
         @Override
@@ -144,7 +144,7 @@ public class Configuration {
                     && Objects.equal(stackTracePeriodMillis, other.stackTracePeriodMillis)
                     && Objects.equal(spanStackTraceThresholdMillis,
                             other.spanStackTraceThresholdMillis)
-                    && Objects.equal(maxSpansPerTrace, other.maxSpansPerTrace)
+                    && Objects.equal(maxTraceEntries, other.maxTraceEntries)
                     && Objects.equal(rollingSizeMb, other.rollingSizeMb)
                     && Objects.equal(warnOnSpanOutsideTrace, other.warnOnSpanOutsideTrace)
                     && Objects.equal(metricPeriodMillis, other.metricPeriodMillis);

@@ -67,7 +67,7 @@ public class ImmutableCoreConfiguration {
 
     // used to limit memory requirement, also used to help limit log file size,
     // 0 means don't capture any traces, -1 means no limit
-    private int maxSpansPerTrace = 5000;
+    private int maxTraceEntries = 5000;
 
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
@@ -101,8 +101,8 @@ public class ImmutableCoreConfiguration {
         return spanStackTraceThresholdMillis;
     }
 
-    public int getMaxSpansPerTrace() {
-        return maxSpansPerTrace;
+    public int getMaxTraceEntries() {
+        return maxTraceEntries;
     }
 
     public int getRollingSizeMb() {
@@ -124,7 +124,7 @@ public class ImmutableCoreConfiguration {
         propertiesJson.addProperty("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis);
         propertiesJson.addProperty("stackTracePeriodMillis", stackTracePeriodMillis);
         propertiesJson.addProperty("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis);
-        propertiesJson.addProperty("maxSpansPerTrace", maxSpansPerTrace);
+        propertiesJson.addProperty("maxTraceEntries", maxTraceEntries);
         propertiesJson.addProperty("rollingSizeMb", rollingSizeMb);
         propertiesJson.addProperty("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace);
         propertiesJson.addProperty("metricPeriodMillis", metricPeriodMillis);
@@ -140,7 +140,7 @@ public class ImmutableCoreConfiguration {
                 .add("stackTraceInitialDelayMillis", stackTraceInitialDelayMillis)
                 .add("stackTracePeriodMillis", stackTracePeriodMillis)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
-                .add("maxSpansPerTrace", maxSpansPerTrace)
+                .add("maxTraceEntries", maxTraceEntries)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("metricPeriodMillis", metricPeriodMillis);
@@ -161,7 +161,7 @@ public class ImmutableCoreConfiguration {
                 && Objects.equal(stackTracePeriodMillis, other.getStackTracePeriodMillis())
                 && Objects.equal(spanStackTraceThresholdMillis,
                         other.getSpanStackTraceThresholdMillis())
-                && Objects.equal(maxSpansPerTrace, other.getMaxSpansPerTrace())
+                && Objects.equal(maxTraceEntries, other.getMaxTraceEntries())
                 && Objects.equal(rollingSizeMb, other.getRollingSizeMb())
                 && Objects.equal(warnOnSpanOutsideTrace, other.isWarnOnSpanOutsideTrace())
                 && Objects.equal(metricPeriodMillis, other.getMetricPeriodMillis());
@@ -171,7 +171,7 @@ public class ImmutableCoreConfiguration {
     public int hashCode() {
         return Objects.hashCode(enabled, thresholdMillis, stuckThresholdSeconds,
                 stackTraceInitialDelayMillis, stackTracePeriodMillis,
-                spanStackTraceThresholdMillis, maxSpansPerTrace, rollingSizeMb,
+                spanStackTraceThresholdMillis, maxTraceEntries, rollingSizeMb,
                 warnOnSpanOutsideTrace, metricPeriodMillis);
     }
 
@@ -189,7 +189,7 @@ public class ImmutableCoreConfiguration {
         private int stackTraceInitialDelayMillis;
         private int stackTracePeriodMillis;
         private int spanStackTraceThresholdMillis;
-        private int maxSpansPerTrace;
+        private int maxTraceEntries;
         private int rollingSizeMb;
         private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
@@ -205,7 +205,7 @@ public class ImmutableCoreConfiguration {
             stackTraceInitialDelayMillis = base.stackTraceInitialDelayMillis;
             stackTracePeriodMillis = base.stackTracePeriodMillis;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
-            maxSpansPerTrace = base.maxSpansPerTrace;
+            maxTraceEntries = base.maxTraceEntries;
             rollingSizeMb = base.rollingSizeMb;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
             metricPeriodMillis = base.metricPeriodMillis;
@@ -219,7 +219,7 @@ public class ImmutableCoreConfiguration {
             configuration.stackTraceInitialDelayMillis = stackTraceInitialDelayMillis;
             configuration.stackTracePeriodMillis = stackTracePeriodMillis;
             configuration.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
-            configuration.maxSpansPerTrace = maxSpansPerTrace;
+            configuration.maxTraceEntries = maxTraceEntries;
             configuration.rollingSizeMb = rollingSizeMb;
             configuration.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             configuration.metricPeriodMillis = metricPeriodMillis;
@@ -244,8 +244,8 @@ public class ImmutableCoreConfiguration {
                 setSpanStackTraceThresholdMillis(jsonObject.get("spanStackTraceThresholdMillis")
                         .getAsInt());
             }
-            if (jsonObject.get("maxSpansPerTrace") != null) {
-                setMaxSpansPerTrace(jsonObject.get("maxSpansPerTrace").getAsInt());
+            if (jsonObject.get("maxTraceEntries") != null) {
+                setMaxTraceEntries(jsonObject.get("maxTraceEntries").getAsInt());
             }
             if (jsonObject.get("rollingSizeMb") != null) {
                 setRollingSizeMb(jsonObject.get("rollingSizeMb").getAsInt());
@@ -290,8 +290,8 @@ public class ImmutableCoreConfiguration {
             return this;
         }
 
-        public CoreConfigurationBuilder setMaxSpansPerTrace(int maxSpansPerTrace) {
-            this.maxSpansPerTrace = maxSpansPerTrace;
+        public CoreConfigurationBuilder setMaxTraceEntries(int maxTraceEntries) {
+            this.maxTraceEntries = maxTraceEntries;
             return this;
         }
 

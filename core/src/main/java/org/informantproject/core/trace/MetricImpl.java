@@ -16,6 +16,7 @@
 package org.informantproject.core.trace;
 
 import org.informantproject.api.Metric;
+import org.informantproject.api.Stopwatch;
 
 import com.google.common.base.Ticker;
 
@@ -26,12 +27,14 @@ import com.google.common.base.Ticker;
 public class MetricImpl implements Metric {
 
     private final String name;
-    private final ThreadLocal<TraceMetricImpl> traceMetric = new ThreadLocal<TraceMetricImpl>();
+    private final ThreadLocal<TraceMetric> traceMetric = new ThreadLocal<TraceMetric>();
 
+    private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
-    public MetricImpl(String name, Ticker ticker) {
+    public MetricImpl(String name, TraceRegistry traceRegistry, Ticker ticker) {
         this.name = name;
+        this.traceRegistry = traceRegistry;
         this.ticker = ticker;
     }
 
@@ -39,10 +42,20 @@ public class MetricImpl implements Metric {
         return name;
     }
 
-    TraceMetricImpl start() {
-        TraceMetricImpl item = traceMetric.get();
+    public Stopwatch start() {
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace == null) {
+            // TODO return global collector?
+            return NopStopwatch.INSTANCE;
+        } else {
+            return currentTrace.startTraceMetric(this);
+        }
+    }
+
+    TraceMetric startInternal() {
+        TraceMetric item = traceMetric.get();
         if (item == null) {
-            item = new TraceMetricImpl(name, ticker);
+            item = new TraceMetric(name, ticker);
             item.start();
             traceMetric.set(item);
             return item;
@@ -52,10 +65,10 @@ public class MetricImpl implements Metric {
         }
     }
 
-    TraceMetricImpl start(long startTick) {
-        TraceMetricImpl item = traceMetric.get();
+    TraceMetric startInternal(long startTick) {
+        TraceMetric item = traceMetric.get();
         if (item == null) {
-            item = new TraceMetricImpl(name, ticker);
+            item = new TraceMetric(name, ticker);
             item.start(startTick);
             traceMetric.set(item);
             return item;
@@ -65,11 +78,16 @@ public class MetricImpl implements Metric {
         }
     }
 
-    TraceMetricImpl get() {
+    TraceMetric get() {
         return traceMetric.get();
     }
 
     void remove() {
         traceMetric.remove();
+    }
+
+    private static class NopStopwatch implements Stopwatch {
+        private static final NopStopwatch INSTANCE = new NopStopwatch();
+        public void stop() {}
     }
 }

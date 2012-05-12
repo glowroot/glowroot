@@ -15,7 +15,7 @@
  */
 package org.informantproject.core.trace;
 
-import org.informantproject.api.TraceMetric;
+import org.informantproject.api.Stopwatch;
 
 import com.google.common.base.Ticker;
 
@@ -27,7 +27,7 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceMetricImpl implements TraceMetric {
+public class TraceMetric implements Stopwatch {
 
     private final String name;
     // nanosecond rollover (292 years) isn't a concern for total time on a single trace
@@ -50,7 +50,7 @@ public class TraceMetricImpl implements TraceMetric {
 
     private final Ticker ticker;
 
-    TraceMetricImpl(String name, Ticker ticker) {
+    TraceMetric(String name, Ticker ticker) {
         this.name = name;
         this.ticker = ticker;
     }

@@ -26,13 +26,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigurationListener;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
-import org.informantproject.api.TraceMetric;
+import org.informantproject.api.Stopwatch;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectReturn;
@@ -101,12 +99,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceMetric onBefore() {
-            return pluginServices.startMetric(metric);
+        public static Stopwatch onBefore() {
+            return metric.start();
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            pluginServices.endMetric(traceMetric);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -199,17 +197,17 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Statement statement,
+        public static Stopwatch onBefore(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
 
             StatementMirror mirror = getStatementMirror(statement);
-            JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(sql);
-            mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-            return pluginServices.startSpan(metric, jdbcSpanDetail);
+            JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(sql);
+            mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+            return pluginServices.startEntry(jdbcMessageSupplier, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -224,16 +222,17 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget PreparedStatement preparedStatement) {
+        public static Stopwatch onBefore(@InjectTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
-            JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror
-                    .getParametersCopy());
-            mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-            return pluginServices.startSpan(metric, jdbcSpanDetail);
+            JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
+                    mirror
+                            .getParametersCopy());
+            mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+            return pluginServices.startEntry(jdbcMessageSupplier, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -248,24 +247,26 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget final Statement statement) {
+        public static Stopwatch onBefore(@InjectTarget final Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror = getPreparedStatementMirror(
                         (PreparedStatement) statement);
-                JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(mirror.getSql(), mirror
-                        .getBatchedParametersCopy());
-                mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-                return pluginServices.startSpan(metric, jdbcSpanDetail);
+                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
+                        mirror
+                                .getBatchedParametersCopy());
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                return pluginServices.startEntry(jdbcMessageSupplier, metric);
             } else {
                 StatementMirror mirror = getStatementMirror(statement);
-                JdbcSpanDetail jdbcSpanDetail = new JdbcSpanDetail(mirror.getBatchedSqlCopy());
-                mirror.setLastJdbcSpanDetail(jdbcSpanDetail);
-                return pluginServices.startSpan(metric, jdbcSpanDetail);
+                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
+                        mirror.getBatchedSqlCopy());
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                return pluginServices.startEntry(jdbcMessageSupplier, metric);
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -298,9 +299,9 @@ public class JdbcAspect {
             return pluginEnabled;
         }
         @OnBefore
-        public static TraceMetric onBefore() {
+        public static Stopwatch onBefore() {
             if (metricEnabled) {
-                return pluginServices.startMetric(metric);
+                return metric.start();
             } else {
                 return null;
             }
@@ -316,7 +317,7 @@ public class JdbcAspect {
                     // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
                     return;
                 }
-                JdbcSpanDetail lastSpan = mirror.getLastJdbcSpanDetail();
+                JdbcMessageSupplier lastSpan = mirror.getLastJdbcMessageSupplier();
                 if (lastSpan == null) {
                     // tracing must be disabled (e.g. exceeded trace limit per operation)
                     return;
@@ -332,9 +333,9 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            if (traceMetric != null) {
-                pluginServices.endMetric(traceMetric);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            if (stopwatch != null) {
+                stopwatch.stop();
             }
         }
     }
@@ -359,12 +360,12 @@ public class JdbcAspect {
             return metricEnabled;
         }
         @OnBefore
-        public static TraceMetric onBefore() {
-            return pluginServices.startMetric(metric);
+        public static Stopwatch onBefore() {
+            return metric.start();
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            pluginServices.endMetric(traceMetric);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -389,12 +390,12 @@ public class JdbcAspect {
             return metricEnabled;
         }
         @OnBefore
-        public static TraceMetric onBefore() {
-            return pluginServices.startMetric(metric);
+        public static Stopwatch onBefore() {
+            return metric.start();
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            pluginServices.endMetric(traceMetric);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -403,27 +404,18 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.Connection", methodName = "commit", captureNested = false,
             metricName = "jdbc commit")
     public static class ConnectionCommitAdvice {
-        private static final Metric commitMetric = pluginServices.getMetric(
-                ConnectionCommitAdvice.class);
+        private static final Metric metric = pluginServices.getMetric(ConnectionCommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore() {
-            SpanDetail spanDetail = new SpanDetail() {
-                public CharSequence getDescription() {
-                    return "jdbc commit";
-                }
-                public SpanContextMap getContextMap() {
-                    return null;
-                }
-            };
-            return pluginServices.startSpan(commitMetric, spanDetail);
+        public static Stopwatch onBefore() {
+            return pluginServices.startEntry(MessageSupplier.of("jdbc commit"), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -440,7 +432,7 @@ public class JdbcAspect {
         public static void onReturn(@InjectTarget Statement statement) {
             StatementMirror mirror = getStatementMirror(statement);
             mirror.clearBatch();
-            mirror.setLastJdbcSpanDetail(null);
+            mirror.setLastJdbcMessageSupplier(null);
         }
     }
 
@@ -455,12 +447,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceMetric onBefore() {
-            return pluginServices.startMetric(metric);
+        public static Stopwatch onBefore() {
+            return metric.start();
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            pluginServices.endMetric(traceMetric);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -475,12 +467,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceMetric onBefore() {
-            return pluginServices.startMetric(metric);
+        public static Stopwatch onBefore() {
+            return metric.start();
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler TraceMetric traceMetric) {
-            pluginServices.endMetric(traceMetric);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 

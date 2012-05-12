@@ -162,7 +162,7 @@
       $('#stackTraceInitialDelayMillis').val(coreProperties.stackTraceInitialDelayMillis)
       $('#stackTracePeriodMillis').val(coreProperties.stackTracePeriodMillis)
       $('#spanStackTraceThresholdMillis').val(coreProperties.spanStackTraceThresholdMillis)
-      $('#maxSpansPerTrace').val(coreProperties.maxSpansPerTrace)
+      $('#maxTraceEntries').val(coreProperties.maxTraceEntries)
       $('#rollingSizeMb').val(coreProperties.rollingSizeMb)
       if (configuration.actualRollingSizeMb != coreProperties.rollingSizeMb) {
         $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
@@ -204,7 +204,7 @@
       'stackTraceInitialDelayMillis': $('#stackTraceInitialDelayMillis').val(),
       'stackTracePeriodMillis': $('#stackTracePeriodMillis').val(),
       'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
-      'maxSpansPerTrace': $('#maxSpansPerTrace').val(),
+      'maxTraceEntries': $('#maxTraceEntries').val(),
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
     $.post('configuration/core/properties', JSON.stringify(properties), function() {
@@ -339,16 +339,15 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="maxSpansPerTrace">Max spans per trace</label>
+        <label class="control-label" for="maxTraceEntries">Max trace entries</label>
         <div class="controls">
-          <input style="width: 6em" id="maxSpansPerTrace" type="text">
+          <input style="width: 6em" id="maxTraceEntries" type="text">
           <div class="help-block">
-            Maximum number of spans collected for a given trace.
-            Since spans are bound to their trace until the trace completes, this is useful for
-            limiting the memory requirement of very very long requests that collect potentially
-            hundreds of thousands of spans (e.g. large batch or background operations).
+            Maximum number of trace entries collected for a given trace. This is useful for limiting
+            the memory requirement of very very long traces that capture potentially hundreds of
+            thousands of trace entries (e.g. large batch or background operations).
             Also, the trace explorer is not really optimized for viewing super large numbers of
-            spans.
+            trace entries.
           </div>
         </div>
       </div>
@@ -363,10 +362,11 @@
             </div>
           </div>
           <div class="help-block">
-            Trace detail data (spans, merged stack tree) is persisted to disk as LZF-compressed json
-            data in a rolling data file to efficiently cap the growth of this large data.
-            (Trace summary data - capture time, duration, description, username, attributes, metrics
-            - is persisted to an H2 data file by the embedded H2 database engine.)
+            Trace detail data (trace entries, sampled profile) is persisted to disk as
+            LZF-compressed json data in a rolling data file to efficiently cap the growth of this
+            large data. (Trace summary data - capture time, duration, description, username,
+            attributes, metrics - is persisted to an H2 data file by the embedded H2 database
+            engine.)
           </div>
         </div>
       </div>

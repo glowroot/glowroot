@@ -28,10 +28,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.informantproject.api.Message;
 import org.informantproject.api.Optional;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanDetail;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 
@@ -62,6 +60,9 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
+    private volatile Supplier<Optional<String>> username = Suppliers.ofInstance(Optional
+            .absent(String.class));
+
     // attribute name ordering is maintained for consistent display
     // (assumption is order of entry is order of importance)
     private final Queue<Attribute> attributes = new ConcurrentLinkedQueue<Attribute>();
@@ -69,8 +70,8 @@ public class Trace {
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricImpl> metrics = Lists.newArrayList();
     // this is mostly updated and rarely read, so seems like synchronized list is best collection
-    private final List<TraceMetricImpl> traceMetrics = Collections.synchronizedList(
-            new ArrayList<TraceMetricImpl>());
+    private final List<TraceMetric> traceMetrics = Collections.synchronizedList(
+            new ArrayList<TraceMetric>());
 
     // root span for this trace
     private final RootSpan rootSpan;
@@ -97,14 +98,16 @@ public class Trace {
 
     private final Ticker ticker;
 
-    Trace(MetricImpl metric, SpanDetail spanDetail, Clock clock, Ticker ticker) {
+    Trace(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier,
+            Clock clock, Ticker ticker) {
+
         this.ticker = ticker;
         long startTimeMillis = clock.currentTimeMillis();
         id = new TraceUniqueId(startTimeMillis);
         startDate = new Date(startTimeMillis);
         long startTick = ticker.read();
-        TraceMetricImpl traceMetric = metric.start(startTick);
-        rootSpan = new RootSpan(spanDetail, traceMetric, startTick, ticker);
+        TraceMetric traceMetric = metric.startInternal(startTick);
+        rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
         metrics.add(metric);
         traceMetrics.add(traceMetric);
     }
@@ -139,15 +142,15 @@ public class Trace {
         return stuck.get();
     }
 
-    public Optional<String> getUsername() {
-        return ((RootSpanDetail) rootSpan.getRootSpan().getSpanDetail()).getUsername();
+    public Supplier<Optional<String>> getUsername() {
+        return username;
     }
 
     public Iterable<Attribute> getAttributes() {
         return attributes;
     }
 
-    public List<TraceMetricImpl> getTraceMetrics() {
+    public List<TraceMetric> getTraceMetrics() {
         return traceMetrics;
     }
 
@@ -176,6 +179,10 @@ public class Trace {
     // returns previous value
     boolean setStuck() {
         return stuck.getAndSet(true);
+    }
+
+    void setUsername(Supplier<Optional<String>> username) {
+        this.username = username;
     }
 
     void putAttribute(String name, Optional<String> value) {
@@ -211,10 +218,10 @@ public class Trace {
         }
     }
 
-    Span pushSpan(MetricImpl metric, SpanDetail spanDetail) {
+    Span pushSpan(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier) {
         long startTick = ticker.read();
-        TraceMetricImpl traceMetric = metric.start(startTick);
-        SpanImpl span = rootSpan.pushSpan(startTick, spanDetail, traceMetric);
+        TraceMetric traceMetric = metric.startInternal(startTick);
+        Span span = rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
         if (traceMetric.isFirstStart()) {
             metrics.add(metric);
             traceMetrics.add(metric.get());
@@ -226,13 +233,13 @@ public class Trace {
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(SpanImpl span, long endTick, StackTraceElement[] stackTraceElements) {
+    void popSpan(Span span, long endTick, StackTraceElement[] stackTraceElements) {
         rootSpan.popSpan(span, endTick, stackTraceElements);
         span.getTraceMetric().stop(endTick);
     }
 
-    TraceMetricImpl startTraceMetric(MetricImpl metric) {
-        TraceMetricImpl traceMetric = metric.start();
+    TraceMetric startTraceMetric(MetricImpl metric) {
+        TraceMetric traceMetric = metric.startInternal();
         if (traceMetric.isFirstStart()) {
             metrics.add(metric);
             traceMetrics.add(metric.get());

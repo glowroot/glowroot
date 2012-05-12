@@ -18,6 +18,7 @@ package org.informantproject.core.metric;
 import org.informantproject.api.Metric;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.trace.MetricImpl;
+import org.informantproject.core.trace.TraceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,18 +38,20 @@ public class MetricCache {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricCache.class);
 
+    private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
     private final LoadingCache<String, MetricImpl> metrics = CacheBuilder.newBuilder().build(
             new CacheLoader<String, MetricImpl>() {
                 @Override
                 public MetricImpl load(String name) throws Exception {
-                    return new MetricImpl(name, ticker);
+                    return new MetricImpl(name, traceRegistry, ticker);
                 }
             });
 
     @Inject
-    public MetricCache(Ticker ticker) {
+    public MetricCache(TraceRegistry traceRegistry, Ticker ticker) {
+        this.traceRegistry = traceRegistry;
         this.ticker = ticker;
     }
 

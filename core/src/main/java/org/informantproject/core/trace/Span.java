@@ -15,9 +15,8 @@
  */
 package org.informantproject.core.trace;
 
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
+import org.informantproject.api.Message;
+import org.informantproject.api.Supplier;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -28,9 +27,9 @@ import org.informantproject.api.SpanDetail;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class SpanImpl implements Span {
+public final class Span {
 
-    private final SpanDetail spanDetail;
+    private final Supplier<Message> messageSupplier;
 
     private final long traceStartTick;
     private final long startTick;
@@ -44,14 +43,14 @@ public final class SpanImpl implements Span {
     private final int level;
 
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
-    private final TraceMetricImpl traceMetric;
+    private final TraceMetric traceMetric;
 
     private volatile StackTraceElement[] stackTraceElements;
 
-    SpanImpl(SpanDetail spanDetail, long traceStartTick, long startTick, int index,
-            int parentIndex, int level, TraceMetricImpl traceMetric) {
+    Span(Supplier<Message> messageSupplier, long traceStartTick, long startTick, int index,
+            int parentIndex, int level, TraceMetric traceMetric) {
 
-        this.spanDetail = spanDetail;
+        this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
         this.startTick = startTick;
         this.index = index;
@@ -60,16 +59,8 @@ public final class SpanImpl implements Span {
         this.traceMetric = traceMetric;
     }
 
-    public CharSequence getDescription() {
-        return spanDetail.getDescription();
-    }
-
-    public SpanContextMap getContextMap() {
-        return spanDetail.getContextMap();
-    }
-
-    public SpanDetail getSpanDetail() {
-        return spanDetail;
+    public Supplier<Message> getMessageSupplier() {
+        return messageSupplier;
     }
 
     public long getStartTick() {
@@ -101,7 +92,7 @@ public final class SpanImpl implements Span {
         return stackTraceElements;
     }
 
-    TraceMetricImpl getTraceMetric() {
+    TraceMetric getTraceMetric() {
         return traceMetric;
     }
 

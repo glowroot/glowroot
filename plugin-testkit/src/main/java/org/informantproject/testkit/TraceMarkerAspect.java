@@ -15,12 +15,10 @@
  */
 package org.informantproject.testkit;
 
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
-import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
+import org.informantproject.api.Stopwatch;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -33,38 +31,26 @@ import org.informantproject.api.weaving.Pointcut;
  * @since 0.5
  */
 @Aspect
-public class RootSpanMarkerAspect {
+public class TraceMarkerAspect {
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-plugin-testkit");
 
-    @Pointcut(typeName = "org.informantproject.testkit.RootSpanMarker",
-            methodName = "rootSpanMarker", metricName = "mock root span")
-    public static class RootSpanMarkerAdvice {
-        private static final Metric metric = pluginServices.getMetric(RootSpanMarkerAdvice.class);
+    @Pointcut(typeName = "org.informantproject.testkit.TraceMarker",
+            methodName = "traceMarker", metricName = "mock trace marker")
+    public static class TraceMarkerAdvice {
+        private static final Metric metric = pluginServices.getMetric(TraceMarkerAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startRootSpan(metric, new MockRootSpan());
+        public static Stopwatch onBefore() {
+            return pluginServices.startTrace(MessageSupplier.of("mock trace marker"), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
-        }
-    }
-
-    private static class MockRootSpan implements RootSpanDetail {
-        public String getDescription() {
-            return "mock root span";
-        }
-        public SpanContextMap getContextMap() {
-            return null;
-        }
-        public Optional<String> getUsername() {
-            return Optional.absent();
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 }

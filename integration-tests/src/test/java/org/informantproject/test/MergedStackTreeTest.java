@@ -22,7 +22,7 @@ import static org.junit.Assert.assertThat;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.RootSpanMarker;
+import org.informantproject.testkit.TraceMarker;
 import org.informantproject.testkit.Trace;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,11 +62,11 @@ public class MergedStackTreeTest {
     }
 
     public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,
-            RootSpanMarker {
+            TraceMarker {
         public void executeApp() throws InterruptedException {
-            rootSpanMarker();
+            traceMarker();
         }
-        public void rootSpanMarker() throws InterruptedException {
+        public void traceMarker() throws InterruptedException {
             Thread.sleep(150);
         }
     }

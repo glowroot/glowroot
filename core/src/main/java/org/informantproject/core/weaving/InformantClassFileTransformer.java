@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
 import org.informantproject.api.Metric;
-import org.informantproject.api.PluginServices;
-import org.informantproject.api.TraceMetric;
+import org.informantproject.api.Stopwatch;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.configuration.PluginDescriptor;
 import org.informantproject.core.configuration.Plugins;
 import org.informantproject.core.trace.MetricImpl;
+import org.informantproject.core.trace.TraceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,6 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private static final Logger logger = LoggerFactory
             .getLogger(InformantClassFileTransformer.class);
 
-    private final PluginServices pluginServices;
     private final List<Mixin> mixins;
     private final List<Advice> advisors;
 
@@ -59,8 +58,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private final Metric metric;
 
     @Inject
-    public InformantClassFileTransformer(PluginServices pluginServices, Ticker ticker) {
-        this.pluginServices = pluginServices;
+    public InformantClassFileTransformer(TraceRegistry traceRegistry, Ticker ticker) {
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
         for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
@@ -73,7 +71,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
         }
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
-        metric = new MetricImpl("informant weaving", ticker);
+        metric = new MetricImpl("informant weaving", traceRegistry, ticker);
     }
 
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
@@ -85,10 +83,9 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
 
     // weird method name is following "metric marker" method naming
     private byte[] transform$informant$metric$informant$weaving$0(ClassLoader loader,
-            String className,
-            ProtectionDomain protectionDomain, byte[] bytes) {
+            String className, ProtectionDomain protectionDomain, byte[] bytes) {
 
-        TraceMetric traceMetric = pluginServices.startMetric(metric);
+        Stopwatch stopwatch = metric.start();
         try {
             Weaver weaver = weavers.get(loader);
             if (weaver == null) {
@@ -102,7 +99,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
             }
             return transformedBytes;
         } finally {
-            pluginServices.endMetric(traceMetric);
+            stopwatch.stop();
         }
     }
 }

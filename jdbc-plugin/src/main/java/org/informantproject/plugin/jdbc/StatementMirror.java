@@ -34,7 +34,7 @@ class StatementMirror {
     // this doesn't apply to PreparedStatementMirror
     private Collection<String> batchedSql;
 
-    // the lastJdbcSpanDetail is stored so that its numRows field
+    // the lastJdbcMessageSupplier is stored so that its numRows field
     // can be incremented inside the advice for ResultSet.next()
     //
     // PreparedStatementMirror objects are cached as long as the application
@@ -45,7 +45,7 @@ class StatementMirror {
     // TODO clear this immediately on Statement.close()?
     //
     // TODO is it ok for this to be non-volatile?
-    private WeakReference<JdbcSpanDetail> lastJdbcSpanDetail;
+    private WeakReference<JdbcMessageSupplier> lastJdbcMessageSupplier;
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by
@@ -62,11 +62,11 @@ class StatementMirror {
         return new ArrayList<String>(batchedSql);
     }
 
-    JdbcSpanDetail getLastJdbcSpanDetail() {
-        if (lastJdbcSpanDetail == null) {
+    JdbcMessageSupplier getLastJdbcMessageSupplier() {
+        if (lastJdbcMessageSupplier == null) {
             return null;
         } else {
-            return lastJdbcSpanDetail.get();
+            return lastJdbcMessageSupplier.get();
         }
     }
 
@@ -74,7 +74,7 @@ class StatementMirror {
         batchedSql.clear();
     }
 
-    void setLastJdbcSpanDetail(JdbcSpanDetail jdbcSpanDetail) {
-        this.lastJdbcSpanDetail = new WeakReference<JdbcSpanDetail>(jdbcSpanDetail);
+    void setLastJdbcMessageSupplier(JdbcMessageSupplier jdbcMessageSupplier) {
+        this.lastJdbcMessageSupplier = new WeakReference<JdbcMessageSupplier>(jdbcMessageSupplier);
     }
 }

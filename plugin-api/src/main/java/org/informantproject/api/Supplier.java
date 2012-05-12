@@ -19,4 +19,16 @@ package org.informantproject.api;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface TraceMetric {}
+public abstract class Supplier<T> {
+
+    public abstract T get();
+
+    public static <T> Supplier<T> of(final T reference) {
+        return new Supplier<T>() {
+            @Override
+            public T get() {
+                return reference;
+            }
+        };
+    }
+}

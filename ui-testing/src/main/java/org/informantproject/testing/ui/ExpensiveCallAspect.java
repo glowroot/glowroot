@@ -15,11 +15,13 @@
  */
 package org.informantproject.testing.ui;
 
+import org.informantproject.api.ContextMap;
+import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
+import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTarget;
 import org.informantproject.api.weaving.InjectTraveler;
@@ -47,12 +49,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetailWithContextMap(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplierWithContextMap(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -65,12 +67,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -83,12 +85,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -101,12 +103,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -119,12 +121,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -137,12 +139,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -155,12 +157,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -173,12 +175,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -191,12 +193,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
@@ -209,35 +211,29 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(metric, getSpanDetail(expensive));
+        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 
-    private static SpanDetail getSpanDetail(final ExpensiveCall expensive) {
-        return new SpanDetail() {
-            public String getDescription() {
-                return expensive.getDescription();
-            }
-            public SpanContextMap getContextMap() {
-                return null;
-            }
-        };
+    private static Supplier<Message> getMessageSupplier(ExpensiveCall expensive) {
+        return MessageSupplier.of(expensive.getDescription());
     }
 
-    private static SpanDetail getSpanDetailWithContextMap(final ExpensiveCall expensive) {
-        return new SpanDetail() {
-            public String getDescription() {
-                return expensive.getDescription();
-            }
-            public SpanContextMap getContextMap() {
-                return SpanContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
-                        SpanContextMap.of("attr31", SpanContextMap.of("attr311", "value311",
-                                "attr312", "value312"), "attr32", "value32", "attr33", "value33"));
+    private static Supplier<Message> getMessageSupplierWithContextMap(
+            final ExpensiveCall expensive) {
+
+        return new Supplier<Message>() {
+            @Override
+            public Message get() {
+                ContextMap context = ContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
+                        ContextMap.of("attr31", ContextMap.of("attr311", "value311", "attr312",
+                                "value312"), "attr32", "value32", "attr33", "value33"));
+                return Message.withContext(expensive.getDescription(), context);
             }
         };
     }

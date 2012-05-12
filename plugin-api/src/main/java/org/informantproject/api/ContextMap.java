@@ -27,7 +27,7 @@ import com.google.common.base.Preconditions;
 /**
  * This map can be used to attach contextual context to a span (e.g. attaching the request or
  * session attributes to a servlet entry point). These maps are generally lazy instantiated in
- * {@link SpanDetail#getContextMap()} since they are only used for traces which end up being
+ * {@link Message#getArgs()} since they are only used for traces which end up being
  * persisted.
  * 
  * It supports String, Date, Double and Boolean values. It supports other ContextMaps as values in
@@ -36,15 +36,15 @@ import com.google.common.base.Preconditions;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class SpanContextMap implements Map<String, Optional<?>> {
+public class ContextMap implements Map<String, Optional<?>> {
 
     private final Map<String, Optional<?>> inner;
 
-    public SpanContextMap() {
+    public ContextMap() {
         this(false);
     }
 
-    public SpanContextMap(boolean sortedByKey) {
+    public ContextMap(boolean sortedByKey) {
         if (sortedByKey) {
             inner = new TreeMap<String, Optional<?>>();
         } else {
@@ -75,11 +75,11 @@ public class SpanContextMap implements Map<String, Optional<?>> {
     public Optional<?> putMap(String key, Optional<? extends Map<String, Optional<?>>> value) {
         Preconditions.checkNotNull(value);
         if (value.isPresent()) {
-            if (value.get() instanceof SpanContextMap) {
+            if (value.get() instanceof ContextMap) {
                 return inner.put(key, value);
             } else {
                 // build and put a SpanContextMap instead
-                SpanContextMap nestedContextMap = new SpanContextMap();
+                ContextMap nestedContextMap = new ContextMap();
                 for (Entry<?, ?> entry : ((Map<?, ?>) value.get()).entrySet()) {
                     nestedContextMap.put((String) entry.getKey(), entry.getValue());
                 }
@@ -103,8 +103,8 @@ public class SpanContextMap implements Map<String, Optional<?>> {
                 return putDouble(key, (Optional<Double>) value);
             } else if (value.get() instanceof Boolean) {
                 return putBoolean(key, (Optional<Boolean>) value);
-            } else if (value.get() instanceof SpanContextMap) {
-                return putMap(key, (Optional<SpanContextMap>) value);
+            } else if (value.get() instanceof ContextMap) {
+                return putMap(key, (Optional<ContextMap>) value);
             } else {
                 throw new IllegalArgumentException("Unexpected value type '"
                         + value.getClass().getName() + "'");
@@ -181,23 +181,23 @@ public class SpanContextMap implements Map<String, Optional<?>> {
         return inner.entrySet();
     }
 
-    public static SpanContextMap of(String k1, Object v1) {
-        SpanContextMap map = new SpanContextMap();
+    public static ContextMap of(String k1, Object v1) {
+        ContextMap map = new ContextMap();
         map.put(k1, v1);
         return map;
     }
 
-    public static SpanContextMap of(String k1, Object v1, String k2, Object v2) {
-        SpanContextMap map = new SpanContextMap();
+    public static ContextMap of(String k1, Object v1, String k2, Object v2) {
+        ContextMap map = new ContextMap();
         map.put(k1, v1);
         map.put(k2, v2);
         return map;
     }
 
-    public static SpanContextMap of(String k1, Object v1, String k2, Object v2, String k3,
+    public static ContextMap of(String k1, Object v1, String k2, Object v2, String k3,
             Object v3) {
 
-        SpanContextMap map = new SpanContextMap();
+        ContextMap map = new ContextMap();
         map.put(k1, v1);
         map.put(k2, v2);
         map.put(k3, v3);

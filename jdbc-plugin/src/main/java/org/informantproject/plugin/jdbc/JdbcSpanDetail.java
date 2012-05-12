@@ -18,9 +18,9 @@ package org.informantproject.plugin.jdbc;
 import java.util.Collection;
 import java.util.List;
 
-import org.informantproject.api.LargeStringBuilder;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
+import org.informantproject.api.Message;
+import org.informantproject.api.Supplier;
+import org.informantproject.shaded.google.common.collect.Lists;
 
 /**
  * Jdbc span captured by AspectJ pointcut.
@@ -34,7 +34,7 @@ import org.informantproject.api.SpanDetail;
  * 
  * 3. There should be some kind of coordination between the threads to ensure visibility of the
  * objects in these arrays / collections. In Informant's case, one thread is putting the
- * JdbcSpanDetail on to a concurrent queue (right after construction) and the only way another
+ * JdbcMessageSupplier on to a concurrent queue (right after construction) and the only way another
  * thread can get access to it is by reading it from the queue. The concurrent queue stores the
  * instance in a volatile field and so the coordination of the first thread writing to that volatile
  * field and the second thread reading from that volatile field ensures a happens-before
@@ -42,13 +42,13 @@ import org.informantproject.api.SpanDetail;
  * in the parameters array prior to the first thread putting the span into the concurrent queue.
  * 
  * numRows is marked volatile to ensure visibility to other threads since it is updated after
- * putting the JdbcSpanDetail on to the concurrent queue and so these updates cannot piggyback on
- * the happens-before relationship created by the concurrent queue.
+ * putting the JdbcMessageSupplier on to the concurrent queue and so these updates cannot piggyback
+ * on the happens-before relationship created by the concurrent queue.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-class JdbcSpanDetail implements SpanDetail {
+class JdbcMessageSupplier extends Supplier<Message> {
 
     private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
 
@@ -63,47 +63,50 @@ class JdbcSpanDetail implements SpanDetail {
 
     private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
-    JdbcSpanDetail(String sql) {
+    JdbcMessageSupplier(String sql) {
         this.sql = sql;
         this.parameters = null;
         this.batchedParameters = null;
         this.batchedSqls = null;
     }
 
-    JdbcSpanDetail(String sql, List<Object> parameters) {
+    JdbcMessageSupplier(String sql, List<Object> parameters) {
         this.sql = sql;
         this.parameters = parameters;
         this.batchedParameters = null;
         this.batchedSqls = null;
     }
 
-    JdbcSpanDetail(Collection<String> batchedSqls) {
+    JdbcMessageSupplier(Collection<String> batchedSqls) {
         this.sql = null;
         this.parameters = null;
         this.batchedParameters = null;
         this.batchedSqls = batchedSqls;
     }
 
-    JdbcSpanDetail(String sql, Collection<List<Object>> batchedParameters) {
+    JdbcMessageSupplier(String sql, Collection<List<Object>> batchedParameters) {
         this.sql = sql;
         this.parameters = null;
         this.batchedParameters = batchedParameters;
         this.batchedSqls = null;
     }
 
-    public CharSequence getDescription() {
-        LargeStringBuilder sb = new LargeStringBuilder();
+    @Override
+    public Message get() {
+        StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");
         if (batchedSqls != null) {
             appendBatchedSqls(sb);
-            return sb.toString();
+            return Message.of(sb.toString());
         }
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {
             // print out number of batches to make it easy to identify
             sb.append(Integer.toString(batchedParameters.size()));
             sb.append(" x ");
         }
-        sb.append(sql);
+        List<Object> args = Lists.newArrayList();
+        sb.append("{{sql}}");
+        args.add(sql);
         if (isUsingParameters() && !parameters.isEmpty()) {
             appendParameters(sb, parameters);
         } else if (isUsingBatchedParameters()) {
@@ -112,15 +115,12 @@ class JdbcSpanDetail implements SpanDetail {
             }
         }
         if (numRows != NEXT_HAS_NOT_BEEN_CALLED) {
-            appendRowCount(sb);
+            appendRowCount(sb, args);
         }
-        return sb.build();
+        return Message.of(sb.toString(), args);
     }
 
     // TODO put row num and bind parameters in context map?
-    public SpanContextMap getContextMap() {
-        return null;
-    }
 
     void setHasPerformedNext() {
         if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
@@ -140,7 +140,7 @@ class JdbcSpanDetail implements SpanDetail {
         return batchedParameters != null;
     }
 
-    private void appendBatchedSqls(LargeStringBuilder sb) {
+    private void appendBatchedSqls(StringBuilder sb) {
         boolean first = true;
         for (String batchedSql : batchedSqls) {
             if (!first) {
@@ -151,17 +151,17 @@ class JdbcSpanDetail implements SpanDetail {
         }
     }
 
-    private void appendRowCount(LargeStringBuilder sb) {
-        sb.append(" => ");
-        sb.append(Integer.toString(numRows));
+    private void appendRowCount(StringBuilder sb, List<Object> args) {
+        sb.append(" => {{numRows}}");
         if (numRows == 1) {
             sb.append(" row");
         } else {
             sb.append(" rows");
         }
+        args.add(numRows);
     }
 
-    private static void appendParameters(LargeStringBuilder sb, List<Object> parameters) {
+    private static void appendParameters(StringBuilder sb, List<Object> parameters) {
         sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {

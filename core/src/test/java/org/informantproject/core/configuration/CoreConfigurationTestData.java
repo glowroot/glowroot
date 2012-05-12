@@ -39,7 +39,7 @@ public class CoreConfigurationTestData {
                 .getStackTraceInitialDelayMillis() + 1);
         builder = builder.setStackTracePeriodMillis(defaultCoreConfiguration
                 .getStackTracePeriodMillis() + 1);
-        builder = builder.setMaxSpansPerTrace(defaultCoreConfiguration.getMaxSpansPerTrace() + 1);
+        builder = builder.setMaxTraceEntries(defaultCoreConfiguration.getMaxTraceEntries() + 1);
         builder = builder.setWarnOnSpanOutsideTrace(!defaultCoreConfiguration
                 .isWarnOnSpanOutsideTrace());
 

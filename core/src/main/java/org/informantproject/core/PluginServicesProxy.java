@@ -18,13 +18,12 @@ package org.informantproject.core;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.RootSpanDetail;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanDetail;
-import org.informantproject.api.TraceMetric;
+import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Supplier;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
@@ -102,52 +101,32 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Span startRootSpan(Metric metric, RootSpanDetail rootSpanDetail) {
+    public Stopwatch startTrace(Supplier<Message> messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.startRootSpan(metric, rootSpanDetail);
+            return pluginServices.startTrace(messageSupplier, metric);
         }
     }
 
     @Override
-    public Span startSpan(Metric metric, SpanDetail spanDetail) {
+    public Stopwatch startEntry(Supplier<Message> messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.startSpan(metric, spanDetail);
+            return pluginServices.startEntry(messageSupplier, metric);
         }
     }
 
     @Override
-    public void endSpan(Span span) {
+    public void setUsername(Supplier<Optional<String>> username) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.endSpan(span);
-        }
-    }
-
-    @Override
-    public TraceMetric startMetric(Metric metric) {
-        if (pluginServices == null) {
-            throw new IllegalStateException("Informant hasn't finished initializing yet."
-                    + "  Plugins should check isEnabled() first.");
-        } else {
-            return pluginServices.startMetric(metric);
-        }
-    }
-
-    @Override
-    public void endMetric(TraceMetric traceMetric) {
-        if (pluginServices == null) {
-            throw new IllegalStateException("Informant hasn't finished initializing yet."
-                    + "  Plugins should check isEnabled() first.");
-        } else {
-            pluginServices.endMetric(traceMetric);
+            pluginServices.setUsername(username);
         }
     }
 
@@ -162,12 +141,12 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public RootSpanDetail getRootSpanDetail() {
+    public Supplier<Message> getRootMessageSupplier() {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getRootSpanDetail();
+            return pluginServices.getRootMessageSupplier();
         }
     }
 

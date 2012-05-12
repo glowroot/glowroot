@@ -15,11 +15,12 @@
  */
 package org.informantproject.test.plugin;
 
+import org.informantproject.api.ContextMap;
+import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Span;
-import org.informantproject.api.SpanContextMap;
-import org.informantproject.api.SpanDetail;
+import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -49,21 +50,19 @@ public class LevelThreeAspect {
         }
 
         @OnBefore
-        public static Span onBefore(final String arg1, final String arg2) {
-            SpanDetail spanDetail = new SpanDetail() {
-                public String getDescription() {
-                    return "Level Three";
-                }
-                public SpanContextMap getContextMap() {
-                    return SpanContextMap.of("arg1", arg1, "arg2", arg2);
+        public static Stopwatch onBefore(final String arg1, final String arg2) {
+            Supplier<Message> messageSupplier = new Supplier<Message>() {
+                @Override
+                public Message get() {
+                    return Message.withContext("Level Three",
+                            ContextMap.of("arg1", arg1, "arg2", arg2));
                 }
             };
-            return pluginServices.startSpan(metric, spanDetail);
+            return pluginServices.startEntry(messageSupplier, metric);
         }
-
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            pluginServices.endSpan(span);
+        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+            stopwatch.stop();
         }
     }
 }

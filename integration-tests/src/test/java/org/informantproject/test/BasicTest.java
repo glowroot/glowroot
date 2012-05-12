@@ -97,7 +97,7 @@ public class BasicTest {
         randomCoreProperties.setStuckThresholdSeconds(1 + random.nextInt(60));
         randomCoreProperties.setStackTraceInitialDelayMillis(1000 + random.nextInt(60000));
         randomCoreProperties.setStackTracePeriodMillis(1000 + random.nextInt(60000));
-        randomCoreProperties.setMaxSpansPerTrace(1000 + random.nextInt(10000));
+        randomCoreProperties.setMaxTraceEntries(1000 + random.nextInt(10000));
         randomCoreProperties.setRollingSizeMb(100 + random.nextInt(10));
         randomCoreProperties.setWarnOnSpanOutsideTrace(random.nextBoolean());
         randomCoreProperties.setMetricPeriodMillis(1000 + random.nextInt(60000));

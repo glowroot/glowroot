@@ -29,13 +29,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.informantproject.api.LargeStringBuilder;
+import org.informantproject.api.Message;
 import org.informantproject.api.Optional;
-import org.informantproject.api.SpanContextMap;
 import org.informantproject.core.stack.MergedStackTreeNode;
-import org.informantproject.core.trace.SpanImpl;
+import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
-import org.informantproject.core.trace.TraceMetricImpl;
-import org.informantproject.core.trace.TraceMetricImpl.Snapshot;
+import org.informantproject.core.trace.TraceMetric;
+import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.CharSequences;
@@ -168,11 +168,12 @@ public class TraceCommonJsonService {
         sb.append(activeTrace.getDuration());
         sb.append(",\"completed\":");
         sb.append(activeTrace.isCompleted());
-        SpanImpl rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
+        Span rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
+        Message message = rootSpan.getMessageSupplier().get();
         sb.append(",\"description\":\"");
-        sb.append(rootSpan.getDescription().toString());
+        sb.append(message.getText());
         sb.append("\"");
-        Optional<String> username = activeTrace.getUsername();
+        Optional<String> username = activeTrace.getUsername().get();
         if (username.isPresent()) {
             sb.append(",\"username\":\"");
             sb.append(username.get());
@@ -221,8 +222,8 @@ public class TraceCommonJsonService {
 
     public static String getMetricsJson(Trace trace, Gson gson) {
         Collection<Snapshot> items = Collections2.transform(trace.getTraceMetrics(),
-                new Function<TraceMetricImpl, Snapshot>() {
-                    public Snapshot apply(TraceMetricImpl item) {
+                new Function<TraceMetric, Snapshot>() {
+                    public Snapshot apply(TraceMetric item) {
                         return item.copyOf();
                     }
                 });
@@ -240,13 +241,13 @@ public class TraceCommonJsonService {
     }
 
     public static String getAttributesJson(Trace trace, Gson gson) {
-        SpanImpl rootSpan = trace.getRootSpan().getSpans().iterator().next();
-        // Span.getContextMap() may be creating the context map on the fly, so don't call it twice
-        SpanContextMap contextMap = rootSpan.getContextMap();
-        if (contextMap == null) {
+        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        Message message = rootSpan.getMessageSupplier().get();
+        if (message.getContext() == null) {
             return null;
         } else {
-            return gson.toJson(contextMap, new TypeToken<Map<String, Object>>() {}.getType());
+            return gson.toJson(message.getContext(),
+                    new TypeToken<Map<String, Object>>() {}.getType());
         }
     }
 
@@ -278,7 +279,7 @@ public class TraceCommonJsonService {
 
         private static final int TARGET_CHUNK_SIZE = 8192;
 
-        private final Iterator<SpanImpl> spans;
+        private final Iterator<Span> spans;
         private final Map<String, String> stackTraces = Maps.newHashMap();
         private final long captureTick;
         private final Gson gson;
@@ -286,7 +287,7 @@ public class TraceCommonJsonService {
         private final Writer raw;
         private final JsonWriter jw;
 
-        private SpansByteStream(Iterator<SpanImpl> spans, long captureTick, Gson gson)
+        private SpansByteStream(Iterator<Span> spans, long captureTick, Gson gson)
                 throws IOException {
 
             this.spans = spans;
@@ -324,7 +325,7 @@ public class TraceCommonJsonService {
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
         // (without using synchronization to block updates to the trace while it is being read)
-        private void writeSpan(SpanImpl span) throws IOException {
+        private void writeSpan(Span span) throws IOException {
             if (span.getStartTick() > captureTick) {
                 // this span started after the capture tick
                 return;
@@ -348,15 +349,13 @@ public class TraceCommonJsonService {
             jw.name("level");
             jw.value(span.getLevel());
             // inject raw json into stream
+            Message message = span.getMessageSupplier().get();
             raw.append(",\"description\":\"");
-            raw.append(CharSequences.toJson(span.getDescription()));
+            raw.append(CharSequences.toJson(message.getText()));
             raw.append("\"");
-            // Span.getContextMap() may be creating the context map on the fly, so don't call it
-            // twice
-            SpanContextMap contextMap = span.getContextMap();
-            if (contextMap != null) {
+            if (message.getContext() != null) {
                 raw.append(",\"contextMap\":");
-                raw.append(gson.toJson(contextMap));
+                raw.append(gson.toJson(message.getContext()));
             }
             if (span.getStackTraceElements() != null) {
                 String stackTraceJson = getStackTraceJson(span.getStackTraceElements());
