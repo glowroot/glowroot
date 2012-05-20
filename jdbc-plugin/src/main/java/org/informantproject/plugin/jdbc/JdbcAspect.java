@@ -311,12 +311,12 @@ public class JdbcAspect {
                 @InjectTarget final ResultSet resultSet) {
 
             try {
-                StatementMirror mirror = getStatementMirror(resultSet.getStatement());
-                if (mirror == null) {
+                if (resultSet.getStatement() == null) {
                     // this is not a statement execution, it is some other execution of
                     // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
                     return;
                 }
+                StatementMirror mirror = getStatementMirror(resultSet.getStatement());
                 JdbcMessageSupplier lastSpan = mirror.getLastJdbcMessageSupplier();
                 if (lastSpan == null) {
                     // tracing must be disabled (e.g. exceeded trace limit per operation)

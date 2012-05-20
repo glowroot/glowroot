@@ -294,7 +294,7 @@ public class JdbcPluginTest {
             }
         }
         public void traceMarker() throws Exception {
-            connection.getMetaData().getTables(null, null, null, null);
+            connection.getMetaData().getTables(null, null, null, null).next();
         }
     }
 }
