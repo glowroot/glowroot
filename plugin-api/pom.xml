@@ -18,6 +18,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <!-- this is the last version of guava that supports jdk 5 -->
       <version>11.0.2</version>
       <scope>provided</scope>
     </dependency>
@@ -30,7 +31,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.3.1.Final</version>
+      <version>3.4.5.Final</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

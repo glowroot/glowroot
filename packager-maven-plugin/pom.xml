@@ -34,6 +34,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <!-- this is the last version of guava that supports jdk 5 -->
       <version>11.0.2</version>
     </dependency>
   </dependencies>

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.informantproject.api.LargeStringBuilder;
 import org.informantproject.api.Message;
 import org.informantproject.api.Optional;
 import org.informantproject.core.stack.MergedStackTreeNode;
@@ -38,7 +37,6 @@ import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.core.util.CharSequences;
 import org.informantproject.core.util.OptionalJsonSerializer;
 
 import com.google.common.base.Charsets;
@@ -264,7 +262,7 @@ public class TraceCommonJsonService {
     private static String getStackTraceJson(StackTraceElement[] stackTraceElements)
             throws IOException {
 
-        LargeStringBuilder sb = new LargeStringBuilder();
+        StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
         for (StackTraceElement stackTraceElement : stackTraceElements) {
@@ -350,9 +348,8 @@ public class TraceCommonJsonService {
             jw.value(span.getLevel());
             // inject raw json into stream
             Message message = span.getMessageSupplier().get();
-            raw.append(",\"description\":\"");
-            raw.append(CharSequences.toJson(message.getText()));
-            raw.append("\"");
+            jw.name("description");
+            jw.value(message.getText());
             if (message.getContext() != null) {
                 raw.append(",\"contextMap\":");
                 raw.append(gson.toJson(message.getContext()));
