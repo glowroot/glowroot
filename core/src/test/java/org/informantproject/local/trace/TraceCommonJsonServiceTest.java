@@ -46,8 +46,8 @@ public class TraceCommonJsonServiceTest {
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
         for (int i = 0; i < stackTraceElements.length; i++) {
-            stackTraceElements[i] = new StackTraceElement(TraceCommonJsonServiceTest.class.getName(),
-                    "method" + i, "TraceDaoTest.java", 100 + 10 * i);
+            stackTraceElements[i] = new StackTraceElement(TraceCommonJsonServiceTest.class
+                    .getName(), "method" + i, "TraceDaoTest.java", 100 + 10 * i);
         }
         mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
         // when
