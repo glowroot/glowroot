@@ -396,6 +396,21 @@ public class WeaverTest {
     }
 
     @Test
+    public void shouldNotNestPointcuts3() throws Exception {
+        // given
+        NotNestingAdvice.resetThreadLocals();
+        Misc test = newWovenObject(NestingAnotherMisc.class, Misc.class, NotNestingAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(NotNestingAdvice.onBeforeCount.get(), is(1));
+        assertThat(NotNestingAdvice.onReturnCount.get(), is(1));
+        assertThat(NotNestingAdvice.onThrowCount.get(), is(0));
+        assertThat(NotNestingAdvice.onAfterCount.get(), is(1));
+        assertThat(test.executeWithReturn(), is("yes"));
+    }
+
+    @Test
     public void shouldNestPointcuts() throws Exception {
         // given
         BasicAdvice.resetThreadLocals();

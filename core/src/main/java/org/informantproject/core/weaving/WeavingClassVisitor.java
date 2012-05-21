@@ -42,7 +42,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
-    private static final Type nestingTrackerType = Type.getType(AdviceFlowThreadLocal.class);
+    private static final Type adviceFlowType = Type.getType(AdviceFlowThreadLocal.class);
 
     private final List<Mixin> mixins;
     private final List<Advice> advisors;
@@ -251,7 +251,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         for (int i = 0; i < adviceMatchers.size(); i++) {
             if (!adviceMatchers.get(i).getAdvice().getPointcut().captureNested()) {
                 super.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "informant$adviceFlow$" + i,
-                        nestingTrackerType.getDescriptor(), null, null);
+                        adviceFlowType.getDescriptor(), null, null);
             }
         }
     }
@@ -259,12 +259,16 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private void writeThreadLocalInitialization(MethodVisitor mv) {
         for (int i = 0; i < adviceMatchers.size(); i++) {
             if (!adviceMatchers.get(i).getAdvice().getPointcut().captureNested()) {
-                mv.visitTypeInsn(NEW, nestingTrackerType.getInternalName());
-                mv.visitInsn(DUP);
-                mv.visitMethodInsn(INVOKESPECIAL, nestingTrackerType.getInternalName(), "<init>",
-                        "()V");
+                // cannot use visitLdcInsn(Type) for .class constants since that is not supported
+                // inside of classes that were compiled to jdk 1.4
+                mv.visitLdcInsn(adviceMatchers.get(i).getAdvice().getAdviceType().getClassName());
+                mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                        "(Ljava/lang/String;)Ljava/lang/Class;");
+                String adviceFlowInternalName = adviceFlowType.getInternalName();
+                mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "lookupSharedAdviceFlow",
+                        "(Ljava/lang/Class;)L" + adviceFlowInternalName + ";");
                 mv.visitFieldInsn(PUTSTATIC, type.getInternalName(), "informant$adviceFlow$" + i,
-                        nestingTrackerType.getDescriptor());
+                        adviceFlowType.getDescriptor());
             }
         }
     }
