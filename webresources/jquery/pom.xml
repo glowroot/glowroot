@@ -11,7 +11,7 @@
 
   <groupId>org.informantproject.webresources</groupId>
   <artifactId>webresources-jquery</artifactId>
-  <version>1.7.1-SNAPSHOT</version>
+  <version>1.7.2-SNAPSHOT</version>
 
   <name>jQuery Javascript Library (packaged for Informant)</name>
   <description>
