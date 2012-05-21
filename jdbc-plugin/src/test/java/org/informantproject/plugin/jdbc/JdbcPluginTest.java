@@ -47,8 +47,6 @@ import com.google.common.collect.Sets;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO use p6spy to run tests against a proxied jdbc connections
-// which are common in application server environments
 public class JdbcPluginTest {
 
     private static final String PLUGIN_ID = "org.informantproject.plugins:jdbc-plugin";
