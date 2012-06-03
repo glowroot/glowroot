@@ -1,0 +1,19 @@
+#
+# The goal of this file is to normalize line endings to LF on checkin without having to rely on the
+# core.autocrlf setting.
+#
+
+# default fallback
+* text=auto
+
+# known text files (instead of relying on git's file type detection)
+*.css      text
+*.js       text
+*.xml      text
+
+# known binary files (instead of relying on git's file type detection)
+*.png      binary
+*.gif      binary
+*.eot      binary
+*.woff     binary
+*.ttf      binary
