@@ -15,13 +15,16 @@
  */
 package org.informantproject.core;
 
+import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import org.h2.store.FileLister;
 import org.informantproject.api.PluginServices;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCache;
@@ -32,7 +35,9 @@ import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -66,14 +71,34 @@ public final class MainEntryPoint {
 
     private MainEntryPoint() {}
 
+    // javaagent entry point
     public static void premain(String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
-        start(new AgentArgs(agentArgs));
+        AgentArgs parsedAgentArgs = new AgentArgs(agentArgs);
+        try {
+            File h2DatabaseFile = new File(parsedAgentArgs.getDataDir(), "informant.lock.db");
+            FileLister.tryUnlockDatabase(Lists.newArrayList(h2DatabaseFile.getPath()), null);
+        } catch (SQLException e) {
+            // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
+            // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
+            // have been used to specify '-javaagent:informant.jar', in which case Informant tries
+            // to start up, but it finds the h2 database is locked (by the tomcat jvm).
+            // this can sometimes be avoided by using CATALINA_OPTS instead of JAVA_OPTS to specify
+            // -javaagent:informant.jar, since CATALINA_OPTS is not used by the 'catalina.sh stop'.
+            // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
+            // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
+            // inevitable at least in this case, and probably others
+            logger.error("Disabling Informant. Embedded database '" + parsedAgentArgs.getDataDir()
+                    .getAbsolutePath() + "' is locked by another process.");
+            return;
+        }
+        start(parsedAgentArgs);
         TraceRegistry traceRegistry = injector.getInstance(TraceRegistry.class);
         Ticker ticker = injector.getInstance(Ticker.class);
         instrumentation.addTransformer(new InformantClassFileTransformer(traceRegistry, ticker));
     }
 
+    // called via reflection from org.informantproject.api.PluginServices
     public static PluginServices createPluginServices(String pluginId) {
         if (returnPluginServicesProxy.get()) {
             synchronized (returnPluginServicesProxy) {
@@ -88,15 +113,17 @@ public final class MainEntryPoint {
         return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
     }
 
+    @VisibleForTesting
     public static void start() {
         start(new AgentArgs());
     }
 
+    @VisibleForTesting
     public static void start(String agentArgs) {
         start(new AgentArgs(agentArgs));
     }
 
-    public static void start(AgentArgs agentArgs) {
+    private static void start(AgentArgs agentArgs) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
         synchronized (lock) {
             if (injector != null) {
@@ -116,10 +143,12 @@ public final class MainEntryPoint {
         }
     }
 
+    @VisibleForTesting
     public static int getPort() {
         return injector.getInstance(HttpServer.class).getPort();
     }
 
+    @VisibleForTesting
     public static void shutdown() {
         logger.debug("shutdown()");
         synchronized (lock) {
