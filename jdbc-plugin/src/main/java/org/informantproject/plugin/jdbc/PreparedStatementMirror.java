@@ -97,7 +97,9 @@ class PreparedStatementMirror extends StatementMirror {
     @Override
     public void clearBatch() {
         parameters.clear();
-        batchedParameters.clear();
+        if (batchedParameters != null) {
+            batchedParameters.clear();
+        }
     }
 
     static class NullParameterValue {

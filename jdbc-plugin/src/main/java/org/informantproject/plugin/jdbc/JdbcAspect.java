@@ -57,6 +57,8 @@ import org.informantproject.plugin.jdbc.PreparedStatementMirror.StreamingParamet
  * @author Trask Stalnaker
  * @since 0.5
  */
+// many of the pointcuts are not restricted to pluginServices.isEnabled() because StatementMirrors
+// must be tracked for their entire life
 @Aspect
 public class JdbcAspect {
 
@@ -74,9 +76,6 @@ public class JdbcAspect {
     // ===================== Statement Preparation =====================
 
     // capture the sql used to create the PreparedStatement
-
-    // this pointcut isn't restricted to isPluginEnabled() because PreparedStatements must be
-    // tracked for their entire life
     @Pointcut(typeName = "java.sql.Connection", methodName = "/prepare.*/",
             methodArgs = { "java.lang.String", ".." })
     public static class PrepareStatementTrackingAdvice {
@@ -116,10 +115,6 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
             methodArgs = { "int", "/.*/", ".." })
     public static class PreparedStatementSetXAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnReturn
         public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
                 @InjectMethodArg int parameterIndex, @InjectMethodArg Object x) {
@@ -141,10 +136,6 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "setNull",
             methodArgs = { "int", "int", ".." })
     public static class PreparedStatementSetNullAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnReturn
         public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
                 @InjectMethodArg int parameterIndex) {
@@ -156,14 +147,9 @@ public class JdbcAspect {
 
     // ================== Statement Batching ==================
 
-    // handle Statement.addBatch(String)
     @Pointcut(typeName = "java.sql.Statement", methodName = "addBatch",
             methodArgs = { "java.lang.String" })
     public static class StatementAddBatchAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnReturn
         public static void onReturn(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
@@ -172,16 +158,22 @@ public class JdbcAspect {
         }
     }
 
-    // handle PreparedStatement.addBatch()
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "addBatch")
     public static class PreparedStatementAddBatchAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnReturn
         public static void onReturn(@InjectTarget PreparedStatement preparedStatement) {
             getPreparedStatementMirror(preparedStatement).addBatch();
+        }
+    }
+
+    // Statement.clearBatch() can be used to re-initiate a prepared statement
+    // that has been cached from a previous usage
+    @Pointcut(typeName = "java.sql.Statement", methodName = "clearBatch")
+    public static class StatementClearBatchAdvice {
+        @OnReturn
+        public static void onReturn(@InjectTarget Statement statement) {
+            StatementMirror mirror = getStatementMirror(statement);
+            mirror.clearBatch();
         }
     }
 
@@ -192,22 +184,31 @@ public class JdbcAspect {
             metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
         private static final Metric metric = pluginServices.getMetric(StatementExecuteAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
 
             StatementMirror mirror = getStatementMirror(statement);
-            JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(sql);
-            mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-            return pluginServices.startEntry(jdbcMessageSupplier, metric);
+            if (pluginServices.isEnabled()) {
+                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(sql);
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                return pluginServices.startEntry(jdbcMessageSupplier, metric);
+            } else {
+                // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
+                // if the plugin is re-enabled in the middle of iterating over a different
+                // result set
+                //
+                // TODO implement test, same statement, execute multiple queries,
+                // disable/re-enable informant in between two of them, check row counts
+                mirror.setLastJdbcMessageSupplier(null);
+                return null;
+            }
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+            if (stopwatch != null) {
+                stopwatch.stop();
+            }
         }
     }
 
@@ -217,56 +218,84 @@ public class JdbcAspect {
     public static class PreparedStatementExecuteAdvice {
         private static final Metric metric = pluginServices.getMetric(
                 PreparedStatementExecuteAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
-            JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
-                    mirror
-                            .getParametersCopy());
-            mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-            return pluginServices.startEntry(jdbcMessageSupplier, metric);
+            if (pluginServices.isEnabled()) {
+                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
+                        mirror.getParametersCopy());
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                return pluginServices.startEntry(jdbcMessageSupplier, metric);
+            } else {
+                // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
+                // if the plugin is re-enabled in the middle of iterating over a different
+                // result set
+                //
+                // TODO implement test, same prepared statement, execute multiple queries,
+                // disable/re-enable informant in between two of them, check row counts
+                mirror.setLastJdbcMessageSupplier(null);
+                return null;
+            }
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+            if (stopwatch != null) {
+                stopwatch.stop();
+            }
         }
     }
 
-    // executeBatch is not included since it is handled separately (below)
     @Pointcut(typeName = "java.sql.Statement", methodName = "executeBatch", captureNested = false,
             metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final Metric metric = pluginServices.getMetric(
                 StatementExecuteBatchAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget final Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror = getPreparedStatementMirror(
                         (PreparedStatement) statement);
-                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
-                        mirror
-                                .getBatchedParametersCopy());
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                if (pluginServices.isEnabled()) {
+                    JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
+                            mirror.getSql(),
+                            mirror.getBatchedParametersCopy());
+                    mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                    return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                } else {
+                    // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
+                    // updated if the plugin is re-enabled in the middle of iterating over a
+                    // different result set
+                    //
+                    // TODO implement test, same prepared statement, execute multiple queries,
+                    // disable/re-enable informant in between two of them, check row counts
+                    mirror.setLastJdbcMessageSupplier(null);
+                    return null;
+                }
             } else {
                 StatementMirror mirror = getStatementMirror(statement);
-                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
-                        mirror.getBatchedSqlCopy());
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                if (pluginServices.isEnabled()) {
+                    JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
+                            mirror.getBatchedSqlCopy());
+                    // TODO track all changes to statement mirrors regardless of isEnabled
+                    mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
+                    return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                } else {
+                    // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
+                    // updated if the plugin is re-enabled in the middle of iterating over a
+                    // different result set
+                    //
+                    // TODO implement test, same prepared statement, execute multiple queries,
+                    // disable/re-enable informant in between two of them, check row counts
+                    mirror.setLastJdbcMessageSupplier(null);
+                    return null;
+                }
             }
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+            if (stopwatch != null) {
+                stopwatch.stop();
+            }
         }
     }
 
@@ -416,23 +445,6 @@ public class JdbcAspect {
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
             stopwatch.stop();
-        }
-    }
-
-    // ================== Statement Clearing ==================
-
-    // Statement.clearBatch() can be used to re-initiate a prepared statement
-    // that has been cached from a previous usage
-    //
-    // this pointcut isn't restricted to isPluginEnabled() because
-    // PreparedStatements must be tracked for their entire life
-    @Pointcut(typeName = "java.sql.Statement", methodName = "clearBatch")
-    public static class StatementClearBatchAdvice {
-        @OnReturn
-        public static void onReturn(@InjectTarget Statement statement) {
-            StatementMirror mirror = getStatementMirror(statement);
-            mirror.clearBatch();
-            mirror.setLastJdbcMessageSupplier(null);
         }
     }
 

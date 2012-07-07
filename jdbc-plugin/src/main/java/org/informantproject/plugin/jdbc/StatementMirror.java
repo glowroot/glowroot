@@ -71,7 +71,9 @@ class StatementMirror {
     }
 
     void clearBatch() {
-        batchedSql.clear();
+        if (batchedSql != null) {
+            batchedSql.clear();
+        }
     }
 
     void setLastJdbcMessageSupplier(JdbcMessageSupplier jdbcMessageSupplier) {
