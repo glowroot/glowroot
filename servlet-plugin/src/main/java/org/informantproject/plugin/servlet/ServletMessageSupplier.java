@@ -20,10 +20,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
-import org.informantproject.api.Optional;
 import org.informantproject.api.Supplier;
+import org.informantproject.shaded.google.common.base.Optional;
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -57,13 +59,13 @@ class ServletMessageSupplier extends Supplier<Message> {
     // the http session object also cannot be stored here because it may be marked
     // expired when the session attributes are persisted, so instead
     // (references to) the session attributes must be stored here
+
     private final String requestMethod;
     private final String requestURI;
     private volatile Map<String, String[]> requestParameterMap;
 
     // the initial value is the sessionId as it was present at the beginning of the request
     private final String sessionIdInitialValue;
-
     private volatile String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to thread-safe Strings
@@ -73,10 +75,11 @@ class ServletMessageSupplier extends Supplier<Message> {
     // of the request
     private final Map<String, String> sessionAttributeInitialValueMap;
 
+    // ConcurrentHashMap does not allow null values, so need to use Optional values
     private volatile Map<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletMessageSupplier(String requestMethod, String requestURI, String sessionId,
-            Map<String, String> sessionAttributeMap) {
+    ServletMessageSupplier(@Nullable String requestMethod, @Nullable String requestURI,
+            @Nullable String sessionId, @Nullable Map<String, String> sessionAttributeMap) {
 
         this.requestMethod = requestMethod;
         this.requestURI = requestURI;
@@ -93,7 +96,17 @@ class ServletMessageSupplier extends Supplier<Message> {
         ContextMap context = new ContextMap();
         addRequestContext(context);
         addHttpSessionContext(context);
-        return Message.withContext(requestMethod + " " + requestURI, context);
+        String message;
+        if (requestMethod == null && requestURI == null) {
+            message = "";
+        } else if (requestMethod == null) {
+            message = requestURI;
+        } else if (requestURI == null) {
+            message = requestMethod;
+        } else {
+            message = requestMethod + " " + requestURI;
+        }
+        return Message.withContext(message, context);
     }
 
     boolean isRequestParameterMapCaptured() {
@@ -114,17 +127,18 @@ class ServletMessageSupplier extends Supplier<Message> {
         this.sessionIdUpdatedValue = sessionId;
     }
 
-    void putSessionAttributeChangedValue(String name, Optional<String> value) {
+    void putSessionAttributeChangedValue(String name, @Nullable String value) {
         if (sessionAttributeUpdatedValueMap == null) {
             sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, Optional<String>>();
         }
-        sessionAttributeUpdatedValueMap.put(name, value);
+        sessionAttributeUpdatedValueMap.put(name, Optional.fromNullable(value));
     }
 
     String getSessionIdInitialValue() {
         return sessionIdInitialValue;
     }
 
+    @Nullable
     String getSessionIdUpdatedValue() {
         return sessionIdUpdatedValue;
     }
@@ -135,29 +149,29 @@ class ServletMessageSupplier extends Supplier<Message> {
             for (String parameterName : requestParameterMap.keySet()) {
                 String[] values = requestParameterMap.get(parameterName);
                 for (String value : values) {
-                    nestedContext.put(parameterName, value);
+                    nestedContext.putString(parameterName, value);
                 }
             }
-            context.put("request parameters", nestedContext);
+            context.putMap("request parameters", nestedContext);
         }
     }
 
     private void addHttpSessionContext(ContextMap context) {
         if (sessionIdUpdatedValue != null) {
-            context.put("session id (at beginning of this request)", sessionIdInitialValue);
-            context.put("session id (updated during this request)", sessionIdUpdatedValue);
+            context.putString("session id (at beginning of this request)", sessionIdInitialValue);
+            context.putString("session id (updated during this request)", sessionIdUpdatedValue);
         } else if (sessionIdInitialValue != null) {
-            context.put("session id", sessionIdInitialValue);
+            context.putString("session id", sessionIdInitialValue);
         }
         if (sessionAttributeInitialValueMap != null && sessionAttributeUpdatedValueMap == null) {
             // session attributes were captured at the beginning of the request, and no session
             // attributes were updated mid-request
-            context.put("session attributes", getSessionAttributeInitialValues());
+            context.putMap("session attributes", getSessionAttributeInitialValues());
         } else if (sessionAttributeInitialValueMap == null
                 && sessionAttributeUpdatedValueMap != null) {
             // no session attributes were available at the beginning of the request, and session
             // attributes were updated mid-request
-            context.put("session attributes (updated during this request)",
+            context.putMap("session attributes (updated during this request)",
                     getSessionAttributeUpdatedValues());
         } else if (sessionAttributeUpdatedValueMap != null) {
             // session attributes were updated mid-request
@@ -166,14 +180,13 @@ class ServletMessageSupplier extends Supplier<Message> {
             // present in initial values nested context
             for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
                     .entrySet()) {
-                if (initialValuesNestedContext.containsKey(entry.getKey())
-                        && entry.getValue() != null) {
-                    initialValuesNestedContext.putString(entry.getKey(), entry.getValue());
+                if (!initialValuesNestedContext.containsKey(entry.getKey())) {
+                    initialValuesNestedContext.putString(entry.getKey(), null);
                 }
             }
-            context.put("session attributes (at beginning of this request)",
+            context.putMap("session attributes (at beginning of this request)",
                     initialValuesNestedContext);
-            context.put("session attributes (updated during this request)",
+            context.putMap("session attributes (updated during this request)",
                     getSessionAttributeUpdatedValues());
         } else {
             // both initial and updated value maps are null so there is nothing to add to the
@@ -186,7 +199,7 @@ class ServletMessageSupplier extends Supplier<Message> {
         ContextMap nestedContext = new ContextMap();
         for (Entry<String, String> entry : sessionAttributeInitialValueMap.entrySet()) {
             if (entry.getValue() != null) {
-                nestedContext.put(entry.getKey(), entry.getValue());
+                nestedContext.putString(entry.getKey(), entry.getValue());
             }
         }
         return nestedContext;
@@ -196,9 +209,7 @@ class ServletMessageSupplier extends Supplier<Message> {
         // create nested context with session attribute updated values
         ContextMap nestedContext = new ContextMap();
         for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap.entrySet()) {
-            if (entry.getValue() != null) {
-                nestedContext.putString(entry.getKey(), entry.getValue());
-            }
+            nestedContext.putString(entry.getKey(), entry.getValue().orNull());
         }
         return nestedContext;
     }

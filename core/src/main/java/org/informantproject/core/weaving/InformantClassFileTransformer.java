@@ -101,7 +101,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
                 weavers.put(loader, weaver);
             }
             byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
-            if (transformedBytes != null && transformedBytes != bytes) {
+            if (transformedBytes != bytes) {
                 logger.debug("transform(): transformed {}", className);
             }
             return transformedBytes;

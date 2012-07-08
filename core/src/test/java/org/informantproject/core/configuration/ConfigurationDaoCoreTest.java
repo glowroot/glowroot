@@ -16,6 +16,7 @@
 package org.informantproject.core.configuration;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
@@ -106,8 +107,9 @@ public class ConfigurationDaoCoreTest {
         ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
         configurationDao.storeCoreProperties(defaultCoreConfiguration.getPropertiesJson());
         // when
-        ImmutableCoreConfiguration configuration = configurationDao.readCoreConfiguration();
+        ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         // then
-        assertThat(configuration.isEnabled(), is(true));
+        assertThat(coreConfiguration, notNullValue());
+        assertThat(coreConfiguration.isEnabled(), is(true));
     }
 }

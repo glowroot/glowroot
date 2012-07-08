@@ -17,6 +17,8 @@ package org.informantproject.testkit;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.Configuration.PluginConfiguration;
 import org.informantproject.testkit.Configuration.PluginConfigurationJsonDeserializer;
@@ -106,7 +108,7 @@ public class Informant {
         JsonArray points = new Gson().fromJson(pointsJson, JsonElement.class).getAsJsonObject()
                 .get("storedTracePoints").getAsJsonArray();
         if (points.size() == 0) {
-            return null;
+            throw new AssertionError("no trace found");
         } else {
             JsonArray values = points.get(points.size() - 1).getAsJsonArray();
             String traceId = values.get(2).getAsString();
@@ -115,6 +117,7 @@ public class Informant {
         }
     }
 
+    @Nullable
     public Trace getActiveTrace() throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);

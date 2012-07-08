@@ -15,12 +15,14 @@
  */
 package org.informantproject.local.ui;
 
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.IOException;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.local.trace.TraceCommonJsonService;
 import org.informantproject.local.ui.HttpServer.HttpService;
@@ -56,29 +58,26 @@ public class TraceDetailHttpService implements HttpService {
         this.traceCommonJsonService = traceCommonJsonService;
     }
 
+    @Nullable
     public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf("/") + 1);
         logger.debug("handleRequest(): id={}", id);
-        Optional<ByteStream> byteStreams = traceCommonJsonService.getStoredOrActiveTraceJson(id,
-                true);
-        if (byteStreams.isPresent()) {
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-            if (HttpHeaders.isKeepAlive(request)) {
-                // keep alive is not supported to avoid having to calculate content length
-                response.setHeader(Names.CONNECTION, "close");
-            }
-            channel.write(response);
-            ChannelFuture f = channel.write(byteStreams.get().toChunkedInput());
-            f.addListener(ChannelFutureListener.CLOSE);
-            // return null to indicate streaming
-            return null;
-        } else {
+        ByteStream byteStreams = traceCommonJsonService.getStoredOrActiveTraceJson(id, true);
+        if (byteStreams == null) {
             logger.error("no trace found for id '{}'", id);
-            // TODO 404
-            return null;
+            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        if (HttpHeaders.isKeepAlive(request)) {
+            // keep alive is not supported to avoid having to calculate content length
+            response.setHeader(Names.CONNECTION, "close");
+        }
+        channel.write(response);
+        ChannelFuture f = channel.write(byteStreams.toChunkedInput());
+        f.addListener(ChannelFutureListener.CLOSE);
+        // return null to indicate streaming
+        return null;
     }
-
 }

@@ -19,6 +19,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,11 +73,13 @@ public class UnresolvedMethod {
         parameterTypes = null;
     }
 
+    @Nullable
     public Object invoke(Object target, Object... parameters) {
         Method method = getResolvedMethod(target.getClass().getClassLoader());
         return invoke(method, target, parameters);
     }
 
+    @Nullable
     public Object invokeStatic(ClassLoader loader, Object... parameters) {
         Method method = getResolvedMethod(loader);
         return invoke(method, null, parameters);
@@ -121,7 +125,8 @@ public class UnresolvedMethod {
         }
     }
 
-    private Object invoke(Method method, Object target, Object... parameters) {
+    @Nullable
+    private Object invoke(Method method, @Nullable Object target, Object... parameters) {
         try {
             return method.invoke(target, parameters);
         } catch (IllegalArgumentException e) {

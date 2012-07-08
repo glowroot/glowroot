@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
@@ -207,17 +208,21 @@ public class Plugins {
         String name = propertyElement.getElementsByTagName("name").item(0).getTextContent();
         String type = propertyElement.getElementsByTagName("type").item(0).getTextContent();
         String defaultValueText = getOptionalElementText(propertyElement, "default");
-        Object defaultValue = getDefaultValue(type, defaultValueText);
-        boolean hidden = Boolean.parseBoolean(getOptionalElementText(propertyElement, "hidden",
-                "false"));
+        Object defaultValue;
+        if (defaultValueText != null) {
+            defaultValue = getDefaultValue(type, defaultValueText);
+        } else if (type.equals("boolean")) {
+            defaultValue = false;
+        } else {
+            defaultValue = null;
+        }
+        boolean hidden = Boolean.parseBoolean(getOptionalElementText(propertyElement, "hidden"));
         String description = getOptionalElementText(propertyElement, "description");
         return new PropertyDescriptor(prompt, name, type, defaultValue, hidden, description);
     }
 
+    @Nullable
     private static Object getDefaultValue(String type, String defaultValueText) {
-        if (defaultValueText == null) {
-            return null;
-        }
         if (type.equals("string")) {
             return defaultValueText;
         } else if (type.equals("boolean")) {
@@ -226,9 +231,9 @@ public class Plugins {
             } else if (defaultValueText.equalsIgnoreCase("false")) {
                 return false;
             } else {
-                logger.error("unexpected boolean value '" + defaultValueText
-                        + "', must be either 'true' or 'false'");
-                return null;
+                logger.error("unexpected boolean value '" + defaultValueText + "', must be either"
+                        + " 'true' or 'false', defaulting to 'false'");
+                return false;
             }
         } else if (type.equals("double")) {
             try {
@@ -245,16 +250,11 @@ public class Plugins {
         }
     }
 
+    @Nullable
     private static String getOptionalElementText(Element element, String tagName) {
-        return getOptionalElementText(element, tagName, null);
-    }
-
-    private static String getOptionalElementText(Element element, String tagName,
-            String defaultValue) {
-
         NodeList nodes = element.getElementsByTagName(tagName);
         if (nodes.getLength() == 0) {
-            return defaultValue;
+            return null;
         } else {
             return nodes.item(0).getTextContent();
         }

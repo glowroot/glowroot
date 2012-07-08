@@ -15,8 +15,11 @@
  */
 package org.informantproject.core.weaving;
 
+import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.Pointcut;
@@ -48,11 +51,18 @@ public class Weaver implements Opcodes {
         parsedTypeCache = new ParsedTypeCache(loader);
     }
 
-    public byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain) {
+    public byte[] weave(byte[] classBytes) {
+        return weave(classBytes, (CodeSource) null);
+    }
 
+    public byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain) {
+        return weave(classBytes, protectionDomain.getCodeSource());
+    }
+
+    public byte[] weave(byte[] classBytes, @Nullable CodeSource codeSource) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        ClassVisitor cv = new WeavingClassVisitor(mixins, advisors, parsedTypeCache,
-                protectionDomain == null ? null : protectionDomain.getCodeSource(), cw);
+        ClassVisitor cv = new WeavingClassVisitor(mixins, advisors, parsedTypeCache, codeSource,
+                cw);
         ClassReader cr = new ClassReader(classBytes);
         try {
             // using SKIP_FRAMES in reader and not using COMPUTE_FRAMES in writer means that frames

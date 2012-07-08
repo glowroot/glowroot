@@ -16,6 +16,7 @@
 package org.informantproject.local.trace;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -53,6 +54,7 @@ public class TraceCommonJsonServiceTest {
         // when
         ByteStream mergedStackTreeByteStream = TraceCommonJsonService.getMergedStackTree(trace);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        assertThat(mergedStackTreeByteStream, notNullValue());
         mergedStackTreeByteStream.writeTo(baos);
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)

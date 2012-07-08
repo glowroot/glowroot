@@ -15,7 +15,10 @@
  */
 package org.informantproject.plugin.servlet;
 
+import java.util.Collections;
 import java.util.Enumeration;
+
+import javax.annotation.Nullable;
 
 import org.informantproject.api.UnresolvedMethod;
 
@@ -23,6 +26,9 @@ import org.informantproject.api.UnresolvedMethod;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// HttpSession wrapper does not make assumptions about the @Nullable properties of the underlying
+// javax.servlet.http.HttpSession since it's just an interface and could theoretically return null
+// even where it seems to not make sense
 class HttpSession {
 
     private static final UnresolvedMethod getIdMethod = new UnresolvedMethod(
@@ -41,7 +47,12 @@ class HttpSession {
     }
 
     String getId() {
-        return (String) getIdMethod.invoke(realSession);
+        String id = (String) getIdMethod.invoke(realSession);
+        if (id == null) {
+            return "";
+        } else {
+            return id;
+        }
     }
 
     boolean isNew() {
@@ -49,14 +60,21 @@ class HttpSession {
     }
 
     Enumeration<?> getAttributeNames() {
-        return (Enumeration<?>) getAttributeNamesMethod.invoke(realSession);
+        Enumeration<?> attributeNames = (Enumeration<?>) getAttributeNamesMethod.invoke(
+                realSession);
+        if (attributeNames == null) {
+            return Collections.enumeration(Collections.emptySet());
+        } else {
+            return attributeNames;
+        }
     }
 
+    @Nullable
     Object getAttribute(String name) {
         return getAttributeMethod.invoke(realSession, name);
     }
 
     static HttpSession from(Object realSession) {
-        return realSession == null ? null : new HttpSession(realSession);
+        return new HttpSession(realSession);
     }
 }

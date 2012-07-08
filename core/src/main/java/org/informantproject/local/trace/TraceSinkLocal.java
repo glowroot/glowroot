@@ -16,25 +16,30 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
-import org.informantproject.api.Optional;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
+import org.informantproject.core.trace.Trace.Attribute;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
-import org.informantproject.core.util.OptionalJsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -111,40 +116,46 @@ public class TraceSinkLocal implements TraceSink {
 
     public StoredTrace buildStoredTrace(Trace trace) throws IOException {
         long captureTick = ticker.read();
-        StoredTrace storedTrace = new StoredTrace();
-        storedTrace.setId(trace.getId());
-        storedTrace.setStartAt(trace.getStartDate().getTime());
-        storedTrace.setStuck(trace.isStuck() && !trace.isCompleted());
+        StoredTrace.Builder builder = new StoredTrace.Builder();
+        builder.id(trace.getId());
+        builder.startAt(trace.getStartDate().getTime());
+        builder.stuck(trace.isStuck() && !trace.isCompleted());
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
         // (without using synchronization to block updates to the trace while it is being read)
         long endTick = trace.getEndTick();
         if (endTick != 0 && endTick <= captureTick) {
-            storedTrace.setDuration(trace.getDuration());
-            storedTrace.setCompleted(true);
+            builder.duration(trace.getDuration());
+            builder.completed(true);
         } else {
-            storedTrace.setDuration(captureTick - trace.getStartTick());
-            storedTrace.setCompleted(false);
+            builder.duration(captureTick - trace.getStartTick());
+            builder.completed(false);
         }
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         Message message = rootSpan.getMessageSupplier().get();
-        storedTrace.setDescription(message.getText());
-        Optional<String> username = trace.getUsername().get();
-        if (username.isPresent()) {
-            storedTrace.setUsername(username.get());
+        builder.description(message.getText());
+        builder.username(trace.getUsername().get());
+        Gson gson = new GsonBuilder().registerTypeAdapter(ContextMap.class,
+                new ContextMapJsonSerializer()).create();
+        Collection<Attribute> attributes = trace.getAttributes();
+        if (!attributes.isEmpty()) {
+            builder.attributes(gson.toJson(attributes));
         }
-        // OptionalJsonSerializer is needed for serializing trace attributes and span context maps
-        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
-                new OptionalJsonSerializer()).create();
-        storedTrace.setAttributes(gson.toJson(trace.getAttributes()));
-        storedTrace.setMetrics(TraceCommonJsonService.getMetricsJson(trace, gson));
-        storedTrace.setSpans(traceCommonJsonService.getSpansByteStream(trace, captureTick, gson));
-        storedTrace.setMergedStackTree(TraceCommonJsonService.getMergedStackTree(trace));
-        return storedTrace;
+        builder.metrics(TraceCommonJsonService.getMetricsJson(trace, gson));
+        builder.spans(traceCommonJsonService.getSpansByteStream(trace, captureTick, gson));
+        builder.mergedStackTree(TraceCommonJsonService.getMergedStackTree(trace));
+        return builder.build();
     }
 
     public void shutdown() {
         logger.debug("shutdown()");
         executorService.shutdownNow();
+    }
+
+    static class ContextMapJsonSerializer implements JsonSerializer<ContextMap> {
+        public JsonElement serialize(ContextMap contextMap, Type typeOfSrc,
+                JsonSerializationContext context) {
+            return context.serialize(contextMap.getInner());
+        }
     }
 }

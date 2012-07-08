@@ -18,6 +18,8 @@ package org.informantproject.core.trace;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.annotation.Nullable;
+
 import com.google.inject.Singleton;
 
 /**
@@ -37,19 +39,18 @@ public class TraceRegistry {
     // active running trace being executed by the current thread
     private final ThreadLocal<Trace> currentTraceHolder = new ThreadLocal<Trace>();
 
+    @Nullable
     Trace getCurrentTrace() {
         return currentTraceHolder.get();
     }
 
-    void setCurrentTrace(Trace trace) {
-        currentTraceHolder.set(trace);
-    }
-
     void addTrace(Trace trace) {
+        currentTraceHolder.set(trace);
         traces.add(trace);
     }
 
     void removeTrace(Trace trace) {
+        currentTraceHolder.set(null);
         traces.remove(trace);
     }
 

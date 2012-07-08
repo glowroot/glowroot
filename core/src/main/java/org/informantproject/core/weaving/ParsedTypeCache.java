@@ -20,7 +20,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.core.weaving.ParsedType.ParsedMethod;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -53,7 +54,7 @@ public class ParsedTypeCache {
         this.loader = loader;
     }
 
-    public List<ParsedType> getTypeHierarchy(String typeName) {
+    public List<ParsedType> getTypeHierarchy(@Nullable String typeName) {
         if (typeName == null || typeName.equals("java/lang/Object")) {
             return ImmutableList.of();
         }
@@ -71,8 +72,9 @@ public class ParsedTypeCache {
         ParsedType parsedType = loadParsedType(typeName);
         ImmutableList.Builder<ParsedType> builder = new Builder<ParsedType>();
         builder.add(parsedType);
-        if (parsedType.getSuperName().isPresent()) {
-            builder.addAll(loadTypeHierarchy(parsedType.getSuperName().get()));
+        String superName = parsedType.getSuperName();
+        if (superName != null) {
+            builder.addAll(loadTypeHierarchy(superName));
         }
         for (String interfaceName : parsedType.getInterfaceNames()) {
             builder.addAll(loadTypeHierarchy(interfaceName));
@@ -99,7 +101,7 @@ public class ParsedTypeCache {
     private static class ParsedTypeBuilder extends ClassVisitor {
 
         private String name;
-        private Optional<String> superName;
+        private String superName;
         private String[] interfaceNames;
         private final List<ParsedMethod> methods = Lists.newArrayList();
 
@@ -108,19 +110,20 @@ public class ParsedTypeCache {
         }
 
         @Override
-        public void visit(int version, int access, String name, String signature, String superName,
-                String[] interfaceNames) {
+        public void visit(int version, int access, String name, String signature,
+                @Nullable String superName, String[] interfaceNames) {
 
             this.name = name;
             if (superName == null || superName.equals("java/lang/Object")) {
-                this.superName = Optional.absent();
+                this.superName = null;
             } else {
-                this.superName = Optional.of(superName);
+                this.superName = superName;
             }
             this.interfaceNames = interfaceNames;
         }
 
         @Override
+        @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc, String signature,
                 String[] exceptions) {
 

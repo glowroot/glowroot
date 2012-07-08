@@ -15,7 +15,10 @@
  */
 package org.informantproject.plugin.servlet;
 
+import java.util.Collections;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import org.informantproject.api.UnresolvedMethod;
 
@@ -23,6 +26,9 @@ import org.informantproject.api.UnresolvedMethod;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// HttpServletRequest wrapper does not make assumptions about the @Nullable properties of the
+// underlying javax.servlet.http.HttpServletRequest since it's just an interface and could
+// theoretically return null even where it seems to not make sense
 class HttpServletRequest {
 
     private static final UnresolvedMethod getSessionOneArgMethod = new UnresolvedMethod(
@@ -42,27 +48,41 @@ class HttpServletRequest {
         this.realRequest = realRequest;
     }
 
+    @Nullable
     HttpSession getSession(boolean create) {
-        return HttpSession.from(getSessionOneArgMethod.invoke(realRequest, create));
+        Object realSession = getSessionOneArgMethod.invoke(realRequest, create);
+        if (realSession == null) {
+            return null;
+        } else {
+            return HttpSession.from(realSession);
+        }
     }
 
+    @Nullable
     String getMethod() {
         return (String) getMethodMethod.invoke(realRequest);
     }
 
+    @Nullable
     String getRequestURI() {
         return (String) getRequestURIMethod.invoke(realRequest);
     }
 
     Map<?, ?> getParameterMap() {
-        return (Map<?, ?>) getParameterMapMethod.invoke(realRequest);
+        Map<?, ?> parameterMap = (Map<?, ?>) getParameterMapMethod.invoke(realRequest);
+        if (parameterMap == null) {
+            return Collections.emptyMap();
+        } else {
+            return parameterMap;
+        }
     }
 
+    @Nullable
     Object getAttribute(String name) {
         return getAttributeMethod.invoke(realRequest, name);
     }
 
     static HttpServletRequest from(Object realRequest) {
-        return realRequest == null ? null : new HttpServletRequest(realRequest);
+        return new HttpServletRequest(realRequest);
     }
 }

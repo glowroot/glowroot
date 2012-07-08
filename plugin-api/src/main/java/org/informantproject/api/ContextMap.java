@@ -16,29 +16,39 @@
 package org.informantproject.api;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import com.google.common.base.Preconditions;
+import javax.annotation.Nullable;
 
 /**
- * This map can be used to attach contextual context to a span (e.g. attaching the request or
- * session attributes to a servlet entry point). These maps are generally lazy instantiated in
- * {@link Message#getArgs()} since they are only used for traces which end up being
- * persisted.
+ * This map can be used to attach context to a span (e.g. attaching the request or session
+ * attributes to a servlet entry point). These maps are generally lazy instantiated in
+ * {@link Message#getContext()} since they are only used for traces which end up being persisted.
  * 
  * It supports String, Date, Double and Boolean values. It supports other ContextMaps as values in
  * order to nest maps. And it supports null values.
  * 
+ * This class is not thread safe, so it should only be instantiated in response to
+ * Supplier<Message>.get(), or Message.getContext() which are called by the thread that needs the
+ * map.
+ * 
+ * This class implements all methods of Map<String, Object>, but does not implement the interface so
+ * that @Nullable can be used appropriately (and users of this class cannot access it through the
+ * Map interface which has different @Nullable behavior).
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ContextMap implements Map<String, Optional<?>> {
+public class ContextMap {
 
-    private final Map<String, Optional<?>> inner;
+    // map values are @Nullable
+    private final Map<String, Object> inner;
 
     public ContextMap() {
         this(false);
@@ -46,94 +56,56 @@ public class ContextMap implements Map<String, Optional<?>> {
 
     public ContextMap(boolean sortedByKey) {
         if (sortedByKey) {
-            inner = new TreeMap<String, Optional<?>>();
+            inner = new TreeMap<String, Object>();
         } else {
-            inner = new LinkedHashMap<String, Optional<?>>();
+            inner = new LinkedHashMap<String, Object>();
         }
     }
 
-    public Optional<?> putString(String key, Optional<String> value) {
-        Preconditions.checkNotNull(value);
+    @Nullable
+    public Object putString(String key, @Nullable String value) {
         return inner.put(key, value);
     }
 
-    public Optional<?> putDate(String key, Optional<Date> value) {
-        Preconditions.checkNotNull(value);
+    @Nullable
+    public Object putDate(String key, @Nullable Date value) {
         return inner.put(key, value);
     }
 
-    public Optional<?> putDouble(String key, Optional<Double> value) {
-        Preconditions.checkNotNull(value);
+    @Nullable
+    public Object putDouble(String key, @Nullable Double value) {
         return inner.put(key, value);
     }
 
-    public Optional<?> putBoolean(String key, Optional<Boolean> value) {
-        Preconditions.checkNotNull(value);
+    @Nullable
+    public Object putBoolean(String key, @Nullable Boolean value) {
         return inner.put(key, value);
     }
 
-    public Optional<?> putMap(String key, Optional<? extends Map<String, Optional<?>>> value) {
-        Preconditions.checkNotNull(value);
-        if (value.isPresent()) {
-            if (value.get() instanceof ContextMap) {
-                return inner.put(key, value);
-            } else {
-                // build and put a SpanContextMap instead
-                ContextMap nestedContextMap = new ContextMap();
-                for (Entry<?, ?> entry : ((Map<?, ?>) value.get()).entrySet()) {
-                    nestedContextMap.put((String) entry.getKey(), entry.getValue());
-                }
-                return inner.put(key, Optional.of(nestedContextMap));
-            }
-        } else {
-            return inner.put(key, Optional.absent());
-        }
+    @Nullable
+    public Object putMap(String key, @Nullable ContextMap value) {
+        return inner.put(key, value);
     }
 
-    @SuppressWarnings("unchecked")
-    public Optional<?> put(String key, Optional<?> value) {
-        Preconditions.checkNotNull(value);
+    @Nullable
+    public Object put(String key, @Nullable Object value) {
         // TODO write unit tests using each of these data types
-        if (value.isPresent()) {
-            if (value.get() instanceof String) {
-                return putString(key, (Optional<String>) value);
-            } else if (value.get() instanceof Date) {
-                return putDate(key, (Optional<Date>) value);
-            } else if (value.get() instanceof Number) {
-                return putDouble(key, (Optional<Double>) value);
-            } else if (value.get() instanceof Boolean) {
-                return putBoolean(key, (Optional<Boolean>) value);
-            } else if (value.get() instanceof ContextMap) {
-                return putMap(key, (Optional<ContextMap>) value);
-            } else {
-                throw new IllegalArgumentException("Unexpected value type '"
-                        + value.getClass().getName() + "'");
-            }
+        if (value == null) {
+            return inner.put(key, null);
+        } else if (value instanceof String) {
+            return putString(key, (String) value);
+        } else if (value instanceof Date) {
+            return putDate(key, (Date) value);
+        } else if (value instanceof Number) {
+            return putDouble(key, (Double) value);
+        } else if (value instanceof Boolean) {
+            return putBoolean(key, (Boolean) value);
+        } else if (value instanceof ContextMap) {
+            return putMap(key, (ContextMap) value);
         } else {
-            return inner.put(key, Optional.absent());
+            throw new IllegalArgumentException("Unexpected value type '"
+                    + value.getClass().getName() + "'");
         }
-    }
-
-    // convenience nullable puts
-
-    public Object putString(String key, String value) {
-        return putString(key, Optional.fromNullable(value));
-    }
-
-    public Object putDate(String key, Date value) {
-        return putDate(key, Optional.fromNullable(value));
-    }
-
-    public Object putDouble(String key, Double value) {
-        return putDouble(key, Optional.fromNullable(value));
-    }
-
-    public Object putBoolean(String key, Boolean value) {
-        return putBoolean(key, Optional.fromNullable(value));
-    }
-
-    public Object put(String key, Object value) {
-        return put(key, Optional.fromNullable(value));
     }
 
     public int size() {
@@ -148,20 +120,20 @@ public class ContextMap implements Map<String, Optional<?>> {
         return inner.containsKey(key);
     }
 
-    public boolean containsValue(Object value) {
+    public boolean containsValue(@Nullable Object value) {
         return inner.containsValue(value);
     }
 
-    public Optional<?> get(Object key) {
+    public Object get(Object key) {
         return inner.get(key);
     }
 
-    public Optional<?> remove(Object key) {
+    public Object remove(Object key) {
         return inner.remove(key);
     }
 
-    public void putAll(Map<? extends String, ? extends Optional<?>> t) {
-        // this will call put() above which is where the validation will be enforced
+    public void putAll(Map<? extends String, ? extends Object> t) {
+        // putAll() delegates to put() so this will still go through new entry validation
         inner.putAll(t);
     }
 
@@ -173,12 +145,18 @@ public class ContextMap implements Map<String, Optional<?>> {
         return inner.keySet();
     }
 
-    public Collection<Optional<?>> values() {
+    public Collection<Object> values() {
         return inner.values();
     }
 
-    public Set<Entry<String, Optional<?>>> entrySet() {
-        return inner.entrySet();
+    public Set<Entry<String, Object>> entrySet() {
+        // return unmodifiable view to prevent bypassing new entry validation
+        return Collections.unmodifiableSet(inner.entrySet());
+    }
+
+    // this is primarily exposed for json serialization
+    public Map<String, Object> getInner() {
+        return Collections.unmodifiableMap(inner);
     }
 
     public static ContextMap of(String k1, Object v1) {
@@ -194,9 +172,7 @@ public class ContextMap implements Map<String, Optional<?>> {
         return map;
     }
 
-    public static ContextMap of(String k1, Object v1, String k2, Object v2, String k3,
-            Object v3) {
-
+    public static ContextMap of(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
         ContextMap map = new ContextMap();
         map.put(k1, v1);
         map.put(k2, v2);

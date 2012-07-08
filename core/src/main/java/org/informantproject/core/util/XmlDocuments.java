@@ -18,6 +18,7 @@ package org.informantproject.core.util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -75,6 +76,7 @@ public class XmlDocuments {
     }
 
     private static class ResourceEntityResolver implements EntityResolver {
+        @Nullable
         public InputSource resolveEntity(String publicId, String systemId) throws IOException {
             String prefix = "http://www.informantproject.org/xsd/";
             if (systemId.startsWith(prefix)) {

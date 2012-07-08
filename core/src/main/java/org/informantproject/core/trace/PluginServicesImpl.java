@@ -19,13 +19,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
-import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigurationListener;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
 import org.informantproject.core.configuration.ImmutablePluginConfiguration;
@@ -96,7 +98,8 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public Optional<String> getStringProperty(String propertyName) {
+    @Nullable
+    public String getStringProperty(String propertyName) {
         return pluginConfiguration.getStringProperty(propertyName);
     }
 
@@ -106,7 +109,8 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public Optional<Double> getDoubleProperty(String propertyName) {
+    @Nullable
+    public Double getDoubleProperty(String propertyName) {
         return pluginConfiguration.getDoubleProperty(propertyName);
     }
 
@@ -117,7 +121,14 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
 
     @Override
     public Stopwatch startTrace(Supplier<Message> messageSupplier, Metric metric) {
-        return startSpan(traceRegistry.getCurrentTrace(), (MetricImpl) metric, messageSupplier);
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace == null) {
+            currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker);
+            traceRegistry.addTrace(currentTrace);
+            return new SpanStopwatch(currentTrace.getRootSpan().getRootSpan(), currentTrace);
+        } else {
+            return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
+        }
     }
 
     @Override
@@ -131,26 +142,23 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     @Override
-    public void setUsername(final Supplier<Optional<String>> username) {
+    public void setUsername(SupplierOfNullable<String> username) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setUsername(new com.google.common.base.Supplier<Optional<String>>() {
-                public Optional<String> get() {
-                    return username.get();
-                }
-            });
+            trace.setUsername(username);
         }
     }
 
     @Override
-    public void putTraceAttribute(String name, String value) {
+    public void putTraceAttribute(String name, @Nullable String value) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.putAttribute(name, Optional.fromNullable(value));
+            trace.putAttribute(name, value);
         }
     }
 
     @Override
+    @Nullable
     public Supplier<Message> getRootMessageSupplier() {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
@@ -168,53 +176,45 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     private Stopwatch startSpan(Trace currentTrace, MetricImpl metric,
             Supplier<Message> messageSupplier) {
 
-        if (currentTrace == null) {
-            currentTrace = new Trace(metric, messageSupplier, clock, ticker);
-            traceRegistry.setCurrentTrace(currentTrace);
-            traceRegistry.addTrace(currentTrace);
-            return new SpanStopwatch(currentTrace.getRootSpan().getRootSpan());
+        int maxEntries = coreConfiguration.getMaxEntries();
+        if (maxEntries != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED && currentTrace
+                .getRootSpan().getSize() >= maxEntries) {
+            // the trace limit has been exceeded
+            return metric.start();
         } else {
-            int maxEntries = coreConfiguration.getMaxEntries();
-            if (maxEntries != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED
-                    && currentTrace.getRootSpan().getSize() >= maxEntries) {
-                // the trace limit has been exceeded
-                return metric.start();
-            } else {
-                return new SpanStopwatch(currentTrace.pushSpan(metric, messageSupplier));
-            }
+            return new SpanStopwatch(currentTrace.pushSpan(metric, messageSupplier), currentTrace);
         }
     }
 
     private class SpanStopwatch implements Stopwatch {
         private final Span span;
-        private SpanStopwatch(Span span) {
+        private final Trace currentTrace;
+        private SpanStopwatch(Span span, Trace currentTrace) {
             this.span = span;
+            this.currentTrace = currentTrace;
         }
         public void stop() {
             // minimizing the number of calls to the clock timer as they are relatively expensive
             long endTick = ticker.read();
-            Trace currentTrace = traceRegistry.getCurrentTrace();
-            StackTraceElement[] stackTraceElements = null;
             if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfiguration
                     .getSpanStackTraceThresholdMillis())) {
-                stackTraceElements = Thread.currentThread().getStackTrace();
                 // TODO remove last few stack trace elements?
+                currentTrace.popSpan(span, endTick, Thread.currentThread().getStackTrace());
+            } else {
+                currentTrace.popSpan(span, endTick, null);
             }
-            currentTrace.popSpan(span, endTick, stackTraceElements);
             if (currentTrace.isCompleted()) {
                 // the root span has been popped off
                 // since the metrics are bound to the thread, they need to be recorded and reset
-                // while
-                // still in the trace thread, before the thread is reused for another trace
+                // while still in the trace thread, before the thread is reused for another trace
                 currentTrace.resetThreadLocalMetrics();
                 cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
                 cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
-                traceRegistry.setCurrentTrace(null);
                 traceRegistry.removeTrace(currentTrace);
                 traceSink.onCompletedTrace(currentTrace);
             }
         }
-        private void cancelScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {
             if (scheduledFuture == null) {
                 return;
             }

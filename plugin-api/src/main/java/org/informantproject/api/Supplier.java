@@ -23,7 +23,7 @@ public abstract class Supplier<T> {
 
     public abstract T get();
 
-    public static <T> Supplier<T> of(final T reference) {
+    public static <T> Supplier<T> ofInstance(final T reference) {
         return new Supplier<T>() {
             @Override
             public T get() {

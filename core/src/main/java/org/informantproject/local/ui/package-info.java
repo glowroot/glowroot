@@ -13,25 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.util;
+@javax.annotation.ParametersAreNonnullByDefault
+package org.informantproject.local.ui;
 
-import java.lang.reflect.Type;
-
-import org.informantproject.api.Optional;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-
-/**
- * @author Trask Stalnaker
- * @since 0.5
- */
-public class OptionalJsonSerializer implements JsonSerializer<Optional<?>> {
-
-    public JsonElement serialize(Optional<?> src, Type typeOfSrc,
-            JsonSerializationContext context) {
-        return src.isPresent() ? context.serialize(src.get()) : JsonNull.INSTANCE;
-    }
-}

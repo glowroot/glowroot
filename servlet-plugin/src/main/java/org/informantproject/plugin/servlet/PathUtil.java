@@ -20,7 +20,8 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.shaded.google.common.cache.CacheBuilder;
 import org.informantproject.shaded.google.common.cache.CacheLoader;
 import org.informantproject.shaded.google.common.cache.LoadingCache;
@@ -37,7 +38,8 @@ public class PathUtil {
             .newBuilder().weakKeys().weakValues()
             .build(new CacheLoader<Class<?>, LoadingCache<String, Method>>() {
                 @Override
-                public LoadingCache<String, Method> load(final Class<?> type) throws Exception {
+                public LoadingCache<String, Method> load(final Class<?> type)
+                        throws Exception {
                     return CacheBuilder.newBuilder().build(new CacheLoader<String, Method>() {
                         @Override
                         public Method load(String path) throws Exception {
@@ -48,11 +50,12 @@ public class PathUtil {
                 }
             });
 
-    public static Optional<?> getValue(Object o, String[] path, int currIndex) {
+    @Nullable
+    public static Object getValue(@Nullable Object o, String[] path, int currIndex) {
         if (o == null) {
-            return Optional.absent();
+            return null;
         } else if (currIndex == path.length) {
-            return Optional.of(o);
+            return o;
         } else if (o instanceof Map) {
             return getValue(((Map<?, ?>) o).get(path[currIndex]), path, currIndex + 1);
         } else {
@@ -60,13 +63,13 @@ public class PathUtil {
                 Method getter = getters.get(o.getClass()).get(path[currIndex]);
                 return getValue(getter.invoke(o), path, currIndex + 1);
             } catch (ExecutionException e) {
-                return Optional.absent();
+                return null;
             } catch (IllegalArgumentException e) {
-                return Optional.absent();
+                return null;
             } catch (IllegalAccessException e) {
-                return Optional.absent();
+                return null;
             } catch (InvocationTargetException e) {
-                return Optional.absent();
+                return null;
             }
         }
     }

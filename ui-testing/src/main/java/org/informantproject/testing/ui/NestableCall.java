@@ -27,7 +27,7 @@ public class NestableCall {
     private final int maxDescriptionLength;
 
     public NestableCall() {
-        this(null, 0, 0, 0);
+        this(0, 0, 0);
     }
 
     public NestableCall(NestableCall child) {
@@ -35,7 +35,10 @@ public class NestableCall {
     }
 
     public NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxDescriptionLength) {
-        this(null, numExpensiveCalls, maxTimeMillis, maxDescriptionLength);
+        this.child = null;
+        this.numExpensiveCalls = numExpensiveCalls;
+        this.maxTimeMillis = maxTimeMillis;
+        this.maxDescriptionLength = maxDescriptionLength;
     }
 
     public NestableCall(NestableCall child, int numExpensiveCalls, int maxTimeMillis,

@@ -20,6 +20,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.weaving.Mixin;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -63,7 +65,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private final NothingToWeaveException nothingToWeaveException = new NothingToWeaveException();
 
     public WeavingClassVisitor(List<Mixin> mixins, List<Advice> advisors,
-            ParsedTypeCache parsedTypeCache, CodeSource codeSource, ClassVisitor cv) {
+            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource, ClassVisitor cv) {
 
         super(ASM4, cv);
         this.mixins = mixins;
@@ -73,8 +75,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     @Override
-    public void visit(int version, int access, String name, String signature, String superName,
-            String[] interfaceNames) {
+    public void visit(int version, int access, String name, String signature,
+            @Nullable String superName, String[] interfaceNames) {
 
         if ((access & ACC_INTERFACE) != 0) {
             // interfaces never get woven

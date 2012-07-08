@@ -18,6 +18,8 @@ package org.informantproject.core.weaving;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.core.weaving.Advice.ParameterKind;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -106,9 +108,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 }
                 Integer travelerLocalIndex = travelerLocals.get(advice);
                 if (travelerLocalIndex != null) {
-                    super.visitLocalVariable("informant$traveler$" + i, advice.getTravelerType()
-                            .getDescriptor(), null, outerStartLabel, outerEndLabel,
-                            travelerLocalIndex);
+                    Type travelerType = advice.getTravelerType();
+                    if (travelerType == null) {
+                        logger.error("visitLocalVariable(): traveler local index is not null,"
+                                + " but traveler type is null");
+                    } else {
+                        super.visitLocalVariable("informant$traveler$" + i, travelerType
+                                .getDescriptor(), null, outerStartLabel, outerEndLabel,
+                                travelerLocalIndex);
+                    }
                 }
             }
         } else {
@@ -147,7 +155,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitLabel(catchStartLabel);
         }
         for (Advice advice : advisors) {
-            invokeOnBefore(travelerLocals.get(advice), advice);
+            invokeOnBefore(advice, travelerLocals.get(advice));
         }
     }
 
@@ -234,7 +242,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void invokeOnBefore(Integer travelerLocal, Advice advice) {
+    private void invokeOnBefore(Advice advice, @Nullable Integer travelerLocal) {
         Method onBeforeAdvice = advice.getOnBeforeAdvice();
         if (onBeforeAdvice == null) {
             return;
@@ -259,53 +267,54 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void visitOnReturnAdvice(int opcode) {
         for (Advice advice : Lists.reverse(advisors)) {
             Method onReturnAdvice = advice.getOnReturnAdvice();
-            if (onReturnAdvice != null) {
-                Integer enabledLocal = enabledLocals.get(advice);
-                Label onReturnBlockEnd = null;
-                if (enabledLocal != null) {
-                    onReturnBlockEnd = newLabel();
-                    loadLocal(enabledLocal);
-                    visitJumpInsn(Opcodes.IFEQ, onReturnBlockEnd);
+            if (onReturnAdvice == null) {
+                continue;
+            }
+            Integer enabledLocal = enabledLocals.get(advice);
+            Label onReturnBlockEnd = null;
+            if (enabledLocal != null) {
+                onReturnBlockEnd = newLabel();
+                loadLocal(enabledLocal);
+                visitJumpInsn(Opcodes.IFEQ, onReturnBlockEnd);
+            }
+            int sort = onReturnAdvice.getReturnType().getSort();
+            if (onReturnAdvice.getArgumentTypes().length == 0) {
+                if (sort == Type.LONG || sort == Type.DOUBLE) {
+                    pop2();
+                } else if (sort != Type.VOID) {
+                    pop();
                 }
-                int sort = onReturnAdvice.getReturnType().getSort();
-                if (onReturnAdvice.getArgumentTypes().length == 0) {
-                    if (sort == Type.LONG || sort == Type.DOUBLE) {
-                        pop2();
-                    } else if (sort != Type.VOID) {
-                        pop();
-                    }
-                    invokeStatic(advice.getAdviceType(), onReturnAdvice);
-                } else {
-                    int startIndex = 0;
-                    if (advice.getOnReturnParameterKinds()[0] == ParameterKind.RETURN) {
-                        // @InjectReturn must be the first argument to @OnReturn (if present)
-                        if (opcode == RETURN) {
-                            logger.error("cannot @InjectReturn on a @Pointcut returning void");
-                            // try to pass null (TODO handle primitive types also)
-                            visitInsn(ACONST_NULL);
-                        } else if (opcode == ARETURN || opcode == ATHROW) {
-                            dup();
+                invokeStatic(advice.getAdviceType(), onReturnAdvice);
+            } else {
+                int startIndex = 0;
+                if (advice.getOnReturnParameterKinds()[0] == ParameterKind.RETURN) {
+                    // @InjectReturn must be the first argument to @OnReturn (if present)
+                    if (opcode == RETURN) {
+                        logger.error("cannot @InjectReturn on a @Pointcut returning void");
+                        // try to pass null (TODO handle primitive types also)
+                        visitInsn(ACONST_NULL);
+                    } else if (opcode == ARETURN || opcode == ATHROW) {
+                        dup();
+                    } else {
+                        if (opcode == LRETURN || opcode == DRETURN) {
+                            dup2();
                         } else {
-                            if (opcode == LRETURN || opcode == DRETURN) {
-                                dup2();
-                            } else {
-                                dup();
-                            }
+                            dup();
                         }
-                        startIndex++;
                     }
-                    loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex, travelerLocals
-                            .get(advice));
-                    if (sort == Type.LONG || sort == Type.DOUBLE) {
-                        pop2();
-                    } else if (sort != Type.VOID) {
-                        pop();
-                    }
-                    invokeStatic(advice.getAdviceType(), onReturnAdvice);
+                    startIndex++;
                 }
-                if (enabledLocal != null) {
-                    visitLabel(onReturnBlockEnd);
+                loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex, travelerLocals
+                        .get(advice));
+                if (sort == Type.LONG || sort == Type.DOUBLE) {
+                    pop2();
+                } else if (sort != Type.VOID) {
+                    pop();
                 }
+                invokeStatic(advice.getAdviceType(), onReturnAdvice);
+            }
+            if (enabledLocal != null) {
+                visitLabel(onReturnBlockEnd);
             }
         }
     }
@@ -313,30 +322,31 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void visitOnThrowAdvice() {
         for (Advice advice : Lists.reverse(advisors)) {
             Method onThrowAdvice = advice.getOnThrowAdvice();
-            if (onThrowAdvice != null) {
-                Integer enabledLocal = enabledLocals.get(advice);
-                Label onThrowBlockEnd = null;
-                if (enabledLocal != null) {
-                    onThrowBlockEnd = newLabel();
-                    loadLocal(enabledLocal);
-                    visitJumpInsn(Opcodes.IFEQ, onThrowBlockEnd);
+            if (onThrowAdvice == null) {
+                continue;
+            }
+            Integer enabledLocal = enabledLocals.get(advice);
+            Label onThrowBlockEnd = null;
+            if (enabledLocal != null) {
+                onThrowBlockEnd = newLabel();
+                loadLocal(enabledLocal);
+                visitJumpInsn(Opcodes.IFEQ, onThrowBlockEnd);
+            }
+            if (onThrowAdvice.getArgumentTypes().length == 0) {
+                invokeStatic(advice.getAdviceType(), onThrowAdvice);
+            } else {
+                int startIndex = 0;
+                if (advice.getOnThrowParameterKinds()[0] == ParameterKind.THROWABLE) {
+                    // @InjectThrowable must be the first argument to @OnThrow (if present)
+                    dup();
+                    startIndex++;
                 }
-                if (onThrowAdvice.getArgumentTypes().length == 0) {
-                    invokeStatic(advice.getAdviceType(), onThrowAdvice);
-                } else {
-                    int startIndex = 0;
-                    if (advice.getOnThrowParameterKinds()[0] == ParameterKind.THROWABLE) {
-                        // @InjectThrowable must be the first argument to @OnThrow (if present)
-                        dup();
-                        startIndex++;
-                    }
-                    loadMethodArgs(advice.getOnThrowParameterKinds(), startIndex,
-                            travelerLocals.get(advice));
-                    invokeStatic(advice.getAdviceType(), onThrowAdvice);
-                }
-                if (enabledLocal != null) {
-                    visitLabel(onThrowBlockEnd);
-                }
+                loadMethodArgs(advice.getOnThrowParameterKinds(), startIndex,
+                        travelerLocals.get(advice));
+                invokeStatic(advice.getAdviceType(), onThrowAdvice);
+            }
+            if (enabledLocal != null) {
+                visitLabel(onThrowBlockEnd);
             }
         }
     }
@@ -344,19 +354,20 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void visitOnAfterAdvice() {
         for (Advice advice : Lists.reverse(advisors)) {
             Method onAfterAdvice = advice.getOnAfterAdvice();
-            if (onAfterAdvice != null) {
-                Integer enabledLocal = enabledLocals.get(advice);
-                Label onAfterBlockEnd = null;
-                if (enabledLocal != null) {
-                    onAfterBlockEnd = newLabel();
-                    loadLocal(enabledLocal);
-                    visitJumpInsn(Opcodes.IFEQ, onAfterBlockEnd);
-                }
-                loadMethodArgs(advice.getOnAfterParameterKinds(), 0, travelerLocals.get(advice));
-                invokeStatic(advice.getAdviceType(), onAfterAdvice);
-                if (enabledLocal != null) {
-                    visitLabel(onAfterBlockEnd);
-                }
+            if (onAfterAdvice == null) {
+                continue;
+            }
+            Integer enabledLocal = enabledLocals.get(advice);
+            Label onAfterBlockEnd = null;
+            if (enabledLocal != null) {
+                onAfterBlockEnd = newLabel();
+                loadLocal(enabledLocal);
+                visitJumpInsn(Opcodes.IFEQ, onAfterBlockEnd);
+            }
+            loadMethodArgs(advice.getOnAfterParameterKinds(), 0, travelerLocals.get(advice));
+            invokeStatic(advice.getAdviceType(), onAfterAdvice);
+            if (enabledLocal != null) {
+                visitLabel(onAfterBlockEnd);
             }
         }
     }
@@ -378,7 +389,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void loadMethodArgs(ParameterKind[] parameterTypes, int startIndex,
-            Integer travelerLocal) {
+            @Nullable Integer travelerLocal) {
 
         int argIndex = 0;
         for (int i = startIndex; i < parameterTypes.length; i++) {

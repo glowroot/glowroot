@@ -18,7 +18,8 @@ package org.informantproject.core.weaving;
 import java.util.Arrays;
 import java.util.List;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.objectweb.asm.Type;
 
 import com.google.common.collect.ImmutableList;
@@ -33,11 +34,11 @@ public class ParsedType {
     private final boolean missing;
 
     private final String name;
-    private final Optional<String> superName;
+    private final String superName;
     private final String[] interfaceNames;
     private final List<ParsedMethod> methods;
 
-    ParsedType(String name, Optional<String> superName, String[] interfaceNames,
+    ParsedType(String name, @Nullable String superName, String[] interfaceNames,
             List<ParsedMethod> methods) {
 
         this.missing = false;
@@ -64,7 +65,8 @@ public class ParsedType {
         return name.replace('/', '.');
     }
 
-    public Optional<String> getSuperName() {
+    @Nullable
+    public String getSuperName() {
         return superName;
     }
 
@@ -76,6 +78,7 @@ public class ParsedType {
         return methods;
     }
 
+    @Nullable
     public ParsedMethod getMethod(String name, Type[] types) {
         for (ParsedMethod method : methods) {
             if (!method.getName().equals(name)) {

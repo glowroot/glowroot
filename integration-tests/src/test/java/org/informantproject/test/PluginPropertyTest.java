@@ -16,11 +16,11 @@
 package org.informantproject.test;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.util.Random;
 
-import org.informantproject.api.Optional;
 import org.informantproject.test.api.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.PluginConfiguration;
@@ -67,9 +67,9 @@ public class PluginPropertyTest {
         PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
                 PLUGIN_ID);
         // then
-        assertThat((String) pluginConfiguration.getProperty("alternateDescription").get(), is(
+        assertThat((String) pluginConfiguration.getProperty("alternateDescription"), is(
                 randomText));
-        assertThat((Boolean) pluginConfiguration.getProperty("starredDescription").get(), is(
+        assertThat((Boolean) pluginConfiguration.getProperty("starredDescription"), is(
                 randomBoolean));
     }
 
@@ -79,7 +79,7 @@ public class PluginPropertyTest {
         PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
                 PLUGIN_ID);
         // then
-        assertThat((String) pluginConfiguration.getProperty("hasDefaultVal").get(), is("one"));
+        assertThat((String) pluginConfiguration.getProperty("hasDefaultVal"), is("one"));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class PluginPropertyTest {
                 .getPropertiesJson());
         // then
         pluginConfiguration = container.getInformant().getPluginConfiguration(PLUGIN_ID);
-        assertThat(pluginConfiguration.getProperty("alternateDescription"), is(Optional.absent()));
+        assertThat(pluginConfiguration.getProperty("alternateDescription"), nullValue());
     }
 
     @Test

@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.configuration;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.gson.Gson;
@@ -148,7 +150,7 @@ public class ImmutableCoreConfiguration {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof ImmutableCoreConfiguration)) {
             return false;
         }

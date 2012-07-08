@@ -18,12 +18,14 @@ package org.informantproject.core;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
-import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
@@ -66,7 +68,8 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Optional<String> getStringProperty(String propertyName) {
+    @Nullable
+    public String getStringProperty(String propertyName) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -86,7 +89,8 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Optional<Double> getDoubleProperty(String propertyName) {
+    @Nullable
+    public Double getDoubleProperty(String propertyName) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -121,7 +125,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void setUsername(Supplier<Optional<String>> username) {
+    public void setUsername(SupplierOfNullable<String> username) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -141,6 +145,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
+    @Nullable
     public Supplier<Message> getRootMessageSupplier() {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."

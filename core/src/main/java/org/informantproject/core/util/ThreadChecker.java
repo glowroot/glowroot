@@ -16,13 +16,18 @@
 package org.informantproject.core.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.informantproject.core.MainEntryPoint;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 
 /**
  * Only used by tests. It is important that Informant doesn't use any non-daemon threads which could
@@ -45,27 +50,27 @@ public final class ThreadChecker {
         return Thread.getAllStackTraces().keySet();
     }
 
-    public static void postShutdownThreadCheck(Set<Thread> preExistingThreads)
+    public static void postShutdownThreadCheck(final Set<Thread> preExistingThreads)
             throws InterruptedException {
 
-        List<Thread> rogueThreads = null;
-        // give it 5?? seconds to shutdown threads
-        for (int i = 0; i < 500; i++) {
-            rogueThreads = new ArrayList<Thread>();
-            for (Thread thread : currentThreadList()) {
-                if (!preExistingThreads.contains(thread)) {
-                    rogueThreads.add(thread);
-                }
-            }
+        // give it 5 seconds to shutdown threads
+        long startedAt = System.currentTimeMillis();
+        while (true) {
+            Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
+                    new Predicate<Thread>() {
+                        public boolean apply(@Nullable Thread thread) {
+                            return !preExistingThreads.contains(thread);
+                        }
+                    });
             if (rogueThreads.isEmpty()) {
                 // success
-                break;
+                return;
+            } else if (System.currentTimeMillis() - startedAt > 5000) {
+                throw new RogueThreadsException(rogueThreads);
+            } else {
+                // failure, wait a few milliseconds before trying again
+                Thread.sleep(10);
             }
-            // failure, wait a few milliseconds and try again
-            Thread.sleep(10);
-        }
-        if (!rogueThreads.isEmpty()) {
-            throw new RogueThreadsException(rogueThreads);
         }
     }
 
@@ -84,8 +89,8 @@ public final class ThreadChecker {
 
     @SuppressWarnings("serial")
     public static class RogueThreadsException extends RuntimeException {
-        private final List<Thread> rogueThreads;
-        private RogueThreadsException(List<Thread> rogueThreads) {
+        private final Collection<Thread> rogueThreads;
+        private RogueThreadsException(Collection<Thread> rogueThreads) {
             this.rogueThreads = rogueThreads;
         }
         @Override

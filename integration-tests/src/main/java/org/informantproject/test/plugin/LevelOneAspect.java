@@ -28,6 +28,8 @@ import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.Pointcut;
 
+import com.google.common.base.Objects;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -54,8 +56,8 @@ public class LevelOneAspect {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
                 @Override
                 public Message get() {
-                    String traceDescription = pluginServices.getStringProperty(
-                            "alternateDescription").or("Level One");
+                    String traceDescription = Objects.firstNonNull(pluginServices
+                            .getStringProperty("alternateDescription"), "Level One");
                     if (pluginServices.getBooleanProperty("starredDescription")) {
                         traceDescription += "*";
                     }
@@ -63,8 +65,9 @@ public class LevelOneAspect {
                     ContextMap nestedContext = ContextMap.of("nestedkey11", arg1, "nestedkey12",
                             arg2, "subnested1",
                             ContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
-                    context.put("nested1", nestedContext);
-                    context.put("nested2", ContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
+                    context.putMap("nested1", nestedContext);
+                    context.putMap("nested2", ContextMap.of("nestedkey21", arg1, "nestedkey22",
+                            arg2));
                     return Message.withContext(traceDescription, context);
                 }
             };

@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 
 /**
@@ -85,6 +87,7 @@ public class JarFileShadingTest {
     // this covers the case where "mvn integration-test" is executed from inside the
     // informant-integration-test directory
     // this case wouldn't necessarily be covered by the relative path case below
+    @Nullable
     private static File findInformantCoreJarFileFromClasspath() {
         String classpath = System.getProperty("java.class.path");
         String[] classpathElements = classpath.split(File.pathSeparator);
@@ -99,6 +102,7 @@ public class JarFileShadingTest {
 
     // this is mostly for convenience as it covers the case where this test is executed from
     // inside eclipse after informant-core.jar file has been built into ../core/target
+    @Nullable
     private static File findInformantCoreJarFileFromRelativePath() {
         File[] possibleMatches = new File("../core/target").listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,8 +27,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
+import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
-import org.informantproject.api.Optional;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
@@ -37,12 +38,11 @@ import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.core.util.OptionalJsonSerializer;
+import org.informantproject.local.trace.TraceSinkLocal.ContextMapJsonSerializer;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -76,21 +76,22 @@ public class TraceCommonJsonService {
         this.ticker = ticker;
     }
 
-    public Optional<ByteStream> getStoredOrActiveTraceJson(String id, boolean includeDetail)
+    @Nullable
+    public ByteStream getStoredOrActiveTraceJson(String id, boolean includeDetail)
             throws IOException {
 
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                return Optional.of(getActiveTraceJson(active, includeDetail));
+                return getActiveTraceJson(active, includeDetail);
             }
         }
         StoredTrace storedTrace = traceDao.readStoredTrace(id);
         if (storedTrace == null) {
-            return Optional.absent();
+            return null;
         } else {
-            return Optional.of(getStoredTraceJson(storedTrace, includeDetail));
+            return getStoredTraceJson(storedTrace, includeDetail);
         }
     }
 
@@ -171,15 +172,14 @@ public class TraceCommonJsonService {
         sb.append(",\"description\":\"");
         sb.append(message.getText());
         sb.append("\"");
-        Optional<String> username = activeTrace.getUsername().get();
-        if (username.isPresent()) {
+        String username = activeTrace.getUsername().get();
+        if (username != null) {
             sb.append(",\"username\":\"");
-            sb.append(username.get());
+            sb.append(username);
             sb.append("\"");
         }
-        // OptionalJsonSerializer is needed for serializing trace attributes and span context maps
-        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
-                new OptionalJsonSerializer()).create();
+        Gson gson = new GsonBuilder().registerTypeAdapter(ContextMap.class,
+                new ContextMapJsonSerializer()).create();
         String attributes = getAttributesJson(activeTrace, gson);
         if (attributes != null) {
             sb.append(",\"attributes\":");
@@ -218,42 +218,44 @@ public class TraceCommonJsonService {
         return new SpansByteStream(trace.getRootSpan().getSpans().iterator(), captureTick, gson);
     }
 
+    @Nullable
     public static String getMetricsJson(Trace trace, Gson gson) {
-        Collection<Snapshot> items = Collections2.transform(trace.getTraceMetrics(),
-                new Function<TraceMetric, Snapshot>() {
-                    public Snapshot apply(TraceMetric item) {
-                        return item.copyOf();
-                    }
-                });
-        if (items.isEmpty()) {
+        List<TraceMetric> traceMetrics = trace.getTraceMetrics();
+        if (traceMetrics.isEmpty()) {
             return null;
-        } else {
-            Ordering<Snapshot> byTotalOrdering = new Ordering<Snapshot>() {
-                @Override
-                public int compare(Snapshot left, Snapshot right) {
-                    return Longs.compare(left.getTotal(), right.getTotal());
-                }
-            };
-            return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
         }
+        List<Snapshot> items = Lists.transform(traceMetrics, new Function<TraceMetric, Snapshot>() {
+            public Snapshot apply(TraceMetric item) {
+                return item.copyOf();
+            }
+        });
+        Ordering<Snapshot> byTotalOrdering = new Ordering<Snapshot>() {
+            @Override
+            public int compare(Snapshot left, Snapshot right) {
+                return Longs.compare(left.getTotal(), right.getTotal());
+            }
+        };
+        return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
     }
 
+    @Nullable
     public static String getAttributesJson(Trace trace, Gson gson) {
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         Message message = rootSpan.getMessageSupplier().get();
         if (message.getContext() == null) {
             return null;
         } else {
-            return gson.toJson(message.getContext(),
-                    new TypeToken<Map<String, Object>>() {}.getType());
+            return gson.toJson(message.getContext(), new TypeToken<Map<String, Object>>() {}
+                    .getType());
         }
     }
 
+    @Nullable
     public static ByteStream getMergedStackTree(Trace trace) {
-        if (trace.getMergedStackTree().getRootNode() == null) {
+        MergedStackTreeNode rootNode = trace.getMergedStackTree().getRootNode();
+        if (rootNode == null) {
             return null;
         }
-        MergedStackTreeNode rootNode = trace.getMergedStackTree().getRootNode();
         LinkedList<Object> toVisit = new LinkedList<Object>();
         toVisit.add(rootNode);
         return new MergedStackTreeByteStream(toVisit);
@@ -350,12 +352,14 @@ public class TraceCommonJsonService {
             Message message = span.getMessageSupplier().get();
             jw.name("description");
             jw.value(message.getText());
-            if (message.getContext() != null) {
+            ContextMap context = message.getContext();
+            if (context != null) {
                 raw.append(",\"contextMap\":");
-                raw.append(gson.toJson(message.getContext()));
+                raw.append(gson.toJson(context));
             }
-            if (span.getStackTraceElements() != null) {
-                String stackTraceJson = getStackTraceJson(span.getStackTraceElements());
+            StackTraceElement[] stackTraceElements = span.getStackTraceElements();
+            if (stackTraceElements != null) {
+                String stackTraceJson = getStackTraceJson(stackTraceElements);
                 String stackTraceHash = Hashing.sha1().hashString(stackTraceJson, Charsets.UTF_8)
                         .toString();
                 stackTraces.put(stackTraceHash, stackTraceJson);
@@ -450,6 +454,7 @@ public class TraceCommonJsonService {
             }
         }
 
+        @Nullable
         private static String top(List<String> stack) {
             if (stack.isEmpty()) {
                 return null;
@@ -458,10 +463,12 @@ public class TraceCommonJsonService {
             }
         }
 
+        @Nullable
         private static String getMetricName(StackTraceElement stackTraceElement) {
             return getMetricNameFromMethodName(stackTraceElement);
         }
 
+        @Nullable
         private static String getMetricNameFromMethodName(StackTraceElement stackTraceElement) {
             Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
             if (matcher.matches()) {

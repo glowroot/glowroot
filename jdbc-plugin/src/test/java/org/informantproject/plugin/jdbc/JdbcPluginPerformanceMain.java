@@ -27,9 +27,9 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.TraceMarker;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Metric;
+import org.informantproject.testkit.TraceMarker;
 
 /**
  * Performance test of the jdbc plugin.

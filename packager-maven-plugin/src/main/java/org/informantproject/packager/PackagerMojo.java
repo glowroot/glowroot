@@ -31,6 +31,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -261,6 +262,7 @@ public class PackagerMojo extends AbstractMojo {
         validateProperties(pluginConfiguration, pluginDescriptor);
     }
 
+    @Nullable
     private PluginDescriptor getPluginDescriptor(PluginConfiguration pluginConfiguration,
             List<PluginDescriptor> pluginDescriptors) {
 
@@ -331,6 +333,7 @@ public class PackagerMojo extends AbstractMojo {
         jarOut.closeEntry();
     }
 
+    @Nullable
     private PluginConfiguration getPluginConfiguration(String id) {
         for (PluginConfiguration pluginConfiguration : plugins) {
             if (pluginConfiguration.getId().equals(id)) {
@@ -379,8 +382,9 @@ public class PackagerMojo extends AbstractMojo {
         out.println("      </properties>");
     }
 
-    private PropertyConfiguration getPropertyConfiguration(PluginConfiguration pluginConfiguration,
-            String name) {
+    @Nullable
+    private PropertyConfiguration getPropertyConfiguration(
+            @Nullable PluginConfiguration pluginConfiguration, String name) {
 
         if (pluginConfiguration == null || pluginConfiguration.getProperties() == null) {
             return null;
@@ -440,6 +444,7 @@ public class PackagerMojo extends AbstractMojo {
         return new PropertyDescriptor(prompt, name, type, defaultValue, hidden, description);
     }
 
+    @Nullable
     private static String getOptionalElementText(Element element, String tagName) {
         NodeList nodes = element.getElementsByTagName(tagName);
         if (nodes.getLength() == 0) {

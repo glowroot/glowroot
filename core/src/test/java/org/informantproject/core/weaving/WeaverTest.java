@@ -433,6 +433,7 @@ public class WeaverTest {
         // when
         String methodName = test.executeWithReturn();
         // then
+        assertThat(methodName, notNullValue());
         assertThat(methodName.substring(0, methodName.lastIndexOf("$")),
                 is("executeWithReturn$informant$metric$abc$xyz"));
     }

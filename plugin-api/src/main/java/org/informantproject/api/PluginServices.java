@@ -18,6 +18,8 @@ package org.informantproject.api;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,20 +58,23 @@ public abstract class PluginServices {
 
     public abstract boolean isEnabled();
 
-    public abstract Optional<String> getStringProperty(String propertyName);
+    @Nullable
+    public abstract String getStringProperty(String propertyName);
 
     public abstract boolean getBooleanProperty(String propertyName);
 
-    public abstract Optional<Double> getDoubleProperty(String propertyName);
+    @Nullable
+    public abstract Double getDoubleProperty(String propertyName);
 
     public abstract Stopwatch startTrace(Supplier<Message> message, Metric metric);
 
     public abstract Stopwatch startEntry(Supplier<Message> message, Metric metric);
 
-    public abstract void setUsername(Supplier<Optional<String>> username);
+    public abstract void setUsername(SupplierOfNullable<String> username);
 
-    public abstract void putTraceAttribute(String name, String value);
+    public abstract void putTraceAttribute(String name, @Nullable String value);
 
+    @Nullable
     public abstract Supplier<Message> getRootMessageSupplier();
 
     public static PluginServices get(String pluginId) {
@@ -119,41 +124,59 @@ public abstract class PluginServices {
     private static class NopPluginServices extends PluginServices {
         @Override
         public Metric getMetric(Class<?> adviceClass) {
-            return null;
+            return NopMetric.INSTANCE;
         }
         @Override
         public boolean isEnabled() {
             return false;
         }
         @Override
-        public Optional<String> getStringProperty(String propertyName) {
-            return Optional.absent();
+        @Nullable
+        public String getStringProperty(String propertyName) {
+            return null;
         }
         @Override
         public boolean getBooleanProperty(String propertyName) {
             return false;
         }
         @Override
-        public Optional<Double> getDoubleProperty(String propertyName) {
-            return Optional.absent();
+        @Nullable
+        public Double getDoubleProperty(String propertyName) {
+            return null;
         }
         @Override
         public void registerConfigurationListener(ConfigurationListener listener) {}
         @Override
         public Stopwatch startTrace(Supplier<Message> message, Metric metric) {
-            return null;
+            return NopStopwatch.INSTANCE;
         }
         @Override
         public Stopwatch startEntry(Supplier<Message> message, Metric metric) {
-            return null;
+            return NopStopwatch.INSTANCE;
         }
         @Override
-        public void setUsername(Supplier<Optional<String>> username) {}
+        public void setUsername(SupplierOfNullable<String> username) {}
         @Override
-        public void putTraceAttribute(String name, String value) {}
+        public void putTraceAttribute(String name, @Nullable String value) {}
         @Override
+        @Nullable
         public Supplier<Message> getRootMessageSupplier() {
             return null;
+        }
+
+        private static class NopMetric implements Metric {
+            private static final NopMetric INSTANCE = new NopMetric();
+            public String getName() {
+                return "NopMetric";
+            }
+            public Stopwatch start() {
+                return NopStopwatch.INSTANCE;
+            }
+        }
+
+        private static class NopStopwatch implements Stopwatch {
+            private static final NopStopwatch INSTANCE = new NopStopwatch();
+            public void stop() {}
         }
     }
 }

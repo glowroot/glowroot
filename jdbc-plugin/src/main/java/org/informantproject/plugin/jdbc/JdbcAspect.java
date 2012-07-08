@@ -24,6 +24,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.MessageSupplier;
@@ -185,6 +187,7 @@ public class JdbcAspect {
     public static class StatementExecuteAdvice {
         private static final Metric metric = pluginServices.getMetric(StatementExecuteAdvice.class);
         @OnBefore
+        @Nullable
         public static Stopwatch onBefore(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
 
@@ -205,7 +208,7 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
             if (stopwatch != null) {
                 stopwatch.stop();
             }
@@ -219,6 +222,7 @@ public class JdbcAspect {
         private static final Metric metric = pluginServices.getMetric(
                 PreparedStatementExecuteAdvice.class);
         @OnBefore
+        @Nullable
         public static Stopwatch onBefore(@InjectTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
@@ -238,7 +242,7 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
             if (stopwatch != null) {
                 stopwatch.stop();
             }
@@ -251,6 +255,7 @@ public class JdbcAspect {
         private static final Metric metric = pluginServices.getMetric(
                 StatementExecuteBatchAdvice.class);
         @OnBefore
+        @Nullable
         public static Stopwatch onBefore(@InjectTarget final Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror = getPreparedStatementMirror(
@@ -292,7 +297,7 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
             if (stopwatch != null) {
                 stopwatch.stop();
             }
@@ -328,6 +333,7 @@ public class JdbcAspect {
             return pluginEnabled;
         }
         @OnBefore
+        @Nullable
         public static Stopwatch onBefore() {
             if (metricEnabled) {
                 return metric.start();
@@ -362,7 +368,7 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
+        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
             if (stopwatch != null) {
                 stopwatch.stop();
             }

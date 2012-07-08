@@ -15,6 +15,8 @@
  */
 package org.informantproject.plugin.jdbc;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -23,6 +25,7 @@ package org.informantproject.plugin.jdbc;
 // that extend java.sql.Statement
 public interface HasStatementMirror {
 
+    @Nullable
     StatementMirror getInformantStatementMirror();
 
     void setInformantStatementMirror(StatementMirror statementMirror);

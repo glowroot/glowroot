@@ -42,5 +42,26 @@
       <!-- this is the last version of guava that supports jdk 5 -->
       <version>11.0.2</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>2.0.0</version>
+    </dependency>
   </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- versions prior to 2.6 depend on an old qdox version that throws an exception when
+            processing package-info.java files with package level annotations (see package-info.java
+            for org.informantproject.packager, and see http://jira.codehaus.org/browse/QDOX-98).
+            maven 3.0 defaults to maven-plugin-plugin version 2.6, so this won't be necessary once
+            maven 2.2.1 support is dropped -->
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>

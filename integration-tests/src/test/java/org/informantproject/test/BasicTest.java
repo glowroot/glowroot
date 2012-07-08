@@ -16,6 +16,7 @@
 package org.informantproject.test;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
@@ -73,7 +74,7 @@ public class BasicTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getDescription(), is("Level One"));
-        assertThat(trace.getAttributes().size(), is(0));
+        assertThat(trace.getAttributes(), nullValue());
         assertThat(trace.getSpans().size(), is(3));
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getDescription(), is("Level One"));

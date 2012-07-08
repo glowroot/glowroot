@@ -17,7 +17,8 @@ package org.informantproject.plugin.servlet;
 
 import java.util.Set;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.api.PluginServices;
 import org.informantproject.shaded.google.common.base.Function;
 import org.informantproject.shaded.google.common.base.Objects;
@@ -49,12 +50,13 @@ final class ServletPluginPropertyUtils {
     private static volatile Set<String> cachedSessionAttributePaths = ImmutableSet.of();
     private static volatile Set<String> cachedSessionAttributeNames = ImmutableSet.of();
     private static volatile boolean isCaptureAllSessionAttributes = false;
-    private static volatile Optional<String> cachedSessionAttributesText;
+    private static volatile String cachedSessionAttributesText;
 
     // utility class
     private ServletPluginPropertyUtils() {}
 
-    static Optional<String> getSessionUsernameAttributePath() {
+    @Nullable
+    static String getSessionUsernameAttributePath() {
         return pluginServices.getStringProperty(SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME);
     }
 
@@ -76,11 +78,18 @@ final class ServletPluginPropertyUtils {
     }
 
     private static void checkCache() {
-        Optional<String> sessionAttributesText = pluginServices.getStringProperty(
+        String sessionAttributesText = pluginServices.getStringProperty(
                 SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
         if (!Objects.equal(sessionAttributesText, cachedSessionAttributesText)) {
-            if (sessionAttributesText.isPresent()) {
-                Iterable<String> paths = Splitter.on(',').split(sessionAttributesText.get());
+            if (sessionAttributesText == null) {
+                // update cached first so that another thread cannot come into this method and get a
+                // positive match for text but then get the old cached attributes
+                cachedSessionAttributePaths = ImmutableSet.of();
+                cachedSessionAttributeNames = ImmutableSet.of();
+                isCaptureAllSessionAttributes = false;
+                cachedSessionAttributesText = null;
+            } else {
+                Iterable<String> paths = Splitter.on(',').split(sessionAttributesText);
                 // update cached first so that another thread cannot come into this method and get a
                 // positive match for text but then get the old cached attributes
                 cachedSessionAttributePaths = ImmutableSet.copyOf(paths);
@@ -93,13 +102,6 @@ final class ServletPluginPropertyUtils {
                 isCaptureAllSessionAttributes = cachedSessionAttributePaths.size() == 1
                         && cachedSessionAttributePaths.iterator().next().equals("*");
                 cachedSessionAttributesText = sessionAttributesText;
-            } else {
-                // update cached first so that another thread cannot come into this method and get a
-                // positive match for text but then get the old cached attributes
-                cachedSessionAttributePaths = ImmutableSet.of();
-                cachedSessionAttributeNames = ImmutableSet.of();
-                isCaptureAllSessionAttributes = false;
-                cachedSessionAttributesText = null;
             }
         }
     }

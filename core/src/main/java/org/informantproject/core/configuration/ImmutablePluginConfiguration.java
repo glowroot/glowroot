@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,24 +65,26 @@ public class ImmutablePluginConfiguration {
     // included in the property map, even those properties with null value, so that an appropriate
     // error can be logged if a plugin tries to access a property value that it hasn't defined in
     // its plugin.xml file
-    private final Map<String, Optional<?>> properties = new HashMap<String, Optional<?>>();
+    //
+    // map values are @Nullable
+    private final Map<String, Object> properties = new HashMap<String, Object>();
 
-    ImmutablePluginConfiguration(boolean enabled, Map<String, Optional<?>> properties) {
+    ImmutablePluginConfiguration(boolean enabled, Map<String, Object> properties) {
         this.enabled = enabled;
         // make a copy and validate value types at the same time
-        for (Entry<String, Optional<?>> subEntry : properties.entrySet()) {
+        for (Entry<String, Object> subEntry : properties.entrySet()) {
             String propertyName = subEntry.getKey();
-            if (subEntry.getValue().isPresent()) {
-                Object value = subEntry.getValue().get();
+            if (subEntry.getValue() == null) {
+                this.properties.put(propertyName, null);
+            } else {
+                Object value = subEntry.getValue();
                 if (validValueTypes.contains(value.getClass())) {
-                    this.properties.put(propertyName, Optional.of(value));
+                    this.properties.put(propertyName, value);
                 } else {
                     logger.error("unexpected plugin configuration value type '" + value.getClass()
                             + "' for property name '" + propertyName + "' (expecting one of "
                             + Joiner.on(", ").join(validValueTypes) + ")", new Throwable());
                 }
-            } else {
-                this.properties.put(propertyName, Optional.absent());
             }
         }
     }
@@ -90,50 +93,44 @@ public class ImmutablePluginConfiguration {
         return enabled;
     }
 
-    @SuppressWarnings("unchecked")
-    public Optional<String> getStringProperty(String name) {
-        Optional<?> value = properties.get(name);
-        if (value.isPresent()) {
-            if (value.get() instanceof String) {
-                return (Optional<String>) value;
-            } else {
-                logger.error("expecting string value type, but found value type '"
-                        + value.get().getClass() + "' for property name '" + name + "'");
-                return Optional.absent();
-            }
+    @Nullable
+    public String getStringProperty(String name) {
+        Object value = properties.get(name);
+        if (value == null) {
+            return null;
+        } else if (value instanceof String) {
+            return (String) value;
         } else {
-            return Optional.absent();
+            logger.error("expecting string value type, but found value type '" + value.getClass()
+                    + "' for property name '" + name + "'");
+            return null;
         }
     }
 
     public boolean getBooleanProperty(String name) {
-        Optional<?> value = properties.get(name);
-        if (value.isPresent()) {
-            if (value.get() instanceof Boolean) {
-                return (Boolean) value.get();
-            } else {
-                logger.error("expecting boolean value type, but found value type '"
-                        + value.get().getClass() + "' for property name '" + name + "'");
-                return false;
-            }
+        Object value = properties.get(name);
+        if (value == null) {
+            return false;
+        } else if (value instanceof Boolean) {
+            return (Boolean) value;
         } else {
+            logger.error("expecting boolean value type, but found value type '" + value.getClass()
+                    + "' for property name '" + name + "'");
             return false;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public Optional<Double> getDoubleProperty(String name) {
-        Optional<?> value = properties.get(name);
-        if (value.isPresent()) {
-            if (value.get() instanceof Double) {
-                return (Optional<Double>) value;
-            } else {
-                logger.error("expecting double value type, but found value type '"
-                        + value.get().getClass() + "' for property name '" + name + "'");
-                return Optional.absent();
-            }
+    @Nullable
+    public Double getDoubleProperty(String name) {
+        Object value = properties.get(name);
+        if (value == null) {
+            return null;
+        } else if (value instanceof Double) {
+            return (Double) value;
         } else {
-            return Optional.absent();
+            logger.error("expecting double value type, but found value type '" + value.getClass()
+                    + "' for property name '" + name + "'");
+            return null;
         }
     }
 
@@ -147,15 +144,10 @@ public class ImmutablePluginConfiguration {
                     continue;
                 }
                 Object value = properties.get(property.getName());
-                if (value instanceof Optional) {
-                    if (((Optional<?>) value).isPresent()) {
-                        value = ((Optional<?>) value).get();
-                    } else {
-                        continue;
-                    }
-                }
                 jw.name(property.getName());
-                if (value instanceof String) {
+                if (value == null) {
+                    jw.nullValue();
+                } else if (value instanceof String) {
                     jw.value((String) value);
                 } else if (value instanceof Boolean) {
                     jw.value((Boolean) value);
@@ -182,7 +174,7 @@ public class ImmutablePluginConfiguration {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(@Nullable Object object) {
         if (object == null) {
             return false;
         }
@@ -218,23 +210,22 @@ public class ImmutablePluginConfiguration {
                 .build();
     }
 
+    public static ImmutablePluginConfiguration createDisabledHasNoDescriptor() {
+        return new ImmutablePluginConfiguration(false, new HashMap<String, Object>());
+    }
+
     public static class PluginConfigurationBuilder {
 
         private boolean enabled;
         private final PluginDescriptor pluginDescriptor;
-        private final Map<String, Optional<?>> properties;
+        // map values are @Nullable
+        private final Map<String, Object> properties;
 
         public PluginConfigurationBuilder(PluginDescriptor pluginDescriptor) {
             this.pluginDescriptor = pluginDescriptor;
             properties = Maps.newHashMap();
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
-                if (property.getDefault() != null) {
-                    properties.put(property.getName(), Optional.of(property.getDefault()));
-                } else if (property.getJavaClass() == Boolean.class) {
-                    properties.put(property.getName(), Optional.of(false));
-                } else {
-                    properties.put(property.getName(), Optional.absent());
-                }
+                properties.put(property.getName(), property.getDefault());
             }
         }
 
@@ -255,15 +246,15 @@ public class ImmutablePluginConfiguration {
         // json value which may be out of sync if the plugin has been updated and the given property
         // has changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        public PluginConfigurationBuilder setProperty(String name, Object value,
+        public PluginConfigurationBuilder setProperty(String name, @Nullable Object value,
                 boolean ignoreExtraProperties) {
 
-            Optional<PropertyDescriptor> property = pluginDescriptor.getPropertyDescriptor(name);
-            if (!property.isPresent()) {
+            PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
+            if (property == null) {
                 logger.error("unexpected property name '{}'", name);
                 return this;
             }
-            if (property.get().isHidden()) {
+            if (property.isHidden()) {
                 if (!ignoreExtraProperties) {
                     logger.error("cannot set hidden property '{}' with value '{}', hidden"
                             + " properties can only be set by via org.informantproject.plugin"
@@ -271,7 +262,7 @@ public class ImmutablePluginConfiguration {
                 }
                 return this;
             }
-            if (value != null && !property.get().getJavaClass().isAssignableFrom(value
+            if (value != null && !property.getJavaClass().isAssignableFrom(value
                     .getClass())) {
                 if (!ignoreExtraProperties) {
                     logger.error("unexpected property type '{}' for property name '{}'",
@@ -279,11 +270,11 @@ public class ImmutablePluginConfiguration {
                 }
                 return this;
             }
-            if (value == null && property.get().getJavaClass() == Boolean.class) {
+            if (value == null && property.getJavaClass() == Boolean.class) {
                 logger.error("boolean property types do not accept null values");
-                properties.put(name, Optional.of(false));
+                properties.put(name, false);
             } else {
-                properties.put(name, Optional.fromNullable(value));
+                properties.put(name, value);
             }
             return this;
         }

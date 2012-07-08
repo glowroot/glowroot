@@ -19,6 +19,8 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +39,11 @@ public class AgentArgs {
     private int uiPort = 4000;
     private File dataDir;
 
-    public AgentArgs() {}
+    public AgentArgs() {
+        dataDir = getDefaultDataDir();
+    }
 
-    public AgentArgs(String agentArgs) {
+    public AgentArgs(@Nullable String agentArgs) {
         dataDir = getDefaultDataDir();
         if (agentArgs != null) {
             for (String agentArg : agentArgs.split(",")) {

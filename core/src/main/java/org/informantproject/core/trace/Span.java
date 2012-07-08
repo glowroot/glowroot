@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.trace;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 
@@ -88,6 +90,7 @@ public final class Span {
         return level;
     }
 
+    @Nullable
     public StackTraceElement[] getStackTraceElements() {
         return stackTraceElements;
     }
@@ -100,7 +103,7 @@ public final class Span {
         this.endTick = endTick;
     }
 
-    void setStackTraceElements(StackTraceElement[] stackTraceElements) {
+    void setStackTraceElements(@Nullable StackTraceElement[] stackTraceElements) {
         this.stackTraceElements = stackTraceElements;
     }
 }

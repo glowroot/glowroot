@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -511,7 +512,7 @@ public class ServletPluginTest {
         public void executeApp() {
             contextInitialized(null);
         }
-        public void contextInitialized(ServletContextEvent sce) {}
+        public void contextInitialized(@Nullable ServletContextEvent sce) {}
         public void contextDestroyed(ServletContextEvent sce) {}
     }
 
@@ -521,7 +522,7 @@ public class ServletPluginTest {
             init(null);
         }
         @Override
-        public void init(ServletConfig config) throws ServletException {
+        public void init(@Nullable ServletConfig config) throws ServletException {
             // calling super to make sure it doesn't end up in an infinite loop (this happened once
             // before due to bug in weaver)
             super.init(config);
@@ -532,7 +533,7 @@ public class ServletPluginTest {
         public void executeApp() {
             init(null);
         }
-        public void init(FilterConfig filterConfig) {
+        public void init(@Nullable FilterConfig filterConfig) {
 
         }
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)

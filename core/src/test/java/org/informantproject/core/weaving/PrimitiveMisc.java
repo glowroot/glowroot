@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.weaving;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -32,5 +34,5 @@ public class PrimitiveMisc implements Misc {
     public void executeWithArgs(String one, int two) {}
 
     @SuppressWarnings("unused")
-    public void executePrimitive(int x, double y, long z, byte[] b) {}
+    public void executePrimitive(int x, double y, long z, @Nullable byte[] b) {}
 }

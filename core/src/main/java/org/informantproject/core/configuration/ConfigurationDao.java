@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.Column;
 import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
@@ -79,15 +81,17 @@ class ConfigurationDao {
         valid = localValid;
     }
 
+    @Nullable
     ImmutableCoreConfiguration readCoreConfiguration() {
         logger.debug("readCoreConfiguration()");
         if (!valid) {
             return null;
         }
         try {
-            return dataSource.query("select enabled, properties from configuration where id ="
-                    + " ?", new Object[] { CORE },
+            return dataSource.query("select enabled, properties from configuration where id = ?",
+                    new Object[] { CORE },
                     new ResultSetExtractor<ImmutableCoreConfiguration>() {
+                        @Nullable
                         public ImmutableCoreConfiguration extractData(ResultSet resultSet)
                                 throws SQLException {
                             if (resultSet.next()) {
@@ -110,22 +114,24 @@ class ConfigurationDao {
         }
     }
 
+    @Nullable
     ImmutablePluginConfiguration readPluginConfiguration(final PluginDescriptor pluginDescriptor) {
         logger.debug("readPluginConfiguration(): pluginDescriptor.id={}", pluginDescriptor.getId());
         if (!valid) {
             return null;
         }
         try {
-            return dataSource.query("select enabled, properties from configuration where id ="
-                    + " ?", new Object[] { pluginDescriptor.getId() },
+            return dataSource.query("select enabled, properties from configuration where id = ?",
+                    new Object[] { pluginDescriptor.getId() },
                     new ResultSetExtractor<ImmutablePluginConfiguration>() {
+                        @Nullable
                         public ImmutablePluginConfiguration extractData(ResultSet resultSet)
                                 throws SQLException {
                             if (resultSet.next()) {
                                 return buildPluginConfiguration(pluginDescriptor, resultSet);
                             } else {
                                 // no existing plugin configuration record
-                                return ImmutablePluginConfiguration.create(pluginDescriptor, true);
+                                return null;
                             }
                         }
                     });

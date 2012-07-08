@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.slf4j.Logger;
@@ -102,7 +104,7 @@ public class RootSpan {
     // typically pop() methods don't require the objects to pop, but for safety, the span is
     // passed in just to make sure it is the one on top (and if not, then pop until it is found,
     // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
-    void popSpan(Span span, long endTick, StackTraceElement[] stackTraceElements) {
+    void popSpan(Span span, long endTick, @Nullable StackTraceElement[] stackTraceElements) {
         span.setEndTick(endTick);
         span.setStackTraceElements(stackTraceElements);
         popSpanSafe(span);

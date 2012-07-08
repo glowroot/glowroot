@@ -17,6 +17,8 @@ package org.informantproject.packager;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -76,8 +78,9 @@ public class PluginDescriptor {
         private final String defaultValue;
         private final String hidden;
         private final String description;
-        public PropertyDescriptor(String prompt, String name, String type, String defaultValue,
-                String hidden, String description) {
+        public PropertyDescriptor(String prompt, String name, String type,
+                @Nullable String defaultValue, @Nullable String hidden,
+                @Nullable String description) {
             this.prompt = prompt;
             this.name = name;
             this.type = type;

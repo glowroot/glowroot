@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectMethodName;
 import org.informantproject.api.weaving.InjectReturn;
@@ -76,7 +78,6 @@ public class Advice {
     private final Pointcut pointcut;
     private final Type adviceType;
     private final Pattern pointcutMethodPattern;
-
     private Method isEnabledAdvice;
     private Method onBeforeAdvice;
     private Method onReturnAdvice;
@@ -234,6 +235,7 @@ public class Advice {
         return pointcut;
     }
 
+    @Nullable
     Pattern getPointcutMethodPattern() {
         return pointcutMethodPattern;
     }
@@ -242,26 +244,32 @@ public class Advice {
         return adviceType;
     }
 
+    @Nullable
     Type getTravelerType() {
         return travelerType;
     }
 
+    @Nullable
     Method getIsEnabledAdvice() {
         return isEnabledAdvice;
     }
 
+    @Nullable
     Method getOnBeforeAdvice() {
         return onBeforeAdvice;
     }
 
+    @Nullable
     Method getOnReturnAdvice() {
         return onReturnAdvice;
     }
 
+    @Nullable
     Method getOnThrowAdvice() {
         return onThrowAdvice;
     }
 
+    @Nullable
     Method getOnAfterAdvice() {
         return onAfterAdvice;
     }

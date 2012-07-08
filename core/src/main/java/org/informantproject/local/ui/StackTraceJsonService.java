@@ -15,6 +15,8 @@
  */
 package org.informantproject.local.ui;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.local.trace.StackTraceDao;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
@@ -42,6 +44,7 @@ public class StackTraceJsonService implements JsonService {
     }
 
     // called dynamically from HttpServer
+    @Nullable
     public String getStackTrace(String hash) {
         logger.debug("getStackTrace(): hash={}", hash);
         return stackTraceDao.readStackTrace(hash);

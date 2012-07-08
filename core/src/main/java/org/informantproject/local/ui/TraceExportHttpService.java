@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.local.trace.TraceCommonJsonService;
 import org.informantproject.local.ui.HttpServer.HttpService;
@@ -69,14 +70,15 @@ public class TraceExportHttpService implements HttpService {
         this.traceCommonJsonService = traceCommonJsonService;
     }
 
+    @Nullable
     public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf("/") + 1);
         logger.debug("handleRequest(): id={}", id);
-        Optional<ByteStream> traceBuffer = traceCommonJsonService.getStoredOrActiveTraceJson(id,
-                true);
+        ByteStream traceBuffer = traceCommonJsonService.getStoredOrActiveTraceJson(id, true);
         // TODO handle stackTraces
-        if (!traceBuffer.isPresent()) {
+        if (traceBuffer == null) {
+            logger.error("no trace found for id '{}'", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String filename = "trace-" + id;
@@ -90,7 +92,7 @@ public class TraceExportHttpService implements HttpService {
             byteStreams.add(ByteStream.of(templateContent.substring(curr, matcher.start())));
             String include = matcher.group(1);
             if (include.equals("detailTrace")) {
-                byteStreams.add(traceBuffer.get());
+                byteStreams.add(traceBuffer);
             } else {
                 // TODO stream resource content as ByteStream
                 byteStreams.add(ByteStream.of(getResourceContent(include)));

@@ -20,6 +20,8 @@ import static org.jboss.netty.channel.Channels.pipeline;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import javax.annotation.Nullable;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
@@ -123,6 +125,7 @@ public abstract class HttpServerBase {
         bootstrap.releaseExternalResources();
     }
 
+    @Nullable
     protected abstract HttpResponse handleRequest(HttpRequest request, Channel channel)
             throws IOException, InterruptedException;
 

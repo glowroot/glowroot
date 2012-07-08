@@ -17,6 +17,8 @@ package org.informantproject.api;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +34,7 @@ public class Message {
     private final Object[] args;
     private final ContextMap context;
 
-    private Message(String template, Object[] args, ContextMap context) {
+    private Message(String template, @Nullable Object[] args, @Nullable ContextMap context) {
         this.template = template;
         this.args = args;
         this.context = context;
@@ -68,10 +70,12 @@ public class Message {
         return template;
     }
 
+    @Nullable
     public Object[] getArgs() {
         return args;
     }
 
+    @Nullable
     public ContextMap getContext() {
         return context;
     }

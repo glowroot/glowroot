@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Lists;
 
 /**
@@ -45,6 +47,7 @@ public class MergedStackTree {
     // marked transient for gson serialization
     private final transient Object lock = new Object();
 
+    @Nullable
     public MergedStackTreeNode getRootNode() {
         List<MergedStackTreeNode> rootNodes = Lists.newArrayList(this.rootNodes);
         if (rootNodes.size() == 0) {

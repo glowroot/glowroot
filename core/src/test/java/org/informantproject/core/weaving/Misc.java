@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.weaving;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -23,6 +25,7 @@ public interface Misc {
 
     public void execute1();
 
+    @Nullable
     public String executeWithReturn();
 
     public void executeWithArgs(String one, int two);

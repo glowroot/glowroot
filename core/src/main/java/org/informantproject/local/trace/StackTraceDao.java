@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.BatchPreparedStatementSetter;
 import org.informantproject.core.util.DataSource.Column;
@@ -117,6 +119,7 @@ public class StackTraceDao {
         }
     }
 
+    @Nullable
     public String readStackTrace(String hash) {
         logger.debug("readStackTrace(): hash={}", hash);
         if (!valid) {
@@ -130,5 +133,4 @@ public class StackTraceDao {
             return null;
         }
     }
-
 }

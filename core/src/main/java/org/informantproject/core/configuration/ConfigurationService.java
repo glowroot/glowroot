@@ -21,7 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.api.PluginServices.ConfigurationListener;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration.CoreConfigurationBuilder;
 import org.informantproject.core.configuration.ImmutablePluginConfiguration.PluginConfigurationBuilder;
@@ -65,18 +66,31 @@ public class ConfigurationService {
     public ConfigurationService(ConfigurationDao configurationDao) {
         logger.debug("<init>");
         this.configurationDao = configurationDao;
-        initCoreConfiguration();
+        // initialize configuration using locally stored values, falling back to defaults if no
+        // locally stored values exist
+        coreConfiguration = configurationDao.readCoreConfiguration();
+        if (coreConfiguration == null) {
+            logger.debug("initConfigurations(): default core configuration is being used");
+            this.coreConfiguration = new ImmutableCoreConfiguration();
+        } else {
+            logger.debug("initCoreConfigurations(): core configuration was read from local data"
+                    + " store: {}", coreConfiguration);
+        }
         pluginConfigurations = Maps.newHashMap();
         // add the "built-in" plugin configuration for the weaving metrics
         pluginConfigurations.put("org.informantproject:informant-core",
-                new ImmutablePluginConfiguration(true, new HashMap<String, Optional<?>>()));
-        for (PluginDescriptor pluginDescriptor : Plugins.getPackagedPluginDescriptors()) {
-            pluginConfigurations.put(pluginDescriptor.getId(), configurationDao
-                    .readPluginConfiguration(pluginDescriptor));
-        }
-        for (PluginDescriptor pluginDescriptor : Plugins.getInstalledPluginDescriptors()) {
-            pluginConfigurations.put(pluginDescriptor.getId(), configurationDao
-                    .readPluginConfiguration(pluginDescriptor));
+                new ImmutablePluginConfiguration(true, new HashMap<String, Object>()));
+        Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(Plugins
+                .getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            ImmutablePluginConfiguration pluginConfiguration = configurationDao
+                    .readPluginConfiguration(pluginDescriptor);
+            if (pluginConfiguration != null) {
+                pluginConfigurations.put(pluginDescriptor.getId(), pluginConfiguration);
+            } else {
+                pluginConfigurations.put(pluginDescriptor.getId(), ImmutablePluginConfiguration
+                        .create(pluginDescriptor, true));
+            }
         }
     }
 
@@ -84,13 +98,16 @@ public class ConfigurationService {
         return coreConfiguration;
     }
 
+    @Nullable
     public ImmutablePluginConfiguration getPluginConfiguration(String pluginId) {
         ImmutablePluginConfiguration pluginConfiguration = pluginConfigurations.get(pluginId);
         if (pluginConfiguration == null) {
             logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId, Joiner
                     .on(", ").join(pluginConfigurations.keySet()));
+            return ImmutablePluginConfiguration.createDisabledHasNoDescriptor();
+        } else {
+            return pluginConfiguration;
         }
-        return pluginConfiguration;
     }
 
     public void addConfigurationListener(ConfigurationListener listener) {
@@ -194,19 +211,6 @@ public class ConfigurationService {
         }
     }
 
-    private void initCoreConfiguration() {
-        // initialize configuration using locally stored values, falling back to defaults if no
-        // locally stored values exist
-        coreConfiguration = configurationDao.readCoreConfiguration();
-        if (coreConfiguration == null) {
-            logger.debug("initConfigurations(): default core configuration is being used");
-            coreConfiguration = new ImmutableCoreConfiguration();
-        } else {
-            logger.debug("initConfigurations(): core configuration was read from local data store:"
-                    + " {}", coreConfiguration);
-        }
-    }
-
     private void writeProperties(PluginDescriptor pluginDescriptor,
             ImmutablePluginConfiguration pluginConfiguration, JsonWriter jw) throws IOException {
 
@@ -216,20 +220,20 @@ public class ConfigurationService {
             }
             jw.name(property.getName());
             if (property.getType().equals("string")) {
-                Optional<String> value = pluginConfiguration.getStringProperty(property.getName());
-                if (value.isPresent()) {
-                    jw.value(value.get());
-                } else {
+                String value = pluginConfiguration.getStringProperty(property.getName());
+                if (value == null) {
                     jw.nullValue();
+                } else {
+                    jw.value(value);
                 }
             } else if (property.getType().equals("boolean")) {
                 jw.value(pluginConfiguration.getBooleanProperty(property.getName()));
             } else if (property.getType().equals("double")) {
-                Optional<Double> value = pluginConfiguration.getDoubleProperty(property.getName());
-                if (value.isPresent()) {
-                    jw.value(value.get());
-                } else {
+                Double value = pluginConfiguration.getDoubleProperty(property.getName());
+                if (value == null) {
                     jw.nullValue();
+                } else {
+                    jw.value(value);
                 }
             } else {
                 logger.error("unexpected type '" + property.getType() + "', this should have"

@@ -22,6 +22,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
@@ -60,6 +62,7 @@ public class StuckTraceTest {
         // when
         ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
         Future<Void> future = executorService.submit(new Callable<Void>() {
+            @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ShouldGenerateStuckTrace.class);
                 return null;
@@ -77,6 +80,9 @@ public class StuckTraceTest {
                 break;
             }
             Thread.sleep(50);
+        }
+        if (trace == null) {
+            throw new AssertionError("no active trace found");
         }
         assertThat(trace.isStuck(), is(true));
         assertThat(trace.isCompleted(), is(false));

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.jdbc.JdbcConnection;
@@ -118,20 +119,23 @@ public class DataSource {
         }
     }
 
-    public Long queryForLong(String sql, final Object... args) throws SQLException {
+    public long queryForLong(final String sql, final Object... args) throws SQLException {
         return query(sql, args, new ResultSetExtractor<Long>() {
             public Long extractData(ResultSet resultSet) throws SQLException {
                 if (resultSet.next()) {
                     return resultSet.getLong(1);
                 } else {
-                    return null;
+                    logger.error("query '" + sql + "' didn't return any results");
+                    return 0L;
                 }
             }
         });
     }
 
+    @Nullable
     public String queryForString(String sql, final Object... args) throws SQLException {
         return query(sql, args, new ResultSetExtractor<String>() {
+            @Nullable
             public String extractData(ResultSet resultSet) throws SQLException {
                 if (resultSet.next()) {
                     return resultSet.getString(1);

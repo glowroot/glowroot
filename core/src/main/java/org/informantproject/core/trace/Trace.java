@@ -20,6 +20,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -28,12 +29,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
-import org.informantproject.api.Optional;
+import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
@@ -60,8 +62,7 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
-    private volatile Supplier<Optional<String>> username = Suppliers.ofInstance(Optional
-            .absent(String.class));
+    private volatile SupplierOfNullable<String> username = SupplierOfNullable.ofInstance(null);
 
     // attribute name ordering is maintained for consistent display
     // (assumption is order of entry is order of importance)
@@ -142,11 +143,11 @@ public class Trace {
         return stuck.get();
     }
 
-    public Supplier<Optional<String>> getUsername() {
+    public SupplierOfNullable<String> getUsername() {
         return username;
     }
 
-    public Iterable<Attribute> getAttributes() {
+    public Collection<Attribute> getAttributes() {
         return attributes;
     }
 
@@ -162,10 +163,12 @@ public class Trace {
         return mergedStackTreeSupplier.get();
     }
 
+    @Nullable
     public ScheduledFuture<?> getCaptureStackTraceScheduledFuture() {
         return captureStackTraceScheduledFuture;
     }
 
+    @Nullable
     public ScheduledFuture<?> getStuckCommandScheduledFuture() {
         return stuckCommandScheduledFuture;
     }
@@ -181,13 +184,11 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    void setUsername(Supplier<Optional<String>> username) {
+    void setUsername(SupplierOfNullable<String> username) {
         this.username = username;
     }
 
-    void putAttribute(String name, Optional<String> value) {
-        Preconditions.checkNotNull(name);
-        Preconditions.checkNotNull(value);
+    void putAttribute(String name, @Nullable String value) {
         // write to orderedAttributeNames only happen in a single thread (the trace thread), so no
         // race condition worries here
         for (Attribute attribute : attributes) {
@@ -233,7 +234,7 @@ public class Trace {
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long endTick, StackTraceElement[] stackTraceElements) {
+    void popSpan(Span span, long endTick, @Nullable StackTraceElement[] stackTraceElements) {
         rootSpan.popSpan(span, endTick, stackTraceElements);
         span.getTraceMetric().stop(endTick);
     }
@@ -250,18 +251,19 @@ public class Trace {
 
     public static class Attribute {
         private final String name;
-        private volatile Optional<String> value;
-        private Attribute(String name, Optional<String> value) {
+        private volatile String value;
+        private Attribute(String name, @Nullable String value) {
             this.name = name;
             this.value = value;
         }
         public String getName() {
             return name;
         }
-        public Optional<String> getValue() {
+        @Nullable
+        public String getValue() {
             return value;
         }
-        public void setValue(Optional<String> value) {
+        public void setValue(@Nullable String value) {
             this.value = value;
         }
     }

@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.weaving;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectMethodName;
@@ -350,9 +352,8 @@ public class SomeAspect {
             methodName = "executePrimitive", methodArgs = { "int", "double", "/.*/", ".." })
     public static class PrimitiveWithWildcardAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        @SuppressWarnings("unused")
         @IsEnabled
-        public static boolean isEnabled(@InjectMethodArg int x) {
+        public static boolean isEnabled(@SuppressWarnings("unused") @InjectMethodArg int x) {
             enabledCount.increment();
             return true;
         }
@@ -365,9 +366,8 @@ public class SomeAspect {
             methodName = "executePrimitive", methodArgs = { "int", "double", "/.*/", ".." })
     public static class PrimitiveWithAutoboxAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        @SuppressWarnings("unused")
         @IsEnabled
-        public static boolean isEnabled(@InjectMethodArg Object x) {
+        public static boolean isEnabled(@SuppressWarnings("unused") @InjectMethodArg Object x) {
             enabledCount.increment();
             return true;
         }
@@ -384,6 +384,7 @@ public class SomeAspect {
             return true;
         }
         @OnBefore
+        @Nullable
         public static Object onBefore() {
             return null;
         }

@@ -19,20 +19,16 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 
 /**
  * @author Trask Stalnaker
@@ -132,7 +128,7 @@ public class Configuration {
                     rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
         }
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (!(o instanceof CoreProperties)) {
                 return false;
             }
@@ -152,20 +148,20 @@ public class Configuration {
 
     public static class PluginConfiguration {
         private boolean enabled;
-        private final Map<String, Optional<Object>> properties = Maps.newHashMap();
+        // map values are @Nullable
+        private final Map<String, Object> properties = Maps.newHashMap();
         public boolean isEnabled() {
             return enabled;
         }
-        public Optional<Object> getProperty(String name) {
+        @Nullable
+        public Object getProperty(String name) {
             return properties.get(name);
         }
-        public void setProperty(String name, Object value) {
-            properties.put(name, Optional.fromNullable(value));
+        public void setProperty(String name, @Nullable Object value) {
+            properties.put(name, value);
         }
         public String getPropertiesJson() {
-            Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(Optional.class,
-                    new OptionalJsonSerializer()).serializeNulls().create();
-            return gson.toJson(properties);
+            return new GsonBuilder().serializeNulls().create().toJson(properties);
         }
     }
 
@@ -187,14 +183,6 @@ public class Configuration {
                 }
             }
             return pluginConfiguration;
-        }
-    }
-
-    private static class OptionalJsonSerializer implements JsonSerializer<Optional<?>> {
-
-        public JsonElement serialize(Optional<?> src, Type typeOfSrc,
-                JsonSerializationContext context) {
-            return src.isPresent() ? context.serialize(src.get()) : JsonNull.INSTANCE;
         }
     }
 }

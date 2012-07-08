@@ -22,10 +22,10 @@ import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
-import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -42,8 +42,8 @@ import com.google.common.collect.ImmutableList;
 @Aspect
 public class NestableCallAspect {
 
-    private static final List<Optional<String>> USERNAMES = ImmutableList.of(Optional.of("able"),
-            Optional.of("baker"), Optional.of("charlie"), Optional.absent(String.class));
+    private static final List<String> USERNAMES = ImmutableList.of("able",
+            "baker", "charlie");
 
     private static final AtomicInteger counter = new AtomicInteger();
 
@@ -61,7 +61,12 @@ public class NestableCallAspect {
         @OnBefore
         public static Stopwatch onBefore() {
             Stopwatch stopwatch = pluginServices.startTrace(getRootMessageSupplier(), metric);
-            pluginServices.setUsername(Supplier.of(USERNAMES.get(counter.getAndIncrement() % 4)));
+            int index = counter.getAndIncrement() % (USERNAMES.size() + 1);
+            if (index < USERNAMES.size()) {
+                pluginServices.setUsername(SupplierOfNullable.ofInstance(USERNAMES.get(index)));
+            } else {
+                pluginServices.setUsername(SupplierOfNullable.ofInstance((String) null));
+            }
             return stopwatch;
         }
         @OnAfter

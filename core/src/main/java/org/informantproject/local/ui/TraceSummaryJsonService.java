@@ -18,7 +18,8 @@ package org.informantproject.local.ui;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.local.trace.TraceCommonJsonService;
 import org.informantproject.local.ui.HttpServer.JsonService;
@@ -47,19 +48,19 @@ public class TraceSummaryJsonService implements JsonService {
     }
 
     // this method returns byte[] directly to avoid converting to it utf8 string and back again
+    @Nullable
     public byte[] getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
-        Optional<ByteStream> byteStreams = traceCommonJsonService.getStoredOrActiveTraceJson(id,
-                false);
-        if (byteStreams.isPresent()) {
-            // summary is small and doesn't need to be streamed
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byteStreams.get().writeTo(baos);
-            return baos.toByteArray();
-        } else {
+        ByteStream byteStreams = traceCommonJsonService.getStoredOrActiveTraceJson(id, false);
+        if (byteStreams == null) {
             logger.error("no trace found for id '{}'", id);
             // TODO 404
             return null;
+        } else {
+            // summary is small and doesn't need to be streamed
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byteStreams.writeTo(baos);
+            return baos.toByteArray();
         }
     }
 }

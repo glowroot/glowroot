@@ -206,12 +206,12 @@ class RollingOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(byte b[]) throws IOException {
+    public void write(byte[] b) throws IOException {
         write(b, 0, b.length);
     }
 
     @Override
-    public void write(byte b[], int off, int len) throws IOException {
+    public void write(byte[] b, int off, int len) throws IOException {
         if (len > rollingSizeBytes) {
             logger.error("cannot write more bytes than max file size", new Throwable());
             return;

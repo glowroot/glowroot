@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.annotation.Nullable;
+
 /**
  * Used by JdbcAspect to capture and mirror the state of statements since the underlying
  * {@link Statement} values cannot be inspected after they have been set.
@@ -62,6 +64,7 @@ class StatementMirror {
         return new ArrayList<String>(batchedSql);
     }
 
+    @Nullable
     JdbcMessageSupplier getLastJdbcMessageSupplier() {
         if (lastJdbcMessageSupplier == null) {
             return null;
@@ -76,7 +79,7 @@ class StatementMirror {
         }
     }
 
-    void setLastJdbcMessageSupplier(JdbcMessageSupplier jdbcMessageSupplier) {
+    void setLastJdbcMessageSupplier(@Nullable JdbcMessageSupplier jdbcMessageSupplier) {
         this.lastJdbcMessageSupplier = new WeakReference<JdbcMessageSupplier>(jdbcMessageSupplier);
     }
 }

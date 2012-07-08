@@ -20,13 +20,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
-import org.informantproject.api.Optional;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectReturn;
@@ -86,23 +88,21 @@ public class ServletAspect {
             HttpSession session = request.getSession(false);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(request.getMethod(),
-                        request.getRequestURI(),
-                        null, null);
+                        request.getRequestURI(), null, null);
             } else {
                 messageSupplier = new ServletMessageSupplier(request.getMethod(),
-                        request.getRequestURI(),
-                        session.getId(), getSessionAttributes(session));
+                        request.getRequestURI(), session.getId(), getSessionAttributes(session));
             }
             topLevelServletMessageSupplier.set(messageSupplier);
             Stopwatch stopwatch = pluginServices.startTrace(messageSupplier, metric);
             if (session != null) {
-                Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
+                String sessionUsernameAttributePath = ServletPluginPropertyUtils
                         .getSessionUsernameAttributePath();
-                if (sessionUsernameAttributePath.isPresent()) {
+                if (sessionUsernameAttributePath != null) {
                     // capture username now, don't use a lazy supplier
-                    Optional<String> username = getSessionAttributeTextValue(session,
-                            sessionUsernameAttributePath.get());
-                    pluginServices.setUsername(Supplier.of(username));
+                    String username = getSessionAttributeTextValue(session,
+                            sessionUsernameAttributePath);
+                    pluginServices.setUsername(SupplierOfNullable.ofInstance(username));
                 }
             }
             return stopwatch;
@@ -200,14 +200,17 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnReturn
-        public static void onReturn(@InjectReturn Object realSession) {
+        public static void onReturn(@InjectReturn @Nullable Object realSession) {
+            if (realSession == null) {
+                return;
+            }
             HttpSession session = HttpSession.from(realSession);
             // either getSession(), getSession(true) or getSession(false) has triggered this
             // pointcut
             // after calls to the first two (no-arg, and passing true), a new session may have been
             // created (the third one -- passing false -- could be ignored but is harmless)
             ServletMessageSupplier messageSupplier = topLevelServletMessageSupplier.get();
-            if (messageSupplier != null && session != null && session.isNew()) {
+            if (messageSupplier != null && session.isNew()) {
                 messageSupplier.setSessionIdUpdatedValue(session.getId());
             }
         }
@@ -240,7 +243,7 @@ public class ServletAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTarget Object realSession, @InjectMethodArg String name,
-                @InjectMethodArg Object value) {
+                @InjectMethodArg @Nullable Object value) {
 
             HttpSession session = HttpSession.from(realSession);
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
@@ -279,22 +282,18 @@ public class ServletAspect {
                 ContextInitializedAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginServices.isEnabled() && pluginServices.getBooleanProperty(
+                    CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
+        @Nullable
         public static Stopwatch onBefore(@InjectTarget Object listener) {
-            if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-                return pluginServices.startTrace(MessageSupplier.of("servlet context initialized"
-                        + " ({{listener}})", listener.getClass().getName()), metric);
-            } else {
-                return null;
-            }
+            return pluginServices.startTrace(MessageSupplier.of("servlet context initialized"
+                    + " ({{listener}})", listener.getClass().getName()), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
-            }
+            stopwatch.stop();
         }
     }
 
@@ -304,22 +303,17 @@ public class ServletAspect {
         private static final Metric metric = pluginServices.getMetric(ServletInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginServices.isEnabled() && pluginServices.getBooleanProperty(
+                    CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget Object servlet) {
-            if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-                return pluginServices.startTrace(MessageSupplier.of("servlet init ({{filter}})",
-                        servlet.getClass().getName()), metric);
-            } else {
-                return null;
-            }
+            return pluginServices.startTrace(MessageSupplier.of("servlet init ({{filter}})",
+                    servlet.getClass().getName()), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
-            }
+            stopwatch.stop();
         }
     }
 
@@ -329,81 +323,68 @@ public class ServletAspect {
         private static final Metric metric = pluginServices.getMetric(FilterInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginServices.isEnabled() && pluginServices.getBooleanProperty(
+                    CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget Object filter) {
-            if (pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME)) {
-                return pluginServices.startTrace(MessageSupplier.of("filter init ({{filter}})",
-                        filter.getClass().getName()), metric);
-            } else {
-                return null;
-            }
+            return pluginServices.startTrace(MessageSupplier.of("filter init ({{filter}})",
+                    filter.getClass().getName()), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
-            }
+            stopwatch.stop();
         }
     }
 
-    private static void updateUsernameIfApplicable(String name, Object value, HttpSession session) {
+    private static void updateUsernameIfApplicable(String name, @Nullable Object value,
+            HttpSession session) {
+
         if (value == null) {
             // if username value is set to null, don't clear it
             return;
         }
-        Optional<String> sessionUsernameAttributePath = ServletPluginPropertyUtils
+        String sessionUsernameAttributePath = ServletPluginPropertyUtils
                 .getSessionUsernameAttributePath();
-        if (sessionUsernameAttributePath.isPresent()) {
+        if (sessionUsernameAttributePath != null) {
             // capture username now, don't use a lazy supplier
-            if (sessionUsernameAttributePath.get().equals(name)) {
-                // it's unlikely, but possible, that toString() returns null
-                pluginServices.setUsername(Supplier.of(Optional.fromNullable(value.toString())));
-            } else if (sessionUsernameAttributePath.get().startsWith(name + ".")) {
-                Optional<String> val = getSessionAttributeTextValue(session,
-                        sessionUsernameAttributePath.get());
-                if (val.isPresent()) {
-                    // if username is absent, don't clear it
-                    pluginServices.setUsername(Supplier.of(val));
+            if (sessionUsernameAttributePath.equals(name)) {
+                pluginServices.setUsername(SupplierOfNullable.ofInstance(value.toString()));
+            } else if (sessionUsernameAttributePath.startsWith(name + ".")) {
+                String username = getSessionAttributeTextValue(session,
+                        sessionUsernameAttributePath);
+                if (username != null) {
+                    // if username is absent, don't clear it by setting SupplierOfNullable.of(null)
+                    pluginServices.setUsername(SupplierOfNullable.ofInstance(username));
                 }
             }
         }
     }
 
     private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
-            String name,
-            Object value, HttpSession session) {
+            String name, @Nullable Object value, HttpSession session) {
 
         if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
             if (value == null) {
-                messageSupplier
-                        .putSessionAttributeChangedValue(name, Optional.absent(String.class));
+                messageSupplier.putSessionAttributeChangedValue(name, null);
             } else {
-                // it's unlikely, but possible, that toString() returns null
-                messageSupplier.putSessionAttributeChangedValue(name, Optional.fromNullable(value
-                        .toString()));
+                messageSupplier.putSessionAttributeChangedValue(name, value.toString());
             }
         } else if (ServletPluginPropertyUtils.getSessionAttributeNames().contains(name)) {
             // update all session attributes (possibly nested) at or under the set attribute
             for (String path : ServletPluginPropertyUtils.getSessionAttributePaths()) {
                 if (path.equals(name)) {
                     if (value == null) {
-                        messageSupplier.putSessionAttributeChangedValue(path, Optional.absent(
-                                String.class));
+                        messageSupplier.putSessionAttributeChangedValue(path, null);
                     } else {
-                        // it's unlikely, but possible, that toString() returns null
-                        messageSupplier.putSessionAttributeChangedValue(path,
-                                Optional.fromNullable(
-                                        value.toString()));
+                        messageSupplier.putSessionAttributeChangedValue(path, value.toString());
                     }
                 } else if (path.startsWith(name + ".")) {
                     if (value == null) {
                         // no need to navigate path since it will always be Optional.absent()
-                        messageSupplier.putSessionAttributeChangedValue(path, Optional.absent(
-                                String.class));
+                        messageSupplier.putSessionAttributeChangedValue(path, null);
                     } else {
-                        Optional<String> val = getSessionAttributeTextValue(session, path);
+                        String val = getSessionAttributeTextValue(session, path);
                         messageSupplier.putSessionAttributeChangedValue(path, val);
                     }
                 }
@@ -411,6 +392,7 @@ public class ServletAspect {
         }
     }
 
+    @Nullable
     private static ServletMessageSupplier getRootServletMessageSupplier(HttpSession session) {
         Supplier<Message> rootMessageSupplier = pluginServices.getRootMessageSupplier();
         if (!(rootMessageSupplier instanceof ServletMessageSupplier)) {
@@ -424,16 +406,18 @@ public class ServletAspect {
         } else {
             sessionId = rootServletMessageSupplier.getSessionIdInitialValue();
         }
-        if (!session.getId().equals(sessionId)) {
+        if (session.getId().equals(sessionId)) {
+            return rootServletMessageSupplier;
+        } else {
             // the target session for this pointcut is not the same as the MessageSupplier
             return null;
         }
-        return rootServletMessageSupplier;
     }
 
+    @Nullable
     private static Map<String, String> getSessionAttributes(HttpSession session) {
         Set<String> sessionAttributePaths = ServletPluginPropertyUtils.getSessionAttributePaths();
-        if (sessionAttributePaths == null || sessionAttributePaths.isEmpty()) {
+        if (sessionAttributePaths.isEmpty()) {
             return null;
         }
         if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
@@ -453,34 +437,35 @@ public class ServletAspect {
                     sessionAttributePaths.size());
             // dump only http session attributes in list
             for (String attributePath : sessionAttributePaths) {
-                Optional<String> value = getSessionAttributeTextValue(session, attributePath);
-                if (value.isPresent()) {
-                    sessionAttributeMap.put(attributePath, value.get());
+                String value = getSessionAttributeTextValue(session, attributePath);
+                if (value != null) {
+                    sessionAttributeMap.put(attributePath, value);
                 }
             }
             return sessionAttributeMap;
         }
     }
 
-    private static Optional<String> getSessionAttributeTextValue(HttpSession session,
+    @Nullable
+    private static String getSessionAttributeTextValue(HttpSession session,
             String attributePath) {
 
         if (attributePath.indexOf('.') == -1) {
             // fast path
             Object value = session.getAttribute(attributePath);
             if (value == null) {
-                return Optional.absent();
+                return null;
             } else {
-                return Optional.of(value.toString());
+                return value.toString();
             }
         } else {
             String[] path = attributePath.split("\\.");
             Object curr = session.getAttribute(path[0]);
-            Optional<?> value = PathUtil.getValue(curr, path, 1);
-            if (value.isPresent()) {
-                return Optional.of(value.get().toString());
+            Object value = PathUtil.getValue(curr, path, 1);
+            if (value == null) {
+                return null;
             } else {
-                return Optional.absent();
+                return value.toString();
             }
         }
     }

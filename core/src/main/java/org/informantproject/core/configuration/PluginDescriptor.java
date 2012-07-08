@@ -18,7 +18,8 @@ package org.informantproject.core.configuration;
 import java.util.List;
 import java.util.Map;
 
-import org.informantproject.api.Optional;
+import javax.annotation.Nullable;
+
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.Weaver;
@@ -112,13 +113,14 @@ public class PluginDescriptor {
         return advisors;
     }
 
-    public Optional<PropertyDescriptor> getPropertyDescriptor(String propertyName) {
-        return Optional.fromNullable(propertyDescriptorsByName.get(propertyName));
+    @Nullable
+    public PropertyDescriptor getPropertyDescriptor(String propertyName) {
+        return propertyDescriptorsByName.get(propertyName);
     }
 
     // equality is defined only in terms of groupId and artifactId
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof PluginDescriptor)) {
             return false;
         }
@@ -138,8 +140,8 @@ public class PluginDescriptor {
         private final Object defaultValue;
         private final boolean hidden;
         private final String description;
-        public PropertyDescriptor(String prompt, String name, String type, Object defaultValue,
-                boolean hidden, String description) {
+        public PropertyDescriptor(String prompt, String name, String type,
+                @Nullable Object defaultValue, boolean hidden, @Nullable String description) {
             this.prompt = prompt;
             this.name = name;
             this.type = type;
@@ -156,12 +158,14 @@ public class PluginDescriptor {
         public String getType() {
             return type;
         }
+        @Nullable
         public Object getDefault() {
             return defaultValue;
         }
         public boolean isHidden() {
             return hidden;
         }
+        @Nullable
         public String getDescription() {
             return description;
         }

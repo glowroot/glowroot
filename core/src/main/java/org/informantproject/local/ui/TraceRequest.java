@@ -15,6 +15,8 @@
  */
 package org.informantproject.local.ui;
 
+import javax.annotation.Nullable;
+
 /**
  * Structure used to deserialize json post data sent to "/trace/durations" and "/trace/details".
  * 
@@ -63,27 +65,30 @@ class TraceRequest {
         this.high = high;
     }
 
+    @Nullable
     public String getUsernameComparator() {
         return usernameComparator;
     }
 
-    public void setUsernameComparator(String usernameComparator) {
+    public void setUsernameComparator(@Nullable String usernameComparator) {
         this.usernameComparator = usernameComparator;
     }
 
+    @Nullable
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
+    public void setUsername(@Nullable String username) {
         this.username = username;
     }
 
+    @Nullable
     public String getExtraIds() {
         return extraIds;
     }
 
-    public void setExtraIds(String extraIds) {
+    public void setExtraIds(@Nullable String extraIds) {
         this.extraIds = extraIds;
     }
 }

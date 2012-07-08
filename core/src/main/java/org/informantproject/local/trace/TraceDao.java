@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
+import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.Column;
@@ -32,10 +35,13 @@ import org.informantproject.core.util.DataSource.RowMapper;
 import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockId;
 import org.informantproject.core.util.RollingFile;
+import org.informantproject.local.trace.StoredTrace.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -107,17 +113,19 @@ public class TraceDao {
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
         String spansBlockId = null;
-        try {
-            spansBlockId = rollingFile.write(storedTrace.getSpans()).getId();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+        ByteStream spans = storedTrace.getSpans();
+        if (spans != null) {
+            try {
+                spansBlockId = rollingFile.write(spans).getId();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
         String mergedStackTreeBlockId = null;
-        if (storedTrace.getMergedStackTree() != null) {
+        ByteStream mergedStackTree = storedTrace.getMergedStackTree();
+        if (mergedStackTree != null) {
             try {
-                mergedStackTreeBlockId = rollingFile.write(
-                        storedTrace.getMergedStackTree())
-                        .getId();
+                mergedStackTreeBlockId = rollingFile.write(mergedStackTree).getId();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
@@ -137,8 +145,8 @@ public class TraceDao {
     }
 
     public List<StoredTraceDuration> readStoredTraceDurations(long capturedFrom, long capturedTo,
-            long durationLow, long durationHigh, StringComparator usernameComparator,
-            String username) {
+            long durationLow, long durationHigh, @Nullable StringComparator usernameComparator,
+            @Nullable String username) {
 
         logger.debug("readStoredTraceDurations(): capturedFrom={}, capturedTo={}, durationLow={},"
                 + " durationHigh={}", new Object[] { capturedFrom, capturedTo, durationLow,
@@ -160,7 +168,7 @@ public class TraceDao {
                 sql += " and duration <= ?";
                 args.add(durationHigh);
             }
-            if (usernameComparator != null) {
+            if (usernameComparator != null && username != null) {
                 sql += " and username " + usernameComparator.getComparator() + " ?";
                 args.add(usernameComparator.formatParameter(username));
             }
@@ -171,30 +179,29 @@ public class TraceDao {
         }
     }
 
+    @Nullable
     public StoredTrace readStoredTrace(String id) {
         logger.debug("readStoredTrace(): id={}", id);
         if (!valid) {
             return null;
         }
-        List<StoredTrace> storedTraces;
+        List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
-            storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, attributes, metrics, spans,"
+            partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
+                    + " duration, completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree from trace where id = ?", new Object[] { id },
                     new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
         }
-        if (storedTraces.isEmpty()) {
+        if (partiallyHydratedTraces.isEmpty()) {
             return null;
-        } else if (storedTraces.size() > 1) {
+        } else if (partiallyHydratedTraces.size() > 1) {
             logger.error("multiple records returned for id '{}'", id);
         }
         // read from rolling file outside of jdbc connection
-        StoredTrace storedTrace = storedTraces.get(0);
-        fillInRollingFileData(storedTraces);
-        return storedTrace;
+        return partiallyHydratedTraces.get(0).fullyHydrate();
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
@@ -203,10 +210,10 @@ public class TraceDao {
         if (!valid) {
             return Collections.emptyList();
         }
-        List<StoredTrace> storedTraces;
+        List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
-            storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, attributes, metrics, spans,"
+            partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
+                    + " duration, completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree from trace where captured_at >= ? and captured_at <= ?",
                     new Object[] { capturedFrom, capturedTo }, new TraceRowMapper());
         } catch (SQLException e) {
@@ -214,8 +221,12 @@ public class TraceDao {
             return Collections.emptyList();
         }
         // read from rolling file outside of jdbc connection
-        fillInRollingFileData(storedTraces);
-        return storedTraces;
+        return Lists.transform(partiallyHydratedTraces,
+                new Function<PartiallyHydratedTrace, StoredTrace>() {
+                    public StoredTrace apply(PartiallyHydratedTrace trace) {
+                        return trace.fullyHydrate();
+                    }
+                });
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo, long lowDuration,
@@ -230,10 +241,10 @@ public class TraceDao {
         if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
             return readStoredTraces(capturedFrom, capturedTo);
         }
-        List<StoredTrace> storedTraces;
+        List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
-            storedTraces = dataSource.query("select id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, attributes, metrics, spans,"
+            partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
+                    + " duration, completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree from trace where captured_at >= ? and captured_at <= ?"
                     + " and duration >= ? and duration <= ?", new Object[] { capturedFrom,
                     capturedTo, lowDuration, highDuration }, new TraceRowMapper());
@@ -242,41 +253,12 @@ public class TraceDao {
             return Collections.emptyList();
         }
         // read from rolling file outside of jdbc connection
-        fillInRollingFileData(storedTraces);
-        return storedTraces;
-    }
-
-    private void fillInRollingFileData(List<StoredTrace> storedTraces) {
-        for (StoredTrace storedTrace : storedTraces) {
-            fillInRollingFileSpan(storedTrace);
-            fillInRollingFileMergedStackTree(storedTrace);
-        }
-    }
-
-    private void fillInRollingFileSpan(StoredTrace storedTrace) {
-        if (storedTrace.getSpansFileBlockId() != null) {
-            FileBlock block;
-            try {
-                block = new FileBlock(storedTrace.getSpansFileBlockId());
-            } catch (InvalidBlockId e) {
-                logger.error(e.getMessage(), e);
-                return;
-            }
-            storedTrace.setSpans(rollingFile.read(block));
-        }
-    }
-
-    private void fillInRollingFileMergedStackTree(StoredTrace storedTrace) {
-        if (storedTrace.getMergedStackTreeFileBlockId() != null) {
-            FileBlock block;
-            try {
-                block = new FileBlock(storedTrace.getMergedStackTreeFileBlockId());
-            } catch (InvalidBlockId e) {
-                logger.error(e.getMessage(), e);
-                return;
-            }
-            storedTrace.setMergedStackTree(rollingFile.read(block));
-        }
+        return Lists.transform(partiallyHydratedTraces,
+                new Function<PartiallyHydratedTrace, StoredTrace>() {
+                    public StoredTrace apply(PartiallyHydratedTrace trace) {
+                        return trace.fullyHydrate();
+                    }
+                });
     }
 
     public int deleteStoredTraces(final long capturedFrom, final long capturedTo) {
@@ -319,46 +301,94 @@ public class TraceDao {
     }
 
     public static enum StringComparator {
+
         BEGINS("like", "%s%%"), EQUALS("=", "%s"), CONTAINS("like", "%%%s%%");
+
         private final String comparator;
         private final String parameterFormat;
+
         private StringComparator(String comparator, String parameterTemplate) {
             this.comparator = comparator;
             this.parameterFormat = parameterTemplate;
         }
+
         public String formatParameter(String parameter) {
             return String.format(parameterFormat, parameter);
         }
+
         public String getComparator() {
             return comparator;
         }
     }
 
     private static class TraceDurationRowMapper implements RowMapper<StoredTraceDuration> {
+
         public StoredTraceDuration mapRow(ResultSet resultSet) throws SQLException {
             return new StoredTraceDuration(resultSet.getString(1), resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4));
         }
     }
 
-    private static class TraceRowMapper implements RowMapper<StoredTrace> {
-        public StoredTrace mapRow(ResultSet resultSet) throws SQLException {
-            StoredTrace storedTrace = new StoredTrace();
+    private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
+
+        public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
+            StoredTrace.Builder builder = new StoredTrace.Builder();
             int columnIndex = 1;
-            storedTrace.setId(resultSet.getString(columnIndex++));
+            builder.id(resultSet.getString(columnIndex++));
             columnIndex++; // TODO place holder for captured_at
-            storedTrace.setStartAt(resultSet.getLong(columnIndex++));
-            storedTrace.setStuck(resultSet.getBoolean(columnIndex++));
-            storedTrace.setDuration(resultSet.getLong(columnIndex++));
-            storedTrace.setCompleted(resultSet.getBoolean(columnIndex++));
-            storedTrace.setDescription(resultSet.getString(columnIndex++));
-            storedTrace.setUsername(resultSet.getString(columnIndex++));
-            storedTrace.setAttributes(resultSet.getString(columnIndex++));
-            storedTrace.setMetrics(resultSet.getString(columnIndex++));
+            builder.startAt(resultSet.getLong(columnIndex++));
+            builder.stuck(resultSet.getBoolean(columnIndex++));
+            builder.duration(resultSet.getLong(columnIndex++));
+            builder.completed(resultSet.getBoolean(columnIndex++));
+            builder.description(resultSet.getString(columnIndex++));
+            builder.username(resultSet.getString(columnIndex++));
+            builder.attributes(resultSet.getString(columnIndex++));
+            builder.metrics(resultSet.getString(columnIndex++));
             // wait and read from rolling file outside of jdbc connection
-            storedTrace.setSpansFileBlockId(resultSet.getString(columnIndex++));
-            storedTrace.setMergedStackTreeFileBlockId(resultSet.getString(columnIndex++));
-            return storedTrace;
+            // return new TempStoredTrace(builder, )
+            String spansFileBlockId = resultSet.getString(columnIndex++);
+            String mergedStackTreeFileBlockId = resultSet.getString(columnIndex++);
+            return new PartiallyHydratedTrace(builder, spansFileBlockId,
+                    mergedStackTreeFileBlockId);
+        }
+    }
+
+    private class PartiallyHydratedTrace {
+
+        private final StoredTrace.Builder builder;
+        // file block ids are stored temporarily while reading the stored trace from the
+        // database so that reading from the rolling file can occur outside of the jdbc connection
+        private final String spansFileBlockId;
+        private final String mergedStackTreeFileBlockId;
+
+        private PartiallyHydratedTrace(Builder builder, @Nullable String spansFileBlockId,
+                @Nullable String mergedStackTreeFileBlockId) {
+
+            this.builder = builder;
+            this.spansFileBlockId = spansFileBlockId;
+            this.mergedStackTreeFileBlockId = mergedStackTreeFileBlockId;
+        }
+
+        private StoredTrace fullyHydrate() {
+            if (spansFileBlockId != null) {
+                FileBlock block;
+                try {
+                    block = new FileBlock(spansFileBlockId);
+                    builder.spans(rollingFile.read(block));
+                } catch (InvalidBlockId e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            if (mergedStackTreeFileBlockId != null) {
+                FileBlock block;
+                try {
+                    block = new FileBlock(mergedStackTreeFileBlockId);
+                    builder.mergedStackTree(rollingFile.read(block));
+                } catch (InvalidBlockId e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            return builder.build();
         }
     }
 }

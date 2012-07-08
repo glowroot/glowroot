@@ -38,6 +38,8 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.core.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -170,7 +172,9 @@ public class HttpServer extends HttpServerBase {
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/threaddump$"),
                 threadDumpJsonService, "getThreadDump"));
     }
+
     @Override
+    @Nullable
     protected HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
@@ -197,8 +201,8 @@ public class HttpServer extends HttpServerBase {
                 for (int i = 0; i < args.length; i++) {
                     args[i] = matcher.group(i + 1);
                 }
-                return handleJsonRequest(jsonServiceMapping.service,
-                        jsonServiceMapping.methodName, args, requestText);
+                return handleJsonRequest(jsonServiceMapping.service, jsonServiceMapping.methodName,
+                        args, requestText);
             }
         }
         logger.warn("Unexpected uri '{}'", request.getUri());
@@ -240,6 +244,7 @@ public class HttpServer extends HttpServerBase {
         return response;
     }
 
+    @Nullable
     private static String getMimeType(String extension) {
         if (extension.equals("html")) {
             return "text/html; charset=UTF-8";
@@ -313,6 +318,7 @@ public class HttpServer extends HttpServerBase {
         return response;
     }
 
+    @Nullable
     private static Object callMethod(Object object, String methodName, Object[] args,
             String optionalArg) throws SecurityException, NoSuchMethodException,
             IllegalArgumentException, IllegalAccessException, InvocationTargetException {
@@ -376,6 +382,7 @@ public class HttpServer extends HttpServerBase {
     public interface JsonService {}
 
     public interface HttpService {
+        @Nullable
         HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException;
     }
 

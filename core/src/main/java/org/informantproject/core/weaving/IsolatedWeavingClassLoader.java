@@ -82,7 +82,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } finally {
             Closeables.closeQuietly(input);
         }
-        b = weaver.weave(b, null);
+        b = weaver.weave(b);
         if (name.indexOf('.') != -1) {
             String packageName = name.substring(0, name.lastIndexOf('.'));
             if (getPackage(packageName) == null) {

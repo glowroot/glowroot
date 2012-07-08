@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.store.FileLister;
@@ -72,7 +73,7 @@ public final class MainEntryPoint {
     private MainEntryPoint() {}
 
     // javaagent entry point
-    public static void premain(String agentArgs, Instrumentation instrumentation) {
+    public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
         AgentArgs parsedAgentArgs = new AgentArgs(agentArgs);
         try {

@@ -15,10 +15,15 @@
  */
 package org.informantproject.packager;
 
+import javax.annotation.Nullable;
+
 /**
+ * This provides the binding for the plugin configuration defined in the pom.xml file.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Nullable
 public class PluginConfiguration {
 
     private String groupId;
@@ -53,6 +58,7 @@ public class PluginConfiguration {
         this.properties = properties;
     }
 
+    @Nullable
     public static class PropertyConfiguration {
         private String prompt;
         private String name;
