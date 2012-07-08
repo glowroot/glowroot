@@ -36,6 +36,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.io.InputSupplier;
 import com.google.common.io.Resources;
@@ -60,6 +61,14 @@ public class XmlDocuments {
     public static Document getValidatedDocument(InputSupplier<InputStream> inputSupplier)
             throws ParserConfigurationException, SAXException, IOException {
 
+        return getValidatedDocument(inputSupplier, new LoggingErrorHandler());
+    }
+
+    @VisibleForTesting
+    static Document getValidatedDocument(InputSupplier<InputStream> inputSupplier,
+            ErrorHandler errorHandler) throws ParserConfigurationException, SAXException,
+            IOException {
+
         // validate first with SAX
         SAXParserFactory factory = SAXParserFactory.newInstance();
         factory.setNamespaceAware(true);
@@ -69,7 +78,7 @@ public class XmlDocuments {
                 XMLConstants.W3C_XML_SCHEMA_NS_URI);
         XMLReader reader = parser.getXMLReader();
         reader.setEntityResolver(new ResourceEntityResolver());
-        reader.setErrorHandler(new LoggingErrorHandler());
+        reader.setErrorHandler(errorHandler);
         reader.parse(new InputSource(inputSupplier.getInput()));
         // then return DOM
         return getDocument(inputSupplier.getInput());

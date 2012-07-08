@@ -15,14 +15,16 @@
  */
 package org.informantproject.core.util;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.net.URL;
-import java.util.regex.Pattern;
 
 import org.informantproject.local.ui.PluginJsonService;
 import org.junit.Test;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import com.google.common.io.Resources;
 
@@ -33,14 +35,36 @@ import com.google.common.io.Resources;
 public class XmlDocumentsTest {
 
     @Test
-    public void shouldReadInstalledPlugins() throws Exception {
+    public void shouldReadValidPluginXml() throws Exception {
         URL resourceURL = PluginJsonService.class.getClassLoader().getResource(
-                "unit.test.plugin.xml");
-        XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(resourceURL));
+                "unit.test.plugin.valid.xml");
+        XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
+                new ThrowingErrorHandler());
     }
 
     @Test
-    public void shouldWork() {
-        assertThat(Pattern.matches("[a-z0-9.-]*", "ab-cd"), is(true));
+    public void shouldErrorOnInvalidPluginXml() throws Exception {
+        URL resourceURL = PluginJsonService.class.getClassLoader().getResource(
+                "unit.test.plugin.invalid.xml");
+        SAXParseException exception = null;
+        try {
+            XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
+                    new ThrowingErrorHandler());
+        } catch (SAXParseException e) {
+            exception = e;
+        }
+        assertThat(exception, notNullValue());
+    }
+
+    private static class ThrowingErrorHandler implements ErrorHandler {
+        public void warning(SAXParseException e) throws SAXException {
+            throw e;
+        }
+        public void error(SAXParseException e) throws SAXException {
+            throw e;
+        }
+        public void fatalError(SAXParseException e) throws SAXException {
+            throw e;
+        }
     }
 }
