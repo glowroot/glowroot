@@ -15,10 +15,12 @@
  */
 package org.informantproject.core.weaving;
 
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.informantproject.api.Metric;
@@ -28,6 +30,9 @@ import org.informantproject.core.configuration.PluginDescriptor;
 import org.informantproject.core.configuration.Plugins;
 import org.informantproject.core.trace.MetricImpl;
 import org.informantproject.core.trace.TraceRegistry;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.commons.RemappingClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +40,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
 /**
@@ -72,13 +78,14 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
         metric = new MetricImpl("informant weaving", traceRegistry, ticker);
+        loadUsedTypes();
     }
 
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
             ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
 
-        return transform$informant$metric$informant$weaving$0(loader, className, protectionDomain,
-                bytes);
+        return transform$informant$metric$informant$weaving$0(loader, className,
+                protectionDomain, bytes);
     }
 
     // weird method name is following "metric marker" method naming
@@ -100,6 +107,75 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
             return transformedBytes;
         } finally {
             stopwatch.stop();
+        }
+    }
+
+    // "There are some things that agents are allowed to do that simply should not be permitted"
+    // -- http://mail.openjdk.java.net/pipermail/hotspot-dev/2012-March/005464.html
+    //
+    // In particular (at least prior to parallel class loading in JDK 7) loading other classes
+    // inside of a ClassFileTransformer.transform() method occasionally leads to deadlocks. To avoid
+    // loading other classes inside of the transform() method, all classes referenced from
+    // InformantClassFileTransformer are preloaded (and all classes referenced from those classes,
+    // etc).
+    //
+    // It seems safe to stop the recursion at classes in the bootstrap classloader, and this
+    // optimization brings the preloading time down from ~760 to ~230 milliseconds.
+    //
+    // It's tempting to further optimize this by hard-coding the list of classes to load, but the
+    // list of classes to load is sensitive to how the code was compiled. For example, compilation
+    // under javac (JDK 6) results in an empty anonymous inner class InformantClassFileTransformer$1
+    // while compilation under eclipse (Juno) doesn't create this empty anonymous inner class. So it
+    // seems safer to calculate the list of classes to load at runtime.
+    //
+    private static void loadUsedTypes() {
+        try {
+            new UsedTypeCollector().processType(InformantClassFileTransformer.class.getName());
+        } catch (ClassNotFoundException e) {
+            logger.error(e.getMessage(), e);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private static class UsedTypeCollector extends Remapper {
+
+        private static final ClassLoader bootstrapClassLoader = Object.class.getClassLoader();
+
+        private final Set<String> typeNames = Sets.newHashSet();
+        private final Set<String> bootstrapClassLoaderTypeNames = Sets.newHashSet();
+
+        @Override
+        public String map(String internalTypeName) {
+            String typeName = internalTypeName.replace('/', '.');
+            if (bootstrapClassLoaderTypeNames.contains(typeName)) {
+                // already processed this type
+                return internalTypeName;
+            } else if (typeNames.contains(typeName)) {
+                // already processed this type
+                return internalTypeName;
+            } else {
+                try {
+                    processType(typeName);
+                } catch (ClassNotFoundException e) {
+                    logger.error(e.getMessage(), e);
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
+                }
+                return internalTypeName;
+            }
+        }
+
+        private void processType(String typeName) throws ClassNotFoundException, IOException {
+            if (Class.forName(typeName).getClassLoader() == bootstrapClassLoader) {
+                // ignore bootstrap classloader types
+                bootstrapClassLoaderTypeNames.add(typeName);
+            } else {
+                typeNames.add(typeName);
+                ClassReader cr = new ClassReader(typeName);
+                RemappingClassAdapter visitor = new RemappingClassAdapter(null, this);
+                cr.accept(visitor, 0);
+            }
         }
     }
 }
