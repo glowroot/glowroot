@@ -47,6 +47,7 @@ public class ConfigurationJsonService implements JsonService {
 
     private final ConfigurationService configurationService;
     private final RollingFile rollingFile;
+    private final Gson gson = new Gson();
 
     @Inject
     public ConfigurationJsonService(ConfigurationService configurationService,
@@ -81,8 +82,8 @@ public class ConfigurationJsonService implements JsonService {
         return "{\"enabled\":" + configurationService.getCoreConfiguration().isEnabled()
                 + ",\"coreProperties\":" + configurationService.getCoreConfiguration()
                         .getPropertiesJson() + ",\"pluginConfiguration\":" + configurationService
-                        .getPluginConfigurationJson() + ",\"pluginDescriptors\":" + new Gson()
-                        .toJson(pluginDescriptors) + ",\"actualRollingSizeMb\":" + rollingSizeMb
+                        .getPluginConfigurationJson() + ",\"pluginDescriptors\":" + gson.toJson(
+                        pluginDescriptors) + ",\"actualRollingSizeMb\":" + rollingSizeMb
                 + "}";
     }
 

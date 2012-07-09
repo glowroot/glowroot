@@ -40,6 +40,7 @@ public class Informant {
 
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
+    private final Gson gson = new Gson();
 
     private long baselineTime;
 
@@ -105,7 +106,7 @@ public class Informant {
     public Trace getLastTrace() throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);
-        JsonArray points = new Gson().fromJson(pointsJson, JsonElement.class).getAsJsonObject()
+        JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
                 .get("storedTracePoints").getAsJsonArray();
         if (points.size() == 0) {
             throw new AssertionError("no trace found");
@@ -113,7 +114,7 @@ public class Informant {
             JsonArray values = points.get(points.size() - 1).getAsJsonArray();
             String traceId = values.get(2).getAsString();
             String traceDetailJson = get("/trace/detail/" + traceId);
-            return new Gson().fromJson(traceDetailJson, Trace.class);
+            return gson.fromJson(traceDetailJson, Trace.class);
         }
     }
 
@@ -121,7 +122,7 @@ public class Informant {
     public Trace getActiveTrace() throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);
-        JsonArray points = new Gson().fromJson(pointsJson, JsonElement.class).getAsJsonObject()
+        JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
                 .get("activeTracePoints").getAsJsonArray();
         if (points.size() == 0) {
             return null;
@@ -131,7 +132,7 @@ public class Informant {
             JsonArray values = points.get(0).getAsJsonArray();
             String traceId = values.get(2).getAsString();
             String traceDetailJson = get("/trace/detail/" + traceId);
-            return new Gson().fromJson(traceDetailJson, Trace.class);
+            return gson.fromJson(traceDetailJson, Trace.class);
         }
     }
 

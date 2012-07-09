@@ -64,6 +64,7 @@ public class PluginJsonService implements JsonService {
             + "/snapshots/org/informantproject/plugins/";
 
     private final AsyncHttpClient asyncHttpClient;
+    private final Gson gson = new Gson();
 
     // expire the list of installable plugins every hour in order to pick up new installable plugins
     private final Supplier<Collection<PluginDescriptor>> installablePlugins = Suppliers
@@ -83,12 +84,12 @@ public class PluginJsonService implements JsonService {
         // informant and a set of plugins can be packaged together in a single jar in order to
         // simplify distribution and installation. any plugins packaged with informant cannot be
         // uninstalled
-        return new Gson().toJson(Plugins.getPackagedPluginDescriptors());
+        return gson.toJson(Plugins.getPackagedPluginDescriptors());
     }
 
     // called dynamically from HttpServer
     public String getInstalledPlugins() {
-        return new Gson().toJson(Plugins.getInstalledPluginDescriptors());
+        return gson.toJson(Plugins.getInstalledPluginDescriptors());
     }
 
     // called dynamically from HttpServer
@@ -97,7 +98,7 @@ public class PluginJsonService implements JsonService {
         // this works because Plugin.equals() is defined only in terms of groupId and artifactId
         Iterables.removeAll(notAlreadyInstalled, Plugins.getPackagedPluginDescriptors());
         Iterables.removeAll(notAlreadyInstalled, Plugins.getInstalledPluginDescriptors());
-        return new Gson().toJson(notAlreadyInstalled);
+        return gson.toJson(notAlreadyInstalled);
     }
 
     private Collection<PluginDescriptor> readInstallablePlugins() {

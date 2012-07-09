@@ -79,6 +79,8 @@ public class ImmutableCoreConfiguration {
 
     private int metricPeriodMillis = 15000;
 
+    private final Gson gson = new Gson();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -130,7 +132,7 @@ public class ImmutableCoreConfiguration {
         propertiesJson.addProperty("rollingSizeMb", rollingSizeMb);
         propertiesJson.addProperty("warnOnEntryOutsideTrace", warnOnEntryOutsideTrace);
         propertiesJson.addProperty("metricPeriodMillis", metricPeriodMillis);
-        return new Gson().toJson(propertiesJson);
+        return gson.toJson(propertiesJson);
     }
 
     @Override

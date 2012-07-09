@@ -75,8 +75,8 @@ public class HttpServer extends HttpServerBase {
 
     private final Map<Pattern, Object> uriMappings = Collections
             .synchronizedMap(new LinkedHashMap<Pattern, Object>());
-
     private final List<JsonServiceMappings> jsonServiceMappings = Lists.newArrayList();
+    private final Gson gson = new Gson();
 
     {
         // pages
@@ -349,7 +349,7 @@ public class HttpServer extends HttpServerBase {
         return parameterTypes;
     }
 
-    private static String getRequestText(HttpRequest request, QueryStringDecoder decoder) {
+    private String getRequestText(HttpRequest request, QueryStringDecoder decoder) {
         if (decoder.getParameters().isEmpty()) {
             return request.getContent().toString(Charsets.ISO_8859_1);
         } else {
@@ -365,7 +365,7 @@ public class HttpServer extends HttpServerBase {
                     parameters.put(key, entry.getValue());
                 }
             }
-            return new Gson().toJson(parameters);
+            return gson.toJson(parameters);
         }
     }
 

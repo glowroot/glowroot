@@ -16,13 +16,11 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.core.configuration.ConfigurationService;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration;
@@ -36,10 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -62,8 +56,8 @@ public class TraceSinkLocal implements TraceSink {
     private final TraceDao traceDao;
     private final TraceCommonJsonService traceCommonJsonService;
     private final Ticker ticker;
-
     private final AtomicInteger queueLength = new AtomicInteger(0);
+    private final Gson gson = new Gson();
 
     @Inject
     public TraceSinkLocal(ConfigurationService configurationService, TraceDao traceDao,
@@ -135,14 +129,12 @@ public class TraceSinkLocal implements TraceSink {
         Message message = rootSpan.getMessageSupplier().get();
         builder.description(message.getText());
         builder.username(trace.getUsername().get());
-        Gson gson = new GsonBuilder().registerTypeAdapter(ContextMap.class,
-                new ContextMapJsonSerializer()).create();
         Collection<Attribute> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }
-        builder.metrics(TraceCommonJsonService.getMetricsJson(trace, gson));
-        builder.spans(traceCommonJsonService.getSpansByteStream(trace, captureTick, gson));
+        builder.metrics(traceCommonJsonService.getMetricsJson(trace));
+        builder.spans(traceCommonJsonService.getSpansByteStream(trace, captureTick));
         builder.mergedStackTree(TraceCommonJsonService.getMergedStackTree(trace));
         return builder.build();
     }
@@ -150,12 +142,5 @@ public class TraceSinkLocal implements TraceSink {
     public void shutdown() {
         logger.debug("shutdown()");
         executorService.shutdownNow();
-    }
-
-    static class ContextMapJsonSerializer implements JsonSerializer<ContextMap> {
-        public JsonElement serialize(ContextMap contextMap, Type typeOfSrc,
-                JsonSerializationContext context) {
-            return context.serialize(contextMap.getInner());
-        }
     }
 }

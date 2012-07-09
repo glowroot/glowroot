@@ -59,6 +59,7 @@ public class TracePointJsonService implements JsonService {
     private final ConfigurationService configurationService;
     private final Ticker ticker;
     private final Clock clock;
+    private final Gson gson = new Gson();
 
     @Inject
     public TracePointJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
@@ -74,7 +75,7 @@ public class TracePointJsonService implements JsonService {
     // called dynamically from HttpServer
     public String getPoints(String message) throws IOException {
         logger.debug("getChartPoints(): message={}", message);
-        TraceRequest request = new Gson().fromJson(message, TraceRequest.class);
+        TraceRequest request = gson.fromJson(message, TraceRequest.class);
         long requestAt = clock.currentTimeMillis();
         if (request.getFrom() < 0) {
             request.setFrom(requestAt + request.getFrom());

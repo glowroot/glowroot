@@ -48,6 +48,7 @@ public class MetricJsonService implements JsonService {
 
     private final MetricDao metricDao;
     private final Clock clock;
+    private final Gson gson = new Gson();
 
     @Inject
     public MetricJsonService(MetricDao metricDao, Clock clock) {
@@ -58,7 +59,7 @@ public class MetricJsonService implements JsonService {
     // called dynamically from HttpServer
     public String getMetrics(String message) throws IOException {
         logger.debug("handleRead(): message={}", message);
-        MetricRequest request = new Gson().fromJson(message, MetricRequest.class);
+        MetricRequest request = gson.fromJson(message, MetricRequest.class);
         if (request.getStart() < 0) {
             request.setStart(clock.currentTimeMillis() + request.getStart());
         }

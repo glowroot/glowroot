@@ -54,8 +54,8 @@ class ConfigurationDao {
             new Column("PROPERTIES", Types.VARCHAR));
 
     private final DataSource dataSource;
-
     private final boolean valid;
+    private final Gson gson = new Gson();
 
     @Inject
     ConfigurationDao(DataSource dataSource) {
@@ -188,7 +188,7 @@ class ConfigurationDao {
         }
     }
 
-    private static ImmutablePluginConfiguration buildPluginConfiguration(
+    private ImmutablePluginConfiguration buildPluginConfiguration(
             PluginDescriptor pluginDescriptor, ResultSet resultSet) throws SQLException {
 
         Object enabledObject = resultSet.getObject(1);
@@ -203,7 +203,7 @@ class ConfigurationDao {
         }
         JsonElement propertiesElement;
         try {
-            propertiesElement = new Gson().fromJson(json, JsonElement.class);
+            propertiesElement = gson.fromJson(json, JsonElement.class);
         } catch (JsonSyntaxException e) {
             logger.error(e.getMessage(), e);
             return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
