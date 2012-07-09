@@ -36,8 +36,6 @@ import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 
@@ -80,12 +78,7 @@ public class Trace {
     // stack trace data constructed from sampled stack traces
     // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
     // and early initialization would use up memory unnecessarily
-    private final Supplier<MergedStackTree> mergedStackTreeSupplier = Suppliers
-            .memoize(new Supplier<MergedStackTree>() {
-                public MergedStackTree get() {
-                    return new MergedStackTree();
-                }
-            });
+    private volatile MergedStackTree mergedStackTreeSupplier = new MergedStackTree();
 
     // the thread is needed so that stack traces can be taken from a different thread
     // a weak reference is used just to be safe and make sure it can't accidentally prevent a thread
@@ -160,7 +153,7 @@ public class Trace {
     }
 
     public MergedStackTree getMergedStackTree() {
-        return mergedStackTreeSupplier.get();
+        return mergedStackTreeSupplier;
     }
 
     @Nullable
@@ -215,7 +208,7 @@ public class Trace {
         if (thread != null) {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
-            mergedStackTreeSupplier.get().addStackTrace(threadInfo);
+            mergedStackTreeSupplier.addStackTrace(threadInfo);
         }
     }
 
