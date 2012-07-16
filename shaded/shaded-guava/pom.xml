@@ -59,10 +59,10 @@
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <!--
-          locally built 1.6 plus new shadeSourcesContent feature from
+          locally built 1.7.1 plus new shadeSourcesContent feature from
           https://jira.codehaus.org/browse/MSHADE-112
         -->
-        <version>1.6-1-SNAPSHOT</version>
+        <version>1.7.1-1-SNAPSHOT</version>
         <executions>
           <execution>
             <goals>

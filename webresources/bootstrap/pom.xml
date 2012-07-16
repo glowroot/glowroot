@@ -11,7 +11,7 @@
 
   <groupId>org.informantproject.webresources</groupId>
   <artifactId>webresources-bootstrap</artifactId>
-  <version>2.0.3-SNAPSHOT</version>
+  <version>2.0.4-SNAPSHOT</version>
 
   <name>Bootstrap HTML, CSS and Javascript Library (packaged for Informant)</name>
   <description>

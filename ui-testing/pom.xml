@@ -21,9 +21,15 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <!-- this is the last version of guava that supports jdk 5 -->
+      <version>11.0.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.6.4</version>
+      <version>1.6.6</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
