@@ -15,8 +15,7 @@
  */
 package org.informantproject.local.ui;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Set;
 
@@ -85,6 +84,6 @@ public class LocalHttpHandlerTest {
         String responseText = response.getResponseBody();
         JsonObject rootNode = new JsonParser().parse(responseText).getAsJsonObject();
         String coreConfigurationJson = new Gson().toJson(rootNode.get("coreProperties"));
-        assertThat(coreConfigurationJson, is(randomCoreConfiguration.getPropertiesJson()));
+        assertThat(coreConfigurationJson).isEqualTo(randomCoreConfiguration.getPropertiesJson());
     }
 }

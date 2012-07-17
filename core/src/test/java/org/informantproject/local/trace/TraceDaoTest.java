@@ -15,8 +15,7 @@
  */
 package org.informantproject.local.trace;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -78,15 +77,15 @@ public class TraceDaoTest {
         // when
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
         // then
-        assertThat(storedTraces.size(), is(1));
+        assertThat(storedTraces).hasSize(1);
         StoredTrace storedTrace2 = storedTraces.get(0);
-        assertThat(storedTrace2.getStartAt(), is(storedTrace.getStartAt()));
-        assertThat(storedTrace2.isStuck(), is(storedTrace.isStuck()));
-        assertThat(storedTrace2.getId(), is(storedTrace.getId()));
-        assertThat(storedTrace2.getDuration(), is(storedTrace.getDuration()));
-        assertThat(storedTrace2.isCompleted(), is(storedTrace.isCompleted()));
-        assertThat(storedTrace2.getDescription(), is("test description"));
-        assertThat(storedTrace2.getUsername(), is(storedTrace.getUsername()));
+        assertThat(storedTrace2.getStartAt()).isEqualTo(storedTrace.getStartAt());
+        assertThat(storedTrace2.isStuck()).isEqualTo(storedTrace.isStuck());
+        assertThat(storedTrace2.getId()).isEqualTo(storedTrace.getId());
+        assertThat(storedTrace2.getDuration()).isEqualTo(storedTrace.getDuration());
+        assertThat(storedTrace2.isCompleted()).isEqualTo(storedTrace.isCompleted());
+        assertThat(storedTrace2.getDescription()).isEqualTo("test description");
+        assertThat(storedTrace2.getUsername()).isEqualTo(storedTrace.getUsername());
         // TODO verify metricData, trace and mergedStackTree
     }
 
@@ -101,7 +100,7 @@ public class TraceDaoTest {
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, storedTrace.getDuration(),
                 storedTrace.getDuration());
         // then
-        assertThat(storedTraces.size(), is(1));
+        assertThat(storedTraces).hasSize(1);
     }
 
     @Test
@@ -115,7 +114,7 @@ public class TraceDaoTest {
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0,
                 storedTrace.getDuration() + 1, storedTrace.getDuration() + 2);
         // then
-        assertThat(storedTraces.size(), is(0));
+        assertThat(storedTraces).isEmpty();
     }
 
     @Test
@@ -129,7 +128,7 @@ public class TraceDaoTest {
         List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0,
                 storedTrace.getDuration() - 2, storedTrace.getDuration() - 1);
         // then
-        assertThat(storedTraces.size(), is(0));
+        assertThat(storedTraces).isEmpty();
     }
 
     @Test
@@ -139,6 +138,6 @@ public class TraceDaoTest {
         // when
         traceDao.deleteStoredTraces(0, 0);
         // then
-        assertThat(traceDao.count(), is(0L));
+        assertThat(traceDao.count()).isEqualTo(0);
     }
 }

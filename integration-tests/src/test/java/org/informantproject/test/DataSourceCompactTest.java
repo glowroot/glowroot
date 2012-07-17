@@ -15,9 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.File;
 
@@ -59,7 +57,7 @@ public class DataSourceCompactTest {
         long preCompactionDbSize = dbFile.length();
         container.getInformant().deleteAllTraces();
         // then
-        assertThat(dbFile.length(), is(lessThan(preCompactionDbSize)));
+        assertThat(dbFile.length()).isLessThan(preCompactionDbSize);
     }
 
     public static class GenerateLotsOfTraces implements AppUnderTest, TraceMarker {

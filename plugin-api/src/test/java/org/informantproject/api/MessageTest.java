@@ -15,8 +15,7 @@
  */
 package org.informantproject.api;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.junit.Test;
 
@@ -29,24 +28,24 @@ public class MessageTest {
     @Test
     public void shouldFormatConstant() {
         Message message = Message.of("constant");
-        assertThat(message.getText(), is("constant"));
+        assertThat(message.getText()).isEqualTo("constant");
     }
 
     @Test
     public void shouldFormatSingle() {
         Message message = Message.of("{{one}}", "test");
-        assertThat(message.getText(), is("test"));
+        assertThat(message.getText()).isEqualTo("test");
     }
 
     @Test
     public void shouldFormatSinglePlus() {
         Message message = Message.of("one {{one}} two", "test");
-        assertThat(message.getText(), is("one test two"));
+        assertThat(message.getText()).isEqualTo("one test two");
     }
 
     @Test
     public void shouldFormatMultiple() {
         Message message = Message.of("one {{one}} two {{two}}{{three}}", "test", "2", "3");
-        assertThat(message.getText(), is("one test two 23"));
+        assertThat(message.getText()).isEqualTo("one test two 23");
     }
 }

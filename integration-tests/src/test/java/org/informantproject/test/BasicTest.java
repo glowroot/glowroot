@@ -15,10 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.Random;
@@ -62,7 +59,7 @@ public class BasicTest {
         // when
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
         // then
-        assertThat(coreProperties, is(randomCoreProperties));
+        assertThat(coreProperties).isEqualTo(randomCoreProperties);
     }
 
     @Test
@@ -73,23 +70,23 @@ public class BasicTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getDescription(), is("Level One"));
-        assertThat(trace.getAttributes(), nullValue());
-        assertThat(trace.getSpans().size(), is(3));
+        assertThat(trace.getDescription()).isEqualTo("Level One");
+        assertThat(trace.getAttributes()).isNull();
+        assertThat(trace.getSpans()).hasSize(3);
         Span span1 = trace.getSpans().get(0);
-        assertThat(span1.getDescription(), is("Level One"));
-        assertThat(span1.getContextMap(), is(mapOf("arg1", "a", "arg2", "b",
+        assertThat(span1.getDescription()).isEqualTo("Level One");
+        assertThat(span1.getContextMap()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
                 "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
                         "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
-                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b"))));
+                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         Span span2 = trace.getSpans().get(1);
-        assertThat(span2.getDescription(), is("Level Two"));
-        assertThat(span2.getContextMap(), is(mapOf("arg1", "ax", "arg2", "bx")));
+        assertThat(span2.getDescription()).isEqualTo("Level Two");
+        assertThat(span2.getContextMap()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
         Span span3 = trace.getSpans().get(2);
-        assertThat(span3.getDescription(), is("Level Three"));
-        assertThat(span3.getContextMap(), is(mapOf("arg1", "axy", "arg2", "bxy")));
+        assertThat(span3.getDescription()).isEqualTo("Level Three");
+        assertThat(span3.getContextMap()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
-        assertThat(span3.getOffset(), is(greaterThan(0L)));
+        assertThat(span3.getOffset()).isGreaterThan(0);
     }
 
     private static CoreProperties makeRandomCoreProperties() {

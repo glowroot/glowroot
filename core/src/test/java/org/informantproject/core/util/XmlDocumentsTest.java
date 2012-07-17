@@ -15,8 +15,7 @@
  */
 package org.informantproject.core.util;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.net.URL;
 
@@ -53,7 +52,7 @@ public class XmlDocumentsTest {
         } catch (SAXParseException e) {
             exception = e;
         }
-        assertThat(exception, notNullValue());
+        assertThat(exception).isNotNull();
     }
 
     private static class ThrowingErrorHandler implements ErrorHandler {

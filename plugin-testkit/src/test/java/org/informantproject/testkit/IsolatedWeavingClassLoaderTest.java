@@ -15,8 +15,7 @@
  */
 package org.informantproject.testkit;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +40,6 @@ public class IsolatedWeavingClassLoaderTest {
                 advisors, ValueHolder.class);
         ValueHolder valueHolder = (ValueHolder) Class.forName(ValueHolderImpl.class.getName(),
                 true, isolatedClassLoader).newInstance();
-        assertThat(valueHolder.get(), is("original-value/aspect-was-here"));
+        assertThat(valueHolder.get()).isEqualTo("original-value/aspect-was-here");
     }
 }

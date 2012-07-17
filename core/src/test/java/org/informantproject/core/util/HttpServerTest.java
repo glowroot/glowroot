@@ -15,8 +15,7 @@
  */
 package org.informantproject.core.util;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Set;
 
@@ -61,6 +60,6 @@ public class HttpServerTest {
                 + httpServer.getPort());
         request.setBody("hello there");
         Response response = request.execute().get();
-        assertThat(response.getResponseBody(), is("hello there"));
+        assertThat(response.getResponseBody()).isEqualTo("hello there");
     }
 }

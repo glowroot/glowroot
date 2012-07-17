@@ -15,9 +15,7 @@
  */
 package org.informantproject.plugin.servlet;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.Map;
@@ -79,9 +77,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("GET /servletundertest"));
+        assertThat(span.getDescription()).isEqualTo("GET /servletundertest");
     }
 
     @Test
@@ -92,9 +90,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("GET /filtertest"));
+        assertThat(span.getDescription()).isEqualTo("GET /filtertest");
     }
 
     @Test
@@ -105,9 +103,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
+        assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("GET /combotest"));
+        assertThat(span.getDescription()).isEqualTo("GET /combotest");
     }
 
     @Test
@@ -131,7 +129,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getUsername(), is("abc"));
+        assertThat(trace.getUsername()).isEqualTo("abc");
     }
 
     @Test
@@ -145,7 +143,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetSessionUsernameAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getUsername(), is("abc"));
+        assertThat(trace.getUsername()).isEqualTo("abc");
     }
 
     @Test
@@ -161,7 +159,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         // this is intentional, setting username attribute to null shouldn't clear out username for
         // that particular request (since the request was in fact, originally, for that username)
-        assertThat(trace.getUsername(), is("something"));
+        assertThat(trace.getUsername()).isEqualTo("something");
     }
 
     @Test
@@ -175,7 +173,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getUsername(), is("xyz"));
+        assertThat(trace.getUsername()).isEqualTo("xyz");
     }
 
     @Test
@@ -189,7 +187,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getUsername(), is("xyz"));
+        assertThat(trace.getUsername()).isEqualTo("xyz");
     }
 
     @Test
@@ -203,7 +201,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getUsername(), is(nullValue()));
+        assertThat(trace.getUsername()).isNull();
     }
 
     @Test
@@ -217,7 +215,7 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getUsername(), is(nullValue()));
+        assertThat(trace.getUsername()).isNull();
     }
 
     @Test
@@ -231,9 +229,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace).get("testattr"), is("val"));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -247,9 +245,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace).get("testattr"), is("val"));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -263,9 +261,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -279,9 +277,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace).get("testattr"), is("val"));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
     }
 
     @Test
@@ -295,9 +293,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace).get("testattr"), is("val"));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
     }
 
     @Test
@@ -311,9 +309,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -327,9 +325,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace).containsValue("testattr"), is(false));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).containsValue("testattr")).isFalse();
     }
 
     @Test
@@ -343,9 +341,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace).get("one.two"), is("three"));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace).get("one.two")).isEqualTo("three");
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -359,9 +357,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace).get("one.two"), is("three"));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace).get("one.two")).isEqualTo("three");
     }
 
     @Test
@@ -375,9 +373,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -391,9 +389,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(getSessionAttributes(trace), is(nullValue()));
-        assertThat(getUpdatedSessionAttributes(trace), is(nullValue()));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
 
     @Test
@@ -404,14 +402,14 @@ public class ServletPluginTest {
         container.executeAppUnderTest(InvalidateSession.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(trace.getDescription(), is("GET /servletundertest"));
-        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id (at beginning"
-                + " of this request)"), is("1234"));
-        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id (updated"
-                + " during this request)"), is(""));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.getDescription()).isEqualTo("GET /servletundertest");
+        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id"
+                + " (at beginning of this request)")).isEqualTo("1234");
+        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id"
+                + " (updated during this request)")).isEqualTo("");
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription(), is("GET /servletundertest"));
+        assertThat(span.getDescription()).isEqualTo("GET /servletundertest");
     }
 
     @Test
@@ -425,9 +423,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(trace.getDescription(), is("servlet context initialized ("
-                + TestServletContextListener.class.getName() + ")"));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.getDescription()).isEqualTo("servlet context initialized ("
+                + TestServletContextListener.class.getName() + ")");
     }
 
     @Test
@@ -441,9 +439,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestServletInit.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(2));
-        assertThat(trace.getDescription(), is("servlet init (" + TestServletInit.class.getName()
-                + ")"));
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getDescription()).isEqualTo("servlet init ("
+                + TestServletInit.class.getName() + ")");
     }
 
     @Test
@@ -457,9 +455,9 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestFilterInit.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(1));
-        assertThat(trace.getDescription(), is("filter init (" + TestFilterInit.class.getName()
-                + ")"));
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.getDescription()).isEqualTo("filter init ("
+                + TestFilterInit.class.getName() + ")");
     }
 
     private PluginConfiguration getPluginConfiguration() throws Exception {
@@ -475,14 +473,14 @@ public class ServletPluginTest {
 
     @SuppressWarnings("unchecked")
     private static Map<String, String> getSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getSpans().get(0).getContextMap().get(
-                "session attributes");
+        return (Map<String, String>) trace.getSpans().get(0).getContextMap()
+                .get("session attributes");
     }
 
     @SuppressWarnings("unchecked")
     private static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getSpans().get(0).getContextMap().get(
-                "session attributes (updated during this request)");
+        return (Map<String, String>) trace.getSpans().get(0).getContextMap()
+                .get("session attributes (updated during this request)");
     }
 
     @SuppressWarnings("serial")

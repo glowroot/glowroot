@@ -15,9 +15,7 @@
  */
 package org.informantproject.plugin.jdbc;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.File;
 import java.sql.Connection;
@@ -25,7 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
+import java.util.List;
 
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
@@ -39,7 +37,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
 
 /**
  * Basic test of the jdbc plugin.
@@ -86,12 +84,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(2));
+        assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock trace marker"));
+        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription(), is("jdbc execution: select * from employee"
-                + " => 1 row"));
+        assertThat(jdbcSpan.getDescription()).isEqualTo("jdbc execution: select * from employee"
+                + " => 1 row");
     }
 
     @Test
@@ -102,12 +100,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(2));
+        assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock trace marker"));
+        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription(), is("jdbc execution: select * from employee"
-                + " where name like ? ['john%'] => 1 row"));
+        assertThat(jdbcSpan.getDescription()).isEqualTo("jdbc execution: select * from employee"
+                + " where name like ? ['john%'] => 1 row");
     }
 
     @Test
@@ -118,22 +116,21 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(3));
+        assertThat(trace.getSpans()).hasSize(3);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock trace marker"));
+        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcInsertSpan = trace.getSpans().get(1);
-        assertThat(jdbcInsertSpan.getDescription(), is("jdbc execution: insert into employee"
-                + " (name) values ('john doe')"));
+        assertThat(jdbcInsertSpan.getDescription()).isEqualTo("jdbc execution: insert into"
+                + " employee (name) values ('john doe')");
         Span jdbcCommitSpan = trace.getSpans().get(2);
-        assertThat(jdbcCommitSpan.getDescription(), is("jdbc commit"));
-        assertThat(trace.getMetrics().size(), is(4));
+        assertThat(jdbcCommitSpan.getDescription()).isEqualTo("jdbc commit");
+        assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
-        assertThat(trace.getMetrics().get(0).getName(), is("mock trace marker"));
-        HashSet<String> metricNames = Sets.newHashSet(trace.getMetrics().get(1).getName(),
+        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
+        List<String> metricNames = Lists.newArrayList(trace.getMetrics().get(1).getName(),
                 trace.getMetrics().get(2).getName(), trace.getMetrics().get(3).getName());
-        assertThat(metricNames, is(Sets.newHashSet("jdbc execute", "jdbc commit",
-                "jdbc statement close")));
+        assertThat(metricNames).contains("jdbc execute", "jdbc commit", "jdbc statement close");
     }
 
     @Test
@@ -156,7 +153,7 @@ public class JdbcPluginTest {
                 break;
             }
         }
-        assertThat(found, is(true));
+        assertThat(found).isTrue();
     }
 
     @Test
@@ -167,13 +164,13 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(AccessMetaData.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans().size(), is(2));
+        assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription(), is("mock trace marker"));
+        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         // h2 calls prepared statement execute underneath jdbc metadata but other drivers may not
-        assertThat(trace.getMetrics().size(), is(greaterThanOrEqualTo(2)));
-        assertThat(trace.getMetrics().get(0).getName(), is("mock trace marker"));
-        assertThat(trace.getMetrics().get(1).getName(), is("jdbc metadata"));
+        assertThat(trace.getMetrics().size()).isGreaterThanOrEqualTo(2);
+        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
     }
 
     // TODO testPreparedStatement

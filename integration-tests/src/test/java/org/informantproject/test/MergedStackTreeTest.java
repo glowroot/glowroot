@@ -15,9 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
@@ -58,7 +56,7 @@ public class MergedStackTreeTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getMergedStackTree(), is(notNullValue()));
+        assertThat(trace.getMergedStackTree()).isNotNull();
     }
 
     public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,

@@ -15,9 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.CoreProperties;
@@ -58,8 +56,8 @@ public class TraceMetricDataTest {
         Trace trace = container.getInformant().getLastTrace();
         // when running in external jvm (via javaagent), the additional "informant weaving" metric
         // is present also
-        assertThat(trace.getMetrics().size(), is(greaterThanOrEqualTo(1)));
-        assertThat(trace.getMetrics().get(0).getName(), is("mock trace marker"));
+        assertThat(trace.getMetrics().size()).isGreaterThanOrEqualTo(1);
+        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
     }
 
     public static class ShouldGenerateTraceWithMetricData implements AppUnderTest,

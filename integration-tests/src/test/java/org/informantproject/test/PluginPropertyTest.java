@@ -15,9 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Random;
 
@@ -67,10 +65,10 @@ public class PluginPropertyTest {
         PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
                 PLUGIN_ID);
         // then
-        assertThat((String) pluginConfiguration.getProperty("alternateDescription"), is(
-                randomText));
-        assertThat((Boolean) pluginConfiguration.getProperty("starredDescription"), is(
-                randomBoolean));
+        assertThat((String) pluginConfiguration.getProperty("alternateDescription"))
+                .isEqualTo(randomText);
+        assertThat((Boolean) pluginConfiguration.getProperty("starredDescription"))
+                .isEqualTo(randomBoolean);
     }
 
     @Test
@@ -79,7 +77,7 @@ public class PluginPropertyTest {
         PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
                 PLUGIN_ID);
         // then
-        assertThat((String) pluginConfiguration.getProperty("hasDefaultVal"), is("one"));
+        assertThat((String) pluginConfiguration.getProperty("hasDefaultVal")).isEqualTo("one");
     }
 
     @Test
@@ -97,7 +95,7 @@ public class PluginPropertyTest {
                 .getPropertiesJson());
         // then
         pluginConfiguration = container.getInformant().getPluginConfiguration(PLUGIN_ID);
-        assertThat(pluginConfiguration.getProperty("alternateDescription"), nullValue());
+        assertThat(pluginConfiguration.getProperty("alternateDescription")).isNull();
     }
 
     @Test
@@ -114,7 +112,7 @@ public class PluginPropertyTest {
         container.executeAppUnderTest(SimpleApp.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getDescription(), is("Level 1"));
+        assertThat(trace.getDescription()).isEqualTo("Level 1");
     }
 
     @Test
@@ -131,7 +129,7 @@ public class PluginPropertyTest {
         container.executeAppUnderTest(SimpleApp.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getDescription(), is("Level One*"));
+        assertThat(trace.getDescription()).isEqualTo("Level One*");
     }
 
     public static class SimpleApp implements AppUnderTest {

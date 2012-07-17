@@ -15,14 +15,12 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -81,7 +79,7 @@ public class JarFileShadingTest {
                 unacceptableEntries.add(jarEntry.getName());
             }
         }
-        assertThat(unacceptableEntries, is(Arrays.asList(new String[0])));
+        assertThat(unacceptableEntries).isEmpty();
     }
 
     // this covers the case where "mvn integration-test" is executed from inside the

@@ -15,10 +15,7 @@
  */
 package org.informantproject.core.configuration;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.SQLException;
 import java.util.Set;
@@ -70,7 +67,7 @@ public class ConfigurationDaoCoreTest {
         // when
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         // then
-        assertThat(coreConfiguration, nullValue());
+        assertThat(coreConfiguration).isNull();
     }
 
     @Test
@@ -82,7 +79,7 @@ public class ConfigurationDaoCoreTest {
         // when
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         // then
-        assertThat(coreConfiguration, is(originalCoreConfiguration));
+        assertThat(coreConfiguration).isEqualTo(originalCoreConfiguration);
     }
 
     @Test
@@ -98,7 +95,7 @@ public class ConfigurationDaoCoreTest {
         configurationDao.setCoreEnabled(randomCoreConfiguration.isEnabled());
         // then
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
-        assertThat(coreConfiguration, is(randomCoreConfiguration));
+        assertThat(coreConfiguration).isEqualTo(randomCoreConfiguration);
     }
 
     @Test
@@ -109,7 +106,7 @@ public class ConfigurationDaoCoreTest {
         // when
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         // then
-        assertThat(coreConfiguration, notNullValue());
-        assertThat(coreConfiguration.isEnabled(), is(true));
+        assertThat(coreConfiguration).isNotNull();
+        assertThat(coreConfiguration.isEnabled()).isTrue();
     }
 }

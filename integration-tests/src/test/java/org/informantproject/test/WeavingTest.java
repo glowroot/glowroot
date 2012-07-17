@@ -15,8 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.informantproject.test.api.LevelOne;
 import org.informantproject.test.api.LevelTwo;
@@ -56,8 +55,8 @@ public class WeavingTest {
         Trace trace = container.getInformant().getLastTrace();
         Span span1 = trace.getSpans().get(0);
         Span span2 = trace.getSpans().get(1);
-        assertThat(span1.getDescription(), is("Level One"));
-        assertThat(span2.getDescription(), is("Level Two"));
+        assertThat(span1.getDescription()).isEqualTo("Level One");
+        assertThat(span2.getDescription()).isEqualTo("Level Two");
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {

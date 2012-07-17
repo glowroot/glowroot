@@ -15,12 +15,10 @@
  */
 package org.informantproject.local.metric;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,8 +29,6 @@ import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.MockClock;
 import org.informantproject.core.util.ThreadChecker;
-import org.informantproject.local.metric.MetricDao;
-import org.informantproject.local.metric.Point;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -82,7 +78,7 @@ public class MetricDaoTest {
         Map<String, List<Point>> metricPoints = metricDao.readMetricPoints(metricIds, 0,
                 System.currentTimeMillis());
         // then
-        assertThat(metricPoints.size(), is(0));
+        assertThat(metricPoints).isEmpty();
     }
 
     @Test
@@ -99,11 +95,10 @@ public class MetricDaoTest {
         // then
         Map<String, List<Point>> storedMetricPoints = metricDao.readMetricPoints(
                 Arrays.asList("cpu", "mem"), start, start + 1000);
-        assertThat(storedMetricPoints.get("cpu"),
-                is(Arrays.asList(new Point(start, 0.5), new Point(start + 1000, 0.75))));
-        assertThat(storedMetricPoints.get("mem"),
-                is(Collections.singletonList(new Point(start, 10))));
-        assertThat(storedMetricPoints.size(), is(2));
+        assertThat(storedMetricPoints.get("cpu")).containsExactly(new Point(start, 0.5),
+                new Point(start + 1000, 0.75));
+        assertThat(storedMetricPoints.get("mem")).containsExactly(new Point(start, 10));
+        assertThat(storedMetricPoints).hasSize(2);
     }
 
     @Test
@@ -127,11 +122,9 @@ public class MetricDaoTest {
         Map<String, List<Point>> storedMetricPoints = metricDao.readMetricPoints(
                 Arrays.asList("cpu", "mem"), start + 1, start + 1001);
         // then
-        assertThat(storedMetricPoints.size(), is(2));
-        assertThat(storedMetricPoints.get("cpu"),
-                is(Collections.singletonList(new Point(start + 1, 0.75))));
-        assertThat(storedMetricPoints.get("mem"),
-                is(Collections.singletonList(new Point(start + 1001, 10))));
+        assertThat(storedMetricPoints).hasSize(2);
+        assertThat(storedMetricPoints.get("cpu")).containsExactly(new Point(start + 1, 0.75));
+        assertThat(storedMetricPoints.get("mem")).containsExactly(new Point(start + 1001, 10));
     }
 
     @Test
@@ -149,10 +142,8 @@ public class MetricDaoTest {
         // then
         Map<String, List<Point>> storedMetricPoints = metricDao.readMetricPoints(
                 Arrays.asList("io", "net"), now, now);
-        assertThat(storedMetricPoints.size(), is(2));
-        assertThat(storedMetricPoints.get("io"),
-                is(Collections.singletonList(new Point(now, 0.5))));
-        assertThat(storedMetricPoints.get("net"),
-                is(Collections.singletonList(new Point(now, 0.5))));
+        assertThat(storedMetricPoints).hasSize(2);
+        assertThat(storedMetricPoints.get("io")).containsExactly(new Point(now, 0.5));
+        assertThat(storedMetricPoints.get("net")).containsExactly(new Point(now, 0.5));
     }
 }

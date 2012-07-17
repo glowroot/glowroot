@@ -15,8 +15,7 @@
  */
 package org.informantproject.core.util;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,7 +42,7 @@ public class RollingFileTest {
         FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
         String text2 = toString(rollingFile.read(block));
-        assertThat(text2, is(text));
+        assertThat(text2).isEqualTo(text);
     }
 
     @Test
@@ -63,7 +62,7 @@ public class RollingFileTest {
         FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
         String text2 = toString(rollingFile.read(block));
-        assertThat(text2, is(text));
+        assertThat(text2).isEqualTo(text);
     }
 
     @Test
@@ -84,7 +83,7 @@ public class RollingFileTest {
         FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
         String text2 = toString(rollingFile.read(block));
-        assertThat(text2, is(text));
+        assertThat(text2).isEqualTo(text);
     }
 
     @Test
@@ -121,7 +120,7 @@ public class RollingFileTest {
         rollingFile.resize(newRollingSizeKb);
         // then
         String text2 = toString(rollingFile.read(block));
-        assertThat(text2, is(text));
+        assertThat(text2).isEqualTo(text);
     }
 
     private static String toString(ByteStream byteStream) throws IOException {

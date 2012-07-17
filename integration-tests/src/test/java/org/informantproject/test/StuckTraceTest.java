@@ -15,8 +15,7 @@
  */
 package org.informantproject.test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -84,13 +83,13 @@ public class StuckTraceTest {
         if (trace == null) {
             throw new AssertionError("no active trace found");
         }
-        assertThat(trace.isStuck(), is(true));
-        assertThat(trace.isCompleted(), is(false));
+        assertThat(trace.isStuck()).isTrue();
+        assertThat(trace.isCompleted()).isFalse();
         future.get();
         // should now be reported as unstuck
         trace = container.getInformant().getLastTrace();
-        assertThat(trace.isStuck(), is(false));
-        assertThat(trace.isCompleted(), is(true));
+        assertThat(trace.isStuck()).isFalse();
+        assertThat(trace.isCompleted()).isTrue();
         // cleanup
         executorService.shutdown();
     }
