@@ -34,6 +34,12 @@
     </dependency>
     <dependency>
       <groupId>org.informantproject.webresources</groupId>
+      <artifactId>webresources-bootstrap-datepicker</artifactId>
+      <version>0.1-nightly-20120709-SNAPSHOT</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.informantproject.webresources</groupId>
       <artifactId>webresources-specialelite</artifactId>
       <version>1.0-SNAPSHOT</version>
       <scope>runtime</scope>
@@ -42,12 +48,6 @@
       <groupId>org.informantproject.webresources</groupId>
       <artifactId>webresources-jquery</artifactId>
       <version>1.7.2-SNAPSHOT</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.informantproject.webresources</groupId>
-      <artifactId>webresources-jqueryui</artifactId>
-      <version>1.8.20-SNAPSHOT</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -64,8 +64,8 @@
     </dependency>
     <dependency>
       <groupId>org.informantproject.webresources</groupId>
-      <artifactId>webresources-dateformat</artifactId>
-      <version>1.2.3-SNAPSHOT</version>
+      <artifactId>webresources-moment</artifactId>
+      <version>1.6.2-SNAPSHOT</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>

@@ -124,7 +124,7 @@ var spansTemplateText = ''
 + '  </div>'
 + '{{/spans}}'
 Handlebars.registerHelper('date', function(timestamp) {
-  return new Date(timestamp).format('m/d/yy h:MM:ss.l TT (Z)')
+  return moment(timestamp).format('L h:mm:ss A (Z)')
 })
 Handlebars.registerHelper('nanosToMillis', function(nanos) {
   return (nanos / 1000000).toFixed(1)
