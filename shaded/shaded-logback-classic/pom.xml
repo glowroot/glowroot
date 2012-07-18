@@ -71,6 +71,9 @@
           </execution>
         </executions>
         <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
           <shadeSourcesContent>true</shadeSourcesContent>
           <artifactSet>
