@@ -210,7 +210,7 @@ public class HttpServer extends HttpServerBase {
     }
 
     private static HttpResponse handleStaticRequest(String path) throws IOException {
-        int extensionStartIndex = path.lastIndexOf(".");
+        int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
             logger.warn("Missing extension '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
@@ -320,8 +320,8 @@ public class HttpServer extends HttpServerBase {
 
     @Nullable
     private static Object callMethod(Object object, String methodName, Object[] args,
-            String optionalArg) throws SecurityException, NoSuchMethodException,
-            IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+            String optionalArg) throws NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException {
 
         boolean withOptionalArg = true;
         Method method;
@@ -372,8 +372,9 @@ public class HttpServer extends HttpServerBase {
     private static String convertUnderscoreToCamel(String s) {
         int underscoreIndex;
         while ((underscoreIndex = s.indexOf('_')) != -1) {
-            s = s.substring(0, underscoreIndex) + s.substring(underscoreIndex + 1,
-                    underscoreIndex + 2).toUpperCase() + s.substring(underscoreIndex + 2);
+            s = s.substring(0, underscoreIndex)
+                    + Character.toUpperCase(s.charAt(underscoreIndex + 1))
+                    + s.substring(underscoreIndex + 2);
         }
         return s;
     }

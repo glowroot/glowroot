@@ -28,7 +28,6 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 
 /**
  * @author Trask Stalnaker
@@ -169,7 +168,7 @@ public class Configuration {
             JsonDeserializer<PluginConfiguration> {
 
         public PluginConfiguration deserialize(JsonElement json, Type typeOfT,
-                JsonDeserializationContext context) throws JsonParseException {
+                JsonDeserializationContext context) {
 
             PluginConfiguration pluginConfiguration = new PluginConfiguration();
             pluginConfiguration.enabled = json.getAsJsonObject().get("enabled").getAsBoolean();

@@ -16,7 +16,6 @@
 package org.informantproject.testkit;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.MainEntryPoint;
@@ -36,7 +35,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
 
     private IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
-    SameJvmExecutionAdapter(String agentArgs) throws Exception {
+    SameJvmExecutionAdapter(String agentArgs) throws InstantiationException,
+            IllegalAccessException, ClassNotFoundException {
+
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
         for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
@@ -44,14 +45,16 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
             advisors.addAll(plugin.getAdvisors());
         }
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
-                AppUnderTest.class, RunnableWithStringArg.class);
+                AppUnderTest.class, RunnableWithStringArg.class, RunnableWithIntReturn.class);
         isolatedWeavingClassLoader.newInstance(StartContainer.class,
                 RunnableWithStringArg.class).run(agentArgs);
     }
 
-    public int getPort() throws Exception {
-        return (Integer) isolatedWeavingClassLoader.newInstance(GetPort.class, Callable.class)
-                .call();
+    public int getPort() throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException {
+
+        return isolatedWeavingClassLoader.newInstance(GetPort.class,
+                RunnableWithIntReturn.class).run();
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
@@ -70,7 +73,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public void shutdownImpl() throws Exception {
+    public void shutdownImpl() throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException {
+
         isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
         isolatedWeavingClassLoader = null;
@@ -78,6 +83,10 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
 
     public interface RunnableWithStringArg {
         void run(String arg);
+    }
+
+    public interface RunnableWithIntReturn {
+        int run();
     }
 
     public static class StartContainer implements RunnableWithStringArg {
@@ -94,8 +103,8 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public static class GetPort implements Callable<Integer> {
-        public Integer call() {
+    public static class GetPort implements RunnableWithIntReturn {
+        public int run() {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
             try {

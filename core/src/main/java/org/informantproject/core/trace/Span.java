@@ -29,7 +29,7 @@ import org.informantproject.api.Supplier;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class Span {
+public class Span {
 
     private final Supplier<Message> messageSupplier;
 

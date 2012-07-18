@@ -47,7 +47,7 @@ public abstract class PluginServices {
     private static final LoadingCache<String, PluginServices> pluginServices = CacheBuilder
             .newBuilder().build(new CacheLoader<String, PluginServices>() {
                 @Override
-                public PluginServices load(String pluginId) throws Exception {
+                public PluginServices load(String pluginId) {
                     return createPluginServices(pluginId);
                 }
             });

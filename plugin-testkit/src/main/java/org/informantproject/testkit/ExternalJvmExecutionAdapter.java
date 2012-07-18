@@ -46,7 +46,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
     private final ObjectOutputStream objectOut;
     private final ObjectInputStream objectIn;
 
-    ExternalJvmExecutionAdapter(String agentArgs) throws Exception {
+    ExternalJvmExecutionAdapter(String agentArgs) throws IOException {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
@@ -75,12 +75,12 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         objectIn = new ObjectInputStream(socket.getInputStream());
     }
 
-    public int getPort() throws Exception {
+    public int getPort() throws IOException, ClassNotFoundException {
         objectOut.writeObject(SocketCommandProcessor.GET_PORT_COMMAND);
         return (Integer) getNextNonPingValue();
     }
 
-    private Object getNextNonPingValue() throws Exception {
+    private Object getNextNonPingValue() throws IOException, ClassNotFoundException {
         while (true) {
             Object value = objectIn.readObject();
             if (value == null || !value.equals(SocketHeartbeat.PING_COMMAND)) {
@@ -90,7 +90,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
-            String threadName) throws Exception {
+            String threadName) throws IOException, ClassNotFoundException {
 
         objectOut.writeObject(SocketCommandProcessor.EXECUTE_APP_COMMAND);
         objectOut.writeObject(appUnderTestClass.getName());
@@ -98,7 +98,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         getNextNonPingValue();
     }
 
-    public void shutdownImpl() throws Exception {
+    public void shutdownImpl() throws IOException, InterruptedException {
         objectOut.close();
         objectIn.close();
         socket.close();
@@ -114,8 +114,9 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
             ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
             new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
             new Thread(new SocketHeartbeat(objectOut)).start();
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        } catch (Throwable t) {
+            // log error and exit gracefully
+            logger.error(t.getMessage(), t);
         }
     }
 

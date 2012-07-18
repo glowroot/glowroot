@@ -44,7 +44,7 @@ public class MetricCache {
     private final LoadingCache<String, MetricImpl> metrics = CacheBuilder.newBuilder().build(
             new CacheLoader<String, MetricImpl>() {
                 @Override
-                public MetricImpl load(String name) throws Exception {
+                public MetricImpl load(String name) {
                     return new MetricImpl(name, traceRegistry, ticker);
                 }
             });

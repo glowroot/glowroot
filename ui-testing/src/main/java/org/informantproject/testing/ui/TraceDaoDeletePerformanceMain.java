@@ -29,10 +29,12 @@ import com.google.common.base.Stopwatch;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceDaoDeletePerformanceMain {
+public final class TraceDaoDeletePerformanceMain {
 
     private static final Logger logger = LoggerFactory
             .getLogger(TraceDaoDeletePerformanceMain.class);
+
+    private TraceDaoDeletePerformanceMain() {}
 
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create();

@@ -312,7 +312,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     @SuppressWarnings("serial")
-    static final class NothingToWeaveException extends RuntimeException {
+    static class NothingToWeaveException extends RuntimeException {
         private NothingToWeaveException() {}
         @Override
         public synchronized Throwable fillInStackTrace() {

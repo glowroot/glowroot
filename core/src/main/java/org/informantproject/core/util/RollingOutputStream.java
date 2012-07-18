@@ -192,7 +192,7 @@ class RollingOutputStream extends OutputStream {
     }
 
     // just for unit testing
-    void sync() throws SyncFailedException, IOException {
+    void sync() throws IOException {
         out.getFD().sync();
     }
 

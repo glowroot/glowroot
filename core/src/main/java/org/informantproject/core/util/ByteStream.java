@@ -137,18 +137,18 @@ public abstract class ByteStream {
             this.byteStream = byteStream;
         }
 
-        public boolean hasNextChunk() throws Exception {
+        public boolean hasNextChunk() {
             return byteStream.hasNext();
         }
 
-        public Object nextChunk() throws Exception {
+        public Object nextChunk() throws IOException {
             return ChannelBuffers.wrappedBuffer(byteStream.next());
         }
 
-        public boolean isEndOfInput() throws Exception {
+        public boolean isEndOfInput() {
             return !byteStream.hasNext();
         }
 
-        public void close() throws Exception {}
+        public void close() {}
     }
 }

@@ -68,8 +68,7 @@ public abstract class HttpServerBase {
 
     static {
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
-            public String determineThreadName(String currentThreadName, String proposedThreadName)
-                    throws Exception {
+            public String determineThreadName(String currentThreadName, String proposedThreadName) {
                 return "Informant-" + proposedThreadName;
             }
         });

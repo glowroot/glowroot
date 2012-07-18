@@ -26,7 +26,7 @@ public abstract class SupplierOfNullable<T> {
     @Nullable
     public abstract T get();
 
-    public static <T> SupplierOfNullable<T> ofInstance(final @Nullable T reference) {
+    public static <T> SupplierOfNullable<T> ofInstance(@Nullable final T reference) {
         return new SupplierOfNullable<T>() {
             @Override
             @Nullable

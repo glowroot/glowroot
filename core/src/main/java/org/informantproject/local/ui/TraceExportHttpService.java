@@ -73,7 +73,7 @@ public class TraceExportHttpService implements HttpService {
     @Nullable
     public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         String uri = request.getUri();
-        String id = uri.substring(uri.lastIndexOf("/") + 1);
+        String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
         ByteStream traceBuffer = traceCommonJsonService.getStoredOrActiveTraceJson(id, true);
         // TODO handle stackTraces

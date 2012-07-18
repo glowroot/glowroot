@@ -73,7 +73,7 @@ public class DataSource {
     private final LoadingCache<String, PreparedStatement> preparedStatementCache = CacheBuilder
             .newBuilder().weakKeys().build(new CacheLoader<String, PreparedStatement>() {
                 @Override
-                public PreparedStatement load(String sql) throws Exception {
+                public PreparedStatement load(String sql) throws SQLException {
                     return connection.prepareStatement(sql);
                 }
             });
@@ -311,7 +311,7 @@ public class DataSource {
     public boolean indexesNeedsUpgrade(String tableName, List<Index> indexes) throws SQLException {
         synchronized (lock) {
             ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
-                    tableName.toUpperCase(), false, false);
+                    tableName.toUpperCase(Locale.ENGLISH), false, false);
             try {
                 for (Index index : indexes) {
                     for (String column : index.getColumns()) {
@@ -350,7 +350,7 @@ public class DataSource {
 
         synchronized (lock) {
             ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
-                    tableName.toUpperCase());
+                    tableName.toUpperCase(Locale.ENGLISH));
             try {
                 for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
                     if (!resultSet.next() || !primaryKeyColumn.getName().equalsIgnoreCase(
@@ -374,7 +374,9 @@ public class DataSource {
                 throw (SQLException) e.getCause();
             } else {
                 logger.error(e.getMessage(), e.getCause());
-                throw new SQLException("Unexpected not-really-a-sql-exception");
+                SQLException f = new SQLException("Unexpected not-really-a-sql-exception");
+                f.initCause(e);
+                throw f;
             }
         }
     }

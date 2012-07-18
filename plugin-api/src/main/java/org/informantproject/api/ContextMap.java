@@ -96,7 +96,7 @@ public class ContextMap {
             return putString(key, (String) value);
         } else if (value instanceof Date) {
             return putDate(key, (Date) value);
-        } else if (value instanceof Number) {
+        } else if (value instanceof Double) {
             return putDouble(key, (Double) value);
         } else if (value instanceof Boolean) {
             return putBoolean(key, (Boolean) value);

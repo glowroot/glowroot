@@ -23,8 +23,8 @@ package org.informantproject.core.trace;
  */
 public interface TraceSink {
 
-    public void onCompletedTrace(Trace trace);
+    void onCompletedTrace(Trace trace);
 
     // implementations must assume another thread is concurrently still writing to trace
-    public void onStuckTrace(Trace trace);
+    void onStuckTrace(Trace trace);
 }

@@ -76,6 +76,8 @@ public class Plugins {
                 }
             });
 
+    private Plugins() {}
+
     public static List<PluginDescriptor> getPackagedPluginDescriptors() {
         return packagedPluginDescriptors.get();
     }

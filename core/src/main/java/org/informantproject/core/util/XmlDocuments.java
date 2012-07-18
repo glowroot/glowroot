@@ -45,9 +45,11 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class XmlDocuments {
+public final class XmlDocuments {
 
     private static final Logger logger = LoggerFactory.getLogger(XmlDocuments.class);
+
+    private XmlDocuments() {}
 
     public static Document getDocument(InputStream inputStream)
             throws ParserConfigurationException, SAXException, IOException {

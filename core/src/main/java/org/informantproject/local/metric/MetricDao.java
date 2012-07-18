@@ -63,7 +63,7 @@ public class MetricDao {
     private final LoadingCache<Integer, String> selectSqls = CacheBuilder.newBuilder().build(
             new CacheLoader<Integer, String>() {
                 @Override
-                public String load(Integer nMetricIds) throws Exception {
+                public String load(Integer nMetricIds) {
                     StringBuilder sql = new StringBuilder();
                     sql.append("select metric_id, captured_at, value from metric_point");
                     sql.append(" where captured_at >= ? and captured_at <= ?");

@@ -18,10 +18,10 @@ package org.informantproject.packager;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Set;
@@ -53,6 +53,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
@@ -88,28 +89,28 @@ public class PackagerMojo extends AbstractMojo {
      * @required
      * @readonly
      */
-    protected ArtifactFactory artifactFactory;
+    private ArtifactFactory artifactFactory;
 
     /**
      * @component
      * @required
      * @readonly
      */
-    protected ArtifactResolver artifactResolver;
+    private ArtifactResolver artifactResolver;
 
     /**
      * @parameter default-value="${project.remoteArtifactRepositories}"
      * @required
      * @readonly
      */
-    protected List<ArtifactRepository> remoteArtifactRepositories;
+    private List<ArtifactRepository> remoteArtifactRepositories;
 
     /**
      * @parameter default-value="${localRepository}"
      * @required
      * @readonly
      */
-    protected ArtifactRepository localRepository;
+    private ArtifactRepository localRepository;
 
     /**
      * @parameter
@@ -119,8 +120,6 @@ public class PackagerMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         try {
             executeInternal();
-        } catch (FileNotFoundException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         } catch (ParserConfigurationException e) {
@@ -130,8 +129,8 @@ public class PackagerMojo extends AbstractMojo {
         }
     }
 
-    public void executeInternal() throws MojoExecutionException, FileNotFoundException,
-            IOException, ParserConfigurationException, SAXException {
+    public void executeInternal() throws MojoExecutionException, IOException,
+            ParserConfigurationException, SAXException {
 
         if (plugins == null) {
             plugins = new PluginConfiguration[0];
@@ -179,25 +178,27 @@ public class PackagerMojo extends AbstractMojo {
     }
 
     private void createArtifactJar(List<Artifact> artifacts, File outputJarFile)
-            throws MojoExecutionException, FileNotFoundException, IOException,
-            ParserConfigurationException, SAXException {
+            throws MojoExecutionException, IOException, ParserConfigurationException, SAXException {
 
         Files.createParentDirs(outputJarFile);
         JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(outputJarFile),
                 createManifest(artifacts));
-        Set<String> seenDirectories = Sets.newHashSet();
-        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        for (Artifact artifact : artifacts) {
-            explode(artifact.getFile(), jarOut, seenDirectories, pluginDescriptors);
+        try {
+            Set<String> seenDirectories = Sets.newHashSet();
+            List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
+            for (Artifact artifact : artifacts) {
+                explode(artifact.getFile(), jarOut, seenDirectories, pluginDescriptors);
+            }
+            validateConfigurationForDuplicates();
+            for (PluginConfiguration pluginConfiguration : plugins) {
+                validateConfigurationItem(pluginDescriptors, pluginConfiguration);
+            }
+            if (!pluginDescriptors.isEmpty()) {
+                writePackageXml(pluginDescriptors, jarOut);
+            }
+        } finally {
+            jarOut.close();
         }
-        validateConfigurationForDuplicates();
-        for (PluginConfiguration pluginConfiguration : plugins) {
-            validateConfigurationItem(pluginDescriptors, pluginConfiguration);
-        }
-        if (!pluginDescriptors.isEmpty()) {
-            writePackageXml(pluginDescriptors, jarOut);
-        }
-        jarOut.close();
     }
 
     private Manifest createManifest(List<Artifact> artifacts) throws IOException,
@@ -305,7 +306,7 @@ public class PackagerMojo extends AbstractMojo {
 
         JarEntry jarEntry = new JarEntry("META-INF/org.informantproject.package.xml");
         jarOut.putNextEntry(jarEntry);
-        PrintWriter out = new PrintWriter(jarOut);
+        PrintWriter out = new PrintWriter(new OutputStreamWriter(jarOut, Charsets.UTF_8));
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         out.println("<package xmlns=\"http://www.informantproject.org/plugin/1.0\""
                 + " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");

@@ -30,7 +30,7 @@ import org.informantproject.shaded.google.common.cache.LoadingCache;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PathUtil {
+public final class PathUtil {
 
     // TODO not sure if there is a retention cycle between Method and its class, so using weak keys
     // and weak values for now
@@ -38,17 +38,18 @@ public class PathUtil {
             .newBuilder().weakKeys().weakValues()
             .build(new CacheLoader<Class<?>, LoadingCache<String, Method>>() {
                 @Override
-                public LoadingCache<String, Method> load(final Class<?> type)
-                        throws Exception {
+                public LoadingCache<String, Method> load(final Class<?> type) {
                     return CacheBuilder.newBuilder().build(new CacheLoader<String, Method>() {
                         @Override
-                        public Method load(String path) throws Exception {
+                        public Method load(String path) throws NoSuchMethodException {
                             return type.getMethod("get" + Character.toUpperCase(path.charAt(0))
                                     + path.substring(1));
                         }
                     });
                 }
             });
+
+    private PathUtil() {}
 
     @Nullable
     public static Object getValue(@Nullable Object o, String[] path, int currIndex) {

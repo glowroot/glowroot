@@ -41,7 +41,7 @@ public class FileBlock {
             startIndex = Long.parseLong(parts[0]);
             length = Long.parseLong(parts[1]);
         } catch (NumberFormatException e) {
-            throw new InvalidBlockId();
+            throw new InvalidBlockId(e);
         }
     }
 
@@ -66,5 +66,10 @@ public class FileBlock {
     }
 
     @SuppressWarnings("serial")
-    public static class InvalidBlockId extends Exception {}
+    public static class InvalidBlockId extends Exception {
+        private InvalidBlockId() {}
+        private InvalidBlockId(Throwable cause) {
+            super(cause);
+        }
+    }
 }

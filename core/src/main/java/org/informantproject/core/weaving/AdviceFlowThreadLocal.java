@@ -32,7 +32,7 @@ public class AdviceFlowThreadLocal extends ThreadLocal<Boolean> {
     private static LoadingCache<Class<?>, AdviceFlowThreadLocal> sharedAdviceFlows = CacheBuilder
             .newBuilder().build(new CacheLoader<Class<?>, AdviceFlowThreadLocal>() {
                 @Override
-                public AdviceFlowThreadLocal load(Class<?> key) throws Exception {
+                public AdviceFlowThreadLocal load(Class<?> key) {
                     return new AdviceFlowThreadLocal();
                 }
             });

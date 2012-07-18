@@ -427,13 +427,11 @@ public class TraceCommonJsonService {
                             currNode.getStackTraceElement().toString());
                 }
                 String newMetricName = getMetricName(currNode.getStackTraceElement());
-                if (newMetricName != null) {
+                if (newMetricName != null && !newMetricName.equals(top(metricNameStack))) {
                     // filter out successive duplicates which are common from weaving groups of
                     // overloaded methods
-                    if (!newMetricName.equals(top(metricNameStack))) {
-                        metricNameStack.add(newMetricName);
-                        toVisit.add(JsonWriterOp.POP_METRIC_NAME);
-                    }
+                    metricNameStack.add(newMetricName);
+                    toVisit.add(JsonWriterOp.POP_METRIC_NAME);
                 }
                 jw.name("sampleCount").value(currNode.getSampleCount());
                 if (currNode.isLeaf()) {

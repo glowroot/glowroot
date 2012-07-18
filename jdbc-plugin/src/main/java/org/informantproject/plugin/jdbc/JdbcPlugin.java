@@ -25,10 +25,12 @@ import org.informantproject.shaded.google.common.collect.Multimap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class JdbcPlugin {
+public final class JdbcPlugin {
 
     private static volatile Multimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
+
+    private JdbcPlugin() {}
 
     public static void setDisplayBinaryParamaterAsHex(String sql, int parameterIndex) {
         HashMultimap<String, Integer> mutableMultimap = HashMultimap

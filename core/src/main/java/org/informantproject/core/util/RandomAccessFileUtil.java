@@ -23,7 +23,9 @@ import java.io.RandomAccessFile;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class RandomAccessFileUtil {
+public final class RandomAccessFileUtil {
+
+    private RandomAccessFileUtil() {}
 
     public static int readFully(RandomAccessFile in, byte[] b) throws IOException {
         return readFully(in, b, 0, b.length);
