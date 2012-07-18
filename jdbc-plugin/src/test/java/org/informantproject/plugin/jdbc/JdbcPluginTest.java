@@ -18,6 +18,7 @@ package org.informantproject.plugin.jdbc;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,6 +27,7 @@ import java.sql.Statement;
 import java.util.List;
 
 import org.h2.jdbcx.JdbcDataSource;
+import org.informantproject.core.util.Files;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Configuration.PluginConfiguration;
 import org.informantproject.testkit.InformantContainer;
@@ -49,31 +51,16 @@ public class JdbcPluginTest {
 
     private static final String PLUGIN_ID = "org.informantproject.plugins:jdbc-plugin";
 
-    private static final String DB_NAME = "test";
     private static InformantContainer container;
 
     @BeforeClass
     public static void setUp() throws Exception {
         container = InformantContainer.create();
-        // set up database
-        new File(DB_NAME + ".h2.db").delete();
-        Connection connection = createConnection();
-        Statement statement = null;
-        try {
-            statement = connection.createStatement();
-            statement.execute("create table employee (name varchar(100))");
-            statement.execute("insert into employee (name) values ('john doe')");
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
-            connection.close();
-        }
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.shutdown();
+        container.shutdownAndDeleteFiles();
     }
 
     @Test
@@ -194,11 +181,29 @@ public class JdbcPluginTest {
     // select * from employee where (name like ?)
     // [john%]
 
-    private static Connection createConnection() throws SQLException {
+    private static File dbFile;
+
+    private static Connection createConnection() throws IOException, SQLException {
         JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL("jdbc:h2:" + DB_NAME);
+        dbFile = File.createTempFile("informant-jdbc-plugin-test-", ".h2.db");
+        String dbPath = dbFile.getCanonicalPath().replaceFirst(".h2.db$", "");
+        dataSource.setURL("jdbc:h2:" + dbPath);
         dataSource.setUser("sa");
-        return dataSource.getConnection();
+        // set up database
+        Connection connection = dataSource.getConnection();
+        Statement statement = connection.createStatement();
+        try {
+            statement.execute("create table employee (name varchar(100))");
+            statement.execute("insert into employee (name) values ('john doe')");
+        } finally {
+            statement.close();
+        }
+        return connection;
+    }
+
+    private static void closeConnection(Connection connection) throws SQLException, IOException {
+        connection.close();
+        Files.delete(dbFile);
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest,
@@ -210,7 +215,7 @@ public class JdbcPluginTest {
             try {
                 traceMarker();
             } finally {
-                connection.close();
+                closeConnection(connection);
             }
         }
         public void traceMarker() throws Exception {
@@ -236,7 +241,7 @@ public class JdbcPluginTest {
             try {
                 traceMarker();
             } finally {
-                connection.close();
+                closeConnection(connection);
             }
         }
         public void traceMarker() throws Exception {
@@ -263,7 +268,7 @@ public class JdbcPluginTest {
             try {
                 traceMarker();
             } finally {
-                connection.close();
+                closeConnection(connection);
             }
         }
         public void traceMarker() throws Exception {
@@ -285,7 +290,7 @@ public class JdbcPluginTest {
             try {
                 traceMarker();
             } finally {
-                connection.close();
+                closeConnection(connection);
             }
         }
         public void traceMarker() throws Exception {

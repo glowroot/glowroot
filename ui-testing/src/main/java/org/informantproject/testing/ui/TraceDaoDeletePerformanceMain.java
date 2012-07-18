@@ -56,7 +56,7 @@ public class TraceDaoDeletePerformanceMain {
         container.getInformant().deleteAllTraces();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsedMillis());
         logger.info("informant.h2.db: {} bytes", dbFile.length());
-        container.shutdown();
+        container.shutdownAndDeleteFiles();
         logger.info("informant.h2.db: {} bytes", dbFile.length());
     }
 

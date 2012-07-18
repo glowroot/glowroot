@@ -204,9 +204,6 @@
               <directory>${basedir}</directory>
               <includes>
                 <include>dependency-reduced-pom.xml</include>
-                <include>informant.h2.db</include>
-                <include>informant.trace.db</include>
-                <include>informant.lock.db</include>
               </includes>
             </fileset>
           </filesets>

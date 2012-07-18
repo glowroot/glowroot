@@ -47,7 +47,7 @@ public class PluginPropertyTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.shutdown();
+        container.shutdownAndDeleteFiles();
     }
 
     @Test

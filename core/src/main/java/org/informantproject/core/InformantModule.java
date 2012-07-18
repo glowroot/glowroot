@@ -85,7 +85,12 @@ class InformantModule extends AbstractModule {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
         }
-        injector.getInstance(RollingFile.class).shutdown();
+        try {
+            injector.getInstance(RollingFile.class).shutdown();
+        } catch (IOException e) {
+            // warning only since it occurs during shutdown anyways
+            logger.warn(e.getMessage(), e);
+        }
     }
 
     @Override

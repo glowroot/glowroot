@@ -41,7 +41,7 @@ public class MergedStackTreeTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.shutdown();
+        container.shutdownAndDeleteFiles();
     }
 
     @Test

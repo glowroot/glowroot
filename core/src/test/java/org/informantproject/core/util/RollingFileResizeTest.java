@@ -17,7 +17,6 @@ package org.informantproject.core.util;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
@@ -26,13 +25,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class RollingFileTest {
+public class RollingFileResizeTest {
 
     private File tempFile;
     private RollingFile rollingFile;
@@ -40,7 +37,7 @@ public class RollingFileTest {
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("informant-test-", ".rolling.db");
-        rollingFile = new RollingFile(tempFile, 1);
+        rollingFile = new RollingFile(tempFile, 2);
     }
 
     @After
@@ -50,36 +47,23 @@ public class RollingFileTest {
     }
 
     @Test
-    public void shouldWrite() throws Exception {
-        // given
-        String text = "0123456789";
-        // when
-        FileBlock block = rollingFile.write(ByteStream.of(text));
-        // then
-        String text2 = toString(rollingFile.read(block));
-        assertThat(text2).isEqualTo(text);
+    public void shouldWrapAndResizeSmaller() throws Exception {
+        shouldWrapAndResize(rollingFile, 1);
     }
 
     @Test
-    public void shouldWrap() throws Exception {
-        // given
-        // because of compression, use somewhat random text and loop until wrap occurs
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 600; i++) {
-            sb.append((char) ('a' + random.nextInt(26)));
-        }
-        String text = sb.toString();
-        rollingFile.write(ByteStream.of(text));
-        // when
-        FileBlock block = rollingFile.write(ByteStream.of(text));
-        // then
-        String text2 = toString(rollingFile.read(block));
-        assertThat(text2).isEqualTo(text);
+    public void shouldWrapAndResizeSameSize() throws Exception {
+        shouldWrapAndResize(rollingFile, 2);
     }
 
     @Test
-    public void shouldWrapAndKeepGoing() throws Exception {
+    public void shouldWrapAndResizeLarger() throws Exception {
+        shouldWrapAndResize(rollingFile, 3);
+    }
+
+    private static void shouldWrapAndResize(RollingFile rollingFile, int newRollingSizeKb)
+            throws Exception {
+
         // given
         // because of compression, use somewhat random text and loop until wrap occurs
         Random random = new Random();
@@ -90,16 +74,12 @@ public class RollingFileTest {
         String text = sb.toString();
         rollingFile.write(ByteStream.of(text));
         rollingFile.write(ByteStream.of(text));
-        // when
+        rollingFile.write(ByteStream.of(text));
         FileBlock block = rollingFile.write(ByteStream.of(text));
+        // when
+        rollingFile.resize(newRollingSizeKb);
         // then
-        String text2 = toString(rollingFile.read(block));
+        String text2 = RollingFileTest.toString(rollingFile.read(block));
         assertThat(text2).isEqualTo(text);
-    }
-
-    static String toString(ByteStream byteStream) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byteStream.writeTo(baos);
-        return new String(baos.toByteArray(), Charsets.UTF_8.name());
     }
 }

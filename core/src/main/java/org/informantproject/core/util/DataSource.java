@@ -16,6 +16,7 @@
 package org.informantproject.core.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -337,6 +338,13 @@ public class DataSource {
         }
     }
 
+    // only used by tests
+    public void closeAndDeleteFile() throws SQLException, IOException {
+        logger.debug("closeAndDeleteFile()");
+        close();
+        Files.delete(dbFile);
+    }
+
     private boolean primaryKeyNeedsUpgrade(String tableName,
             Iterable<PrimaryKeyColumn> primaryKeyColumns) throws SQLException {
 
@@ -378,7 +386,7 @@ public class DataSource {
 
     private Connection createConnection() throws SQLException {
         String dbPath = dbFile.getPath();
-        dbPath = dbPath.substring(0, dbPath.length() - ".h2.db".length());
+        dbPath = dbPath.replaceFirst(".h2.db$", "");
         Properties props = new Properties();
         props.setProperty("user", "sa");
         props.setProperty("password", "");

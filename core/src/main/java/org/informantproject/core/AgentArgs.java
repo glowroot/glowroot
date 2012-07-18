@@ -16,6 +16,7 @@
 package org.informantproject.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -23,6 +24,8 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.io.Files;
 
 /**
  * 
@@ -37,14 +40,11 @@ public class AgentArgs {
     private static final Logger logger = LoggerFactory.getLogger(AgentArgs.class);
 
     private int uiPort = 4000;
-    private File dataDir;
+    private File dataDir = getDefaultDataDir();
 
-    public AgentArgs() {
-        dataDir = getDefaultDataDir();
-    }
+    public AgentArgs() {}
 
     public AgentArgs(@Nullable String agentArgs) {
-        dataDir = getDefaultDataDir();
         if (agentArgs != null) {
             for (String agentArg : agentArgs.split(",")) {
                 String agentArgName = agentArg.substring(0, agentArg.indexOf(":"));
@@ -52,16 +52,41 @@ public class AgentArgs {
                 if (agentArgName.equals("ui.port")) {
                     setUiPort(agentArgValue);
                 } else if (agentArgName.equals("data.dir")) {
-                    File dataDir = new File(agentArgValue);
-                    if (dataDir.isAbsolute()) {
-                        setDataDir(dataDir);
-                    } else {
-                        setDataDir(new File(getDefaultDataDir(), dataDir.getPath()));
-                    }
+                    setDataDir(agentArgValue);
                 } else {
                     throw new IllegalStateException("Unsupported agent arg '" + agentArgName + "'");
                 }
             }
+        }
+    }
+
+    public int getUiPort() {
+        return uiPort;
+    }
+
+    public File getDataDir() {
+        return dataDir;
+    }
+
+    private void setUiPort(String uiPort) {
+        try {
+            this.uiPort = Integer.parseInt(uiPort);
+        } catch (NumberFormatException e) {
+            logger.warn("invalid ui.port value '{}', proceeding with default value '4000'", uiPort);
+        }
+    }
+
+    private void setDataDir(String path) {
+        File dataDir = new File(path);
+        if (!dataDir.isAbsolute()) {
+            dataDir = new File(getDefaultDataDir(), path);
+        }
+        try {
+            Files.createParentDirs(dataDir);
+            this.dataDir = dataDir;
+        } catch (IOException e) {
+            logger.error("unable to create data.dir '{}', proceeding with default value '{}'",
+                    dataDir.getAbsolutePath(), this.dataDir.getAbsolutePath());
         }
     }
 
@@ -80,31 +105,5 @@ public class AgentArgs {
             logger.error(e.getMessage(), e);
             return new File(".");
         }
-    }
-
-    private void setUiPort(String uiPort) {
-        try {
-            this.uiPort = Integer.parseInt(uiPort);
-        } catch (NumberFormatException e) {
-            logger.warn("invalid ui.port value '{}', using default value '4000'", uiPort);
-        }
-    }
-
-    private void setDataDir(File dataDir) {
-        dataDir.mkdirs();
-        if (!dataDir.isDirectory()) {
-            logger.warn("unable to create data.dir '{}', using default value '{}'",
-                    dataDir.getAbsolutePath(), this.dataDir.getAbsolutePath());
-        } else {
-            this.dataDir = dataDir;
-        }
-    }
-
-    public int getUiPort() {
-        return uiPort;
-    }
-
-    public File getDataDir() {
-        return dataDir;
     }
 }

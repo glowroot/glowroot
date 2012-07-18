@@ -23,6 +23,8 @@ import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -31,11 +33,27 @@ import org.junit.Test;
  */
 public class RollingOutputStreamTest {
 
+    private File tempFile;
+    private RollingOutputStream rollingOut;
+    private RandomAccessFile in;
+
+    @Before
+    public void onBefore() throws IOException {
+        tempFile = File.createTempFile("informant-test-", ".rolling.txt");
+        rollingOut = new RollingOutputStream(tempFile, 1);
+        in = new RandomAccessFile(tempFile, "r");
+    }
+
+    @After
+    public void onAfter() throws IOException {
+        rollingOut.shutdown();
+        in.close();
+        Files.delete(tempFile);
+    }
+
     @Test
     public void shouldWrite() throws IOException {
         // given
-        File file = File.createTempFile("informant-unit-test-", "");
-        RollingOutputStream rollingOut = new RollingOutputStream(file, 1);
         Writer out = new OutputStreamWriter(rollingOut);
         String text = "0123456789";
         // when
@@ -46,7 +64,6 @@ public class RollingOutputStreamTest {
         rollingOut.sync();
         // then
         assertThat(block.getStartIndex()).isEqualTo(0);
-        RandomAccessFile in = new RandomAccessFile(file, "r");
         long currIndex = in.readLong();
         int rollingSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
@@ -62,8 +79,6 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrap() throws IOException {
         // given
-        File file = File.createTempFile("informant-unit-test-", "");
-        RollingOutputStream rollingOut = new RollingOutputStream(file, 1);
         Writer out = new OutputStreamWriter(rollingOut);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 60; i++) {
@@ -82,7 +97,6 @@ public class RollingOutputStreamTest {
         FileBlock block = rollingOut.endBlock();
         // then
         assertThat(block.getStartIndex()).isEqualTo(600);
-        RandomAccessFile in = new RandomAccessFile(file, "r");
         long currIndex = in.readLong();
         int rollingSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
@@ -101,8 +115,6 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrapAndKeepGoing() throws IOException {
         // given
-        File file = File.createTempFile("informant-unit-test-", "");
-        RollingOutputStream rollingOut = new RollingOutputStream(file, 1);
         Writer out = new OutputStreamWriter(rollingOut);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 60; i++) {
@@ -123,7 +135,6 @@ public class RollingOutputStreamTest {
         FileBlock block = rollingOut.endBlock();
         // then
         assertThat(block.getStartIndex()).isEqualTo(1200);
-        RandomAccessFile in = new RandomAccessFile(file, "r");
         long currIndex = in.readLong();
         int rollingSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
@@ -140,8 +151,6 @@ public class RollingOutputStreamTest {
     @Test
     public void shouldWrapAndResize() throws IOException {
         // given
-        File file = File.createTempFile("informant-unit-test-", "");
-        RollingOutputStream rollingOut = new RollingOutputStream(file, 1);
         Writer out = new OutputStreamWriter(rollingOut);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 60; i++) {
@@ -157,10 +166,12 @@ public class RollingOutputStreamTest {
         out.flush();
         FileBlock block = rollingOut.endBlock();
         // when
+        // have to close in before resizing
+        in.close();
         rollingOut.resize(2);
+        in = new RandomAccessFile(tempFile, "r");
         // then
         assertThat(block.getStartIndex()).isEqualTo(600);
-        RandomAccessFile in = new RandomAccessFile(file, "r");
         long currIndex = in.readLong();
         int rollingSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();

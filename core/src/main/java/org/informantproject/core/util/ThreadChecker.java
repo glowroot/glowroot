@@ -37,7 +37,7 @@ import com.google.common.collect.Collections2;
  * 
  * The placement of this class in the main Informant code base (and not inside of the tests folder)
  * is not ideal, but the alternative is to create a separate artifact (or at least classifier) for
- * this one class, which also seems to be not ideal.
+ * this one class (now two classes, see also {@link Files}), which also seems to be not ideal.
  * 
  * @author Trask Stalnaker
  * @since 0.5

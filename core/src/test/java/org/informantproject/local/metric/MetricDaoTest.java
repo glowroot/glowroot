@@ -66,7 +66,7 @@ public class MetricDaoTest {
     @After
     public void after(DataSource dataSource) throws Exception {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        dataSource.close();
+        dataSource.closeAndDeleteFile();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

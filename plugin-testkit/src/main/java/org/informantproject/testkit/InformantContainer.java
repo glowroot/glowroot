@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.core.util.Files;
 import org.informantproject.core.util.ThreadChecker;
 
 import com.ning.http.client.AsyncHttpClient;
@@ -36,20 +37,20 @@ public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
 
-    private static final AtomicInteger dataDirCounter = new AtomicInteger();
-
     private final Set<Thread> preExistingThreads;
     private final ExecutionAdapter executionAdapter;
+    private final File dataDir;
     private final AsyncHttpClient asyncHttpClient;
     private final Informant informant;
 
     private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
-    InformantContainer(ExecutionAdapter executionAdapter, Set<Thread> preExistingThreads)
-            throws Exception {
+    InformantContainer(ExecutionAdapter executionAdapter, Set<Thread> preExistingThreads,
+            File dataDir) throws Exception {
 
         this.preExistingThreads = preExistingThreads;
         this.executionAdapter = executionAdapter;
+        this.dataDir = dataDir;
         asyncHttpClient = new AsyncHttpClient();
         informant = new Informant(executionAdapter.getPort(), asyncHttpClient);
     }
@@ -59,18 +60,7 @@ public class InformantContainer {
     }
 
     public static InformantContainer create(int uiPort) throws Exception {
-        // increment ui port and db filename so that tests can be run in parallel by using multiple
-        // InformantContainers (however tests are not being run in parallel at this point)
-        int dataDirNum = dataDirCounter.getAndIncrement();
-        File dataDir;
-        if (dataDirNum == 0) {
-            dataDir = new File(".");
-        } else {
-            dataDir = new File("test-" + dataDirNum);
-        }
-        new File(dataDir, "informant.h2.db").delete();
-        new File(dataDir, "informant.trace.db").delete();
-        new File(dataDir, "informant.rolling.db").delete();
+        File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
         Set<Thread> preExistingThreads = ThreadChecker.currentThreadList();
         ExecutionAdapter executionAdapter;
@@ -78,22 +68,22 @@ public class InformantContainer {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
-            executionAdapter = new ExternalJvmExecutionAdapter("data.dir:" + dataDir
-                    .getAbsolutePath() + ",ui.port:" + uiPort);
+            executionAdapter = new ExternalJvmExecutionAdapter("data.dir:"
+                    + dataDir.getAbsolutePath() + ",ui.port:" + uiPort);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using same JVM app container");
-            executionAdapter = new SameJvmExecutionAdapter("data.dir:" + dataDir + ",ui.port:"
-                    + uiPort);
+            executionAdapter = new SameJvmExecutionAdapter("data.dir:" + dataDir.getAbsolutePath()
+                    + ",ui.port:" + uiPort);
         }
-        return new InformantContainer(executionAdapter, preExistingThreads);
+        return new InformantContainer(executionAdapter, preExistingThreads, dataDir);
     }
 
     public Informant getInformant() {
         return informant;
     }
 
-    public final void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
+    public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
 
         String threadName = "AppUnderTest-" + threadNameCounter.getAndIncrement();
@@ -119,9 +109,11 @@ public class InformantContainer {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
         executionAdapter.shutdownImpl();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
-        // no need to keep incrementing data dir counter if tests are being run serially
-        // (especially since all tests are being run in serial at this point)
-        dataDirCounter.compareAndSet(1, 0);
+    }
+
+    public void shutdownAndDeleteFiles() throws Exception {
+        shutdown();
+        Files.delete(dataDir);
     }
 
     private static boolean useExternalJvmAppContainer() {

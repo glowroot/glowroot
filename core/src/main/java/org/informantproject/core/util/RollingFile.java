@@ -79,11 +79,19 @@ public class RollingFile {
         }
     }
 
-    public void shutdown() {
+    public void shutdown() throws IOException {
         logger.debug("shutdown()");
         synchronized (lock) {
             rollingOut.shutdown();
+            inFile.close();
         }
+    }
+
+    // only used by tests
+    public void shutdownAndDeleteFile() throws IOException {
+        logger.debug("shutdownAndDeleteFile()");
+        shutdown();
+        Files.delete(rollingFile);
     }
 
     private class FileBlockByteStream extends ByteStream {

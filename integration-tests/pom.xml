@@ -54,22 +54,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <version>2.5</version>
-        <configuration>
-          <filesets>
-            <fileset>
-              <directory>${basedir}</directory>
-              <includes>
-                <include>informant.h2.db</include>
-                <include>informant.trace.db</include>
-                <include>informant.lock.db</include>
-              </includes>
-            </fileset>
-          </filesets>
-        </configuration>
-      </plugin>
-      <plugin>
         <!--
           the tests in this project depend on the Informant jar so they must be
           executed during the integration-test phase at which time the Informant jar
