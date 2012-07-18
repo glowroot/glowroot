@@ -197,7 +197,11 @@
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>1.7.1</version>
+        <!--
+          locally built 1.7.1 plus new shadeSourcesContent feature from
+          https://jira.codehaus.org/browse/MSHADE-112
+        -->
+        <version>1.7.1-1-SNAPSHOT</version>
         <executions>
           <execution>
             <goals>
@@ -210,6 +214,7 @@
             ${project.build.directory}/dependency-reduced-pom.xml
           </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
           <filters>
             <filter>
               <artifact>org.sonatype.sisu:sisu-guice</artifact>
