@@ -28,6 +28,7 @@ import org.informantproject.core.util.DataSource.ResultSetExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -95,14 +96,19 @@ class ConfigurationDao {
                         public ImmutableCoreConfiguration extractData(ResultSet resultSet)
                                 throws SQLException {
                             if (resultSet.next()) {
-                                Object enabledObject = resultSet.getObject(1);
-                                // default value for enabled is true
-                                boolean enabled = true;
-                                if (enabledObject != null) {
+                                // default value for enabled is true (so can't just use
+                                // ResultSet.getBoolean() which defaults to false)
+                                boolean enabled;
+                                if (resultSet.getObject(1) == null) {
+                                    enabled = true;
+                                } else {
                                     enabled = resultSet.getBoolean(1);
                                 }
-                                String json = resultSet.getString(2);
-                                return ImmutableCoreConfiguration.create(enabled, json);
+                                // default value for propertiesJson is {} which doesn't override any
+                                // of the default property values
+                                String propertiesJson = Objects.firstNonNull(resultSet
+                                        .getString(2), "{}");
+                                return ImmutableCoreConfiguration.create(enabled, propertiesJson);
                             } else {
                                 return null;
                             }

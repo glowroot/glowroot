@@ -20,6 +20,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.sql.SQLException;
 import java.util.Set;
 
+import org.informantproject.core.configuration.ImmutableCoreConfiguration.CoreConfigurationBuilder;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.ThreadChecker;
@@ -73,17 +74,39 @@ public class ConfigurationDaoCoreTest {
     @Test
     public void shouldReadConfiguration(ConfigurationDao configurationDao) {
         // given
-        ImmutableCoreConfiguration originalCoreConfiguration = new ImmutableCoreConfiguration();
-        configurationDao.setCoreEnabled(originalCoreConfiguration.isEnabled());
-        configurationDao.storeCoreProperties(originalCoreConfiguration.getPropertiesJson());
+        ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
+        configurationDao.setCoreEnabled(defaultCoreConfiguration.isEnabled());
+        configurationDao.storeCoreProperties(defaultCoreConfiguration.getPropertiesJson());
         // when
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         // then
-        assertThat(coreConfiguration).isEqualTo(originalCoreConfiguration);
+        assertThat(coreConfiguration).isEqualTo(defaultCoreConfiguration);
     }
 
     @Test
-    public void shouldUpdatedConfiguration(ConfigurationDao configurationDao) {
+    public void shouldReadAfterUpdatingPropertiesOnly(ConfigurationDao configurationDao) {
+        // given
+        ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
+        configurationDao.storeCoreProperties(defaultCoreConfiguration.getPropertiesJson());
+        // when
+        ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
+        // then
+        assertThat(coreConfiguration).isEqualTo(defaultCoreConfiguration);
+    }
+
+    @Test
+    public void shouldReadAfterUpdatingEnabledOnly(ConfigurationDao configurationDao) {
+        // given
+        configurationDao.setCoreEnabled(false);
+        // when
+        ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
+        // then
+        assertThat(coreConfiguration).isEqualTo(
+                new CoreConfigurationBuilder().setEnabled(false).build());
+    }
+
+    @Test
+    public void shouldUpdateConfiguration(ConfigurationDao configurationDao) {
         // given
         ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
         ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
@@ -96,17 +119,5 @@ public class ConfigurationDaoCoreTest {
         // then
         ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
         assertThat(coreConfiguration).isEqualTo(randomCoreConfiguration);
-    }
-
-    @Test
-    public void shouldTestCoreEnabled(ConfigurationDao configurationDao) {
-        // given
-        ImmutableCoreConfiguration defaultCoreConfiguration = new ImmutableCoreConfiguration();
-        configurationDao.storeCoreProperties(defaultCoreConfiguration.getPropertiesJson());
-        // when
-        ImmutableCoreConfiguration coreConfiguration = configurationDao.readCoreConfiguration();
-        // then
-        assertThat(coreConfiguration).isNotNull();
-        assertThat(coreConfiguration.isEnabled()).isTrue();
     }
 }
