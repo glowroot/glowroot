@@ -17,7 +17,6 @@ package org.informantproject.core.metric;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +30,7 @@ import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -108,7 +108,7 @@ public class MetricCollector implements Runnable, ConfigurationListener {
 
     private void runInternal() {
         // RuntimeMXBean mxbean = ManagementFactory.getRuntimeMXBean();
-        List<MetricValue> metricValues = new ArrayList<MetricValue>();
+        List<MetricValue> metricValues = Lists.newArrayList();
         addMemoryStats(metricValues);
         metricSink.onMetricCapture(metricValues);
     }

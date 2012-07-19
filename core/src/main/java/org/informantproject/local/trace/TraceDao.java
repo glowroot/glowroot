@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -39,7 +37,6 @@ import org.informantproject.local.trace.StoredTrace.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
@@ -56,7 +53,7 @@ public class TraceDao {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
-    private static ImmutableList<Column> columns = ImmutableList.of(
+    private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("id", Types.VARCHAR),
             new Column("captured_at", Types.BIGINT),
             new Column("start_at", Types.BIGINT),
@@ -70,7 +67,7 @@ public class TraceDao {
             new Column("spans", Types.VARCHAR),
             new Column("merged_stack_tree", Types.VARCHAR));
 
-    private static ImmutableList<Index> indexes = ImmutableList.of(
+    private static final ImmutableList<Index> indexes = ImmutableList.of(
             new Index("trace_idx", "captured_at", "duration"));
 
     private final DataSource dataSource;
@@ -152,12 +149,12 @@ public class TraceDao {
                 + " durationHigh={}", new Object[] { capturedFrom, capturedTo, durationLow,
                 durationHigh });
         if (!valid) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         try {
             String sql = "select id, captured_at, duration, completed from trace where"
                     + " captured_at >= ? and captured_at <= ?";
-            List<Object> args = new ArrayList<Object>();
+            List<Object> args = Lists.newArrayList();
             args.add(capturedFrom);
             args.add(capturedTo);
             if (durationLow != 0) {
@@ -175,7 +172,7 @@ public class TraceDao {
             return dataSource.query(sql, args.toArray(), new TraceDurationRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
     }
 
@@ -208,7 +205,7 @@ public class TraceDao {
         logger.debug("readStoredTraces(): capturedFrom={}, capturedTo={}", capturedFrom,
                 capturedTo);
         if (!valid) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
@@ -218,15 +215,14 @@ public class TraceDao {
                     new Object[] { capturedFrom, capturedTo }, new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         // read from rolling file outside of jdbc connection
-        return Lists.transform(partiallyHydratedTraces,
-                new Function<PartiallyHydratedTrace, StoredTrace>() {
-                    public StoredTrace apply(PartiallyHydratedTrace trace) {
-                        return trace.fullyHydrate();
-                    }
-                });
+        List<StoredTrace> storedTraces = Lists.newArrayList();
+        for (PartiallyHydratedTrace trace : partiallyHydratedTraces) {
+            storedTraces.add(trace.fullyHydrate());
+        }
+        return storedTraces;
     }
 
     public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo, long lowDuration,
@@ -236,7 +232,7 @@ public class TraceDao {
                 + " highDuration={}", new long[] { capturedFrom, capturedTo, lowDuration,
                 highDuration });
         if (!valid) {
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
             return readStoredTraces(capturedFrom, capturedTo);
@@ -250,15 +246,14 @@ public class TraceDao {
                     capturedTo, lowDuration, highDuration }, new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         // read from rolling file outside of jdbc connection
-        return Lists.transform(partiallyHydratedTraces,
-                new Function<PartiallyHydratedTrace, StoredTrace>() {
-                    public StoredTrace apply(PartiallyHydratedTrace trace) {
-                        return trace.fullyHydrate();
-                    }
-                });
+        List<StoredTrace> storedTraces = Lists.newArrayList();
+        for (PartiallyHydratedTrace trace : partiallyHydratedTraces) {
+            storedTraces.add(trace.fullyHydrate());
+        }
+        return storedTraces;
     }
 
     public int deleteStoredTraces(final long capturedFrom, final long capturedTo) {

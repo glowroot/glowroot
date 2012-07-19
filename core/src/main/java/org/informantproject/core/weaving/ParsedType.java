@@ -36,10 +36,10 @@ public class ParsedType {
     private final String name;
     private final String superName;
     private final String[] interfaceNames;
-    private final List<ParsedMethod> methods;
+    private final ImmutableList<ParsedMethod> methods;
 
     ParsedType(String name, @Nullable String superName, String[] interfaceNames,
-            List<ParsedMethod> methods) {
+            ImmutableList<ParsedMethod> methods) {
 
         this.missing = false;
         this.name = name;

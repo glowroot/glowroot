@@ -20,7 +20,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -29,6 +28,8 @@ import java.util.jar.JarFile;
 import javax.annotation.Nullable;
 
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -55,7 +56,7 @@ public class JarFileShadingTest {
                     + " of this git repository.  After that you can re-run this test outside of"
                     + " maven (e.g. from inside of Eclipse) and it should succeed.");
         }
-        List<String> acceptableEntries = new ArrayList<String>();
+        List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("org.informantproject\\..*");
         acceptableEntries.add("org/");
         acceptableEntries.add("org/informantproject/.*");
@@ -65,7 +66,7 @@ public class JarFileShadingTest {
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/THIRD-PARTY\\.txt");
         JarFile jarFile = new JarFile(informantCoreJarFile);
-        List<String> unacceptableEntries = new ArrayList<String>();
+        List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
             JarEntry jarEntry = e.nextElement();
             boolean acceptable = false;

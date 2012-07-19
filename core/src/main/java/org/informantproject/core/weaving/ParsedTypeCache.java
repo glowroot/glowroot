@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -103,7 +102,7 @@ public class ParsedTypeCache {
         private String name;
         private String superName;
         private String[] interfaceNames;
-        private final List<ParsedMethod> methods = Lists.newArrayList();
+        private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
         private ParsedTypeBuilder() {
             super(Opcodes.ASM4);
@@ -132,7 +131,7 @@ public class ParsedTypeCache {
         }
 
         private ParsedType build() {
-            return new ParsedType(name, superName, interfaceNames, methods);
+            return new ParsedType(name, superName, interfaceNames, methods.build());
         }
     }
 }

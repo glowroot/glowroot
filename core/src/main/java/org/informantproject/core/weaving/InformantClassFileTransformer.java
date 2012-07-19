@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
@@ -52,8 +50,8 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private static final Logger logger = LoggerFactory
             .getLogger(InformantClassFileTransformer.class);
 
-    private final List<Mixin> mixins;
-    private final List<Advice> advisors;
+    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<Advice> advisors;
 
     // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
     // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
@@ -65,8 +63,8 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
 
     @Inject
     public InformantClassFileTransformer(TraceRegistry traceRegistry, Ticker ticker) {
-        List<Mixin> mixins = Lists.newArrayList();
-        List<Advice> advisors = Lists.newArrayList();
+        ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
+        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
         for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
@@ -75,8 +73,8 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
         }
-        this.mixins = ImmutableList.copyOf(mixins);
-        this.advisors = ImmutableList.copyOf(advisors);
+        this.mixins = mixins.build();
+        this.advisors = advisors.build();
         metric = new MetricImpl("informant weaving", traceRegistry, ticker);
         loadUsedTypes();
     }

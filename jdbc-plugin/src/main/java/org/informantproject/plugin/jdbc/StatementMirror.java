@@ -17,11 +17,12 @@ package org.informantproject.plugin.jdbc;
 
 import java.lang.ref.WeakReference;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
+
+import org.informantproject.shaded.google.common.collect.ImmutableList;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of statements since the underlying
@@ -61,7 +62,7 @@ class StatementMirror {
     // just in case someone executes a batch statement and then adds more batches (on top of
     // previous ones) and re-executes (is this possible? TODO write a test case for this)
     Collection<String> getBatchedSqlCopy() {
-        return new ArrayList<String>(batchedSql);
+        return ImmutableList.copyOf(batchedSql);
     }
 
     @Nullable

@@ -17,8 +17,6 @@ package org.informantproject.local.ui;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
@@ -91,7 +91,7 @@ public class TracePointJsonService implements JsonService {
             usernameComparator = StringComparator.valueOf(request.getUsernameComparator()
                     .toUpperCase(Locale.ENGLISH));
         }
-        List<Trace> activeTraces = Collections.emptyList();
+        List<Trace> activeTraces = ImmutableList.of();
         long capturedAt = 0;
         long captureTick = 0;
         if ((request.getTo() == 0 || request.getTo() > requestAt) && request.getFrom()
@@ -132,7 +132,7 @@ public class TracePointJsonService implements JsonService {
     }
 
     private List<Trace> getActiveTraces(long low, long high) {
-        List<Trace> activeTraces = new ArrayList<Trace>();
+        List<Trace> activeTraces = Lists.newArrayList();
         long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configurationService
                 .getCoreConfiguration().getThresholdMillis());
         for (Trace trace : traceRegistry.getTraces()) {

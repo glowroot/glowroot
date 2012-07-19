@@ -15,18 +15,15 @@
  */
 package org.informantproject.core.util;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 import org.informantproject.core.MainEntryPoint;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 
 /**
@@ -57,11 +54,7 @@ public final class ThreadChecker {
         long startedAt = System.currentTimeMillis();
         while (true) {
             Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
-                    new Predicate<Thread>() {
-                        public boolean apply(@Nullable Thread thread) {
-                            return !preExistingThreads.contains(thread);
-                        }
-                    });
+                    Predicates.not(Predicates.in(preExistingThreads)));
             if (rogueThreads.isEmpty()) {
                 // success
                 return;
@@ -74,14 +67,14 @@ public final class ThreadChecker {
         }
     }
 
-    public static void preShutdownNonDaemonThreadCheck(Set<Thread> preExistingThreads) {
-        List<Thread> rogueThreads = new ArrayList<Thread>();
-        for (Thread thread : currentThreadList()) {
-            if (thread != Thread.currentThread() && !thread.isDaemon()
-                    && !preExistingThreads.contains(thread)) {
-                rogueThreads.add(thread);
-            }
-        }
+    public static void preShutdownNonDaemonThreadCheck(final Set<Thread> preExistingThreads) {
+        Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
+                new Predicate<Thread>() {
+                    public boolean apply(Thread input) {
+                        return input != Thread.currentThread() && !input.isDaemon()
+                                && !preExistingThreads.contains(input);
+                    }
+                });
         if (!rogueThreads.isEmpty()) {
             throw new RogueThreadsException(rogueThreads);
         }

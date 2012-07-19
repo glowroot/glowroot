@@ -31,6 +31,7 @@ import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 /**
@@ -41,13 +42,13 @@ public class Weaver implements Opcodes {
 
     static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
-    private final List<Mixin> mixins;
-    private final List<Advice> advisors;
+    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<Advice> advisors;
     private final ParsedTypeCache parsedTypeCache;
 
     public Weaver(List<Mixin> mixins, List<Advice> advisors, ClassLoader loader) {
-        this.mixins = mixins;
-        this.advisors = advisors;
+        this.mixins = ImmutableList.copyOf(mixins);
+        this.advisors = ImmutableList.copyOf(advisors);
         parsedTypeCache = new ParsedTypeCache(loader);
     }
 

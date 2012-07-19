@@ -15,7 +15,6 @@
  */
 package org.informantproject.plugin.servlet;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +25,7 @@ import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.shaded.google.common.base.Optional;
+import org.informantproject.shaded.google.common.collect.Maps;
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -116,7 +116,7 @@ class ServletMessageSupplier extends Supplier<Message> {
     void captureRequestParameterMap(Map<?, ?> requestParameterMap) {
         // shallow copy is necessary because request may not be thread safe
         // shallow copy is also necessary because of the note about tomcat above
-        Map<String, String[]> map = new HashMap<String, String[]>(requestParameterMap.size());
+        Map<String, String[]> map = Maps.newHashMapWithExpectedSize(requestParameterMap.size());
         for (Entry<?, ?> entry : requestParameterMap.entrySet()) {
             map.put((String) entry.getKey(), (String[]) entry.getValue());
         }

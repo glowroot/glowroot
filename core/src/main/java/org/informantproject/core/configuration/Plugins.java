@@ -17,9 +17,7 @@ package org.informantproject.core.configuration;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +41,7 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
@@ -94,7 +93,7 @@ public class Plugins {
         try {
             Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
                     "META-INF/org.informantproject.plugin.xml");
-            List<PluginDescriptor> plugins = new ArrayList<PluginDescriptor>();
+            List<PluginDescriptor> plugins = Lists.newArrayList();
             while (e.hasMoreElements()) {
                 URL resourceURL = e.nextElement();
                 Document document = XmlDocuments.getValidatedDocument(Resources
@@ -105,13 +104,13 @@ public class Plugins {
             return plugins;
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         } catch (ParserConfigurationException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         } catch (SAXException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
     }
 
@@ -120,11 +119,11 @@ public class Plugins {
             Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
                     "META-INF/org.informantproject.package.xml");
             if (!e.hasMoreElements()) {
-                return Collections.emptyList();
+                return ImmutableList.of();
             }
             URL resourceURL = e.nextElement();
             if (e.hasMoreElements()) {
-                List<String> resourcePaths = new ArrayList<String>();
+                List<String> resourcePaths = Lists.newArrayList();
                 resourcePaths.add("'" + resourceURL.getPath() + "'");
                 while (e.hasMoreElements()) {
                     resourcePaths.add("'" + e.nextElement().getPath() + "'");
@@ -141,10 +140,10 @@ public class Plugins {
             } catch (SAXParseException f) {
                 logger.error("error reading/validating META-INF/org.informantproject.package.xml: "
                         + f.getMessage(), f);
-                return Collections.emptySet();
+                return ImmutableSet.of();
             }
             Element root = document.getDocumentElement();
-            List<PluginDescriptor> plugins = new ArrayList<PluginDescriptor>();
+            List<PluginDescriptor> plugins = Lists.newArrayList();
             NodeList pluginsNodes = root.getElementsByTagName("plugins");
             if (pluginsNodes.getLength() > 0) {
                 NodeList pluginNodes = ((Element) pluginsNodes.item(0)).getElementsByTagName(
@@ -157,13 +156,13 @@ public class Plugins {
             return plugins;
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         } catch (ParserConfigurationException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         } catch (SAXException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
     }
 

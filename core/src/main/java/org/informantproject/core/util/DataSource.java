@@ -23,8 +23,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +41,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * DataSource is a cross between javax.sql.DataSource and spring's JdbcTemplate. Ideally would have
@@ -55,7 +55,7 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
-    private static final Map<Integer, String> sqlTypeNames = new HashMap<Integer, String>();
+    private static final Map<Integer, String> sqlTypeNames = Maps.newHashMap();
 
     static {
         sqlTypeNames.put(Types.VARCHAR, "varchar");
@@ -158,7 +158,7 @@ public class DataSource {
                 }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 try {
-                    List<T> mappedRows = new ArrayList<T>();
+                    List<T> mappedRows = Lists.newArrayList();
                     while (resultSet.next()) {
                         mappedRows.add(rowMapper.mapRow(resultSet));
                     }

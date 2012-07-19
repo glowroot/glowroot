@@ -17,13 +17,13 @@ package org.informantproject.core.weaving;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.informantproject.api.weaving.Mixin;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 
@@ -38,7 +38,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     private final Class<?>[] bridgeClasses;
     private final Weaver weaver;
     // guarded by 'this'
-    private final Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
+    private final Map<String, Class<?>> classes = Maps.newHashMap();
 
     // bridge classes can be either interfaces or base classes
     public IsolatedWeavingClassLoader(List<Mixin> mixins, List<Advice> advisors,

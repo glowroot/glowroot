@@ -43,7 +43,7 @@ public class PluginDescriptor {
     private final String groupId;
     private final String artifactId;
     private final String version;
-    private final List<PropertyDescriptor> propertyDescriptors;
+    private final ImmutableList<PropertyDescriptor> propertyDescriptors;
     // marked transient for gson serialization
     private final transient List<Mixin> mixins;
     // marked transient for gson serialization

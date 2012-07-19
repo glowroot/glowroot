@@ -15,7 +15,6 @@
  */
 package org.informantproject.testing.ui;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.ContextMap;
@@ -42,8 +41,8 @@ import com.google.common.collect.ImmutableList;
 @Aspect
 public class NestableCallAspect {
 
-    private static final List<String> USERNAMES = ImmutableList.of("able",
-            "baker", "charlie");
+    private static final ImmutableList<String> USERNAMES = ImmutableList.of("able", "baker",
+            "charlie");
 
     private static final AtomicInteger counter = new AtomicInteger();
 

@@ -33,6 +33,7 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -125,8 +126,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 for (Mixin mixin : mixins) {
                     interfacesIncludingMixins.add(Type.getInternalName(mixin.mixin()));
                 }
-                super.visit(version, access, name, signature, superName, interfacesIncludingMixins
-                        .toArray(new String[0]));
+                super.visit(version, access, name, signature, superName, Iterables.toArray(
+                        interfacesIncludingMixins, String.class));
             }
         }
     }

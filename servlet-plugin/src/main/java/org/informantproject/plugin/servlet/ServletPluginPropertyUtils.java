@@ -94,15 +94,19 @@ final class ServletPluginPropertyUtils {
                 // positive match for text but then get the old cached attributes
                 cachedSessionAttributePaths = ImmutableSet.copyOf(paths);
                 cachedSessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(paths,
-                        new Function<String, String>() {
-                            public String apply(String path) {
-                                return Splitter.on('.').split(path).iterator().next();
-                            }
-                        }));
+                        substringBefore('.')));
                 isCaptureAllSessionAttributes = cachedSessionAttributePaths.size() == 1
                         && cachedSessionAttributePaths.iterator().next().equals("*");
                 cachedSessionAttributesText = sessionAttributesText;
             }
         }
+    }
+
+    private static Function<String, String> substringBefore(final char separator) {
+        return new Function<String, String>() {
+            public String apply(String input) {
+                return Splitter.on(separator).split(input).iterator().next();
+            }
+        };
     }
 }

@@ -31,12 +31,10 @@ import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -51,7 +49,7 @@ public class StackTraceDao {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceDao.class);
 
-    private static ImmutableList<Column> columns = ImmutableList.of(
+    private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("hash", Types.VARCHAR),
             new Column("stack_trace", Types.CLOB));
 
@@ -91,13 +89,13 @@ public class StackTraceDao {
         if (!valid) {
             return;
         }
-        Map<String, String> newStackTraces = Maps.filterKeys(stackTraces, new Predicate<String>() {
-            public boolean apply(String hash) {
-                return storedHashes.getIfPresent(hash) == null;
+        final List<Entry<String, String>> newEntries = Lists.newArrayList();
+        for (Entry<String, String> entry : stackTraces.entrySet()) {
+            String hash = entry.getKey();
+            if (storedHashes.getIfPresent(hash) == null) {
+                newEntries.add(entry);
             }
-        });
-        final List<Entry<String, String>> newEntries = Lists.newArrayList(newStackTraces
-                .entrySet());
+        }
         try {
             dataSource.batchUpdate("merge into stack_trace (hash, stack_trace) values (?, ?)",
                     new BatchPreparedStatementSetter() {
@@ -110,7 +108,8 @@ public class StackTraceDao {
                             return newEntries.size();
                         }
                     });
-            for (String hash : newStackTraces.keySet()) {
+            for (Entry<String, String> entry : newEntries) {
+                String hash = entry.getKey();
                 storedHashes.put(hash, Boolean.TRUE);
             }
         } catch (SQLException e) {

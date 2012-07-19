@@ -16,10 +16,12 @@
 package org.informantproject.plugin.jdbc;
 
 import java.sql.PreparedStatement;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.informantproject.shaded.google.common.collect.ImmutableList;
+import org.informantproject.shaded.google.common.collect.Lists;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of prepared statements since the underlying
@@ -43,7 +45,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     public PreparedStatementMirror(String sql) {
         this.sql = sql;
-        parameters = new ArrayList<Object>();
+        parameters = Lists.newArrayList();
     }
 
     public void addBatch() {
@@ -52,16 +54,17 @@ class PreparedStatementMirror extends StatementMirror {
             batchedParameters = new ConcurrentLinkedQueue<List<Object>>();
         }
         batchedParameters.add(parameters);
-        parameters = new ArrayList<Object>(parameters.size());
+        parameters = Lists.newArrayListWithCapacity(parameters.size());
     }
 
     public Collection<List<Object>> getBatchedParametersCopy() {
         if (batchedParameters == null) {
-            return new ArrayList<List<Object>>();
+            return ImmutableList.of();
         } else {
             // batched parameters cannot be changed after calling addBatch(),
             // so it is safe to not copy the inner list
-            return new ArrayList<List<Object>>(batchedParameters);
+            // cannot return ImmutableList.copyOf() since ImmutableList does not allow null elements
+            return Lists.newArrayList(batchedParameters);
         }
     }
 
@@ -70,7 +73,8 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     public List<Object> getParametersCopy() {
-        return new ArrayList<Object>(parameters);
+        // cannot return ImmutableList.copyOf() since ImmutableList does not allow null elements
+        return Lists.newArrayList(parameters);
     }
 
     public String getSql() {

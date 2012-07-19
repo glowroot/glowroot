@@ -19,7 +19,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +40,7 @@ import org.xml.sax.SAXException;
 import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
@@ -110,17 +110,17 @@ public class PluginJsonService implements JsonService {
             body = request.execute().get().getResponseBody();
         } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         } catch (ExecutionException e) {
             logger.error(e.getMessage(), e.getCause());
-            return Collections.emptyList();
+            return ImmutableList.of();
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyList();
+            return ImmutableList.of();
         }
         Pattern pattern = Pattern.compile(INSTALLABLE_PLUGINS_URL + "([^/]+)/");
         Matcher matcher = pattern.matcher(body);
-        List<PluginDescriptor> installablePlugins = new ArrayList<PluginDescriptor>();
+        List<PluginDescriptor> installablePlugins = Lists.newArrayList();
         while (matcher.find()) {
             String artifactId = matcher.group(1);
             try {

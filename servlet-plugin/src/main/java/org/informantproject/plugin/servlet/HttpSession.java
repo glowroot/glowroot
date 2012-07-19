@@ -21,6 +21,7 @@ import java.util.Enumeration;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.UnresolvedMethod;
+import org.informantproject.shaded.google.common.collect.ImmutableSet;
 
 /**
  * @author Trask Stalnaker
@@ -63,7 +64,7 @@ class HttpSession {
         Enumeration<?> attributeNames = (Enumeration<?>) getAttributeNamesMethod.invoke(
                 realSession);
         if (attributeNames == null) {
-            return Collections.enumeration(Collections.emptySet());
+            return Collections.enumeration(ImmutableSet.of());
         } else {
             return attributeNames;
         }

@@ -15,12 +15,12 @@
  */
 package org.informantproject.plugin.servlet;
 
-import java.util.Collections;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import org.informantproject.api.UnresolvedMethod;
+import org.informantproject.shaded.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -71,7 +71,7 @@ class HttpServletRequest {
     Map<?, ?> getParameterMap() {
         Map<?, ?> parameterMap = (Map<?, ?>) getParameterMapMethod.invoke(realRequest);
         if (parameterMap == null) {
-            return Collections.emptyMap();
+            return ImmutableMap.of();
         } else {
             return parameterMap;
         }

@@ -18,7 +18,6 @@ package org.informantproject.core;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,8 +65,7 @@ public final class MainEntryPoint {
     // possible. this is not an issue when running under javaagent, since in that case Informant is
     // started up before adding the aspectj weaving agent (InformantClassFileTransformer).
     @GuardedBy("returnPluginServicesProxy")
-    private static final List<PluginServicesProxy> pluginServicesProxies =
-            new ArrayList<PluginServicesProxy>();
+    private static final List<PluginServicesProxy> pluginServicesProxies = Lists.newArrayList();
     private static final AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
 
     private MainEntryPoint() {}

@@ -41,7 +41,6 @@ import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -227,11 +226,10 @@ public class TraceCommonJsonService {
         if (traceMetrics.isEmpty()) {
             return null;
         }
-        List<Snapshot> items = Lists.transform(traceMetrics, new Function<TraceMetric, Snapshot>() {
-            public Snapshot apply(TraceMetric item) {
-                return item.copyOf();
-            }
-        });
+        List<Snapshot> items = Lists.newArrayList();
+        for (TraceMetric traceMetric : traceMetrics) {
+            items.add(traceMetric.copyOf());
+        }
         Ordering<Snapshot> byTotalOrdering = new Ordering<Snapshot>() {
             @Override
             public int compare(Snapshot left, Snapshot right) {

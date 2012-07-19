@@ -19,9 +19,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +35,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -52,7 +52,7 @@ public class MetricDao {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricDao.class);
 
-    private static ImmutableList<Column> columns = ImmutableList.of(
+    private static final ImmutableList<Column> columns = ImmutableList.of(
             new Column("metric_id", Types.VARCHAR),
             new Column("captured_at", Types.BIGINT),
             new Column("value", Types.DOUBLE));
@@ -108,7 +108,7 @@ public class MetricDao {
 
     public Map<String, List<Point>> readMetricPoints(List<String> metricIds, long from, long to) {
         if (!valid) {
-            return Collections.emptyMap();
+            return ImmutableMap.of();
         }
         Object[] args = new Object[2 + metricIds.size()];
         args[0] = from;
@@ -121,14 +121,14 @@ public class MetricDao {
                     new ResultSetExtractor<Map<String, List<Point>>>() {
                         public Map<String, List<Point>> extractData(ResultSet resultSet)
                                 throws SQLException {
-                            Map<String, List<Point>> map = new HashMap<String, List<Point>>();
+                            Map<String, List<Point>> map = Maps.newHashMap();
                             while (resultSet.next()) {
                                 String metricId = resultSet.getString(1);
                                 long capturedAt = resultSet.getLong(2);
                                 double value = resultSet.getDouble(3);
                                 List<Point> metricPoints = map.get(metricId);
                                 if (metricPoints == null) {
-                                    metricPoints = new ArrayList<Point>();
+                                    metricPoints = Lists.newArrayList();
                                     map.put(metricId, metricPoints);
                                 }
                                 metricPoints.add(new Point(capturedAt, value));
@@ -138,7 +138,7 @@ public class MetricDao {
                     });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return Collections.emptyMap();
+            return ImmutableMap.of();
         }
     }
 

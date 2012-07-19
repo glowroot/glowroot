@@ -28,10 +28,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,7 +49,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.gson.Gson;
@@ -73,12 +72,21 @@ public class HttpServer extends HttpServerBase {
 
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
 
-    private final Map<Pattern, Object> uriMappings = Collections
-            .synchronizedMap(new LinkedHashMap<Pattern, Object>());
-    private final List<JsonServiceMappings> jsonServiceMappings = Lists.newArrayList();
+    private final ImmutableMap<Pattern, Object> uriMappings;
+    private final ImmutableList<JsonServiceMappings> jsonServiceMappings;
     private final Gson gson = new Gson();
 
-    {
+    @Inject
+    public HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
+            TraceSummaryJsonService traceSummaryJsonService,
+            TraceDetailHttpService traceDetailJsonService,
+            TraceExportHttpService traceExportHttpService,
+            StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
+            ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
+            PluginJsonService pluginJsonService, ThreadDumpJsonService threadDumpJsonService) {
+
+        super(port);
+        ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), "org/informantproject/local/ui/index.html");
         uriMappings.put(Pattern.compile("^/traces.html$"),
@@ -118,23 +126,14 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/webresources/qtip/$1");
         uriMappings.put(Pattern.compile("^/favicon.ico$"),
                 "org/informantproject/local/ui/img/favicon.ico");
-    }
-
-    @Inject
-    public HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
-            TraceSummaryJsonService traceSummaryJsonService,
-            TraceDetailHttpService traceDetailJsonService,
-            TraceExportHttpService traceExportHttpService,
-            StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
-            ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
-            PluginJsonService pluginJsonService, ThreadDumpJsonService threadDumpJsonService) {
-
-        super(port);
         uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/trace/detail/.*$"), traceDetailJsonService);
+        this.uriMappings = uriMappings.build();
+
         // the parentheses define the part of the match that is used to construct the args for
         // calling the method in json service, e.g. /trace/detail/abc123 below calls the method
         // getDetail("abc123") in TraceJsonService
+        ImmutableList.Builder<JsonServiceMappings> jsonServiceMappings = ImmutableList.builder();
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/points$"),
                 tracePointJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/summary/(.*)$"),
@@ -171,6 +170,7 @@ public class HttpServer extends HttpServerBase {
                 miscJsonService, "getDbFilePath"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/threaddump$"),
                 threadDumpJsonService, "getThreadDump"));
+        this.jsonServiceMappings = jsonServiceMappings.build();
     }
 
     @Override
@@ -355,7 +355,7 @@ public class HttpServer extends HttpServerBase {
         } else {
             // create json message out of the query string
             // flatten map values from list to single element where possible
-            Map<String, Object> parameters = new HashMap<String, Object>();
+            Map<String, Object> parameters = Maps.newHashMap();
             for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
                 String key = entry.getKey();
                 key = convertUnderscoreToCamel(key);

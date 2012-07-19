@@ -47,6 +47,7 @@ import org.informantproject.core.weaving.SomeAspect.StaticAdvice;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 /**
@@ -572,10 +573,9 @@ public class WeaverTest {
         }
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
-        Class<?>[] bridgeClasses = Lists.asList(bridgeClass, adviceClass, extraBridgeClasses)
-                .toArray(new Class[0]);
+        List<Class<?>> bridgeClasses = Lists.asList(bridgeClass, adviceClass, extraBridgeClasses);
         IsolatedWeavingClassLoader weavingClassLoader = new IsolatedWeavingClassLoader(mixins,
-                advisors, bridgeClasses);
+                advisors, Iterables.toArray(bridgeClasses, Class.class));
         return weavingClassLoader.newInstance(implClass, bridgeClass);
     }
 }

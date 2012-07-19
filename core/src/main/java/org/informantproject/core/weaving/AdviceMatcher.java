@@ -23,7 +23,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 
 /**
  * @author Trask Stalnaker
@@ -35,7 +36,7 @@ public class AdviceMatcher {
 
     private final Advice advice;
     private final boolean targetTypeMatch;
-    private final List<ParsedType> preMatchedSuperTypes;
+    private final ImmutableList<ParsedType> preMatchedSuperTypes;
 
     public AdviceMatcher(Advice advice, Type targetType, List<ParsedType> superTypes) {
         this.advice = advice;
@@ -66,14 +67,14 @@ public class AdviceMatcher {
         return advice;
     }
 
-    private List<ParsedType> buildPreMatchedSuperTypes(List<ParsedType> superTypes) {
-        List<ParsedType> preMatchedSuperTypes = Lists.newArrayList();
+    private ImmutableList<ParsedType> buildPreMatchedSuperTypes(List<ParsedType> superTypes) {
+        Builder<ParsedType> builder = ImmutableList.builder();
         for (ParsedType superType : superTypes) {
             if (isTypeMatch(superType.getClassName())) {
-                preMatchedSuperTypes.add(superType);
+                builder.add(superType);
             }
         }
-        return preMatchedSuperTypes;
+        return builder.build();
     }
 
     private boolean isTypeMatch(String className) {

@@ -16,7 +16,6 @@
 package org.informantproject.plugin.servlet;
 
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +38,7 @@ import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.OnReturn;
 import org.informantproject.api.weaving.Pointcut;
+import org.informantproject.shaded.google.common.collect.Maps;
 
 /**
  * Defines pointcuts and captures data on
@@ -422,7 +422,7 @@ public class ServletAspect {
         }
         if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
             // special single value of "*" means dump all http session attributes
-            Map<String, String> sessionAttributeMap = new HashMap<String, String>();
+            Map<String, String> sessionAttributeMap = Maps.newHashMap();
             for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
                 String attributeName = (String) e.nextElement();
                 Object value = session.getAttribute(attributeName);
@@ -433,7 +433,7 @@ public class ServletAspect {
             }
             return sessionAttributeMap;
         } else {
-            Map<String, String> sessionAttributeMap = new HashMap<String, String>(
+            Map<String, String> sessionAttributeMap = Maps.newHashMapWithExpectedSize(
                     sessionAttributePaths.size());
             // dump only http session attributes in list
             for (String attributePath : sessionAttributePaths) {

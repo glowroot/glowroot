@@ -16,9 +16,7 @@
 package org.informantproject.core.configuration;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -31,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
@@ -49,14 +48,12 @@ public class ImmutablePluginConfiguration {
     private static final Logger logger = LoggerFactory
             .getLogger(ImmutablePluginConfiguration.class);
 
-    private static final List<Class<?>> validValueTypes;
+    private static final ImmutableList<Class<?>> validValueTypes;
 
     static {
         // TODO write unit tests using each of these data types
-        validValueTypes = new ArrayList<Class<?>>();
-        validValueTypes.add(String.class);
-        validValueTypes.add(Boolean.class);
-        validValueTypes.add(Double.class);
+        validValueTypes = ImmutableList.copyOf(new Class<?>[] { String.class, Boolean.class,
+                Double.class });
     }
 
     private final boolean enabled;
@@ -67,7 +64,7 @@ public class ImmutablePluginConfiguration {
     // its plugin.xml file
     //
     // map values are @Nullable
-    private final Map<String, Object> properties = new HashMap<String, Object>();
+    private final Map<String, Object> properties = Maps.newHashMap();
 
     ImmutablePluginConfiguration(boolean enabled, Map<String, Object> properties) {
         this.enabled = enabled;

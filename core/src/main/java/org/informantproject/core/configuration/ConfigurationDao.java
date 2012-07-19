@@ -49,7 +49,7 @@ class ConfigurationDao {
 
     private static final String CORE = "core";
 
-    private static ImmutableList<Column> columns = ImmutableList.of(
+    private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("ID", Types.VARCHAR),
             new Column("ENABLED", Types.VARCHAR),
             new Column("PROPERTIES", Types.VARCHAR));
