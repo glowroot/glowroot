@@ -22,17 +22,16 @@ import java.util.Map;
 
 import org.informantproject.api.weaving.Mixin;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 
 /**
+ * Only used by tests.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// this is only used for testing
-@VisibleForTesting
 public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private final Class<?>[] bridgeClasses;

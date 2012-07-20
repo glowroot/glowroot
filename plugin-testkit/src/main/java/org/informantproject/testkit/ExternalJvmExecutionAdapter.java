@@ -98,7 +98,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         getNextNonPingValue();
     }
 
-    public void shutdownImpl() throws IOException, InterruptedException {
+    public void closeImpl() throws IOException, InterruptedException {
         objectOut.close();
         objectIn.close();
         socket.close();

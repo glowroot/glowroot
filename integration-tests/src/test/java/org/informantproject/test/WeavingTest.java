@@ -42,7 +42,7 @@ public class WeavingTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.shutdownAndDeleteFiles();
+        container.closeAndDeleteFiles();
     }
 
     @Test

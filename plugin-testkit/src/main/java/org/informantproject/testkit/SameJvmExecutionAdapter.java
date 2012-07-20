@@ -73,7 +73,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public void shutdownImpl() throws InstantiationException, IllegalAccessException,
+    public void closeImpl() throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
 
         isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();

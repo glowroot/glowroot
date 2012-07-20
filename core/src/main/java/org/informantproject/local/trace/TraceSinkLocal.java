@@ -139,8 +139,8 @@ public class TraceSinkLocal implements TraceSink {
         return builder.build();
     }
 
-    public void shutdown() {
-        logger.debug("shutdown()");
+    public void close() {
+        logger.debug("close()");
         executorService.shutdownNow();
     }
 }

@@ -46,7 +46,7 @@ public class RollingOutputStreamTest {
 
     @After
     public void onAfter() throws IOException {
-        rollingOut.shutdown();
+        rollingOut.close();
         in.close();
         Files.delete(tempFile);
     }

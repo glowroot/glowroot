@@ -63,7 +63,14 @@ class InformantModule extends AbstractModule {
         this.agentArgs = agentArgs;
     }
 
-    public static void start(Injector injector) {
+    @Override
+    protected void configure() {
+        logger.debug("configure()");
+        install(new LocalModule(agentArgs.getUiPort()));
+        install(new FactoryModuleBuilder().build(PluginServicesImplFactory.class));
+    }
+
+    static void start(Injector injector) {
         logger.debug("start()");
         injector.getInstance(StuckTraceCollector.class);
         injector.getInstance(StackCollector.class);
@@ -71,13 +78,13 @@ class InformantModule extends AbstractModule {
         LocalModule.start(injector);
     }
 
-    public static void shutdown(Injector injector) {
-        logger.debug("shutdown()");
-        LocalModule.shutdown(injector);
-        injector.getInstance(StuckTraceCollector.class).shutdown();
-        injector.getInstance(StackCollector.class).shutdown();
-        injector.getInstance(MetricCollector.class).shutdown();
-        injector.getInstance(TraceSinkLocal.class).shutdown();
+    static void close(Injector injector) {
+        logger.debug("close()");
+        LocalModule.close(injector);
+        injector.getInstance(StuckTraceCollector.class).close();
+        injector.getInstance(StackCollector.class).close();
+        injector.getInstance(MetricCollector.class).close();
+        injector.getInstance(TraceSinkLocal.class).close();
         injector.getInstance(AsyncHttpClient.class).close();
         try {
             injector.getInstance(DataSource.class).close();
@@ -86,18 +93,11 @@ class InformantModule extends AbstractModule {
             logger.warn(e.getMessage(), e);
         }
         try {
-            injector.getInstance(RollingFile.class).shutdown();
+            injector.getInstance(RollingFile.class).close();
         } catch (IOException e) {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
         }
-    }
-
-    @Override
-    protected void configure() {
-        logger.debug("configure()");
-        install(new LocalModule(agentArgs.getUiPort()));
-        install(new FactoryModuleBuilder().build(PluginServicesImplFactory.class));
     }
 
     @Provides

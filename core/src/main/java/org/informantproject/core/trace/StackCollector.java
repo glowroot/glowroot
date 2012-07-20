@@ -82,8 +82,8 @@ public class StackCollector implements Runnable {
         }
     }
 
-    public void shutdown() {
-        logger.debug("shutdown()");
+    public void close() {
+        logger.debug("close()");
         scheduledExecutor.shutdownNow();
     }
 

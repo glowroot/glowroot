@@ -100,8 +100,8 @@ public class MetricCollector implements Runnable, ConfigurationListener {
         }
     }
 
-    public void shutdown() {
-        logger.debug("shutdown()");
+    public void close() {
+        logger.debug("close()");
         future.cancel(true);
         scheduledExecutor.shutdownNow();
     }

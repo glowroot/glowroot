@@ -65,7 +65,7 @@ public class TraceDaoTest {
     public void after(DataSource dataSource, RollingFile rollingFile) throws Exception {
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
-        rollingFile.shutdownAndDeleteFile();
+        rollingFile.closeAndDeleteFile();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

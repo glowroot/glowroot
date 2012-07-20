@@ -196,7 +196,9 @@ class RollingOutputStream extends OutputStream {
         out.getFD().sync();
     }
 
-    void shutdown() throws IOException {
+    @Override
+    public void close() throws IOException {
+        super.close();
         executorService.shutdownNow();
         out.close();
     }

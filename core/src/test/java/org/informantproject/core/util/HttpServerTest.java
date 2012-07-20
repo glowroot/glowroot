@@ -50,7 +50,7 @@ public class HttpServerTest {
         // first before checking for non-daemon threads
         asyncHttpClient.close();
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        httpServer.shutdown();
+        httpServer.close();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 

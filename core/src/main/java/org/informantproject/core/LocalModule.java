@@ -57,8 +57,8 @@ class LocalModule extends AbstractModule {
         injector.getInstance(HttpServer.class);
     }
 
-    static void shutdown(Injector injector) {
-        logger.debug("shutdown()");
-        injector.getInstance(HttpServer.class).shutdown();
+    static void close(Injector injector) {
+        logger.debug("close()");
+        injector.getInstance(HttpServer.class).close();
     }
 }

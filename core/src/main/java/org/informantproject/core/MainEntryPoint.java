@@ -35,7 +35,6 @@ import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
@@ -112,16 +111,6 @@ public final class MainEntryPoint {
         return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
     }
 
-    @VisibleForTesting
-    public static void start() {
-        start(new AgentArgs());
-    }
-
-    @VisibleForTesting
-    public static void start(String agentArgs) {
-        start(new AgentArgs(agentArgs));
-    }
-
     private static void start(AgentArgs agentArgs) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
         synchronized (lock) {
@@ -142,19 +131,29 @@ public final class MainEntryPoint {
         }
     }
 
-    @VisibleForTesting
+    // only used by tests
+    public static void start() {
+        start(new AgentArgs());
+    }
+
+    // only used by tests
+    public static void start(String agentArgs) {
+        start(new AgentArgs(agentArgs));
+    }
+
+    // only used by tests
     public static int getPort() {
         return injector.getInstance(HttpServer.class).getPort();
     }
 
-    @VisibleForTesting
+    // only used by tests
     public static void shutdown() {
         logger.debug("shutdown()");
         synchronized (lock) {
             if (injector == null) {
                 throw new IllegalStateException("Informant is not started");
             }
-            InformantModule.shutdown(injector);
+            InformantModule.close(injector);
             injector = null;
         }
     }

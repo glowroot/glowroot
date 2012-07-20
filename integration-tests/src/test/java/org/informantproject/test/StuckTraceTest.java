@@ -48,7 +48,7 @@ public class StuckTraceTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.shutdownAndDeleteFiles();
+        container.closeAndDeleteFiles();
     }
 
     @Test

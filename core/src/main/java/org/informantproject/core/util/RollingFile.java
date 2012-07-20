@@ -79,18 +79,18 @@ public class RollingFile {
         }
     }
 
-    public void shutdown() throws IOException {
-        logger.debug("shutdown()");
+    public void close() throws IOException {
+        logger.debug("close()");
         synchronized (lock) {
-            rollingOut.shutdown();
+            rollingOut.close();
             inFile.close();
         }
     }
 
     // only used by tests
-    public void shutdownAndDeleteFile() throws IOException {
-        logger.debug("shutdownAndDeleteFile()");
-        shutdown();
+    public void closeAndDeleteFile() throws IOException {
+        logger.debug("closeAndDeleteFile()");
+        close();
         Files.delete(rollingFile);
     }
 

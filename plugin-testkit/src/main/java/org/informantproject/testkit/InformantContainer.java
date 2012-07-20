@@ -102,17 +102,17 @@ public class InformantContainer {
         }
     }
 
-    public void shutdown() throws Exception {
+    public void close() throws Exception {
         // asyncHttpClient is not part of the "app under test", so shut it down
         // first before checking for non-daemon threads
         asyncHttpClient.close();
         ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
-        executionAdapter.shutdownImpl();
+        executionAdapter.closeImpl();
         ThreadChecker.postShutdownThreadCheck(preExistingThreads);
     }
 
-    public void shutdownAndDeleteFiles() throws Exception {
-        shutdown();
+    public void closeAndDeleteFiles() throws Exception {
+        close();
         Files.delete(dataDir);
     }
 
@@ -134,6 +134,6 @@ public class InformantContainer {
         int getPort() throws Exception;
         void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
                 String threadName) throws Exception;
-        void shutdownImpl() throws Exception;
+        void closeImpl() throws Exception;
     }
 }

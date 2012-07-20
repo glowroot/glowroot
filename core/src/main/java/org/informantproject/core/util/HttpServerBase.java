@@ -117,10 +117,10 @@ public abstract class HttpServerBase {
         return port;
     }
 
-    public void shutdown() {
-        logger.debug("shutdown(): stopping http server");
+    public void close() {
+        logger.debug("close(): stopping http server");
         allChannels.close().awaitUninterruptibly();
-        logger.debug("shutdown(): http server stopped");
+        logger.debug("close(): http server stopped");
         bootstrap.releaseExternalResources();
     }
 
