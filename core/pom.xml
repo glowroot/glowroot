@@ -21,12 +21,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.informantproject.shaded</groupId>
-      <artifactId>shaded-logback-classic</artifactId>
-      <version>1.0.6-SNAPSHOT</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
       <groupId>org.informantproject.webresources</groupId>
       <artifactId>webresources-bootstrap</artifactId>
       <version>2.0.4-SNAPSHOT</version>
@@ -153,6 +147,12 @@
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
       <version>2.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.0.6</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -312,6 +312,51 @@
             <relocation>
               <pattern>org.aopalliance</pattern>
               <shadedPattern>org.informantproject.shaded.aopalliance</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback</pattern>
+              <shadedPattern>org.informantproject.shaded.qos.logback</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- ch.qos.logback.classic.util.ContextInitializer : "logback.configurationFile" -->
+              <rawString>true</rawString>
+              <pattern>^logback.configurationFile$</pattern>
+              <shadedPattern>org.informantproject.logback.configurationFile</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- ch.qos.logback.classic.util.ContextInitializer : "logback.groovy" -->
+              <rawString>true</rawString>
+              <pattern>^logback.groovy$</pattern>
+              <shadedPattern>org.informantproject.logback.groovy</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- ch.qos.logback.classic.util.ContextInitializer : "logback.xml"
+                ch.qos.logback.classic.util.ContextInitializer : "logback-test.xml" -->
+              <rawString>true</rawString>
+              <pattern>^logback(-test)?.xml$</pattern>
+              <shadedPattern>org.informantproject.logback$1.xml</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- ch.qos.logback.classic.ClassicConstants : "logback.ContextSelector" -->
+              <rawString>true</rawString>
+              <pattern>^logback.ContextSelector$</pattern>
+              <shadedPattern>org.informantproject.logback.ContextSelector</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- ch.qos.logback.classic.ClassicConstants :
+                "java:comp/env/logback/configuration-resource" -->
+              <rawString>true</rawString>
+              <pattern>^java:comp/env/logback/configuration-resource$</pattern>
+              <shadedPattern>
+                java:comp/env/org.informantproject.logback/configuration-resource
+              </shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- ch.qos.logback.classic.ClassicConstants :
+                "java:comp/env/logback/context-name" -->
+              <rawString>true</rawString>
+              <pattern>^java:comp/env/logback/context-name$</pattern>
+              <shadedPattern>java:comp/env/org.informantproject.logback/context-name</shadedPattern>
             </relocation>
           </relocations>
           <transformers>
