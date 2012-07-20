@@ -51,7 +51,7 @@ public final class XmlDocuments {
 
     private XmlDocuments() {}
 
-    public static Document getDocument(InputStream inputStream)
+    public static Document newDocument(InputStream inputStream)
             throws ParserConfigurationException, SAXException, IOException {
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -60,14 +60,14 @@ public final class XmlDocuments {
         return builder.parse(inputStream);
     }
 
-    public static Document getValidatedDocument(InputSupplier<InputStream> inputSupplier)
+    public static Document newValidatedDocument(InputSupplier<InputStream> inputSupplier)
             throws ParserConfigurationException, SAXException, IOException {
 
-        return getValidatedDocument(inputSupplier, new LoggingErrorHandler());
+        return newValidatedDocument(inputSupplier, new LoggingErrorHandler());
     }
 
     @VisibleForTesting
-    static Document getValidatedDocument(InputSupplier<InputStream> inputSupplier,
+    static Document newValidatedDocument(InputSupplier<InputStream> inputSupplier,
             ErrorHandler errorHandler) throws ParserConfigurationException, SAXException,
             IOException {
 
@@ -83,7 +83,7 @@ public final class XmlDocuments {
         reader.setErrorHandler(errorHandler);
         reader.parse(new InputSource(inputSupplier.getInput()));
         // then return DOM
-        return getDocument(inputSupplier.getInput());
+        return newDocument(inputSupplier.getInput());
     }
 
     private static class ResourceEntityResolver implements EntityResolver {

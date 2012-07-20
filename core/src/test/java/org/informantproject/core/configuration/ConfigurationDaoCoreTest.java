@@ -23,7 +23,7 @@ import java.util.Set;
 import org.informantproject.core.configuration.ImmutableCoreConfiguration.CoreConfigurationBuilder;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
-import org.informantproject.core.util.ThreadChecker;
+import org.informantproject.core.util.Threads;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -50,7 +50,7 @@ public class ConfigurationDaoCoreTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = ThreadChecker.currentThreadList();
+        preExistingThreads = Threads.currentThreadList();
         if (dataSource.tableExists("configuration")) {
             dataSource.execute("drop table configuration");
         }
@@ -58,9 +58,9 @@ public class ConfigurationDaoCoreTest {
 
     @After
     public void after(DataSource dataSource) throws Exception {
-        ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
-        ThreadChecker.postShutdownThreadCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

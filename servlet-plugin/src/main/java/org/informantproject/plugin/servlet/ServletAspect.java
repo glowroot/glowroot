@@ -96,8 +96,8 @@ public class ServletAspect {
             topLevelServletMessageSupplier.set(messageSupplier);
             Stopwatch stopwatch = pluginServices.startTrace(messageSupplier, metric);
             if (session != null) {
-                String sessionUsernameAttributePath = ServletPluginPropertyUtils
-                        .getSessionUsernameAttributePath();
+                String sessionUsernameAttributePath = ServletPluginProperties
+                        .sessionUsernameAttributePath();
                 if (sessionUsernameAttributePath != null) {
                     // capture username now, don't use a lazy supplier
                     String username = getSessionAttributeTextValue(session,
@@ -344,8 +344,8 @@ public class ServletAspect {
             // if username value is set to null, don't clear it
             return;
         }
-        String sessionUsernameAttributePath = ServletPluginPropertyUtils
-                .getSessionUsernameAttributePath();
+        String sessionUsernameAttributePath = ServletPluginProperties
+                .sessionUsernameAttributePath();
         if (sessionUsernameAttributePath != null) {
             // capture username now, don't use a lazy supplier
             if (sessionUsernameAttributePath.equals(name)) {
@@ -364,15 +364,15 @@ public class ServletAspect {
     private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
             String name, @Nullable Object value, HttpSession session) {
 
-        if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
+        if (ServletPluginProperties.captureAllSessionAttributes()) {
             if (value == null) {
                 messageSupplier.putSessionAttributeChangedValue(name, null);
             } else {
                 messageSupplier.putSessionAttributeChangedValue(name, value.toString());
             }
-        } else if (ServletPluginPropertyUtils.getSessionAttributeNames().contains(name)) {
+        } else if (ServletPluginProperties.sessionAttributeNames().contains(name)) {
             // update all session attributes (possibly nested) at or under the set attribute
-            for (String path : ServletPluginPropertyUtils.getSessionAttributePaths()) {
+            for (String path : ServletPluginProperties.sessionAttributePaths()) {
                 if (path.equals(name)) {
                     if (value == null) {
                         messageSupplier.putSessionAttributeChangedValue(path, null);
@@ -416,11 +416,11 @@ public class ServletAspect {
 
     @Nullable
     private static Map<String, String> getSessionAttributes(HttpSession session) {
-        Set<String> sessionAttributePaths = ServletPluginPropertyUtils.getSessionAttributePaths();
+        Set<String> sessionAttributePaths = ServletPluginProperties.sessionAttributePaths();
         if (sessionAttributePaths.isEmpty()) {
             return null;
         }
-        if (ServletPluginPropertyUtils.isCaptureAllSessionAttributes()) {
+        if (ServletPluginProperties.captureAllSessionAttributes()) {
             // special single value of "*" means dump all http session attributes
             Map<String, String> sessionAttributeMap = Maps.newHashMap();
             for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
@@ -461,7 +461,7 @@ public class ServletAspect {
         } else {
             String[] path = attributePath.split("\\.");
             Object curr = session.getAttribute(path[0]);
-            Object value = PathUtil.getValue(curr, path, 1);
+            Object value = Beans.value(curr, path, 1);
             if (value == null) {
                 return null;
             } else {

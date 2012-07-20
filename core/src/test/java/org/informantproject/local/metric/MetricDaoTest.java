@@ -28,7 +28,7 @@ import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.MockClock;
-import org.informantproject.core.util.ThreadChecker;
+import org.informantproject.core.util.Threads;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -57,7 +57,7 @@ public class MetricDaoTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = ThreadChecker.currentThreadList();
+        preExistingThreads = Threads.currentThreadList();
         if (dataSource.tableExists("metric_point")) {
             dataSource.execute("drop table metric_point");
         }
@@ -65,9 +65,9 @@ public class MetricDaoTest {
 
     @After
     public void after(DataSource dataSource) throws Exception {
-        ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
-        ThreadChecker.postShutdownThreadCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

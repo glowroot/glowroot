@@ -19,7 +19,9 @@ package org.informantproject.api;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public abstract class MessageSupplier {
+public final class MessageSupplier {
+
+    private MessageSupplier() {}
 
     public static Supplier<Message> of(String message) {
         return Supplier.ofInstance(Message.of(message));

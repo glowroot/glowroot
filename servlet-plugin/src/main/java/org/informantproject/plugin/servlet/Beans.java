@@ -30,7 +30,7 @@ import org.informantproject.shaded.google.common.cache.LoadingCache;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class PathUtil {
+public final class Beans {
 
     // TODO not sure if there is a retention cycle between Method and its class, so using weak keys
     // and weak values for now
@@ -42,6 +42,7 @@ public final class PathUtil {
                     return CacheBuilder.newBuilder().build(new CacheLoader<String, Method>() {
                         @Override
                         public Method load(String path) throws NoSuchMethodException {
+                            // TODO fallback and look for "is" and with no prefix also
                             return type.getMethod("get" + Character.toUpperCase(path.charAt(0))
                                     + path.substring(1));
                         }
@@ -49,20 +50,20 @@ public final class PathUtil {
                 }
             });
 
-    private PathUtil() {}
+    private Beans() {}
 
     @Nullable
-    public static Object getValue(@Nullable Object o, String[] path, int currIndex) {
+    public static Object value(@Nullable Object o, String[] path, int currIndex) {
         if (o == null) {
             return null;
         } else if (currIndex == path.length) {
             return o;
         } else if (o instanceof Map) {
-            return getValue(((Map<?, ?>) o).get(path[currIndex]), path, currIndex + 1);
+            return value(((Map<?, ?>) o).get(path[currIndex]), path, currIndex + 1);
         } else {
             try {
                 Method getter = getters.get(o.getClass()).get(path[currIndex]);
-                return getValue(getter.invoke(o), path, currIndex + 1);
+                return value(getter.invoke(o), path, currIndex + 1);
             } catch (ExecutionException e) {
                 return null;
             } catch (IllegalArgumentException e) {

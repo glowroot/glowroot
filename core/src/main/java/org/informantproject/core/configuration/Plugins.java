@@ -96,7 +96,7 @@ public class Plugins {
             List<PluginDescriptor> plugins = Lists.newArrayList();
             while (e.hasMoreElements()) {
                 URL resourceURL = e.nextElement();
-                Document document = XmlDocuments.getValidatedDocument(Resources
+                Document document = XmlDocuments.newValidatedDocument(Resources
                         .newInputStreamSupplier(resourceURL));
                 Element root = document.getDocumentElement();
                 plugins.add(createPluginDescriptor(root));
@@ -135,7 +135,7 @@ public class Plugins {
             }
             Document document;
             try {
-                document = XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(
+                document = XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(
                         resourceURL));
             } catch (SAXParseException f) {
                 logger.error("error reading/validating META-INF/org.informantproject.package.xml: "

@@ -126,7 +126,7 @@ public class JdbcAspect {
             if (x instanceof InputStream || x instanceof Reader) {
                 mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
             } else if (x instanceof byte[]) {
-                boolean displayAsHex = JdbcPlugin.isDisplayBinaryParameterAsHex(mirror.getSql(),
+                boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(mirror.getSql(),
                         parameterIndex);
                 mirror.setParameterValue(parameterIndex, new ByteArrayParameterValue((byte[]) x,
                         displayAsHex));

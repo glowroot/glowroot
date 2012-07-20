@@ -152,7 +152,7 @@ public class PluginJsonService implements JsonService {
             throws ParserConfigurationException, SAXException, IOException {
 
         byte[] xmlBytes = metadata.getBytes(Charsets.UTF_8.name());
-        Element root = XmlDocuments.getDocument(new ByteArrayInputStream(xmlBytes))
+        Element root = XmlDocuments.newDocument(new ByteArrayInputStream(xmlBytes))
                 .getDocumentElement();
         return root.getElementsByTagName("version").item(0).getTextContent();
     }

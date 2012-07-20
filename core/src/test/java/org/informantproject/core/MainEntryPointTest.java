@@ -21,7 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.informantproject.core.MainEntryPoint;
-import org.informantproject.core.util.ThreadChecker;
+import org.informantproject.core.util.Threads;
 
 /**
  * @author Trask Stalnaker
@@ -33,15 +33,15 @@ public class MainEntryPointTest {
 
     @Before
     public void before() {
-        preExistingThreads = ThreadChecker.currentThreadList();
+        preExistingThreads = Threads.currentThreadList();
         MainEntryPoint.start();
     }
 
     @After
     public void after() throws Exception {
-        ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         MainEntryPoint.shutdown();
-        ThreadChecker.postShutdownThreadCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

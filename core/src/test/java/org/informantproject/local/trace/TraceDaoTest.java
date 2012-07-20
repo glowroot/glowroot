@@ -26,7 +26,7 @@ import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.RollingFileTestProvider;
-import org.informantproject.core.util.ThreadChecker;
+import org.informantproject.core.util.Threads;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -55,7 +55,7 @@ public class TraceDaoTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = ThreadChecker.currentThreadList();
+        preExistingThreads = Threads.currentThreadList();
         if (dataSource.tableExists("trace")) {
             dataSource.execute("drop table trace");
         }
@@ -63,10 +63,10 @@ public class TraceDaoTest {
 
     @After
     public void after(DataSource dataSource, RollingFile rollingFile) throws Exception {
-        ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
         rollingFile.closeAndDeleteFile();
-        ThreadChecker.postShutdownThreadCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

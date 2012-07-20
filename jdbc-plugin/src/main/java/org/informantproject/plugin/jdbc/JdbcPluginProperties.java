@@ -25,12 +25,12 @@ import org.informantproject.shaded.google.common.collect.Multimap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class JdbcPlugin {
+public final class JdbcPluginProperties {
 
     private static volatile Multimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
 
-    private JdbcPlugin() {}
+    private JdbcPluginProperties() {}
 
     public static void setDisplayBinaryParamaterAsHex(String sql, int parameterIndex) {
         HashMultimap<String, Integer> mutableMultimap = HashMultimap
@@ -48,7 +48,7 @@ public final class JdbcPlugin {
         displayBinaryParameterAsHex = ImmutableMultimap.copyOf(mutableMultimap);
     }
 
-    static boolean isDisplayBinaryParameterAsHex(String sql, int parameterIndex) {
+    static boolean displayBinaryParameterAsHex(String sql, int parameterIndex) {
         return displayBinaryParameterAsHex.containsEntry(sql, parameterIndex);
     }
 }

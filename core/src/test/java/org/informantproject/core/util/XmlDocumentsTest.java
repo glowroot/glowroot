@@ -37,7 +37,7 @@ public class XmlDocumentsTest {
     public void shouldReadValidPluginXml() throws Exception {
         URL resourceURL = PluginJsonService.class.getClassLoader().getResource(
                 "unit.test.plugin.valid.xml");
-        XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
+        XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
                 new ThrowingErrorHandler());
     }
 
@@ -47,7 +47,7 @@ public class XmlDocumentsTest {
                 "unit.test.plugin.invalid.xml");
         SAXParseException exception = null;
         try {
-            XmlDocuments.getValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
+            XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
                     new ThrowingErrorHandler());
         } catch (SAXParseException e) {
             exception = e;

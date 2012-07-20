@@ -39,15 +39,30 @@ import com.google.common.collect.Collections2;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class ThreadChecker {
+public final class Threads {
 
-    private ThreadChecker() {}
+    private Threads() {}
 
     public static Set<Thread> currentThreadList() {
         return Thread.getAllStackTraces().keySet();
     }
 
-    public static void postShutdownThreadCheck(final Set<Thread> preExistingThreads)
+    // ensure the test didn't create any non-daemon threads
+    public static void preShutdownCheck(final Set<Thread> preExistingThreads) {
+        Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
+                new Predicate<Thread>() {
+                    public boolean apply(Thread input) {
+                        return input != Thread.currentThread() && !input.isDaemon()
+                                && !preExistingThreads.contains(input);
+                    }
+                });
+        if (!rogueThreads.isEmpty()) {
+            throw new RogueThreadsException(rogueThreads);
+        }
+    }
+
+    // ensure the test shutdown all threads that it created
+    public static void postShutdownCheck(final Set<Thread> preExistingThreads)
             throws InterruptedException {
 
         // give it 5 seconds to shutdown threads
@@ -64,19 +79,6 @@ public final class ThreadChecker {
                 // failure, wait a few milliseconds before trying again
                 Thread.sleep(10);
             }
-        }
-    }
-
-    public static void preShutdownNonDaemonThreadCheck(final Set<Thread> preExistingThreads) {
-        Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
-                new Predicate<Thread>() {
-                    public boolean apply(Thread input) {
-                        return input != Thread.currentThread() && !input.isDaemon()
-                                && !preExistingThreads.contains(input);
-                    }
-                });
-        if (!rogueThreads.isEmpty()) {
-            throw new RogueThreadsException(rogueThreads);
         }
     }
 

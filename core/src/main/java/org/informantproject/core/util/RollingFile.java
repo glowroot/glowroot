@@ -123,12 +123,12 @@ public class RollingFile {
                 byte[] bytes = new byte[(int) block.getLength()];
                 long remaining = rollingOut.getRollingSizeBytes() - filePosition;
                 if (block.getLength() > remaining) {
-                    RandomAccessFileUtil.readFully(inFile, bytes, 0, (int) remaining);
+                    RandomAccessFiles.readFully(inFile, bytes, 0, (int) remaining);
                     inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES);
-                    RandomAccessFileUtil.readFully(inFile, bytes, (int) remaining,
+                    RandomAccessFiles.readFully(inFile, bytes, (int) remaining,
                             (int) (block.getLength() - remaining));
                 } else {
-                    RandomAccessFileUtil.readFully(inFile, bytes);
+                    RandomAccessFiles.readFully(inFile, bytes);
                 }
                 end = true;
                 return LZFDecoder.decode(bytes);

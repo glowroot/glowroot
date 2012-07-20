@@ -32,7 +32,7 @@ import org.informantproject.shaded.google.common.collect.Iterables;
  * @author Trask Stalnaker
  * @since 0.5
  */
-final class ServletPluginPropertyUtils {
+final class ServletPluginProperties {
 
     private static final String SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME =
             "sessionUsernameAttribute";
@@ -53,26 +53,26 @@ final class ServletPluginPropertyUtils {
     private static volatile String cachedSessionAttributesText;
 
     // utility class
-    private ServletPluginPropertyUtils() {}
+    private ServletPluginProperties() {}
 
     @Nullable
-    static String getSessionUsernameAttributePath() {
+    static String sessionUsernameAttributePath() {
         return pluginServices.getStringProperty(SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME);
     }
 
-    static Set<String> getSessionAttributePaths() {
+    static Set<String> sessionAttributePaths() {
         checkCache();
         return cachedSessionAttributePaths;
     }
 
     // only the first-level attribute names (e.g. "one", "abc") as opposed to full paths (e.g.
     // "one.two", "abc.def") returned by getSessionAttributePaths()
-    static Set<String> getSessionAttributeNames() {
+    static Set<String> sessionAttributeNames() {
         checkCache();
         return cachedSessionAttributeNames;
     }
 
-    static boolean isCaptureAllSessionAttributes() {
+    static boolean captureAllSessionAttributes() {
         checkCache();
         return isCaptureAllSessionAttributes;
     }

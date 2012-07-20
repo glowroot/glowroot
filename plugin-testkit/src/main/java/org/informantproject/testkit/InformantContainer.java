@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Files;
-import org.informantproject.core.util.ThreadChecker;
+import org.informantproject.core.util.Threads;
 
 import com.ning.http.client.AsyncHttpClient;
 
@@ -62,7 +62,7 @@ public class InformantContainer {
     public static InformantContainer create(int uiPort) throws Exception {
         File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
-        Set<Thread> preExistingThreads = ThreadChecker.currentThreadList();
+        Set<Thread> preExistingThreads = Threads.currentThreadList();
         ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
@@ -106,9 +106,9 @@ public class InformantContainer {
         // asyncHttpClient is not part of the "app under test", so shut it down
         // first before checking for non-daemon threads
         asyncHttpClient.close();
-        ThreadChecker.preShutdownNonDaemonThreadCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         executionAdapter.closeImpl();
-        ThreadChecker.postShutdownThreadCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     public void closeAndDeleteFiles() throws Exception {

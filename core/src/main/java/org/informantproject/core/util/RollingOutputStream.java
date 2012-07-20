@@ -160,12 +160,12 @@ class RollingOutputStream extends OutputStream {
         long remaining = rollingSizeBytes - startPosition;
         if (numKeepBytes > remaining) {
             out.seek(HEADER_SKIP_BYTES + startPosition);
-            RandomAccessFileUtil.copyFully(out, tmpOut, remaining);
+            RandomAccessFiles.copyFully(out, tmpOut, remaining);
             out.seek(HEADER_SKIP_BYTES);
-            RandomAccessFileUtil.copyFully(out, tmpOut, numKeepBytes - remaining);
+            RandomAccessFiles.copyFully(out, tmpOut, numKeepBytes - remaining);
         } else {
             out.seek(HEADER_SKIP_BYTES + startPosition);
-            RandomAccessFileUtil.copyFully(out, tmpOut, numKeepBytes);
+            RandomAccessFiles.copyFully(out, tmpOut, numKeepBytes);
         }
         out.close();
         tmpOut.close();

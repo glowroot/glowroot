@@ -99,7 +99,7 @@ public class StuckTraceCollector implements Runnable {
                 // if the trace is within CHECK_INTERVAL_MILLIS from hitting the stuck
                 // thread threshold and the stuck thread messaging hasn't already been scheduled
                 // then schedule it
-                if (NanoUtils.isLessThan(trace.getStartTick(), stuckThresholdTick)
+                if (Nanoseconds.lessThan(trace.getStartTick(), stuckThresholdTick)
                         && trace.getStuckCommandScheduledFuture() == null) {
                     // schedule stuck thread
                     long initialDelayMillis = Math.max(0, TimeUnit.SECONDS.toMillis(configuration
