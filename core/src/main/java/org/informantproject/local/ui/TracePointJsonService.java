@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.Clock;
@@ -56,18 +56,18 @@ public class TracePointJsonService implements JsonService {
 
     private final TraceDao traceDao;
     private final TraceRegistry traceRegistry;
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final Ticker ticker;
     private final Clock clock;
     private final Gson gson = new Gson();
 
     @Inject
     public TracePointJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
-            ConfigurationService configurationService, Ticker ticker, Clock clock) {
+            ConfigService configService, Ticker ticker, Clock clock) {
 
         this.traceDao = traceDao;
         this.traceRegistry = traceRegistry;
-        this.configurationService = configurationService;
+        this.configService = configService;
         this.ticker = ticker;
         this.clock = clock;
     }
@@ -133,8 +133,8 @@ public class TracePointJsonService implements JsonService {
 
     private List<Trace> getActiveTraces(long low, long high) {
         List<Trace> activeTraces = Lists.newArrayList();
-        long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configurationService
-                .getCoreConfiguration().getThresholdMillis());
+        long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService
+                .getCoreConfig().getThresholdMillis());
         for (Trace trace : traceRegistry.getTraces()) {
             long duration = trace.getDuration();
             if (duration >= thresholdNanos && duration >= low && duration <= high) {

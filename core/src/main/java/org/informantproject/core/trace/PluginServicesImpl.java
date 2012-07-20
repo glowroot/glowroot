@@ -24,13 +24,13 @@ import javax.annotation.Nullable;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.PluginServices.ConfigurationListener;
+import org.informantproject.api.PluginServices.ConfigListener;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.SupplierOfNullable;
-import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
-import org.informantproject.core.configuration.ImmutablePluginConfiguration;
+import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.CoreConfig;
+import org.informantproject.core.config.PluginConfig;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.util.Clock;
 import org.slf4j.Logger;
@@ -49,13 +49,13 @@ import com.google.inject.assistedinject.Assisted;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PluginServicesImpl extends PluginServices implements ConfigurationListener {
+public class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
 
     private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final MetricCache metricCache;
     private final Clock clock;
     private final Ticker ticker;
@@ -65,26 +65,26 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     private final String pluginId;
 
     // cache for fast read access
-    private volatile ImmutableCoreConfiguration coreConfiguration;
-    private volatile ImmutablePluginConfiguration pluginConfiguration;
+    private volatile CoreConfig coreConfig;
+    private volatile PluginConfig pluginConfig;
 
     @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
-            ConfigurationService configurationService, MetricCache metricCache, Clock clock,
-            Ticker ticker, @Assisted String pluginId) {
+            ConfigService configService, MetricCache metricCache, Clock clock, Ticker ticker,
+            @Assisted String pluginId) {
 
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
-        this.configurationService = configurationService;
+        this.configService = configService;
         this.metricCache = metricCache;
         this.clock = clock;
         this.ticker = ticker;
         this.pluginId = pluginId;
-        // add configuration listener first before caching configuration properties to avoid a
+        // add config listener first before caching config properties to avoid a
         // (remotely) possible race condition
-        configurationService.addConfigurationListener(this);
-        coreConfiguration = configurationService.getCoreConfiguration();
-        pluginConfiguration = configurationService.getPluginConfiguration(pluginId);
+        configService.addConfigListener(this);
+        coreConfig = configService.getCoreConfig();
+        pluginConfig = configService.getPluginConfig(pluginId);
     }
 
     @Override
@@ -94,29 +94,29 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
 
     @Override
     public boolean isEnabled() {
-        return coreConfiguration.isEnabled() && pluginConfiguration.isEnabled();
+        return coreConfig.isEnabled() && pluginConfig.isEnabled();
     }
 
     @Override
     @Nullable
     public String getStringProperty(String propertyName) {
-        return pluginConfiguration.getStringProperty(propertyName);
+        return pluginConfig.getStringProperty(propertyName);
     }
 
     @Override
     public boolean getBooleanProperty(String propertyName) {
-        return pluginConfiguration.getBooleanProperty(propertyName);
+        return pluginConfig.getBooleanProperty(propertyName);
     }
 
     @Override
     @Nullable
     public Double getDoubleProperty(String propertyName) {
-        return pluginConfiguration.getDoubleProperty(propertyName);
+        return pluginConfig.getDoubleProperty(propertyName);
     }
 
     @Override
-    public void registerConfigurationListener(ConfigurationListener listener) {
-        configurationService.addConfigurationListener(listener);
+    public void registerConfigListener(ConfigListener listener) {
+        configService.addConfigListener(listener);
     }
 
     @Override
@@ -169,15 +169,15 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
     }
 
     public void onChange() {
-        coreConfiguration = configurationService.getCoreConfiguration();
-        pluginConfiguration = configurationService.getPluginConfiguration(pluginId);
+        coreConfig = configService.getCoreConfig();
+        pluginConfig = configService.getPluginConfig(pluginId);
     }
 
     private Stopwatch startSpan(Trace currentTrace, MetricImpl metric,
             Supplier<Message> messageSupplier) {
 
-        int maxEntries = coreConfiguration.getMaxEntries();
-        if (maxEntries != ImmutableCoreConfiguration.SPAN_LIMIT_DISABLED && currentTrace
+        int maxEntries = coreConfig.getMaxEntries();
+        if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED && currentTrace
                 .getRootSpan().getSize() >= maxEntries) {
             // the trace limit has been exceeded
             return metric.start();
@@ -196,7 +196,7 @@ public class PluginServicesImpl extends PluginServices implements ConfigurationL
         public void stop() {
             // minimizing the number of calls to the clock timer as they are relatively expensive
             long endTick = ticker.read();
-            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfiguration
+            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
                     .getSpanStackTraceThresholdMillis())) {
                 // TODO remove last few stack trace elements?
                 currentTrace.popSpan(span, endTick, Thread.currentThread().getStackTrace());

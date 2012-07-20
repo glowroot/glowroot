@@ -25,7 +25,7 @@ import java.sql.Statement;
 
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreProperties;
+import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Metric;

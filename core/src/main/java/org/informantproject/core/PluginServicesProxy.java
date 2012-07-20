@@ -26,7 +26,7 @@ import org.informantproject.api.PluginServices;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.SupplierOfNullable;
-import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 
@@ -43,8 +43,8 @@ class PluginServicesProxy extends PluginServices {
     private final String pluginId;
     private final MetricCache metricCache;
 
-    private final List<ConfigurationListener> pendingListeners =
-            new CopyOnWriteArrayList<ConfigurationListener>();
+    private final List<ConfigListener> pendingListeners =
+            new CopyOnWriteArrayList<ConfigListener>();
 
     private volatile PluginServices pluginServices;
 
@@ -100,7 +100,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void registerConfigurationListener(ConfigurationListener listener) {
+    public void registerConfigListener(ConfigListener listener) {
         pendingListeners.add(listener);
     }
 
@@ -155,14 +155,12 @@ class PluginServicesProxy extends PluginServices {
         }
     }
 
-    void start(PluginServicesImplFactory pluginServicesImplFactory,
-            ConfigurationService configurationService) {
-
+    void start(PluginServicesImplFactory pluginServicesImplFactory, ConfigService configService) {
         this.pluginServices = pluginServicesImplFactory.create(pluginId);
         // not that proxy points to the real PluginServices, register the pending listeners and
-        // notify them that configuration values are available from its (cached) PluginServices
-        for (ConfigurationListener pendingListener : pendingListeners) {
-            configurationService.addConfigurationListener(pendingListener);
+        // notify them that config values are available from its (cached) PluginServices
+        for (ConfigListener pendingListener : pendingListeners) {
+            configService.addConfigListener(pendingListener);
             pendingListener.onChange();
         }
     }

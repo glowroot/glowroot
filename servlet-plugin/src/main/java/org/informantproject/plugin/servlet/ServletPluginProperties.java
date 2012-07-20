@@ -27,7 +27,7 @@ import org.informantproject.shaded.google.common.collect.ImmutableSet;
 import org.informantproject.shaded.google.common.collect.Iterables;
 
 /**
- * Convenience methods for accessing servlet plugin configuration property values.
+ * Convenience methods for accessing servlet plugin property values.
  * 
  * @author Trask Stalnaker
  * @since 0.5

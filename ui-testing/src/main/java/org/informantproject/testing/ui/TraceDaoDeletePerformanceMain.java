@@ -18,7 +18,7 @@ package org.informantproject.testing.ui;
 import java.io.File;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreProperties;
+import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

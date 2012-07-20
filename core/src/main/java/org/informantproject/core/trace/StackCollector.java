@@ -19,8 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
+import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ import com.google.inject.Singleton;
 
 /**
  * Owns the thread (via a single threaded scheduled executor) that captures thread dumps for traces
- * that exceed the configuration threshold.
+ * that exceed the configured threshold.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -46,15 +46,13 @@ public class StackCollector implements Runnable {
             .newSingleThreadScheduledExecutor("Informant-StackCollector");
 
     private final TraceRegistry traceRegistry;
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final Ticker ticker;
 
     @Inject
-    public StackCollector(TraceRegistry traceRegistry, ConfigurationService configurationService,
-            Ticker ticker) {
-
+    public StackCollector(TraceRegistry traceRegistry, ConfigService configService, Ticker ticker) {
         this.traceRegistry = traceRegistry;
-        this.configurationService = configurationService;
+        this.configService = configService;
         this.ticker = ticker;
         // the main repeating Runnable (this) only runs every CHECK_INTERVAL_MILLIS at which time it
         // checks to see if there are any traces that may need stack traces scheduled before the
@@ -90,13 +88,12 @@ public class StackCollector implements Runnable {
     // look for traces that will exceed the stack trace initial delay threshold within the next
     // polling interval and schedule stack trace capture to occur at the appropriate time(s)
     private void runInternal() {
-        ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
+        CoreConfig config = configService.getCoreConfig();
         long currentTime = ticker.read();
-        if (configuration.getProfilerInitialDelayMillis()
-                != ImmutableCoreConfiguration.THRESHOLD_DISABLED) {
+        if (config.getProfilerInitialDelayMillis() != CoreConfig.THRESHOLD_DISABLED) {
             // stack trace threshold is not disabled
             long stackTraceThresholdTime = currentTime - TimeUnit.MILLISECONDS.toNanos(
-                    configuration.getProfilerInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
+                    config.getProfilerInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace will exceed the stack trace initial delay threshold before the next
                 // scheduled execution of this repeating Runnable (in other words, it is within
@@ -106,14 +103,12 @@ public class StackCollector implements Runnable {
                         && trace.getCaptureStackTraceScheduledFuture() == null) {
 
                     // schedule stack traces to be taken every X seconds
-                    long initialDelayMillis = Math.max(0,
-                            configuration.getProfilerInitialDelayMillis()
-                                    - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
+                    long initialDelayMillis = Math.max(0, config.getProfilerInitialDelayMillis()
+                            - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
                     CollectStackCommand command = new CollectStackCommand(trace);
                     ScheduledFuture<?> captureStackTraceScheduledFuture = scheduledExecutor
                             .scheduleWithFixedDelay(command, initialDelayMillis,
-                                    configuration.getProfilerIntervalMillis(),
-                                    TimeUnit.MILLISECONDS);
+                                    config.getProfilerIntervalMillis(), TimeUnit.MILLISECONDS);
                     trace.setCaptureStackTraceScheduledFuture(captureStackTraceScheduledFuture);
                 } else {
                     // since the list of traces are ordered by start time, if this trace

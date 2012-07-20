@@ -21,7 +21,7 @@ import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCollector;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.trace.StackCollector;
@@ -108,8 +108,8 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    protected RollingFile providesRollingFile(ConfigurationService configurationService) {
-        int rollingSizeMb = configurationService.getCoreConfiguration().getRollingSizeMb();
+    protected RollingFile providesRollingFile(ConfigService configService) {
+        int rollingSizeMb = configService.getCoreConfig().getRollingSizeMb();
         try {
             // 1gb
             return new RollingFile(new File(agentArgs.getDataDir(), "informant.rolling.db"),

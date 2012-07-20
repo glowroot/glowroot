@@ -21,7 +21,7 @@ import java.util.Random;
 
 import org.informantproject.test.api.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.PluginConfiguration;
+import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.junit.AfterClass;
@@ -51,63 +51,56 @@ public class PluginPropertyTest {
     }
 
     @Test
-    public void shouldUpdateAndReadBackPluginConfiguration() throws Exception {
+    public void shouldUpdateAndReadBackPluginConfig() throws Exception {
         // given
         String randomText = "Level " + random.nextLong();
         boolean randomBoolean = random.nextBoolean();
-        PluginConfiguration randomPluginConfiguration = container.getInformant()
-                .getPluginConfiguration(PLUGIN_ID);
-        randomPluginConfiguration.setProperty("alternateDescription", randomText);
-        randomPluginConfiguration.setProperty("starredDescription", randomBoolean);
-        container.getInformant().storePluginProperties(PLUGIN_ID, randomPluginConfiguration
-                .getPropertiesJson());
+        PluginConfig randomPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        randomPluginConfig.setProperty("alternateDescription", randomText);
+        randomPluginConfig.setProperty("starredDescription", randomBoolean);
+        container.getInformant().storePluginProperties(PLUGIN_ID,
+                randomPluginConfig.getPropertiesJson());
         // when
-        PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
-                PLUGIN_ID);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat((String) pluginConfiguration.getProperty("alternateDescription"))
-                .isEqualTo(randomText);
-        assertThat((Boolean) pluginConfiguration.getProperty("starredDescription"))
-                .isEqualTo(randomBoolean);
+        assertThat((String) pluginConfig.getProperty("alternateDescription")).isEqualTo(randomText);
+        assertThat((Boolean) pluginConfig.getProperty("starredDescription")).isEqualTo(
+                randomBoolean);
     }
 
     @Test
     public void shouldReadDefaultPropertyValue() throws Exception {
         // when
-        PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
-                PLUGIN_ID);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat((String) pluginConfiguration.getProperty("hasDefaultVal")).isEqualTo("one");
+        assertThat((String) pluginConfig.getProperty("hasDefaultVal")).isEqualTo("one");
     }
 
     @Test
     public void shouldClearPluginProperty() throws Exception {
         // given
-        PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
-                PLUGIN_ID);
-        pluginConfiguration.setProperty("alternateDescription", "a non-null value");
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
-                .getPropertiesJson());
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setProperty("alternateDescription", "a non-null value");
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
         // when
-        pluginConfiguration = container.getInformant().getPluginConfiguration(PLUGIN_ID);
-        pluginConfiguration.setProperty("alternateDescription", null);
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
-                .getPropertiesJson());
+        pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setProperty("alternateDescription", null);
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
         // then
-        pluginConfiguration = container.getInformant().getPluginConfiguration(PLUGIN_ID);
-        assertThat(pluginConfiguration.getProperty("alternateDescription")).isNull();
+        pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        assertThat(pluginConfig.getProperty("alternateDescription")).isNull();
     }
 
     @Test
     public void shouldReadAlternateDescription() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "org.informantproject:informant-integration-tests");
-        pluginConfiguration.setProperty("alternateDescription", "Level 1");
-        pluginConfiguration.setProperty("starredDescription", false);
+        pluginConfig.setProperty("alternateDescription", "Level 1");
+        pluginConfig.setProperty("starredDescription", false);
         container.getInformant().storePluginProperties("org.informantproject"
-                + ":informant-integration-tests", pluginConfiguration.getPropertiesJson());
+                + ":informant-integration-tests", pluginConfig.getPropertiesJson());
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
@@ -119,12 +112,12 @@ public class PluginPropertyTest {
     public void shouldReadStarredDescription() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "org.informantproject:informant-integration-tests");
-        pluginConfiguration.setProperty("alternateDescription", null);
-        pluginConfiguration.setProperty("starredDescription", true);
+        pluginConfig.setProperty("alternateDescription", null);
+        pluginConfig.setProperty("starredDescription", true);
         container.getInformant().storePluginProperties("org.informantproject"
-                + ":informant-integration-tests", pluginConfiguration.getPropertiesJson());
+                + ":informant-integration-tests", pluginConfig.getPropertiesJson());
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then

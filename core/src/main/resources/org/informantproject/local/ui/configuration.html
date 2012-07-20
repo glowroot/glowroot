@@ -85,7 +85,7 @@
         {{/ifDouble}}
       {{/each}}
       <div class="form-actions">
-        <button type="button" class="btn" onclick="updatePluginConfiguration('{{id}}')">
+        <button type="button" class="btn" onclick="updatePluginConfig('{{id}}')">
           Save changes
         </button>
         <div id="{{id}}_saveComplete" class="button-success-message">Saved</div>
@@ -154,9 +154,9 @@
     })
   }
   function read() {
-    $.getJSON('configuration/read', function(configuration) {
-      setUpOnOffButton('', configuration.enabled, 'configuration/core')
-      var coreProperties = configuration.coreProperties
+    $.getJSON('config/read', function(config) {
+      setUpOnOffButton('', config.enabled, 'config/core')
+      var coreProperties = config.coreProperties
       $('#thresholdMillis').val(coreProperties.thresholdMillis)
       $('#stuckThresholdSeconds').val(coreProperties.stuckThresholdSeconds)
       $('#profilerInitialDelayMillis').val(coreProperties.profilerInitialDelayMillis)
@@ -164,11 +164,11 @@
       $('#spanStackTraceThresholdMillis').val(coreProperties.spanStackTraceThresholdMillis)
       $('#maxEntries').val(coreProperties.maxEntries)
       $('#rollingSizeMb').val(coreProperties.rollingSizeMb)
-      if (configuration.actualRollingSizeMb != coreProperties.rollingSizeMb) {
-        $('#actualRollingSizeMb').html(configuration.actualRollingSizeMb)
+      if (config.actualRollingSizeMb != coreProperties.rollingSizeMb) {
+        $('#actualRollingSizeMb').html(config.actualRollingSizeMb)
         $('#rollingSizeHelp').css('display', 'inline-block')
       }
-      plugins = configuration.pluginDescriptors
+      plugins = config.pluginDescriptors
       for (var i = 0; i < plugins.length; i++) {
         var plugin = plugins[i]
         plugin.id = plugin.groupId + ':' + plugin.artifactId
@@ -181,9 +181,9 @@
         plugin.propertyDescriptors = propertyDescriptors
         var html = pluginTemplate(plugin)
         $(html).appendTo('#plugins')
-        setUpOnOffButton(escapeForSelector(plugin.id) + '_', configuration
-            .pluginConfiguration[plugin.id].enabled, 'configuration/plugin/' + plugin.id)
-        var pluginProperties = configuration.pluginConfiguration[plugin.id].properties
+        setUpOnOffButton(escapeForSelector(plugin.id) + '_', 
+            config.pluginConfigs[plugin.id].enabled, 'config/plugin/' + plugin.id)
+        var pluginProperties = config.pluginConfigs[plugin.id].properties
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
           var propertyDescriptors = plugin.propertyDescriptors[j]
           var value = pluginProperties[propertyDescriptors.name]
@@ -207,13 +207,13 @@
       'maxEntries': $('#maxEntries').val(),
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
-    $.post('configuration/core/properties', JSON.stringify(properties), function() {
+    $.post('config/core/properties', JSON.stringify(properties), function() {
       showAndFadeSuccessMessage('#saveComplete')
     })
   }
-  function updatePluginConfiguration(pluginId) {
+  function updatePluginConfig(pluginId) {
     var plugin = pluginForId(pluginId)
-    var configuration = {}
+    var config = {}
     for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
       var propertyDescriptors = plugin.propertyDescriptors[j]
       if (!propertyDescriptors.hidden) {
@@ -227,10 +227,10 @@
         } else {
           value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).val()
         }
-        configuration[propertyDescriptors.name] = value
+        config[propertyDescriptors.name] = value
       }
     }
-    $.post('configuration/plugin/' + pluginId + '/properties', JSON.stringify(configuration),
+    $.post('config/plugin/' + pluginId + '/properties', JSON.stringify(config),
         function() {
           showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
         })

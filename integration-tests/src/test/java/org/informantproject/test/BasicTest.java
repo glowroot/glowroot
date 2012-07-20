@@ -22,7 +22,7 @@ import java.util.Random;
 
 import org.informantproject.test.api.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreProperties;
+import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Span;
@@ -52,7 +52,7 @@ public class BasicTest {
     }
 
     @Test
-    public void shouldUpdateAndReadBackConfiguration() throws Exception {
+    public void shouldUpdateAndReadBackConfig() throws Exception {
         // given
         CoreProperties randomCoreProperties = makeRandomCoreProperties();
         container.getInformant().updateCoreProperties(randomCoreProperties);

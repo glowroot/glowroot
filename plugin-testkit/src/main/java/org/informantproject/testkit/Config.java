@@ -33,11 +33,11 @@ import com.google.gson.JsonObject;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class Configuration {
+public class Config {
 
     private boolean enabled;
     private CoreProperties coreProperties;
-    private Map<String, PluginConfiguration> pluginConfiguration;
+    private Map<String, PluginConfig> pluginConfigs;
 
     public boolean isEnabled() {
         return enabled;
@@ -51,8 +51,8 @@ public class Configuration {
         return coreProperties;
     }
 
-    public Map<String, PluginConfiguration> getPluginConfiguration() {
-        return pluginConfiguration;
+    public Map<String, PluginConfig> getPluginConfigs() {
+        return pluginConfigs;
     }
 
     public static class CoreProperties {
@@ -145,7 +145,7 @@ public class Configuration {
         }
     }
 
-    public static class PluginConfiguration {
+    public static class PluginConfig {
         private boolean enabled;
         // map values are @Nullable
         private final Map<String, Object> properties = Maps.newHashMap();
@@ -164,24 +164,22 @@ public class Configuration {
         }
     }
 
-    public static class PluginConfigurationJsonDeserializer implements
-            JsonDeserializer<PluginConfiguration> {
-
-        public PluginConfiguration deserialize(JsonElement json, Type typeOfT,
+    public static class PluginConfigJsonDeserializer implements JsonDeserializer<PluginConfig> {
+        public PluginConfig deserialize(JsonElement json, Type typeOfT,
                 JsonDeserializationContext context) {
 
-            PluginConfiguration pluginConfiguration = new PluginConfiguration();
-            pluginConfiguration.enabled = json.getAsJsonObject().get("enabled").getAsBoolean();
+            PluginConfig pluginConfig = new PluginConfig();
+            pluginConfig.enabled = json.getAsJsonObject().get("enabled").getAsBoolean();
             JsonObject properties = json.getAsJsonObject().get("properties").getAsJsonObject();
             for (Entry<String, JsonElement> entry : properties.entrySet()) {
                 if (entry.getValue().isJsonNull()) {
-                    pluginConfiguration.setProperty(entry.getKey(), null);
+                    pluginConfig.setProperty(entry.getKey(), null);
                 } else {
-                    pluginConfiguration.setProperty(entry.getKey(), context.deserialize(entry
-                            .getValue(), Object.class));
+                    pluginConfig.setProperty(entry.getKey(),
+                            context.deserialize(entry.getValue(), Object.class));
                 }
             }
-            return pluginConfiguration;
+            return pluginConfig;
         }
     }
 }

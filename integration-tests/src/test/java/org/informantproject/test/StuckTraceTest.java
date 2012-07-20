@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreProperties;
+import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;

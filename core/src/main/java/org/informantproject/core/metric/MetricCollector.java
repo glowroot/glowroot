@@ -24,8 +24,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.informantproject.api.PluginServices.ConfigurationListener;
-import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.api.PluginServices.ConfigListener;
+import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,27 +41,27 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MetricCollector implements Runnable, ConfigurationListener {
+public class MetricCollector implements Runnable, ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricCollector.class);
 
     private final ScheduledExecutorService scheduledExecutor =
             DaemonExecutors.newSingleThreadScheduledExecutor("Informant-MetricCollector");
 
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final MetricSink metricSink;
 
     private volatile Future<?> future;
     private volatile int bossIntervalMillis;
 
     @Inject
-    public MetricCollector(ConfigurationService configurationService, MetricSink metricSink) {
-        this.configurationService = configurationService;
+    public MetricCollector(ConfigService configService, MetricSink metricSink) {
+        this.configService = configService;
         this.metricSink = metricSink;
-        bossIntervalMillis = configurationService.getCoreConfiguration().getMetricPeriodMillis();
+        bossIntervalMillis = configService.getCoreConfig().getMetricPeriodMillis();
         future = scheduledExecutor.scheduleWithFixedDelay(this, 0, bossIntervalMillis,
                 TimeUnit.MILLISECONDS);
-        configurationService.addConfigurationListener(this);
+        configService.addConfigListener(this);
     }
 
     public void run() {
@@ -79,7 +79,7 @@ public class MetricCollector implements Runnable, ConfigurationListener {
     }
 
     public void onChange() {
-        int updatedBossIntervalMillis = configurationService.getCoreConfiguration()
+        int updatedBossIntervalMillis = configService.getCoreConfig()
                 .getMetricPeriodMillis();
         if (updatedBossIntervalMillis != bossIntervalMillis) {
             bossIntervalMillis = updatedBossIntervalMillis;

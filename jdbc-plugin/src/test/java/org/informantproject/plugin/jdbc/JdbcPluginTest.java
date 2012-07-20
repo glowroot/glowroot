@@ -29,7 +29,7 @@ import java.util.List;
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.core.util.Files;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.PluginConfiguration;
+import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Metric;
@@ -124,11 +124,9 @@ public class JdbcPluginTest {
     public void testResultSetValueMetric() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = container.getInformant().getPluginConfiguration(
-                PLUGIN_ID);
-        pluginConfiguration.setProperty("captureResultSetGet", true);
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
-                .getPropertiesJson());
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setProperty("captureResultSetGet", true);
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then

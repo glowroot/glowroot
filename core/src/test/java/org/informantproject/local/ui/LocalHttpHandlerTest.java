@@ -20,8 +20,8 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.util.Set;
 
 import org.informantproject.core.MainEntryPoint;
-import org.informantproject.core.configuration.CoreConfigurationTestData;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
+import org.informantproject.core.config.CoreConfig;
+import org.informantproject.core.config.CoreConfigTestData;
 import org.informantproject.core.util.Threads;
 import org.junit.After;
 import org.junit.Before;
@@ -68,22 +68,21 @@ public class LocalHttpHandlerTest {
     }
 
     @Test
-    public void shouldUpdateAndReadBackConfiguration() throws Exception {
+    public void shouldUpdateAndReadBackConfig() throws Exception {
         // given
-        ImmutableCoreConfiguration randomCoreConfiguration = new CoreConfigurationTestData()
-                .getRandomCoreConfiguration();
+        CoreConfig randomCoreConfig = new CoreConfigTestData().getRandomCoreConfig();
         BoundRequestBuilder updateRequest = asyncHttpClient.preparePost("http://localhost:"
-                + MainEntryPoint.getPort() + "/configuration/core/properties");
-        updateRequest.setBody(randomCoreConfiguration.getPropertiesJson());
+                + MainEntryPoint.getPort() + "/config/core/properties");
+        updateRequest.setBody(randomCoreConfig.getPropertiesJson());
         updateRequest.execute().get();
         BoundRequestBuilder readRequest = asyncHttpClient.prepareGet("http://localhost:"
-                + MainEntryPoint.getPort() + "/configuration/read");
+                + MainEntryPoint.getPort() + "/config/read");
         // when
         Response response = readRequest.execute().get();
         // then
         String responseText = response.getResponseBody();
         JsonObject rootNode = new JsonParser().parse(responseText).getAsJsonObject();
-        String coreConfigurationJson = new Gson().toJson(rootNode.get("coreProperties"));
-        assertThat(coreConfigurationJson).isEqualTo(randomCoreConfiguration.getPropertiesJson());
+        String coreConfigJson = new Gson().toJson(rootNode.get("coreProperties"));
+        assertThat(coreConfigJson).isEqualTo(randomCoreConfig.getPropertiesJson());
     }
 }

@@ -27,9 +27,9 @@ import java.util.regex.Pattern;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.informantproject.core.configuration.PluginDescriptor;
-import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
-import org.informantproject.core.configuration.Plugins;
+import org.informantproject.core.config.PluginDescriptor;
+import org.informantproject.core.config.Plugins;
+import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.informantproject.core.util.XmlDocuments;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;

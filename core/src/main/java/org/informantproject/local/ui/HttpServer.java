@@ -82,7 +82,7 @@ public class HttpServer extends HttpServerBase {
             TraceDetailHttpService traceDetailJsonService,
             TraceExportHttpService traceExportHttpService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
-            ConfigurationJsonService configurationJsonService, MiscJsonService miscJsonService,
+            ConfigJsonService configJsonService, MiscJsonService miscJsonService,
             PluginJsonService pluginJsonService, ThreadDumpJsonService threadDumpJsonService) {
 
         super(port);
@@ -142,20 +142,20 @@ public class HttpServer extends HttpServerBase {
                 stackTraceJsonService, "getStackTrace"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/metrics/read$"),
                 metricJsonService, "getMetrics"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/read$"),
-                configurationJsonService, "getConfiguration"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/core"
-                + "/properties"), configurationJsonService, "storeCoreProperties"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/core"
-                + "/enable"), configurationJsonService, "enableCore"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/core"
-                + "/disable"), configurationJsonService, "disableCore"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/plugin"
-                + "/([^/]+)/enable"), configurationJsonService, "enablePlugin"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/plugin"
-                + "/([^/]+)/disable"), configurationJsonService, "disablePlugin"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/configuration/plugin"
-                + "/([^/]+)/properties$"), configurationJsonService, "storePluginProperties"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/read$"),
+                configJsonService, "getConfig"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/core"
+                + "/properties"), configJsonService, "storeCoreProperties"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/core"
+                + "/enable"), configJsonService, "enableCore"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/core"
+                + "/disable"), configJsonService, "disableCore"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/plugin"
+                + "/([^/]+)/enable"), configJsonService, "enablePlugin"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/plugin"
+                + "/([^/]+)/disable"), configJsonService, "disablePlugin"));
+        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/plugin"
+                + "/([^/]+)/properties$"), configJsonService, "storePluginProperties"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/packaged$"),
                 pluginJsonService, "getPackagedPlugins"));
         jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/installed$"),

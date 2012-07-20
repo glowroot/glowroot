@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 @javax.annotation.ParametersAreNonnullByDefault
-package org.informantproject.core.configuration;
+package org.informantproject.core.config;
 

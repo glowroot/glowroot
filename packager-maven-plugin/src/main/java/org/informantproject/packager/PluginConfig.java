@@ -24,11 +24,11 @@ import javax.annotation.Nullable;
  * @since 0.5
  */
 @Nullable
-public class PluginConfiguration {
+public class PluginConfig {
 
     private String groupId;
     private String artifactId;
-    private PropertyConfiguration[] properties;
+    private PropertyConfig[] properties;
 
     public String getId() {
         return groupId + ":" + artifactId;
@@ -50,16 +50,16 @@ public class PluginConfiguration {
         this.artifactId = artifactId;
     }
 
-    public PropertyConfiguration[] getProperties() {
+    public PropertyConfig[] getProperties() {
         return properties;
     }
 
-    public void setProperties(PropertyConfiguration[] properties) {
+    public void setProperties(PropertyConfig[] properties) {
         this.properties = properties;
     }
 
     @Nullable
-    public static class PropertyConfiguration {
+    public static class PropertyConfig {
         private String prompt;
         private String name;
         private String defaultValue;

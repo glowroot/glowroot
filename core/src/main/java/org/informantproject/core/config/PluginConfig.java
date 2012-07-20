@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.configuration;
+package org.informantproject.core.config;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
+import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,15 +38,14 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonWriter;
 
 /**
- * Immutable structure to hold the current configuration for Plugins.
+ * Immutable structure to hold the current config for a plugin.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ImmutablePluginConfiguration {
+public class PluginConfig {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(ImmutablePluginConfiguration.class);
+    private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
 
     private static final ImmutableList<Class<?>> validValueTypes;
 
@@ -66,7 +65,7 @@ public class ImmutablePluginConfiguration {
     // map values are @Nullable
     private final Map<String, Object> properties = Maps.newHashMap();
 
-    ImmutablePluginConfiguration(boolean enabled, Map<String, Object> properties) {
+    PluginConfig(boolean enabled, Map<String, Object> properties) {
         this.enabled = enabled;
         // make a copy and validate value types at the same time
         for (Entry<String, Object> subEntry : properties.entrySet()) {
@@ -78,7 +77,7 @@ public class ImmutablePluginConfiguration {
                 if (validValueTypes.contains(value.getClass())) {
                     this.properties.put(propertyName, value);
                 } else {
-                    logger.error("unexpected plugin configuration value type '" + value.getClass()
+                    logger.error("unexpected plugin config value type '" + value.getClass()
                             + "' for property name '" + propertyName + "' (expecting one of "
                             + Joiner.on(", ").join(validValueTypes) + ")", new Throwable());
                 }
@@ -181,7 +180,7 @@ public class ImmutablePluginConfiguration {
         if (object.getClass() != getClass()) {
             return false;
         }
-        ImmutablePluginConfiguration rhs = (ImmutablePluginConfiguration) object;
+        PluginConfig rhs = (PluginConfig) object;
         return enabled == rhs.enabled && properties.equals(rhs.properties);
     }
 
@@ -190,35 +189,35 @@ public class ImmutablePluginConfiguration {
         return Objects.hashCode(enabled, properties);
     }
 
-    public static ImmutablePluginConfiguration create(PluginDescriptor pluginDescriptor,
+    public static PluginConfig create(PluginDescriptor pluginDescriptor,
             boolean enabled) {
 
-        return new PluginConfigurationBuilder(pluginDescriptor)
+        return new PluginConfigBuilder(pluginDescriptor)
                 .setEnabled(enabled)
                 .build();
     }
 
-    public static ImmutablePluginConfiguration create(PluginDescriptor pluginDescriptor,
+    public static PluginConfig create(PluginDescriptor pluginDescriptor,
             boolean enabled, JsonObject propertiesJson) {
 
-        return new PluginConfigurationBuilder(pluginDescriptor)
+        return new PluginConfigBuilder(pluginDescriptor)
                 .setEnabled(enabled)
                 .setProperties(propertiesJson)
                 .build();
     }
 
-    public static ImmutablePluginConfiguration createDisabledHasNoDescriptor() {
-        return new ImmutablePluginConfiguration(false, new HashMap<String, Object>());
+    public static PluginConfig createDisabledHasNoDescriptor() {
+        return new PluginConfig(false, new HashMap<String, Object>());
     }
 
-    public static class PluginConfigurationBuilder {
+    public static class PluginConfigBuilder {
 
         private boolean enabled;
         private final PluginDescriptor pluginDescriptor;
         // map values are @Nullable
         private final Map<String, Object> properties;
 
-        public PluginConfigurationBuilder(PluginDescriptor pluginDescriptor) {
+        public PluginConfigBuilder(PluginDescriptor pluginDescriptor) {
             this.pluginDescriptor = pluginDescriptor;
             properties = Maps.newHashMap();
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
@@ -226,24 +225,24 @@ public class ImmutablePluginConfiguration {
             }
         }
 
-        public PluginConfigurationBuilder(PluginDescriptor pluginDescriptor,
-                ImmutablePluginConfiguration base) {
+        public PluginConfigBuilder(PluginDescriptor pluginDescriptor,
+                PluginConfig base) {
 
             this.pluginDescriptor = pluginDescriptor;
             this.enabled = base.enabled;
             properties = Maps.newHashMap(base.properties);
         }
 
-        public PluginConfigurationBuilder setEnabled(boolean enabled) {
+        public PluginConfigBuilder setEnabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
 
-        // ignoreExtraProperties option exists for instantiating plugin configuration from a stored
-        // json value which may be out of sync if the plugin has been updated and the given property
-        // has changed, e.g. from not hidden to hidden, in which case the associated error messages
+        // ignoreExtraProperties option exists for instantiating plugin config from a stored json
+        // value which may be out of sync if the plugin has been updated and the given property has
+        // changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        public PluginConfigurationBuilder setProperty(String name, @Nullable Object value,
+        public PluginConfigBuilder setProperty(String name, @Nullable Object value,
                 boolean ignoreExtraProperties) {
 
             PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
@@ -276,12 +275,12 @@ public class ImmutablePluginConfiguration {
             return this;
         }
 
-        public PluginConfigurationBuilder setProperties(JsonObject jsonObject) {
+        public PluginConfigBuilder setProperties(JsonObject jsonObject) {
             setProperties(jsonObject, false);
             return this;
         }
 
-        public PluginConfigurationBuilder setProperties(JsonObject jsonObject,
+        public PluginConfigBuilder setProperties(JsonObject jsonObject,
                 boolean ignoreExtraProperties) {
 
             Map<String, Object> overlayProperties = new Gson().fromJson(jsonObject,
@@ -299,8 +298,8 @@ public class ImmutablePluginConfiguration {
             return this;
         }
 
-        public ImmutablePluginConfiguration build() {
-            return new ImmutablePluginConfiguration(enabled, properties);
+        public PluginConfig build() {
+            return new PluginConfig(enabled, properties);
         }
     }
 }

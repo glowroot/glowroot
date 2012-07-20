@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.PluginConfiguration;
+import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Span;
@@ -122,9 +122,9 @@ public class ServletPluginTest {
     public void testHasSessionUsernameAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
@@ -136,9 +136,9 @@ public class ServletPluginTest {
     public void testSetSessionUsernameAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionUsernameAttribute.class);
         // then
@@ -150,9 +150,9 @@ public class ServletPluginTest {
     public void testSetSessionUsernameAttributeNull() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionUsernameAttributeNull.class);
         // then
@@ -166,9 +166,9 @@ public class ServletPluginTest {
     public void testHasNestedSessionUsernameAttributePath() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameone.two");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.two");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
@@ -180,9 +180,9 @@ public class ServletPluginTest {
     public void testSetNestedSessionUsernameAttributePath() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameone.two");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.two");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
         // then
@@ -194,9 +194,9 @@ public class ServletPluginTest {
     public void testHasMissingSessionUsernameAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "missingusernameattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "missingusernameattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
@@ -208,9 +208,9 @@ public class ServletPluginTest {
     public void testHasMissingNestedSessionUsernameAttributePath() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionUsernameAttribute", "usernameone.missingtwo");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.missingtwo");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
@@ -222,9 +222,9 @@ public class ServletPluginTest {
     public void testHasSessionAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "testattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "testattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -238,9 +238,9 @@ public class ServletPluginTest {
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "*");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "*");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -254,9 +254,9 @@ public class ServletPluginTest {
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", null);
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", null);
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -270,9 +270,9 @@ public class ServletPluginTest {
     public void testSetSessionAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "testattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "testattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -286,9 +286,9 @@ public class ServletPluginTest {
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "*");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "*");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -302,9 +302,9 @@ public class ServletPluginTest {
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", null);
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", null);
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -318,9 +318,9 @@ public class ServletPluginTest {
     public void testSetSessionAttributeNull() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "*");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "*");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
@@ -334,9 +334,9 @@ public class ServletPluginTest {
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "one.two");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "one.two");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -350,9 +350,9 @@ public class ServletPluginTest {
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "one.two");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "one.two");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -366,9 +366,9 @@ public class ServletPluginTest {
     public void testHasMissingSessionAttribute() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "missingtestattr");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "missingtestattr");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -382,9 +382,9 @@ public class ServletPluginTest {
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("sessionAttributes", "one.missingtwo");
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("sessionAttributes", "one.missingtwo");
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -416,9 +416,9 @@ public class ServletPluginTest {
     public void testServletContextInitialized() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("captureStartup", true);
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("captureStartup", true);
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
@@ -432,9 +432,9 @@ public class ServletPluginTest {
     public void testServletInit() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("captureStartup", true);
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("captureStartup", true);
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(TestServletInit.class);
         // then
@@ -448,9 +448,9 @@ public class ServletPluginTest {
     public void testFilterInit() throws Exception {
         // given
         container.getInformant().setThresholdMillis(0);
-        PluginConfiguration pluginConfiguration = getPluginConfiguration();
-        pluginConfiguration.setProperty("captureStartup", true);
-        storePluginConfiguration(pluginConfiguration);
+        PluginConfig pluginConfig = getPluginConfig();
+        pluginConfig.setProperty("captureStartup", true);
+        storePluginConfig(pluginConfig);
         // when
         container.executeAppUnderTest(TestFilterInit.class);
         // then
@@ -460,14 +460,12 @@ public class ServletPluginTest {
                 + TestFilterInit.class.getName() + ")");
     }
 
-    private PluginConfiguration getPluginConfiguration() throws Exception {
-        return container.getInformant().getPluginConfiguration(PLUGIN_ID);
+    private PluginConfig getPluginConfig() throws Exception {
+        return container.getInformant().getPluginConfig(PLUGIN_ID);
     }
 
-    private void storePluginConfiguration(PluginConfiguration pluginConfiguration)
-            throws Exception {
-
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfiguration
+    private void storePluginConfig(PluginConfig pluginConfig) throws Exception {
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig
                 .getPropertiesJson());
     }
 

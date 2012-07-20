@@ -19,9 +19,9 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import org.informantproject.testkit.Configuration.CoreProperties;
-import org.informantproject.testkit.Configuration.PluginConfiguration;
-import org.informantproject.testkit.Configuration.PluginConfigurationJsonDeserializer;
+import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.PluginConfig;
+import org.informantproject.testkit.Config.PluginConfigJsonDeserializer;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
@@ -71,36 +71,36 @@ public class Informant {
     }
 
     public CoreProperties getCoreProperties() throws Exception {
-        return getConfiguration().getCoreProperties();
+        return getConfig().getCoreProperties();
     }
 
     public void updateCoreProperties(CoreProperties properties) throws Exception {
-        post("/configuration/core/properties", new GsonBuilder().serializeNulls().create().toJson(
-                properties));
+        post("/config/core/properties",
+                new GsonBuilder().serializeNulls().create().toJson(properties));
     }
 
     public void disableCore() throws Exception {
-        get("/configuration/core/disable");
+        get("/config/core/disable");
     }
 
     public void enableCore() throws Exception {
-        get("/configuration/core/enable");
+        get("/config/core/enable");
     }
 
-    public PluginConfiguration getPluginConfiguration(String pluginId) throws Exception {
-        return getConfiguration().getPluginConfiguration().get(pluginId);
+    public PluginConfig getPluginConfig(String pluginId) throws Exception {
+        return getConfig().getPluginConfigs().get(pluginId);
     }
 
     public void storePluginProperties(String pluginId, String propertiesJson) throws Exception {
-        post("/configuration/plugin/" + pluginId + "/properties", propertiesJson);
+        post("/config/plugin/" + pluginId + "/properties", propertiesJson);
     }
 
     public void disablePlugin(String pluginId) throws Exception {
-        get("/configuration/plugin/" + pluginId + "/disable");
+        get("/config/plugin/" + pluginId + "/disable");
     }
 
     public void enablePlugin(String pluginId) throws Exception {
-        get("/configuration/plugin/" + pluginId + "/enable");
+        get("/config/plugin/" + pluginId + "/enable");
     }
 
     public Trace getLastTrace() throws Exception {
@@ -153,11 +153,11 @@ public class Informant {
         this.baselineTime = System.currentTimeMillis();
     }
 
-    private Configuration getConfiguration() throws Exception {
-        String json = get("/configuration/read");
-        Gson gson = new GsonBuilder().registerTypeAdapter(PluginConfiguration.class,
-                new PluginConfigurationJsonDeserializer()).create();
-        return gson.fromJson(json, Configuration.class);
+    private Config getConfig() throws Exception {
+        String json = get("/config/read");
+        Gson gson = new GsonBuilder().registerTypeAdapter(PluginConfig.class,
+                new PluginConfigJsonDeserializer()).create();
+        return gson.fromJson(json, Config.class);
     }
 
     private static String validateAndReturnBody(Response response) throws IOException {

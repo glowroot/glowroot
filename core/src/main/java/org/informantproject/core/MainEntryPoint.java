@@ -26,7 +26,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.store.FileLister;
 import org.informantproject.api.PluginServices;
-import org.informantproject.core.configuration.ConfigurationService;
+import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.trace.TraceRegistry;
@@ -124,7 +124,7 @@ public final class MainEntryPoint {
         synchronized (returnPluginServicesProxy) {
             for (PluginServicesProxy proxy : pluginServicesProxies) {
                 proxy.start(injector.getInstance(PluginServicesImplFactory.class), injector
-                        .getInstance(ConfigurationService.class));
+                        .getInstance(ConfigService.class));
             }
             // don't need reference to these proxies anymore, may as well clean up
             pluginServicesProxies.clear();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.configuration;
+package org.informantproject.core.config;
 
 import javax.annotation.Nullable;
 
@@ -23,14 +23,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 /**
- * Immutable structure to hold the current core configuration.
+ * Immutable structure to hold the current core config.
  * 
  * Default values should be conservative.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ImmutableCoreConfiguration {
+public class CoreConfig {
 
     public static final int SPAN_LIMIT_DISABLED = -1;
     public static final int THRESHOLD_DISABLED = -1;
@@ -153,10 +153,10 @@ public class ImmutableCoreConfiguration {
 
     @Override
     public boolean equals(@Nullable Object o) {
-        if (!(o instanceof ImmutableCoreConfiguration)) {
+        if (!(o instanceof CoreConfig)) {
             return false;
         }
-        ImmutableCoreConfiguration other = (ImmutableCoreConfiguration) o;
+        CoreConfig other = (CoreConfig) o;
         return Objects.equal(enabled, other.isEnabled())
                 && Objects.equal(thresholdMillis, other.getThresholdMillis())
                 && Objects.equal(stuckThresholdSeconds, other.getStuckThresholdSeconds())
@@ -179,13 +179,13 @@ public class ImmutableCoreConfiguration {
                 warnOnEntryOutsideTrace, metricPeriodMillis);
     }
 
-    static ImmutableCoreConfiguration create(boolean enabled, String propertiesJson) {
-        return new Gson().fromJson(propertiesJson, CoreConfigurationBuilder.class)
+    static CoreConfig create(boolean enabled, String propertiesJson) {
+        return new Gson().fromJson(propertiesJson, CoreConfigBuilder.class)
                 .setEnabled(enabled)
                 .build();
     }
 
-    public static class CoreConfigurationBuilder {
+    public static class CoreConfigBuilder {
 
         private boolean enabled;
         private int thresholdMillis;
@@ -198,11 +198,11 @@ public class ImmutableCoreConfiguration {
         private boolean warnOnEntryOutsideTrace;
         private int metricPeriodMillis;
 
-        public CoreConfigurationBuilder() {
-            this(new ImmutableCoreConfiguration());
+        public CoreConfigBuilder() {
+            this(new CoreConfig());
         }
 
-        public CoreConfigurationBuilder(ImmutableCoreConfiguration base) {
+        public CoreConfigBuilder(CoreConfig base) {
             enabled = base.enabled;
             thresholdMillis = base.thresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
@@ -215,19 +215,19 @@ public class ImmutableCoreConfiguration {
             metricPeriodMillis = base.metricPeriodMillis;
         }
 
-        public ImmutableCoreConfiguration build() {
-            ImmutableCoreConfiguration configuration = new ImmutableCoreConfiguration();
-            configuration.enabled = enabled;
-            configuration.thresholdMillis = thresholdMillis;
-            configuration.stuckThresholdSeconds = stuckThresholdSeconds;
-            configuration.profilerInitialDelayMillis = profilerInitialDelayMillis;
-            configuration.profilerIntervalMillis = profilerIntervalMillis;
-            configuration.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
-            configuration.maxEntries = maxEntries;
-            configuration.rollingSizeMb = rollingSizeMb;
-            configuration.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
-            configuration.metricPeriodMillis = metricPeriodMillis;
-            return configuration;
+        public CoreConfig build() {
+            CoreConfig config = new CoreConfig();
+            config.enabled = enabled;
+            config.thresholdMillis = thresholdMillis;
+            config.stuckThresholdSeconds = stuckThresholdSeconds;
+            config.profilerInitialDelayMillis = profilerInitialDelayMillis;
+            config.profilerIntervalMillis = profilerIntervalMillis;
+            config.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
+            config.maxEntries = maxEntries;
+            config.rollingSizeMb = rollingSizeMb;
+            config.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
+            config.metricPeriodMillis = metricPeriodMillis;
+            return config;
         }
 
         public void setFromJson(JsonObject jsonObject) {
@@ -263,58 +263,58 @@ public class ImmutableCoreConfiguration {
             }
         }
 
-        public CoreConfigurationBuilder setEnabled(boolean enabled) {
+        public CoreConfigBuilder setEnabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
 
-        public CoreConfigurationBuilder setThresholdMillis(int thresholdMillis) {
+        public CoreConfigBuilder setThresholdMillis(int thresholdMillis) {
             this.thresholdMillis = thresholdMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setStuckThresholdSeconds(int stuckThresholdSeconds) {
+        public CoreConfigBuilder setStuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
             return this;
         }
 
-        public CoreConfigurationBuilder setProfilerInitialDelayMillis(
+        public CoreConfigBuilder setProfilerInitialDelayMillis(
                 int profilerInitialDelayMillis) {
 
             this.profilerInitialDelayMillis = profilerInitialDelayMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setProfilerIntervalMillis(int profilerIntervalMillis) {
+        public CoreConfigBuilder setProfilerIntervalMillis(int profilerIntervalMillis) {
             this.profilerIntervalMillis = profilerIntervalMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setSpanStackTraceThresholdMillis(
+        public CoreConfigBuilder setSpanStackTraceThresholdMillis(
                 int spanStackTraceThresholdMillis) {
 
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
 
-        public CoreConfigurationBuilder setMaxEntries(int maxEntries) {
+        public CoreConfigBuilder setMaxEntries(int maxEntries) {
             this.maxEntries = maxEntries;
             return this;
         }
 
-        public CoreConfigurationBuilder setRollingSizeMb(int rollingSizeMb) {
+        public CoreConfigBuilder setRollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
         }
 
-        public CoreConfigurationBuilder setWarnOnEntryOutsideTrace(
+        public CoreConfigBuilder setWarnOnEntryOutsideTrace(
                 boolean warnOnEntryOutsideTrace) {
 
             this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
             return this;
         }
 
-        public CoreConfigurationBuilder setMetricPeriodMillis(int metricPeriodMillis) {
+        public CoreConfigBuilder setMetricPeriodMillis(int metricPeriodMillis) {
             this.metricPeriodMillis = metricPeriodMillis;
             return this;
         }

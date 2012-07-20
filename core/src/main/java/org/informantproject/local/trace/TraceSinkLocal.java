@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.Message;
-import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
+import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.Trace.Attribute;
@@ -52,7 +52,7 @@ public class TraceSinkLocal implements TraceSink {
     private final ExecutorService executorService = DaemonExecutors
             .newSingleThreadExecutor("Informant-StackCollector");
 
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final TraceDao traceDao;
     private final TraceCommonJsonService traceCommonJsonService;
     private final Ticker ticker;
@@ -60,20 +60,19 @@ public class TraceSinkLocal implements TraceSink {
     private final Gson gson = new Gson();
 
     @Inject
-    public TraceSinkLocal(ConfigurationService configurationService, TraceDao traceDao,
+    public TraceSinkLocal(ConfigService configService, TraceDao traceDao,
             TraceCommonJsonService traceCommonJsonService, Ticker ticker) {
 
-        this.configurationService = configurationService;
+        this.configService = configService;
         this.traceDao = traceDao;
         this.traceCommonJsonService = traceCommonJsonService;
         this.ticker = ticker;
     }
 
     public void onCompletedTrace(final Trace trace) {
-        ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
-        int thresholdMillis = configuration.getThresholdMillis();
-        boolean thresholdDisabled =
-                (thresholdMillis == ImmutableCoreConfiguration.THRESHOLD_DISABLED);
+        CoreConfig config = configService.getCoreConfig();
+        int thresholdMillis = config.getThresholdMillis();
+        boolean thresholdDisabled = (thresholdMillis == CoreConfig.THRESHOLD_DISABLED);
         long durationInNanoseconds = trace.getRootSpan().getDuration();
         // if the completed trace exceeded the given threshold then it is sent to the sink. the
         // completed trace is also checked in case it was previously sent to the sink and marked as

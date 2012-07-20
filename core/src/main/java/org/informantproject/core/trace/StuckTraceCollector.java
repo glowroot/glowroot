@@ -19,8 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.ImmutableCoreConfiguration;
+import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,16 +49,16 @@ public class StuckTraceCollector implements Runnable {
 
     private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final Ticker ticker;
 
     @Inject
     public StuckTraceCollector(TraceRegistry traceRegistry, TraceSink traceSink,
-            ConfigurationService configurationService, Ticker ticker) {
+            ConfigService configService, Ticker ticker) {
 
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
-        this.configurationService = configurationService;
+        this.configService = configService;
         this.ticker = ticker;
         // wait to schedule the real stuck thread command until it is within CHECK_INTERVAL_MILLIS
         // from needing to start
@@ -88,13 +88,13 @@ public class StuckTraceCollector implements Runnable {
     // look for traces that will exceed the stuck threshold within the next polling interval and
     // schedule stuck trace command to run at the appropriate time(s)
     private void runInternal() {
-        ImmutableCoreConfiguration configuration = configurationService.getCoreConfiguration();
-        if (configuration.getStuckThresholdSeconds()
-                != ImmutableCoreConfiguration.THRESHOLD_DISABLED) {
+        CoreConfig config = configService.getCoreConfig();
+        if (config.getStuckThresholdSeconds()
+                != CoreConfig.THRESHOLD_DISABLED) {
             // stuck threshold is not disabled
-            long stuckThresholdTick = ticker.read() - TimeUnit.SECONDS.toNanos(configuration
-                    .getStuckThresholdSeconds()) + TimeUnit.MILLISECONDS.toNanos(
-                    CHECK_INTERVAL_MILLIS);
+            long stuckThresholdTick = ticker.read()
+                    - TimeUnit.SECONDS.toNanos(config.getStuckThresholdSeconds())
+                    + TimeUnit.MILLISECONDS.toNanos(CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace is within CHECK_INTERVAL_MILLIS from hitting the stuck
                 // thread threshold and the stuck thread messaging hasn't already been scheduled
@@ -102,9 +102,9 @@ public class StuckTraceCollector implements Runnable {
                 if (Nanoseconds.lessThan(trace.getStartTick(), stuckThresholdTick)
                         && trace.getStuckCommandScheduledFuture() == null) {
                     // schedule stuck thread
-                    long initialDelayMillis = Math.max(0, TimeUnit.SECONDS.toMillis(configuration
-                            .getStuckThresholdSeconds() - TimeUnit.NANOSECONDS.toMillis(trace
-                            .getDuration())));
+                    long initialDelayMillis = Math.max(0,
+                            TimeUnit.SECONDS.toMillis(config.getStuckThresholdSeconds()
+                                    - TimeUnit.NANOSECONDS.toMillis(trace.getDuration())));
                     CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
                             traceSink);
                     ScheduledFuture<?> stuckCommandScheduledFuture = scheduledExecutor.schedule(

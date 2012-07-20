@@ -48,8 +48,6 @@ import org.informantproject.shaded.google.common.collect.Maps;
  * calls.
  * 
  * By default only calls to the top-most Filter and to the top-most Servlet are captured.
- * "isWarnOnSpanOutsideTrace" core configuration property can be used to enable capturing of nested
- * Filters and nested Servlets as well.
  * 
  * This plugin is careful not to rely on request or session objects being thread-safe.
  * 

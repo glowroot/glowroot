@@ -54,7 +54,7 @@ public abstract class PluginServices {
 
     public abstract Metric getMetric(Class<?> adviceClass);
 
-    public abstract void registerConfigurationListener(ConfigurationListener listener);
+    public abstract void registerConfigListener(ConfigListener listener);
 
     public abstract boolean isEnabled();
 
@@ -114,10 +114,10 @@ public abstract class PluginServices {
         }
     }
 
-    public interface ConfigurationListener {
-        // the new configuration is not passed to onChange so that the receiver has to get the
-        // latest which avoids race condition worries that two updates may get sent to the receiver
-        // in the wrong order
+    public interface ConfigListener {
+        // the new config is not passed to onChange so that the receiver has to get the latest,
+        // this avoids race condition worries that two updates may get sent to the receiver in the
+        // wrong order
         void onChange();
     }
 
@@ -145,7 +145,7 @@ public abstract class PluginServices {
             return null;
         }
         @Override
-        public void registerConfigurationListener(ConfigurationListener listener) {}
+        public void registerConfigListener(ConfigListener listener) {}
         @Override
         public Stopwatch startTrace(Supplier<Message> message, Metric metric) {
             return NopStopwatch.INSTANCE;

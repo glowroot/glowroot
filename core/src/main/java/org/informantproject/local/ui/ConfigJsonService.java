@@ -18,9 +18,9 @@ package org.informantproject.local.ui;
 import java.io.IOException;
 import java.util.List;
 
-import org.informantproject.core.configuration.ConfigurationService;
-import org.informantproject.core.configuration.PluginDescriptor;
-import org.informantproject.core.configuration.Plugins;
+import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.PluginDescriptor;
+import org.informantproject.core.config.Plugins;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
@@ -35,66 +35,63 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read configuration data.
+ * Json service to read config data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class ConfigurationJsonService implements JsonService {
+public class ConfigJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigurationJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
 
-    private final ConfigurationService configurationService;
+    private final ConfigService configService;
     private final RollingFile rollingFile;
     private final Gson gson = new Gson();
 
     @Inject
-    public ConfigurationJsonService(ConfigurationService configurationService,
-            RollingFile rollingFile) {
-
-        this.configurationService = configurationService;
+    public ConfigJsonService(ConfigService configService, RollingFile rollingFile) {
+        this.configService = configService;
         this.rollingFile = rollingFile;
     }
 
     public void enableCore() {
-        configurationService.setCoreEnabled(true);
+        configService.setCoreEnabled(true);
     }
 
     public void disableCore() {
-        configurationService.setCoreEnabled(false);
+        configService.setCoreEnabled(false);
     }
 
     public void enablePlugin(String pluginId) {
-        configurationService.setPluginEnabled(pluginId, true);
+        configService.setPluginEnabled(pluginId, true);
     }
 
     public void disablePlugin(String pluginId) {
-        configurationService.setPluginEnabled(pluginId, false);
+        configService.setPluginEnabled(pluginId, false);
     }
 
     // called dynamically from HttpServer
-    public String getConfiguration() {
-        logger.debug("getConfiguration()");
+    public String getConfig() {
+        logger.debug("getConfig()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
         double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024;
-        return "{\"enabled\":" + configurationService.getCoreConfiguration().isEnabled()
-                + ",\"coreProperties\":" + configurationService.getCoreConfiguration()
-                        .getPropertiesJson() + ",\"pluginConfiguration\":" + configurationService
-                        .getPluginConfigurationJson() + ",\"pluginDescriptors\":" + gson.toJson(
-                        pluginDescriptors) + ",\"actualRollingSizeMb\":" + rollingSizeMb
-                + "}";
+        return "{\"enabled\":" + configService.getCoreConfig().isEnabled()
+                + ",\"coreProperties\":" + configService.getCoreConfig().getPropertiesJson()
+                + ",\"pluginConfigs\":" + configService.getPluginConfigsJson()
+                + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
+                + ",\"actualRollingSizeMb\":" + rollingSizeMb + "}";
     }
 
     // called dynamically from HttpServer
     public void storeCoreProperties(String properties) {
         logger.debug("storeCoreProperties(): properties={}", properties);
         JsonObject propertiesJson = new JsonParser().parse(properties).getAsJsonObject();
-        configurationService.updateCoreConfiguration(propertiesJson);
+        configService.updateCoreConfig(propertiesJson);
         try {
             // resize() doesn't do anything if the new and old value are the same
-            rollingFile.resize(configurationService.getCoreConfiguration().getRollingSizeMb()
+            rollingFile.resize(configService.getCoreConfig().getRollingSizeMb()
                     * 1024);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -107,6 +104,6 @@ public class ConfigurationJsonService implements JsonService {
     public void storePluginProperties(String pluginId, String properties) {
         logger.debug("storePluginProperties(): pluginId={}, properties={}", pluginId, properties);
         JsonObject propertiesJson = new JsonParser().parse(properties).getAsJsonObject();
-        configurationService.storePluginConfiguration(pluginId, propertiesJson);
+        configService.storePluginConfig(pluginId, propertiesJson);
     }
 }

@@ -18,7 +18,7 @@ package org.informantproject.test;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Configuration.CoreProperties;
+import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;

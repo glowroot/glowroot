@@ -31,7 +31,7 @@ import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.PluginServices.ConfigurationListener;
+import org.informantproject.api.PluginServices.ConfigListener;
 import org.informantproject.api.Stopwatch;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
@@ -318,7 +318,7 @@ public class JdbcAspect {
         private static volatile boolean pluginEnabled;
         private static volatile boolean metricEnabled;
         static {
-            pluginServices.registerConfigurationListener(new ConfigurationListener() {
+            pluginServices.registerConfigListener(new ConfigListener() {
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
                     metricEnabled = pluginEnabled && pluginServices.getBooleanProperty(
@@ -382,7 +382,7 @@ public class JdbcAspect {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
         private static volatile boolean metricEnabled;
         static {
-            pluginServices.registerConfigurationListener(new ConfigurationListener() {
+            pluginServices.registerConfigListener(new ConfigListener() {
                 public void onChange() {
                     metricEnabled = pluginServices.isEnabled() && pluginServices
                             .getBooleanProperty("captureResultSetGet");
@@ -412,7 +412,7 @@ public class JdbcAspect {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice2.class);
         private static volatile boolean metricEnabled;
         static {
-            pluginServices.registerConfigurationListener(new ConfigurationListener() {
+            pluginServices.registerConfigListener(new ConfigListener() {
                 public void onChange() {
                     metricEnabled = pluginServices.isEnabled() && pluginServices
                             .getBooleanProperty("captureResultSetGet");

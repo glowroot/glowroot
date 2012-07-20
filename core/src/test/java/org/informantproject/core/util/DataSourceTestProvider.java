@@ -39,8 +39,8 @@ public class DataSourceTestProvider implements Provider<DataSource> {
             if (dataSource.tableExists("trace")) {
                 dataSource.execute("drop table trace");
             }
-            if (dataSource.tableExists("configuration")) {
-                dataSource.execute("drop table configuration");
+            if (dataSource.tableExists("config")) {
+                dataSource.execute("drop table config");
             }
             return dataSource;
         } catch (SQLException e) {

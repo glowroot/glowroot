@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.configuration;
+package org.informantproject.core.config;
 
 import java.io.IOException;
 import java.net.URL;
@@ -25,7 +25,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.informantproject.core.configuration.PluginDescriptor.PropertyDescriptor;
+import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.informantproject.core.util.XmlDocuments;
 import org.informantproject.local.ui.PluginJsonService;
 import org.slf4j.Logger;

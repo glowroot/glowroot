@@ -19,8 +19,8 @@ import java.util.List;
 
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.MainEntryPoint;
-import org.informantproject.core.configuration.PluginDescriptor;
-import org.informantproject.core.configuration.Plugins;
+import org.informantproject.core.config.PluginDescriptor;
+import org.informantproject.core.config.Plugins;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.IsolatedWeavingClassLoader;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;

@@ -46,7 +46,7 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
-import org.informantproject.packager.PluginConfiguration.PropertyConfiguration;
+import org.informantproject.packager.PluginConfig.PropertyConfig;
 import org.informantproject.packager.PluginDescriptor.PropertyDescriptor;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -115,7 +115,7 @@ public class PackagerMojo extends AbstractMojo {
     /**
      * @parameter
      */
-    private PluginConfiguration[] plugins;
+    private PluginConfig[] plugins;
 
     public void execute() throws MojoExecutionException {
         try {
@@ -133,7 +133,7 @@ public class PackagerMojo extends AbstractMojo {
             ParserConfigurationException, SAXException {
 
         if (plugins == null) {
-            plugins = new PluginConfiguration[0];
+            plugins = new PluginConfig[0];
         }
         @SuppressWarnings("unchecked")
         List<Artifact> artifacts = project.getCompileArtifacts();
@@ -189,9 +189,9 @@ public class PackagerMojo extends AbstractMojo {
             for (Artifact artifact : artifacts) {
                 explode(artifact.getFile(), jarOut, seenDirectories, pluginDescriptors);
             }
-            validateConfigurationForDuplicates();
-            for (PluginConfiguration pluginConfiguration : plugins) {
-                validateConfigurationItem(pluginDescriptors, pluginConfiguration);
+            validateConfigForDuplicates();
+            for (PluginConfig pluginConfig : plugins) {
+                validateConfigItem(pluginDescriptors, pluginConfig);
             }
             if (!pluginDescriptors.isEmpty()) {
                 writePackageXml(pluginDescriptors, jarOut);
@@ -238,11 +238,11 @@ public class PackagerMojo extends AbstractMojo {
         }
     }
 
-    private void validateConfigurationForDuplicates() throws MojoExecutionException {
-        for (PluginConfiguration pluginConfiguration : plugins) {
-            for (PluginConfiguration pluginConfiguration2 : plugins) {
-                if (pluginConfiguration != pluginConfiguration2 && pluginConfiguration.getId()
-                        .equals(pluginConfiguration2.getId())) {
+    private void validateConfigForDuplicates() throws MojoExecutionException {
+        for (PluginConfig pluginConfig : plugins) {
+            for (PluginConfig pluginConfig2 : plugins) {
+                if (pluginConfig != pluginConfig2 && pluginConfig.getId()
+                        .equals(pluginConfig2.getId())) {
                     throw new MojoExecutionException("Found duplicate <plugin> tags (same groupId"
                             + " and artifactId) under <configuration>");
                 }
@@ -250,37 +250,37 @@ public class PackagerMojo extends AbstractMojo {
         }
     }
 
-    private void validateConfigurationItem(List<PluginDescriptor> pluginDescriptors,
-            PluginConfiguration pluginConfiguration) throws MojoExecutionException {
+    private void validateConfigItem(List<PluginDescriptor> pluginDescriptors,
+            PluginConfig pluginConfig) throws MojoExecutionException {
 
-        PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginConfiguration,
+        PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginConfig,
                 pluginDescriptors);
         if (pluginDescriptor == null) {
             throw new MojoExecutionException("Found <plugin> tag under <configuration> that"
                     + " doesn't have a corresponding dependency in the pom file");
         }
         // check for property names with missing corresponding property name in property descriptor
-        validateProperties(pluginConfiguration, pluginDescriptor);
+        validateProperties(pluginConfig, pluginDescriptor);
     }
 
     @Nullable
-    private PluginDescriptor getPluginDescriptor(PluginConfiguration pluginConfiguration,
+    private PluginDescriptor getPluginDescriptor(PluginConfig pluginConfig,
             List<PluginDescriptor> pluginDescriptors) {
 
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            if (pluginDescriptor.getId().equals(pluginConfiguration.getId())) {
+            if (pluginDescriptor.getId().equals(pluginConfig.getId())) {
                 return pluginDescriptor;
             }
         }
         return null;
     }
 
-    private void validateProperties(PluginConfiguration pluginConfiguration,
+    private void validateProperties(PluginConfig pluginConfig,
             PluginDescriptor pluginDescriptor) throws MojoExecutionException {
 
-        for (PropertyConfiguration propertyConfiguration : pluginConfiguration
+        for (PropertyConfig propertyConfig : pluginConfig
                 .getProperties()) {
-            String propertyName = propertyConfiguration.getName();
+            String propertyName = propertyConfig.getName();
             if (propertyName == null || propertyName.length() == 0) {
                 throw new MojoExecutionException("Missing or empty <name> under"
                         + " <configuration>/<plugins>/<plugin>/<properties>/<property>");
@@ -335,10 +335,10 @@ public class PackagerMojo extends AbstractMojo {
     }
 
     @Nullable
-    private PluginConfiguration getPluginConfiguration(String id) {
-        for (PluginConfiguration pluginConfiguration : plugins) {
-            if (pluginConfiguration.getId().equals(id)) {
-                return pluginConfiguration;
+    private PluginConfig getPluginConfig(String id) {
+        for (PluginConfig pluginConfig : plugins) {
+            if (pluginConfig.getId().equals(id)) {
+                return pluginConfig;
             }
         }
         return null;
@@ -348,10 +348,10 @@ public class PackagerMojo extends AbstractMojo {
         if (pluginDescriptor.getProperties().isEmpty()) {
             return;
         }
-        PluginConfiguration pluginConfiguration = getPluginConfiguration(pluginDescriptor.getId());
+        PluginConfig pluginConfig = getPluginConfig(pluginDescriptor.getId());
         out.println("      <properties>");
         for (PropertyDescriptor property : pluginDescriptor.getProperties()) {
-            PropertyConfiguration override = getPropertyConfiguration(pluginConfiguration,
+            PropertyConfig override = getPropertyConfig(pluginConfig,
                     property.getName());
             out.println("        <property>");
             if (override != null && override.getPrompt() != null) {
@@ -384,15 +384,15 @@ public class PackagerMojo extends AbstractMojo {
     }
 
     @Nullable
-    private PropertyConfiguration getPropertyConfiguration(
-            @Nullable PluginConfiguration pluginConfiguration, String name) {
+    private PropertyConfig getPropertyConfig(
+            @Nullable PluginConfig pluginConfig, String name) {
 
-        if (pluginConfiguration == null || pluginConfiguration.getProperties() == null) {
+        if (pluginConfig == null || pluginConfig.getProperties() == null) {
             return null;
         }
-        for (PropertyConfiguration propertyConfiguration : pluginConfiguration.getProperties()) {
-            if (propertyConfiguration.getName().equals(name)) {
-                return propertyConfiguration;
+        for (PropertyConfig propertyConfig : pluginConfig.getProperties()) {
+            if (propertyConfig.getName().equals(name)) {
+                return propertyConfig;
             }
         }
         return null;

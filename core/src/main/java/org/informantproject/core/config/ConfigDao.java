@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.configuration;
+package org.informantproject.core.config;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,15 +37,15 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Data access object for storing and reading configuration data from the embedded H2 database.
+ * Data access object for storing and reading config data from the embedded H2 database.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-class ConfigurationDao {
+class ConfigDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigurationDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(ConfigDao.class);
 
     private static final String CORE = "core";
 
@@ -59,20 +59,19 @@ class ConfigurationDao {
     private final Gson gson = new Gson();
 
     @Inject
-    ConfigurationDao(DataSource dataSource) {
+    ConfigDao(DataSource dataSource) {
         this.dataSource = dataSource;
         boolean localValid;
         try {
-            if (!dataSource.tableExists("configuration")) {
-                dataSource.createTable("configuration", columns);
-            } else if (dataSource.tableNeedsUpgrade("configuration", columns)) {
-                logger.warn("upgrading configuration table schema, which unfortunately at this"
-                        + " point just means dropping and re-create the table (losing existing"
-                        + " data)");
-                dataSource.execute("drop table configuration");
-                dataSource.createTable("configuration", columns);
-                logger.warn("the schema for the configuration table was outdated so it was dropped"
-                        + " and re-created, existing configuration data was lost");
+            if (!dataSource.tableExists("config")) {
+                dataSource.createTable("config", columns);
+            } else if (dataSource.tableNeedsUpgrade("config", columns)) {
+                logger.warn("upgrading config table schema, which unfortunately at this point just"
+                        + " means dropping and re-create the table (losing existing data)");
+                dataSource.execute("drop table config");
+                dataSource.createTable("config", columns);
+                logger.warn("the schema for the config table was outdated so it was dropped and"
+                        + " re-created, existing config data was lost");
             }
             localValid = true;
         } catch (SQLException e) {
@@ -83,17 +82,17 @@ class ConfigurationDao {
     }
 
     @Nullable
-    ImmutableCoreConfiguration readCoreConfiguration() {
-        logger.debug("readCoreConfiguration()");
+    CoreConfig readCoreConfig() {
+        logger.debug("readCoreConfig()");
         if (!valid) {
             return null;
         }
         try {
-            return dataSource.query("select enabled, properties from configuration where id = ?",
+            return dataSource.query("select enabled, properties from config where id = ?",
                     new Object[] { CORE },
-                    new ResultSetExtractor<ImmutableCoreConfiguration>() {
+                    new ResultSetExtractor<CoreConfig>() {
                         @Nullable
-                        public ImmutableCoreConfiguration extractData(ResultSet resultSet)
+                        public CoreConfig extractData(ResultSet resultSet)
                                 throws SQLException {
                             if (resultSet.next()) {
                                 // default value for enabled is true (so can't just use
@@ -108,7 +107,7 @@ class ConfigurationDao {
                                 // of the default property values
                                 String propertiesJson = Objects.firstNonNull(resultSet
                                         .getString(2), "{}");
-                                return ImmutableCoreConfiguration.create(enabled, propertiesJson);
+                                return CoreConfig.create(enabled, propertiesJson);
                             } else {
                                 return null;
                             }
@@ -121,22 +120,22 @@ class ConfigurationDao {
     }
 
     @Nullable
-    ImmutablePluginConfiguration readPluginConfiguration(final PluginDescriptor pluginDescriptor) {
-        logger.debug("readPluginConfiguration(): pluginDescriptor.id={}", pluginDescriptor.getId());
+    PluginConfig readPluginConfig(final PluginDescriptor pluginDescriptor) {
+        logger.debug("readPluginConfig(): pluginDescriptor.id={}", pluginDescriptor.getId());
         if (!valid) {
             return null;
         }
         try {
-            return dataSource.query("select enabled, properties from configuration where id = ?",
+            return dataSource.query("select enabled, properties from config where id = ?",
                     new Object[] { pluginDescriptor.getId() },
-                    new ResultSetExtractor<ImmutablePluginConfiguration>() {
+                    new ResultSetExtractor<PluginConfig>() {
                         @Nullable
-                        public ImmutablePluginConfiguration extractData(ResultSet resultSet)
+                        public PluginConfig extractData(ResultSet resultSet)
                                 throws SQLException {
                             if (resultSet.next()) {
-                                return buildPluginConfiguration(pluginDescriptor, resultSet);
+                                return buildPluginConfig(pluginDescriptor, resultSet);
                             } else {
-                                // no existing plugin configuration record
+                                // no existing plugin config record
                                 return null;
                             }
                         }
@@ -150,7 +149,7 @@ class ConfigurationDao {
     void setCoreEnabled(boolean enabled) {
         logger.debug("setCoreEnabled(): enabled={}", enabled);
         try {
-            dataSource.update("merge into configuration (id, enabled) values (?, ?)", new Object[] {
+            dataSource.update("merge into config (id, enabled) values (?, ?)", new Object[] {
                     CORE, enabled });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -160,7 +159,7 @@ class ConfigurationDao {
     void setPluginEnabled(String pluginId, boolean enabled) {
         logger.debug("setPluginEnabled(): pluginId={}, enabled={}", pluginId, enabled);
         try {
-            dataSource.update("merge into configuration (id, enabled) values (?, ?)", new Object[] {
+            dataSource.update("merge into config (id, enabled) values (?, ?)", new Object[] {
                     pluginId, enabled });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -173,8 +172,8 @@ class ConfigurationDao {
             return;
         }
         try {
-            dataSource.update("merge into configuration (id, properties) values (?, ?)",
-                    new Object[] { CORE, propertiesJson });
+            dataSource.update("merge into config (id, properties) values (?, ?)", new Object[] {
+                    CORE, propertiesJson });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -187,14 +186,14 @@ class ConfigurationDao {
             return;
         }
         try {
-            dataSource.update("merge into configuration (id, properties) values (?, ?)",
-                    new Object[] { pluginId, propertiesJson });
+            dataSource.update("merge into config (id, properties) values (?, ?)", new Object[] {
+                    pluginId, propertiesJson });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
     }
 
-    private ImmutablePluginConfiguration buildPluginConfiguration(
+    private PluginConfig buildPluginConfig(
             PluginDescriptor pluginDescriptor, ResultSet resultSet) throws SQLException {
 
         Object enabledObject = resultSet.getObject(1);
@@ -205,22 +204,21 @@ class ConfigurationDao {
         }
         String json = resultSet.getString(2);
         if (json == null) {
-            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
+            return PluginConfig.create(pluginDescriptor, enabled);
         }
         JsonElement propertiesElement;
         try {
             propertiesElement = gson.fromJson(json, JsonElement.class);
         } catch (JsonSyntaxException e) {
             logger.error(e.getMessage(), e);
-            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
+            return PluginConfig.create(pluginDescriptor, enabled);
         }
         if (propertiesElement.isJsonObject()) {
-            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled, propertiesElement
+            return PluginConfig.create(pluginDescriptor, enabled, propertiesElement
                     .getAsJsonObject());
         } else {
-            logger.error("configuration for plugin id '{}' is not json object", pluginDescriptor
-                    .getId());
-            return ImmutablePluginConfiguration.create(pluginDescriptor, enabled);
+            logger.error("config for plugin id '{}' is not json object", pluginDescriptor.getId());
+            return PluginConfig.create(pluginDescriptor, enabled);
         }
     }
 }
