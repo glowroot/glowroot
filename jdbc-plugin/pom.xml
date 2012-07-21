@@ -22,10 +22,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!--
-        using shaded-guava dependency to take advantage of
-        the guava library already included in the Informant jar
-      -->
+      <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
+        already provided in the informant jar -->
       <groupId>org.informantproject.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
       <!-- this is the last version of guava that supports jdk 5 -->

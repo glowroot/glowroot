@@ -121,10 +121,8 @@
       <version>1.7.5</version>
     </dependency>
     <dependency>
-      <!--
-        using sisu-guice for now until guice upgrades to guava 10.0
-        primarily due to http://code.google.com/p/google-guice/issues/detail?id=288
-      -->
+      <!-- using sisu-guice for now until guice upgrades to guava 10.0
+        primarily due to http://code.google.com/p/google-guice/issues/detail?id=288 -->
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-guice</artifactId>
       <version>3.1.1</version>
@@ -136,9 +134,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <!--
-        using sisu-guice for now until guice upgrades to guava 10.0
-      -->
+      <!-- using sisu-guice for now until guice upgrades to guava 10.0 -->
       <groupId>org.sonatype.sisu.inject</groupId>
       <artifactId>guice-assistedinject</artifactId>
       <version>3.1.1</version>
@@ -178,9 +174,7 @@
       <version>1.1</version>
       <scope>test</scope>
       <exclusions>
-        <!--
-          using sisu-guice for now until guice upgrades to guava 10.0
-        -->
+        <!-- using sisu-guice for now until guice upgrades to guava 10.0 -->
         <exclusion>
           <groupId>com.google.inject</groupId>
           <artifactId>guice</artifactId>
@@ -197,10 +191,8 @@
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <!--
-          locally built 1.7.1 plus new shadeSourcesContent feature from
-          https://jira.codehaus.org/browse/MSHADE-112
-        -->
+        <!-- locally built 1.7.1 plus new shadeSourcesContent feature from
+          https://jira.codehaus.org/browse/MSHADE-112 -->
         <version>1.7.1-1-SNAPSHOT</version>
         <executions>
           <execution>
@@ -262,17 +254,13 @@
               <shadedPattern>org.informantproject.shaded.h2</shadedPattern>
             </relocation>
             <relocation>
-              <!--
-                shade thread names as well to make it easy to identify informant threads
-              -->
+              <!-- shade thread names as well to make it easy to identify informant threads -->
               <rawString>true</rawString>
               <pattern>H2 File Lock Watchdog</pattern>
               <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
             </relocation>
             <relocation>
-              <!--
-                shade thread names as well to make it easy to identify informant threads
-              -->
+              <!-- shade thread names as well to make it easy to identify informant threads -->
               <rawString>true</rawString>
               <pattern>H2 Log Writer</pattern>
               <shadedPattern>H2 Log Writer</shadedPattern>

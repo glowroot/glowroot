@@ -43,10 +43,8 @@
       <version>11.0.2</version>
       <exclusions>
         <exclusion>
-          <!--
-            the shaded guava artifact is available to informant plugins
-            but there is no need to make jsr305 available to plugins
-          -->
+          <!-- the shaded guava artifact is available to informant plugins but there is no need to
+            make jsr305 available to plugins -->
           <groupId>com.google.code.findbugs</groupId>
           <artifactId>jsr305</artifactId>
         </exclusion>
@@ -58,10 +56,8 @@
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <!--
-          locally built 1.7.1 plus new shadeSourcesContent feature from
-          https://jira.codehaus.org/browse/MSHADE-112
-        -->
+        <!-- locally built 1.7.1 plus new shadeSourcesContent feature from
+          https://jira.codehaus.org/browse/MSHADE-112 -->
         <version>1.7.1-1-SNAPSHOT</version>
         <executions>
           <execution>
