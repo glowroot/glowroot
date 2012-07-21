@@ -63,9 +63,8 @@ public class PluginPropertyTest {
         // when
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat((String) pluginConfig.getProperty("alternateDescription")).isEqualTo(randomText);
-        assertThat((Boolean) pluginConfig.getProperty("starredDescription")).isEqualTo(
-                randomBoolean);
+        assertThat(pluginConfig.getProperty("alternateDescription")).isEqualTo(randomText);
+        assertThat(pluginConfig.getProperty("starredDescription")).isEqualTo(randomBoolean);
     }
 
     @Test

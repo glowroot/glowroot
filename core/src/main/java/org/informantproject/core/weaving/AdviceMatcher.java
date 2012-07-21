@@ -112,8 +112,8 @@ public class AdviceMatcher {
                 return false;
             }
             // only supporting /.*/ regex at this point
-            if (!pointcutMethodArgs[i].equals("/.*/") && !pointcutMethodArgs[i].equals(
-                    argumentTypes[i].getClassName())) {
+            if (!pointcutMethodArgs[i].equals("/.*/")
+                    && !pointcutMethodArgs[i].equals(argumentTypes[i].getClassName())) {
                 return false;
             }
         }

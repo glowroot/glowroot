@@ -86,16 +86,16 @@ public class JdbcAspect {
         public static void onReturn(@InjectReturn PreparedStatement preparedStatement,
                 @InjectMethodArg String sql) {
 
-            ((HasStatementMirror) preparedStatement).setInformantStatementMirror(
-                    new PreparedStatementMirror(sql));
+            ((HasStatementMirror) preparedStatement)
+                    .setInformantStatementMirror(new PreparedStatementMirror(sql));
         }
     }
 
     @Pointcut(typeName = "java.sql.Connection", methodName = "/prepare.*/",
             methodArgs = { "java.lang.String", ".." }, metricName = "jdbc prepare")
     public static class PrepareStatementTimingAdvice {
-        private static final Metric metric = pluginServices.getMetric(
-                PrepareStatementTimingAdvice.class);
+        private static final Metric metric = pluginServices
+                .getMetric(PrepareStatementTimingAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -126,8 +126,8 @@ public class JdbcAspect {
             if (x instanceof InputStream || x instanceof Reader) {
                 mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
             } else if (x instanceof byte[]) {
-                boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(mirror.getSql(),
-                        parameterIndex);
+                boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
+                        mirror.getSql(), parameterIndex);
                 mirror.setParameterValue(parameterIndex, new ByteArrayParameterValue((byte[]) x,
                         displayAsHex));
             } else {
@@ -217,11 +217,12 @@ public class JdbcAspect {
     }
 
     // executeBatch is not included since it is handled separately (below)
-    @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "/execute|executeQuery"
-            + "|executeUpdate/", captureNested = false, metricName = "jdbc execute")
+    @Pointcut(typeName = "java.sql.PreparedStatement",
+            methodName = "/execute|executeQuery|executeUpdate/", captureNested = false,
+            metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
-        private static final Metric metric = pluginServices.getMetric(
-                PreparedStatementExecuteAdvice.class);
+        private static final Metric metric = pluginServices
+                .getMetric(PreparedStatementExecuteAdvice.class);
         @OnBefore
         @Nullable
         public static Stopwatch onBefore(@InjectTarget PreparedStatement preparedStatement) {
@@ -253,18 +254,17 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.Statement", methodName = "executeBatch", captureNested = false,
             metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
-        private static final Metric metric = pluginServices.getMetric(
-                StatementExecuteBatchAdvice.class);
+        private static final Metric metric = pluginServices
+                .getMetric(StatementExecuteBatchAdvice.class);
         @OnBefore
         @Nullable
         public static Stopwatch onBefore(@InjectTarget final Statement statement) {
             if (statement instanceof PreparedStatement) {
-                PreparedStatementMirror mirror = getPreparedStatementMirror(
-                        (PreparedStatement) statement);
+                PreparedStatementMirror mirror =
+                        getPreparedStatementMirror((PreparedStatement) statement);
                 if (pluginServices.isEnabled()) {
                     JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
-                            mirror.getSql(),
-                            mirror.getBatchedParametersCopy());
+                            mirror.getSql(), mirror.getBatchedParametersCopy());
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startEntry(jdbcMessageSupplier, metric);
                 } else {
@@ -321,13 +321,13 @@ public class JdbcAspect {
             pluginServices.registerConfigListener(new ConfigListener() {
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
-                    metricEnabled = pluginEnabled && pluginServices.getBooleanProperty(
-                            "captureResultSetNext");
+                    metricEnabled = pluginEnabled
+                            && pluginServices.getBooleanProperty("captureResultSetNext");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
-            metricEnabled = pluginEnabled && pluginServices.getBooleanProperty(
-                    "captureResultSetNext");
+            metricEnabled = pluginEnabled
+                    && pluginServices.getBooleanProperty("captureResultSetNext");
         }
         @IsEnabled
         public static boolean isEnabled() {
@@ -376,20 +376,20 @@ public class JdbcAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "/get.*/", methodArgs = { "int",
-            ".." }, metricName = "jdbc resultset value")
+    @Pointcut(typeName = "java.sql.ResultSet", methodName = "/get.*/", methodArgs = { "int", ".." },
+            metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 public void onChange() {
-                    metricEnabled = pluginServices.isEnabled() && pluginServices
-                            .getBooleanProperty("captureResultSetGet");
+                    metricEnabled = pluginServices.isEnabled()
+                            && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            metricEnabled = pluginServices.isEnabled() && pluginServices.getBooleanProperty(
-                    "captureResultSetGet");
+            metricEnabled = pluginServices.isEnabled()
+                    && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled() {
@@ -406,20 +406,19 @@ public class JdbcAspect {
     }
 
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "/get.*/",
-            methodArgs = { "java.lang.String", ".." },
-            metricName = "jdbc resultset value")
+            methodArgs = { "java.lang.String", ".." }, metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice2 {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice2.class);
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 public void onChange() {
-                    metricEnabled = pluginServices.isEnabled() && pluginServices
-                            .getBooleanProperty("captureResultSetGet");
+                    metricEnabled = pluginServices.isEnabled()
+                            && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            metricEnabled = pluginServices.isEnabled() && pluginServices.getBooleanProperty(
-                    "captureResultSetGet");
+            metricEnabled = pluginServices.isEnabled()
+                    && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled() {

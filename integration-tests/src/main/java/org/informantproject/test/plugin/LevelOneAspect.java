@@ -56,8 +56,8 @@ public class LevelOneAspect {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
                 @Override
                 public Message get() {
-                    String traceDescription = Objects.firstNonNull(pluginServices
-                            .getStringProperty("alternateDescription"), "Level One");
+                    String traceDescription = Objects.firstNonNull(
+                            pluginServices.getStringProperty("alternateDescription"), "Level One");
                     if (pluginServices.getBooleanProperty("starredDescription")) {
                         traceDescription += "*";
                     }
@@ -66,8 +66,8 @@ public class LevelOneAspect {
                             arg2, "subnested1",
                             ContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
                     context.putMap("nested1", nestedContext);
-                    context.putMap("nested2", ContextMap.of("nestedkey21", arg1, "nestedkey22",
-                            arg2));
+                    context.putMap("nested2",
+                            ContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
                     return Message.withContext(traceDescription, context);
                 }
             };

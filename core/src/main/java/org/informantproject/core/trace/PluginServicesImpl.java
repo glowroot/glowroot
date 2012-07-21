@@ -177,8 +177,8 @@ public class PluginServicesImpl extends PluginServices implements ConfigListener
             Supplier<Message> messageSupplier) {
 
         int maxEntries = coreConfig.getMaxEntries();
-        if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED && currentTrace
-                .getRootSpan().getSize() >= maxEntries) {
+        if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED
+                && currentTrace.getRootSpan().getSize() >= maxEntries) {
             // the trace limit has been exceeded
             return metric.start();
         } else {

@@ -353,8 +353,8 @@ public class DataSource {
                     tableName.toUpperCase(Locale.ENGLISH));
             try {
                 for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
-                    if (!resultSet.next() || !primaryKeyColumn.getName().equalsIgnoreCase(
-                            resultSet.getString("COLUMN_NAME"))) {
+                    if (!resultSet.next() || !primaryKeyColumn.getName()
+                            .equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))) {
                         return true;
                     }
                 }

@@ -60,8 +60,7 @@ public class TraceMetricDataTest {
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
     }
 
-    public static class ShouldGenerateTraceWithMetricData implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldGenerateTraceWithMetricData implements AppUnderTest, TraceMarker {
         public void executeApp() throws InterruptedException {
             traceMarker();
         }

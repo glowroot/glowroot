@@ -23,8 +23,7 @@ import java.io.IOException;
  * 
  * The placement of this class in the main Informant code base (and not inside of the tests folder)
  * is not ideal, but the alternative is to create a separate artifact (or at least classifier) for
- * this one class (now two classes, see also {@link Threads}), which also seems to be not
- * ideal.
+ * this one class (now two classes, see also {@link Threads}), which also seems to be not ideal.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -63,8 +62,8 @@ public final class Files {
                 return tempDir;
             }
         }
-        throw new IllegalStateException("Failed to create directory within "
-                + TEMP_DIR_ATTEMPTS + " attempts (tried "
-                + baseName + "0 to " + baseName + (TEMP_DIR_ATTEMPTS - 1) + ')');
+        throw new IllegalStateException("Failed to create directory within " + TEMP_DIR_ATTEMPTS
+                + " attempts (tried " + baseName + "0 to " + baseName + (TEMP_DIR_ATTEMPTS - 1)
+                + ')');
     }
 }

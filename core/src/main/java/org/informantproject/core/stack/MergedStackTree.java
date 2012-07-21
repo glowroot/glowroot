@@ -75,7 +75,6 @@ public class MergedStackTree {
 
     // public for unit tests (otherwise could be private)
     public void addToStackTree(StackTraceElement[] stackTraceElements, State threadState) {
-
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;

@@ -128,9 +128,9 @@ public class RootSpan {
         Span pop = spanStack.remove(spanStack.size() - 1);
         if (!pop.equals(span)) {
             // somehow(?) a pop was missed (or maybe too many pops), this is just damage control
-            logger.error("found '{}' at the top of the stack when expecting '{}'",
-                    pop.getMessageSupplier().get().getText(), span.getMessageSupplier().get()
-                            .getText());
+            logger.error("found '{}' at the top of the stack when expecting '{}'", pop
+                    .getMessageSupplier().get().getText(), span.getMessageSupplier().get()
+                    .getText());
             while (!spanStack.isEmpty() && !pop.equals(span)) {
                 pop = spanStack.remove(spanStack.size() - 1);
             }

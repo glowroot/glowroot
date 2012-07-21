@@ -126,8 +126,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 for (Mixin mixin : mixins) {
                     interfacesIncludingMixins.add(Type.getInternalName(mixin.mixin()));
                 }
-                super.visit(version, access, name, signature, superName, Iterables.toArray(
-                        interfacesIncludingMixins, String.class));
+                super.visit(version, access, name, signature, superName,
+                        Iterables.toArray(interfacesIncludingMixins, String.class));
             }
         }
     }
@@ -238,8 +238,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 // TODO support methods with generics
                 // TODO make it clear that generics are not supported at the class/interface level
                 Method m = Method.getMethod(method);
-                GeneratorAdapter mg = new GeneratorAdapter(ACC_PUBLIC, m, null, exceptions,
-                        cv);
+                GeneratorAdapter mg = new GeneratorAdapter(ACC_PUBLIC, m, null, exceptions, cv);
                 mg.loadThis();
                 mg.getField(type, "informant$mixin$" + i, mixinType);
                 mg.loadArgs();

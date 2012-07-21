@@ -61,8 +61,8 @@ class HttpSession {
     }
 
     Enumeration<?> getAttributeNames() {
-        Enumeration<?> attributeNames = (Enumeration<?>) getAttributeNamesMethod.invoke(
-                realSession);
+        Enumeration<?> attributeNames = (Enumeration<?>) getAttributeNamesMethod
+                .invoke(realSession);
         if (attributeNames == null) {
             return Collections.enumeration(ImmutableSet.of());
         } else {

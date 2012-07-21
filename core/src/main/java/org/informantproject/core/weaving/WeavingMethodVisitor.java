@@ -96,15 +96,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 Advice advice = advisors.get(i);
                 Integer topFlowLocalIndex = topFlowLocals.get(advice);
                 if (topFlowLocalIndex != null) {
-                    super.visitLocalVariable("informant$topFlow$" + i, Type.BOOLEAN_TYPE
-                            .getDescriptor(), null, outerStartLabel, outerEndLabel,
-                            topFlowLocalIndex);
+                    super.visitLocalVariable("informant$topFlow$" + i,
+                            Type.BOOLEAN_TYPE.getDescriptor(), null, outerStartLabel,
+                            outerEndLabel, topFlowLocalIndex);
                 }
                 Integer enabledLocalIndex = enabledLocals.get(advice);
                 if (enabledLocalIndex != null) {
-                    super.visitLocalVariable("informant$enabled$" + i, Type.BOOLEAN_TYPE
-                            .getDescriptor(), null, outerStartLabel, outerEndLabel,
-                            enabledLocalIndex);
+                    super.visitLocalVariable("informant$enabled$" + i,
+                            Type.BOOLEAN_TYPE.getDescriptor(), null, outerStartLabel,
+                            outerEndLabel, enabledLocalIndex);
                 }
                 Integer travelerLocalIndex = travelerLocals.get(advice);
                 if (travelerLocalIndex != null) {
@@ -113,8 +113,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                         logger.error("visitLocalVariable(): traveler local index is not null,"
                                 + " but traveler type is null");
                     } else {
-                        super.visitLocalVariable("informant$traveler$" + i, travelerType
-                                .getDescriptor(), null, outerStartLabel, outerEndLabel,
+                        super.visitLocalVariable("informant$traveler$" + i,
+                                travelerType.getDescriptor(), null, outerStartLabel, outerEndLabel,
                                 travelerLocalIndex);
                     }
                 }
@@ -304,8 +304,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     }
                     startIndex++;
                 }
-                loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex, travelerLocals
-                        .get(advice));
+                loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex,
+                        travelerLocals.get(advice));
                 if (sort == Type.LONG || sort == Type.DOUBLE) {
                     pop2();
                 } else if (sort != Type.VOID) {

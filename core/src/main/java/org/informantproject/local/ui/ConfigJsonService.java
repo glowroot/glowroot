@@ -91,8 +91,7 @@ public class ConfigJsonService implements JsonService {
         configService.updateCoreConfig(propertiesJson);
         try {
             // resize() doesn't do anything if the new and old value are the same
-            rollingFile.resize(configService.getCoreConfig().getRollingSizeMb()
-                    * 1024);
+            rollingFile.resize(configService.getCoreConfig().getRollingSizeMb() * 1024);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             // TODO return HTTP 500 Internal Server Error?

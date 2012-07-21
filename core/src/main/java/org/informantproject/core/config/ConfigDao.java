@@ -89,11 +89,9 @@ class ConfigDao {
         }
         try {
             return dataSource.query("select enabled, properties from config where id = ?",
-                    new Object[] { CORE },
-                    new ResultSetExtractor<CoreConfig>() {
+                    new Object[] { CORE }, new ResultSetExtractor<CoreConfig>() {
                         @Nullable
-                        public CoreConfig extractData(ResultSet resultSet)
-                                throws SQLException {
+                        public CoreConfig extractData(ResultSet resultSet) throws SQLException {
                             if (resultSet.next()) {
                                 // default value for enabled is true (so can't just use
                                 // ResultSet.getBoolean() which defaults to false)
@@ -105,8 +103,8 @@ class ConfigDao {
                                 }
                                 // default value for propertiesJson is {} which doesn't override any
                                 // of the default property values
-                                String propertiesJson = Objects.firstNonNull(resultSet
-                                        .getString(2), "{}");
+                                String propertiesJson = Objects.firstNonNull(
+                                        resultSet.getString(2), "{}");
                                 return CoreConfig.create(enabled, propertiesJson);
                             } else {
                                 return null;
@@ -130,8 +128,7 @@ class ConfigDao {
                     new Object[] { pluginDescriptor.getId() },
                     new ResultSetExtractor<PluginConfig>() {
                         @Nullable
-                        public PluginConfig extractData(ResultSet resultSet)
-                                throws SQLException {
+                        public PluginConfig extractData(ResultSet resultSet) throws SQLException {
                             if (resultSet.next()) {
                                 return buildPluginConfig(pluginDescriptor, resultSet);
                             } else {
@@ -149,8 +146,8 @@ class ConfigDao {
     void setCoreEnabled(boolean enabled) {
         logger.debug("setCoreEnabled(): enabled={}", enabled);
         try {
-            dataSource.update("merge into config (id, enabled) values (?, ?)", new Object[] {
-                    CORE, enabled });
+            dataSource.update("merge into config (id, enabled) values (?, ?)", new Object[] { CORE,
+                    enabled });
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -193,8 +190,8 @@ class ConfigDao {
         }
     }
 
-    private PluginConfig buildPluginConfig(
-            PluginDescriptor pluginDescriptor, ResultSet resultSet) throws SQLException {
+    private PluginConfig buildPluginConfig(PluginDescriptor pluginDescriptor, ResultSet resultSet)
+            throws SQLException {
 
         Object enabledObject = resultSet.getObject(1);
         // default value for enabled is true
@@ -214,8 +211,8 @@ class ConfigDao {
             return PluginConfig.create(pluginDescriptor, enabled);
         }
         if (propertiesElement.isJsonObject()) {
-            return PluginConfig.create(pluginDescriptor, enabled, propertiesElement
-                    .getAsJsonObject());
+            return PluginConfig.create(pluginDescriptor, enabled,
+                    propertiesElement.getAsJsonObject());
         } else {
             logger.error("config for plugin id '{}' is not json object", pluginDescriptor.getId());
             return PluginConfig.create(pluginDescriptor, enabled);

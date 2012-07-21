@@ -84,8 +84,8 @@ public class TracePointJsonService implements JsonService {
         // is in whole nanoseconds, ceil(low) and floor(high) give the correct final result even in
         // cases where low and high are not in whole nanoseconds
         long low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
-        long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request
-                .getHigh() * NANOSECONDS_PER_MILLISECOND);
+        long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
+                * NANOSECONDS_PER_MILLISECOND);
         StringComparator usernameComparator = null;
         if (request.getUsernameComparator() != null) {
             usernameComparator = StringComparator.valueOf(request.getUsernameComparator()
@@ -94,8 +94,8 @@ public class TracePointJsonService implements JsonService {
         List<Trace> activeTraces = ImmutableList.of();
         long capturedAt = 0;
         long captureTick = 0;
-        if ((request.getTo() == 0 || request.getTo() > requestAt) && request.getFrom()
-                < requestAt) {
+        if ((request.getTo() == 0 || request.getTo() > requestAt)
+                && request.getFrom() < requestAt) {
             // capture active traces first to make sure that none are missed in between reading
             // stored traces and then capturing active traces (possible duplicates are removed
             // below)
@@ -133,8 +133,8 @@ public class TracePointJsonService implements JsonService {
 
     private List<Trace> getActiveTraces(long low, long high) {
         List<Trace> activeTraces = Lists.newArrayList();
-        long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService
-                .getCoreConfig().getThresholdMillis());
+        long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService.getCoreConfig()
+                .getThresholdMillis());
         for (Trace trace : traceRegistry.getTraces()) {
             long duration = trace.getDuration();
             if (duration >= thresholdNanos && duration >= low && duration <= high) {

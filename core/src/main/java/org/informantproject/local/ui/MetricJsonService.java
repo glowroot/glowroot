@@ -67,8 +67,8 @@ public class MetricJsonService implements JsonService {
         if (isEndCurrentTime) {
             request.setEnd(clock.currentTimeMillis());
         }
-        Map<String, List<Point>> metricPoints = metricDao.readMetricPoints(
-                request.getMetricIds(), request.getStart(), request.getEnd());
+        Map<String, List<Point>> metricPoints = metricDao.readMetricPoints(request.getMetricIds(),
+                request.getStart(), request.getEnd());
         String response;
         if (isEndCurrentTime) {
             response = writeResponse(metricPoints, request.getStart(), request.getEnd());

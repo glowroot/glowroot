@@ -253,8 +253,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName =
-            "executeWithReturn")
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "executeWithReturn")
     public static class ChangeReturnAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -332,8 +331,8 @@ public class SomeAspect {
             captureNested = false)
     public static class NotNestingAdvice extends BasicAdvice {}
 
-    @Pointcut(typeName = "org.informantproject.core.weaving.Misc",
-            methodName = "/execute.*/", methodArgs = { ".." }, metricName = "abc xyz")
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "/execute.*/",
+            methodArgs = { ".." }, metricName = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "/execute.*/",

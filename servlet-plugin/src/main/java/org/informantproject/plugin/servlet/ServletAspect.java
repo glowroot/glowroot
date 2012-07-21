@@ -66,8 +66,8 @@ public class ServletAspect {
     private static final ThreadLocal<ServletMessageSupplier> topLevelServletMessageSupplier =
             new ThreadLocal<ServletMessageSupplier>();
 
-    @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service", methodArgs = {
-            "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
+    @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service",
+            methodArgs = { "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
             metricName = "http request")
     public static class ServletAdvice {
         private static final Metric metric = pluginServices.getMetric(ServletAdvice.class);
@@ -276,12 +276,12 @@ public class ServletAspect {
     @Pointcut(typeName = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
             methodArgs = { "javax.servlet.ServletContextEvent" }, metricName = "servlet startup")
     public static class ContextInitializedAdvice {
-        private static final Metric metric = pluginServices.getMetric(
-                ContextInitializedAdvice.class);
+        private static final Metric metric = pluginServices
+                .getMetric(ContextInitializedAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && pluginServices.getBooleanProperty(
-                    CAPTURE_STARTUP_PROPERTY_NAME);
+            return pluginServices.isEnabled()
+                    && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
         @Nullable
@@ -301,8 +301,8 @@ public class ServletAspect {
         private static final Metric metric = pluginServices.getMetric(ServletInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && pluginServices.getBooleanProperty(
-                    CAPTURE_STARTUP_PROPERTY_NAME);
+            return pluginServices.isEnabled()
+                    && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget Object servlet) {
@@ -321,8 +321,8 @@ public class ServletAspect {
         private static final Metric metric = pluginServices.getMetric(FilterInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && pluginServices.getBooleanProperty(
-                    CAPTURE_STARTUP_PROPERTY_NAME);
+            return pluginServices.isEnabled()
+                    && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
         public static Stopwatch onBefore(@InjectTarget Object filter) {
@@ -431,8 +431,8 @@ public class ServletAspect {
             }
             return sessionAttributeMap;
         } else {
-            Map<String, String> sessionAttributeMap = Maps.newHashMapWithExpectedSize(
-                    sessionAttributePaths.size());
+            Map<String, String> sessionAttributeMap = Maps
+                    .newHashMapWithExpectedSize(sessionAttributePaths.size());
             // dump only http session attributes in list
             for (String attributePath : sessionAttributePaths) {
                 String value = getSessionAttributeTextValue(session, attributePath);
@@ -445,9 +445,7 @@ public class ServletAspect {
     }
 
     @Nullable
-    private static String getSessionAttributeTextValue(HttpSession session,
-            String attributePath) {
-
+    private static String getSessionAttributeTextValue(HttpSession session, String attributePath) {
         if (attributePath.indexOf('.') == -1) {
             // fast path
             Object value = session.getAttribute(attributePath);

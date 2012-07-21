@@ -160,11 +160,10 @@ public class CoreConfig {
         return Objects.equal(enabled, other.isEnabled())
                 && Objects.equal(thresholdMillis, other.getThresholdMillis())
                 && Objects.equal(stuckThresholdSeconds, other.getStuckThresholdSeconds())
-                && Objects.equal(profilerInitialDelayMillis, other
-                        .getProfilerInitialDelayMillis())
+                && Objects.equal(profilerInitialDelayMillis, other.getProfilerInitialDelayMillis())
                 && Objects.equal(profilerIntervalMillis, other.getProfilerIntervalMillis())
-                && Objects.equal(spanStackTraceThresholdMillis, other
-                        .getSpanStackTraceThresholdMillis())
+                && Objects.equal(spanStackTraceThresholdMillis,
+                        other.getSpanStackTraceThresholdMillis())
                 && Objects.equal(maxEntries, other.getMaxEntries())
                 && Objects.equal(rollingSizeMb, other.getRollingSizeMb())
                 && Objects.equal(warnOnEntryOutsideTrace, other.isWarnOnEntryOutsideTrace())
@@ -174,14 +173,12 @@ public class CoreConfig {
     @Override
     public int hashCode() {
         return Objects.hashCode(enabled, thresholdMillis, stuckThresholdSeconds,
-                profilerInitialDelayMillis, profilerIntervalMillis,
-                spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
-                warnOnEntryOutsideTrace, metricPeriodMillis);
+                profilerInitialDelayMillis, profilerIntervalMillis, spanStackTraceThresholdMillis,
+                maxEntries, rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
     }
 
     static CoreConfig create(boolean enabled, String propertiesJson) {
-        return new Gson().fromJson(propertiesJson, CoreConfigBuilder.class)
-                .setEnabled(enabled)
+        return new Gson().fromJson(propertiesJson, CoreConfigBuilder.class).setEnabled(enabled)
                 .build();
     }
 
@@ -278,9 +275,7 @@ public class CoreConfig {
             return this;
         }
 
-        public CoreConfigBuilder setProfilerInitialDelayMillis(
-                int profilerInitialDelayMillis) {
-
+        public CoreConfigBuilder setProfilerInitialDelayMillis(int profilerInitialDelayMillis) {
             this.profilerInitialDelayMillis = profilerInitialDelayMillis;
             return this;
         }
@@ -290,10 +285,8 @@ public class CoreConfig {
             return this;
         }
 
-        public CoreConfigBuilder setSpanStackTraceThresholdMillis(
-                int spanStackTraceThresholdMillis) {
-
-            this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
+        public CoreConfigBuilder setSpanStackTraceThresholdMillis(int thresholdMillis) {
+            this.spanStackTraceThresholdMillis = thresholdMillis;
             return this;
         }
 
@@ -307,9 +300,7 @@ public class CoreConfig {
             return this;
         }
 
-        public CoreConfigBuilder setWarnOnEntryOutsideTrace(
-                boolean warnOnEntryOutsideTrace) {
-
+        public CoreConfigBuilder setWarnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
             this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
             return this;
         }

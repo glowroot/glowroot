@@ -45,8 +45,8 @@ public class MetricCollector implements Runnable, ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricCollector.class);
 
-    private final ScheduledExecutorService scheduledExecutor =
-            DaemonExecutors.newSingleThreadScheduledExecutor("Informant-MetricCollector");
+    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
+            .newSingleThreadScheduledExecutor("Informant-MetricCollector");
 
     private final ConfigService configService;
     private final MetricSink metricSink;
@@ -79,8 +79,7 @@ public class MetricCollector implements Runnable, ConfigListener {
     }
 
     public void onChange() {
-        int updatedBossIntervalMillis = configService.getCoreConfig()
-                .getMetricPeriodMillis();
+        int updatedBossIntervalMillis = configService.getCoreConfig().getMetricPeriodMillis();
         if (updatedBossIntervalMillis != bossIntervalMillis) {
             bossIntervalMillis = updatedBossIntervalMillis;
             future.cancel(false);

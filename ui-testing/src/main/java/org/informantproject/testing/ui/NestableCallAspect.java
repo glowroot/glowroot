@@ -77,8 +77,8 @@ public class NestableCallAspect {
     @Pointcut(typeName = "org.informantproject.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable and very long")
     public static class LevelOneLongMetricAdvice {
-        private static final Metric metric = pluginServices.getMetric(
-                LevelOneLongMetricAdvice.class);
+        private static final Metric metric = pluginServices
+                .getMetric(LevelOneLongMetricAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && pluginServices.getRootMessageSupplier() != null;
@@ -104,8 +104,9 @@ public class NestableCallAspect {
             @Override
             public Message get() {
                 ContextMap context = ContextMap.of("attr1", "value1", "attr2", "value2",
-                        "attr3", ContextMap.of("attr31", ContextMap.of("attr311", "value311",
-                                "attr312", "value312"), "attr32", "value32", "attr33", "value33"));
+                        "attr3", ContextMap.of("attr31",
+                                ContextMap.of("attr311", "value311", "attr312", "value312"),
+                                "attr32", "value32", "attr33", "value33"));
                 return Message.withContext("Nestable with a very long description to test wrapping"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz", context);
             }

@@ -78,8 +78,8 @@ final class ServletPluginProperties {
     }
 
     private static void checkCache() {
-        String sessionAttributesText = pluginServices.getStringProperty(
-                SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
+        String sessionAttributesText = pluginServices
+                .getStringProperty(SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
         if (!Objects.equal(sessionAttributesText, cachedSessionAttributesText)) {
             if (sessionAttributesText == null) {
                 // update cached first so that another thread cannot come into this method and get a

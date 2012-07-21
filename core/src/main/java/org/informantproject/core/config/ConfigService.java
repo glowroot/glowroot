@@ -54,8 +54,7 @@ public class ConfigService {
 
     private final ConfigDao configDao;
 
-    private final Set<ConfigListener> configListeners =
-            new CopyOnWriteArraySet<ConfigListener>();
+    private final Set<ConfigListener> configListeners = new CopyOnWriteArraySet<ConfigListener>();
 
     private volatile CoreConfig coreConfig;
     private final Map<String, PluginConfig> pluginConfigs;
@@ -73,8 +72,7 @@ public class ConfigService {
             logger.debug("<init>(): default core config is being used");
             this.coreConfig = new CoreConfig();
         } else {
-            logger.debug("<init>(): core config was read from local data store: {}",
-                    coreConfig);
+            logger.debug("<init>(): core config was read from local data store: {}", coreConfig);
         }
         pluginConfigs = Maps.newHashMap();
         // add the "built-in" plugin config for the weaving metrics
@@ -83,8 +81,7 @@ public class ConfigService {
         Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            PluginConfig pluginConfig = configDao
-                    .readPluginConfig(pluginDescriptor);
+            PluginConfig pluginConfig = configDao.readPluginConfig(pluginDescriptor);
             if (pluginConfig != null) {
                 pluginConfigs.put(pluginDescriptor.getId(), pluginConfig);
             } else {
@@ -183,8 +180,10 @@ public class ConfigService {
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         try {
             jw.beginObject();
-            for (PluginDescriptor pluginDescriptor : Iterables.concat(Plugins
-                    .getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors())) {
+            Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
+                    Plugins.getPackagedPluginDescriptors(),
+                    Plugins.getInstalledPluginDescriptors());
+            for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
                 jw.name(pluginDescriptor.getId());
                 jw.beginObject();
                 PluginConfig pluginConfig = pluginConfigs.get(pluginDescriptor.getId());
@@ -210,8 +209,8 @@ public class ConfigService {
         }
     }
 
-    private void writeProperties(PluginDescriptor pluginDescriptor,
-            PluginConfig pluginConfig, JsonWriter jw) throws IOException {
+    private void writeProperties(PluginDescriptor pluginDescriptor, PluginConfig pluginConfig,
+            JsonWriter jw) throws IOException {
 
         for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
             if (property.isHidden()) {

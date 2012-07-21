@@ -69,8 +69,8 @@ public class Trace {
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricImpl> metrics = Lists.newArrayList();
     // this is mostly updated and rarely read, so seems like synchronized list is best collection
-    private final List<TraceMetric> traceMetrics = Collections.synchronizedList(
-            new ArrayList<TraceMetric>());
+    private final List<TraceMetric> traceMetrics = Collections
+            .synchronizedList(new ArrayList<TraceMetric>());
 
     // root span for this trace
     private final RootSpan rootSpan;

@@ -16,7 +16,6 @@
 package org.informantproject.core.util;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
 
 /**
  * @author Trask Stalnaker
@@ -59,10 +58,8 @@ public class FileBlock {
 
     @Override
     public String toString() {
-        ToStringHelper toStringHelper = Objects.toStringHelper(this)
-                .add("startIndex", startIndex)
-                .add("length", length);
-        return toStringHelper.toString();
+        return Objects.toStringHelper(this).add("startIndex", startIndex).add("length", length)
+                .toString();
     }
 
     @SuppressWarnings("serial")

@@ -164,8 +164,7 @@ public class PluginConfig {
 
     @Override
     public String toString() {
-        ToStringHelper toStringHelper = Objects.toStringHelper(this).add("properties",
-                properties);
+        ToStringHelper toStringHelper = Objects.toStringHelper(this).add("properties", properties);
         return toStringHelper.toString();
     }
 
@@ -189,21 +188,15 @@ public class PluginConfig {
         return Objects.hashCode(enabled, properties);
     }
 
-    public static PluginConfig create(PluginDescriptor pluginDescriptor,
-            boolean enabled) {
-
-        return new PluginConfigBuilder(pluginDescriptor)
-                .setEnabled(enabled)
-                .build();
+    public static PluginConfig create(PluginDescriptor pluginDescriptor, boolean enabled) {
+        return new PluginConfigBuilder(pluginDescriptor).setEnabled(enabled).build();
     }
 
-    public static PluginConfig create(PluginDescriptor pluginDescriptor,
-            boolean enabled, JsonObject propertiesJson) {
+    public static PluginConfig create(PluginDescriptor pluginDescriptor, boolean enabled,
+            JsonObject propertiesJson) {
 
-        return new PluginConfigBuilder(pluginDescriptor)
-                .setEnabled(enabled)
-                .setProperties(propertiesJson)
-                .build();
+        return new PluginConfigBuilder(pluginDescriptor).setEnabled(enabled)
+                .setProperties(propertiesJson).build();
     }
 
     public static PluginConfig createDisabledHasNoDescriptor() {
@@ -225,9 +218,7 @@ public class PluginConfig {
             }
         }
 
-        public PluginConfigBuilder(PluginDescriptor pluginDescriptor,
-                PluginConfig base) {
-
+        public PluginConfigBuilder(PluginDescriptor pluginDescriptor, PluginConfig base) {
             this.pluginDescriptor = pluginDescriptor;
             this.enabled = base.enabled;
             properties = Maps.newHashMap(base.properties);
@@ -258,11 +249,10 @@ public class PluginConfig {
                 }
                 return this;
             }
-            if (value != null && !property.getJavaClass().isAssignableFrom(value
-                    .getClass())) {
+            if (value != null && !property.getJavaClass().isAssignableFrom(value.getClass())) {
                 if (!ignoreExtraProperties) {
-                    logger.error("unexpected property type '{}' for property name '{}'",
-                            value.getClass().getName(), name);
+                    logger.error("unexpected property type '{}' for property name '{}'", value
+                            .getClass().getName(), name);
                 }
                 return this;
             }

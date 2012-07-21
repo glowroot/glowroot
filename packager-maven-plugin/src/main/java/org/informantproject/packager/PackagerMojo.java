@@ -141,9 +141,9 @@ public class PackagerMojo extends AbstractMojo {
 
         List<Artifact> sourceArtifacts = Lists.newArrayList();
         for (Artifact artifact : artifacts) {
-            Artifact sourceArtifact = artifactFactory.createArtifactWithClassifier(artifact
-                    .getGroupId(), artifact.getArtifactId(), artifact.getVersion(), "java-source",
-                    "sources");
+            Artifact sourceArtifact = artifactFactory.createArtifactWithClassifier(
+                    artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+                    "java-source", "sources");
             try {
                 artifactResolver.resolve(sourceArtifact, remoteArtifactRepositories,
                         localRepository);
@@ -205,8 +205,8 @@ public class PackagerMojo extends AbstractMojo {
             MojoExecutionException {
 
         for (Artifact artifact : artifacts) {
-            if (artifact.getGroupId().equals("org.informantproject") && artifact.getArtifactId()
-                    .equals("informant-core")) {
+            if (artifact.getGroupId().equals("org.informantproject")
+                    && artifact.getArtifactId().equals("informant-core")) {
                 return new Manifest(new JarFile(artifact.getFile()).getManifest());
             }
         }
@@ -225,8 +225,8 @@ public class PackagerMojo extends AbstractMojo {
                 continue;
             }
             if (jarEntry.getName().equals("META-INF/org.informantproject.plugin.xml")) {
-                Document document = getDocument(new ByteArrayInputStream(ByteStreams.toByteArray(
-                        jarIn)));
+                Document document = getDocument(new ByteArrayInputStream(
+                        ByteStreams.toByteArray(jarIn)));
                 PluginDescriptor pluginDescriptor = createPluginDescriptor(document
                         .getDocumentElement());
                 pluginDescriptors.add(pluginDescriptor);
@@ -241,8 +241,8 @@ public class PackagerMojo extends AbstractMojo {
     private void validateConfigForDuplicates() throws MojoExecutionException {
         for (PluginConfig pluginConfig : plugins) {
             for (PluginConfig pluginConfig2 : plugins) {
-                if (pluginConfig != pluginConfig2 && pluginConfig.getId()
-                        .equals(pluginConfig2.getId())) {
+                if (pluginConfig != pluginConfig2
+                        && pluginConfig.getId().equals(pluginConfig2.getId())) {
                     throw new MojoExecutionException("Found duplicate <plugin> tags (same groupId"
                             + " and artifactId) under <configuration>");
                 }
@@ -253,8 +253,7 @@ public class PackagerMojo extends AbstractMojo {
     private void validateConfigItem(List<PluginDescriptor> pluginDescriptors,
             PluginConfig pluginConfig) throws MojoExecutionException {
 
-        PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginConfig,
-                pluginDescriptors);
+        PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginConfig, pluginDescriptors);
         if (pluginDescriptor == null) {
             throw new MojoExecutionException("Found <plugin> tag under <configuration> that"
                     + " doesn't have a corresponding dependency in the pom file");
@@ -275,11 +274,10 @@ public class PackagerMojo extends AbstractMojo {
         return null;
     }
 
-    private void validateProperties(PluginConfig pluginConfig,
-            PluginDescriptor pluginDescriptor) throws MojoExecutionException {
+    private void validateProperties(PluginConfig pluginConfig, PluginDescriptor pluginDescriptor)
+            throws MojoExecutionException {
 
-        for (PropertyConfig propertyConfig : pluginConfig
-                .getProperties()) {
+        for (PropertyConfig propertyConfig : pluginConfig.getProperties()) {
             String propertyName = propertyConfig.getName();
             if (propertyName == null || propertyName.length() == 0) {
                 throw new MojoExecutionException("Missing or empty <name> under"
@@ -351,8 +349,7 @@ public class PackagerMojo extends AbstractMojo {
         PluginConfig pluginConfig = getPluginConfig(pluginDescriptor.getId());
         out.println("      <properties>");
         for (PropertyDescriptor property : pluginDescriptor.getProperties()) {
-            PropertyConfig override = getPropertyConfig(pluginConfig,
-                    property.getName());
+            PropertyConfig override = getPropertyConfig(pluginConfig, property.getName());
             out.println("        <property>");
             if (override != null && override.getPrompt() != null) {
                 out.println("          <prompt>" + override.getPrompt() + "</prompt>");
@@ -384,8 +381,7 @@ public class PackagerMojo extends AbstractMojo {
     }
 
     @Nullable
-    private PropertyConfig getPropertyConfig(
-            @Nullable PluginConfig pluginConfig, String name) {
+    private PropertyConfig getPropertyConfig(@Nullable PluginConfig pluginConfig, String name) {
 
         if (pluginConfig == null || pluginConfig.getProperties() == null) {
             return null;
@@ -411,12 +407,10 @@ public class PackagerMojo extends AbstractMojo {
 
     private static PluginDescriptor createPluginDescriptor(Element pluginElement) {
         String name = pluginElement.getElementsByTagName("name").item(0).getTextContent();
-        String groupId = pluginElement.getElementsByTagName("groupId").item(0)
-                .getTextContent();
+        String groupId = pluginElement.getElementsByTagName("groupId").item(0).getTextContent();
         String artifactId = pluginElement.getElementsByTagName("artifactId").item(0)
                 .getTextContent();
-        String version = pluginElement.getElementsByTagName("version").item(0)
-                .getTextContent();
+        String version = pluginElement.getElementsByTagName("version").item(0).getTextContent();
         NodeList propertiesNodes = pluginElement.getElementsByTagName("properties");
         List<PropertyDescriptor> properties = Lists.newArrayList();
         if (propertiesNodes.getLength() > 0) {

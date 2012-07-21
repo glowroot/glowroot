@@ -123,8 +123,8 @@ public final class MainEntryPoint {
         returnPluginServicesProxy.set(false);
         synchronized (returnPluginServicesProxy) {
             for (PluginServicesProxy proxy : pluginServicesProxies) {
-                proxy.start(injector.getInstance(PluginServicesImplFactory.class), injector
-                        .getInstance(ConfigService.class));
+                proxy.start(injector.getInstance(PluginServicesImplFactory.class),
+                        injector.getInstance(ConfigService.class));
             }
             // don't need reference to these proxies anymore, may as well clean up
             pluginServicesProxies.clear();

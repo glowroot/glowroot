@@ -32,7 +32,6 @@ public class MixinMatcher {
     private final boolean superClassMatch;
 
     public MixinMatcher(Mixin mixin, Type targetType, List<ParsedType> superTypes) {
-
         this.mixin = mixin;
         targetTypeClassMatch = isTypeMatch(targetType.getClassName());
 

@@ -110,18 +110,18 @@ public class UnresolvedMethod {
         } catch (ClassNotFoundException e) {
             // TODO bug in a plugin shouldn't be fatal to informant
             logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
-                    e.getCause());
+            throw new IllegalStateException("Fatal error occurred: "
+                    + e.getMessage(), e.getCause());
         } catch (SecurityException e) {
             // TODO bug in a plugin shouldn't be fatal to informant
             logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
-                    e.getCause());
+            throw new IllegalStateException("Fatal error occurred: "
+                    + e.getMessage(), e.getCause());
         } catch (NoSuchMethodException e) {
             // TODO bug in a plugin shouldn't be fatal to informant
             logger.error("fatal error occurred: " + e.getMessage(), e.getCause());
-            throw new IllegalStateException("Fatal error occurred: " + e.getMessage(),
-                    e.getCause());
+            throw new IllegalStateException("Fatal error occurred: "
+                    + e.getMessage(), e.getCause());
         }
     }
 

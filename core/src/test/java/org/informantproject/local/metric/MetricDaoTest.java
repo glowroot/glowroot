@@ -102,9 +102,7 @@ public class MetricDaoTest {
     }
 
     @Test
-    public void shouldOnlyReadMetricPointsInGivenTimeBand(MetricDao metricDao,
-            MockClock clock) {
-
+    public void shouldOnlyReadMetricPointsInGivenTimeBand(MetricDao metricDao, MockClock clock) {
         // given
         MetricValue mv1 = new MetricValue("cpu", 0.5);
         MetricValue mv2 = new MetricValue("cpu", 0.75);
@@ -128,9 +126,7 @@ public class MetricDaoTest {
     }
 
     @Test
-    public void shouldOnlyReadMetricPointsForGivenMetricIds(MetricDao metricDao,
-            MockClock clock) {
-
+    public void shouldOnlyReadMetricPointsForGivenMetricIds(MetricDao metricDao, MockClock clock) {
         // given
         MetricValue mv1 = new MetricValue("cpu", 0.5);
         MetricValue mv2 = new MetricValue("mem", 0.75);

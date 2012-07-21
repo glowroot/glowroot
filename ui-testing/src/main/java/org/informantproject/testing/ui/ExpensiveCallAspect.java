@@ -230,9 +230,10 @@ public class ExpensiveCallAspect {
         return new Supplier<Message>() {
             @Override
             public Message get() {
-                ContextMap context = ContextMap.of("attr1", "value1", "attr2", "value2", "attr3",
-                        ContextMap.of("attr31", ContextMap.of("attr311", "value311", "attr312",
-                                "value312"), "attr32", "value32", "attr33", "value33"));
+                ContextMap context = ContextMap.of("attr1", "value1", "attr2", "value2",
+                        "attr3", ContextMap.of("attr31",
+                                ContextMap.of("attr311", "value311", "attr312", "value312"),
+                                "attr32", "value32", "attr33", "value33"));
                 return Message.withContext(expensive.getDescription(), context);
             }
         };

@@ -404,10 +404,10 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getDescription()).isEqualTo("GET /servletundertest");
-        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id"
-                + " (at beginning of this request)")).isEqualTo("1234");
-        assertThat((String) trace.getSpans().get(0).getContextMap().get("session id"
-                + " (updated during this request)")).isEqualTo("");
+        assertThat(trace.getSpans().get(0).getContextMap()
+                .get("session id (at beginning of this request)")).isEqualTo("1234");
+        assertThat(trace.getSpans().get(0).getContextMap()
+                .get("session id (updated during this request)")).isEqualTo("");
         Span span = trace.getSpans().get(0);
         assertThat(span.getDescription()).isEqualTo("GET /servletundertest");
     }
@@ -424,8 +424,8 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getDescription()).isEqualTo("servlet context initialized ("
-                + TestServletContextListener.class.getName() + ")");
+        assertThat(trace.getDescription()).isEqualTo(
+                "servlet context initialized (" + TestServletContextListener.class.getName() + ")");
     }
 
     @Test
@@ -440,8 +440,8 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getDescription()).isEqualTo("servlet init ("
-                + TestServletInit.class.getName() + ")");
+        assertThat(trace.getDescription()).isEqualTo(
+                "servlet init (" + TestServletInit.class.getName() + ")");
     }
 
     @Test
@@ -456,8 +456,8 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getDescription()).isEqualTo("filter init ("
-                + TestFilterInit.class.getName() + ")");
+        assertThat(trace.getDescription()).isEqualTo(
+                "filter init (" + TestFilterInit.class.getName() + ")");
     }
 
     private PluginConfig getPluginConfig() throws Exception {
@@ -465,8 +465,7 @@ public class ServletPluginTest {
     }
 
     private void storePluginConfig(PluginConfig pluginConfig) throws Exception {
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig
-                .getPropertiesJson());
+        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
     }
 
     @SuppressWarnings("unchecked")
@@ -529,9 +528,7 @@ public class ServletPluginTest {
         public void executeApp() {
             init(null);
         }
-        public void init(@Nullable FilterConfig filterConfig) {
-
-        }
+        public void init(@Nullable FilterConfig filterConfig) {}
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {}
         public void destroy() {}

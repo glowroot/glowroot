@@ -75,10 +75,11 @@ public class BasicTest {
         assertThat(trace.getSpans()).hasSize(3);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getDescription()).isEqualTo("Level One");
-        assertThat(span1.getContextMap()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
-                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
-                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
-                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
+        assertThat(span1.getContextMap()).isEqualTo(
+                mapOf("arg1", "a", "arg2", "b",
+                        "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
+                                "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+                        "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         Span span2 = trace.getSpans().get(1);
         assertThat(span2.getDescription()).isEqualTo("Level Two");
         assertThat(span2.getContextMap()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));

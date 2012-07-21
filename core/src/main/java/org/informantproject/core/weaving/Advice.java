@@ -50,21 +50,19 @@ public class Advice {
 
     private static final Logger logger = LoggerFactory.getLogger(Advice.class);
 
-    private static final Collection<ParameterKind> isEnabledValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_NAME);
-    private static final Collection<ParameterKind> onBeforeValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_NAME);
-    private static final Collection<ParameterKind> onReturnValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_NAME, ParameterKind.RETURN, ParameterKind.TRAVELER);
-    private static final Collection<ParameterKind> onThrowValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_NAME, ParameterKind.THROWABLE, ParameterKind.TRAVELER);
-    private static final Collection<ParameterKind> onAfterValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_NAME, ParameterKind.TRAVELER);
+    private static final Collection<ParameterKind> isEnabledValidParameterKinds = ImmutableList.of(
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME);
+    private static final Collection<ParameterKind> onBeforeValidParameterKinds = ImmutableList.of(
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME);
+    private static final Collection<ParameterKind> onReturnValidParameterKinds = ImmutableList.of(
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME,
+            ParameterKind.RETURN, ParameterKind.TRAVELER);
+    private static final Collection<ParameterKind> onThrowValidParameterKinds = ImmutableList.of(
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME,
+            ParameterKind.THROWABLE, ParameterKind.TRAVELER);
+    private static final Collection<ParameterKind> onAfterValidParameterKinds = ImmutableList.of(
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME,
+            ParameterKind.TRAVELER);
 
     private static final Map<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
@@ -107,8 +105,8 @@ public class Advice {
         for (java.lang.reflect.Method method : adviceClass.getMethods()) {
             if (method.isAnnotationPresent(IsEnabled.class)) {
                 if (isEnabledAdvice != null) {
-                    logger.error("Advice '{}' has more than one @IsEnabled method", adviceClass
-                            .getName());
+                    logger.error("Advice '{}' has more than one @IsEnabled method",
+                            adviceClass.getName());
                 } else {
                     isEnabledAdvice = Method.getMethod(method);
                     isEnabledParameterKinds = getParameterKinds(method.getParameterAnnotations(),
@@ -121,8 +119,8 @@ public class Advice {
                 }
             } else if (method.isAnnotationPresent(OnBefore.class)) {
                 if (onBeforeAdvice != null) {
-                    logger.error("Advice '{}' has more than one @OnBefore method", adviceClass
-                            .getName());
+                    logger.error("Advice '{}' has more than one @OnBefore method",
+                            adviceClass.getName());
                 } else {
                     onBeforeAdvice = Method.getMethod(method);
                     onBeforeParameterKinds = getParameterKinds(method.getParameterAnnotations(),
@@ -138,8 +136,8 @@ public class Advice {
                 }
             } else if (method.isAnnotationPresent(OnReturn.class)) {
                 if (onReturnAdvice != null) {
-                    logger.error("Advice '{}' has more than one @OnSucces method", adviceClass
-                            .getName());
+                    logger.error("Advice '{}' has more than one @OnSucces method",
+                            adviceClass.getName());
                 } else {
                     onReturnAdvice = Method.getMethod(method);
                     onReturnParameterKinds = getParameterKinds(method.getParameterAnnotations(),
@@ -155,8 +153,8 @@ public class Advice {
                 }
             } else if (method.isAnnotationPresent(OnThrow.class)) {
                 if (onThrowAdvice != null) {
-                    logger.error("Advice '{}' has more than one @OnThrow method", adviceClass
-                            .getName());
+                    logger.error("Advice '{}' has more than one @OnThrow method",
+                            adviceClass.getName());
                 } else {
                     onThrowAdvice = Method.getMethod(method);
                     onThrowParameterKinds = getParameterKinds(method.getParameterAnnotations(),
@@ -170,8 +168,8 @@ public class Advice {
                             break;
                         }
                     }
-                    if (onThrowAdvice != null && onThrowAdvice.getReturnType().getSort()
-                                != Type.VOID) {
+                    if (onThrowAdvice != null
+                            && onThrowAdvice.getReturnType().getSort() != Type.VOID) {
                         logger.error("@OnThrow method must return void (for now)");
                         onThrowAdvice = null;
                         onThrowParameterKinds = null;
@@ -179,8 +177,8 @@ public class Advice {
                 }
             } else if (method.isAnnotationPresent(OnAfter.class)) {
                 if (onAfterAdvice != null) {
-                    logger.error("Advice '{}' has more than one @OnAfter method", adviceClass
-                            .getName());
+                    logger.error("Advice '{}' has more than one @OnAfter method",
+                            adviceClass.getName());
                 } else {
                     onAfterAdvice = Method.getMethod(method);
                     onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),

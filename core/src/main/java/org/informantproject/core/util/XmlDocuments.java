@@ -92,9 +92,9 @@ public final class XmlDocuments {
             String prefix = "http://www.informantproject.org/xsd/";
             if (systemId.startsWith(prefix)) {
                 String simpleName = systemId.substring(prefix.length());
-                return new InputSource(Resources.newReaderSupplier(Resources.getResource(
-                        "org/informantproject/core/schema/" + simpleName), Charsets.UTF_8)
-                        .getInput());
+                return new InputSource(Resources.newReaderSupplier(
+                        Resources.getResource("org/informantproject/core/schema/" + simpleName),
+                        Charsets.UTF_8).getInput());
             } else {
                 logger.error("unexpected xml resource requested: publicId={}, systemId={}",
                         new Object[] { publicId, systemId });

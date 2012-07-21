@@ -75,8 +75,8 @@ public class JdbcPluginTest {
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription()).isEqualTo("jdbc execution: select * from employee"
-                + " => 1 row");
+        assertThat(jdbcSpan.getDescription()).isEqualTo(
+                "jdbc execution: select * from employee => 1 row");
     }
 
     @Test
@@ -91,8 +91,8 @@ public class JdbcPluginTest {
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription()).isEqualTo("jdbc execution: select * from employee"
-                + " where name like ? ['john%'] => 1 row");
+        assertThat(jdbcSpan.getDescription()).isEqualTo(
+                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
     @Test
@@ -107,16 +107,16 @@ public class JdbcPluginTest {
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcInsertSpan = trace.getSpans().get(1);
-        assertThat(jdbcInsertSpan.getDescription()).isEqualTo("jdbc execution: insert into"
-                + " employee (name) values ('john doe')");
+        assertThat(jdbcInsertSpan.getDescription()).isEqualTo(
+                "jdbc execution: insert into employee (name) values ('john doe')");
         Span jdbcCommitSpan = trace.getSpans().get(2);
         assertThat(jdbcCommitSpan.getDescription()).isEqualTo("jdbc commit");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        List<String> metricNames = Lists.newArrayList(trace.getMetrics().get(1).getName(),
-                trace.getMetrics().get(2).getName(), trace.getMetrics().get(3).getName());
+        List<String> metricNames = Lists.newArrayList(trace.getMetrics().get(1).getName(), trace
+                .getMetrics().get(2).getName(), trace.getMetrics().get(3).getName());
         assertThat(metricNames).contains("jdbc execute", "jdbc commit", "jdbc statement close");
     }
 
@@ -204,8 +204,7 @@ public class JdbcPluginTest {
         Files.delete(dbFile);
     }
 
-    public static class ExecuteStatementAndIterateOverResults implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
 
         private Connection connection;
         public void executeApp() throws Exception {
@@ -243,8 +242,8 @@ public class JdbcPluginTest {
             }
         }
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "select * from employee where name like ?");
+            PreparedStatement preparedStatement = connection
+                    .prepareStatement("select * from employee where name like ?");
             preparedStatement.setString(1, "john%");
             try {
                 preparedStatement.execute();

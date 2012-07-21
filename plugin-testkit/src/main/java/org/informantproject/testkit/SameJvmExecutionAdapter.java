@@ -46,15 +46,15 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
                 AppUnderTest.class, RunnableWithStringArg.class, RunnableWithIntReturn.class);
-        isolatedWeavingClassLoader.newInstance(StartContainer.class,
-                RunnableWithStringArg.class).run(agentArgs);
+        isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithStringArg.class)
+                .run(agentArgs);
     }
 
     public int getPort() throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
 
-        return isolatedWeavingClassLoader.newInstance(GetPort.class,
-                RunnableWithIntReturn.class).run();
+        return isolatedWeavingClassLoader.newInstance(GetPort.class, RunnableWithIntReturn.class)
+                .run();
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,

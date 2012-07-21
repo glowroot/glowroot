@@ -135,8 +135,8 @@ public class Plugins {
             }
             Document document;
             try {
-                document = XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(
-                        resourceURL));
+                document = XmlDocuments.newValidatedDocument(Resources
+                        .newInputStreamSupplier(resourceURL));
             } catch (SAXParseException f) {
                 logger.error("error reading/validating META-INF/org.informantproject.package.xml: "
                         + f.getMessage(), f);
@@ -146,8 +146,8 @@ public class Plugins {
             List<PluginDescriptor> plugins = Lists.newArrayList();
             NodeList pluginsNodes = root.getElementsByTagName("plugins");
             if (pluginsNodes.getLength() > 0) {
-                NodeList pluginNodes = ((Element) pluginsNodes.item(0)).getElementsByTagName(
-                        "plugin");
+                NodeList pluginNodes = ((Element) pluginsNodes.item(0))
+                        .getElementsByTagName("plugin");
                 for (int i = 0; i < pluginNodes.getLength(); i++) {
                     Element pluginElement = (Element) pluginNodes.item(i);
                     plugins.add(createPluginDescriptor(pluginElement));
@@ -171,8 +171,7 @@ public class Plugins {
         for (PluginDescriptor pluginDescriptor : Plugins.getPackagedPluginDescriptors()) {
             descriptorMap.put(pluginDescriptor.getId(), pluginDescriptor);
         }
-        for (PluginDescriptor pluginDescriptor : Plugins
-                .getInstalledPluginDescriptors()) {
+        for (PluginDescriptor pluginDescriptor : Plugins.getInstalledPluginDescriptors()) {
             descriptorMap.put(pluginDescriptor.getId(), pluginDescriptor);
         }
         return descriptorMap;
@@ -180,17 +179,15 @@ public class Plugins {
 
     private static PluginDescriptor createPluginDescriptor(Element pluginElement) {
         String name = pluginElement.getElementsByTagName("name").item(0).getTextContent();
-        String groupId = pluginElement.getElementsByTagName("groupId").item(0)
-                .getTextContent();
+        String groupId = pluginElement.getElementsByTagName("groupId").item(0).getTextContent();
         String artifactId = pluginElement.getElementsByTagName("artifactId").item(0)
                 .getTextContent();
-        String version = pluginElement.getElementsByTagName("version").item(0)
-                .getTextContent();
+        String version = pluginElement.getElementsByTagName("version").item(0).getTextContent();
         NodeList propertiesNodes = pluginElement.getElementsByTagName("properties");
         List<PropertyDescriptor> properties = Lists.newArrayList();
         if (propertiesNodes.getLength() > 0) {
-            NodeList propertyNodes = ((Element) propertiesNodes.item(0)).getElementsByTagName(
-                    "property");
+            NodeList propertyNodes = ((Element) propertiesNodes.item(0))
+                    .getElementsByTagName("property");
             for (int i = 0; i < propertyNodes.getLength(); i++) {
                 properties.add(createPropertyDescriptor((Element) propertyNodes.item(i)));
             }

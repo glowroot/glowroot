@@ -95,8 +95,7 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/local/ui/configuration.html");
         uriMappings.put(Pattern.compile("^/plugins.html$"),
                 "org/informantproject/local/ui/plugins.html");
-        uriMappings.put(Pattern.compile("^/misc.html$"),
-                "org/informantproject/local/ui/misc.html");
+        uriMappings.put(Pattern.compile("^/misc.html$"), "org/informantproject/local/ui/misc.html");
         uriMappings.put(Pattern.compile("^/threaddump.html$"),
                 "org/informantproject/local/ui/threaddump.html");
         // internal resources
@@ -305,8 +304,8 @@ public class HttpServer extends HttpServerBase {
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         } else {
-            logger.error("unexpected type of json service response '{}'",
-                    responseText.getClass().getName());
+            logger.error("unexpected type of json service response '{}'", responseText.getClass()
+                    .getName());
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
         // prevent caching of dynamic json data, using 'definitive' minimum set of headers from

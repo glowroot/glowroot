@@ -89,8 +89,7 @@ public class StuckTraceCollector implements Runnable {
     // schedule stuck trace command to run at the appropriate time(s)
     private void runInternal() {
         CoreConfig config = configService.getCoreConfig();
-        if (config.getStuckThresholdSeconds()
-                != CoreConfig.THRESHOLD_DISABLED) {
+        if (config.getStuckThresholdSeconds() != CoreConfig.THRESHOLD_DISABLED) {
             // stuck threshold is not disabled
             long stuckThresholdTick = ticker.read()
                     - TimeUnit.SECONDS.toNanos(config.getStuckThresholdSeconds())

@@ -123,8 +123,8 @@ public class Config {
         public int hashCode() {
             return Objects.hashCode(thresholdMillis, stuckThresholdSeconds,
                     profilerInitialDelayMillis, profilerIntervalMillis,
-                    spanStackTraceThresholdMillis, maxEntries,
-                    rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
+                    spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
+                    warnOnEntryOutsideTrace, metricPeriodMillis);
         }
         @Override
         public boolean equals(@Nullable Object o) {

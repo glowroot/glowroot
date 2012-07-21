@@ -214,9 +214,7 @@ public class TraceCommonJsonService {
         return ByteStream.of(byteStreams);
     }
 
-    public ByteStream getSpansByteStream(Trace trace, long captureTick)
-            throws IOException {
-
+    public ByteStream getSpansByteStream(Trace trace, long captureTick) throws IOException {
         return new SpansByteStream(trace.getRootSpan().getSpans().iterator(), captureTick);
     }
 
@@ -379,8 +377,8 @@ public class TraceCommonJsonService {
 
         private static final int TARGET_CHUNK_SIZE = 8192;
 
-        private static final Pattern metricMarkerMethodPattern = Pattern.compile(
-                "^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
+        private static final Pattern metricMarkerMethodPattern = Pattern
+                .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
         private final LinkedList<Object> toVisit;
         private final ByteArrayOutputStream baos;
@@ -421,8 +419,7 @@ public class TraceCommonJsonService {
                 if (currNode.isSyntheticRoot()) {
                     jw.name("stackTraceElement").value("<multiple root nodes>");
                 } else {
-                    jw.name("stackTraceElement").value(
-                            currNode.getStackTraceElement().toString());
+                    jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
                 }
                 String newMetricName = getMetricName(currNode.getStackTraceElement());
                 if (newMetricName != null && !newMetricName.equals(top(metricNameStack))) {
@@ -441,8 +438,7 @@ public class TraceCommonJsonService {
                     }
                     jw.endArray();
                 }
-                List<MergedStackTreeNode> childNodes = Lists.newArrayList(currNode
-                        .getChildNodes());
+                List<MergedStackTreeNode> childNodes = Lists.newArrayList(currNode.getChildNodes());
                 if (!childNodes.isEmpty()) {
                     jw.name("childNodes").beginArray();
                     toVisit.add(JsonWriterOp.END_ARRAY);

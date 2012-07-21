@@ -84,8 +84,8 @@ public abstract class PluginServices {
     private static PluginServices createPluginServices(String pluginId) {
         try {
             Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
-            Method getPluginServicesMethod = mainEntryPointClass
-                    .getMethod(CREATE_PLUGIN_SERVICES_METHOD_NAME, String.class);
+            Method getPluginServicesMethod = mainEntryPointClass.getMethod(
+                    CREATE_PLUGIN_SERVICES_METHOD_NAME, String.class);
             return (PluginServices) getPluginServicesMethod.invoke(null, pluginId);
         } catch (ClassNotFoundException e) {
             // this really really really shouldn't happen

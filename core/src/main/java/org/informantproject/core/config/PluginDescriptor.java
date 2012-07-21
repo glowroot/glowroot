@@ -65,8 +65,8 @@ public class PluginDescriptor {
             try {
                 // don't initialize the aspect since that will trigger static initializers which
                 // will probably call PluginServices.get()
-                Class<?> aspectClass = Class.forName(aspect, false, PluginDescriptor.class
-                        .getClassLoader());
+                Class<?> aspectClass = Class.forName(aspect, false,
+                        PluginDescriptor.class.getClassLoader());
                 advisors.addAll(Weaver.getAdvisors(aspectClass));
                 mixins.addAll(Weaver.getMixins(aspectClass));
             } catch (ClassNotFoundException e) {

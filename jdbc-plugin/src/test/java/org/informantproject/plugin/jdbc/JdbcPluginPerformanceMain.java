@@ -132,8 +132,8 @@ public class JdbcPluginPerformanceMain {
                 for (int i = 0; i < 1000; i++) {
                     long startTick = System.nanoTime();
                     traceMarker();
-                    System.out.format("%d milliseconds%n", (System.nanoTime() - startTick)
-                            / 1000000);
+                    System.out.format("%d milliseconds%n",
+                            (System.nanoTime() - startTick) / 1000000);
                 }
             } finally {
                 connection.close();

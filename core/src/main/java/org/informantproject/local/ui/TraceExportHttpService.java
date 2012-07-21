@@ -82,8 +82,8 @@ public class TraceExportHttpService implements HttpService {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String filename = "trace-" + id;
-        String templateContent = getResourceContent(
-                "org/informantproject/local/ui/trace-export.html");
+        String templateContent = getResourceContent("org/informantproject/local/ui"
+                + "/trace-export.html");
         Pattern pattern = Pattern.compile("\\{\\{#include ([^}]+)\\}\\}");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;

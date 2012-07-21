@@ -67,8 +67,8 @@ public class TraceDao {
             new Column("spans", Types.VARCHAR),
             new Column("merged_stack_tree", Types.VARCHAR));
 
-    private static final ImmutableList<Index> indexes = ImmutableList.of(
-            new Index("trace_idx", "captured_at", "duration"));
+    private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("trace_idx",
+            "captured_at", "duration"));
 
     private final DataSource dataSource;
     private final RollingFile rollingFile;

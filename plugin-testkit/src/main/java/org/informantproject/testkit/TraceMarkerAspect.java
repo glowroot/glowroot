@@ -36,8 +36,8 @@ public class TraceMarkerAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-plugin-testkit");
 
-    @Pointcut(typeName = "org.informantproject.testkit.TraceMarker",
-            methodName = "traceMarker", metricName = "mock trace marker")
+    @Pointcut(typeName = "org.informantproject.testkit.TraceMarker", methodName = "traceMarker",
+            metricName = "mock trace marker")
     public static class TraceMarkerAdvice {
         private static final Metric metric = pluginServices.getMetric(TraceMarkerAdvice.class);
         @IsEnabled
