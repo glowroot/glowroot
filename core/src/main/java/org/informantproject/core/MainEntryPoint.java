@@ -55,6 +55,7 @@ public final class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
+    @Nullable
     private static volatile Injector injector;
     private static final Object lock = new Object();
 

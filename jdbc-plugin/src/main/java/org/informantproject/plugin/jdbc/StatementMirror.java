@@ -35,6 +35,7 @@ import org.informantproject.shaded.google.common.collect.ImmutableList;
 class StatementMirror {
 
     // this doesn't apply to PreparedStatementMirror
+    @Nullable
     private Collection<String> batchedSql;
 
     // the lastJdbcMessageSupplier is stored so that its numRows field
@@ -48,6 +49,7 @@ class StatementMirror {
     // TODO clear this immediately on Statement.close()?
     //
     // TODO is it ok for this to be non-volatile?
+    @Nullable
     private WeakReference<JdbcMessageSupplier> lastJdbcMessageSupplier;
 
     void addBatch(String sql) {

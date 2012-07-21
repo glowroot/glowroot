@@ -39,7 +39,9 @@ public class UnresolvedMethod {
 
     private final String unresolvedClass;
     private final String name;
+    @Nullable
     private final Class<?>[] parameterTypes;
+    @Nullable
     private final String[] unresolvedParameterTypes;
 
     // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
@@ -69,8 +71,8 @@ public class UnresolvedMethod {
 
         this.unresolvedClass = unresolvedClass;
         this.name = name;
-        this.unresolvedParameterTypes = unresolvedParameterTypes;
         parameterTypes = null;
+        this.unresolvedParameterTypes = unresolvedParameterTypes;
     }
 
     @Nullable

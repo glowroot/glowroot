@@ -36,12 +36,17 @@ public class StoredTrace {
     private final long duration; // nanoseconds
     private final boolean completed;
     private final String description;
+    @Nullable
     private final String username;
+    @Nullable
     private final String attributes;
+    @Nullable
     private final String metrics;
     // using ByteStream so these potentially very large strings can be streamed without consuming
     // large amounts of memory
+    @Nullable
     private final ByteStream spans;
+    @Nullable
     private final ByteStream mergedStackTree;
 
     private StoredTrace(String id, long startAt, boolean stuck, long duration, boolean completed,
@@ -134,10 +139,15 @@ public class StoredTrace {
         private long duration;
         private boolean completed;
         private String description;
+        @Nullable
         private String username;
+        @Nullable
         private String attributes;
+        @Nullable
         private String metrics;
+        @Nullable
         private ByteStream spans;
+        @Nullable
         private ByteStream mergedStackTree;
 
         public Builder id(String id) {

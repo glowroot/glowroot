@@ -31,7 +31,9 @@ public class Message {
     private static final Logger logger = LoggerFactory.getLogger(Message.class);
 
     private final String template;
+    @Nullable
     private final Object[] args;
+    @Nullable
     private final ContextMap context;
 
     private Message(String template, @Nullable Object[] args, @Nullable ContextMap context) {

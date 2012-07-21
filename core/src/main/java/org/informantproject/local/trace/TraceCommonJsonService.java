@@ -41,13 +41,13 @@ import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
-import com.google.common.primitives.Longs;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -228,12 +228,12 @@ public class TraceCommonJsonService {
         for (TraceMetric traceMetric : traceMetrics) {
             items.add(traceMetric.copyOf());
         }
-        Ordering<Snapshot> byTotalOrdering = new Ordering<Snapshot>() {
-            @Override
-            public int compare(Snapshot left, Snapshot right) {
-                return Longs.compare(left.getTotal(), right.getTotal());
-            }
-        };
+        Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
+                new Function<Snapshot, Long>() {
+                    public Long apply(Snapshot input) {
+                        return input.getTotal();
+                    }
+                });
         return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
     }
 
@@ -369,6 +369,7 @@ public class TraceCommonJsonService {
 
         public JsonElement serialize(ContextMap contextMap, Type typeOfSrc,
                 JsonSerializationContext context) {
+
             return context.serialize(contextMap.getInner());
         }
     }
@@ -420,13 +421,13 @@ public class TraceCommonJsonService {
                     jw.name("stackTraceElement").value("<multiple root nodes>");
                 } else {
                     jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
-                }
-                String newMetricName = getMetricName(currNode.getStackTraceElement());
-                if (newMetricName != null && !newMetricName.equals(top(metricNameStack))) {
-                    // filter out successive duplicates which are common from weaving groups of
-                    // overloaded methods
-                    metricNameStack.add(newMetricName);
-                    toVisit.add(JsonWriterOp.POP_METRIC_NAME);
+                    String newMetricName = getMetricName(currNode.getStackTraceElement());
+                    if (newMetricName != null && !newMetricName.equals(top(metricNameStack))) {
+                        // filter out successive duplicates which are common from weaving groups of
+                        // overloaded methods
+                        metricNameStack.add(newMetricName);
+                        toVisit.add(JsonWriterOp.POP_METRIC_NAME);
+                    }
                 }
                 jw.name("sampleCount").value(currNode.getSampleCount());
                 if (currNode.isLeaf()) {

@@ -67,12 +67,13 @@ public class ConfigService {
         this.configDao = configDao;
         // initialize config using locally stored values, falling back to defaults if no locally
         // stored values exist
-        coreConfig = configDao.readCoreConfig();
+        CoreConfig coreConfig = configDao.readCoreConfig();
         if (coreConfig == null) {
             logger.debug("<init>(): default core config is being used");
             this.coreConfig = new CoreConfig();
         } else {
             logger.debug("<init>(): core config was read from local data store: {}", coreConfig);
+            this.coreConfig = coreConfig;
         }
         pluginConfigs = Maps.newHashMap();
         // add the "built-in" plugin config for the weaving metrics

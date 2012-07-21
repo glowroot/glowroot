@@ -46,6 +46,7 @@ class PluginServicesProxy extends PluginServices {
     private final List<ConfigListener> pendingListeners =
             new CopyOnWriteArrayList<ConfigListener>();
 
+    @Nullable
     private volatile PluginServices pluginServices;
 
     public PluginServicesProxy(String pluginId, MetricCache metricCache) {
@@ -135,7 +136,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void putTraceAttribute(String name, String value) {
+    public void putTraceAttribute(String name, @Nullable String value) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");

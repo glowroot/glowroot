@@ -50,9 +50,11 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private final List<Mixin> mixins;
     private final List<Advice> advisors;
     private final ParsedTypeCache parsedTypeCache;
+    @Nullable
     private final CodeSource codeSource;
     private final List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
     private final List<Mixin> matchedMixins = Lists.newArrayList();
+    @Nullable
     private Type type;
 
     private final Map<Advice, Integer> adviceFlowThreadLocalNums = Maps.newHashMap();
@@ -212,6 +214,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                     matchingAdvisors, adviceFlowThreadLocalNums);
         }
     }
+
     @Override
     public void visitEnd() {
         if (!writtenAdviceFlowThreadLocals) {

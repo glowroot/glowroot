@@ -47,6 +47,7 @@ public class Span {
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     private final TraceMetric traceMetric;
 
+    @Nullable
     private volatile StackTraceElement[] stackTraceElements;
 
     Span(Supplier<Message> messageSupplier, long traceStartTick, long startTick, int index,

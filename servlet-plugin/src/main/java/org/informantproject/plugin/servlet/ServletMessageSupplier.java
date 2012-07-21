@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
+import org.informantproject.shaded.google.common.base.Objects;
 import org.informantproject.shaded.google.common.base.Optional;
 import org.informantproject.shaded.google.common.collect.Maps;
 
@@ -60,12 +61,17 @@ class ServletMessageSupplier extends Supplier<Message> {
     // expired when the session attributes are persisted, so instead
     // (references to) the session attributes must be stored here
 
+    @Nullable
     private final String requestMethod;
+    @Nullable
     private final String requestURI;
+    @Nullable
     private volatile Map<String, String[]> requestParameterMap;
 
     // the initial value is the sessionId as it was present at the beginning of the request
+    @Nullable
     private final String sessionIdInitialValue;
+    @Nullable
     private volatile String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to thread-safe Strings
@@ -73,9 +79,11 @@ class ServletMessageSupplier extends Supplier<Message> {
     // threads and real-time monitoring threads
     // the initial value map contains the session attributes as they were present at the beginning
     // of the request
+    @Nullable
     private final Map<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
+    @Nullable
     private volatile Map<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(@Nullable String requestMethod, @Nullable String requestURI,
@@ -100,9 +108,9 @@ class ServletMessageSupplier extends Supplier<Message> {
         if (requestMethod == null && requestURI == null) {
             message = "";
         } else if (requestMethod == null) {
-            message = requestURI;
+            message = Objects.firstNonNull(requestURI, "");
         } else if (requestURI == null) {
-            message = requestMethod;
+            message = Objects.firstNonNull(requestMethod, "");
         } else {
             message = requestMethod + " " + requestURI;
         }
@@ -134,6 +142,7 @@ class ServletMessageSupplier extends Supplier<Message> {
         sessionAttributeUpdatedValueMap.put(name, Optional.fromNullable(value));
     }
 
+    @Nullable
     String getSessionIdInitialValue() {
         return sessionIdInitialValue;
     }

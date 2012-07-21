@@ -99,8 +99,11 @@ public class ParsedTypeCache {
 
     private static class ParsedTypeBuilder extends ClassVisitor {
 
+        @Nullable
         private String name;
+        @Nullable
         private String superName;
+        @Nullable
         private String[] interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 

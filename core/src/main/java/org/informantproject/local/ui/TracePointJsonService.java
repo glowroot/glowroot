@@ -87,8 +87,9 @@ public class TracePointJsonService implements JsonService {
         long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                 * NANOSECONDS_PER_MILLISECOND);
         StringComparator usernameComparator = null;
-        if (request.getUsernameComparator() != null) {
-            usernameComparator = StringComparator.valueOf(request.getUsernameComparator()
+        String comparatorText = request.getUsernameComparator();
+        if (comparatorText != null) {
+            usernameComparator = StringComparator.valueOf(comparatorText
                     .toUpperCase(Locale.ENGLISH));
         }
         List<Trace> activeTraces = ImmutableList.of();

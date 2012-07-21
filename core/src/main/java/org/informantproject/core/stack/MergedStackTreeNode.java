@@ -19,6 +19,8 @@ import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.annotation.Nullable;
+
 /**
  * Element of {@link MergedStackTree}.
  * 
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class MergedStackTreeNode {
 
+    @Nullable
     private final StackTraceElement stackTraceElement;
     private final Collection<MergedStackTreeNode> childNodes =
             new ConcurrentLinkedQueue<MergedStackTreeNode>();
@@ -43,6 +46,7 @@ public class MergedStackTreeNode {
     // (see MergedStackTree) in order to avoid volatile and ensure consistent state of read
     //
     private volatile int sampleCount;
+    @Nullable
     private volatile State leafThreadState;
 
     // this is for creating a single synthetic root node above other root nodes when there are
@@ -79,6 +83,7 @@ public class MergedStackTreeNode {
         return childNodes;
     }
 
+    @Nullable
     public StackTraceElement getStackTraceElement() {
         return stackTraceElement;
     }
@@ -91,6 +96,7 @@ public class MergedStackTreeNode {
         return leafThreadState != null;
     }
 
+    @Nullable
     public State getLeafThreadState() {
         return leafThreadState;
     }

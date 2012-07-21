@@ -29,8 +29,11 @@ class TraceRequest {
     private long to;
     private double low; // milliseconds, with nanosecond precision
     private double high; // milliseconds, with nanosecond precision
+    @Nullable
     private String usernameComparator;
+    @Nullable
     private String username;
+    @Nullable
     private String extraIds;
 
     public long getFrom() {

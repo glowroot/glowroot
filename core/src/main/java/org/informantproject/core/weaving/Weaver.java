@@ -85,7 +85,7 @@ public class Weaver implements Opcodes {
         for (Class<?> memberClass : aspectClass.getClasses()) {
             if (memberClass.isAnnotationPresent(Pointcut.class)) {
                 Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
-                advisors.add(new Advice(pointcut, memberClass));
+                advisors.add(Advice.create(pointcut, memberClass));
             }
         }
         return advisors;

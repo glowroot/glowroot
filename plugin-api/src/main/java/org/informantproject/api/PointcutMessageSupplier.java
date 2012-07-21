@@ -17,6 +17,8 @@ package org.informantproject.api;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Lists;
 
 /**
@@ -28,9 +30,12 @@ public class PointcutMessageSupplier extends Supplier<Message> {
     private final String template;
     private final Object[] args;
     // stopwatch is only accessed by the trace thread so doesn't need to be volatile
+    @Nullable
     private Stopwatch stopwatch;
     private volatile boolean hasReturnValue;
+    @Nullable
     private volatile Object returnValue;
+    @Nullable
     private volatile Throwable throwable;
 
     public PointcutMessageSupplier(String template, Object... args) {
@@ -51,6 +56,7 @@ public class PointcutMessageSupplier extends Supplier<Message> {
         this.throwable = throwable;
     }
 
+    @Nullable
     public Stopwatch getStopwatch() {
         return stopwatch;
     }

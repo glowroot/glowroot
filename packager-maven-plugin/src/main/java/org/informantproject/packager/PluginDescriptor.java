@@ -97,12 +97,15 @@ public class PluginDescriptor {
         public String getType() {
             return type;
         }
+        @Nullable
         public String getDefault() {
             return defaultValue;
         }
+        @Nullable
         public String getHidden() {
             return hidden;
         }
+        @Nullable
         public String getDescription() {
             return description;
         }

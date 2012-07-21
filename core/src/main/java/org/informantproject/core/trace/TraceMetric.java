@@ -96,29 +96,19 @@ public class TraceMetric implements Stopwatch {
         // non-volatile fields below will be visible to this threads
         boolean active = selfNestingLevel > 0;
 
-        Snapshot copy = new Snapshot();
-        copy.name = name;
-        copy.total = total;
-        copy.min = min;
-        copy.max = max;
-        copy.count = count;
-
         if (active) {
-            copy.active = true;
             long currentTick = ticker.read();
             long curr = currentTick - startTick;
-            copy.total += curr;
             if (min == Long.MAX_VALUE) {
-                copy.min = curr;
-                copy.minActive = true;
+                return new Snapshot(name, total + curr, curr, max, count + 1, true, true, false);
+            } else if (curr > max) {
+                return new Snapshot(name, total + curr, min, curr, count + 1, true, false, true);
+            } else {
+                return new Snapshot(name, total + curr, min, max, count + 1, true, false, false);
             }
-            if (curr > max) {
-                copy.max = curr;
-                copy.maxActive = true;
-            }
-            copy.count++;
+        } else {
+            return new Snapshot(name, total, min, max, count, false, false, false);
         }
-        return copy;
     }
 
     void start() {
@@ -186,35 +176,57 @@ public class TraceMetric implements Stopwatch {
     }
 
     public static class Snapshot {
-        private String name;
-        private long total;
-        private long min;
-        private long max;
-        private long count;
-        private boolean active;
-        private boolean minActive;
-        private boolean maxActive;
+
+        private final String name;
+        private final long total;
+        private final long min;
+        private final long max;
+        private final long count;
+        private final boolean active;
+        private final boolean minActive;
+        private final boolean maxActive;
+
+        private Snapshot(String name, long total, long min, long max, long count, boolean active,
+                boolean minActive, boolean maxActive) {
+
+            this.name = name;
+            this.total = total;
+            this.min = min;
+            this.max = max;
+            this.count = count;
+            this.active = active;
+            this.minActive = minActive;
+            this.maxActive = maxActive;
+        }
+
         public String getName() {
             return name;
         }
+
         public long getTotal() {
             return total;
         }
+
         public long getMin() {
             return min;
         }
+
         public long getMax() {
             return max;
         }
+
         public long getCount() {
             return count;
         }
+
         public boolean isActive() {
             return active;
         }
+
         public boolean isMinActive() {
             return minActive;
         }
+
         public boolean isMaxActive() {
             return maxActive;
         }

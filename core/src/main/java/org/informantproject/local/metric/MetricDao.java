@@ -117,7 +117,8 @@ public class MetricDao {
             args[2 + i] = metricIds.get(i);
         }
         try {
-            return dataSource.query(selectSqls.getUnchecked(metricIds.size()), args,
+            String selectSql = selectSqls.getUnchecked(metricIds.size());
+            return dataSource.query(selectSql, args,
                     new ResultSetExtractor<Map<String, List<Point>>>() {
                         public Map<String, List<Point>> extractData(ResultSet resultSet)
                                 throws SQLException {

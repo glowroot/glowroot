@@ -18,6 +18,8 @@ package org.informantproject.plugin.jdbc;
 import java.util.Collection;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.shaded.google.common.collect.Lists;
@@ -52,13 +54,17 @@ class JdbcMessageSupplier extends Supplier<Message> {
 
     private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
 
+    @Nullable
     private final String sql;
 
     // parameters and batchedParameters cannot both be non-null
+    @Nullable
     private final List<Object> parameters;
+    @Nullable
     private final Collection<List<Object>> batchedParameters;
 
     // this is only used for batching of non-PreparedStatements
+    @Nullable
     private final Collection<String> batchedSqls;
 
     private int numRows = NEXT_HAS_NOT_BEEN_CALLED;

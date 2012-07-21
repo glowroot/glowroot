@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.shaded.google.common.collect.ImmutableList;
 import org.informantproject.shaded.google.common.collect.Lists;
 
@@ -41,6 +43,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     private final String sql;
     private List<Object> parameters;
+    @Nullable
     private Collection<List<Object>> batchedParameters;
 
     public PreparedStatementMirror(String sql) {
@@ -115,6 +118,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     static class ByteArrayParameterValue {
         private final int length;
+        @Nullable
         private final byte[] bytes;
         private final boolean displayAsHex;
         public ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {

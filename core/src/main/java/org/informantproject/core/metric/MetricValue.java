@@ -28,8 +28,6 @@ public class MetricValue {
     private String metricId;
     private double value;
 
-    public MetricValue() {}
-
     public MetricValue(String metricId, double value) {
         this.metricId = metricId;
         this.value = value;

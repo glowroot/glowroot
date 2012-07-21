@@ -353,7 +353,9 @@ public class TraceDao {
         private final StoredTrace.Builder builder;
         // file block ids are stored temporarily while reading the stored trace from the
         // database so that reading from the rolling file can occur outside of the jdbc connection
+        @Nullable
         private final String spansFileBlockId;
+        @Nullable
         private final String mergedStackTreeFileBlockId;
 
         private PartiallyHydratedTrace(Builder builder, @Nullable String spansFileBlockId,

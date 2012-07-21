@@ -28,12 +28,13 @@ public class PluginConfig {
 
     private String groupId;
     private String artifactId;
-    private PropertyConfig[] properties;
+    private PropertyConfig[] properties = new PropertyConfig[0];
 
     public String getId() {
         return groupId + ":" + artifactId;
     }
 
+    @Nullable
     public String getGroupId() {
         return groupId;
     }
@@ -42,6 +43,7 @@ public class PluginConfig {
         this.groupId = groupId;
     }
 
+    @Nullable
     public String getArtifactId() {
         return artifactId;
     }
@@ -65,30 +67,35 @@ public class PluginConfig {
         private String defaultValue;
         private String hidden;
         private String description;
+        @Nullable
         public String getPrompt() {
             return prompt;
         }
         public void setPrompt(String prompt) {
             this.prompt = prompt;
         }
+        @Nullable
         public String getName() {
             return name;
         }
         public void setName(String name) {
             this.name = name;
         }
+        @Nullable
         public String getDefault() {
             return defaultValue;
         }
         public void setDefault(String defaultValue) {
             this.defaultValue = defaultValue;
         }
+        @Nullable
         public String getHidden() {
             return hidden;
         }
         public void setHidden(String hidden) {
             this.hidden = hidden;
         }
+        @Nullable
         public String getDescription() {
             return description;
         }

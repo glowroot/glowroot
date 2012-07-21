@@ -87,7 +87,9 @@ public class Trace {
             Thread.currentThread());
 
     // these are stored in the trace so that they can be cancelled
+    @Nullable
     private volatile ScheduledFuture<?> captureStackTraceScheduledFuture;
+    @Nullable
     private volatile ScheduledFuture<?> stuckCommandScheduledFuture;
 
     private final Ticker ticker;
@@ -244,6 +246,7 @@ public class Trace {
 
     public static class Attribute {
         private final String name;
+        @Nullable
         private volatile String value;
         private Attribute(String name, @Nullable String value) {
             this.name = name;

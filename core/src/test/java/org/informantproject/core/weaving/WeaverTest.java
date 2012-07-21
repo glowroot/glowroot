@@ -561,8 +561,7 @@ public class WeaverTest {
         if (pointcut == null) {
             advisors = ImmutableList.of();
         } else {
-            Advice advice = new Advice(pointcut, adviceClass);
-            advisors = ImmutableList.of(advice);
+            advisors = ImmutableList.of(Advice.create(pointcut, adviceClass));
         }
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         List<Mixin> mixins;

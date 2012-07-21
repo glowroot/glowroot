@@ -124,7 +124,13 @@ public class DataSource {
         return query(sql, args, new ResultSetExtractor<Long>() {
             public Long extractData(ResultSet resultSet) throws SQLException {
                 if (resultSet.next()) {
-                    return resultSet.getLong(1);
+                    Long value = resultSet.getLong(1);
+                    if (value == null) {
+                        logger.error("query '" + sql + "' returned a null sql value");
+                        return 0L;
+                    } else {
+                        return value;
+                    }
                 } else {
                     logger.error("query '" + sql + "' didn't return any results");
                     return 0L;
@@ -135,7 +141,7 @@ public class DataSource {
 
     @Nullable
     public String queryForString(String sql, final Object... args) throws SQLException {
-        return query(sql, args, new ResultSetExtractor<String>() {
+        return query(sql, args, new NullableResultSetExtractor<String>() {
             @Nullable
             public String extractData(ResultSet resultSet) throws SQLException {
                 if (resultSet.next()) {
@@ -173,6 +179,28 @@ public class DataSource {
     }
 
     public <T> T query(String sql, Object[] args, ResultSetExtractor<T> rse) throws SQLException {
+        synchronized (lock) {
+            PreparedStatement preparedStatement = prepareStatement(sql);
+            try {
+                for (int i = 0; i < args.length; i++) {
+                    preparedStatement.setObject(i + 1, args[i]);
+                }
+                ResultSet resultSet = preparedStatement.executeQuery();
+                try {
+                    return rse.extractData(resultSet);
+                } finally {
+                    resultSet.close();
+                }
+            } finally {
+                closeStatement(preparedStatement);
+            }
+        }
+    }
+
+    @Nullable
+    public <T> T query(String sql, Object[] args, NullableResultSetExtractor<T> rse)
+            throws SQLException {
+
         synchronized (lock) {
             PreparedStatement preparedStatement = prepareStatement(sql);
             try {
@@ -406,6 +434,11 @@ public class DataSource {
     }
 
     public interface ResultSetExtractor<T> {
+        T extractData(ResultSet resultSet) throws SQLException;
+    }
+
+    public interface NullableResultSetExtractor<T> {
+        @Nullable
         T extractData(ResultSet resultSet) throws SQLException;
     }
 

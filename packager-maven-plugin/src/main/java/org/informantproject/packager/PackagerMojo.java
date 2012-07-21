@@ -382,12 +382,11 @@ public class PackagerMojo extends AbstractMojo {
 
     @Nullable
     private PropertyConfig getPropertyConfig(@Nullable PluginConfig pluginConfig, String name) {
-
-        if (pluginConfig == null || pluginConfig.getProperties() == null) {
+        if (pluginConfig == null) {
             return null;
         }
         for (PropertyConfig propertyConfig : pluginConfig.getProperties()) {
-            if (propertyConfig.getName().equals(name)) {
+            if (name.equals(propertyConfig.getName())) {
                 return propertyConfig;
             }
         }

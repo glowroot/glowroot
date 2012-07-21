@@ -230,6 +230,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
@@ -246,6 +247,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
@@ -279,6 +281,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
         assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
     }
 
@@ -295,6 +298,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
         assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
     }
 
@@ -327,6 +331,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
         assertThat(getUpdatedSessionAttributes(trace).containsValue("testattr")).isFalse();
     }
 
@@ -342,6 +347,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
+        assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("one.two")).isEqualTo("three");
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
     }
@@ -359,6 +365,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
+        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
         assertThat(getUpdatedSessionAttributes(trace).get("one.two")).isEqualTo("three");
     }
 
@@ -468,12 +475,14 @@ public class ServletPluginTest {
         container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
     }
 
+    @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, String> getSessionAttributes(Trace trace) {
         return (Map<String, String>) trace.getSpans().get(0).getContextMap()
                 .get("session attributes");
     }
 
+    @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
         return (Map<String, String>) trace.getSpans().get(0).getContextMap()
@@ -507,7 +516,7 @@ public class ServletPluginTest {
         public void executeApp() {
             contextInitialized(null);
         }
-        public void contextInitialized(@Nullable ServletContextEvent sce) {}
+        public void contextInitialized(ServletContextEvent sce) {}
         public void contextDestroyed(ServletContextEvent sce) {}
     }
 
@@ -517,7 +526,7 @@ public class ServletPluginTest {
             init(null);
         }
         @Override
-        public void init(@Nullable ServletConfig config) throws ServletException {
+        public void init(ServletConfig config) throws ServletException {
             // calling super to make sure it doesn't end up in an infinite loop (this happened once
             // before due to bug in weaver)
             super.init(config);
@@ -528,7 +537,7 @@ public class ServletPluginTest {
         public void executeApp() {
             init(null);
         }
-        public void init(@Nullable FilterConfig filterConfig) {}
+        public void init(FilterConfig filterConfig) {}
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {}
         public void destroy() {}

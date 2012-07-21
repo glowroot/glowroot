@@ -34,6 +34,7 @@ public class ParsedType {
     private final boolean missing;
 
     private final String name;
+    @Nullable
     private final String superName;
     private final String[] interfaceNames;
     private final ImmutableList<ParsedMethod> methods;

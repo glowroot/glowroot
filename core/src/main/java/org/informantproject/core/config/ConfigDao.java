@@ -23,8 +23,8 @@ import javax.annotation.Nullable;
 
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.Column;
+import org.informantproject.core.util.DataSource.NullableResultSetExtractor;
 import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
-import org.informantproject.core.util.DataSource.ResultSetExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +89,7 @@ class ConfigDao {
         }
         try {
             return dataSource.query("select enabled, properties from config where id = ?",
-                    new Object[] { CORE }, new ResultSetExtractor<CoreConfig>() {
+                    new Object[] { CORE }, new NullableResultSetExtractor<CoreConfig>() {
                         @Nullable
                         public CoreConfig extractData(ResultSet resultSet) throws SQLException {
                             if (resultSet.next()) {
@@ -126,7 +126,7 @@ class ConfigDao {
         try {
             return dataSource.query("select enabled, properties from config where id = ?",
                     new Object[] { pluginDescriptor.getId() },
-                    new ResultSetExtractor<PluginConfig>() {
+                    new NullableResultSetExtractor<PluginConfig>() {
                         @Nullable
                         public PluginConfig extractData(ResultSet resultSet) throws SQLException {
                             if (resultSet.next()) {

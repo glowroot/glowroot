@@ -54,7 +54,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
     private boolean needsTryCatch;
+    @Nullable
     private Label catchStartLabel;
+    @Nullable
     private Label outerStartLabel;
 
     protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
