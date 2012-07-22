@@ -22,7 +22,11 @@ package org.informantproject.core.weaving;
 public class BasicMisc implements Misc, Misc2, Misc3 {
 
     // Misc implementation
-    public void execute1() {}
+    public void execute1() {
+        // do some stuff that can be intercepted
+        new BasicMisc();
+        withInnerArg(null);
+    }
 
     public String executeWithReturn() {
         return "xyz";
@@ -37,4 +41,8 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
     public BasicMisc identity(BasicMisc misc) {
         return misc;
     }
+
+    private void withInnerArg(@SuppressWarnings("unused") Inner inner) {}
+
+    public static class Inner {}
 }

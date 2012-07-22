@@ -22,6 +22,8 @@ import java.util.List;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.weaving.SomeAspect.BasicAdvice;
+import org.informantproject.core.weaving.SomeAspect.BasicMiscConstructorAdvice;
+import org.informantproject.core.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import org.informantproject.core.weaving.SomeAspect.BrokenAdvice;
 import org.informantproject.core.weaving.SomeAspect.ChangeReturnAdvice;
 import org.informantproject.core.weaving.SomeAspect.CircularClassDependencyAdvice;
@@ -497,6 +499,41 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(PrimitiveWithAutoboxAdvice.enabledCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    // TODO handle @OnBefore constructor
+    // TODO what about constructing objects that implement a given interface?
+    public void shouldHandleConstructorPointcut() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        BasicMiscConstructorAdvice.resetThreadLocals();
+        // when
+        test.execute1();
+        // then
+        assertThat(BasicMiscConstructorAdvice.enabledCount.get()).isEqualTo(1);
+        // assertThat(BasicConstructorAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(BasicMiscConstructorAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(BasicMiscConstructorAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(BasicMiscConstructorAdvice.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    // TODO handle inner classes with org.informantproject.core.weaving.BasicMisc.Inner
+    // instead of org.informantproject.core.weaving.BasicMisc$Inner (??) or at least doc clearly
+    public void shouldHandleInnerClassArg() throws Exception {
+        // given
+        BasicWithInnerClassArgAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicWithInnerClassArgAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(BasicWithInnerClassArgAdvice.enabledCount.get()).isEqualTo(1);
+        assertThat(BasicWithInnerClassArgAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(BasicWithInnerClassArgAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(BasicWithInnerClassArgAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(BasicWithInnerClassArgAdvice.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test

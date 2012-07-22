@@ -89,6 +89,107 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(typeName = "org.informantproject.core.weaving.BasicMisc", methodName = "<init>")
+    public static class BasicMiscConstructorAdvice {
+        public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return true;
+            }
+        };
+        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @IsEnabled
+        public static boolean isEnabled() {
+            enabledCount.increment();
+            return enabled.get();
+        }
+        // @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            enabled.set(true);
+            enabledCount.set(0);
+            onBeforeCount.set(0);
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+        public static void enable() {
+            enabled.set(true);
+        }
+        public static void disable() {
+            enabled.set(false);
+        }
+    }
+
+    @Pointcut(typeName = "org.informantproject.core.weaving.BasicMisc", methodName = "withInnerArg",
+            methodArgs = { "org.informantproject.core.weaving.BasicMisc$Inner" })
+    public static class BasicWithInnerClassArgAdvice {
+        public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return true;
+            }
+        };
+        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @IsEnabled
+        public static boolean isEnabled() {
+            enabledCount.increment();
+            return enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            enabled.set(true);
+            enabledCount.set(0);
+            onBeforeCount.set(0);
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+        public static void enable() {
+            enabled.set(true);
+        }
+        public static void disable() {
+            enabled.set(false);
+        }
+    }
+
     @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1")
     public static class InjectTargetAdvice {
         public static ThreadLocal<Misc> isEnabledTarget = new ThreadLocal<Misc>();
