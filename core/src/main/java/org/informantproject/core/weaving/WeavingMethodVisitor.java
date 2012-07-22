@@ -15,11 +15,18 @@
  */
 package org.informantproject.core.weaving;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.weaving.InjectMethodArg;
+import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.OnAfter;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.OnReturn;
+import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.core.weaving.Advice.ParameterKind;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -206,7 +213,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 loadLocal(enabledLocal);
                 visitJumpInsn(Opcodes.IFEQ, enabledAdviceBlockEnd);
             }
-            loadMethodArgs(advice.getIsEnabledParameterKinds(), 0, -1);
+            loadMethodArgs(advice.getIsEnabledParameterKinds(), 0, -1, advice.getAdviceType(),
+                    IsEnabled.class);
             invokeStatic(advice.getAdviceType(), isEnabledAdvice);
             if (enabledLocal == null) {
                 enabledLocal = newLocal(Type.BOOLEAN_TYPE);
@@ -256,7 +264,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             loadLocal(enabledLocal);
             visitJumpInsn(Opcodes.IFEQ, onBeforeBlockEnd);
         }
-        loadMethodArgs(advice.getOnBeforeParameterKinds(), 0, -1);
+        loadMethodArgs(advice.getOnBeforeParameterKinds(), 0, -1, advice.getAdviceType(),
+                OnBefore.class);
         invokeStatic(advice.getAdviceType(), onBeforeAdvice);
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
@@ -307,7 +316,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     startIndex++;
                 }
                 loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex,
-                        travelerLocals.get(advice));
+                        travelerLocals.get(advice), advice.getAdviceType(), OnReturn.class);
                 if (sort == Type.LONG || sort == Type.DOUBLE) {
                     pop2();
                 } else if (sort != Type.VOID) {
@@ -344,7 +353,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     startIndex++;
                 }
                 loadMethodArgs(advice.getOnThrowParameterKinds(), startIndex,
-                        travelerLocals.get(advice));
+                        travelerLocals.get(advice), advice.getAdviceType(), OnThrow.class);
                 invokeStatic(advice.getAdviceType(), onThrowAdvice);
             }
             if (enabledLocal != null) {
@@ -366,7 +375,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 loadLocal(enabledLocal);
                 visitJumpInsn(Opcodes.IFEQ, onAfterBlockEnd);
             }
-            loadMethodArgs(advice.getOnAfterParameterKinds(), 0, travelerLocals.get(advice));
+            loadMethodArgs(advice.getOnAfterParameterKinds(), 0, travelerLocals.get(advice),
+                    advice.getAdviceType(), OnAfter.class);
             invokeStatic(advice.getAdviceType(), onAfterAdvice);
             if (enabledLocal != null) {
                 visitLabel(onAfterBlockEnd);
@@ -391,7 +401,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void loadMethodArgs(ParameterKind[] parameterTypes, int startIndex,
-            @Nullable Integer travelerLocal) {
+            @Nullable Integer travelerLocal, Type adviceType,
+            Class<? extends Annotation> annotationType) {
 
         int argIndex = 0;
         for (int i = startIndex; i < parameterTypes.length; i++) {
@@ -399,9 +410,16 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (parameterType == ParameterKind.TARGET) {
                 loadThis();
             } else if (parameterType == ParameterKind.METHOD_ARG) {
-                loadArg(argIndex);
-                // autobox
-                box(argumentTypes[argIndex++]);
+                if (argIndex < argumentTypes.length) {
+                    loadArg(argIndex);
+                    // autobox
+                    box(argumentTypes[argIndex++]);
+                } else {
+                    logger.error("the @" + annotationType.getSimpleName() + " method in "
+                            + adviceType.getClassName() + " has more @"
+                            + InjectMethodArg.class.getSimpleName() + " arguments than the number"
+                            + " of args in the target method", new Throwable());
+                }
             } else if (parameterType == ParameterKind.PRIMITIVE_METHOD_ARG) {
                 // no autobox
                 loadArg(argIndex++);
@@ -409,7 +427,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 push(name);
             } else if (parameterType == ParameterKind.TRAVELER) {
                 if (travelerLocal == null) {
-                    logger.error("@InjectTraveler requested but @OnBefore returns void");
+                    logger.error("the @" + annotationType.getSimpleName() + " method in "
+                            + adviceType.getClassName()
+                            + " requested @InjectTraveler but @OnBefore returns void");
                     // try to pass null (TODO handle primitive types also)
                     visitInsn(ACONST_NULL);
                 } else {
