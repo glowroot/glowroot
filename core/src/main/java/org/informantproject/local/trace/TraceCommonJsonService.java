@@ -21,8 +21,8 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -255,7 +255,7 @@ public class TraceCommonJsonService {
         if (rootNode == null) {
             return null;
         }
-        LinkedList<Object> toVisit = new LinkedList<Object>();
+        List<Object> toVisit = new ArrayList<Object>();
         toVisit.add(rootNode);
         return new MergedStackTreeByteStream(toVisit);
     }
@@ -381,12 +381,12 @@ public class TraceCommonJsonService {
         private static final Pattern metricMarkerMethodPattern = Pattern
                 .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
-        private final LinkedList<Object> toVisit;
+        private final List<Object> toVisit;
         private final ByteArrayOutputStream baos;
         private final JsonWriter jw;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private MergedStackTreeByteStream(LinkedList<Object> toVisit) {
+        private MergedStackTreeByteStream(List<Object> toVisit) {
             this.toVisit = toVisit;
             baos = new ByteArrayOutputStream(2 * TARGET_CHUNK_SIZE);
             jw = new JsonWriter(new OutputStreamWriter(baos, Charsets.UTF_8));
@@ -412,7 +412,7 @@ public class TraceCommonJsonService {
         }
 
         private void writeNext() throws IOException {
-            Object curr = toVisit.removeLast();
+            Object curr = toVisit.remove(toVisit.size() - 1);
             if (curr instanceof MergedStackTreeNode) {
                 MergedStackTreeNode currNode = (MergedStackTreeNode) curr;
                 jw.beginObject();
