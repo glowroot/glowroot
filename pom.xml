@@ -73,6 +73,18 @@
     </pluginManagement>
     <plugins>
       <plugin>
+        <!-- use lateset maven-enforcer-plugin to avoid warning message
+          when running parallel build, e.g. "mvn -T 1C" -->
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.1.1</version>
+      </plugin>
+      <plugin>
+        <!-- use lateset maven-plugin-plugin to avoid warning message
+          when running parallel build, e.g. "mvn -T 1C" -->
+        <artifactId>maven-plugin-plugin</artifactId>
+        <version>3.1</version>
+      </plugin>
+      <plugin>
         <!--
           ensure that only methods available in jdk 5 can
           be used even when compiling with a more recent jdk

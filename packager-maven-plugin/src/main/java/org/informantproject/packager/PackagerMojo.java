@@ -64,6 +64,7 @@ import com.google.common.io.Files;
  * @phase package
  * @requiresDependencyResolution compile
  * @requiresProject
+ * @threadSafe
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -71,7 +72,7 @@ import com.google.common.io.Files;
 public class PackagerMojo extends AbstractMojo {
 
     /**
-     * @parameter expression="${project}"
+     * @parameter default-value="${project}"
      * @required
      * @readonly
      */
