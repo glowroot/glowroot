@@ -19,9 +19,9 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.informantproject.core.metric.MetricValue;
 import org.informantproject.core.util.Clock;
@@ -44,7 +44,7 @@ import org.junit.runner.RunWith;
 @RunWith(JukitoRunner.class)
 public class MetricDaoTest {
 
-    private Set<Thread> preExistingThreads;
+    private Collection<Thread> preExistingThreads;
 
     public static class Module extends JukitoModule {
         @Override
@@ -57,7 +57,7 @@ public class MetricDaoTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = Threads.currentThreadList();
+        preExistingThreads = Threads.currentThreads();
         if (dataSource.tableExists("metric_point")) {
             dataSource.execute("drop table metric_point");
         }

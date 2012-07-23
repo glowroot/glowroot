@@ -18,7 +18,7 @@ package org.informantproject.core.config;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.SQLException;
-import java.util.Set;
+import java.util.Collection;
 
 import org.informantproject.core.config.CoreConfig.CoreConfigBuilder;
 import org.informantproject.core.util.DataSource;
@@ -39,7 +39,7 @@ import org.junit.runner.RunWith;
 @RunWith(JukitoRunner.class)
 public class ConfigDaoCoreTest {
 
-    private Set<Thread> preExistingThreads;
+    private Collection<Thread> preExistingThreads;
 
     public static class Module extends JukitoModule {
         @Override
@@ -50,7 +50,7 @@ public class ConfigDaoCoreTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = Threads.currentThreadList();
+        preExistingThreads = Threads.currentThreads();
         if (dataSource.tableExists("config")) {
             dataSource.execute("drop table config");
         }

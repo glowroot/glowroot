@@ -15,13 +15,12 @@
  */
 package org.informantproject.core;
 
-import java.util.Set;
+import java.util.Collection;
 
+import org.informantproject.core.util.Threads;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.informantproject.core.MainEntryPoint;
-import org.informantproject.core.util.Threads;
 
 /**
  * @author Trask Stalnaker
@@ -29,11 +28,11 @@ import org.informantproject.core.util.Threads;
  */
 public class MainEntryPointTest {
 
-    private Set<Thread> preExistingThreads;
+    private Collection<Thread> preExistingThreads;
 
     @Before
     public void before() {
-        preExistingThreads = Threads.currentThreadList();
+        preExistingThreads = Threads.currentThreads();
         MainEntryPoint.start();
     }
 

@@ -16,7 +16,7 @@
 package org.informantproject.testkit;
 
 import java.io.File;
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.Logger;
@@ -37,7 +37,7 @@ public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
 
-    private final Set<Thread> preExistingThreads;
+    private final Collection<Thread> preExistingThreads;
     private final ExecutionAdapter executionAdapter;
     private final File dataDir;
     private final AsyncHttpClient asyncHttpClient;
@@ -45,7 +45,7 @@ public class InformantContainer {
 
     private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
-    InformantContainer(ExecutionAdapter executionAdapter, Set<Thread> preExistingThreads,
+    InformantContainer(ExecutionAdapter executionAdapter, Collection<Thread> preExistingThreads,
             File dataDir) throws Exception {
 
         this.preExistingThreads = preExistingThreads;
@@ -62,7 +62,7 @@ public class InformantContainer {
     public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
         File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
-        Set<Thread> preExistingThreads = Threads.currentThreadList();
+        Collection<Thread> preExistingThreads = Threads.currentThreads();
         String agentArgs = "data.dir:" + dataDir.getAbsolutePath() + ",ui.port:" + uiPort
                 + ",internal.h2memdb:" + useMemDb;
         ExecutionAdapter executionAdapter;

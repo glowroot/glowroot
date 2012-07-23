@@ -17,7 +17,7 @@ package org.informantproject.core.util;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.util.Set;
+import java.util.Collection;
 
 import org.junit.After;
 import org.junit.Before;
@@ -33,13 +33,13 @@ import com.ning.http.client.Response;
  */
 public class HttpServerTest {
 
-    private Set<Thread> preExistingThreads;
+    private Collection<Thread> preExistingThreads;
     private HttpServerBase httpServer;
     private AsyncHttpClient asyncHttpClient;
 
     @Before
     public void before() {
-        preExistingThreads = Threads.currentThreadList();
+        preExistingThreads = Threads.currentThreads();
         httpServer = new EchoHttpServer();
         asyncHttpClient = new AsyncHttpClient();
     }

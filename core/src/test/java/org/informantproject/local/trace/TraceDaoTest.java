@@ -18,8 +18,8 @@ package org.informantproject.local.trace;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.informantproject.core.trace.TraceTestData;
 import org.informantproject.core.util.DataSource;
@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 @RunWith(JukitoRunner.class)
 public class TraceDaoTest {
 
-    private Set<Thread> preExistingThreads;
+    private Collection<Thread> preExistingThreads;
 
     public static class Module extends JukitoModule {
         @Override
@@ -55,7 +55,7 @@ public class TraceDaoTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = Threads.currentThreadList();
+        preExistingThreads = Threads.currentThreads();
         if (dataSource.tableExists("trace")) {
             dataSource.execute("drop table trace");
         }

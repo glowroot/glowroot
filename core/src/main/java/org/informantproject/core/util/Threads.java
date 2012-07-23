@@ -15,8 +15,8 @@
  */
 package org.informantproject.core.util;
 
+import java.lang.Thread.State;
 import java.util.Collection;
-import java.util.Set;
 
 import org.informantproject.core.MainEntryPoint;
 
@@ -43,13 +43,18 @@ public final class Threads {
 
     private Threads() {}
 
-    public static Set<Thread> currentThreadList() {
-        return Thread.getAllStackTraces().keySet();
+    public static Collection<Thread> currentThreads() {
+        return Collections2.filter(Thread.getAllStackTraces().keySet(),
+                new Predicate<Thread>() {
+                    public boolean apply(Thread input) {
+                        return input.getState() != State.TERMINATED;
+                    }
+                });
     }
 
     // ensure the test didn't create any non-daemon threads
-    public static void preShutdownCheck(final Set<Thread> preExistingThreads) {
-        Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
+    public static void preShutdownCheck(final Collection<Thread> preExistingThreads) {
+        Collection<Thread> rogueThreads = Collections2.filter(currentThreads(),
                 new Predicate<Thread>() {
                     public boolean apply(Thread input) {
                         return input != Thread.currentThread() && !input.isDaemon()
@@ -62,13 +67,13 @@ public final class Threads {
     }
 
     // ensure the test shutdown all threads that it created
-    public static void postShutdownCheck(final Set<Thread> preExistingThreads)
+    public static void postShutdownCheck(Collection<Thread> preExistingThreads)
             throws InterruptedException {
 
         // give it 5 seconds to shutdown threads
         long startedAt = System.currentTimeMillis();
         while (true) {
-            Collection<Thread> rogueThreads = Collections2.filter(currentThreadList(),
+            Collection<Thread> rogueThreads = Collections2.filter(currentThreads(),
                     Predicates.not(Predicates.in(preExistingThreads)));
             if (rogueThreads.isEmpty()) {
                 // success

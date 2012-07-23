@@ -17,7 +17,7 @@ package org.informantproject.local.ui;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.util.Set;
+import java.util.Collection;
 
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.core.config.CoreConfig;
@@ -40,12 +40,12 @@ import com.ning.http.client.Response;
  */
 public class LocalHttpHandlerTest {
 
-    private Set<Thread> preExistingThreads;
+    private Collection<Thread> preExistingThreads;
     private AsyncHttpClient asyncHttpClient;
 
     @Before
     public void before() {
-        preExistingThreads = Threads.currentThreadList();
+        preExistingThreads = Threads.currentThreads();
         MainEntryPoint.start("ui.port:0");
         asyncHttpClient = new AsyncHttpClient();
     }
