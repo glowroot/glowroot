@@ -109,7 +109,7 @@ public class TraceSinkLocal implements TraceSink {
 
     public StoredTrace buildStoredTrace(Trace trace) throws IOException {
         long captureTick = ticker.read();
-        StoredTrace.Builder builder = new StoredTrace.Builder();
+        StoredTrace.Builder builder = StoredTrace.builder();
         builder.id(trace.getId());
         builder.startAt(trace.getStartDate().getTime());
         builder.stuck(trace.isStuck() && !trace.isCompleted());

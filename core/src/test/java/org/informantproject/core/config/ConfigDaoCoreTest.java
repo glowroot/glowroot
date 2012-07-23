@@ -20,7 +20,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.sql.SQLException;
 import java.util.Collection;
 
-import org.informantproject.core.config.CoreConfig.CoreConfigBuilder;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.Threads;
@@ -101,14 +100,14 @@ public class ConfigDaoCoreTest {
         // when
         CoreConfig coreConfig = configDao.readCoreConfig();
         // then
-        assertThat(coreConfig).isEqualTo(new CoreConfigBuilder().setEnabled(false).build());
+        assertThat(coreConfig).isEqualTo(CoreConfig.builder().setEnabled(false).build());
     }
 
     @Test
     public void shouldUpdateConfig(ConfigDao configDao) {
         // given
         CoreConfig defaultCoreConfig = new CoreConfig();
-        CoreConfig randomCoreConfig = new CoreConfigTestData().getRandomCoreConfig();
+        CoreConfig randomCoreConfig = new CoreConfigTestData().getNonDefaultCoreConfig();
         configDao.storeCoreProperties(defaultCoreConfig.getPropertiesJson());
         configDao.setCoreEnabled(defaultCoreConfig.isEnabled());
         // when

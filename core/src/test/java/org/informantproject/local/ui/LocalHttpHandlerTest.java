@@ -70,7 +70,7 @@ public class LocalHttpHandlerTest {
     @Test
     public void shouldUpdateAndReadBackConfig() throws Exception {
         // given
-        CoreConfig randomCoreConfig = new CoreConfigTestData().getRandomCoreConfig();
+        CoreConfig randomCoreConfig = new CoreConfigTestData().getNonDefaultCoreConfig();
         BoundRequestBuilder updateRequest = asyncHttpClient.preparePost("http://localhost:"
                 + MainEntryPoint.getPort() + "/config/core/properties");
         updateRequest.setBody(randomCoreConfig.getPropertiesJson());

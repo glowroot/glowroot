@@ -40,24 +40,25 @@ public class TraceTestData {
     }
 
     public StoredTrace createTrace() {
-        StoredTrace.Builder builder = new StoredTrace.Builder();
-        builder.id("abc" + counter.getAndIncrement());
-        builder.startAt(clock.currentTimeMillis() - 10);
-        builder.stuck(false);
-        builder.duration(TimeUnit.MILLISECONDS.toNanos(10));
-        builder.completed(true);
-        builder.description("test description");
-        builder.username("j");
-        builder.spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
-                + "\"parentIndex\":-1,\"level\":0,\"description\":\"Level One\",\"contextMap\":"
-                + "\"{\"arg1\":\"a\",arg2\":\"b\",\"nested1\":{\"nestedkey11\":\"a\","
-                + "\"nestedkey12\":\"b\",\"subnestedkey1\":{\"subnestedkey1\":\"a\","
-                + "\"subnestedkey2\":\"b\"}},\"nested2\":{\"nestedkey21\":\"a\",\"nestedkey22\":"
-                + "\"b\"}}},{\"offset\":0,\"duration\":0,\"index\":1,\"parentIndex\":0,"
-                + "\"level\":1,\"description\":\"Level Two\",\"contextMap\":{\"arg1\":\"ax\","
-                + "\"arg2\":\"bx\"}},{\"offset\":0,\"duration\":0,\"index\":2,\"parentIndex\":1,"
-                + "\"level\":2,\"description\":\"Level Three\",\"contextMap\":{\"arg1\":\"axy\","
-                + "\"arg2\":\"bxy\"}}]"));
-        return builder.build();
+        return StoredTrace.builder()
+                .id("abc" + counter.getAndIncrement())
+                .startAt(clock.currentTimeMillis() - 10)
+                .stuck(false)
+                .duration(TimeUnit.MILLISECONDS.toNanos(10))
+                .completed(true)
+                .description("test description")
+                .username("j")
+                .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
+                        + "\"parentIndex\":-1,\"level\":0,\"description\":\"Level One\","
+                        + "\"contextMap\":\"{\"arg1\":\"a\",arg2\":\"b\",\"nested1\":"
+                        + "{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\",\"subnestedkey1\":"
+                        + "{\"subnestedkey1\":\"a\",\"subnestedkey2\":\"b\"}},\"nested2\":"
+                        + "{\"nestedkey21\":\"a\",\"nestedkey22\":\"b\"}}},{\"offset\":0,"
+                        + "\"duration\":0,\"index\":1,\"parentIndex\":0,\"level\":1,"
+                        + "\"description\":\"Level Two\",\"contextMap\":{\"arg1\":\"ax\",\"arg2\":"
+                        + "\"bx\"}},{\"offset\":0,\"duration\":0,\"index\":2,\"parentIndex\":1,"
+                        + "\"level\":2,\"description\":\"Level Three\",\"contextMap\":{\"arg1\":"
+                        + "\"axy\",\"arg2\":\"bxy\"}}]"))
+                .build();
     }
 }

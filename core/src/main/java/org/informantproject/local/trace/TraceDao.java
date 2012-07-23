@@ -327,22 +327,20 @@ public class TraceDao {
     private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
 
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
-            StoredTrace.Builder builder = new StoredTrace.Builder();
-            int columnIndex = 1;
-            builder.id(resultSet.getString(columnIndex++));
-            columnIndex++; // TODO place holder for captured_at
-            builder.startAt(resultSet.getLong(columnIndex++));
-            builder.stuck(resultSet.getBoolean(columnIndex++));
-            builder.duration(resultSet.getLong(columnIndex++));
-            builder.completed(resultSet.getBoolean(columnIndex++));
-            builder.description(resultSet.getString(columnIndex++));
-            builder.username(resultSet.getString(columnIndex++));
-            builder.attributes(resultSet.getString(columnIndex++));
-            builder.metrics(resultSet.getString(columnIndex++));
-            // wait and read from rolling file outside of jdbc connection
-            // return new TempStoredTrace(builder, )
-            String spansFileBlockId = resultSet.getString(columnIndex++);
-            String mergedStackTreeFileBlockId = resultSet.getString(columnIndex++);
+            StoredTrace.Builder builder = StoredTrace.builder()
+                    .id(resultSet.getString(1))
+                    // column 2 is 'captured_at'
+                    .startAt(resultSet.getLong(3))
+                    .stuck(resultSet.getBoolean(4))
+                    .duration(resultSet.getLong(5))
+                    .completed(resultSet.getBoolean(6))
+                    .description(resultSet.getString(7))
+                    .username(resultSet.getString(8))
+                    .attributes(resultSet.getString(9))
+                    .metrics(resultSet.getString(10));
+            // wait and read from rolling file outside of the jdbc connection
+            String spansFileBlockId = resultSet.getString(11);
+            String mergedStackTreeFileBlockId = resultSet.getString(12);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     mergedStackTreeFileBlockId);
         }

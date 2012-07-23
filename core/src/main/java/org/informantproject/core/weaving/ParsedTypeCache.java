@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Maps;
 
 /**
@@ -69,7 +68,7 @@ public class ParsedTypeCache {
     // TODO is it worth removing duplicates from resulting type hierarchy list?
     private List<ParsedType> loadTypeHierarchy(String typeName) {
         ParsedType parsedType = loadParsedType(typeName);
-        ImmutableList.Builder<ParsedType> builder = new Builder<ParsedType>();
+        ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
         builder.add(parsedType);
         String superName = parsedType.getSuperName();
         if (superName != null) {
@@ -82,7 +81,7 @@ public class ParsedTypeCache {
     }
 
     private ParsedType loadParsedType(String typeName) {
-        ParsedTypeBuilder cv = new ParsedTypeBuilder();
+        ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
         InputStream inputStream = loader.getResourceAsStream(typeName + ".class");
         if (inputStream == null) {
             return new ParsedType(typeName);
@@ -97,7 +96,7 @@ public class ParsedTypeCache {
         }
     }
 
-    private static class ParsedTypeBuilder extends ClassVisitor {
+    private static class ParsedTypeClassVisitor extends ClassVisitor {
 
         @Nullable
         private String name;
@@ -107,7 +106,7 @@ public class ParsedTypeCache {
         private String[] interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
-        private ParsedTypeBuilder() {
+        private ParsedTypeClassVisitor() {
             super(Opcodes.ASM4);
         }
 

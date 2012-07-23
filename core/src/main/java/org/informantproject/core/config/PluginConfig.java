@@ -189,13 +189,13 @@ public class PluginConfig {
     }
 
     public static PluginConfig create(PluginDescriptor pluginDescriptor, boolean enabled) {
-        return new PluginConfigBuilder(pluginDescriptor).setEnabled(enabled).build();
+        return new Builder(pluginDescriptor).setEnabled(enabled).build();
     }
 
     public static PluginConfig create(PluginDescriptor pluginDescriptor, boolean enabled,
             JsonObject propertiesJson) {
 
-        return new PluginConfigBuilder(pluginDescriptor).setEnabled(enabled)
+        return new Builder(pluginDescriptor).setEnabled(enabled)
                 .setProperties(propertiesJson).build();
     }
 
@@ -203,14 +203,18 @@ public class PluginConfig {
         return new PluginConfig(false, new HashMap<String, Object>());
     }
 
-    public static class PluginConfigBuilder {
+    public static Builder builder(PluginDescriptor pluginDescriptor) {
+        return new Builder(pluginDescriptor);
+    }
 
-        private boolean enabled;
+    public static class Builder {
+
         private final PluginDescriptor pluginDescriptor;
         // map values are @Nullable
         private final Map<String, Object> properties;
+        private boolean enabled;
 
-        public PluginConfigBuilder(PluginDescriptor pluginDescriptor) {
+        private Builder(PluginDescriptor pluginDescriptor) {
             this.pluginDescriptor = pluginDescriptor;
             properties = Maps.newHashMap();
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
@@ -218,13 +222,13 @@ public class PluginConfig {
             }
         }
 
-        public PluginConfigBuilder(PluginDescriptor pluginDescriptor, PluginConfig base) {
-            this.pluginDescriptor = pluginDescriptor;
+        public Builder copy(PluginConfig base) {
             this.enabled = base.enabled;
-            properties = Maps.newHashMap(base.properties);
+            properties.putAll(base.properties);
+            return this;
         }
 
-        public PluginConfigBuilder setEnabled(boolean enabled) {
+        public Builder setEnabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
@@ -233,7 +237,7 @@ public class PluginConfig {
         // value which may be out of sync if the plugin has been updated and the given property has
         // changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        public PluginConfigBuilder setProperty(String name, @Nullable Object value,
+        public Builder setProperty(String name, @Nullable Object value,
                 boolean ignoreExtraProperties) {
 
             PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
@@ -265,12 +269,12 @@ public class PluginConfig {
             return this;
         }
 
-        public PluginConfigBuilder setProperties(JsonObject jsonObject) {
+        public Builder setProperties(JsonObject jsonObject) {
             setProperties(jsonObject, false);
             return this;
         }
 
-        public PluginConfigBuilder setProperties(JsonObject jsonObject,
+        public Builder setProperties(JsonObject jsonObject,
                 boolean ignoreExtraProperties) {
 
             Map<String, Object> overlayProperties = new Gson().fromJson(jsonObject,

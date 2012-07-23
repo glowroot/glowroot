@@ -15,31 +15,28 @@
  */
 package org.informantproject.core.config;
 
-import org.informantproject.core.config.CoreConfig.CoreConfigBuilder;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 public class CoreConfigTestData {
 
-    public CoreConfig getRandomCoreConfig() {
+    public CoreConfig getNonDefaultCoreConfig() {
         CoreConfig defaultCoreConfig = new CoreConfig();
-        CoreConfigBuilder builder = new CoreConfigBuilder(defaultCoreConfig);
-
-        // cover all fields
-        builder = builder.setEnabled(!defaultCoreConfig.isEnabled());
-        builder = builder.setThresholdMillis(defaultCoreConfig.getThresholdMillis() + 1);
-        builder = builder
-                .setStuckThresholdSeconds(defaultCoreConfig.getStuckThresholdSeconds() + 1);
-        builder = builder.setProfilerInitialDelayMillis(defaultCoreConfig
-                .getProfilerInitialDelayMillis() + 1);
-        builder = builder
-                .setProfilerIntervalMillis(defaultCoreConfig.getProfilerIntervalMillis() + 1);
-        builder = builder.setMaxEntries(defaultCoreConfig.getMaxEntries() + 1);
-        builder = builder
-                .setWarnOnEntryOutsideTrace(!defaultCoreConfig.isWarnOnEntryOutsideTrace());
-
-        return builder.build();
+        return CoreConfig.builder()
+                // cover all fields
+                .setEnabled(!defaultCoreConfig.isEnabled())
+                .setThresholdMillis(defaultCoreConfig.getThresholdMillis() + 1)
+                .setStuckThresholdSeconds(defaultCoreConfig.getStuckThresholdSeconds() + 1)
+                .setProfilerInitialDelayMillis(
+                        defaultCoreConfig.getProfilerInitialDelayMillis() + 1)
+                .setProfilerIntervalMillis(defaultCoreConfig.getProfilerIntervalMillis() + 1)
+                .setSpanStackTraceThresholdMillis(
+                        defaultCoreConfig.getSpanStackTraceThresholdMillis() + 1)
+                .setMaxEntries(defaultCoreConfig.getMaxEntries() + 1)
+                .setRollingSizeMb(defaultCoreConfig.getRollingSizeMb() + 1)
+                .setWarnOnEntryOutsideTrace(!defaultCoreConfig.isWarnOnEntryOutsideTrace())
+                .setMetricPeriodMillis(defaultCoreConfig.getMetricPeriodMillis() + 1)
+                .build();
     }
 }

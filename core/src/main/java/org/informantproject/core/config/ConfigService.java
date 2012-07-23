@@ -24,8 +24,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.PluginServices.ConfigListener;
-import org.informantproject.core.config.CoreConfig.CoreConfigBuilder;
-import org.informantproject.core.config.PluginConfig.PluginConfigBuilder;
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,9 +113,10 @@ public class ConfigService {
     public void setCoreEnabled(boolean enabled) {
         configDao.setCoreEnabled(enabled);
         synchronized (updateLock) {
-            CoreConfigBuilder builder = new CoreConfigBuilder(coreConfig);
-            builder.setEnabled(enabled);
-            coreConfig = builder.build();
+            coreConfig = CoreConfig.builder()
+                    .copy(coreConfig)
+                    .setEnabled(enabled)
+                    .build();
         }
         // it is safe to send the notification to the listeners outside of the update lock because
         // the updated config is not passed to the listeners so there shouldn't be a problem even if
@@ -128,11 +127,12 @@ public class ConfigService {
     // updates only the supplied properties, in a synchronized block ensuring no clobbering
     public void updateCoreConfig(JsonObject propertiesJson) {
         synchronized (updateLock) {
-            // copy existing properties
-            CoreConfigBuilder builder = new CoreConfigBuilder(coreConfig);
-            // overlay updated properties
-            builder.setFromJson(propertiesJson);
-            coreConfig = builder.build();
+            coreConfig = CoreConfig.builder()
+                    // copy existing properties
+                    .copy(coreConfig)
+                    // overlay updated properties
+                    .setFromJson(propertiesJson)
+                    .build();
             configDao.storeCoreProperties(coreConfig.getPropertiesJson());
         }
         // it is safe to send the notification to the listeners outside of the update lock because
@@ -144,10 +144,12 @@ public class ConfigService {
     public void setPluginEnabled(String pluginId, boolean enabled) {
         configDao.setPluginEnabled(pluginId, enabled);
         synchronized (updateLock) {
-            PluginConfigBuilder builder = new PluginConfigBuilder(Plugins.getDescriptor(pluginId),
-                    pluginConfigs.get(pluginId));
-            builder.setEnabled(enabled);
-            pluginConfigs.put(pluginId, builder.build());
+            PluginDescriptor pluginDescriptor = Plugins.getDescriptor(pluginId);
+            PluginConfig pluginConfig = PluginConfig.builder(pluginDescriptor)
+                    .copy(pluginConfigs.get(pluginId))
+                    .setEnabled(enabled)
+                    .build();
+            pluginConfigs.put(pluginId, pluginConfig);
         }
         // it is safe to send the notification to the listeners outside of the update lock because
         // the updated config is not passed to the listeners so there shouldn't be a problem even if
@@ -158,13 +160,13 @@ public class ConfigService {
     // updates only the supplied properties, in a synchronized block ensuring no clobbering
     public void storePluginConfig(String pluginId, JsonObject propertiesJson) {
         synchronized (updateLock) {
-            // start with existing plugin config
             PluginDescriptor pluginDescriptor = Plugins.getDescriptor(pluginId);
-            PluginConfigBuilder builder = new PluginConfigBuilder(pluginDescriptor,
-                    pluginConfigs.get(pluginId));
-            // overlay updated properties
-            builder.setProperties(propertiesJson);
-            PluginConfig pluginConfig = builder.build();
+            PluginConfig pluginConfig = PluginConfig.builder(pluginDescriptor)
+                    // start with existing plugin config
+                    .copy(pluginConfigs.get(pluginId))
+                    // overlay updated properties
+                    .setProperties(propertiesJson)
+                    .build();
             // only store non-hidden properties
             configDao.storePluginProperties(pluginId,
                     pluginConfig.getNonHiddenPropertiesJson(pluginDescriptor));

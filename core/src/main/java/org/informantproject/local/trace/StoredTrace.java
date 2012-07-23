@@ -131,6 +131,10 @@ public class StoredTrace {
         return toStringHelper.toString();
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
 
         private String id;
@@ -149,6 +153,8 @@ public class StoredTrace {
         private ByteStream spans;
         @Nullable
         private ByteStream mergedStackTree;
+
+        private Builder() {}
 
         public Builder id(String id) {
             this.id = id;
