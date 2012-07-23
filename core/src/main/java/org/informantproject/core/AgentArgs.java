@@ -35,16 +35,18 @@ import com.google.common.io.Files;
  */
 // TODO implement good error reporting for command line args
 // to help users get up and running with minimal trouble
-public class AgentArgs {
+class AgentArgs {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentArgs.class);
 
     private int uiPort = 4000;
     private File dataDir = getDefaultDataDir();
+    // this is for internal use (by plugin-testkit)
+    private boolean h2MemDb = false;
 
-    public AgentArgs() {}
+    AgentArgs() {}
 
-    public AgentArgs(@Nullable String agentArgs) {
+    AgentArgs(@Nullable String agentArgs) {
         if (agentArgs != null) {
             for (String agentArg : agentArgs.split(",")) {
                 String agentArgName = agentArg.substring(0, agentArg.indexOf(":"));
@@ -53,6 +55,9 @@ public class AgentArgs {
                     setUiPort(agentArgValue);
                 } else if (agentArgName.equals("data.dir")) {
                     setDataDir(agentArgValue);
+                } else if (agentArgName.equals("internal.h2memdb")) {
+                    // this is for internal use (by plugin-testkit)
+                    h2MemDb = Boolean.parseBoolean(agentArgValue);
                 } else {
                     throw new IllegalStateException("Unsupported agent arg '" + agentArgName + "'");
                 }
@@ -60,12 +65,16 @@ public class AgentArgs {
         }
     }
 
-    public int getUiPort() {
+    int getUiPort() {
         return uiPort;
     }
 
-    public File getDataDir() {
+    File getDataDir() {
         return dataDir;
+    }
+
+    boolean isH2MemDb() {
+        return h2MemDb;
     }
 
     private void setUiPort(String uiPort) {

@@ -56,25 +56,25 @@ public class InformantContainer {
     }
 
     public static InformantContainer create() throws Exception {
-        return create(0);
+        return create(0, true);
     }
 
-    public static InformantContainer create(int uiPort) throws Exception {
+    public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
         File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
         Set<Thread> preExistingThreads = Threads.currentThreadList();
+        String agentArgs = "data.dir:" + dataDir.getAbsolutePath() + ",ui.port:" + uiPort
+                + ",internal.h2memdb:" + useMemDb;
         ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
-            executionAdapter = new ExternalJvmExecutionAdapter("data.dir:"
-                    + dataDir.getAbsolutePath() + ",ui.port:" + uiPort);
+            executionAdapter = new ExternalJvmExecutionAdapter(agentArgs);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using same JVM app container");
-            executionAdapter = new SameJvmExecutionAdapter("data.dir:" + dataDir.getAbsolutePath()
-                    + ",ui.port:" + uiPort);
+            executionAdapter = new SameJvmExecutionAdapter(agentArgs);
         }
         return new InformantContainer(executionAdapter, preExistingThreads, dataDir);
     }

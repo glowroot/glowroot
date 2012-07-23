@@ -34,7 +34,7 @@ public class DataSourceTestProvider implements Provider<DataSource> {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        DataSource dataSource = new DataSource(dbFile);
+        DataSource dataSource = new DataSource(dbFile, true);
         try {
             if (dataSource.tableExists("trace")) {
                 dataSource.execute("drop table trace");

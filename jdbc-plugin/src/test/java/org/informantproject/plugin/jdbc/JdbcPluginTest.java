@@ -185,7 +185,7 @@ public class JdbcPluginTest {
         JdbcDataSource dataSource = new JdbcDataSource();
         dbFile = File.createTempFile("informant-jdbc-plugin-test-", ".h2.db");
         String dbPath = dbFile.getCanonicalPath().replaceFirst(".h2.db$", "");
-        dataSource.setURL("jdbc:h2:" + dbPath);
+        dataSource.setURL("jdbc:h2:mem:" + dbPath);
         dataSource.setUser("sa");
         // set up database
         Connection connection = dataSource.getConnection();

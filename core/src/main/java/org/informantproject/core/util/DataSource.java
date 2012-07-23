@@ -66,6 +66,7 @@ public class DataSource {
     }
 
     private final File dbFile;
+    private final boolean memDb;
     @GuardedBy("lock")
     private Connection connection;
     private final Object lock = new Object();
@@ -79,11 +80,16 @@ public class DataSource {
             });
 
     public DataSource(File dbFile) {
+        this(dbFile, false);
+    }
+
+    public DataSource(File dbFile, boolean memDb) {
         if (dbFile.getPath().endsWith(".h2.db")) {
             this.dbFile = dbFile;
         } else {
             this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
         }
+        this.memDb = memDb;
         try {
             connection = createConnection();
         } catch (SQLException e) {
@@ -422,7 +428,11 @@ public class DataSource {
         props.setProperty("password", "");
         // do not use java.sql.DriverManager or org.h2.Driver because these register the driver
         // globally with the JVM
-        return new JdbcConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", props);
+        if (memDb) {
+            return new JdbcConnection("jdbc:h2:mem:" + dbPath + ";compress_lob=lzf", props);
+        } else {
+            return new JdbcConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", props);
+        }
     }
 
     public interface ConnectionCallback<T> {

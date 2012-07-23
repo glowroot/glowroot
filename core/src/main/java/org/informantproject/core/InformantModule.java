@@ -103,7 +103,8 @@ class InformantModule extends AbstractModule {
     @Provides
     @Singleton
     protected DataSource providesDataSource() {
-        return new DataSource(new File(agentArgs.getDataDir(), "informant.h2.db"));
+        return new DataSource(new File(agentArgs.getDataDir(), "informant.h2.db"),
+                agentArgs.isH2MemDb());
     }
 
     @Provides
