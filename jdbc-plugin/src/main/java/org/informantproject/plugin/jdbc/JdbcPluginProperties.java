@@ -32,7 +32,7 @@ public final class JdbcPluginProperties {
 
     private JdbcPluginProperties() {}
 
-    public static void setDisplayBinaryParamaterAsHex(String sql, int parameterIndex) {
+    public static void setDisplayBinaryParameterAsHex(String sql, int parameterIndex) {
         HashMultimap<String, Integer> mutableMultimap = HashMultimap
                 .create(displayBinaryParameterAsHex);
         mutableMultimap.put(sql, parameterIndex);
