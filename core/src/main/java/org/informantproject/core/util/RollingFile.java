@@ -108,6 +108,7 @@ public class RollingFile {
             return !end;
         }
 
+        // TODO read and lzf decode bytes in chunks
         @Override
         public byte[] next() throws IOException {
             if (block.getLength() > Integer.MAX_VALUE) {
@@ -116,6 +117,7 @@ public class RollingFile {
             synchronized (lock) {
                 if (!rollingOut.stillExists(block)) {
                     // TODO handle not exists case better?
+                    end = true;
                     return new byte[0];
                 }
                 long filePosition = rollingOut.convertToFilePosition(block.getStartIndex());

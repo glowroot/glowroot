@@ -63,7 +63,7 @@ public class RollingFileTest {
     @Test
     public void shouldWrap() throws Exception {
         // given
-        // because of compression, use somewhat random text and loop until wrap occurs
+        // use random text so that the lzf compressed text is also large and forces wrapping
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 600; i++) {
@@ -81,7 +81,7 @@ public class RollingFileTest {
     @Test
     public void shouldWrapAndKeepGoing() throws Exception {
         // given
-        // because of compression, use somewhat random text and loop until wrap occurs
+        // use random text so that the lzf compressed text is also large and forces wrapping
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 600; i++) {
@@ -95,6 +95,26 @@ public class RollingFileTest {
         // then
         String text2 = toString(rollingFile.read(block));
         assertThat(text2).isEqualTo(text);
+    }
+
+    @Test
+    public void shouldWrapOverOldBlocks() throws Exception {
+        // given
+        // use random text so that the lzf compressed text is also large and forces wrapping
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 600; i++) {
+            sb.append((char) ('a' + random.nextInt(26)));
+        }
+        String text = sb.toString();
+        FileBlock block = rollingFile.write(ByteStream.of(text));
+        rollingFile.write(ByteStream.of(text));
+        // when
+        rollingFile.write(ByteStream.of(text));
+        // then
+        // for now, overwritten blocks return empty byte array when read
+        String text2 = toString(rollingFile.read(block));
+        assertThat(text2).isEqualTo("");
     }
 
     static String toString(ByteStream byteStream) throws IOException {
