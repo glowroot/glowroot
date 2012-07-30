@@ -357,6 +357,52 @@
           </transformers>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.github.wvengen</groupId>
+        <artifactId>proguard-maven-plugin</artifactId>
+        <version>2.0.5</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>proguard</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <includeDependency>false</includeDependency>
+          <obfuscate>false</obfuscate>
+          <options>
+            <option>-dontoptimize</option>
+            <option>-ignorewarnings</option>
+            <option>-keep class org.informantproject.core.MainEntryPoint { *; }</option>
+            <option>-keep class org.informantproject.core.InformantModule { *; }</option>
+            <option>
+              -keepclassmembers class * { @org.informantproject.shaded.google.inject.Inject *; }
+            </option>
+            <option>-keep class org.informantproject.local.**JsonService { *; }</option>
+            <option>-keep class org.informantproject.api.** { *; }</option>
+            <option>-keep class org.informantproject.core.** { *; }</option>
+            <!-- test classes use DaemonExecutors -->
+            <option>-keep class org.informantproject.core.util.DaemonExecutors { *; }</option>
+            <option>-keep class org.informantproject.core.util.Files { *; }</option>
+            <option>-keep class org.informantproject.core.util.Threads { *; }</option>
+            <option>
+              -keep class org.informantproject.core.weaving.IsolatedWeavingClassLoader { *; }
+            </option>
+          </options>
+          <libs>
+            <lib>${java.home}/lib/rt.jar</lib>
+          </libs>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>net.sf.proguard</groupId>
+            <artifactId>proguard-base</artifactId>
+            <version>4.8</version>
+          </dependency>
+        </dependencies>
+      </plugin>
     </plugins>
   </build>
 
