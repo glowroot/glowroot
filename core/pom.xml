@@ -378,7 +378,8 @@
             <option>-keep class org.informantproject.core.MainEntryPoint { *; }</option>
             <option>-keep class org.informantproject.core.InformantModule { *; }</option>
             <option>
-              -keepclassmembers class * { @org.informantproject.shaded.google.inject.Inject *; }
+              -keepclassmembers class * { @org.informantproject.shaded.google.inject.Inject *;
+              }
             </option>
             <option>-keep class org.informantproject.local.**JsonService { *; }</option>
             <option>-keep class org.informantproject.api.** { *; }</option>
@@ -390,6 +391,8 @@
             <option>
               -keep class org.informantproject.core.weaving.IsolatedWeavingClassLoader { *; }
             </option>
+            <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
+            <option>-keep class org.informantproject.shaded.google.common.** { *; }</option>
           </options>
           <libs>
             <lib>${java.home}/lib/rt.jar</lib>
