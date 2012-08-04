@@ -18,10 +18,10 @@ body {
 }
 @font-face {
   font-family: 'SpecialElite-Regular';
-  src: url('../specialelite/1.0/specialelite.eot');
-  src: url('../specialelite/1.0/specialelite.eot?#iefix') format('embedded-opentype'),
-       url('../specialelite/1.0/specialelite.woff') format('woff'),
-       url('../specialelite/1.0/specialelite.ttf') format('truetype');
+  src: url('../libs/specialelite/1.0/specialelite.eot');
+  src: url('../libs/specialelite/1.0/specialelite.eot?#iefix') format('embedded-opentype'),
+       url('../libs/specialelite/1.0/specialelite.woff') format('woff'),
+       url('../libs/specialelite/1.0/specialelite.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }

@@ -79,7 +79,7 @@ public class HttpServer extends HttpServerBase {
     @Inject
     public HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            TraceDetailHttpService traceDetailJsonService,
+            TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigJsonService configJsonService, MiscJsonService miscJsonService,
@@ -102,31 +102,10 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
         uriMappings.put(Pattern.compile("^/js/(.*)$"), "org/informantproject/local/ui/js/$1");
-        // 3rd party resources
-        uriMappings.put(Pattern.compile("^/bootstrap/(.*)$"),
-                "org/informantproject/webresources/bootstrap/$1");
-        uriMappings.put(Pattern.compile("^/bootstrap-datepicker/(.*)$"),
-                "org/informantproject/webresources/bootstrap-datepicker/$1");
-        uriMappings.put(Pattern.compile("^/specialelite/(.*)$"),
-                "org/informantproject/webresources/specialelite/$1");
-        uriMappings.put(Pattern.compile("^/jquery/(.*)$"),
-                "org/informantproject/webresources/jquery/$1");
-        uriMappings.put(Pattern.compile("^/flot/(.*)$"),
-                "org/informantproject/webresources/flot/$1");
-        uriMappings.put(Pattern.compile("^/dynatree/(.*)$"),
-                "org/informantproject/webresources/dynatree/$1");
-        uriMappings.put(Pattern.compile("^/moment/(.*)$"),
-                "org/informantproject/webresources/moment/$1");
-        uriMappings.put(Pattern.compile("^/handlebars/(.*)$"),
-                "org/informantproject/webresources/handlebars/$1");
-        uriMappings.put(Pattern.compile("^/spin/(.*)$"),
-                "org/informantproject/webresources/spin/$1");
-        uriMappings.put(Pattern.compile("^/qtip/(.*)$"),
-                "org/informantproject/webresources/qtip/$1");
-        uriMappings.put(Pattern.compile("^/favicon.ico$"),
-                "org/informantproject/local/ui/img/favicon.ico");
+        uriMappings.put(Pattern.compile("^/libs/(.*)$"), "org/informantproject/local/ui/libs/$1");
+        // services
         uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/trace/detail/.*$"), traceDetailJsonService);
+        uriMappings.put(Pattern.compile("^/trace/detail/.*$"), traceDetailHttpService);
         this.uriMappings = uriMappings.build();
 
         // the parentheses define the part of the match that is used to construct the args for
@@ -236,7 +215,7 @@ public class HttpServer extends HttpServerBase {
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
-        if (path.startsWith("org/informantproject/webresources/")) {
+        if (path.startsWith("org/informantproject/local/ui/libs/")) {
             // these are all third-party versioned resources and can be safely cached forever
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
         }

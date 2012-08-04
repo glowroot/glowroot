@@ -19,10 +19,10 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Configuration</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
-<link rel="stylesheet" href="bootstrap/2.0.4/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="libs/bootstrap/2.0.4/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
-<script type="text/javascript" src="jquery/1.7.2/jquery.min.js"></script>
-<script type="text/javascript" src="handlebars/1.0.0.beta.6/handlebars.js"></script>
+<script type="text/javascript" src="libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script id="pluginTemplate" type="text/x-handlebars-template">
 <br>
@@ -181,7 +181,7 @@
         plugin.propertyDescriptors = propertyDescriptors
         var html = pluginTemplate(plugin)
         $(html).appendTo('#plugins')
-        setUpOnOffButton(escapeForSelector(plugin.id) + '_', 
+        setUpOnOffButton(escapeForSelector(plugin.id) + '_',
             config.pluginConfigs[plugin.id].enabled, 'config/plugin/' + plugin.id)
         var pluginProperties = config.pluginConfigs[plugin.id].properties
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
