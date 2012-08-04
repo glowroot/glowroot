@@ -38,7 +38,7 @@
     <module>ui-testing</module>
     <module>servlet-plugin</module>
     <module>jdbc-plugin</module>
-    <module>informant</module>
+    <module>package</module>
   </modules>
 
   <scm>

@@ -9,10 +9,10 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant</artifactId>
+  <artifactId>informant-package</artifactId>
 
-  <name>Informant</name>
-  <description>Informant</description>
+  <name>Informant Package</name>
+  <description>Informant Package</description>
 
   <dependencies>
     <dependency>
