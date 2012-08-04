@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,9 @@
  */
 package org.informantproject.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
 import org.informantproject.test.api.LevelOne;
-import org.informantproject.test.api.LevelTwo;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
-import org.informantproject.testkit.Trace;
-import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,7 +26,7 @@ import org.junit.Test;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class WeavingTest {
+public class ErrorCaptureTest {
 
     private static InformantContainer container;
 
@@ -48,26 +43,24 @@ public class WeavingTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setThresholdMillis(10000);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        container.executeAppUnderTest(ShouldCaptureError.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
-        Span span1 = trace.getSpans().get(0);
-        Span span2 = trace.getSpans().get(1);
-        assertThat(span1.getDescription()).isEqualTo("Level One");
-        assertThat(span2.getDescription()).isEqualTo("Level Two");
+        container.getInformant().getLastTrace();
     }
 
-    public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public ShouldGenerateTraceWithNestedSpans() {
-            // force the subclass to be loaded first
-            LevelTwoSubclass.class.getClass();
-        }
+    public static class ShouldCaptureError implements AppUnderTest {
         public void executeApp() throws Exception {
-            new LevelOne().call("a", "b");
+            Exception expected = new Exception();
+            try {
+                new LevelOne(expected).call("a", "b");
+            } catch (Exception e) {
+                if (e != expected) {
+                    // suppress expected exception
+                    throw e;
+                }
+            }
         }
     }
-
-    public static class LevelTwoSubclass extends LevelTwo {}
 }

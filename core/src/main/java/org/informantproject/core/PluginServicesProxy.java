@@ -23,9 +23,10 @@ import javax.annotation.Nullable;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.SupplierOfNullable;
+import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
@@ -106,7 +107,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Stopwatch startTrace(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -116,12 +117,42 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Stopwatch startEntry(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.startEntry(messageSupplier, metric);
+            return pluginServices.startSpan(messageSupplier, metric);
+        }
+    }
+
+    @Override
+    public Timer startTimer(Metric metric) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            return pluginServices.startTimer(metric);
+        }
+    }
+
+    @Override
+    public void addSpan(Supplier<Message> message) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            pluginServices.addSpan(message);
+        }
+    }
+
+    @Override
+    public void addErrorSpan(Supplier<Message> message, Throwable t) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            pluginServices.addErrorSpan(message, t);
         }
     }
 

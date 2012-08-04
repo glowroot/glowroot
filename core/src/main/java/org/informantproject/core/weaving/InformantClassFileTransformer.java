@@ -23,12 +23,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.informantproject.api.Metric;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.PluginServices;
+import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
 import org.informantproject.core.trace.MetricImpl;
-import org.informantproject.core.trace.TraceRegistry;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
@@ -59,10 +59,11 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     // weak keys to prevent retention of class loaders
     private final ConcurrentMap<ClassLoader, Weaver> weavers = new MapMaker().weakKeys().makeMap();
 
+    private final PluginServices pluginServices;
     private final Metric metric;
 
     @Inject
-    public InformantClassFileTransformer(TraceRegistry traceRegistry, Ticker ticker) {
+    public InformantClassFileTransformer(PluginServices pluginServices, Ticker ticker) {
         ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
         ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
         for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
@@ -75,7 +76,8 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
         }
         this.mixins = mixins.build();
         this.advisors = advisors.build();
-        metric = new MetricImpl("informant weaving", traceRegistry, ticker);
+        this.pluginServices = pluginServices;
+        metric = new MetricImpl("informant weaving", ticker);
         loadUsedTypes();
     }
 
@@ -90,7 +92,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private byte[] transform$informant$metric$informant$weaving$0(ClassLoader loader,
             String className, ProtectionDomain protectionDomain, byte[] bytes) {
 
-        Stopwatch stopwatch = metric.start();
+        Timer timer = pluginServices.startTimer(metric);
         try {
             Weaver weaver = weavers.get(loader);
             if (weaver == null) {
@@ -104,7 +106,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
             }
             return transformedBytes;
         } finally {
-            stopwatch.stop();
+            timer.end();
         }
     }
 

@@ -125,7 +125,7 @@ public class PluginPropertyTest {
     }
 
     public static class SimpleApp implements AppUnderTest {
-        public void executeApp() throws InterruptedException {
+        public void executeApp() throws Exception {
             new LevelOne().call("a", "b");
         }
     }

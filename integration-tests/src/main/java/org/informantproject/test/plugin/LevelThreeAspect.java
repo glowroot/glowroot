@@ -19,7 +19,7 @@ import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
@@ -50,7 +50,7 @@ public class LevelThreeAspect {
         }
 
         @OnBefore
-        public static Stopwatch onBefore(final String arg1, final String arg2) {
+        public static Span onBefore(final String arg1, final String arg2) {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
                 @Override
                 public Message get() {
@@ -58,11 +58,12 @@ public class LevelThreeAspect {
                             ContextMap.of("arg1", arg1, "arg2", arg2));
                 }
             };
-            return pluginServices.startEntry(messageSupplier, metric);
+            return pluginServices.startSpan(messageSupplier, metric);
         }
+
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 }

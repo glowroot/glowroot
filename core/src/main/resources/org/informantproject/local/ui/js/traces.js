@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 var traceSummaryTemplateText = ''
++ '{{#if error}}'
++ '  <b>ERROR</b><br>'
++ '{{/if}}'
 + '{{#if active}}'
 + '  <b>ACTIVE {{#if stuck}}/ STUCK{{/if}}</b><br>'
 + '{{^}}'

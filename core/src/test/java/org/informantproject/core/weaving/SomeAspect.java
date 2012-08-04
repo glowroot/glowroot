@@ -351,13 +351,19 @@ public class SomeAspect {
             methodName = "executePrimitive", methodArgs = { "int", "double", "/.*/", ".." })
     public static class PrimitiveWithWildcardAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @InjectMethodArg int x) {
             enabledCount.increment();
             return true;
         }
+        @OnBefore
+        public static void onBefore(@SuppressWarnings("unused") int x) {
+            onBeforeCount.increment();
+        }
         public static void resetThreadLocals() {
             enabledCount.set(0);
+            onBeforeCount.set(0);
         }
     }
 

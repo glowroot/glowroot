@@ -45,13 +45,16 @@ public class Span {
     private final int level;
 
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
+    @Nullable
     private final TraceMetric traceMetric;
+
+    private volatile boolean error;
 
     @Nullable
     private volatile StackTraceElement[] stackTraceElements;
 
     Span(Supplier<Message> messageSupplier, long traceStartTick, long startTick, int index,
-            int parentIndex, int level, TraceMetric traceMetric) {
+            int parentIndex, int level, @Nullable TraceMetric traceMetric) {
 
         this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
@@ -91,17 +94,26 @@ public class Span {
         return level;
     }
 
+    public boolean isError() {
+        return error;
+    }
+
     @Nullable
     public StackTraceElement[] getStackTraceElements() {
         return stackTraceElements;
     }
 
+    @Nullable
     TraceMetric getTraceMetric() {
         return traceMetric;
     }
 
     void setEndTick(long endTick) {
         this.endTick = endTick;
+    }
+
+    void setError(boolean error) {
+        this.error = error;
     }
 
     void setStackTraceElements(@Nullable StackTraceElement[] stackTraceElements) {

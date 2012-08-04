@@ -16,7 +16,6 @@
 package org.informantproject.core.trace;
 
 import org.informantproject.api.Metric;
-import org.informantproject.api.Stopwatch;
 
 import com.google.common.base.Ticker;
 
@@ -29,27 +28,15 @@ public class MetricImpl implements Metric {
     private final String name;
     private final ThreadLocal<TraceMetric> traceMetric = new ThreadLocal<TraceMetric>();
 
-    private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
-    public MetricImpl(String name, TraceRegistry traceRegistry, Ticker ticker) {
+    public MetricImpl(String name, Ticker ticker) {
         this.name = name;
-        this.traceRegistry = traceRegistry;
         this.ticker = ticker;
     }
 
     public String getName() {
         return name;
-    }
-
-    public Stopwatch start() {
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace == null) {
-            // TODO return global collector?
-            return NopStopwatch.INSTANCE;
-        } else {
-            return currentTrace.startTraceMetric(this);
-        }
     }
 
     TraceMetric startInternal() {
@@ -84,10 +71,5 @@ public class MetricImpl implements Metric {
 
     void remove() {
         traceMetric.remove();
-    }
-
-    private static class NopStopwatch implements Stopwatch {
-        private static final NopStopwatch INSTANCE = new NopStopwatch();
-        public void stop() {}
     }
 }

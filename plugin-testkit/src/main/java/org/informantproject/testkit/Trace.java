@@ -30,6 +30,7 @@ public class Trace {
     private long from;
     private long to;
     private boolean stuck;
+    private boolean error;
     private long duration;
     private boolean completed;
     private String description;
@@ -50,6 +51,9 @@ public class Trace {
     }
     public boolean isStuck() {
         return stuck;
+    }
+    public boolean isError() {
+        return error;
     }
     public long getDuration() {
         return duration;
@@ -83,6 +87,7 @@ public class Trace {
                 .add("from", from)
                 .add("to", to)
                 .add("stuck", stuck)
+                .add("error", error)
                 .add("duration", duration)
                 .add("completed", completed)
                 .add("description", description)
@@ -175,6 +180,7 @@ public class Trace {
         private int level;
         private String description;
         private Map<String, Object> contextMap;
+        private boolean error;
 
         public long getOffset() {
             return offset;
@@ -197,6 +203,9 @@ public class Trace {
         public Map<String, Object> getContextMap() {
             return contextMap;
         }
+        public boolean isError() {
+            return error;
+        }
 
         @Override
         public String toString() {
@@ -208,6 +217,7 @@ public class Trace {
                     .add("level", level)
                     .add("description", description)
                     .add("contextMap", contextMap)
+                    .add("error", error)
                     .toString();
         }
     }

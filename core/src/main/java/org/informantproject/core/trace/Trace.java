@@ -60,11 +60,13 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
+    private volatile boolean error;
+
     private volatile SupplierOfNullable<String> username = SupplierOfNullable.ofInstance(null);
 
     // attribute name ordering is maintained for consistent display
     // (assumption is order of entry is order of importance)
-    private final Queue<Attribute> attributes = new ConcurrentLinkedQueue<Attribute>();
+    private final Queue<TraceAttribute> attributes = new ConcurrentLinkedQueue<TraceAttribute>();
 
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricImpl> metrics = Lists.newArrayList();
@@ -142,8 +144,12 @@ public class Trace {
         return username;
     }
 
-    public Collection<Attribute> getAttributes() {
+    public Collection<TraceAttribute> getAttributes() {
         return attributes;
+    }
+
+    public boolean isError() {
+        return error;
     }
 
     public List<TraceMetric> getTraceMetrics() {
@@ -186,13 +192,13 @@ public class Trace {
     void putAttribute(String name, @Nullable String value) {
         // write to orderedAttributeNames only happen in a single thread (the trace thread), so no
         // race condition worries here
-        for (Attribute attribute : attributes) {
+        for (TraceAttribute attribute : attributes) {
             if (attribute.getName().equals(name)) {
                 attribute.setValue(value);
                 return;
             }
         }
-        attributes.add(new Attribute(name, value));
+        attributes.add(new TraceAttribute(name, value));
     }
 
     // this method doesn't need to be synchronized
@@ -226,12 +232,30 @@ public class Trace {
         return span;
     }
 
+    Span addSpan(org.informantproject.api.Supplier<Message> messageSupplier, boolean error) {
+        Span span = rootSpan.addSpan(ticker.read(), messageSupplier, error);
+        if (error) {
+            this.error = true;
+        }
+        return span;
+    }
+
+    void popSpan(Span span, long endTick) {
+        popSpan(span, endTick, false);
+    }
+
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long endTick, @Nullable StackTraceElement[] stackTraceElements) {
-        rootSpan.popSpan(span, endTick, stackTraceElements);
-        span.getTraceMetric().stop(endTick);
+    void popSpan(Span span, long endTick, boolean error) {
+        if (error) {
+            this.error = true;
+        }
+        rootSpan.popSpan(span, endTick, error);
+        TraceMetric traceMetric = span.getTraceMetric();
+        if (traceMetric != null) {
+            traceMetric.stop(endTick);
+        }
     }
 
     TraceMetric startTraceMetric(MetricImpl metric) {
@@ -244,11 +268,11 @@ public class Trace {
         return traceMetric;
     }
 
-    public static class Attribute {
+    public static class TraceAttribute {
         private final String name;
         @Nullable
         private volatile String value;
-        private Attribute(String name, @Nullable String value) {
+        private TraceAttribute(String name, @Nullable String value) {
             this.name = name;
             this.value = value;
         }

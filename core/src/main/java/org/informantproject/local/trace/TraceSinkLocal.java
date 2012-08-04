@@ -26,7 +26,7 @@ import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
-import org.informantproject.core.trace.Trace.Attribute;
+import org.informantproject.core.trace.Trace.TraceAttribute;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
@@ -74,12 +74,9 @@ public class TraceSinkLocal implements TraceSink {
         int thresholdMillis = config.getThresholdMillis();
         boolean thresholdDisabled = (thresholdMillis == CoreConfig.THRESHOLD_DISABLED);
         long durationInNanoseconds = trace.getRootSpan().getDuration();
-        // if the completed trace exceeded the given threshold then it is sent to the sink. the
-        // completed trace is also checked in case it was previously sent to the sink and marked as
-        // stuck, and the threshold was disabled or increased in the meantime, in which case the
-        // full completed trace needs to be (re-)sent to the sink
+
         if ((!thresholdDisabled && durationInNanoseconds >= TimeUnit.MILLISECONDS
-                .toNanos(thresholdMillis)) || trace.isStuck()) {
+                .toNanos(thresholdMillis)) || trace.isStuck() || trace.isError()) {
 
             queueLength.incrementAndGet();
             executorService.execute(new Runnable() {
@@ -113,6 +110,7 @@ public class TraceSinkLocal implements TraceSink {
         builder.id(trace.getId());
         builder.startAt(trace.getStartDate().getTime());
         builder.stuck(trace.isStuck() && !trace.isCompleted());
+        builder.error(trace.isError());
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
         // (without using synchronization to block updates to the trace while it is being read)
@@ -128,7 +126,7 @@ public class TraceSinkLocal implements TraceSink {
         Message message = rootSpan.getMessageSupplier().get();
         builder.description(message.getText());
         builder.username(trace.getUsername().get());
-        Collection<Attribute> attributes = trace.getAttributes();
+        Collection<TraceAttribute> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }

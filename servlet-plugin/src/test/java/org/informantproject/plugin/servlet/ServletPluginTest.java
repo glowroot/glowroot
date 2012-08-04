@@ -467,6 +467,34 @@ public class ServletPluginTest {
                 "filter init (" + TestFilterInit.class.getName() + ")");
     }
 
+    @Test
+    public void testThrowsException() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(10000);
+        // when
+        container.executeAppUnderTest(ThrowsException.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.isError()).isTrue();
+    }
+
+    @Test
+    public void testReturns404() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(10000);
+        // when
+        container.executeAppUnderTest(Returns404.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.isError()).isTrue();
+        assertThat(trace.getSpans().get(0).isError()).isFalse();
+        assertThat(trace.getSpans().get(1).isError()).isTrue();
+        assertThat(trace.getSpans().get(1).getDescription()).isEqualTo(
+                "HttpServletResponse.setStatus(404)");
+    }
+
     private PluginConfig getPluginConfig() throws Exception {
         return container.getInformant().getPluginConfig(PLUGIN_ID);
     }
@@ -649,6 +677,34 @@ public class ServletPluginTest {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().invalidate();
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ThrowsException extends ServletUnderTest {
+        private final RuntimeException exception = new RuntimeException("something happened");
+        @Override
+        public void executeApp() throws Exception {
+            try {
+                super.executeApp();
+            } catch (RuntimeException e) {
+                // only suppress expected exception
+                if (e != exception) {
+                    throw e;
+                }
+            }
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            throw exception;
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class Returns404 extends ServletUnderTest {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            response.setStatus(404);
         }
     }
 

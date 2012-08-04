@@ -21,5 +21,4 @@ package org.informantproject.api;
  */
 public interface Metric {
     String getName();
-    Stopwatch start();
 }

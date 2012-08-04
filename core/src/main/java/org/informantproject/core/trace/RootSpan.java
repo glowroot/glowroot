@@ -51,6 +51,7 @@ public class RootSpan {
 
     private final Span rootSpan;
     private final Queue<Span> spans = new ConcurrentLinkedQueue<Span>();
+    // tracking size of spans queue since ConcurrentLinkedQueue.size() is slow
     private volatile int size;
 
     private final Ticker ticker;
@@ -94,23 +95,39 @@ public class RootSpan {
     }
 
     Span pushSpan(long startTick, Supplier<Message> messageSupplier, TraceMetric traceMetric) {
-        Span currentSpan = spanStack.get(spanStack.size() - 1);
-        Span span = new Span(messageSupplier, this.startTick, startTick, size,
-                currentSpan.getIndex(), currentSpan.getLevel() + 1, traceMetric);
+        Span span = createSpan(startTick, messageSupplier, traceMetric);
         pushSpanInternal(span);
+        return span;
+    }
+
+    Span addSpan(long startTick, Supplier<Message> messageSupplier, boolean error) {
+        Span span = createSpan(startTick, messageSupplier, null);
+        span.setError(error);
+        spans.add(span);
+        size++;
+        span.setEndTick(startTick);
         return span;
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the span is
     // passed in just to make sure it is the one on top (and if not, then pop until it is found,
     // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
-    void popSpan(Span span, long endTick, @Nullable StackTraceElement[] stackTraceElements) {
+    void popSpan(Span span, long endTick, boolean error) {
+        span.setError(error);
         span.setEndTick(endTick);
-        span.setStackTraceElements(stackTraceElements);
         popSpanSafe(span);
         if (spanStack.isEmpty()) {
             this.endTick = endTick;
         }
+    }
+
+    private Span createSpan(long startTick, Supplier<Message> messageSupplier,
+            @Nullable TraceMetric traceMetric) {
+
+        Span currentSpan = spanStack.get(spanStack.size() - 1);
+        Span span = new Span(messageSupplier, this.startTick, startTick, size,
+                currentSpan.getIndex(), currentSpan.getLevel() + 1, traceMetric);
+        return span;
     }
 
     private void pushSpanInternal(Span span) {

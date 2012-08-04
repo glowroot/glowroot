@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,27 @@
  */
 package org.informantproject.test.api;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 public class LevelOne {
 
+    @Nullable
+    private final Exception exception;
+
+    public LevelOne() {
+        this(null);
+    }
+
+    public LevelOne(@Nullable Exception e) {
+        this.exception = e;
+    }
+
     // this method corresponds to LevelOneAspect
-    public void call(String arg1, String arg2) {
-        new LevelTwo().call(arg1 + "x", arg2 + "x");
+    public void call(String arg1, String arg2) throws Exception {
+        new LevelTwo(exception).call(arg1 + "x", arg2 + "x");
     }
 }

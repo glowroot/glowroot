@@ -110,6 +110,8 @@ public class TraceCommonJsonService {
         sb.append(storedTrace.getStartAt());
         sb.append(",\"stuck\":");
         sb.append(storedTrace.isStuck());
+        sb.append(",\"error\":");
+        sb.append(storedTrace.isError());
         sb.append(",\"duration\":");
         sb.append(storedTrace.getDuration());
         sb.append(",\"completed\":");
@@ -347,6 +349,12 @@ public class TraceCommonJsonService {
             Message message = span.getMessageSupplier().get();
             jw.name("description");
             jw.value(message.getText());
+            boolean error = span.isError();
+            if (error) {
+                // no need to clutter up json with this mostly unused attribute
+                jw.name("error");
+                jw.value(true);
+            }
             ContextMap context = message.getContext();
             if (context != null) {
                 raw.append(",\"contextMap\":");

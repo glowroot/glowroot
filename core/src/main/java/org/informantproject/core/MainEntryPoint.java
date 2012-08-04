@@ -29,7 +29,6 @@ import org.informantproject.api.PluginServices;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
-import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.weaving.InformantClassFileTransformer;
 import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
@@ -92,9 +91,9 @@ public final class MainEntryPoint {
             return;
         }
         start(parsedAgentArgs);
-        TraceRegistry traceRegistry = injector.getInstance(TraceRegistry.class);
+        PluginServices pluginServices = createPluginServices("org.informantproject:informant-core");
         Ticker ticker = injector.getInstance(Ticker.class);
-        instrumentation.addTransformer(new InformantClassFileTransformer(traceRegistry, ticker));
+        instrumentation.addTransformer(new InformantClassFileTransformer(pluginServices, ticker));
     }
 
     // called via reflection from org.informantproject.api.PluginServices

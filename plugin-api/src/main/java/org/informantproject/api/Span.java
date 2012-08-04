@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.test.api;
+package org.informantproject.api;
 
 import javax.annotation.Nullable;
 
@@ -21,20 +21,15 @@ import javax.annotation.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LevelThree {
+public interface Span {
 
-    @Nullable
-    private final Exception exception;
+    void end();
 
-    public LevelThree(@Nullable Exception e) {
-        this.exception = e;
-    }
+    void endWithError(@Nullable Throwable t);
 
-    @SuppressWarnings("unused")
-    public void call(String arg1, String arg2) throws Exception {
-        // this method corresponds to LevelThreeAspect
-        if (exception != null) {
-            throw exception;
-        }
+    void updateMessage(MessageUpdater updater);
+
+    public interface MessageUpdater {
+        void update(Supplier<Message> message);
     }
 }

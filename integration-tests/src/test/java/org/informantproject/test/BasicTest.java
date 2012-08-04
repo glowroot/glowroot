@@ -120,7 +120,7 @@ public class BasicTest {
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public void executeApp() throws InterruptedException {
+        public void executeApp() throws Exception {
             new LevelOne().call("a", "b");
         }
     }

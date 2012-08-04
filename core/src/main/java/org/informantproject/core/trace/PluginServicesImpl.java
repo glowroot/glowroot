@@ -25,9 +25,10 @@ import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigListener;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.SupplierOfNullable;
+import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.config.PluginConfig;
@@ -120,24 +121,60 @@ public class PluginServicesImpl extends PluginServices implements ConfigListener
     }
 
     @Override
-    public Stopwatch startTrace(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
             currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker);
             traceRegistry.addTrace(currentTrace);
-            return new SpanStopwatch(currentTrace.getRootSpan().getRootSpan(), currentTrace);
+            return new SpanImpl(currentTrace.getRootSpan().getRootSpan(), currentTrace);
         } else {
             return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
         }
     }
 
     @Override
-    public Stopwatch startEntry(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
-            return NopStopwatch.INSTANCE;
+            return NopSpan.INSTANCE;
         } else {
             return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
+        }
+    }
+
+    @Override
+    public Timer startTimer(Metric metric) {
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace == null) {
+            // TODO return global collector?
+            return NopTimer.INSTANCE;
+        } else {
+            return currentTrace.startTraceMetric((MetricImpl) metric);
+        }
+    }
+
+    @Override
+    public void addSpan(Supplier<Message> messageSupplier) {
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace != null) {
+            int maxEntries = coreConfig.getMaxEntries();
+            if (maxEntries == CoreConfig.SPAN_LIMIT_DISABLED
+                    || currentTrace.getRootSpan().getSize() < maxEntries) {
+                // the trace limit has not been exceeded
+                currentTrace.addSpan(messageSupplier, false);
+            }
+        }
+    }
+
+    @Override
+    public void addErrorSpan(Supplier<Message> messageSupplier, @Nullable Throwable t) {
+        // don't use span limit when adding errors
+        Trace currentTrace = traceRegistry.getCurrentTrace();
+        if (currentTrace != null) {
+            org.informantproject.core.trace.Span span = currentTrace.addSpan(messageSupplier, true);
+            if (t != null) {
+                span.setStackTraceElements(t.getStackTrace());
+            }
         }
     }
 
@@ -173,36 +210,45 @@ public class PluginServicesImpl extends PluginServices implements ConfigListener
         pluginConfig = configService.getPluginConfig(pluginId);
     }
 
-    private Stopwatch startSpan(Trace currentTrace, MetricImpl metric,
+    private Span startSpan(Trace currentTrace, MetricImpl metric,
             Supplier<Message> messageSupplier) {
 
         int maxEntries = coreConfig.getMaxEntries();
         if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED
                 && currentTrace.getRootSpan().getSize() >= maxEntries) {
             // the trace limit has been exceeded
-            return metric.start();
+            return new TimerWrappedInSpan(startTimer(metric));
         } else {
-            return new SpanStopwatch(currentTrace.pushSpan(metric, messageSupplier), currentTrace);
+            return new SpanImpl(currentTrace.pushSpan(metric, messageSupplier), currentTrace);
         }
     }
 
-    private class SpanStopwatch implements Stopwatch {
-        private final Span span;
+    private class SpanImpl implements Span {
+        private final org.informantproject.core.trace.Span span;
         private final Trace currentTrace;
-        private SpanStopwatch(Span span, Trace currentTrace) {
+        private SpanImpl(org.informantproject.core.trace.Span span, Trace currentTrace) {
             this.span = span;
             this.currentTrace = currentTrace;
         }
-        public void stop() {
-            // minimizing the number of calls to the clock timer as they are relatively expensive
+        public void endWithError(@Nullable Throwable t) {
+            stopInternal(true, t);
+        }
+        public void end() {
+            stopInternal(false, null);
+        }
+        public void updateMessage(MessageUpdater updater) {
+            updater.update(span.getMessageSupplier());
+        }
+        private void stopInternal(boolean error, @Nullable Throwable t) {
             long endTick = ticker.read();
-            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
+            if (t != null) {
+                span.setStackTraceElements(t.getStackTrace());
+            } else if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
                     .getSpanStackTraceThresholdMillis())) {
                 // TODO remove last few stack trace elements?
-                currentTrace.popSpan(span, endTick, Thread.currentThread().getStackTrace());
-            } else {
-                currentTrace.popSpan(span, endTick, null);
+                span.setStackTraceElements(Thread.currentThread().getStackTrace());
             }
+            currentTrace.popSpan(span, endTick, error);
             if (currentTrace.isCompleted()) {
                 // the root span has been popped off
                 // since the metrics are bound to the thread, they need to be recorded and reset
@@ -232,9 +278,30 @@ public class PluginServicesImpl extends PluginServices implements ConfigListener
         }
     }
 
-    private static class NopStopwatch implements Stopwatch {
-        private static final NopStopwatch INSTANCE = new NopStopwatch();
-        public void stop() {}
+    private static class TimerWrappedInSpan implements Span {
+        private final Timer timer;
+        private TimerWrappedInSpan(Timer timer) {
+            this.timer = timer;
+        }
+        public void end() {
+            timer.end();
+        }
+        public void endWithError(@Nullable Throwable t) {
+            timer.end();
+        }
+        public void updateMessage(MessageUpdater updater) {}
+    }
+
+    private static class NopSpan implements Span {
+        private static final NopSpan INSTANCE = new NopSpan();
+        public void end() {}
+        public void endWithError(@Nullable Throwable t) {}
+        public void updateMessage(MessageUpdater updater) {}
+    }
+
+    private static class NopTimer implements Timer {
+        private static final NopTimer INSTANCE = new NopTimer();
+        public void end() {}
     }
 
     public interface PluginServicesImplFactory {

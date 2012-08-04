@@ -482,6 +482,7 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(PrimitiveWithWildcardAdvice.enabledCount.get()).isEqualTo(1);
+        assertThat(PrimitiveWithWildcardAdvice.onBeforeCount.get()).isEqualTo(1);
     }
 
     // ===================== autobox args =====================

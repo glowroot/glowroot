@@ -32,7 +32,8 @@ import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigListener;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
+import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectMethodName;
@@ -101,12 +102,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore() {
-            return metric.start();
+        public static Timer onBefore() {
+            return pluginServices.startTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Timer timer) {
+            timer.end();
         }
     }
 
@@ -189,14 +190,14 @@ public class JdbcAspect {
         private static final Metric metric = pluginServices.getMetric(StatementExecuteAdvice.class);
         @OnBefore
         @Nullable
-        public static Stopwatch onBefore(@InjectTarget Statement statement,
+        public static Span onBefore(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
 
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(sql);
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                return pluginServices.startSpan(jdbcMessageSupplier, metric);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
                 // if the plugin is re-enabled in the middle of iterating over a different
@@ -209,9 +210,9 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null) {
+                span.end();
             }
         }
     }
@@ -225,13 +226,13 @@ public class JdbcAspect {
                 .getMetric(PreparedStatementExecuteAdvice.class);
         @OnBefore
         @Nullable
-        public static Stopwatch onBefore(@InjectTarget PreparedStatement preparedStatement) {
+        public static Span onBefore(@InjectTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
                         mirror.getParametersCopy());
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                return pluginServices.startSpan(jdbcMessageSupplier, metric);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
                 // if the plugin is re-enabled in the middle of iterating over a different
@@ -244,9 +245,9 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null) {
+                span.end();
             }
         }
     }
@@ -258,7 +259,7 @@ public class JdbcAspect {
                 .getMetric(StatementExecuteBatchAdvice.class);
         @OnBefore
         @Nullable
-        public static Stopwatch onBefore(@InjectTarget final Statement statement) {
+        public static Span onBefore(@InjectTarget final Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
@@ -266,7 +267,7 @@ public class JdbcAspect {
                     JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
                             mirror.getSql(), mirror.getBatchedParametersCopy());
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                    return pluginServices.startSpan(jdbcMessageSupplier, metric);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
                     // updated if the plugin is re-enabled in the middle of iterating over a
@@ -284,7 +285,7 @@ public class JdbcAspect {
                             mirror.getBatchedSqlCopy());
                     // TODO track all changes to statement mirrors regardless of isEnabled
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startEntry(jdbcMessageSupplier, metric);
+                    return pluginServices.startSpan(jdbcMessageSupplier, metric);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
                     // updated if the plugin is re-enabled in the middle of iterating over a
@@ -298,9 +299,9 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null) {
+                span.end();
             }
         }
     }
@@ -335,9 +336,9 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Stopwatch onBefore() {
+        public static Timer onBefore() {
             if (metricEnabled) {
-                return metric.start();
+                return pluginServices.startTimer(metric);
             } else {
                 return null;
             }
@@ -369,9 +370,9 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
-            if (stopwatch != null) {
-                stopwatch.stop();
+        public static void onAfter(@InjectTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.end();
             }
         }
     }
@@ -396,12 +397,12 @@ public class JdbcAspect {
             return metricEnabled;
         }
         @OnBefore
-        public static Stopwatch onBefore() {
-            return metric.start();
+        public static Timer onBefore() {
+            return pluginServices.startTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Timer timer) {
+            timer.end();
         }
     }
 
@@ -425,12 +426,12 @@ public class JdbcAspect {
             return metricEnabled;
         }
         @OnBefore
-        public static Stopwatch onBefore() {
-            return metric.start();
+        public static Timer onBefore() {
+            return pluginServices.startTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Timer timer) {
+            timer.end();
         }
     }
 
@@ -445,12 +446,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore() {
-            return pluginServices.startEntry(MessageSupplier.of("jdbc commit"), metric);
+        public static Span onBefore() {
+            return pluginServices.startSpan(MessageSupplier.of("jdbc commit"), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -465,12 +466,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore() {
-            return metric.start();
+        public static Timer onBefore() {
+            return pluginServices.startTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Timer timer) {
+            timer.end();
         }
     }
 
@@ -484,21 +485,21 @@ public class JdbcAspect {
                 new ThreadLocal<String>();
         @OnBefore
         @Nullable
-        public static Stopwatch onBefore(@InjectMethodName String methodName) {
+        public static Timer onBefore(@InjectMethodName String methodName) {
             inDatabaseMetatDataCall.set(methodName);
             if (pluginServices.isEnabled()) {
-                return metric.start();
+                return pluginServices.startTimer(metric);
             } else {
                 return null;
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Stopwatch stopwatch) {
+        public static void onAfter(@InjectTraveler @Nullable Timer timer) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.captureNested = false prevents re-entrant calls
             inDatabaseMetatDataCall.set(null);
-            if (stopwatch != null) {
-                stopwatch.stop();
+            if (timer != null) {
+                timer.end();
             }
         }
     }

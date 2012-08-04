@@ -66,9 +66,15 @@ public abstract class PluginServices {
     @Nullable
     public abstract Double getDoubleProperty(String propertyName);
 
-    public abstract Stopwatch startTrace(Supplier<Message> message, Metric metric);
+    public abstract Span startTrace(Supplier<Message> message, Metric metric);
 
-    public abstract Stopwatch startEntry(Supplier<Message> message, Metric metric);
+    public abstract Span startSpan(Supplier<Message> message, Metric metric);
+
+    public abstract Timer startTimer(Metric metric);
+
+    public abstract void addSpan(Supplier<Message> message);
+
+    public abstract void addErrorSpan(Supplier<Message> message, Throwable t);
 
     public abstract void setUsername(SupplierOfNullable<String> username);
 
@@ -147,13 +153,21 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public Stopwatch startTrace(Supplier<Message> message, Metric metric) {
-            return NopStopwatch.INSTANCE;
+        public Span startTrace(Supplier<Message> message, Metric metric) {
+            return NopSpan.INSTANCE;
         }
         @Override
-        public Stopwatch startEntry(Supplier<Message> message, Metric metric) {
-            return NopStopwatch.INSTANCE;
+        public Span startSpan(Supplier<Message> message, Metric metric) {
+            return NopSpan.INSTANCE;
         }
+        @Override
+        public Timer startTimer(Metric metric) {
+            return NopTimer.INSTANCE;
+        }
+        @Override
+        public void addSpan(Supplier<Message> message) {}
+        @Override
+        public void addErrorSpan(Supplier<Message> message, Throwable t) {}
         @Override
         public void setUsername(SupplierOfNullable<String> username) {}
         @Override
@@ -169,14 +183,18 @@ public abstract class PluginServices {
             public String getName() {
                 return "NopMetric";
             }
-            public Stopwatch start() {
-                return NopStopwatch.INSTANCE;
-            }
         }
 
-        private static class NopStopwatch implements Stopwatch {
-            private static final NopStopwatch INSTANCE = new NopStopwatch();
-            public void stop() {}
+        private static class NopSpan implements Span {
+            private static final NopSpan INSTANCE = new NopSpan();
+            public void end() {}
+            public void endWithError(@Nullable Throwable t) {}
+            public void updateMessage(MessageUpdater updater) {}
+        }
+
+        private static class NopTimer implements Timer {
+            private static final NopTimer INSTANCE = new NopTimer();
+            public void end() {}
         }
     }
 }

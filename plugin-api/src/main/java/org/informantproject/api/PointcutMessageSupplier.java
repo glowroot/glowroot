@@ -19,6 +19,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.Span.MessageUpdater;
+
 import com.google.common.collect.Lists;
 
 /**
@@ -29,36 +31,18 @@ public class PointcutMessageSupplier extends Supplier<Message> {
 
     private final String template;
     private final Object[] args;
-    // stopwatch is only accessed by the trace thread so doesn't need to be volatile
-    @Nullable
-    private Stopwatch stopwatch;
     private volatile boolean hasReturnValue;
     @Nullable
     private volatile Object returnValue;
-    @Nullable
-    private volatile Throwable throwable;
 
     public PointcutMessageSupplier(String template, Object... args) {
         this.template = template;
         this.args = args;
     }
 
-    public void setStopwatch(Stopwatch stopwatch) {
-        this.stopwatch = stopwatch;
-    }
-
     public void setReturnValue(Object returnValue) {
         this.returnValue = returnValue;
         hasReturnValue = true;
-    }
-
-    public void setThrowable(Throwable throwable) {
-        this.throwable = throwable;
-    }
-
-    @Nullable
-    public Stopwatch getStopwatch() {
-        return stopwatch;
     }
 
     @Override
@@ -67,13 +51,16 @@ public class PointcutMessageSupplier extends Supplier<Message> {
             List<Object> messageArgs = Lists.newArrayList(args);
             messageArgs.add(returnValue);
             return Message.of(template + " => {{returnValue}}", messageArgs);
-        } else if (throwable != null) {
-            List<Object> messageArgs = Lists.newArrayList(args);
-            messageArgs.add(throwable.getClass().getName());
-            messageArgs.add(throwable.getMessage());
-            return Message.of(template + " => {{throwable}}: {{throwableMessage}}", messageArgs);
         } else {
             return Message.of(template, args);
         }
+    }
+
+    public static void updateWithReturnValue(final Object returnValue, Span span) {
+        span.updateMessage(new MessageUpdater() {
+            public void update(Supplier<Message> message) {
+                ((PointcutMessageSupplier) message).setReturnValue(returnValue);
+            }
+        });
     }
 }

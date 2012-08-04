@@ -25,18 +25,20 @@ import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectReturn;
 import org.informantproject.api.weaving.InjectTarget;
+import org.informantproject.api.weaving.InjectThrowable;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
 import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.OnReturn;
+import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.shaded.google.common.collect.Maps;
 
@@ -77,7 +79,7 @@ public class ServletAspect {
             return pluginServices.isEnabled() && topLevelServletMessageSupplier.get() == null;
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectMethodArg Object realRequest) {
+        public static Span onBefore(@InjectMethodArg Object realRequest) {
             HttpServletRequest request = HttpServletRequest.from(realRequest);
             // request parameter map is collected in afterReturningRequestGetParameterPointcut()
             // session info is collected here if the request already has a session
@@ -92,7 +94,7 @@ public class ServletAspect {
                         request.getRequestURI(), session.getId(), getSessionAttributes(session));
             }
             topLevelServletMessageSupplier.set(messageSupplier);
-            Stopwatch stopwatch = pluginServices.startTrace(messageSupplier, metric);
+            Span span = pluginServices.startTrace(messageSupplier, metric);
             if (session != null) {
                 String sessionUsernameAttributePath = ServletPluginProperties
                         .sessionUsernameAttributePath();
@@ -103,12 +105,25 @@ public class ServletAspect {
                     pluginServices.setUsername(SupplierOfNullable.ofInstance(username));
                 }
             }
-            return stopwatch;
+            return span;
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            span.endWithError(t);
             topLevelServletMessageSupplier.set(null);
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span,
+                @InjectMethodArg @SuppressWarnings("unused") Object realRequest,
+                @InjectMethodArg Object realResponse) {
+
+            span.end();
+            topLevelServletMessageSupplier.set(null);
+
+            HttpServletResponse response = HttpServletResponse.from(realResponse);
+            int responseStatus = response.getStatus();
+            pluginServices.putTraceAttribute("Response status code",
+                    Integer.toString(responseStatus));
         }
     }
 
@@ -121,12 +136,18 @@ public class ServletAspect {
             return ServletAdvice.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectMethodArg Object realRequest) {
+        public static Span onBefore(@InjectMethodArg Object realRequest) {
             return ServletAdvice.onBefore(realRequest);
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            ServletAdvice.onAfter(stopwatch);
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            ServletAdvice.onThrow(t, span);
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span, @InjectMethodArg Object realRequest,
+                @InjectMethodArg Object realResponse) {
+
+            ServletAdvice.onReturn(span, realRequest, realResponse);
         }
     }
 
@@ -139,12 +160,18 @@ public class ServletAspect {
             return ServletAdvice.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectMethodArg Object realRequest) {
+        public static Span onBefore(@InjectMethodArg Object realRequest) {
             return ServletAdvice.onBefore(realRequest);
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            ServletAdvice.onAfter(stopwatch);
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            ServletAdvice.onThrow(t, span);
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span, @InjectMethodArg Object realRequest,
+                @InjectMethodArg Object realResponse) {
+
+            ServletAdvice.onReturn(span, realRequest, realResponse);
         }
     }
 
@@ -285,13 +312,13 @@ public class ServletAspect {
         }
         @OnBefore
         @Nullable
-        public static Stopwatch onBefore(@InjectTarget Object listener) {
+        public static Span onBefore(@InjectTarget Object listener) {
             return pluginServices.startTrace(MessageSupplier.of("servlet context initialized"
                     + " ({{listener}})", listener.getClass().getName()), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -305,13 +332,13 @@ public class ServletAspect {
                     && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget Object servlet) {
+        public static Span onBefore(@InjectTarget Object servlet) {
             return pluginServices.startTrace(MessageSupplier.of("servlet init ({{filter}})",
                     servlet.getClass().getName()), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -325,13 +352,34 @@ public class ServletAspect {
                     && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget Object filter) {
+        public static Span onBefore(@InjectTarget Object filter) {
             return pluginServices.startTrace(MessageSupplier.of("filter init ({{filter}})",
                     filter.getClass().getName()), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
+        }
+    }
+
+    /*
+     * ================== Response Status Code ==================
+     */
+
+    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
+            methodArgs = { "int" })
+    public static class SetStatusAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static void onBefore(Integer sc) {
+            if (sc >= 400) {
+                pluginServices.addErrorSpan(
+                        MessageSupplier.of("HttpServletResponse.setStatus(" + sc + ")"),
+                        new Throwable());
+            }
         }
     }
 

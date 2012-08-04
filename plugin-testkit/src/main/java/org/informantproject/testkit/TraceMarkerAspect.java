@@ -18,7 +18,7 @@ package org.informantproject.testkit;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -45,12 +45,12 @@ public class TraceMarkerAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore() {
+        public static Span onBefore() {
             return pluginServices.startTrace(MessageSupplier.of("mock trace marker"), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 }

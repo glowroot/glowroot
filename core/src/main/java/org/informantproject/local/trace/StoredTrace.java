@@ -33,6 +33,7 @@ public class StoredTrace {
     private final String id;
     private final long startAt;
     private final boolean stuck;
+    private final boolean error;
     private final long duration; // nanoseconds
     private final boolean completed;
     private final String description;
@@ -49,14 +50,15 @@ public class StoredTrace {
     @Nullable
     private final ByteStream mergedStackTree;
 
-    private StoredTrace(String id, long startAt, boolean stuck, long duration, boolean completed,
-            String description, @Nullable String username, @Nullable String attributes,
-            @Nullable String metrics, @Nullable ByteStream spans,
+    private StoredTrace(String id, long startAt, boolean stuck, boolean error, long duration,
+            boolean completed, String description, @Nullable String username,
+            @Nullable String attributes, @Nullable String metrics, @Nullable ByteStream spans,
             @Nullable ByteStream mergedStackTree) {
 
         this.id = id;
         this.startAt = startAt;
         this.stuck = stuck;
+        this.error = error;
         this.duration = duration;
         this.completed = completed;
         this.description = description;
@@ -77,6 +79,10 @@ public class StoredTrace {
 
     public boolean isStuck() {
         return stuck;
+    }
+
+    protected boolean isError() {
+        return error;
     }
 
     public long getDuration() {
@@ -140,6 +146,7 @@ public class StoredTrace {
         private String id;
         private long startAt;
         private boolean stuck;
+        private boolean error;
         private long duration;
         private boolean completed;
         private String description;
@@ -168,6 +175,11 @@ public class StoredTrace {
 
         public Builder stuck(boolean stuck) {
             this.stuck = stuck;
+            return this;
+        }
+
+        public Builder error(boolean error) {
+            this.error = error;
             return this;
         }
 
@@ -212,8 +224,8 @@ public class StoredTrace {
         }
 
         public StoredTrace build() {
-            return new StoredTrace(id, startAt, stuck, duration, completed, description, username,
-                    attributes, metrics, spans, mergedStackTree);
+            return new StoredTrace(id, startAt, stuck, error, duration, completed, description,
+                    username, attributes, metrics, spans, mergedStackTree);
         }
     }
 }

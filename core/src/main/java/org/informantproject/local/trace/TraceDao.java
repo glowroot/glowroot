@@ -58,6 +58,7 @@ public class TraceDao {
             new Column("captured_at", Types.BIGINT),
             new Column("start_at", Types.BIGINT),
             new Column("stuck", Types.BOOLEAN),
+            new Column("error", Types.BOOLEAN),
             new Column("duration", Types.BIGINT),
             new Column("completed", Types.BOOLEAN),
             new Column("description", Types.VARCHAR),
@@ -128,14 +129,14 @@ public class TraceDao {
             }
         }
         try {
-            dataSource.update("merge into trace (id, captured_at, start_at, stuck, duration,"
-                    + " completed, description, username, attributes, metrics, spans,"
-                    + " merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            dataSource.update("merge into trace (id, captured_at, start_at, stuck, error,"
+                    + " duration, completed, description, username, attributes, metrics, spans,"
+                    + " merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     storedTrace.getId(), capturedAt, storedTrace.getStartAt(),
-                    storedTrace.isStuck(), storedTrace.getDuration(), storedTrace.isCompleted(),
-                    storedTrace.getDescription(), storedTrace.getUsername(),
-                    storedTrace.getAttributes(), storedTrace.getMetrics(), spansBlockId,
-                    mergedStackTreeBlockId);
+                    storedTrace.isStuck(), storedTrace.isError(), storedTrace.getDuration(),
+                    storedTrace.isCompleted(), storedTrace.getDescription(),
+                    storedTrace.getUsername(), storedTrace.getAttributes(),
+                    storedTrace.getMetrics(), spansBlockId, mergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -185,8 +186,8 @@ public class TraceDao {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " duration, completed, description, username, attributes, metrics, spans,"
-                    + " merged_stack_tree from trace where id = ?", new Object[] { id },
+                    + " error, duration, completed, description, username, attributes, metrics,"
+                    + " spans, merged_stack_tree from trace where id = ?", new Object[] { id },
                     new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -210,9 +211,10 @@ public class TraceDao {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " duration, completed, description, username, attributes, metrics, spans,"
-                    + " merged_stack_tree from trace where captured_at >= ? and captured_at <= ?",
-                    new Object[] { capturedFrom, capturedTo }, new TraceRowMapper());
+                    + " error, duration, completed, description, username, attributes, metrics,"
+                    + " spans, merged_stack_tree from trace where captured_at >= ?"
+                    + " and captured_at <= ?", new Object[] { capturedFrom, capturedTo },
+                    new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -240,10 +242,10 @@ public class TraceDao {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " duration, completed, description, username, attributes, metrics, spans,"
-                    + " merged_stack_tree from trace where captured_at >= ? and captured_at <= ?"
-                    + " and duration >= ? and duration <= ?", new Object[] { capturedFrom,
-                    capturedTo, lowDuration, highDuration }, new TraceRowMapper());
+                    + " error, duration, completed, description, username, attributes, metrics,"
+                    + " spans, merged_stack_tree from trace where captured_at >= ?"
+                    + " and captured_at <= ? and duration >= ? and duration <= ?", new Object[] {
+                    capturedFrom, capturedTo, lowDuration, highDuration }, new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -332,15 +334,16 @@ public class TraceDao {
                     // column 2 is 'captured_at'
                     .startAt(resultSet.getLong(3))
                     .stuck(resultSet.getBoolean(4))
-                    .duration(resultSet.getLong(5))
-                    .completed(resultSet.getBoolean(6))
-                    .description(resultSet.getString(7))
-                    .username(resultSet.getString(8))
-                    .attributes(resultSet.getString(9))
-                    .metrics(resultSet.getString(10));
+                    .error(resultSet.getBoolean(5))
+                    .duration(resultSet.getLong(6))
+                    .completed(resultSet.getBoolean(7))
+                    .description(resultSet.getString(8))
+                    .username(resultSet.getString(9))
+                    .attributes(resultSet.getString(10))
+                    .metrics(resultSet.getString(11));
             // wait and read from rolling file outside of the jdbc connection
-            String spansFileBlockId = resultSet.getString(11);
-            String mergedStackTreeFileBlockId = resultSet.getString(12);
+            String spansFileBlockId = resultSet.getString(12);
+            String mergedStackTreeFileBlockId = resultSet.getString(13);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     mergedStackTreeFileBlockId);
         }

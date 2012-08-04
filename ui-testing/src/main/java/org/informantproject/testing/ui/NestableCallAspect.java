@@ -15,6 +15,7 @@
  */
 package org.informantproject.testing.ui;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.ContextMap;
@@ -22,7 +23,7 @@ import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.weaving.Aspect;
@@ -53,24 +54,29 @@ public class NestableCallAspect {
             metricName = "nestable")
     public static class LevelOneAdvice {
         private static final Metric metric = pluginServices.getMetric(LevelOneAdvice.class);
+        private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && pluginServices.getRootMessageSupplier() == null;
         }
         @OnBefore
-        public static Stopwatch onBefore() {
-            Stopwatch stopwatch = pluginServices.startTrace(getRootMessageSupplier(), metric);
+        public static Span onBefore() {
+            Span span = pluginServices.startTrace(getRootMessageSupplier(), metric);
             int index = counter.getAndIncrement() % (USERNAMES.size() + 1);
             if (index < USERNAMES.size()) {
                 pluginServices.setUsername(SupplierOfNullable.ofInstance(USERNAMES.get(index)));
             } else {
                 pluginServices.setUsername(SupplierOfNullable.ofInstance((String) null));
             }
-            return stopwatch;
+            return span;
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(null);
+            }
         }
     }
 
@@ -84,18 +90,18 @@ public class NestableCallAspect {
             return pluginServices.isEnabled() && pluginServices.getRootMessageSupplier() != null;
         }
         @OnBefore
-        public static Stopwatch onBefore() {
+        public static Span onBefore() {
             pluginServices.putTraceAttribute("my first attribute", "hello world");
             pluginServices.putTraceAttribute("and second", "val");
             pluginServices.putTraceAttribute("and a very long attribute value", "abcdefghijkl"
                     + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
             pluginServices.putTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
                     + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
-            return pluginServices.startEntry(MessageSupplier.of("Nestable"), metric);
+            return pluginServices.startSpan(MessageSupplier.of("Nestable"), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 

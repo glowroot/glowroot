@@ -20,7 +20,7 @@ import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTarget;
@@ -49,12 +49,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplierWithContextMap(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplierWithContextMap(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -67,12 +67,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -85,12 +85,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -103,12 +103,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -121,12 +121,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -139,12 +139,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -157,12 +157,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -175,12 +175,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -193,12 +193,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 
@@ -211,12 +211,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Stopwatch onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startEntry(getMessageSupplier(expensive), metric);
+        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        public static void onAfter(@InjectTraveler Span span) {
+            span.end();
         }
     }
 

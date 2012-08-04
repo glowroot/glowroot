@@ -13,13 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.api;
+package org.informantproject.plugin.servlet;
+
+import org.informantproject.api.UnresolvedMethod;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Stopwatch {
+class HttpServletResponse {
 
-    void stop();
+    private static final UnresolvedMethod getStatusMethod = new UnresolvedMethod(
+            "javax.servlet.http.HttpServletResponse", "getStatus");
+
+    private final Object realResponse;
+
+    private HttpServletResponse(Object realRequest) {
+        this.realResponse = realRequest;
+    }
+
+    int getStatus() {
+        return (Integer) getStatusMethod.invoke(realResponse);
+    }
+
+    static HttpServletResponse from(Object realResponse) {
+        return new HttpServletResponse(realResponse);
+    }
 }

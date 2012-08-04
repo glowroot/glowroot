@@ -346,13 +346,7 @@ public class Advice {
                         logger.error("multiple annotations found on a single parameter");
                     }
                     if (validArgTypes.contains(parameterKind)) {
-                        if (parameterKind == ParameterKind.METHOD_ARG
-                                && parameterTypes[i].isPrimitive()) {
-                            // special case to track primitive method args for possible autoboxing
-                            parameterKinds[i] = ParameterKind.PRIMITIVE_METHOD_ARG;
-                        } else {
-                            parameterKinds[i] = parameterKind;
-                        }
+                        parameterKinds[i] = parameterKind;
                         found = true;
                     } else {
                         logger.error("annotation '" + annotation.annotationType().getName()
@@ -362,6 +356,11 @@ public class Advice {
                 if (!found) {
                     // no applicable annotations found
                     parameterKinds[i] = ParameterKind.METHOD_ARG;
+                }
+                if (parameterKinds[i] == ParameterKind.METHOD_ARG
+                        && parameterTypes[i].isPrimitive()) {
+                    // special case to track primitive method args for possible autoboxing
+                    parameterKinds[i] = ParameterKind.PRIMITIVE_METHOD_ARG;
                 }
             }
             return parameterKinds;

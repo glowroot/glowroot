@@ -19,13 +19,15 @@ import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
-import org.informantproject.api.Stopwatch;
+import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectThrowable;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
-import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.OnReturn;
+import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.api.weaving.Pointcut;
 
 import com.google.common.base.Objects;
@@ -52,7 +54,7 @@ public class LevelOneAspect {
         }
 
         @OnBefore
-        public static Stopwatch onBefore(final String arg1, final String arg2) {
+        public static Span onBefore(final String arg1, final String arg2) {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
                 @Override
                 public Message get() {
@@ -74,9 +76,14 @@ public class LevelOneAspect {
             return pluginServices.startTrace(messageSupplier, metric);
         }
 
-        @OnAfter
-        public static void onAfter(@InjectTraveler Stopwatch stopwatch) {
-            stopwatch.stop();
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            span.endWithError(t);
+        }
+
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span) {
+            span.end();
         }
     }
 }
