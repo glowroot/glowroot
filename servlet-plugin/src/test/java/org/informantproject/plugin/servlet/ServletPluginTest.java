@@ -79,7 +79,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /servletundertest");
+        assertThat(span.getDescription()).isEqualTo("GET /testservlet");
     }
 
     @Test
@@ -410,13 +410,13 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getDescription()).isEqualTo("GET /servletundertest");
+        assertThat(trace.getDescription()).isEqualTo("GET /testservlet");
         assertThat(trace.getSpans().get(0).getContextMap()
                 .get("session id (at beginning of this request)")).isEqualTo("1234");
         assertThat(trace.getSpans().get(0).getContextMap()
                 .get("session id (updated during this request)")).isEqualTo("");
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /servletundertest");
+        assertThat(span.getDescription()).isEqualTo("GET /testservlet");
     }
 
     @Test
@@ -518,7 +518,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class ExecuteServlet extends ServletUnderTest {}
+    public static class ExecuteServlet extends TestServlet {}
 
     public static class ExecuteFilter implements AppUnderTest {
         public void executeApp() throws ServletException, IOException {
@@ -572,7 +572,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class GetParameters extends ServletUnderTest {
+    public static class GetParameters extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getParameter("xy");
@@ -580,7 +580,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class HasSessionUsernameAttribute extends ServletUnderTest {
+    public static class HasSessionUsernameAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("usernameattr", "abc");
@@ -588,7 +588,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionUsernameAttribute extends ServletUnderTest {
+    public static class SetSessionUsernameAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("usernameattr", "abc");
@@ -596,7 +596,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionUsernameAttributeNull extends ServletUnderTest {
+    public static class SetSessionUsernameAttributeNull extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("usernameattr", "something");
@@ -608,7 +608,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class HasNestedSessionUsernameAttribute extends ServletUnderTest {
+    public static class HasNestedSessionUsernameAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("usernameone", new NestedTwo("xyz"));
@@ -616,7 +616,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class SetNestedSessionUsernameAttribute extends ServletUnderTest {
+    public static class SetNestedSessionUsernameAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("usernameone", new NestedTwo("xyz"));
@@ -624,7 +624,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class HasSessionAttribute extends ServletUnderTest {
+    public static class HasSessionAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("testattr", "val");
@@ -632,7 +632,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionAttribute extends ServletUnderTest {
+    public static class SetSessionAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("testattr", "val");
@@ -640,7 +640,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionAttributeNull extends ServletUnderTest {
+    public static class SetSessionAttributeNull extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("testattr", "something");
@@ -652,7 +652,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class HasNestedSessionAttribute extends ServletUnderTest {
+    public static class HasNestedSessionAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("one", new NestedTwo("three"));
@@ -660,7 +660,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class SetNestedSessionAttribute extends ServletUnderTest {
+    public static class SetNestedSessionAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("one", new NestedTwo("three"));
@@ -668,7 +668,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class InvalidateSession extends ServletUnderTest {
+    public static class InvalidateSession extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             ((MockHttpServletRequest) request).setSession(new MockHttpSession(request
@@ -681,7 +681,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class ThrowsException extends ServletUnderTest {
+    public static class ThrowsException extends TestServlet {
         private final RuntimeException exception = new RuntimeException("something happened");
         @Override
         public void executeApp() throws Exception {
@@ -701,7 +701,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class Returns404 extends ServletUnderTest {
+    public static class Returns404 extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             response.setStatus(404);

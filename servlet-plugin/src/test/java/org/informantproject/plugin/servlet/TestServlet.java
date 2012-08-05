@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.junit.Ignore;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -30,13 +29,11 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO rename to not end with "Test" so this doesn't show as a skipped test in maven build
-@Ignore
 @SuppressWarnings("serial")
-public class ServletUnderTest extends HttpServlet implements AppUnderTest {
+public class TestServlet extends HttpServlet implements AppUnderTest {
 
     public void executeApp() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/servletundertest");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/testservlet");
         MockHttpServletResponse response = new MockHttpServletResponse();
         before(request, response);
         service((ServletRequest) request, (ServletResponse) response);
