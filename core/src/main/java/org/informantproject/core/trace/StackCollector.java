@@ -99,9 +99,12 @@ public class StackCollector implements Runnable {
                 // scheduled execution of this repeating Runnable (in other words, it is within
                 // COMMAND_INTERVAL_MILLIS from exceeding the threshold) and the stack trace capture
                 // hasn't already been scheduled then schedule it
-                if (Nanoseconds.lessThan(trace.getStartTick(), stackTraceThresholdTime)
-                        && trace.getCaptureStackTraceScheduledFuture() == null) {
-
+                if (!Nanoseconds.lessThan(trace.getStartTick(), stackTraceThresholdTime)) {
+                    // since the list of traces are ordered by start time, if this trace
+                    // didn't meet the threshold then no subsequent trace will meet the threshold
+                    break;
+                }
+                if (trace.getCaptureStackTraceScheduledFuture() == null) {
                     // schedule stack traces to be taken every X seconds
                     long initialDelayMillis = Math.max(0, config.getProfilerInitialDelayMillis()
                             - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
@@ -110,10 +113,6 @@ public class StackCollector implements Runnable {
                             .scheduleWithFixedDelay(command, initialDelayMillis,
                                     config.getProfilerIntervalMillis(), TimeUnit.MILLISECONDS);
                     trace.setCaptureStackTraceScheduledFuture(captureStackTraceScheduledFuture);
-                } else {
-                    // since the list of traces are ordered by start time, if this trace
-                    // didn't meet the threshold then no subsequent trace will meet the threshold
-                    break;
                 }
             }
         }
