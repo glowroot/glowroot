@@ -33,7 +33,7 @@ public class MainEntryPointTest {
     @Before
     public void before() {
         preExistingThreads = Threads.currentThreads();
-        MainEntryPoint.start();
+        MainEntryPoint.start("ui.port:0");
     }
 
     @After
