@@ -16,7 +16,6 @@
 package org.informantproject.core;
 
 import org.informantproject.api.Logger;
-import org.informantproject.api.LoggerFactory.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -31,9 +30,9 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LoggerFactoryImpl implements ILoggerFactory {
+public class LoggerFactoryImpl {
 
-    public Logger getLogger(String name) {
+    public static Logger getLogger(String name) {
         return new LoggerImpl(LoggerFactory.getLogger(name));
     }
 

@@ -15,6 +15,9 @@
  */
 package org.informantproject.api;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 /**
  * This is simply a wrapper of the SLF4J Logger API without the Marker support.
  * 
@@ -27,26 +30,23 @@ package org.informantproject.api;
  */
 public class LoggerFactory {
 
-    private static final String ILOGGER_FACTORY_CLASS_NAME =
+    private static final String LOGGER_FACTORY_IMPL_CLASS_NAME =
             "org.informantproject.core.LoggerFactoryImpl";
+    private static final String GET_LOGGER_METHOD_NAME = "getLogger";
 
-    private static final ILoggerFactory iLoggerFactory;
+    private static final Method getPluginServicesMethod;
 
     static {
         try {
-            iLoggerFactory = (ILoggerFactory) Class.forName(ILOGGER_FACTORY_CLASS_NAME)
-                    .newInstance();
-        } catch (InstantiationException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
-            e.printStackTrace();
-            throw new IllegalStateException(e);
-        } catch (IllegalAccessException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
-            e.printStackTrace();
-            throw new IllegalStateException(e);
+            Class<?> mainEntryPointClass = Class.forName(LOGGER_FACTORY_IMPL_CLASS_NAME);
+            getPluginServicesMethod = mainEntryPointClass.getMethod(GET_LOGGER_METHOD_NAME,
+                    String.class);
         } catch (ClassNotFoundException e) {
+            // this really really really shouldn't happen, but anyways,
+            // couldn't load the logger so best recourse at this point is to write error to stderr
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        } catch (NoSuchMethodException e) {
             // this really really really shouldn't happen, but anyways,
             // couldn't load the logger so best recourse at this point is to write error to stderr
             e.printStackTrace();
@@ -57,10 +57,28 @@ public class LoggerFactory {
     private LoggerFactory() {}
 
     public static Logger getLogger(Class<?> type) {
-        return iLoggerFactory.getLogger(type.getName());
-    }
-
-    public interface ILoggerFactory {
-        Logger getLogger(String name);
+        try {
+            return (Logger) getPluginServicesMethod.invoke(null, type.getName());
+        } catch (SecurityException e) {
+            // this really really really shouldn't happen, but anyways,
+            // couldn't load the logger so best recourse at this point is to write error to stderr
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        } catch (IllegalArgumentException e) {
+            // this really really really shouldn't happen, but anyways,
+            // couldn't load the logger so best recourse at this point is to write error to stderr
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        } catch (IllegalAccessException e) {
+            // this really really really shouldn't happen, but anyways,
+            // couldn't load the logger so best recourse at this point is to write error to stderr
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        } catch (InvocationTargetException e) {
+            // this really really really shouldn't happen, but anyways,
+            // couldn't load the logger so best recourse at this point is to write error to stderr
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        }
     }
 }
