@@ -15,10 +15,10 @@
  */
 package org.informantproject.testing.ui;
 
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
@@ -34,6 +34,7 @@ import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.Pointcut;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -109,12 +110,13 @@ public class NestableCallAspect {
         return new Supplier<Message>() {
             @Override
             public Message get() {
-                ContextMap context = ContextMap.of("attr1", "value1", "attr2", "value2",
-                        "attr3", ContextMap.of("attr31",
-                                ContextMap.of("attr311", "value311", "attr312", "value312"),
+                Map<String, ?> contextMap = ImmutableMap.of("attr1", "value1", "attr2", "value2",
+                        "attr3", ImmutableMap.of("attr31",
+                                ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.withContext("Nestable with a very long description to test wrapping"
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz", context);
+                return Message.withContextMap("Nestable with a very long description to test"
+                        + " wrapping abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz",
+                        contextMap);
             }
         };
     }

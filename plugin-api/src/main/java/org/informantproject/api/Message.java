@@ -16,6 +16,7 @@
 package org.informantproject.api;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -23,6 +24,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * The context map can contain {@link String}, {@link Double}, {@link Boolean} and null value types.
+ * It can also contain nested maps (which have the same restrictions on value types, including
+ * additional levels of nested maps). The context map cannot have null keys.
+ * 
+ * As an extra bonus, it also handles org.informantproject.shaded.google.common.base.Optional which
+ * is useful for Maps that do not accept null values, e.g.
+ * org.informantproject.shaded.google.common.collect.ImmutableMap.
+ * 
+ * The context map does not need to be thread safe as long as it is only instantiated in response to
+ * either Supplier<Message>.get() or Message.getContext() which are called by the thread that needs
+ * the map.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
@@ -34,12 +47,12 @@ public class Message {
     @Nullable
     private final Object[] args;
     @Nullable
-    private final ContextMap context;
+    private final Map<String, ?> contextMap;
 
-    private Message(String template, @Nullable Object[] args, @Nullable ContextMap context) {
+    private Message(String template, @Nullable Object[] args, @Nullable Map<String, ?> contextMap) {
         this.template = template;
         this.args = args;
-        this.context = context;
+        this.contextMap = contextMap;
     }
 
     public String getText() {
@@ -78,8 +91,8 @@ public class Message {
     }
 
     @Nullable
-    public ContextMap getContext() {
-        return context;
+    public Map<String, ?> getContextMap() {
+        return contextMap;
     }
 
     public static Message of(String message) {
@@ -94,11 +107,13 @@ public class Message {
         return new Message(template, args.toArray(), null);
     }
 
-    public static Message withContext(String message, ContextMap context) {
-        return new Message(message, null, context);
+    public static Message withContextMap(String message, Map<String, ?> contextMap) {
+        return new Message(message, null, contextMap);
     }
 
-    public static Message withContextMap(String template, Object[] args, ContextMap context) {
-        return new Message(template, args, context);
+    public static Message withContextMap(String template, Object[] args,
+            Map<String, ?> contextMap) {
+
+        return new Message(template, args, contextMap);
     }
 }

@@ -15,7 +15,8 @@
  */
 package org.informantproject.test.plugin;
 
-import org.informantproject.api.ContextMap;
+import java.util.Map;
+
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -31,6 +32,7 @@ import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.api.weaving.Pointcut;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -63,14 +65,12 @@ public class LevelOneAspect {
                     if (pluginServices.getBooleanProperty("starredDescription")) {
                         traceDescription += "*";
                     }
-                    ContextMap context = ContextMap.of("arg1", arg1, "arg2", arg2);
-                    ContextMap nestedContext = ContextMap.of("nestedkey11", arg1, "nestedkey12",
-                            arg2, "subnested1",
-                            ContextMap.of("subnestedkey1", arg1, "subnestedkey2", arg2));
-                    context.putMap("nested1", nestedContext);
-                    context.putMap("nested2",
-                            ContextMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return Message.withContext(traceDescription, context);
+                    Map<String, ?> contextMap = ImmutableMap.of("arg1", arg1, "arg2", arg2,
+                            "nested1", ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2,
+                                    "subnested1",
+                                    ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
+                            "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
+                    return Message.withContextMap(traceDescription, contextMap);
                 }
             };
             return pluginServices.startTrace(messageSupplier, metric);

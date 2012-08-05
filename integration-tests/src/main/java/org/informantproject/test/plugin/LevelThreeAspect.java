@@ -15,7 +15,6 @@
  */
 package org.informantproject.test.plugin;
 
-import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -27,6 +26,8 @@ import org.informantproject.api.weaving.IsEnabled;
 import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.Pointcut;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -54,8 +55,8 @@ public class LevelThreeAspect {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
                 @Override
                 public Message get() {
-                    return Message.withContext("Level Three",
-                            ContextMap.of("arg1", arg1, "arg2", arg2));
+                    return Message.withContextMap("Level Three",
+                            ImmutableMap.of("arg1", arg1, "arg2", arg2));
                 }
             };
             return pluginServices.startSpan(messageSupplier, metric);

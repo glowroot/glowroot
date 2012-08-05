@@ -15,6 +15,8 @@
  */
 package org.informantproject.api;
 
+import java.util.Map;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -31,13 +33,13 @@ public final class MessageSupplier {
         return Supplier.ofInstance(Message.of(template, args));
     }
 
-    public static Supplier<Message> withContext(String message, ContextMap context) {
-        return Supplier.ofInstance(Message.of(message, context));
+    public static Supplier<Message> withContextMap(String message, Map<String, ?> contextMap) {
+        return Supplier.ofInstance(Message.of(message, contextMap));
     }
 
     public static Supplier<Message> withContextMap(String template, Object[] args,
-            ContextMap context) {
+            Map<String, ?> contextMap) {
 
-        return Supplier.ofInstance(Message.of(template, args, context));
+        return Supplier.ofInstance(Message.of(template, args, contextMap));
     }
 }

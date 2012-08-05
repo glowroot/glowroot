@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import org.informantproject.api.ContextMap;
 import org.informantproject.api.Message;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
@@ -49,10 +47,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 
@@ -66,7 +60,7 @@ public class TraceCommonJsonService {
     private final TraceRegistry traceRegistry;
     private final StackTraceDao stackTraceDao;
     private final Ticker ticker;
-    private final Gson gson;
+    private final Gson gson = new Gson();
 
     @Inject
     public TraceCommonJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
@@ -76,8 +70,6 @@ public class TraceCommonJsonService {
         this.traceRegistry = traceRegistry;
         this.stackTraceDao = stackTraceDao;
         this.ticker = ticker;
-        gson = new GsonBuilder().registerTypeAdapter(ContextMap.class,
-                new ContextMapJsonSerializer()).create();
     }
 
     @Nullable
@@ -240,14 +232,18 @@ public class TraceCommonJsonService {
     }
 
     @Nullable
-    public String getAttributesJson(Trace trace) {
+    public String getAttributesJson(Trace trace) throws IOException {
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         Message message = rootSpan.getMessageSupplier().get();
-        ContextMap context = message.getContext();
-        if (context == null) {
+        Map<String, ?> contextMap = message.getContextMap();
+        if (contextMap == null) {
             return null;
         } else {
-            return gson.toJson(context);
+            StringBuilder sb = new StringBuilder();
+            JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+            new ContextMapSerializer(jw).write(contextMap);
+            jw.close();
+            return sb.toString();
         }
     }
 
@@ -355,10 +351,10 @@ public class TraceCommonJsonService {
                 jw.name("error");
                 jw.value(true);
             }
-            ContextMap context = message.getContext();
-            if (context != null) {
-                raw.append(",\"contextMap\":");
-                raw.append(gson.toJson(context));
+            Map<String, ?> contextMap = message.getContextMap();
+            if (contextMap != null) {
+                jw.name("contextMap");
+                new ContextMapSerializer(jw).write(contextMap);
             }
             StackTraceElement[] stackTraceElements = span.getStackTraceElements();
             if (stackTraceElements != null) {
@@ -370,15 +366,6 @@ public class TraceCommonJsonService {
                 jw.value(stackTraceHash);
             }
             jw.endObject();
-        }
-    }
-
-    private static class ContextMapJsonSerializer implements JsonSerializer<ContextMap> {
-
-        public JsonElement serialize(ContextMap contextMap, Type typeOfSrc,
-                JsonSerializationContext context) {
-
-            return context.serialize(contextMap.getInner());
         }
     }
 
