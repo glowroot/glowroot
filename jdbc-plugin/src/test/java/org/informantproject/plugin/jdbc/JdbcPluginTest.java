@@ -75,8 +75,8 @@ public class JdbcPluginTest {
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription()).isEqualTo(
-                "jdbc execution: select * from employee => 1 row");
+        assertThat(jdbcSpan.getDescription()).startsWith(
+                "jdbc execution: select * from employee => 1 row [connection: ");
     }
 
     @Test
@@ -91,8 +91,8 @@ public class JdbcPluginTest {
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+        assertThat(jdbcSpan.getDescription()).startsWith("jdbc execution: select * from employee"
+                + " where name like ? ['john%'] => 1 row [connection: ");
     }
 
     @Test
@@ -107,10 +107,10 @@ public class JdbcPluginTest {
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
         Span jdbcInsertSpan = trace.getSpans().get(1);
-        assertThat(jdbcInsertSpan.getDescription()).isEqualTo(
-                "jdbc execution: insert into employee (name) values ('john doe')");
+        assertThat(jdbcInsertSpan.getDescription()).startsWith(
+                "jdbc execution: insert into employee (name) values ('john doe') [connection: ");
         Span jdbcCommitSpan = trace.getSpans().get(2);
-        assertThat(jdbcCommitSpan.getDescription()).isEqualTo("jdbc commit");
+        assertThat(jdbcCommitSpan.getDescription()).startsWith("jdbc commit [connection: ");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)

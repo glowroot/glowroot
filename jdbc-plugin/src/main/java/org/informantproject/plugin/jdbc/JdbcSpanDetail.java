@@ -69,32 +69,41 @@ class JdbcMessageSupplier extends Supplier<Message> {
 
     private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
-    JdbcMessageSupplier(String sql) {
+    @Nullable
+    private final Integer connectionHashCode;
+
+    JdbcMessageSupplier(String sql, Integer connectionHashCode) {
         this.sql = sql;
         this.parameters = null;
         this.batchedParameters = null;
         this.batchedSqls = null;
+        this.connectionHashCode = connectionHashCode;
     }
 
-    JdbcMessageSupplier(String sql, List<Object> parameters) {
+    JdbcMessageSupplier(String sql, List<Object> parameters, Integer connectionHashCode) {
         this.sql = sql;
         this.parameters = parameters;
         this.batchedParameters = null;
         this.batchedSqls = null;
+        this.connectionHashCode = connectionHashCode;
     }
 
-    JdbcMessageSupplier(Collection<String> batchedSqls) {
+    JdbcMessageSupplier(Collection<String> batchedSqls, Integer connectionHashCode) {
         this.sql = null;
         this.parameters = null;
         this.batchedParameters = null;
         this.batchedSqls = batchedSqls;
+        this.connectionHashCode = connectionHashCode;
     }
 
-    JdbcMessageSupplier(String sql, Collection<List<Object>> batchedParameters) {
+    JdbcMessageSupplier(String sql, Collection<List<Object>> batchedParameters,
+            Integer connectionHashCode) {
+
         this.sql = sql;
         this.parameters = null;
         this.batchedParameters = batchedParameters;
         this.batchedSqls = null;
+        this.connectionHashCode = connectionHashCode;
     }
 
     @Override
@@ -123,6 +132,13 @@ class JdbcMessageSupplier extends Supplier<Message> {
         if (numRows != NEXT_HAS_NOT_BEEN_CALLED) {
             appendRowCount(sb, args);
         }
+        sb.append(" [connection: ");
+        if (connectionHashCode == null) {
+            sb.append("???");
+        } else {
+            sb.append(Integer.toHexString(connectionHashCode));
+        }
+        sb.append("]");
         return Message.of(sb.toString(), args);
     }
 
