@@ -21,13 +21,13 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +53,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
+import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Inject;
@@ -183,34 +183,28 @@ public class HttpServer extends HttpServerBase {
                         args, requestText);
             }
         }
-        logger.warn("Unexpected uri '{}'", request.getUri());
+        logger.warn("unexpected uri '{}'", request.getUri());
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
     private static HttpResponse handleStaticRequest(String path) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
-            logger.warn("Missing extension '{}'", path);
+            logger.warn("missing extension '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String extension = path.substring(extensionStartIndex + 1);
         String mimeType = getMimeType(extension);
         if (mimeType == null) {
-            logger.warn("Unexpected extension '{}' for path '{}'", extension, path);
+            logger.warn("unexpected extension '{}' for path '{}'", extension, path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        InputStream staticContentStream = HttpServer.class.getClassLoader().getResourceAsStream(
-                path);
-        if (staticContentStream == null) {
-            logger.warn("Unexpected path '{}'", path);
+        URL url = Resources.getResource(path);
+        if (url == null) {
+            logger.warn("unexpected path '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        byte[] staticContent;
-        try {
-            staticContent = ByteStreams.toByteArray(staticContentStream);
-        } finally {
-            Closeables.closeQuietly(staticContentStream);
-        }
+        byte[] staticContent = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType);

@@ -21,8 +21,7 @@ import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.net.URL;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,7 +47,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
-import com.google.common.io.Closeables;
+import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -118,12 +117,12 @@ public class TraceExportHttpService implements HttpService {
     }
 
     private String getResourceContent(String path) throws IOException {
-        Reader in = new InputStreamReader(TraceExportHttpService.class.getClassLoader()
-                .getResourceAsStream(path), Charsets.UTF_8);
-        try {
-            return CharStreams.toString(in);
-        } finally {
-            Closeables.closeQuietly(in);
+        URL url = Resources.getResource(path);
+        if (url == null) {
+            logger.error("could not find resource '{}'", path);
+            return "";
+        } else {
+            return CharStreams.toString(Resources.newReaderSupplier(url, Charsets.UTF_8));
         }
     }
 

@@ -16,7 +16,7 @@
 package org.informantproject.core.weaving;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +24,7 @@ import org.informantproject.api.weaving.Mixin;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
+import com.google.common.io.Resources;
 
 /**
  * Only used by tests.
@@ -69,17 +69,15 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             }
         }
         String resourceName = name.replace('.', '/') + ".class";
-        InputStream input = getResourceAsStream(resourceName);
-        if (input == null) {
+        URL url = getResource(resourceName);
+        if (url == null) {
             throw new ClassNotFoundException(name);
         }
         byte[] b;
         try {
-            b = ByteStreams.toByteArray(input);
+            b = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            Closeables.closeQuietly(input);
         }
         b = weaver.weave(b);
         if (name.indexOf('.') != -1) {

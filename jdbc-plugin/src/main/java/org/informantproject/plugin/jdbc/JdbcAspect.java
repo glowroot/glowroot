@@ -538,7 +538,7 @@ public class JdbcAspect {
                 ((HasStatementMirror) preparedStatement).setInformantStatementMirror(mirror);
                 if (!noSqlTextAvailableLoggedOnce.getAndSet(true)) {
                     // this is only logged the first time it occurs
-                    logger.warn("Prepared statement generated outside of the"
+                    logger.warn("prepared statement generated outside of the"
                             + " java.sql.Connection.prepare*() public API, no sql text available",
                             new Throwable());
                 }

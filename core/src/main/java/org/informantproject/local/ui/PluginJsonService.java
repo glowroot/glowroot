@@ -15,7 +15,6 @@
  */
 package org.informantproject.local.ui;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,8 +27,8 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.informantproject.core.config.PluginDescriptor;
-import org.informantproject.core.config.Plugins;
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
+import org.informantproject.core.config.Plugins;
 import org.informantproject.core.util.XmlDocuments;
 import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
@@ -43,6 +42,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -152,7 +152,7 @@ public class PluginJsonService implements JsonService {
             throws ParserConfigurationException, SAXException, IOException {
 
         byte[] xmlBytes = metadata.getBytes(Charsets.UTF_8.name());
-        Element root = XmlDocuments.newDocument(new ByteArrayInputStream(xmlBytes))
+        Element root = XmlDocuments.newDocument(ByteStreams.newInputStreamSupplier(xmlBytes))
                 .getDocumentElement();
         return root.getElementsByTagName("version").item(0).getTextContent();
     }

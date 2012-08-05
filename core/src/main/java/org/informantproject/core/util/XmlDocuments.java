@@ -17,6 +17,7 @@ package org.informantproject.core.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 
 import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
@@ -51,13 +52,18 @@ public final class XmlDocuments {
 
     private XmlDocuments() {}
 
-    public static Document newDocument(InputStream inputStream)
+    public static Document newDocument(InputSupplier<? extends InputStream> inputSupplier)
             throws ParserConfigurationException, SAXException, IOException {
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         DocumentBuilder builder = factory.newDocumentBuilder();
-        return builder.parse(inputStream);
+        InputStream in = inputSupplier.getInput();
+        try {
+            return builder.parse(in);
+        } finally {
+            in.close();
+        }
     }
 
     public static Document newValidatedDocument(InputSupplier<InputStream> inputSupplier)
@@ -81,9 +87,14 @@ public final class XmlDocuments {
         XMLReader reader = parser.getXMLReader();
         reader.setEntityResolver(new ResourceEntityResolver());
         reader.setErrorHandler(errorHandler);
-        reader.parse(new InputSource(inputSupplier.getInput()));
+        InputStream in = inputSupplier.getInput();
+        try {
+            reader.parse(new InputSource(in));
+        } finally {
+            in.close();
+        }
         // then return DOM
-        return newDocument(inputSupplier.getInput());
+        return newDocument(inputSupplier);
     }
 
     private static class ResourceEntityResolver implements EntityResolver {
@@ -92,9 +103,15 @@ public final class XmlDocuments {
             String prefix = "http://www.informantproject.org/xsd/";
             if (systemId.startsWith(prefix)) {
                 String simpleName = systemId.substring(prefix.length());
-                return new InputSource(Resources.newReaderSupplier(
-                        Resources.getResource("org/informantproject/core/schema/" + simpleName),
-                        Charsets.UTF_8).getInput());
+                String path = "org/informantproject/core/schema/" + simpleName;
+                URL url = Resources.getResource(path);
+                if (url == null) {
+                    logger.error("could not find resource '{}'", path);
+                    return null;
+                } else {
+                    return new InputSource(Resources.newReaderSupplier(url, Charsets.UTF_8)
+                            .getInput());
+                }
             } else {
                 logger.error("unexpected xml resource requested: publicId={}, systemId={}",
                         new Object[] { publicId, systemId });

@@ -19,7 +19,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.net.URL;
 
-import org.informantproject.local.ui.PluginJsonService;
 import org.junit.Test;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
@@ -35,19 +34,17 @@ public class XmlDocumentsTest {
 
     @Test
     public void shouldReadValidPluginXml() throws Exception {
-        URL resourceURL = PluginJsonService.class.getClassLoader().getResource(
-                "unit.test.plugin.valid.xml");
-        XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
+        URL url = Resources.getResource("unit.test.plugin.valid.xml");
+        XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(url),
                 new ThrowingErrorHandler());
     }
 
     @Test
     public void shouldErrorOnInvalidPluginXml() throws Exception {
-        URL resourceURL = PluginJsonService.class.getClassLoader().getResource(
-                "unit.test.plugin.invalid.xml");
+        URL url = Resources.getResource("unit.test.plugin.invalid.xml");
         SAXParseException exception = null;
         try {
-            XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(resourceURL),
+            XmlDocuments.newValidatedDocument(Resources.newInputStreamSupplier(url),
                     new ThrowingErrorHandler());
         } catch (SAXParseException e) {
             exception = e;

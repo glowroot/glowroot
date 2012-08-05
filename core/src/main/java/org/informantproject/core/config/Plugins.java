@@ -128,7 +128,7 @@ public class Plugins {
                 while (e.hasMoreElements()) {
                     resourcePaths.add("'" + e.nextElement().getPath() + "'");
                 }
-                logger.error("More than one resource found with name 'META-INF"
+                logger.error("more than one resource found with name 'META-INF"
                         + "/org.informantproject.package.xml'. This file is only supported inside"
                         + " of an informant packaged jar so there should be only one. Only using"
                         + " the first one of " + Joiner.on(", ").join(resourcePaths) + ".");

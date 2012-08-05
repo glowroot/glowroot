@@ -16,7 +16,7 @@
 package org.informantproject.core.weaving;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Resources;
 
 /**
  * @author Trask Stalnaker
@@ -82,12 +84,15 @@ public class ParsedTypeCache {
 
     private ParsedType loadParsedType(String typeName) {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
-        InputStream inputStream = loader.getResourceAsStream(typeName + ".class");
-        if (inputStream == null) {
+        String path = typeName + ".class";
+        URL url = loader.getResource(path);
+        if (url == null) {
+            logger.error("could not find resource '{}'", path);
             return new ParsedType(typeName);
         }
         try {
-            ClassReader cr = new ClassReader(inputStream);
+            byte[] bytes = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
+            ClassReader cr = new ClassReader(bytes);
             cr.accept(cv, 0);
             return cv.build();
         } catch (IOException e) {
