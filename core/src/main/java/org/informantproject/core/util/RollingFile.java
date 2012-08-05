@@ -73,10 +73,10 @@ public class RollingFile {
         }
     }
 
-    public double getRollingSizeKb() {
-        synchronized (lock) {
-            return rollingOut.getRollingSizeBytes() / (double) 1024;
-        }
+    public int getRollingSizeKb() {
+        // this is ok to read outside of the synchronization around startBlock()/write()/endBlock()
+        // which is useful so that the ConfigJsonService cannot blocked by large number of writes
+        return rollingOut.getRollingSizeKb();
     }
 
     public void close() throws IOException {
@@ -123,7 +123,7 @@ public class RollingFile {
                 long filePosition = rollingOut.convertToFilePosition(block.getStartIndex());
                 inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
                 byte[] bytes = new byte[(int) block.getLength()];
-                long remaining = rollingOut.getRollingSizeBytes() - filePosition;
+                long remaining = rollingOut.getRollingSizeKb() * 1024 - filePosition;
                 if (block.getLength() > remaining) {
                     RandomAccessFiles.readFully(inFile, bytes, 0, (int) remaining);
                     inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES);

@@ -57,7 +57,9 @@ class RollingOutputStream extends OutputStream {
     private long lastCompactionBaseIndex;
     // currPosition is the current position in the file
     private long currPosition;
-    private int rollingSizeKb;
+    // rollingSizeKb is volatile so it can be read outside of the external synchronization around
+    // startBlock()/write()/endBlock()
+    private volatile int rollingSizeKb;
     private long rollingSizeBytes;
 
     private long blockStartIndex;
@@ -117,8 +119,9 @@ class RollingOutputStream extends OutputStream {
                 && currIndex - block.getStartIndex() <= rollingSizeBytes;
     }
 
-    long getRollingSizeBytes() {
-        return rollingSizeBytes;
+    // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()
+    int getRollingSizeKb() {
+        return rollingSizeKb;
     }
 
     long convertToFilePosition(long index) {

@@ -76,7 +76,7 @@ public class ConfigJsonService implements JsonService {
         logger.debug("getConfig()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
-        double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024;
+        double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024.0;
         return "{\"enabled\":" + configService.getCoreConfig().isEnabled()
                 + ",\"coreProperties\":" + configService.getCoreConfig().getPropertiesJson()
                 + ",\"pluginConfigs\":" + configService.getPluginConfigsJson()
