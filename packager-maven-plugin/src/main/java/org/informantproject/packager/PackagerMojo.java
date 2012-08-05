@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -42,10 +44,14 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.shade.pom.PomWriter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
+import org.codehaus.plexus.util.WriterFactory;
 import org.informantproject.packager.PluginConfig.PropertyConfig;
 import org.informantproject.packager.PluginDescriptor.PropertyDescriptor;
 import org.w3c.dom.Document;
@@ -162,6 +168,8 @@ public class PackagerMojo extends AbstractMojo {
         File sourceJarFile = getSourceJarFile();
         createArtifactJar(sourceArtifacts, sourceJarFile);
         projectHelper.attachArtifact(project, "jar", "sources", sourceJarFile);
+        // remove dependencies from pom since all dependencies are now embedded directly in artifact
+        createDependencyReducedPom();
     }
 
     private File getArtifactJarFile() {
@@ -447,5 +455,18 @@ public class PackagerMojo extends AbstractMojo {
         } else {
             return nodes.item(0).getTextContent();
         }
+    }
+
+    private void createDependencyReducedPom() throws IOException {
+        Model model = project.getOriginalModel();
+        model.setDependencies(new ArrayList<Dependency>());
+        File dependencyReducedPomLocation = new File(project.getBuild().getDirectory(),
+                "dependency-reduced-pom.xml");
+        if (dependencyReducedPomLocation.exists()) {
+            dependencyReducedPomLocation.delete();
+        }
+        Writer w = WriterFactory.newXmlWriter(dependencyReducedPomLocation);
+        PomWriter.write(w, model, true);
+        project.setFile(dependencyReducedPomLocation);
     }
 }
