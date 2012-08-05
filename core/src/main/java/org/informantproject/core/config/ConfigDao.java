@@ -105,7 +105,9 @@ class ConfigDao {
                                 // of the default property values
                                 String propertiesJson = Objects.firstNonNull(
                                         resultSet.getString(2), "{}");
-                                return CoreConfig.create(enabled, propertiesJson);
+                                CoreConfig.Builder builder = gson.fromJson(propertiesJson,
+                                        CoreConfig.Builder.class);
+                                return builder.setEnabled(enabled).build();
                             } else {
                                 return null;
                             }
@@ -201,21 +203,27 @@ class ConfigDao {
         }
         String json = resultSet.getString(2);
         if (json == null) {
-            return PluginConfig.create(pluginDescriptor, enabled);
+            return defaultPluginConfig(pluginDescriptor, enabled);
         }
         JsonElement propertiesElement;
         try {
             propertiesElement = gson.fromJson(json, JsonElement.class);
         } catch (JsonSyntaxException e) {
             logger.error(e.getMessage(), e);
-            return PluginConfig.create(pluginDescriptor, enabled);
+            return defaultPluginConfig(pluginDescriptor, enabled);
         }
         if (propertiesElement.isJsonObject()) {
-            return PluginConfig.create(pluginDescriptor, enabled,
-                    propertiesElement.getAsJsonObject());
+            return PluginConfig.builder(pluginDescriptor)
+                    .setEnabled(enabled)
+                    .setProperties(propertiesElement.getAsJsonObject())
+                    .build();
         } else {
             logger.error("config for plugin id '{}' is not json object", pluginDescriptor.getId());
-            return PluginConfig.create(pluginDescriptor, enabled);
+            return defaultPluginConfig(pluginDescriptor, enabled);
         }
+    }
+
+    private PluginConfig defaultPluginConfig(PluginDescriptor pluginDescriptor, boolean enabled) {
+        return PluginConfig.builder(pluginDescriptor).setEnabled(enabled).build();
     }
 }

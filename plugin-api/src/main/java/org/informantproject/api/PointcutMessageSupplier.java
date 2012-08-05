@@ -35,7 +35,11 @@ public class PointcutMessageSupplier extends Supplier<Message> {
     @Nullable
     private volatile Object returnValue;
 
-    public PointcutMessageSupplier(String template, Object... args) {
+    public static PointcutMessageSupplier create(String template, Object... args) {
+        return new PointcutMessageSupplier(template, args);
+    }
+
+    private PointcutMessageSupplier(String template, Object[] args) {
         this.template = template;
         this.args = args;
     }

@@ -52,6 +52,10 @@ public abstract class PluginServices {
                 }
             });
 
+    public static PluginServices get(String pluginId) {
+        return pluginServices.getUnchecked(pluginId);
+    }
+
     public abstract Metric getMetric(Class<?> adviceClass);
 
     public abstract void registerConfigListener(ConfigListener listener);
@@ -82,10 +86,6 @@ public abstract class PluginServices {
 
     @Nullable
     public abstract Supplier<Message> getRootMessageSupplier();
-
-    public static PluginServices get(String pluginId) {
-        return pluginServices.getUnchecked(pluginId);
-    }
 
     private static PluginServices createPluginServices(String pluginId) {
         try {

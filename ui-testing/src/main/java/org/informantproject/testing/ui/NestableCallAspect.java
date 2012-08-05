@@ -114,7 +114,7 @@ public class NestableCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.withContextMap("Nestable with a very long description to test"
+                return Message.of("Nestable with a very long description to test"
                         + " wrapping abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz",
                         contextMap);
             }

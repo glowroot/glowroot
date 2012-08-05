@@ -73,7 +73,7 @@ public class ConfigDaoCoreTest {
     @Test
     public void shouldReadConfig(ConfigDao configDao) {
         // given
-        CoreConfig defaultCoreConfig = new CoreConfig();
+        CoreConfig defaultCoreConfig = CoreConfig.getDefaultInstance();
         configDao.setCoreEnabled(defaultCoreConfig.isEnabled());
         configDao.storeCoreProperties(defaultCoreConfig.getPropertiesJson());
         // when
@@ -85,7 +85,7 @@ public class ConfigDaoCoreTest {
     @Test
     public void shouldReadAfterUpdatingPropertiesOnly(ConfigDao configDao) {
         // given
-        CoreConfig defaultCoreConfig = new CoreConfig();
+        CoreConfig defaultCoreConfig = CoreConfig.getDefaultInstance();
         configDao.storeCoreProperties(defaultCoreConfig.getPropertiesJson());
         // when
         CoreConfig coreConfig = configDao.readCoreConfig();
@@ -106,7 +106,7 @@ public class ConfigDaoCoreTest {
     @Test
     public void shouldUpdateConfig(ConfigDao configDao) {
         // given
-        CoreConfig defaultCoreConfig = new CoreConfig();
+        CoreConfig defaultCoreConfig = CoreConfig.getDefaultInstance();
         CoreConfig randomCoreConfig = new CoreConfigTestData().getNonDefaultCoreConfig();
         configDao.storeCoreProperties(defaultCoreConfig.getPropertiesJson());
         configDao.setCoreEnabled(defaultCoreConfig.isEnabled());

@@ -72,7 +72,7 @@ public final class MainEntryPoint {
     // javaagent entry point
     public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
-        AgentArgs parsedAgentArgs = new AgentArgs(agentArgs);
+        AgentArgs parsedAgentArgs = AgentArgs.from(agentArgs);
         try {
             File h2DatabaseFile = new File(parsedAgentArgs.getDataDir(), "informant.lock.db");
             FileLister.tryUnlockDatabase(Lists.newArrayList(h2DatabaseFile.getPath()), null);
@@ -133,12 +133,12 @@ public final class MainEntryPoint {
 
     // only used by tests
     public static void start() {
-        start(new AgentArgs());
+        start(AgentArgs.from(""));
     }
 
     // only used by tests
     public static void start(String agentArgs) {
-        start(new AgentArgs(agentArgs));
+        start(AgentArgs.from(agentArgs));
     }
 
     // only used by tests

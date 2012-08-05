@@ -23,10 +23,14 @@ import org.informantproject.api.UnresolvedMethod;
  */
 class HttpServletResponse {
 
-    private static final UnresolvedMethod getStatusMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getStatusMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpServletResponse", "getStatus");
 
     private final Object realResponse;
+
+    static HttpServletResponse from(Object realResponse) {
+        return new HttpServletResponse(realResponse);
+    }
 
     private HttpServletResponse(Object realRequest) {
         this.realResponse = realRequest;
@@ -34,9 +38,5 @@ class HttpServletResponse {
 
     int getStatus() {
         return (Integer) getStatusMethod.invoke(realResponse);
-    }
-
-    static HttpServletResponse from(Object realResponse) {
-        return new HttpServletResponse(realResponse);
     }
 }

@@ -51,14 +51,17 @@ public class MergedStackTreeNode {
 
     // this is for creating a single synthetic root node above other root nodes when there are
     // multiple root nodes
-    MergedStackTreeNode(int sampleCount) {
-        stackTraceElement = null;
-        this.sampleCount = sampleCount;
+    static MergedStackTreeNode createSyntheticRoot(int sampleCount) {
+        return new MergedStackTreeNode(null, sampleCount);
     }
 
-    MergedStackTreeNode(StackTraceElement stackTraceElement) {
+    static MergedStackTreeNode create(StackTraceElement stackTraceElement) {
+        return new MergedStackTreeNode(stackTraceElement, 1);
+    }
+
+    private MergedStackTreeNode(StackTraceElement stackTraceElement, int sampleCount) {
         this.stackTraceElement = stackTraceElement;
-        sampleCount = 1;
+        this.sampleCount = sampleCount;
     }
 
     void addChildNode(MergedStackTreeNode methodTreeElement) {

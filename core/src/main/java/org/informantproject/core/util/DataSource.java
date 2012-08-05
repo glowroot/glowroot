@@ -79,10 +79,6 @@ public class DataSource {
                 }
             });
 
-    public DataSource(File dbFile) {
-        this(dbFile, false);
-    }
-
     public DataSource(File dbFile, boolean memDb) {
         if (dbFile.getPath().endsWith(".h2.db")) {
             this.dbFile = dbFile;

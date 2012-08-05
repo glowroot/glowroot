@@ -45,16 +45,6 @@ public class InformantContainer {
 
     private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
-    InformantContainer(ExecutionAdapter executionAdapter, Collection<Thread> preExistingThreads,
-            File dataDir) throws Exception {
-
-        this.preExistingThreads = preExistingThreads;
-        this.executionAdapter = executionAdapter;
-        this.dataDir = dataDir;
-        asyncHttpClient = new AsyncHttpClient();
-        informant = new Informant(executionAdapter.getPort(), asyncHttpClient);
-    }
-
     public static InformantContainer create() throws Exception {
         return create(0, true);
     }
@@ -77,6 +67,17 @@ public class InformantContainer {
             executionAdapter = new SameJvmExecutionAdapter(agentArgs);
         }
         return new InformantContainer(executionAdapter, preExistingThreads, dataDir);
+    }
+
+    private InformantContainer(ExecutionAdapter executionAdapter,
+            Collection<Thread> preExistingThreads,
+            File dataDir) throws Exception {
+
+        this.preExistingThreads = preExistingThreads;
+        this.executionAdapter = executionAdapter;
+        this.dataDir = dataDir;
+        asyncHttpClient = new AsyncHttpClient();
+        informant = new Informant(executionAdapter.getPort(), asyncHttpClient);
     }
 
     public Informant getInformant() {

@@ -371,7 +371,7 @@ public class TraceDao {
             if (spansFileBlockId != null) {
                 FileBlock block;
                 try {
-                    block = new FileBlock(spansFileBlockId);
+                    block = FileBlock.from(spansFileBlockId);
                     builder.spans(rollingFile.read(block));
                 } catch (InvalidBlockId e) {
                     logger.error(e.getMessage(), e);
@@ -380,7 +380,7 @@ public class TraceDao {
             if (mergedStackTreeFileBlockId != null) {
                 FileBlock block;
                 try {
-                    block = new FileBlock(mergedStackTreeFileBlockId);
+                    block = FileBlock.from(mergedStackTreeFileBlockId);
                     builder.mergedStackTree(rollingFile.read(block));
                 } catch (InvalidBlockId e) {
                     logger.error(e.getMessage(), e);

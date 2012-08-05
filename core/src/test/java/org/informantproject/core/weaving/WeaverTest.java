@@ -599,7 +599,7 @@ public class WeaverTest {
         if (pointcut == null) {
             advisors = ImmutableList.of();
         } else {
-            advisors = ImmutableList.of(Advice.create(pointcut, adviceClass));
+            advisors = ImmutableList.of(Advice.from(pointcut, adviceClass));
         }
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         List<Mixin> mixins;

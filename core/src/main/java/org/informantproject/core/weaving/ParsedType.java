@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
  * @since 0.5
  */
 // a ParsedType is never created for Object.class
+// Immutable
 public class ParsedType {
 
     private final boolean missing;
@@ -36,25 +37,27 @@ public class ParsedType {
     private final String name;
     @Nullable
     private final String superName;
-    private final String[] interfaceNames;
+    private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
 
-    ParsedType(String name, @Nullable String superName, String[] interfaceNames,
-            ImmutableList<ParsedMethod> methods) {
+    static ParsedType from(String name, @Nullable String superName,
+            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
+        return new ParsedType(false, name, superName, interfaceNames, methods);
+    }
 
-        this.missing = false;
+    static ParsedType fromMissing(String name) {
+        return new ParsedType(true, name, null, ImmutableList.<String> of(),
+                ImmutableList.<ParsedMethod> of());
+    }
+
+    private ParsedType(boolean missing, String name, @Nullable String superName,
+            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
+
+        this.missing = missing;
         this.name = name;
         this.superName = superName;
         this.interfaceNames = interfaceNames;
         this.methods = methods;
-    }
-
-    ParsedType(String name) {
-        this.missing = true;
-        this.name = name;
-        superName = null;
-        interfaceNames = new String[0];
-        methods = ImmutableList.of();
     }
 
     public boolean isMissing() {
@@ -71,7 +74,7 @@ public class ParsedType {
         return superName;
     }
 
-    public String[] getInterfaceNames() {
+    public List<String> getInterfaceNames() {
         return interfaceNames;
     }
 

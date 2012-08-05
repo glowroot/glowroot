@@ -65,7 +65,19 @@ public class PluginConfig {
     // map values are @Nullable
     private final Map<String, Object> properties = Maps.newHashMap();
 
-    PluginConfig(boolean enabled, Map<String, Object> properties) {
+    public static PluginConfig getEnabledInstance() {
+        return new PluginConfig(true, new HashMap<String, Object>());
+    }
+
+    public static PluginConfig getDisabledInstance() {
+        return new PluginConfig(false, new HashMap<String, Object>());
+    }
+
+    public static Builder builder(PluginDescriptor pluginDescriptor) {
+        return new Builder(pluginDescriptor);
+    }
+
+    private PluginConfig(boolean enabled, Map<String, Object> properties) {
         this.enabled = enabled;
         // make a copy and validate value types at the same time
         for (Entry<String, Object> subEntry : properties.entrySet()) {
@@ -188,26 +200,9 @@ public class PluginConfig {
         return Objects.hashCode(enabled, properties);
     }
 
-    public static PluginConfig create(PluginDescriptor pluginDescriptor, boolean enabled) {
-        return new Builder(pluginDescriptor).setEnabled(enabled).build();
-    }
-
-    public static PluginConfig create(PluginDescriptor pluginDescriptor, boolean enabled,
-            JsonObject propertiesJson) {
-
-        return new Builder(pluginDescriptor).setEnabled(enabled)
-                .setProperties(propertiesJson).build();
-    }
-
-    public static PluginConfig createDisabledHasNoDescriptor() {
-        return new PluginConfig(false, new HashMap<String, Object>());
-    }
-
-    public static Builder builder(PluginDescriptor pluginDescriptor) {
-        return new Builder(pluginDescriptor);
-    }
-
     public static class Builder {
+
+        private static final Gson gson = new Gson();
 
         private final PluginDescriptor pluginDescriptor;
         // map values are @Nullable
@@ -277,7 +272,7 @@ public class PluginConfig {
         public Builder setProperties(JsonObject jsonObject,
                 boolean ignoreExtraProperties) {
 
-            Map<String, Object> overlayProperties = new Gson().fromJson(jsonObject,
+            Map<String, Object> overlayProperties = gson.fromJson(jsonObject,
                     new TypeToken<Map<String, Object>>() {}.getType());
             // overlay new values
             for (Entry<String, Object> subEntry : overlayProperties.entrySet()) {

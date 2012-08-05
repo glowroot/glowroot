@@ -23,12 +23,11 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// Immutable
 public class Point {
 
-    private long capturedAt;
-    private double value;
-
-    public Point() {}
+    private final long capturedAt;
+    private final double value;
 
     public Point(long capturedAt, double value) {
         this.capturedAt = capturedAt;
@@ -39,16 +38,8 @@ public class Point {
         return capturedAt;
     }
 
-    public void setCapturedAt(long capturedAt) {
-        this.capturedAt = capturedAt;
-    }
-
     public double getValue() {
         return value;
-    }
-
-    public void setValue(double value) {
-        this.value = value;
     }
 
     @Override

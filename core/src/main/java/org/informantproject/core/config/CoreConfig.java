@@ -35,6 +35,8 @@ public class CoreConfig {
     public static final int SPAN_LIMIT_DISABLED = -1;
     public static final int THRESHOLD_DISABLED = -1;
 
+    private static final Gson gson = new Gson();
+
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional spans
     // but they will be logged / emailed if they exceed the defined thresholds
@@ -79,7 +81,15 @@ public class CoreConfig {
 
     private int metricPeriodMillis = 15000;
 
-    private final Gson gson = new Gson();
+    public static CoreConfig getDefaultInstance() {
+        return new CoreConfig();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private CoreConfig() {}
 
     public boolean isEnabled() {
         return enabled;
@@ -175,15 +185,6 @@ public class CoreConfig {
         return Objects.hashCode(enabled, thresholdMillis, stuckThresholdSeconds,
                 profilerInitialDelayMillis, profilerIntervalMillis, spanStackTraceThresholdMillis,
                 maxEntries, rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    static CoreConfig create(boolean enabled, String propertiesJson) {
-        return new Gson().fromJson(propertiesJson, Builder.class).setEnabled(enabled)
-                .build();
     }
 
     public static class Builder {

@@ -196,7 +196,7 @@ public class JdbcAspect {
 
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(sql,
+                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql,
                         getConnectionHashCode(statement));
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metric);
@@ -231,8 +231,8 @@ public class JdbcAspect {
         public static Span onBefore(@InjectTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(mirror.getSql(),
-                        mirror.getParametersCopy(), getConnectionHashCode(preparedStatement));
+                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.createWithParameters(
+                        mirror, getConnectionHashCode(preparedStatement));
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metric);
             } else {
@@ -266,9 +266,8 @@ public class JdbcAspect {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
                 if (pluginServices.isEnabled()) {
-                    JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
-                            mirror.getSql(), mirror.getBatchedParametersCopy(),
-                            getConnectionHashCode(statement));
+                    JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
+                            .createWithBatchedParameters(mirror, getConnectionHashCode(statement));
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metric);
                 } else {
@@ -284,8 +283,8 @@ public class JdbcAspect {
             } else {
                 StatementMirror mirror = getStatementMirror(statement);
                 if (pluginServices.isEnabled()) {
-                    JdbcMessageSupplier jdbcMessageSupplier = new JdbcMessageSupplier(
-                            mirror.getBatchedSqlCopy(), getConnectionHashCode(statement));
+                    JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
+                            .createWithBatchedSqls(mirror, getConnectionHashCode(statement));
                     // TODO track all changes to statement mirrors regardless of isEnabled
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metric);

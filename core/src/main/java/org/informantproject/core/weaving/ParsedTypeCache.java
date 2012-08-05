@@ -88,7 +88,7 @@ public class ParsedTypeCache {
         URL url = loader.getResource(path);
         if (url == null) {
             logger.error("could not find resource '{}'", path);
-            return new ParsedType(typeName);
+            return ParsedType.fromMissing(typeName);
         }
         try {
             byte[] bytes = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
@@ -97,7 +97,7 @@ public class ParsedTypeCache {
             return cv.build();
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
-            return new ParsedType(typeName);
+            return ParsedType.fromMissing(typeName);
         }
     }
 
@@ -108,7 +108,7 @@ public class ParsedTypeCache {
         @Nullable
         private String superName;
         @Nullable
-        private String[] interfaceNames;
+        private ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
         private ParsedTypeClassVisitor() {
@@ -125,7 +125,7 @@ public class ParsedTypeCache {
             } else {
                 this.superName = superName;
             }
-            this.interfaceNames = interfaceNames;
+            this.interfaceNames = ImmutableList.copyOf(interfaceNames);
         }
 
         @Override
@@ -138,7 +138,7 @@ public class ParsedTypeCache {
         }
 
         private ParsedType build() {
-            return new ParsedType(name, superName, interfaceNames, methods.build());
+            return ParsedType.from(name, superName, interfaceNames, methods.build());
         }
     }
 }

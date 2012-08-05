@@ -55,7 +55,7 @@ public class LevelTwoAspect {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
                 @Override
                 public Message get() {
-                    return Message.withContextMap("Level Two",
+                    return Message.of("Level Two",
                             ImmutableMap.of("arg1", arg1, "arg2", arg2));
                 }
             };

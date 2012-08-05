@@ -96,6 +96,10 @@ public class Advice {
     private final ParameterKind[] onThrowParameterKinds;
     private final ParameterKind[] onAfterParameterKinds;
 
+    static Advice from(Pointcut pointcut, Class<?> adviceClass) {
+        return new Builder(pointcut, adviceClass).build();
+    }
+
     private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutMethodPattern,
             @Nullable Method isEnabledAdvice, @Nullable Method onBeforeAdvice,
             @Nullable Method onReturnAdvice, @Nullable Method onThrowAdvice,
@@ -181,10 +185,6 @@ public class Advice {
 
     ParameterKind[] getOnAfterParameterKinds() {
         return onAfterParameterKinds;
-    }
-
-    static Advice create(Pointcut pointcut, Class<?> adviceClass) {
-        return new Builder(pointcut, adviceClass).build();
     }
 
     enum ParameterKind {

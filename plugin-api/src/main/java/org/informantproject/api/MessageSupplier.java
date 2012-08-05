@@ -23,8 +23,6 @@ import java.util.Map;
  */
 public final class MessageSupplier {
 
-    private MessageSupplier() {}
-
     public static Supplier<Message> of(String message) {
         return Supplier.ofInstance(Message.of(message));
     }
@@ -33,13 +31,15 @@ public final class MessageSupplier {
         return Supplier.ofInstance(Message.of(template, args));
     }
 
-    public static Supplier<Message> withContextMap(String message, Map<String, ?> contextMap) {
+    public static Supplier<Message> of(String message, Map<String, ?> contextMap) {
         return Supplier.ofInstance(Message.of(message, contextMap));
     }
 
-    public static Supplier<Message> withContextMap(String template, Object[] args,
+    public static Supplier<Message> of(String template, Object[] args,
             Map<String, ?> contextMap) {
 
         return Supplier.ofInstance(Message.of(template, args, contextMap));
     }
+
+    private MessageSupplier() {}
 }

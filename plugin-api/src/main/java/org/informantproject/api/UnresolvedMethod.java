@@ -33,6 +33,7 @@ import com.google.common.collect.MapMaker;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// Immutable
 public class UnresolvedMethod {
 
     private static final Logger logger = LoggerFactory.getLogger(UnresolvedMethod.class);
@@ -52,26 +53,26 @@ public class UnresolvedMethod {
     private final Map<ClassLoader, Method> resolvedMethods = new MapMaker().weakKeys().weakValues()
             .makeMap();
 
-    public UnresolvedMethod(String unresolvedClass, String name) {
-        this.unresolvedClass = unresolvedClass;
-        this.name = name;
-        parameterTypes = new Class<?>[0];
-        unresolvedParameterTypes = null;
+    public static UnresolvedMethod from(String unresolvedClass, String name) {
+        return new UnresolvedMethod(unresolvedClass, name, new Class<?>[0], null);
     }
 
-    public UnresolvedMethod(String unresolvedClass, String name, Class<?>... parameterTypes) {
+    public static UnresolvedMethod from(String unresolvedClass, String name,
+            Class<?>... parameterTypes) {
+        return new UnresolvedMethod(unresolvedClass, name, parameterTypes, null);
+    }
+
+    public static UnresolvedMethod from(String unresolvedClass, String name,
+            String... unresolvedParameterTypes) {
+        return new UnresolvedMethod(unresolvedClass, name, null, unresolvedParameterTypes);
+    }
+
+    private UnresolvedMethod(String unresolvedClass, String name,
+            @Nullable Class<?>[] parameterTypes, @Nullable String[] unresolvedParameterTypes) {
+
         this.unresolvedClass = unresolvedClass;
         this.name = name;
         this.parameterTypes = parameterTypes;
-        unresolvedParameterTypes = null;
-    }
-
-    public UnresolvedMethod(String unresolvedClass, String name,
-            String... unresolvedParameterTypes) {
-
-        this.unresolvedClass = unresolvedClass;
-        this.name = name;
-        parameterTypes = null;
         this.unresolvedParameterTypes = unresolvedParameterTypes;
     }
 

@@ -74,10 +74,6 @@ public abstract class HttpServerBase {
         });
     }
 
-    public HttpServerBase() {
-        this(0);
-    }
-
     public HttpServerBase(int port) {
         // thread names will be overridden by ThreadNameDeterminer above
         bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(

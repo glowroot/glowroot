@@ -59,7 +59,8 @@ public class MergedStackTree {
             for (MergedStackTreeNode rootNode : rootNodes) {
                 totalSampleCount += rootNode.getSampleCount();
             }
-            MergedStackTreeNode syntheticRootNode = new MergedStackTreeNode(totalSampleCount);
+            MergedStackTreeNode syntheticRootNode = MergedStackTreeNode
+                    .createSyntheticRoot(totalSampleCount);
             for (MergedStackTreeNode rootNode : rootNodes) {
                 syntheticRootNode.addChildNode(rootNode);
             }
@@ -100,7 +101,7 @@ public class MergedStackTree {
         }
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
-            MergedStackTreeNode nextNode = new MergedStackTreeNode(stackTraceElements[i]);
+            MergedStackTreeNode nextNode = MergedStackTreeNode.create(stackTraceElements[i]);
             if (i == 0) {
                 // leaf node
                 nextNode.setLeafThreadState(threadState);

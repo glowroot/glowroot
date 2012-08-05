@@ -32,16 +32,20 @@ import org.informantproject.shaded.google.common.collect.ImmutableSet;
 // even where it seems to not make sense
 class HttpSession {
 
-    private static final UnresolvedMethod getIdMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getIdMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpSession", "getId");
-    private static final UnresolvedMethod isNewMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod isNewMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpSession", "isNew");
-    private static final UnresolvedMethod getAttributeNamesMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getAttributeNamesMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpSession", "getAttributeNames");
-    private static final UnresolvedMethod getAttributeMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getAttributeMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpSession", "getAttribute", String.class);
 
     private final Object realSession;
+
+    static HttpSession from(Object realSession) {
+        return new HttpSession(realSession);
+    }
 
     private HttpSession(Object realSession) {
         this.realSession = realSession;
@@ -73,9 +77,5 @@ class HttpSession {
     @Nullable
     Object getAttribute(String name) {
         return getAttributeMethod.invoke(realSession, name);
-    }
-
-    static HttpSession from(Object realSession) {
-        return new HttpSession(realSession);
     }
 }

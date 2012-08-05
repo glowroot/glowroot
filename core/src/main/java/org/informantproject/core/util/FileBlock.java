@@ -21,27 +21,33 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// Immutable
 public class FileBlock {
 
     private final long startIndex;
     private final long length;
 
-    public FileBlock(long startIndex, long numBytes) {
-        this.startIndex = startIndex;
-        this.length = numBytes;
+    public static FileBlock from(long startIndex, long length) {
+        return new FileBlock(startIndex, length);
     }
 
-    public FileBlock(String id) throws InvalidBlockId {
+    public static FileBlock from(String id) throws InvalidBlockId {
         String[] parts = id.split(":");
         if (parts.length != 2) {
             throw new InvalidBlockId();
         }
         try {
-            startIndex = Long.parseLong(parts[0]);
-            length = Long.parseLong(parts[1]);
+            long startIndex = Long.parseLong(parts[0]);
+            long length = Long.parseLong(parts[1]);
+            return new FileBlock(startIndex, length);
         } catch (NumberFormatException e) {
             throw new InvalidBlockId(e);
         }
+    }
+
+    private FileBlock(long startIndex, long length) {
+        this.startIndex = startIndex;
+        this.length = length;
     }
 
     public long getStartIndex() {

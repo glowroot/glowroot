@@ -109,8 +109,8 @@ class RollingOutputStream extends OutputStream {
 
     FileBlock endBlock() {
         fsyncNeeded.set(true);
-        long numBytes = currIndex - blockStartIndex;
-        return new FileBlock(blockStartIndex, numBytes);
+        long length = currIndex - blockStartIndex;
+        return FileBlock.from(blockStartIndex, length);
     }
 
     boolean stillExists(FileBlock block) {

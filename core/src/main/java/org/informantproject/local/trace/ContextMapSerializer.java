@@ -35,9 +35,9 @@ class ContextMapSerializer {
     private static final Logger logger = LoggerFactory.getLogger(ContextMapSerializer.class);
 
     private static final Class<?> SHADED_OPTIONAL_CLASS = getShadedOptionalClass();
-    private static final UnresolvedMethod isPresentMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod isPresentMethod = UnresolvedMethod.from(
             "org.informantproject.shaded.google.common.base.Optional", "isPresent");
-    private static final UnresolvedMethod getMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getMethod = UnresolvedMethod.from(
             "org.informantproject.shaded.google.common.base.Optional", "get");
 
     private final JsonWriter jw;

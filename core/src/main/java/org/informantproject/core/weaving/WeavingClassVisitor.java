@@ -270,7 +270,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                         "(Ljava/lang/String;)Ljava/lang/Class;");
                 String adviceFlowInternalName = adviceFlowType.getInternalName();
-                mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "lookupSharedAdviceFlow",
+                mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "getSharedInstance",
                         "(Ljava/lang/Class;)L" + adviceFlowInternalName + ";");
                 mv.visitFieldInsn(PUTSTATIC, type.getInternalName(), "informant$adviceFlow$" + i,
                         adviceFlowType.getDescriptor());

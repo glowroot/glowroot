@@ -31,18 +31,23 @@ import org.informantproject.shaded.google.common.collect.ImmutableMap;
 // theoretically return null even where it seems to not make sense
 class HttpServletRequest {
 
-    private static final UnresolvedMethod getSessionOneArgMethod = new UnresolvedMethod(
-            "javax.servlet.http.HttpServletRequest", "getSession", boolean.class);
-    private static final UnresolvedMethod getMethodMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getSessionOneArgMethod = UnresolvedMethod.from(
+            "javax.servlet.http.HttpServletRequest", "getSession",
+            boolean.class);
+    private static final UnresolvedMethod getMethodMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpServletRequest", "getMethod");
-    private static final UnresolvedMethod getRequestURIMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getRequestURIMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpServletRequest", "getRequestURI");
-    private static final UnresolvedMethod getParameterMapMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getParameterMapMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpServletRequest", "getParameterMap");
-    private static final UnresolvedMethod getAttributeMethod = new UnresolvedMethod(
+    private static final UnresolvedMethod getAttributeMethod = UnresolvedMethod.from(
             "javax.servlet.http.HttpServletRequest", "getAttribute", String.class);
 
     private final Object realRequest;
+
+    static HttpServletRequest from(Object realRequest) {
+        return new HttpServletRequest(realRequest);
+    }
 
     private HttpServletRequest(Object realRequest) {
         this.realRequest = realRequest;
@@ -80,9 +85,5 @@ class HttpServletRequest {
     @Nullable
     Object getAttribute(String name) {
         return getAttributeMethod.invoke(realRequest, name);
-    }
-
-    static HttpServletRequest from(Object realRequest) {
-        return new HttpServletRequest(realRequest);
     }
 }

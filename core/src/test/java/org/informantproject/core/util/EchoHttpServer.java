@@ -33,6 +33,10 @@ import com.google.common.base.Charsets;
  */
 public class EchoHttpServer extends HttpServerBase {
 
+    public EchoHttpServer() {
+        super(0);
+    }
+
     @Override
     public HttpResponse handleRequest(HttpRequest request, Channel channel) {
         String content = request.getContent().toString(Charsets.ISO_8859_1);

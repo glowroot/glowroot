@@ -67,42 +67,41 @@ class JdbcMessageSupplier extends Supplier<Message> {
     @Nullable
     private final Collection<String> batchedSqls;
 
-    private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
-
     @Nullable
     private final Integer connectionHashCode;
 
-    JdbcMessageSupplier(String sql, Integer connectionHashCode) {
-        this.sql = sql;
-        this.parameters = null;
-        this.batchedParameters = null;
-        this.batchedSqls = null;
-        this.connectionHashCode = connectionHashCode;
+    private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
+
+    static JdbcMessageSupplier create(String sql, Integer connectionHashCode) {
+        return new JdbcMessageSupplier(sql, null, null, null, connectionHashCode);
     }
 
-    JdbcMessageSupplier(String sql, List<Object> parameters, Integer connectionHashCode) {
-        this.sql = sql;
-        this.parameters = parameters;
-        this.batchedParameters = null;
-        this.batchedSqls = null;
-        this.connectionHashCode = connectionHashCode;
+    static JdbcMessageSupplier createWithParameters(PreparedStatementMirror mirror,
+            Integer connectionHashCode) {
+        return new JdbcMessageSupplier(mirror.getSql(), mirror.getParametersCopy(), null, null,
+                connectionHashCode);
     }
 
-    JdbcMessageSupplier(Collection<String> batchedSqls, Integer connectionHashCode) {
-        this.sql = null;
-        this.parameters = null;
-        this.batchedParameters = null;
-        this.batchedSqls = batchedSqls;
-        this.connectionHashCode = connectionHashCode;
+    static JdbcMessageSupplier createWithBatchedSqls(StatementMirror mirror,
+            Integer connectionHashCode) {
+        return new JdbcMessageSupplier(null, null, null, mirror.getBatchedSqlCopy(),
+                connectionHashCode);
     }
 
-    JdbcMessageSupplier(String sql, Collection<List<Object>> batchedParameters,
+    static JdbcMessageSupplier createWithBatchedParameters(PreparedStatementMirror mirror,
+            Integer connectionHashCode) {
+        return new JdbcMessageSupplier(mirror.getSql(), null, mirror.getBatchedParametersCopy(),
+                null, connectionHashCode);
+    }
+
+    private JdbcMessageSupplier(String sql, List<Object> parameters,
+            Collection<List<Object>> batchedParameters, Collection<String> batchedSqls,
             Integer connectionHashCode) {
 
         this.sql = sql;
-        this.parameters = null;
+        this.parameters = parameters;
         this.batchedParameters = batchedParameters;
-        this.batchedSqls = null;
+        this.batchedSqls = batchedSqls;
         this.connectionHashCode = connectionHashCode;
     }
 

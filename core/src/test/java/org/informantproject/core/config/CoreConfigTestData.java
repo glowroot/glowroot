@@ -22,7 +22,7 @@ package org.informantproject.core.config;
 public class CoreConfigTestData {
 
     public CoreConfig getNonDefaultCoreConfig() {
-        CoreConfig defaultCoreConfig = new CoreConfig();
+        CoreConfig defaultCoreConfig = CoreConfig.getDefaultInstance();
         return CoreConfig.builder()
                 // cover all fields
                 .setEnabled(!defaultCoreConfig.isEnabled())

@@ -114,7 +114,7 @@ class ServletMessageSupplier extends Supplier<Message> {
         } else {
             message = requestMethod + " " + requestURI;
         }
-        return Message.withContextMap(message, mapBuilder.build());
+        return Message.of(message, mapBuilder.build());
     }
 
     boolean isRequestParameterMapCaptured() {

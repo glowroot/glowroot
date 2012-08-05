@@ -49,6 +49,26 @@ public class Message {
     @Nullable
     private final Map<String, ?> contextMap;
 
+    public static Message of(String message) {
+        return new Message(message, null, null);
+    }
+
+    public static Message of(String template, Object... args) {
+        return new Message(template, args, null);
+    }
+
+    public static Message of(String template, List<?> args) {
+        return new Message(template, args.toArray(), null);
+    }
+
+    public static Message of(String message, Map<String, ?> contextMap) {
+        return new Message(message, null, contextMap);
+    }
+
+    public static Message of(String template, Object[] args, Map<String, ?> contextMap) {
+        return new Message(template, args, contextMap);
+    }
+
     private Message(String template, @Nullable Object[] args, @Nullable Map<String, ?> contextMap) {
         this.template = template;
         this.args = args;
@@ -93,27 +113,5 @@ public class Message {
     @Nullable
     public Map<String, ?> getContextMap() {
         return contextMap;
-    }
-
-    public static Message of(String message) {
-        return new Message(message, null, null);
-    }
-
-    public static Message of(String template, Object... args) {
-        return new Message(template, args, null);
-    }
-
-    public static Message of(String template, List<?> args) {
-        return new Message(template, args.toArray(), null);
-    }
-
-    public static Message withContextMap(String message, Map<String, ?> contextMap) {
-        return new Message(message, null, contextMap);
-    }
-
-    public static Message withContextMap(String template, Object[] args,
-            Map<String, ?> contextMap) {
-
-        return new Message(template, args, contextMap);
     }
 }

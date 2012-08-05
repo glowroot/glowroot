@@ -16,7 +16,6 @@
 package org.informantproject.core.config;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -68,15 +67,14 @@ public class ConfigService {
         CoreConfig coreConfig = configDao.readCoreConfig();
         if (coreConfig == null) {
             logger.debug("<init>(): default core config is being used");
-            this.coreConfig = new CoreConfig();
+            this.coreConfig = CoreConfig.getDefaultInstance();
         } else {
             logger.debug("<init>(): core config was read from local data store: {}", coreConfig);
             this.coreConfig = coreConfig;
         }
         pluginConfigs = Maps.newHashMap();
         // add the "built-in" plugin config for the weaving metrics
-        pluginConfigs.put("org.informantproject:informant-core", new PluginConfig(true,
-                new HashMap<String, Object>()));
+        pluginConfigs.put("org.informantproject:informant-core", PluginConfig.getEnabledInstance());
         Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
@@ -84,8 +82,8 @@ public class ConfigService {
             if (pluginConfig != null) {
                 pluginConfigs.put(pluginDescriptor.getId(), pluginConfig);
             } else {
-                pluginConfigs.put(pluginDescriptor.getId(),
-                        PluginConfig.create(pluginDescriptor, true));
+                pluginConfigs.put(pluginDescriptor.getId(), PluginConfig.builder(pluginDescriptor)
+                        .setEnabled(true).build());
             }
         }
     }
@@ -100,7 +98,7 @@ public class ConfigService {
         if (pluginConfig == null) {
             logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId, Joiner
                     .on(", ").join(pluginConfigs.keySet()));
-            return PluginConfig.createDisabledHasNoDescriptor();
+            return PluginConfig.getDisabledInstance();
         } else {
             return pluginConfig;
         }

@@ -70,7 +70,7 @@ public class LevelOneAspect {
                                     "subnested1",
                                     ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return Message.withContextMap(traceDescription, contextMap);
+                    return Message.of(traceDescription, contextMap);
                 }
             };
             return pluginServices.startTrace(messageSupplier, metric);
