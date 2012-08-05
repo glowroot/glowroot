@@ -25,13 +25,13 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class TraceUiMain {
+public final class UiTestingMain {
 
     private static final int UI_PORT = 4000;
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceUiMain.class);
+    private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
-    private TraceUiMain() {}
+    private UiTestingMain() {}
 
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(UI_PORT, false);
