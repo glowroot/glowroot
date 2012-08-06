@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.SupplierOfNullable;
+import org.informantproject.api.Supplier;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 
@@ -62,7 +62,7 @@ public class Trace {
 
     private volatile boolean error;
 
-    private volatile SupplierOfNullable<String> username = SupplierOfNullable.ofInstance(null);
+    private volatile Supplier<String> username = Supplier.ofInstance(null);
 
     // attribute name ordering is maintained for consistent display
     // (assumption is order of entry is order of importance)
@@ -140,7 +140,7 @@ public class Trace {
         return stuck.get();
     }
 
-    public SupplierOfNullable<String> getUsername() {
+    public Supplier<String> getUsername() {
         return username;
     }
 
@@ -185,7 +185,7 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    void setUsername(SupplierOfNullable<String> username) {
+    void setUsername(Supplier<String> username) {
         this.username = username;
     }
 

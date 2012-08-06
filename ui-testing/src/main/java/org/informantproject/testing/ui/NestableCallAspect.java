@@ -25,7 +25,6 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
-import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -65,9 +64,9 @@ public class NestableCallAspect {
             Span span = pluginServices.startTrace(getRootMessageSupplier(), metric);
             int index = counter.getAndIncrement() % (USERNAMES.size() + 1);
             if (index < USERNAMES.size()) {
-                pluginServices.setUsername(SupplierOfNullable.ofInstance(USERNAMES.get(index)));
+                pluginServices.setUsername(Supplier.ofInstance(USERNAMES.get(index)));
             } else {
-                pluginServices.setUsername(SupplierOfNullable.ofInstance((String) null));
+                pluginServices.setUsername(Supplier.ofInstance((String) null));
             }
             return span;
         }

@@ -15,15 +15,18 @@
  */
 package org.informantproject.api;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 public abstract class Supplier<T> {
 
+    @Nullable
     public abstract T get();
 
-    public static <T> Supplier<T> ofInstance(final T reference) {
+    public static <T> Supplier<T> ofInstance(@Nullable final T reference) {
         return new Supplier<T>() {
             @Override
             public T get() {

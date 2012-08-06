@@ -25,7 +25,6 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
-import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
@@ -157,7 +156,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void setUsername(SupplierOfNullable<String> username) {
+    public void setUsername(Supplier<String> username) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");

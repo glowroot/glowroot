@@ -27,7 +27,6 @@ import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigListener;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
-import org.informantproject.api.SupplierOfNullable;
 import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
@@ -179,7 +178,7 @@ public class PluginServicesImpl extends PluginServices implements ConfigListener
     }
 
     @Override
-    public void setUsername(SupplierOfNullable<String> username) {
+    public void setUsername(Supplier<String> username) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUsername(username);
