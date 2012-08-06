@@ -27,6 +27,7 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.Suppliers;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectReturn;
@@ -101,7 +102,7 @@ public class ServletAspect {
                     // capture username now, don't use a lazy supplier
                     String username = getSessionAttributeTextValue(session,
                             sessionUsernameAttributePath);
-                    pluginServices.setUsername(Supplier.ofInstance(username));
+                    pluginServices.setUsername(Suppliers.ofInstance(username));
                 }
             }
             return span;
@@ -394,13 +395,13 @@ public class ServletAspect {
         if (sessionUsernameAttributePath != null) {
             // capture username now, don't use a lazy supplier
             if (sessionUsernameAttributePath.equals(name)) {
-                pluginServices.setUsername(Supplier.ofInstance(value.toString()));
+                pluginServices.setUsername(Suppliers.ofInstance(value.toString()));
             } else if (sessionUsernameAttributePath.startsWith(name + ".")) {
                 String username = getSessionAttributeTextValue(session,
                         sessionUsernameAttributePath);
                 if (username != null) {
                     // if username is absent, don't clear it by setting SupplierOfNullable.of(null)
-                    pluginServices.setUsername(Supplier.ofInstance(username));
+                    pluginServices.setUsername(Suppliers.ofInstance(username));
                 }
             }
         }

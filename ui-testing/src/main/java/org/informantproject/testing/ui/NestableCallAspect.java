@@ -25,6 +25,7 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.Suppliers;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -64,9 +65,9 @@ public class NestableCallAspect {
             Span span = pluginServices.startTrace(getRootMessageSupplier(), metric);
             int index = counter.getAndIncrement() % (USERNAMES.size() + 1);
             if (index < USERNAMES.size()) {
-                pluginServices.setUsername(Supplier.ofInstance(USERNAMES.get(index)));
+                pluginServices.setUsername(Suppliers.ofInstance(USERNAMES.get(index)));
             } else {
-                pluginServices.setUsername(Supplier.ofInstance((String) null));
+                pluginServices.setUsername(Suppliers.ofInstance((String) null));
             }
             return span;
         }
@@ -107,7 +108,6 @@ public class NestableCallAspect {
 
     private static Supplier<Message> getRootMessageSupplier() {
         return new Supplier<Message>() {
-            @Override
             public Message get() {
                 Map<String, ?> contextMap = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",

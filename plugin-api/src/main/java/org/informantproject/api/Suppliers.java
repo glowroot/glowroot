@@ -21,8 +21,15 @@ import javax.annotation.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Supplier<T> {
+public final class Suppliers {
 
-    @Nullable
-    T get();
+    private Suppliers() {}
+
+    public static <T> Supplier<T> ofInstance(@Nullable final T reference) {
+        return new Supplier<T>() {
+            public T get() {
+                return reference;
+            }
+        };
+    }
 }

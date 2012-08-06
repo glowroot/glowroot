@@ -27,7 +27,7 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PointcutMessageSupplier extends Supplier<Message> {
+public class PointcutMessageSupplier implements Supplier<Message> {
 
     private final String template;
     private final Object[] args;
@@ -49,7 +49,6 @@ public class PointcutMessageSupplier extends Supplier<Message> {
         hasReturnValue = true;
     }
 
-    @Override
     public Message get() {
         if (hasReturnValue) {
             List<Object> messageArgs = Lists.newArrayList(args);

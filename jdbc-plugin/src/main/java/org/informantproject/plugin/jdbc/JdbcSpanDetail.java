@@ -50,7 +50,7 @@ import org.informantproject.shaded.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class JdbcMessageSupplier extends Supplier<Message> {
+class JdbcMessageSupplier implements Supplier<Message> {
 
     private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
 
@@ -105,7 +105,6 @@ class JdbcMessageSupplier extends Supplier<Message> {
         this.connectionHashCode = connectionHashCode;
     }
 
-    @Override
     public Message get() {
         StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");

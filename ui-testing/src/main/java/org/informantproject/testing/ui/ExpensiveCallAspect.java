@@ -231,7 +231,6 @@ public class ExpensiveCallAspect {
             final ExpensiveCall expensive) {
 
         return new Supplier<Message>() {
-            @Override
             public Message get() {
                 Map<String, ?> contextMap = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",

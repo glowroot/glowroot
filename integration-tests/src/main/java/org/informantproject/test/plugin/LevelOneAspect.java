@@ -58,7 +58,6 @@ public class LevelOneAspect {
         @OnBefore
         public static Span onBefore(final String arg1, final String arg2) {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
-                @Override
                 public Message get() {
                     String traceDescription = Objects.firstNonNull(
                             pluginServices.getStringProperty("alternateDescription"), "Level One");

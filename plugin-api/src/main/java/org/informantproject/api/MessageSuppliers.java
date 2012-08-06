@@ -24,21 +24,21 @@ import java.util.Map;
 public final class MessageSuppliers {
 
     public static Supplier<Message> of(String message) {
-        return Supplier.ofInstance(Message.of(message));
+        return Suppliers.ofInstance(Message.of(message));
     }
 
     public static Supplier<Message> of(String template, Object... args) {
-        return Supplier.ofInstance(Message.of(template, args));
+        return Suppliers.ofInstance(Message.of(template, args));
     }
 
     public static Supplier<Message> of(String message, Map<String, ?> contextMap) {
-        return Supplier.ofInstance(Message.of(message, contextMap));
+        return Suppliers.ofInstance(Message.of(message, contextMap));
     }
 
     public static Supplier<Message> of(String template, Object[] args,
             Map<String, ?> contextMap) {
 
-        return Supplier.ofInstance(Message.of(template, args, contextMap));
+        return Suppliers.ofInstance(Message.of(template, args, contextMap));
     }
 
     private MessageSuppliers() {}

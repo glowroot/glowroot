@@ -53,7 +53,6 @@ public class LevelThreeAspect {
         @OnBefore
         public static Span onBefore(final String arg1, final String arg2) {
             Supplier<Message> messageSupplier = new Supplier<Message>() {
-                @Override
                 public Message get() {
                     return Message.of("Level Three",
                             ImmutableMap.of("arg1", arg1, "arg2", arg2));

@@ -41,7 +41,7 @@ import org.informantproject.shaded.google.common.collect.Maps;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ServletMessageSupplier extends Supplier<Message> {
+class ServletMessageSupplier implements Supplier<Message> {
 
     // TODO allow additional notation for session attributes to capture, e.g.
     // +currentControllerContext.key which would denote to capture the value of that attribute at
@@ -99,7 +99,6 @@ class ServletMessageSupplier extends Supplier<Message> {
         }
     }
 
-    @Override
     public Message get() {
         ImmutableMap.Builder<String, Object> mapBuilder = ImmutableMap.builder();
         addRequestParametersContextMap(mapBuilder);

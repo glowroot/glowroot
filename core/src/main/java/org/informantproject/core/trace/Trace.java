@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.Suppliers;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 
@@ -62,7 +63,7 @@ public class Trace {
 
     private volatile boolean error;
 
-    private volatile Supplier<String> username = Supplier.ofInstance(null);
+    private volatile Supplier<String> username = Suppliers.ofInstance(null);
 
     // attribute name ordering is maintained for consistent display
     // (assumption is order of entry is order of importance)
