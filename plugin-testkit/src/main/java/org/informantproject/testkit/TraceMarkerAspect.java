@@ -15,7 +15,7 @@
  */
 package org.informantproject.testkit;
 
-import org.informantproject.api.MessageSupplier;
+import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
@@ -46,7 +46,7 @@ public class TraceMarkerAspect {
         }
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startTrace(MessageSupplier.of("mock trace marker"), metric);
+            return pluginServices.startTrace(MessageSuppliers.of("mock trace marker"), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {

@@ -21,7 +21,7 @@ import java.util.Map;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class MessageSupplier {
+public final class MessageSuppliers {
 
     public static Supplier<Message> of(String message) {
         return Supplier.ofInstance(Message.of(message));
@@ -41,5 +41,5 @@ public final class MessageSupplier {
         return Supplier.ofInstance(Message.of(template, args, contextMap));
     }
 
-    private MessageSupplier() {}
+    private MessageSuppliers() {}
 }

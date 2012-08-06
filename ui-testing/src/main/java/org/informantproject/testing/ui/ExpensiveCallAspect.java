@@ -18,7 +18,7 @@ package org.informantproject.testing.ui;
 import java.util.Map;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.MessageSupplier;
+import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
@@ -224,7 +224,7 @@ public class ExpensiveCallAspect {
     }
 
     private static Supplier<Message> getMessageSupplier(ExpensiveCall expensive) {
-        return MessageSupplier.of(expensive.getDescription());
+        return MessageSuppliers.of(expensive.getDescription());
     }
 
     private static Supplier<Message> getMessageSupplierWithContextMap(

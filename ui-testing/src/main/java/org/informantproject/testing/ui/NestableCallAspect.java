@@ -20,7 +20,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.MessageSupplier;
+import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
@@ -98,7 +98,7 @@ public class NestableCallAspect {
                     + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
             pluginServices.putTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
                     + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
-            return pluginServices.startSpan(MessageSupplier.of("Nestable"), metric);
+            return pluginServices.startSpan(MessageSuppliers.of("Nestable"), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {

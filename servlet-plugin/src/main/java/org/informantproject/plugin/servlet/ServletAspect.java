@@ -22,7 +22,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.MessageSupplier;
+import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
@@ -313,7 +313,7 @@ public class ServletAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object listener) {
-            return pluginServices.startTrace(MessageSupplier.of("servlet context initialized"
+            return pluginServices.startTrace(MessageSuppliers.of("servlet context initialized"
                     + " ({{listener}})", listener.getClass().getName()), metric);
         }
         @OnAfter
@@ -333,7 +333,7 @@ public class ServletAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object servlet) {
-            return pluginServices.startTrace(MessageSupplier.of("servlet init ({{filter}})",
+            return pluginServices.startTrace(MessageSuppliers.of("servlet init ({{filter}})",
                     servlet.getClass().getName()), metric);
         }
         @OnAfter
@@ -353,7 +353,7 @@ public class ServletAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object filter) {
-            return pluginServices.startTrace(MessageSupplier.of("filter init ({{filter}})",
+            return pluginServices.startTrace(MessageSuppliers.of("filter init ({{filter}})",
                     filter.getClass().getName()), metric);
         }
         @OnAfter
@@ -377,7 +377,7 @@ public class ServletAspect {
         public static void onBefore(Integer sc) {
             if (sc >= 400) {
                 pluginServices.addErrorSpan(
-                        MessageSupplier.of("HttpServletResponse.setStatus(" + sc + ")"),
+                        MessageSuppliers.of("HttpServletResponse.setStatus(" + sc + ")"),
                         new Throwable());
             }
         }
