@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.shaded.google.common.base.Objects;
 import org.informantproject.shaded.google.common.base.Optional;
 import org.informantproject.shaded.google.common.collect.ImmutableMap;
@@ -113,7 +114,7 @@ class ServletMessageSupplier implements Supplier<Message> {
         } else {
             message = requestMethod + " " + requestURI;
         }
-        return Message.of(message, mapBuilder.build());
+        return TemplateMessage.of(message, mapBuilder.build());
     }
 
     boolean isRequestParameterMapCaptured() {

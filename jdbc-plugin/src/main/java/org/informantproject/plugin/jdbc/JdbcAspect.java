@@ -29,11 +29,11 @@ import javax.annotation.Nullable;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigListener;
 import org.informantproject.api.Span;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
@@ -450,7 +450,7 @@ public class JdbcAspect {
         @OnBefore
         public static Span onBefore(@InjectTarget Connection connection) {
             return pluginServices.startSpan(
-                    MessageSuppliers.of("jdbc commit [connection: {{hashCode}}]",
+                    TemplateMessage.of("jdbc commit [connection: {{hashCode}}]",
                             Integer.toHexString(connection.hashCode())), metric);
         }
         @OnAfter

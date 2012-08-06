@@ -15,11 +15,10 @@
  */
 package org.informantproject.test.plugin;
 
-import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -52,13 +51,8 @@ public class LevelThreeAspect {
 
         @OnBefore
         public static Span onBefore(final String arg1, final String arg2) {
-            Supplier<Message> messageSupplier = new Supplier<Message>() {
-                public Message get() {
-                    return Message.of("Level Three",
-                            ImmutableMap.of("arg1", arg1, "arg2", arg2));
-                }
-            };
-            return pluginServices.startSpan(messageSupplier, metric);
+            return pluginServices.startSpan(TemplateMessage.of("Level Three",
+                    ImmutableMap.of("arg1", arg1, "arg2", arg2)), metric);
         }
 
         @OnAfter

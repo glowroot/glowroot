@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.shaded.google.common.collect.Lists;
 
 /**
@@ -110,7 +111,7 @@ class JdbcMessageSupplier implements Supplier<Message> {
         sb.append("jdbc execution: ");
         if (batchedSqls != null) {
             appendBatchedSqls(sb);
-            return Message.of(sb.toString());
+            return TemplateMessage.of(sb.toString());
         }
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {
             // print out number of batches to make it easy to identify
@@ -137,7 +138,7 @@ class JdbcMessageSupplier implements Supplier<Message> {
             sb.append(Integer.toHexString(connectionHashCode));
         }
         sb.append("]");
-        return Message.of(sb.toString(), args);
+        return TemplateMessage.of(sb.toString(), args);
     }
 
     // TODO put row num and bind parameters in context map?

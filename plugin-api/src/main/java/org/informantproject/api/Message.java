@@ -15,22 +15,18 @@
  */
 package org.informantproject.api;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The context map can contain {@link String}, {@link Double}, {@link Boolean} and null value types.
  * It can also contain nested maps (which have the same restrictions on value types, including
  * additional levels of nested maps). The context map cannot have null keys.
  * 
- * As an extra bonus, it also handles org.informantproject.shaded.google.common.base.Optional which
- * is useful for Maps that do not accept null values, e.g.
- * org.informantproject.shaded.google.common.collect.ImmutableMap.
+ * As an extra bonus, context map can also contain
+ * org.informantproject.shaded.google.common.base.Optional values which is useful for Maps that do
+ * not accept null values, e.g. org.informantproject.shaded.google.common.collect.ImmutableMap.
  * 
  * The context map does not need to be thread safe as long as it is only instantiated in response to
  * either Supplier<Message>.get() or Message.getContext() which are called by the thread that needs
@@ -39,79 +35,10 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class Message {
+public interface Message {
 
-    private static final Logger logger = LoggerFactory.getLogger(Message.class);
-
-    private final String template;
-    @Nullable
-    private final Object[] args;
-    @Nullable
-    private final Map<String, ?> contextMap;
-
-    public static Message of(String message) {
-        return new Message(message, null, null);
-    }
-
-    public static Message of(String template, Object... args) {
-        return new Message(template, args, null);
-    }
-
-    public static Message of(String template, List<?> args) {
-        return new Message(template, args.toArray(), null);
-    }
-
-    public static Message of(String message, Map<String, ?> contextMap) {
-        return new Message(message, null, contextMap);
-    }
-
-    public static Message of(String template, Object[] args, Map<String, ?> contextMap) {
-        return new Message(template, args, contextMap);
-    }
-
-    private Message(String template, @Nullable Object[] args, @Nullable Map<String, ?> contextMap) {
-        this.template = template;
-        this.args = args;
-        this.contextMap = contextMap;
-    }
-
-    public String getText() {
-        StringBuilder text = new StringBuilder();
-        int curr = 0;
-        int next;
-        int argIndex = 0;
-        while ((next = template.indexOf("{{", curr)) != -1) {
-            text.append(template.substring(curr, next));
-            curr = next;
-            next = template.indexOf("}}", curr);
-            if (next == -1) {
-                logger.error("unclosed {{ in template: {}", template);
-                text.append(" -- error, unclosed {{ --");
-                break;
-            }
-            if (args == null || argIndex >= args.length) {
-                logger.error("not enough args provided for template: {}", template);
-                text.append(" -- error, not enough args --");
-                break;
-            }
-            text.append(args[argIndex++]);
-            curr = next + 2; // +2 to skip over "}}"
-        }
-        text.append(template.substring(curr));
-        return text.toString();
-    }
-
-    public String getTemplate() {
-        return template;
-    }
+    String getText();
 
     @Nullable
-    public Object[] getArgs() {
-        return args;
-    }
-
-    @Nullable
-    public Map<String, ?> getContextMap() {
-        return contextMap;
-    }
+    public Map<String, ?> getContextMap();
 }

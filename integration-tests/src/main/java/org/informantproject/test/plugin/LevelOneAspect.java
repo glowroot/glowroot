@@ -22,6 +22,7 @@ import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectThrowable;
 import org.informantproject.api.weaving.InjectTraveler;
@@ -69,7 +70,7 @@ public class LevelOneAspect {
                                     "subnested1",
                                     ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return Message.of(traceDescription, contextMap);
+                    return TemplateMessage.of(traceDescription, contextMap);
                 }
             };
             return pluginServices.startTrace(messageSupplier, metric);

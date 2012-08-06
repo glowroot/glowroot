@@ -15,10 +15,10 @@
  */
 package org.informantproject.testkit;
 
-import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -46,7 +46,7 @@ public class TraceMarkerAspect {
         }
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startTrace(MessageSuppliers.of("mock trace marker"), metric);
+            return pluginServices.startTrace(TemplateMessage.of("mock trace marker"), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {

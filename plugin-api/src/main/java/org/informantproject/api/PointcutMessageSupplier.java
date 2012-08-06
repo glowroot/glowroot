@@ -53,9 +53,9 @@ public class PointcutMessageSupplier implements Supplier<Message> {
         if (hasReturnValue) {
             List<Object> messageArgs = Lists.newArrayList(args);
             messageArgs.add(returnValue);
-            return Message.of(template + " => {{returnValue}}", messageArgs);
+            return TemplateMessage.of(template + " => {{returnValue}}", messageArgs);
         } else {
-            return Message.of(template, args);
+            return TemplateMessage.of(template, args);
         }
     }
 

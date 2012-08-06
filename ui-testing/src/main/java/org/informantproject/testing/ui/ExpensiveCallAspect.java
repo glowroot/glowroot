@@ -18,11 +18,11 @@ package org.informantproject.testing.ui;
 import java.util.Map;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTarget;
 import org.informantproject.api.weaving.InjectTraveler;
@@ -224,7 +224,7 @@ public class ExpensiveCallAspect {
     }
 
     private static Supplier<Message> getMessageSupplier(ExpensiveCall expensive) {
-        return MessageSuppliers.of(expensive.getDescription());
+        return TemplateMessage.of(expensive.getDescription());
     }
 
     private static Supplier<Message> getMessageSupplierWithContextMap(
@@ -236,7 +236,7 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.of(expensive.getDescription(), contextMap);
+                return TemplateMessage.of(expensive.getDescription(), contextMap);
             }
         };
     }

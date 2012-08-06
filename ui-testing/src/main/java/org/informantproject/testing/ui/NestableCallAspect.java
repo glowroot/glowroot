@@ -20,12 +20,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.MessageSuppliers;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.Suppliers;
+import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -98,7 +98,7 @@ public class NestableCallAspect {
                     + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
             pluginServices.putTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
                     + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
-            return pluginServices.startSpan(MessageSuppliers.of("Nestable"), metric);
+            return pluginServices.startSpan(TemplateMessage.of("Nestable"), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
@@ -113,7 +113,7 @@ public class NestableCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.of("Nestable with a very long description to test"
+                return TemplateMessage.of("Nestable with a very long description to test"
                         + " wrapping abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz",
                         contextMap);
             }
