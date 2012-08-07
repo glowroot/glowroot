@@ -22,7 +22,6 @@ import javax.annotation.Nullable;
 
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.local.trace.TraceCommonJsonService;
-import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,20 +35,21 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class TraceSummaryJsonService implements JsonService {
+class TraceSummaryJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
 
     private final TraceCommonJsonService traceCommonJsonService;
 
     @Inject
-    public TraceSummaryJsonService(TraceCommonJsonService traceCommonJsonService) {
+    TraceSummaryJsonService(TraceCommonJsonService traceCommonJsonService) {
         this.traceCommonJsonService = traceCommonJsonService;
     }
 
     // this method returns byte[] directly to avoid converting to it utf8 string and back again
+    @JsonServiceMethod
     @Nullable
-    public byte[] getSummary(String id) throws IOException {
+    byte[] getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
         ByteStream byteStreams = traceCommonJsonService.getStoredOrActiveTraceJson(id, false);
         if (byteStreams == null) {

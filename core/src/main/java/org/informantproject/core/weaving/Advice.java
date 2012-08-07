@@ -96,7 +96,7 @@ public class Advice {
     private final ParameterKind[] onThrowParameterKinds;
     private final ParameterKind[] onAfterParameterKinds;
 
-    static Advice from(Pointcut pointcut, Class<?> adviceClass) {
+    public static Advice from(Pointcut pointcut, Class<?> adviceClass) {
         return new Builder(pointcut, adviceClass).build();
     }
 

@@ -81,11 +81,11 @@ public class CoreConfig {
 
     private int metricPeriodMillis = 15000;
 
-    public static CoreConfig getDefaultInstance() {
+    static CoreConfig getDefaultInstance() {
         return new CoreConfig();
     }
 
-    public static Builder builder() {
+    static Builder builder() {
         return new Builder();
     }
 
@@ -187,7 +187,7 @@ public class CoreConfig {
                 maxEntries, rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
     }
 
-    public static class Builder {
+    static class Builder {
 
         private boolean enabled;
         private int thresholdMillis;
@@ -204,7 +204,7 @@ public class CoreConfig {
             copy(new CoreConfig());
         }
 
-        public Builder copy(CoreConfig base) {
+        Builder copy(CoreConfig base) {
             enabled = base.enabled;
             thresholdMillis = base.thresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
@@ -218,7 +218,7 @@ public class CoreConfig {
             return this;
         }
 
-        public CoreConfig build() {
+        CoreConfig build() {
             CoreConfig config = new CoreConfig();
             config.enabled = enabled;
             config.thresholdMillis = thresholdMillis;
@@ -233,7 +233,7 @@ public class CoreConfig {
             return config;
         }
 
-        public Builder setFromJson(JsonObject jsonObject) {
+        Builder setFromJson(JsonObject jsonObject) {
             if (jsonObject.get("thresholdMillis") != null) {
                 setThresholdMillis(jsonObject.get("thresholdMillis").getAsInt());
             }
@@ -267,52 +267,52 @@ public class CoreConfig {
             return this;
         }
 
-        public Builder setEnabled(boolean enabled) {
+        Builder setEnabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
 
-        public Builder setThresholdMillis(int thresholdMillis) {
+        Builder setThresholdMillis(int thresholdMillis) {
             this.thresholdMillis = thresholdMillis;
             return this;
         }
 
-        public Builder setStuckThresholdSeconds(int stuckThresholdSeconds) {
+        Builder setStuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
             return this;
         }
 
-        public Builder setProfilerInitialDelayMillis(int profilerInitialDelayMillis) {
+        Builder setProfilerInitialDelayMillis(int profilerInitialDelayMillis) {
             this.profilerInitialDelayMillis = profilerInitialDelayMillis;
             return this;
         }
 
-        public Builder setProfilerIntervalMillis(int profilerIntervalMillis) {
+        Builder setProfilerIntervalMillis(int profilerIntervalMillis) {
             this.profilerIntervalMillis = profilerIntervalMillis;
             return this;
         }
 
-        public Builder setSpanStackTraceThresholdMillis(int thresholdMillis) {
+        Builder setSpanStackTraceThresholdMillis(int thresholdMillis) {
             this.spanStackTraceThresholdMillis = thresholdMillis;
             return this;
         }
 
-        public Builder setMaxEntries(int maxEntries) {
+        Builder setMaxEntries(int maxEntries) {
             this.maxEntries = maxEntries;
             return this;
         }
 
-        public Builder setRollingSizeMb(int rollingSizeMb) {
+        Builder setRollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
         }
 
-        public Builder setWarnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
+        Builder setWarnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
             this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
             return this;
         }
 
-        public Builder setMetricPeriodMillis(int metricPeriodMillis) {
+        Builder setMetricPeriodMillis(int metricPeriodMillis) {
             this.metricPeriodMillis = metricPeriodMillis;
             return this;
         }

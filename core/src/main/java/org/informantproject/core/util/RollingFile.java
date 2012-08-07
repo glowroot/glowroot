@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,7 @@ public class RollingFile {
         }
     }
 
-    // only used by tests
+    @OnlyUsedByTests
     public void closeAndDeleteFile() throws IOException {
         logger.debug("closeAndDeleteFile()");
         close();

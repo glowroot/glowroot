@@ -77,7 +77,7 @@ public class HttpServer extends HttpServerBase {
     private final Gson gson = new Gson();
 
     @Inject
-    public HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
+    HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
@@ -298,9 +298,11 @@ public class HttpServer extends HttpServerBase {
         boolean withOptionalArg = true;
         Method method;
         try {
-            method = object.getClass().getMethod(methodName, getParameterTypes(args.length + 1));
+            method = object.getClass().getDeclaredMethod(methodName,
+                    getParameterTypes(args.length + 1));
         } catch (NoSuchMethodException e) {
-            method = object.getClass().getMethod(methodName, getParameterTypes(args.length));
+            method = object.getClass()
+                    .getDeclaredMethod(methodName, getParameterTypes(args.length));
             withOptionalArg = false;
         }
         if (withOptionalArg) {
@@ -350,17 +352,6 @@ public class HttpServer extends HttpServerBase {
         }
         return s;
     }
-
-    // marker interface
-    public interface JsonService {}
-
-    public interface HttpService {
-        @Nullable
-        HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException;
-    }
-
-    @SuppressWarnings("serial")
-    public static class PathNotFoundException extends Exception {}
 
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.PARAMETER)

@@ -50,7 +50,7 @@ public class StackCollector implements Runnable {
     private final Ticker ticker;
 
     @Inject
-    public StackCollector(TraceRegistry traceRegistry, ConfigService configService, Ticker ticker) {
+    StackCollector(TraceRegistry traceRegistry, ConfigService configService, Ticker ticker) {
         this.traceRegistry = traceRegistry;
         this.configService = configService;
         this.ticker = ticker;

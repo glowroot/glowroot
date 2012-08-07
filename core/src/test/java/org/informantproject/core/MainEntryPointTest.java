@@ -17,7 +17,7 @@ package org.informantproject.core;
 
 import java.util.Collection;
 
-import org.informantproject.core.util.Threads;
+import org.informantproject.core.util.UnitTests;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,15 +32,15 @@ public class MainEntryPointTest {
 
     @Before
     public void before() {
-        preExistingThreads = Threads.currentThreads();
+        preExistingThreads = UnitTests.currentThreads();
         MainEntryPoint.start("ui.port:0");
     }
 
     @After
     public void after() throws Exception {
-        Threads.preShutdownCheck(preExistingThreads);
+        UnitTests.preShutdownCheck(preExistingThreads);
         MainEntryPoint.shutdown();
-        Threads.postShutdownCheck(preExistingThreads);
+        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     @Test

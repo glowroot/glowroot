@@ -31,14 +31,14 @@ import com.google.common.base.Charsets;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class EchoHttpServer extends HttpServerBase {
+class EchoHttpServer extends HttpServerBase {
 
-    public EchoHttpServer() {
+    EchoHttpServer() {
         super(0);
     }
 
     @Override
-    public HttpResponse handleRequest(HttpRequest request, Channel channel) {
+    protected HttpResponse handleRequest(HttpRequest request, Channel channel) {
         String content = request.getContent().toString(Charsets.ISO_8859_1);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(content, Charsets.ISO_8859_1));

@@ -21,12 +21,11 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
-import org.informantproject.core.trace.TraceTestData;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.RollingFileTestProvider;
-import org.informantproject.core.util.Threads;
+import org.informantproject.core.util.UnitTests;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -55,7 +54,7 @@ public class TraceDaoTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = Threads.currentThreads();
+        preExistingThreads = UnitTests.currentThreads();
         if (dataSource.tableExists("trace")) {
             dataSource.execute("drop table trace");
         }
@@ -63,10 +62,10 @@ public class TraceDaoTest {
 
     @After
     public void after(DataSource dataSource, RollingFile rollingFile) throws Exception {
-        Threads.preShutdownCheck(preExistingThreads);
+        UnitTests.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
         rollingFile.closeAndDeleteFile();
-        Threads.postShutdownCheck(preExistingThreads);
+        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     @Test
@@ -75,10 +74,10 @@ public class TraceDaoTest {
         StoredTrace storedTrace = traceTestData.createTrace();
         traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0);
+        List<StoredTraceDuration> storedTraceDurations = traceDao.readStoredTraceDurations(0, 0, 0,
+                Long.MAX_VALUE, null, null);
+        StoredTrace storedTrace2 = traceDao.readStoredTrace(storedTraceDurations.get(0).getId());
         // then
-        assertThat(storedTraces).hasSize(1);
-        StoredTrace storedTrace2 = storedTraces.get(0);
         assertThat(storedTrace2.getStartAt()).isEqualTo(storedTrace.getStartAt());
         assertThat(storedTrace2.isStuck()).isEqualTo(storedTrace.isStuck());
         assertThat(storedTrace2.getId()).isEqualTo(storedTrace.getId());
@@ -97,8 +96,8 @@ public class TraceDaoTest {
         StoredTrace storedTrace = traceTestData.createTrace();
         traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0, storedTrace.getDuration(),
-                storedTrace.getDuration());
+        List<StoredTraceDuration> storedTraces = traceDao.readStoredTraceDurations(0, 0,
+                storedTrace.getDuration(), storedTrace.getDuration(), null, null);
         // then
         assertThat(storedTraces).hasSize(1);
     }
@@ -111,8 +110,8 @@ public class TraceDaoTest {
         StoredTrace storedTrace = traceTestData.createTrace();
         traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0,
-                storedTrace.getDuration() + 1, storedTrace.getDuration() + 2);
+        List<StoredTraceDuration> storedTraces = traceDao.readStoredTraceDurations(0, 0,
+                storedTrace.getDuration() + 1, storedTrace.getDuration() + 2, null, null);
         // then
         assertThat(storedTraces).isEmpty();
     }
@@ -125,8 +124,8 @@ public class TraceDaoTest {
         StoredTrace storedTrace = traceTestData.createTrace();
         traceDao.storeTrace(storedTrace);
         // when
-        List<StoredTrace> storedTraces = traceDao.readStoredTraces(0, 0,
-                storedTrace.getDuration() - 2, storedTrace.getDuration() - 1);
+        List<StoredTraceDuration> storedTraces = traceDao.readStoredTraceDurations(0, 0,
+                storedTrace.getDuration() - 2, storedTrace.getDuration() - 1, null, null);
         // then
         assertThat(storedTraces).isEmpty();
     }

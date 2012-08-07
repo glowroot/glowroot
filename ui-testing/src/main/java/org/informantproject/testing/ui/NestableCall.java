@@ -19,29 +19,25 @@ package org.informantproject.testing.ui;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class NestableCall {
+class NestableCall {
 
     private final NestableCall child;
     private final int numExpensiveCalls;
     private final int maxTimeMillis;
     private final int maxDescriptionLength;
 
-    public NestableCall() {
+    NestableCall() {
         this(0, 0, 0);
     }
 
-    public NestableCall(NestableCall child) {
-        this(child, 0, 0, 0);
-    }
-
-    public NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxDescriptionLength) {
+    NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxDescriptionLength) {
         this.child = null;
         this.numExpensiveCalls = numExpensiveCalls;
         this.maxTimeMillis = maxTimeMillis;
         this.maxDescriptionLength = maxDescriptionLength;
     }
 
-    public NestableCall(NestableCall child, int numExpensiveCalls, int maxTimeMillis,
+    NestableCall(NestableCall child, int numExpensiveCalls, int maxTimeMillis,
             int maxDescriptionLength) {
 
         this.child = child;
@@ -50,7 +46,7 @@ public class NestableCall {
         this.maxDescriptionLength = maxDescriptionLength;
     }
 
-    public void execute() throws InterruptedException {
+    void execute() throws InterruptedException {
         if (child != null) {
             child.execute();
         }

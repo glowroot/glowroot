@@ -21,19 +21,19 @@ import java.util.Random;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ExpensiveCall {
+class ExpensiveCall {
 
     private static final Random random = new Random();
 
     private final int maxTimeMillis;
     private final int maxDescriptionLength;
 
-    public ExpensiveCall(int maxTimeMillis, int maxDescriptionLength) {
+    ExpensiveCall(int maxTimeMillis, int maxDescriptionLength) {
         this.maxTimeMillis = maxTimeMillis;
         this.maxDescriptionLength = maxDescriptionLength;
     }
 
-    public void execute() {
+    void execute() {
         int route = random.nextInt(10);
         switch (route) {
         case 0:
@@ -69,7 +69,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute0() {
+    private void execute0() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -77,7 +77,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute1() {
+    private void execute1() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -85,7 +85,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute2() {
+    private void execute2() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -93,7 +93,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute3() {
+    private void execute3() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -101,7 +101,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute4() {
+    private void execute4() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -109,7 +109,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute5() {
+    private void execute5() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -117,7 +117,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute6() {
+    private void execute6() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -125,7 +125,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute7() {
+    private void execute7() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -133,7 +133,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute8() {
+    private void execute8() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {
@@ -141,7 +141,7 @@ public class ExpensiveCall {
         }
     }
 
-    public void execute9() {
+    private void execute9() {
         try {
             Thread.sleep(random.nextInt(maxTimeMillis));
         } catch (InterruptedException e) {

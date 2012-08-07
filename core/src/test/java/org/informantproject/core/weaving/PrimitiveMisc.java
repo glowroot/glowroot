@@ -34,5 +34,5 @@ public class PrimitiveMisc implements Misc {
     public void executeWithArgs(String one, int two) {}
 
     @SuppressWarnings("unused")
-    public void executePrimitive(int x, double y, long z, @Nullable byte[] b) {}
+    private void executePrimitive(int x, double y, long z, @Nullable byte[] b) {}
 }

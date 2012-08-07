@@ -37,6 +37,8 @@ public abstract class ByteStream {
 
     private static final Logger logger = LoggerFactory.getLogger(ByteStream.class);
 
+    protected ByteStream() {}
+
     public abstract boolean hasNext();
 
     public abstract byte[] next() throws IOException;

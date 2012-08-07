@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList;
  */
 // a ParsedType is never created for Object.class
 // Immutable
-public class ParsedType {
+class ParsedType {
 
     private final boolean missing;
 
@@ -60,42 +60,38 @@ public class ParsedType {
         this.methods = methods;
     }
 
-    public boolean isMissing() {
+    boolean isMissing() {
         return missing;
     }
 
-    public String getClassName() {
+    String getClassName() {
         // TODO cache result
         return name.replace('/', '.');
     }
 
     @Nullable
-    public String getSuperName() {
+    String getSuperName() {
         return superName;
     }
 
-    public List<String> getInterfaceNames() {
+    List<String> getInterfaceNames() {
         return interfaceNames;
     }
 
-    public List<ParsedMethod> getMethods() {
-        return methods;
-    }
-
     @Nullable
-    public ParsedMethod getMethod(String name, Type[] types) {
+    ParsedMethod getMethod(String name, Type[] types) {
         for (ParsedMethod method : methods) {
-            if (!method.getName().equals(name)) {
+            if (!method.name.equals(name)) {
                 continue;
             }
-            if (Arrays.equals(method.getArgs(), types)) {
+            if (Arrays.equals(method.args, types)) {
                 return method;
             }
         }
         return null;
     }
 
-    public static class ParsedMethod {
+    static class ParsedMethod {
 
         private final String name;
         private final Type[] args;
@@ -103,14 +99,6 @@ public class ParsedType {
         ParsedMethod(String name, Type[] args) {
             this.name = name;
             this.args = args;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Type[] getArgs() {
-            return args;
         }
     }
 }

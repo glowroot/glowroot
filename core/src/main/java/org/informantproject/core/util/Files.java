@@ -18,12 +18,10 @@ package org.informantproject.core.util;
 import java.io.File;
 import java.io.IOException;
 
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
+
 /**
- * Only used by tests, for creating and deleting temporary files and folders.
- * 
- * The placement of this class in the main Informant code base (and not inside of the tests folder)
- * is not ideal, but the alternative is to create a separate artifact (or at least classifier) for
- * this one class (now two classes, see also {@link Threads}), which also seems to be not ideal.
+ * Only used by tests (either directly or through methods that are {@link OnlyUsedByTests}).
  * 
  * @author Trask Stalnaker
  * @since 0.5

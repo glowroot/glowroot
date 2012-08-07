@@ -30,7 +30,7 @@ import org.informantproject.shaded.google.common.cache.LoadingCache;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class Beans {
+final class Beans {
 
     // TODO not sure if there is a retention cycle between Method and its class, so using weak keys
     // and weak values for now
@@ -53,7 +53,7 @@ public final class Beans {
     private Beans() {}
 
     @Nullable
-    public static Object value(@Nullable Object o, String[] path, int currIndex) {
+    static Object value(@Nullable Object o, String[] path, int currIndex) {
         if (o == null) {
             return null;
         } else if (currIndex == path.length) {

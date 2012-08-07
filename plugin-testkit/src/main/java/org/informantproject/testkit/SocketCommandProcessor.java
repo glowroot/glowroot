@@ -32,7 +32,6 @@ class SocketCommandProcessor implements Runnable {
 
     public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
     public static final String GET_PORT_COMMAND = "GET_PORT";
-    public static final String PING_COMMAND = "PING";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -88,7 +87,6 @@ class SocketCommandProcessor implements Runnable {
             }
         }
     }
-
     private static void executeApp(Class<?> appClass) throws Exception {
         AppUnderTest app = (AppUnderTest) appClass.newInstance();
         app.executeApp();

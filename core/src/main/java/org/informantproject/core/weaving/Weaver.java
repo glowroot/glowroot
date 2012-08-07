@@ -22,7 +22,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.weaving.Mixin;
-import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.weaving.WeavingClassVisitor.NothingToWeaveException;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -32,35 +31,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class Weaver implements Opcodes {
+class Weaver implements Opcodes {
 
-    static final Logger logger = LoggerFactory.getLogger(Weaver.class);
+    private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
     private final ParsedTypeCache parsedTypeCache;
 
-    public Weaver(List<Mixin> mixins, List<Advice> advisors, ClassLoader loader) {
+    Weaver(List<Mixin> mixins, List<Advice> advisors, ClassLoader loader) {
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
         parsedTypeCache = new ParsedTypeCache(loader);
     }
 
-    public byte[] weave(byte[] classBytes) {
+    byte[] weave(byte[] classBytes) {
         return weave(classBytes, (CodeSource) null);
     }
 
-    public byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain) {
+    byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain) {
         return weave(classBytes, protectionDomain.getCodeSource());
     }
 
-    public byte[] weave(byte[] classBytes, @Nullable CodeSource codeSource) {
+    private byte[] weave(byte[] classBytes, @Nullable CodeSource codeSource) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         ClassVisitor cv = new WeavingClassVisitor(mixins, advisors, parsedTypeCache, codeSource,
                 cw);
@@ -78,26 +76,5 @@ public class Weaver implements Opcodes {
             logger.error(e.getMessage(), e);
             return classBytes;
         }
-    }
-
-    public static List<Advice> getAdvisors(Class<?> aspectClass) {
-        List<Advice> advisors = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            if (memberClass.isAnnotationPresent(Pointcut.class)) {
-                Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
-                advisors.add(Advice.from(pointcut, memberClass));
-            }
-        }
-        return advisors;
-    }
-
-    public static List<Mixin> getMixins(Class<?> aspectClass) {
-        List<Mixin> mixins = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            if (memberClass.isAnnotationPresent(Mixin.class)) {
-                mixins.add(memberClass.getAnnotation(Mixin.class));
-            }
-        }
-        return mixins;
     }
 }

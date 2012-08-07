@@ -15,7 +15,7 @@
  */
 package org.informantproject.test;
 
-import org.informantproject.test.api.LevelOne;
+import org.informantproject.test.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.junit.AfterClass;

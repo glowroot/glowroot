@@ -65,15 +65,15 @@ public class PluginConfig {
     // map values are @Nullable
     private final Map<String, Object> properties = Maps.newHashMap();
 
-    public static PluginConfig getEnabledInstance() {
+    static PluginConfig getEnabledInstance() {
         return new PluginConfig(true, new HashMap<String, Object>());
     }
 
-    public static PluginConfig getDisabledInstance() {
+    static PluginConfig getDisabledInstance() {
         return new PluginConfig(false, new HashMap<String, Object>());
     }
 
-    public static Builder builder(PluginDescriptor pluginDescriptor) {
+    static Builder builder(PluginDescriptor pluginDescriptor) {
         return new Builder(pluginDescriptor);
     }
 
@@ -142,7 +142,7 @@ public class PluginConfig {
         }
     }
 
-    public String getNonHiddenPropertiesJson(PluginDescriptor pluginDescriptor) {
+    String getNonHiddenPropertiesJson(PluginDescriptor pluginDescriptor) {
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         try {
@@ -200,7 +200,7 @@ public class PluginConfig {
         return Objects.hashCode(enabled, properties);
     }
 
-    public static class Builder {
+    static class Builder {
 
         private static final Gson gson = new Gson();
 
@@ -217,13 +217,13 @@ public class PluginConfig {
             }
         }
 
-        public Builder copy(PluginConfig base) {
+        Builder copy(PluginConfig base) {
             this.enabled = base.enabled;
             properties.putAll(base.properties);
             return this;
         }
 
-        public Builder setEnabled(boolean enabled) {
+        Builder setEnabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
@@ -232,7 +232,7 @@ public class PluginConfig {
         // value which may be out of sync if the plugin has been updated and the given property has
         // changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        public Builder setProperty(String name, @Nullable Object value,
+        private Builder setProperty(String name, @Nullable Object value,
                 boolean ignoreExtraProperties) {
 
             PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
@@ -264,14 +264,12 @@ public class PluginConfig {
             return this;
         }
 
-        public Builder setProperties(JsonObject jsonObject) {
+        Builder setProperties(JsonObject jsonObject) {
             setProperties(jsonObject, false);
             return this;
         }
 
-        public Builder setProperties(JsonObject jsonObject,
-                boolean ignoreExtraProperties) {
-
+        private Builder setProperties(JsonObject jsonObject, boolean ignoreExtraProperties) {
             Map<String, Object> overlayProperties = gson.fromJson(jsonObject,
                     new TypeToken<Map<String, Object>>() {}.getType());
             // overlay new values
@@ -287,7 +285,7 @@ public class PluginConfig {
             return this;
         }
 
-        public PluginConfig build() {
+        PluginConfig build() {
             return new PluginConfig(enabled, properties);
         }
     }

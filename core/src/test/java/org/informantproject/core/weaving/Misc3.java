@@ -21,5 +21,5 @@ package org.informantproject.core.weaving;
  */
 public interface Misc3 {
 
-    public Misc3 identity(BasicMisc x);
+    Misc3 identity(BasicMisc x);
 }

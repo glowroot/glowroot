@@ -22,7 +22,7 @@ import java.util.Collection;
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.config.CoreConfigTestData;
-import org.informantproject.core.util.Threads;
+import org.informantproject.core.util.UnitTests;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class LocalHttpHandlerTest {
 
     @Before
     public void before() {
-        preExistingThreads = Threads.currentThreads();
+        preExistingThreads = UnitTests.currentThreads();
         MainEntryPoint.start("ui.port:0");
         asyncHttpClient = new AsyncHttpClient();
     }
@@ -62,9 +62,9 @@ public class LocalHttpHandlerTest {
         // TODO remove this sleep (and comment above) once the patch is accepted
         // and a new release of async-http-client is available
         Thread.sleep(200);
-        Threads.preShutdownCheck(preExistingThreads);
+        UnitTests.preShutdownCheck(preExistingThreads);
         MainEntryPoint.shutdown();
-        Threads.postShutdownCheck(preExistingThreads);
+        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     @Test

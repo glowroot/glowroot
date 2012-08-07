@@ -21,8 +21,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.weaving.Mixin;
+import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.weaving.Advice;
-import org.informantproject.core.weaving.Weaver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +67,8 @@ public class PluginDescriptor {
                 // will probably call PluginServices.get()
                 Class<?> aspectClass = Class.forName(aspect, false,
                         PluginDescriptor.class.getClassLoader());
-                advisors.addAll(Weaver.getAdvisors(aspectClass));
-                mixins.addAll(Weaver.getMixins(aspectClass));
+                advisors.addAll(getAdvisors(aspectClass));
+                mixins.addAll(getMixins(aspectClass));
             } catch (ClassNotFoundException e) {
                 continue;
             }
@@ -114,7 +114,7 @@ public class PluginDescriptor {
     }
 
     @Nullable
-    public PropertyDescriptor getPropertyDescriptor(String propertyName) {
+    PropertyDescriptor getPropertyDescriptor(String propertyName) {
         return propertyDescriptorsByName.get(propertyName);
     }
 
@@ -133,6 +133,27 @@ public class PluginDescriptor {
         return Objects.hashCode(groupId, artifactId);
     }
 
+    private static List<Advice> getAdvisors(Class<?> aspectClass) {
+        List<Advice> advisors = Lists.newArrayList();
+        for (Class<?> memberClass : aspectClass.getClasses()) {
+            if (memberClass.isAnnotationPresent(Pointcut.class)) {
+                Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
+                advisors.add(Advice.from(pointcut, memberClass));
+            }
+        }
+        return advisors;
+    }
+
+    private static List<Mixin> getMixins(Class<?> aspectClass) {
+        List<Mixin> mixins = Lists.newArrayList();
+        for (Class<?> memberClass : aspectClass.getClasses()) {
+            if (memberClass.isAnnotationPresent(Mixin.class)) {
+                mixins.add(memberClass.getAnnotation(Mixin.class));
+            }
+        }
+        return mixins;
+    }
+
     public static class PropertyDescriptor {
         private final String prompt;
         private final String name;
@@ -142,7 +163,7 @@ public class PluginDescriptor {
         private final boolean hidden;
         @Nullable
         private final String description;
-        public PropertyDescriptor(String prompt, String name, String type,
+        PropertyDescriptor(String prompt, String name, String type,
                 @Nullable Object defaultValue, boolean hidden, @Nullable String description) {
             this.prompt = prompt;
             this.name = name;

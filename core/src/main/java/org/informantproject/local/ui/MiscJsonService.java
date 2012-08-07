@@ -21,7 +21,6 @@ import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.trace.TraceSinkLocal;
-import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +36,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MiscJsonService implements JsonService {
+class MiscJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(MiscJsonService.class);
 
@@ -47,7 +46,7 @@ public class MiscJsonService implements JsonService {
     private final Clock clock;
 
     @Inject
-    public MiscJsonService(TraceDao traceDao, TraceSinkLocal traceSinkLocal, DataSource dataSource,
+    MiscJsonService(TraceDao traceDao, TraceSinkLocal traceSinkLocal, DataSource dataSource,
             Clock clock) {
 
         this.traceDao = traceDao;
@@ -56,8 +55,8 @@ public class MiscJsonService implements JsonService {
         this.clock = clock;
     }
 
-    // called dynamically from HttpServer
-    public void clearData(String message) {
+    @JsonServiceMethod
+    void clearData(String message) {
         logger.debug("handleCleardata(): message={}", message);
         JsonObject request = new JsonParser().parse(message).getAsJsonObject();
         long keepMillis = request.get("keepMillis").getAsLong();
@@ -76,14 +75,14 @@ public class MiscJsonService implements JsonService {
         }
     }
 
-    // called dynamically from HttpServer
-    public String getNumPendingTraceWrites() {
+    @JsonServiceMethod
+    String getNumPendingTraceWrites() {
         logger.debug("handleNumPendingTraceWrites()");
         return Integer.toString(traceSinkLocal.getQueueLength());
     }
 
-    // called dynamically from HttpServer
-    public String getDbFilePath() {
+    @JsonServiceMethod
+    String getDbFilePath() {
         return dataSource.getDbFile().getAbsolutePath();
     }
 }

@@ -48,7 +48,7 @@ public class MetricCache {
             });
 
     @Inject
-    public MetricCache(Ticker ticker) {
+    MetricCache(Ticker ticker) {
         this.ticker = ticker;
     }
 
@@ -64,9 +64,5 @@ public class MetricCache {
         } else {
             return metrics.getUnchecked(pointcut.metricName());
         }
-    }
-
-    public Metric getMetric(String name) {
-        return metrics.getUnchecked(name);
     }
 }

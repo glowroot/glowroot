@@ -27,7 +27,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.informantproject.core.util.XmlDocuments;
-import org.informantproject.local.ui.PluginJsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -85,13 +84,13 @@ public class Plugins {
         return installedPluginDescriptors.get();
     }
 
-    public static PluginDescriptor getDescriptor(String pluginId) {
+    static PluginDescriptor getDescriptor(String pluginId) {
         return pluginDescriptorMap.get().get(pluginId);
     }
 
     private static Collection<PluginDescriptor> readInstalledPlugins() {
         try {
-            Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
+            Enumeration<URL> e = Plugins.class.getClassLoader().getResources(
                     "META-INF/org.informantproject.plugin.xml");
             List<PluginDescriptor> plugins = Lists.newArrayList();
             while (e.hasMoreElements()) {
@@ -116,7 +115,7 @@ public class Plugins {
 
     private static Collection<PluginDescriptor> readPackagedPlugins() {
         try {
-            Enumeration<URL> e = PluginJsonService.class.getClassLoader().getResources(
+            Enumeration<URL> e = Plugins.class.getClassLoader().getResources(
                     "META-INF/org.informantproject.package.xml");
             if (!e.hasMoreElements()) {
                 return ImmutableList.of();

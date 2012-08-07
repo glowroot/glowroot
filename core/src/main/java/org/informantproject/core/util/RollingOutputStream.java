@@ -24,11 +24,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Needs to be externally synchronized around startBlock()/write()/endBlock()
+ * Needs to be externally synchronized around startBlock()/write()/endBlock().
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -42,10 +43,8 @@ class RollingOutputStream extends OutputStream {
 
     private static final int FSYNC_INTERVAL_MILLIS = 2000;
 
-    public static final int HEADER_CURR_INDEX_POS = 0;
-    public static final int HEADER_CURR_FIXED_LENGTH_POS = 8;
-    public static final int HEADER_COMPACTION_OFFSET_POS = 12;
-    public static final int HEADER_SKIP_BYTES = 20;
+    private static final int HEADER_CURR_INDEX_POS = 0;
+    static final int HEADER_SKIP_BYTES = 20;
 
     private final File rollingFile;
     private RandomAccessFile out;
@@ -194,7 +193,7 @@ class RollingOutputStream extends OutputStream {
         out.seek(HEADER_SKIP_BYTES + currPosition);
     }
 
-    // just for unit testing
+    @OnlyUsedByTests
     void sync() throws IOException {
         out.getFD().sync();
     }

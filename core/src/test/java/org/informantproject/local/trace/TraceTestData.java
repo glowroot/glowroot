@@ -13,33 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.trace;
+package org.informantproject.local.trace;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.Clock;
-import org.informantproject.local.trace.StoredTrace;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceTestData {
+@Singleton
+class TraceTestData {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final Clock clock;
 
     @Inject
-    public TraceTestData(Clock clock) {
+    TraceTestData(Clock clock) {
         this.clock = clock;
     }
 
-    public StoredTrace createTrace() {
+    StoredTrace createTrace() {
         return StoredTrace.builder()
                 .id("abc" + counter.getAndIncrement())
                 .startAt(clock.currentTimeMillis() - 10)

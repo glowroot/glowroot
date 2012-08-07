@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import org.informantproject.core.util.Clock;
 import org.informantproject.local.metric.MetricDao;
 import org.informantproject.local.metric.Point;
-import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MetricJsonService implements JsonService {
+class MetricJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricJsonService.class);
 
@@ -51,13 +50,13 @@ public class MetricJsonService implements JsonService {
     private final Gson gson = new Gson();
 
     @Inject
-    public MetricJsonService(MetricDao metricDao, Clock clock) {
+    MetricJsonService(MetricDao metricDao, Clock clock) {
         this.metricDao = metricDao;
         this.clock = clock;
     }
 
-    // called dynamically from HttpServer
-    public String getMetrics(String message) throws IOException {
+    @JsonServiceMethod
+    String getMetrics(String message) throws IOException {
         logger.debug("handleRead(): message={}", message);
         MetricRequest request = gson.fromJson(message, MetricRequest.class);
         if (request.getStart() < 0) {

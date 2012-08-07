@@ -23,17 +23,15 @@ import java.io.RandomAccessFile;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class RandomAccessFiles {
+final class RandomAccessFiles {
 
     private RandomAccessFiles() {}
 
-    public static int readFully(RandomAccessFile in, byte[] b) throws IOException {
+    static int readFully(RandomAccessFile in, byte[] b) throws IOException {
         return readFully(in, b, 0, b.length);
     }
 
-    public static int readFully(RandomAccessFile in, byte[] b, int off, int len)
-            throws IOException {
-
+    static int readFully(RandomAccessFile in, byte[] b, int off, int len) throws IOException {
         int total = 0;
         while (total < len) {
             int result = in.read(b, off + total, len - total);
@@ -48,7 +46,7 @@ public final class RandomAccessFiles {
         return total;
     }
 
-    public static void copyFully(RandomAccessFile in, RandomAccessFile out, long numBytes)
+    static void copyFully(RandomAccessFile in, RandomAccessFile out, long numBytes)
             throws IOException {
 
         byte[] block = new byte[1024];

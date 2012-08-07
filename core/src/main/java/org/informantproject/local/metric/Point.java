@@ -29,7 +29,11 @@ public class Point {
     private final long capturedAt;
     private final double value;
 
-    public Point(long capturedAt, double value) {
+    static Point from(long capturedAt, double value) {
+        return new Point(capturedAt, value);
+    }
+
+    private Point(long capturedAt, double value) {
         this.capturedAt = capturedAt;
         this.value = value;
     }

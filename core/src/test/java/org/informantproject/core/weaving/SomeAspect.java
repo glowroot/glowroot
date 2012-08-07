@@ -511,12 +511,12 @@ public class SomeAspect {
         }
     }
 
-    public static class IntegerThreadLocal extends ThreadLocal<Integer> {
+    static class IntegerThreadLocal extends ThreadLocal<Integer> {
         @Override
-        public Integer initialValue() {
+        protected Integer initialValue() {
             return 0;
         }
-        public void increment() {
+        private void increment() {
             set(get() + 1);
         }
     }

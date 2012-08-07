@@ -62,7 +62,7 @@ public class Informant {
         return validateAndReturnBody(response);
     }
 
-    public String post(String path, String data) throws Exception {
+    private String post(String path, String data) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + uiPort
                 + path);
         request.setBody(data);

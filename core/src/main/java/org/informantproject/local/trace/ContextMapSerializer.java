@@ -84,7 +84,7 @@ class ContextMapSerializer {
             write((Map<?, ?>) value);
         } else if (SHADED_OPTIONAL_CLASS.isAssignableFrom(value.getClass())) {
             // this is hackery to make informant plugin unit tests (e.g. ServletPluginTest) pass
-            // inside eclipse when running against unshaded informant-core
+            // inside an IDE when running against unshaded informant-core
             //
             // informant plugins are compiled directly against shaded guava, so when they pass a
             // context map with a value of type Optional, it is the shaded Optional class

@@ -39,7 +39,7 @@ public class HttpServerTest {
 
     @Before
     public void before() {
-        preExistingThreads = Threads.currentThreads();
+        preExistingThreads = UnitTests.currentThreads();
         httpServer = new EchoHttpServer();
         asyncHttpClient = new AsyncHttpClient();
     }
@@ -49,9 +49,9 @@ public class HttpServerTest {
         // asyncHttpClient is not part of the system under test, so it can be shut down
         // first before checking for non-daemon threads
         asyncHttpClient.close();
-        Threads.preShutdownCheck(preExistingThreads);
+        UnitTests.preShutdownCheck(preExistingThreads);
         httpServer.close();
-        Threads.postShutdownCheck(preExistingThreads);
+        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     @Test

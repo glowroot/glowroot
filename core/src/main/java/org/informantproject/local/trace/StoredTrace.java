@@ -28,7 +28,7 @@ import com.google.common.base.Objects.ToStringHelper;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class StoredTrace {
+class StoredTrace {
 
     private final String id;
     private final long startAt;
@@ -69,56 +69,56 @@ public class StoredTrace {
         this.mergedStackTree = mergedStackTree;
     }
 
-    public String getId() {
+    String getId() {
         return id;
     }
 
-    public long getStartAt() {
+    long getStartAt() {
         return startAt;
     }
 
-    public boolean isStuck() {
+    boolean isStuck() {
         return stuck;
     }
 
-    protected boolean isError() {
+    boolean isError() {
         return error;
     }
 
-    public long getDuration() {
+    long getDuration() {
         return duration;
     }
 
-    public boolean isCompleted() {
+    boolean isCompleted() {
         return completed;
     }
 
-    public String getDescription() {
+    String getDescription() {
         return description;
     }
 
     @Nullable
-    public String getUsername() {
+    String getUsername() {
         return username;
     }
 
     @Nullable
-    public String getAttributes() {
+    String getAttributes() {
         return attributes;
     }
 
     @Nullable
-    public String getMetrics() {
+    String getMetrics() {
         return metrics;
     }
 
     @Nullable
-    public ByteStream getSpans() {
+    ByteStream getSpans() {
         return spans;
     }
 
     @Nullable
-    public ByteStream getMergedStackTree() {
+    ByteStream getMergedStackTree() {
         return mergedStackTree;
     }
 
@@ -137,11 +137,11 @@ public class StoredTrace {
         return toStringHelper.toString();
     }
 
-    public static Builder builder() {
+    static Builder builder() {
         return new Builder();
     }
 
-    public static class Builder {
+    static class Builder {
 
         private String id;
         private long startAt;
@@ -163,67 +163,67 @@ public class StoredTrace {
 
         private Builder() {}
 
-        public Builder id(String id) {
+        Builder id(String id) {
             this.id = id;
             return this;
         }
 
-        public Builder startAt(long startAt) {
+        Builder startAt(long startAt) {
             this.startAt = startAt;
             return this;
         }
 
-        public Builder stuck(boolean stuck) {
+        Builder stuck(boolean stuck) {
             this.stuck = stuck;
             return this;
         }
 
-        public Builder error(boolean error) {
+        Builder error(boolean error) {
             this.error = error;
             return this;
         }
 
-        public Builder duration(long duration) {
+        Builder duration(long duration) {
             this.duration = duration;
             return this;
         }
 
-        public Builder completed(boolean completed) {
+        Builder completed(boolean completed) {
             this.completed = completed;
             return this;
         }
 
-        public Builder description(String description) {
+        Builder description(String description) {
             this.description = description;
             return this;
         }
 
-        public Builder username(@Nullable String username) {
+        Builder username(@Nullable String username) {
             this.username = username;
             return this;
         }
 
-        public Builder attributes(@Nullable String attributes) {
+        Builder attributes(@Nullable String attributes) {
             this.attributes = attributes;
             return this;
         }
 
-        public Builder metrics(@Nullable String metrics) {
+        Builder metrics(@Nullable String metrics) {
             this.metrics = metrics;
             return this;
         }
 
-        public Builder spans(@Nullable ByteStream spans) {
+        Builder spans(@Nullable ByteStream spans) {
             this.spans = spans;
             return this;
         }
 
-        public Builder mergedStackTree(@Nullable ByteStream mergedStackTree) {
+        Builder mergedStackTree(@Nullable ByteStream mergedStackTree) {
             this.mergedStackTree = mergedStackTree;
             return this;
         }
 
-        public StoredTrace build() {
+        StoredTrace build() {
             return new StoredTrace(id, startAt, stuck, error, duration, completed, description,
                     username, attributes, metrics, spans, mergedStackTree);
         }

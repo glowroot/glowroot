@@ -22,7 +22,7 @@ import java.util.Collection;
 
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
-import org.informantproject.core.util.Threads;
+import org.informantproject.core.util.UnitTests;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.jukito.TestSingleton;
@@ -49,7 +49,7 @@ public class ConfigDaoCoreTest {
 
     @Before
     public void before(DataSource dataSource) throws SQLException {
-        preExistingThreads = Threads.currentThreads();
+        preExistingThreads = UnitTests.currentThreads();
         if (dataSource.tableExists("config")) {
             dataSource.execute("drop table config");
         }
@@ -57,9 +57,9 @@ public class ConfigDaoCoreTest {
 
     @After
     public void after(DataSource dataSource) throws Exception {
-        Threads.preShutdownCheck(preExistingThreads);
+        UnitTests.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
-        Threads.postShutdownCheck(preExistingThreads);
+        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     @Test

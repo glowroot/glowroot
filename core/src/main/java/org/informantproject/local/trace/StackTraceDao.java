@@ -84,7 +84,7 @@ public class StackTraceDao {
         this.valid = !errorOnInit;
     }
 
-    public void storeStackTraces(Map<String, String> stackTraces) {
+    void storeStackTraces(Map<String, String> stackTraces) {
         logger.debug("storeStackTraces()");
         if (!valid) {
             return;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.test.api;
+package org.informantproject.test;
 
 import javax.annotation.Nullable;
 
@@ -21,21 +21,21 @@ import javax.annotation.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LevelTwo {
+class LevelTwo {
 
     @Nullable
     private final Exception exception;
 
-    public LevelTwo() {
+    LevelTwo() {
         this(null);
     }
 
-    public LevelTwo(@Nullable Exception e) {
+    LevelTwo(@Nullable Exception e) {
         exception = e;
     }
 
     // this method corresponds to LevelTwoAspect
-    public void call(String arg1, String arg2) throws Exception {
+    void call(String arg1, String arg2) throws Exception {
         new LevelThree(exception).call(arg1 + "y", arg2 + "y");
     }
 }

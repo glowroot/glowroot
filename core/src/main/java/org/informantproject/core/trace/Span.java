@@ -116,7 +116,7 @@ public class Span {
         this.error = error;
     }
 
-    void setStackTraceElements(@Nullable StackTraceElement[] stackTraceElements) {
+    public void setStackTraceElements(@Nullable StackTraceElement[] stackTraceElements) {
         this.stackTraceElements = stackTraceElements;
     }
 }

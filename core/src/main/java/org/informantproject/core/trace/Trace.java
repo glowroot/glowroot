@@ -81,7 +81,7 @@ public class Trace {
     // stack trace data constructed from sampled stack traces
     // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
     // and early initialization would use up memory unnecessarily
-    private volatile MergedStackTree mergedStackTreeSupplier = new MergedStackTree();
+    private volatile MergedStackTree mergedStackTree = new MergedStackTree();
 
     // the thread is needed so that stack traces can be taken from a different thread
     // a weak reference is used just to be safe and make sure it can't accidentally prevent a thread
@@ -97,7 +97,7 @@ public class Trace {
 
     private final Ticker ticker;
 
-    Trace(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier,
+    public Trace(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier,
             Clock clock, Ticker ticker) {
 
         this.ticker = ticker;
@@ -162,7 +162,7 @@ public class Trace {
     }
 
     public MergedStackTree getMergedStackTree() {
-        return mergedStackTreeSupplier;
+        return mergedStackTree;
     }
 
     @Nullable
@@ -186,11 +186,11 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    void setUsername(Supplier<String> username) {
+    public void setUsername(Supplier<String> username) {
         this.username = username;
     }
 
-    void putAttribute(String name, @Nullable String value) {
+    public void putAttribute(String name, @Nullable String value) {
         // write to orderedAttributeNames only happen in a single thread (the trace thread), so no
         // race condition worries here
         for (TraceAttribute attribute : attributes) {
@@ -217,11 +217,13 @@ public class Trace {
         if (thread != null) {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
-            mergedStackTreeSupplier.addStackTrace(threadInfo);
+            mergedStackTree.addStackTrace(threadInfo);
         }
     }
 
-    Span pushSpan(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier) {
+    public Span pushSpan(MetricImpl metric,
+            org.informantproject.api.Supplier<Message> messageSupplier) {
+
         long startTick = ticker.read();
         TraceMetric traceMetric = metric.startInternal(startTick);
         Span span = rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
@@ -233,7 +235,7 @@ public class Trace {
         return span;
     }
 
-    Span addSpan(org.informantproject.api.Supplier<Message> messageSupplier, boolean error) {
+    public Span addSpan(org.informantproject.api.Supplier<Message> messageSupplier, boolean error) {
         Span span = rootSpan.addSpan(ticker.read(), messageSupplier, error);
         if (error) {
             this.error = true;
@@ -241,14 +243,10 @@ public class Trace {
         return span;
     }
 
-    void popSpan(Span span, long endTick) {
-        popSpan(span, endTick, false);
-    }
-
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long endTick, boolean error) {
+    public void popSpan(Span span, long endTick, boolean error) {
         if (error) {
             this.error = true;
         }
@@ -259,7 +257,7 @@ public class Trace {
         }
     }
 
-    TraceMetric startTraceMetric(MetricImpl metric) {
+    public TraceMetric startTraceMetric(MetricImpl metric) {
         TraceMetric traceMetric = metric.startInternal();
         if (traceMetric.isFirstStart()) {
             metrics.add(metric);

@@ -26,9 +26,10 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.store.FileLister;
 import org.informantproject.api.PluginServices;
+import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
-import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.informantproject.core.weaving.InformantClassFileTransformer;
 import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
@@ -131,22 +132,17 @@ public final class MainEntryPoint {
         }
     }
 
-    // only used by tests
-    public static void start() {
-        start(AgentArgs.from(""));
-    }
-
-    // only used by tests
+    @OnlyUsedByTests
     public static void start(String agentArgs) {
         start(AgentArgs.from(agentArgs));
     }
 
-    // only used by tests
+    @OnlyUsedByTests
     public static int getPort() {
         return injector.getInstance(HttpServer.class).getPort();
     }
 
-    // only used by tests
+    @OnlyUsedByTests
     public static void shutdown() {
         logger.debug("shutdown()");
         synchronized (lock) {

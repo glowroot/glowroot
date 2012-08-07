@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.jdbc.JdbcConnection;
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -299,7 +300,7 @@ public class DataSource {
         }
     }
 
-    public void createIndex(String tableName, Index index) throws SQLException {
+    private void createIndex(String tableName, Index index) throws SQLException {
         StringBuilder sql = new StringBuilder();
         sql.append("create index " + index.getName() + " on " + tableName + " (");
         for (int i = 0; i < index.getColumns().size(); i++) {
@@ -338,7 +339,7 @@ public class DataSource {
     }
 
     // must pass in indexes ordered by index name
-    public boolean indexesNeedsUpgrade(String tableName, List<Index> indexes) throws SQLException {
+    private boolean indexesNeedsUpgrade(String tableName, List<Index> indexes) throws SQLException {
         synchronized (lock) {
             ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
                     tableName.toUpperCase(Locale.ENGLISH), false, false);
@@ -368,7 +369,7 @@ public class DataSource {
         }
     }
 
-    // only used by tests
+    @OnlyUsedByTests
     public void closeAndDeleteFile() throws SQLException, IOException {
         logger.debug("closeAndDeleteFile()");
         close();
@@ -429,10 +430,6 @@ public class DataSource {
         } else {
             return new JdbcConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", props);
         }
-    }
-
-    public interface ConnectionCallback<T> {
-        T doWithConnection(Connection connection) throws SQLException;
     }
 
     public interface RowMapper<T> {

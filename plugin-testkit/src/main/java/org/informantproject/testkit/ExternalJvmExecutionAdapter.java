@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DaemonExecutors;
+import org.informantproject.core.util.UnitTests;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
 
 import com.google.common.base.Strings;
@@ -50,7 +51,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
-        String javaagentArg = "-javaagent:" + findInformantCoreJarPath(classpath);
+        String javaagentArg = "-javaagent:" + UnitTests.findInformantCoreJarFile();
         if (!Strings.isNullOrEmpty(agentArgs)) {
             javaagentArg += "=" + agentArgs;
         }
@@ -118,17 +119,5 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
             // log error and exit gracefully
             logger.error(t.getMessage(), t);
         }
-    }
-
-    private static String findInformantCoreJarPath(String classpath) {
-        String[] classpathElements = classpath.split(File.pathSeparator);
-        for (String classpathElement : classpathElements) {
-            if (new File(classpathElement).getName().matches(
-                    "informant-core-[0-9.]+(-SNAPSHOT)?.jar")) {
-                return classpathElement;
-            }
-        }
-        throw new IllegalStateException("Unable to find informant-core.jar on the classpath: "
-                + classpath);
     }
 }

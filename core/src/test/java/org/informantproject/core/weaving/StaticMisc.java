@@ -31,5 +31,5 @@ public class StaticMisc implements Misc {
 
     public void executeWithArgs(String one, int two) {}
 
-    public static void executeStatic() {}
+    private static void executeStatic() {}
 }

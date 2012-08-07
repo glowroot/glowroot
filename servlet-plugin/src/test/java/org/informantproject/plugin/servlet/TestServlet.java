@@ -15,8 +15,6 @@
  */
 package org.informantproject.plugin.servlet;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,17 +28,18 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * @since 0.5
  */
 @SuppressWarnings("serial")
-public class TestServlet extends HttpServlet implements AppUnderTest {
+class TestServlet extends HttpServlet implements AppUnderTest {
 
     public void executeApp() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/testservlet");
         MockHttpServletResponse response = new MockHttpServletResponse();
         before(request, response);
-        service((ServletRequest) request, (ServletResponse) response);
+        service(request, response);
     }
 
-    @SuppressWarnings("unused")
-    protected void before(HttpServletRequest request, HttpServletResponse response) {}
+    // hook for subclasses
+    protected void before(@SuppressWarnings("unused") HttpServletRequest request,
+            @SuppressWarnings("unused") HttpServletResponse response) {}
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {}

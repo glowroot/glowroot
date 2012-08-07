@@ -29,7 +29,6 @@ import org.informantproject.core.util.Clock;
 import org.informantproject.local.trace.StoredTraceDuration;
 import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.trace.TraceDao.StringComparator;
-import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class TracePointJsonService implements JsonService {
+class TracePointJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
 
@@ -62,7 +61,7 @@ public class TracePointJsonService implements JsonService {
     private final Gson gson = new Gson();
 
     @Inject
-    public TracePointJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
+    TracePointJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
             ConfigService configService, Ticker ticker, Clock clock) {
 
         this.traceDao = traceDao;
@@ -72,8 +71,8 @@ public class TracePointJsonService implements JsonService {
         this.clock = clock;
     }
 
-    // called dynamically from HttpServer
-    public String getPoints(String message) throws IOException {
+    @JsonServiceMethod
+    String getPoints(String message) throws IOException {
         logger.debug("getChartPoints(): message={}", message);
         TraceRequest request = gson.fromJson(message, TraceRequest.class);
         long requestAt = clock.currentTimeMillis();

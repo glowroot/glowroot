@@ -44,5 +44,5 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
 
     private void withInnerArg(@SuppressWarnings("unused") Inner inner) {}
 
-    public static class Inner {}
+    private static class Inner {}
 }

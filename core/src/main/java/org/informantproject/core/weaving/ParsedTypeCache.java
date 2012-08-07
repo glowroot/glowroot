@@ -40,7 +40,7 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ParsedTypeCache {
+class ParsedTypeCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ParsedTypeCache.class);
 
@@ -50,11 +50,11 @@ public class ParsedTypeCache {
     // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
     private final Map<String, List<ParsedType>> typeHierarchies = Maps.newConcurrentMap();
 
-    public ParsedTypeCache(ClassLoader loader) {
+    ParsedTypeCache(ClassLoader loader) {
         this.loader = loader;
     }
 
-    public List<ParsedType> getTypeHierarchy(@Nullable String typeName) {
+    List<ParsedType> getTypeHierarchy(@Nullable String typeName) {
         if (typeName == null || typeName.equals("java/lang/Object")) {
             return ImmutableList.of();
         }

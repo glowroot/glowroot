@@ -23,14 +23,20 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// Immutable
 public class StoredTraceDuration {
 
-    private String id;
-    private long capturedAt;
-    private double duration; // nanoseconds
-    private boolean completed;
+    private final String id;
+    private final long capturedAt;
+    private final double duration; // nanoseconds
+    private final boolean completed;
 
-    public StoredTraceDuration(String id, long capturedAt, double duration, boolean completed) {
+    static StoredTraceDuration from(String id, long capturedAt, double duration,
+            boolean completed) {
+        return new StoredTraceDuration(id, capturedAt, duration, completed);
+    }
+
+    private StoredTraceDuration(String id, long capturedAt, double duration, boolean completed) {
         this.id = id;
         this.capturedAt = capturedAt;
         this.duration = duration;
@@ -41,32 +47,16 @@ public class StoredTraceDuration {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public long getCapturedAt() {
         return capturedAt;
-    }
-
-    public void setCapturedAt(long capturedAt) {
-        this.capturedAt = capturedAt;
     }
 
     public double getDuration() {
         return duration;
     }
 
-    public void setDuration(double duration) {
-        this.duration = duration;
-    }
-
     public boolean isCompleted() {
         return completed;
-    }
-
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
     }
 
     @Override
@@ -75,12 +65,14 @@ public class StoredTraceDuration {
             return false;
         }
         StoredTraceDuration other = (StoredTraceDuration) o;
-        return Objects.equal(capturedAt, other.getCapturedAt())
-                && Objects.equal(duration, other.getDuration());
+        return Objects.equal(id, other.getId())
+                && Objects.equal(capturedAt, other.getCapturedAt())
+                && Objects.equal(duration, other.getDuration())
+                && Objects.equal(completed, other.isCompleted());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(capturedAt, duration);
+        return Objects.hashCode(id, capturedAt, duration, completed);
     }
 }

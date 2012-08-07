@@ -21,13 +21,13 @@ package org.informantproject.core.weaving;
  */
 public class NestingMisc implements Misc {
 
-    public static String YES;
+    private static String yes;
 
     private final boolean stopNesting;
 
     // test with static initializer present to verify static initializer merging
     static {
-        YES = "yes";
+        yes = "yes";
     }
 
     public NestingMisc() {
@@ -45,7 +45,7 @@ public class NestingMisc implements Misc {
     }
 
     public String executeWithReturn() {
-        return YES;
+        return yes;
     }
 
     public void executeWithArgs(String one, int two) {}

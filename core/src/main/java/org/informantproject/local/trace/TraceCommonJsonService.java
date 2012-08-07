@@ -63,7 +63,7 @@ public class TraceCommonJsonService {
     private final Gson gson = new Gson();
 
     @Inject
-    public TraceCommonJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
+    TraceCommonJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
             StackTraceDao stackTraceDao, Ticker ticker) {
 
         this.traceDao = traceDao;
@@ -208,12 +208,12 @@ public class TraceCommonJsonService {
         return ByteStream.of(byteStreams);
     }
 
-    public ByteStream getSpansByteStream(Trace trace, long captureTick) throws IOException {
+    ByteStream getSpansByteStream(Trace trace, long captureTick) throws IOException {
         return new SpansByteStream(trace.getRootSpan().getSpans().iterator(), captureTick);
     }
 
     @Nullable
-    public String getMetricsJson(Trace trace) {
+    String getMetricsJson(Trace trace) {
         List<TraceMetric> traceMetrics = trace.getTraceMetrics();
         if (traceMetrics.isEmpty()) {
             return null;
@@ -232,7 +232,7 @@ public class TraceCommonJsonService {
     }
 
     @Nullable
-    public String getAttributesJson(Trace trace) throws IOException {
+    private String getAttributesJson(Trace trace) throws IOException {
         Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
         Message message = rootSpan.getMessageSupplier().get();
         Map<String, ?> contextMap = message.getContextMap();
@@ -248,7 +248,7 @@ public class TraceCommonJsonService {
     }
 
     @Nullable
-    public static ByteStream getMergedStackTree(Trace trace) {
+    static ByteStream getMergedStackTree(Trace trace) {
         MergedStackTreeNode rootNode = trace.getMergedStackTree().getRootNode();
         if (rootNode == null) {
             return null;

@@ -30,7 +30,10 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LoggerFactoryImpl {
+// called via reflection from org.informantproject.api.LoggerFactory
+public final class LoggerFactoryImpl {
+
+    private LoggerFactoryImpl() {}
 
     public static Logger getLogger(String name) {
         return new LoggerImpl(LoggerFactory.getLogger(name));

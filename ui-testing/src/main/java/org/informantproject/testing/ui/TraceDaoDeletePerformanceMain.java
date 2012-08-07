@@ -62,7 +62,7 @@ public final class TraceDaoDeletePerformanceMain {
         logger.info("informant.h2.db: {} bytes", dbFile.length());
     }
 
-    public static class GenerateTraces implements AppUnderTest {
+    private static class GenerateTraces implements AppUnderTest {
         public void executeApp() throws InterruptedException {
             File rollingFile = new File("informant.rolling.db");
             while (rollingFile.length() < 100 * 1024 * 1024) {

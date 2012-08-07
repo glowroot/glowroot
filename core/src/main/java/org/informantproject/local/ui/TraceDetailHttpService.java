@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.local.trace.TraceCommonJsonService;
-import org.informantproject.local.ui.HttpServer.HttpService;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -47,14 +46,14 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class TraceDetailHttpService implements HttpService {
+class TraceDetailHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDetailHttpService.class);
 
     private final TraceCommonJsonService traceCommonJsonService;
 
     @Inject
-    public TraceDetailHttpService(TraceCommonJsonService traceCommonJsonService) {
+    TraceDetailHttpService(TraceCommonJsonService traceCommonJsonService) {
         this.traceCommonJsonService = traceCommonJsonService;
     }
 

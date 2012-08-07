@@ -15,7 +15,6 @@
  */
 package org.informantproject.local.trace;
 
-import org.informantproject.core.trace.TraceTestData;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;

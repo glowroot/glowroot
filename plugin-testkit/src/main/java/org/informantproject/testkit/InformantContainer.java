@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Files;
-import org.informantproject.core.util.Threads;
+import org.informantproject.core.util.UnitTests;
 
 import com.ning.http.client.AsyncHttpClient;
 
@@ -52,7 +52,7 @@ public class InformantContainer {
     public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
         File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
-        Collection<Thread> preExistingThreads = Threads.currentThreads();
+        Collection<Thread> preExistingThreads = UnitTests.currentThreads();
         String agentArgs = "data.dir:" + dataDir.getAbsolutePath() + ",ui.port:" + uiPort
                 + ",internal.h2memdb:" + useMemDb;
         ExecutionAdapter executionAdapter;
@@ -103,13 +103,13 @@ public class InformantContainer {
         }
     }
 
-    public void close() throws Exception {
+    private void close() throws Exception {
         // asyncHttpClient is not part of the "app under test", so shut it down
         // first before checking for non-daemon threads
         asyncHttpClient.close();
-        Threads.preShutdownCheck(preExistingThreads);
+        UnitTests.preShutdownCheck(preExistingThreads);
         executionAdapter.closeImpl();
-        Threads.postShutdownCheck(preExistingThreads);
+        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     public void closeAndDeleteFiles() throws Exception {

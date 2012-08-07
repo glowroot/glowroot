@@ -42,9 +42,7 @@ import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 
 /**
@@ -92,7 +90,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /filtertest");
+        assertThat(span.getDescription()).isEqualTo("GET /testfilter");
     }
 
     @Test
@@ -105,7 +103,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /combotest");
+        assertThat(span.getDescription()).isEqualTo("GET /testfilter");
     }
 
     @Test
@@ -520,23 +518,13 @@ public class ServletPluginTest {
     @SuppressWarnings("serial")
     public static class ExecuteServlet extends TestServlet {}
 
-    public static class ExecuteFilter implements AppUnderTest {
-        public void executeApp() throws ServletException, IOException {
-            Filter filter = new MockFilter();
-            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/filtertest");
-            MockHttpServletResponse response = new MockHttpServletResponse();
-            MockFilterChain chain = new MockFilterChain();
-            filter.doFilter(request, response, chain);
-        }
-    }
+    public static class ExecuteFilter extends TestFilter {}
 
-    public static class ExecuteFilterWithNestedServlet implements AppUnderTest {
-        public void executeApp() throws ServletException, IOException {
-            Filter filter = new MockFilterWithServlet();
-            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/combotest");
-            MockHttpServletResponse response = new MockHttpServletResponse();
-            MockFilterChain chain = new MockFilterChain();
-            filter.doFilter(request, response, chain);
+    public static class ExecuteFilterWithNestedServlet extends TestFilter {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                throws IOException, ServletException {
+            new TestServlet().service(request, response);
         }
     }
 

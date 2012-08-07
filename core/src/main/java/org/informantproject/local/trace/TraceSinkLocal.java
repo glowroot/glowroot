@@ -60,7 +60,7 @@ public class TraceSinkLocal implements TraceSink {
     private final Gson gson = new Gson();
 
     @Inject
-    public TraceSinkLocal(ConfigService configService, TraceDao traceDao,
+    TraceSinkLocal(ConfigService configService, TraceDao traceDao,
             TraceCommonJsonService traceCommonJsonService, Ticker ticker) {
 
         this.configService = configService;
@@ -104,7 +104,7 @@ public class TraceSinkLocal implements TraceSink {
         return queueLength.get();
     }
 
-    public StoredTrace buildStoredTrace(Trace trace) throws IOException {
+    private StoredTrace buildStoredTrace(Trace trace) throws IOException {
         long captureTick = ticker.read();
         StoredTrace.Builder builder = StoredTrace.builder();
         builder.id(trace.getId());

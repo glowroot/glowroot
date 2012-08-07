@@ -55,7 +55,7 @@ public class MetricCollector implements Runnable, ConfigListener {
     private volatile int bossIntervalMillis;
 
     @Inject
-    public MetricCollector(ConfigService configService, MetricSink metricSink) {
+    MetricCollector(ConfigService configService, MetricSink metricSink) {
         this.configService = configService;
         this.metricSink = metricSink;
         bossIntervalMillis = configService.getCoreConfig().getMetricPeriodMillis();

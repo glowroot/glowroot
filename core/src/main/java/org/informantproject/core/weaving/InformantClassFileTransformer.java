@@ -39,7 +39,6 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
-import com.google.inject.Inject;
 
 /**
  * @author Trask Stalnaker
@@ -62,7 +61,6 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private final PluginServices pluginServices;
     private final Metric metric;
 
-    @Inject
     public InformantClassFileTransformer(PluginServices pluginServices, Ticker ticker) {
         ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
         ImmutableList.Builder<Advice> advisors = ImmutableList.builder();

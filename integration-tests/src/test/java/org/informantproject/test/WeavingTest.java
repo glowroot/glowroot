@@ -17,8 +17,8 @@ package org.informantproject.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import org.informantproject.test.api.LevelOne;
-import org.informantproject.test.api.LevelTwo;
+import org.informantproject.test.LevelOne;
+import org.informantproject.test.LevelTwo;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;

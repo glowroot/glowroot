@@ -20,7 +20,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.util.Map;
 import java.util.Random;
 
-import org.informantproject.test.api.LevelOne;
+import org.informantproject.test.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;

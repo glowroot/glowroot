@@ -30,7 +30,6 @@ import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.informantproject.core.config.Plugins;
 import org.informantproject.core.util.XmlDocuments;
-import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -56,7 +55,7 @@ import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
  * @since 0.5
  */
 @Singleton
-public class PluginJsonService implements JsonService {
+class PluginJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginJsonService.class);
 
@@ -75,25 +74,25 @@ public class PluginJsonService implements JsonService {
             }, 3600, TimeUnit.SECONDS);
 
     @Inject
-    public PluginJsonService(AsyncHttpClient asyncHttpClient) {
+    PluginJsonService(AsyncHttpClient asyncHttpClient) {
         this.asyncHttpClient = asyncHttpClient;
     }
 
-    // called dynamically from HttpServer
-    public String getPackagedPlugins() {
+    @JsonServiceMethod
+    String getPackagedPlugins() {
         // informant and a set of plugins can be packaged together in a single jar in order to
         // simplify distribution and installation. any plugins packaged with informant cannot be
         // uninstalled
         return gson.toJson(Plugins.getPackagedPluginDescriptors());
     }
 
-    // called dynamically from HttpServer
-    public String getInstalledPlugins() {
+    @JsonServiceMethod
+    String getInstalledPlugins() {
         return gson.toJson(Plugins.getInstalledPluginDescriptors());
     }
 
-    // called dynamically from HttpServer
-    public String getInstallablePlugins() {
+    @JsonServiceMethod
+    String getInstallablePlugins() {
         List<PluginDescriptor> notAlreadyInstalled = Lists.newArrayList(installablePlugins.get());
         // this works because Plugin.equals() is defined only in terms of groupId and artifactId
         Iterables.removeAll(notAlreadyInstalled, Plugins.getPackagedPluginDescriptors());

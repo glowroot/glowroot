@@ -59,7 +59,7 @@ public class ConfigService {
     private final Object updateLock = new Object();
 
     @Inject
-    public ConfigService(ConfigDao configDao) {
+    ConfigService(ConfigDao configDao) {
         logger.debug("<init>()");
         this.configDao = configDao;
         // initialize config using locally stored values, falling back to defaults if no locally

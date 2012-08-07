@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList.Builder;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AdviceMatcher {
+class AdviceMatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
 
@@ -38,17 +38,17 @@ public class AdviceMatcher {
     private final boolean targetTypeMatch;
     private final ImmutableList<ParsedType> preMatchedSuperTypes;
 
-    public AdviceMatcher(Advice advice, Type targetType, List<ParsedType> superTypes) {
+    AdviceMatcher(Advice advice, Type targetType, List<ParsedType> superTypes) {
         this.advice = advice;
         targetTypeMatch = isTypeMatch(targetType.getClassName());
         preMatchedSuperTypes = buildPreMatchedSuperTypes(superTypes);
     }
 
-    public boolean isClassLevelMatch() {
+    boolean isClassLevelMatch() {
         return targetTypeMatch || !preMatchedSuperTypes.isEmpty();
     }
 
-    public boolean isMethodLevelMatch(int access, String name, String desc) {
+    boolean isMethodLevelMatch(int access, String name, String desc) {
         if (!isMethodNameMatch(name)) {
             return false;
         }
@@ -63,7 +63,7 @@ public class AdviceMatcher {
         }
     }
 
-    public Advice getAdvice() {
+    Advice getAdvice() {
         return advice;
     }
 

@@ -33,6 +33,7 @@ import org.informantproject.core.util.DataSource.RowMapper;
 import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockId;
 import org.informantproject.core.util.RollingFile;
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.informantproject.local.trace.StoredTrace.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,7 +179,7 @@ public class TraceDao {
     }
 
     @Nullable
-    public StoredTrace readStoredTrace(String id) {
+    StoredTrace readStoredTrace(String id) {
         logger.debug("readStoredTrace(): id={}", id);
         if (!valid) {
             return null;
@@ -200,62 +201,6 @@ public class TraceDao {
         }
         // read from rolling file outside of jdbc connection
         return partiallyHydratedTraces.get(0).fullyHydrate();
-    }
-
-    public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo) {
-        logger.debug("readStoredTraces(): capturedFrom={}, capturedTo={}", capturedFrom,
-                capturedTo);
-        if (!valid) {
-            return ImmutableList.of();
-        }
-        List<PartiallyHydratedTrace> partiallyHydratedTraces;
-        try {
-            partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " error, duration, completed, description, username, attributes, metrics,"
-                    + " spans, merged_stack_tree from trace where captured_at >= ?"
-                    + " and captured_at <= ?", new Object[] { capturedFrom, capturedTo },
-                    new TraceRowMapper());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
-        }
-        // read from rolling file outside of jdbc connection
-        List<StoredTrace> storedTraces = Lists.newArrayList();
-        for (PartiallyHydratedTrace trace : partiallyHydratedTraces) {
-            storedTraces.add(trace.fullyHydrate());
-        }
-        return storedTraces;
-    }
-
-    public List<StoredTrace> readStoredTraces(long capturedFrom, long capturedTo, long lowDuration,
-            long highDuration) {
-
-        logger.debug("readStoredTraces(): capturedFrom={}, capturedTo={}, lowDuration={},"
-                + " highDuration={}", new long[] { capturedFrom, capturedTo, lowDuration,
-                highDuration });
-        if (!valid) {
-            return ImmutableList.of();
-        }
-        if (lowDuration <= 0 && highDuration == Long.MAX_VALUE) {
-            return readStoredTraces(capturedFrom, capturedTo);
-        }
-        List<PartiallyHydratedTrace> partiallyHydratedTraces;
-        try {
-            partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " error, duration, completed, description, username, attributes, metrics,"
-                    + " spans, merged_stack_tree from trace where captured_at >= ?"
-                    + " and captured_at <= ? and duration >= ? and duration <= ?", new Object[] {
-                    capturedFrom, capturedTo, lowDuration, highDuration }, new TraceRowMapper());
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
-        }
-        // read from rolling file outside of jdbc connection
-        List<StoredTrace> storedTraces = Lists.newArrayList();
-        for (PartiallyHydratedTrace trace : partiallyHydratedTraces) {
-            storedTraces.add(trace.fullyHydrate());
-        }
-        return storedTraces;
     }
 
     public int deleteStoredTraces(final long capturedFrom, final long capturedTo) {
@@ -285,6 +230,7 @@ public class TraceDao {
         }
     }
 
+    @OnlyUsedByTests
     long count() {
         if (!valid) {
             return 0;
@@ -321,7 +267,7 @@ public class TraceDao {
     private static class TraceDurationRowMapper implements RowMapper<StoredTraceDuration> {
 
         public StoredTraceDuration mapRow(ResultSet resultSet) throws SQLException {
-            return new StoredTraceDuration(resultSet.getString(1), resultSet.getLong(2),
+            return StoredTraceDuration.from(resultSet.getString(1), resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4));
         }
     }

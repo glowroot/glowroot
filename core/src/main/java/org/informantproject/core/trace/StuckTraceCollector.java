@@ -53,7 +53,7 @@ public class StuckTraceCollector implements Runnable {
     private final Ticker ticker;
 
     @Inject
-    public StuckTraceCollector(TraceRegistry traceRegistry, TraceSink traceSink,
+    StuckTraceCollector(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, Ticker ticker) {
 
         this.traceRegistry = traceRegistry;

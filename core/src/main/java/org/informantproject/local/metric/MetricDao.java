@@ -82,7 +82,7 @@ public class MetricDao {
     private final boolean valid;
 
     @Inject
-    public MetricDao(DataSource dataSource, Clock clock) {
+    MetricDao(DataSource dataSource, Clock clock) {
         this.dataSource = dataSource;
         this.clock = clock;
 
@@ -132,7 +132,7 @@ public class MetricDao {
                                     metricPoints = Lists.newArrayList();
                                     map.put(metricId, metricPoints);
                                 }
-                                metricPoints.add(new Point(capturedAt, value));
+                                metricPoints.add(Point.from(capturedAt, value));
                             }
                             return map;
                         }
@@ -140,18 +140,6 @@ public class MetricDao {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableMap.of();
-        }
-    }
-
-    public long count() {
-        if (!valid) {
-            return 0;
-        }
-        try {
-            return dataSource.queryForLong("select count(*) from metric_point");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return 0;
         }
     }
 

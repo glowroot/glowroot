@@ -15,10 +15,13 @@
  */
 package org.informantproject.core.util;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.lang.Thread.State;
+import java.lang.annotation.Documented;
 import java.util.Collection;
 
-import org.informantproject.core.MainEntryPoint;
+import javax.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
@@ -27,21 +30,21 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 
 /**
- * Only used by tests. It is important that Informant doesn't use any non-daemon threads which could
- * prevent the monitored JVM from shutting down propertly. It is also important that Informant shuts
- * down all threads on {@link MainEntryPoint#shutdown()} so that subsequent unit tests can truly
- * start from a clean state (no extraneous threads still running).
- * 
- * The placement of this class in the main Informant code base (and not inside of the tests folder)
- * is not ideal, but the alternative is to create a separate artifact (or at least classifier) for
- * this one class (now two classes, see also {@link Files}), which also seems to be not ideal.
+ * Only used by tests (except for the {@link OnlyUsedByTests} annotation itself). The placement of
+ * this code (other than {@link OnlyUsedByTests}) in the main Informant code base (and not inside of
+ * the tests folder) is not ideal, but the alternative is to create a separate artifact (or at least
+ * classifier) for this small amount of code, which also seems to be not ideal.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class Threads {
+public final class UnitTests {
 
-    private Threads() {}
+    private UnitTests() {}
+
+    // marker annotation
+    @Documented
+    public @interface OnlyUsedByTests {}
 
     public static Collection<Thread> currentThreads() {
         return Collections2.filter(Thread.getAllStackTraces().keySet(),
@@ -85,6 +88,69 @@ public final class Threads {
                 Thread.sleep(10);
             }
         }
+    }
+
+    public static File findInformantCoreJarFile() {
+        File informantCoreJarFile = findInformantCoreJarFileFromClasspath();
+        if (informantCoreJarFile != null) {
+            return informantCoreJarFile;
+        }
+        informantCoreJarFile = findInformantCoreJarFileFromRelativePath();
+        if (informantCoreJarFile != null) {
+            return informantCoreJarFile;
+        }
+        // could not find jar file, try to give intelligible error
+        if (System.getProperty("surefire.test.class.path") != null) {
+            throw new IllegalStateException(
+                    "Running inside maven and can't find informant-core.jar");
+        } else {
+            throw new IllegalStateException("You are probably running this test outside of maven"
+                    + " (e.g. you are running this test from inside of your IDE).  This test"
+                    + " requires informant-core.jar to be available.  The easiest way to build"
+                    + " informant-core.jar is to run 'mvn clean package' from the root directory"
+                    + " of this git repository.  After that you can re-run this test outside of"
+                    + " maven (e.g. from inside of your IDE) and it should succeed.");
+        }
+    }
+
+    // cover the standard case when running from maven
+    @Nullable
+    private static File findInformantCoreJarFileFromClasspath() {
+        String classpath = System.getProperty("java.class.path");
+        String[] classpathElements = classpath.split(File.pathSeparator);
+        for (String classpathElement : classpathElements) {
+            File classpathElementFile = new File(classpathElement);
+            if (isInformantCoreJar(classpathElementFile.getName())) {
+                return classpathElementFile;
+            }
+        }
+        return null;
+    }
+
+    // cover the non-standard case when running from inside an IDE
+    @Nullable
+    private static File findInformantCoreJarFileFromRelativePath() {
+        String classesDir = Files.class.getProtectionDomain().getCodeSource().getLocation()
+                .getFile();
+        // guessing this is target/classes
+        File targetDir = new File(classesDir).getParentFile();
+        File[] possibleMatches = targetDir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return isInformantCoreJar(name);
+            }
+        });
+        if (possibleMatches == null || possibleMatches.length == 0) {
+            return null;
+        } else if (possibleMatches.length == 1) {
+            return possibleMatches[0];
+        } else {
+            throw new IllegalStateException("More than one possible match found for"
+                    + " informant-core.jar");
+        }
+    }
+
+    private static boolean isInformantCoreJar(String name) {
+        return name.matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar");
     }
 
     @SuppressWarnings("serial")

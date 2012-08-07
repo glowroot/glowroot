@@ -18,15 +18,13 @@ package org.informantproject.test;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import javax.annotation.Nullable;
-
+import org.informantproject.core.util.UnitTests;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -39,23 +37,7 @@ public class JarFileShadingTest {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File informantCoreJarFile = findInformantCoreJarFileFromClasspath();
-        if (informantCoreJarFile == null) {
-            informantCoreJarFile = findInformantCoreJarFileFromRelativePath();
-        }
-        if (informantCoreJarFile == null
-                && System.getProperty("surefire.test.class.path") != null) {
-            throw new IllegalStateException("Running inside maven and can't find"
-                    + " informant-core.jar");
-        }
-        if (informantCoreJarFile == null) {
-            throw new IllegalStateException("You are probably running this test outside of maven"
-                    + " (e.g. you are running this test from inside of Eclipse).  This test"
-                    + " requires informant-core.jar to be available.  The easiest way to build"
-                    + " informant-core.jar is to run 'mvn clean package' from the root directory"
-                    + " of this git repository.  After that you can re-run this test outside of"
-                    + " maven (e.g. from inside of Eclipse) and it should succeed.");
-        }
+        File informantCoreJarFile = UnitTests.findInformantCoreJarFile();
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("org.informantproject\\..*");
         acceptableEntries.add("org/");
@@ -81,40 +63,5 @@ public class JarFileShadingTest {
             }
         }
         assertThat(unacceptableEntries).isEmpty();
-    }
-
-    // this covers the case where "mvn integration-test" is executed from inside the
-    // informant-integration-test directory
-    // this case wouldn't necessarily be covered by the relative path case below
-    @Nullable
-    private static File findInformantCoreJarFileFromClasspath() {
-        String classpath = System.getProperty("java.class.path");
-        String[] classpathElements = classpath.split(File.pathSeparator);
-        for (String classpathElement : classpathElements) {
-            File classpathElementFile = new File(classpathElement);
-            if (classpathElementFile.getName().matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar")) {
-                return classpathElementFile;
-            }
-        }
-        return null;
-    }
-
-    // this is mostly for convenience as it covers the case where this test is executed from
-    // inside eclipse after informant-core.jar file has been built into ../core/target
-    @Nullable
-    private static File findInformantCoreJarFileFromRelativePath() {
-        File[] possibleMatches = new File("../core/target").listFiles(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar");
-            }
-        });
-        if (possibleMatches.length == 0) {
-            return null;
-        } else if (possibleMatches.length == 1) {
-            return possibleMatches[0];
-        } else {
-            throw new IllegalStateException("More than one possible match found for"
-                    + " informant-core.jar");
-        }
     }
 }

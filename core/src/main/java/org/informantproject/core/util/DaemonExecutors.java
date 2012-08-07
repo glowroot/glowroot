@@ -61,14 +61,6 @@ public final class DaemonExecutors {
                 .build());
     }
 
-    public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize, String name) {
-        return Executors.newScheduledThreadPool(corePoolSize, new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat(name + NAME_COUNTER_SUFFIX)
-                .setUncaughtExceptionHandler(new ExceptionHandler())
-                .build());
-    }
-
     private static class ExceptionHandler implements UncaughtExceptionHandler {
         private static final Logger logger = LoggerFactory.getLogger(ExceptionHandler.class);
         public void uncaughtException(Thread t, Throwable e) {

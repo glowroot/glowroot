@@ -40,16 +40,16 @@ public class TraceRegistry {
     private final ThreadLocal<Trace> currentTraceHolder = new ThreadLocal<Trace>();
 
     @Nullable
-    Trace getCurrentTrace() {
+    public Trace getCurrentTrace() {
         return currentTraceHolder.get();
     }
 
-    void addTrace(Trace trace) {
+    public void addTrace(Trace trace) {
         currentTraceHolder.set(trace);
         traces.add(trace);
     }
 
-    void removeTrace(Trace trace) {
+    public void removeTrace(Trace trace) {
         currentTraceHolder.set(null);
         traces.remove(trace);
     }

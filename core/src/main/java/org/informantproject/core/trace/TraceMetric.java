@@ -45,8 +45,6 @@ public class TraceMetric implements Timer {
     // is ok since it is primarily read (cheap for volatile) and rarely updated ('expensive' for
     // volatile)
     private volatile boolean firstStart = true;
-    // only accessed by trace thread
-    private long pauseTick;
 
     private final Ticker ticker;
 
@@ -144,23 +142,6 @@ public class TraceMetric implements Timer {
         }
         // selfNestingLevel is decremented after recording data since it is volatile and creates a
         // memory barrier so that all updated fields will be visible to other threads in copyOf()
-        selfNestingLevel--;
-    }
-
-    // this is kind of hacky, only meant to be used by "informant weaving" metric
-    public void pause() {
-        pauseTick = ticker.read();
-        // selfNestingLevel is incremented (sort of unnecessarily) so that resume() can decrement
-        // it (also sort of unnecessarily) to create memory barrier so that startTick will be
-        // visible to other threads calling copyOf()
-        selfNestingLevel++;
-    }
-
-    public void resume() {
-        long pauseTicks = ticker.read() - pauseTick;
-        startTick += pauseTicks;
-        // selfNestingLevel is decremented (sort of unnecessarily) to create memory barrier so that
-        // startTick will be visible to other threads calling copyOf()
         selfNestingLevel--;
     }
 

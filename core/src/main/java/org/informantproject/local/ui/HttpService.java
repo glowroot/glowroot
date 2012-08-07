@@ -13,6 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@javax.annotation.ParametersAreNonnullByDefault
-package org.informantproject.test.api;
+package org.informantproject.local.ui;
+
+import java.io.IOException;
+
+import javax.annotation.Nullable;
+
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponse;
+
+/**
+ * @author Trask Stalnaker
+ * @since 0.5
+ */
+interface HttpService {
+
+    @Nullable
+    HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException;
+}
 

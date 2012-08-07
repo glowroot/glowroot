@@ -24,14 +24,14 @@ import org.objectweb.asm.Type;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MixinMatcher {
+class MixinMatcher {
 
     private final Mixin mixin;
     private final boolean targetTypeClassMatch;
     private final boolean alreadyImplementsMixin;
     private final boolean superClassMatch;
 
-    public MixinMatcher(Mixin mixin, Type targetType, List<ParsedType> superTypes) {
+    MixinMatcher(Mixin mixin, Type targetType, List<ParsedType> superTypes) {
         this.mixin = mixin;
         targetTypeClassMatch = isTypeMatch(targetType.getClassName());
 
@@ -53,7 +53,7 @@ public class MixinMatcher {
         alreadyImplementsMixin = alreadyImplementsMixinLocal;
     }
 
-    public boolean isMatch() {
+    boolean isMatch() {
         return (targetTypeClassMatch || superClassMatch) && !alreadyImplementsMixin;
     }
 

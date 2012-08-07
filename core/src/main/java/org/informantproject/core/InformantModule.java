@@ -21,9 +21,9 @@ import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCollector;
-import org.informantproject.core.trace.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.trace.StackCollector;
 import org.informantproject.core.trace.StuckTraceCollector;
 import org.informantproject.core.util.Clock;
@@ -102,14 +102,14 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    protected DataSource providesDataSource() {
+    DataSource providesDataSource() {
         return new DataSource(new File(agentArgs.getDataDir(), "informant.h2.db"),
                 agentArgs.isH2MemDb());
     }
 
     @Provides
     @Singleton
-    protected RollingFile providesRollingFile(ConfigService configService) {
+    RollingFile providesRollingFile(ConfigService configService) {
         int rollingSizeMb = configService.getCoreConfig().getRollingSizeMb();
         try {
             // 1gb
@@ -123,7 +123,7 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    protected AsyncHttpClient providesAsyncHttpClient() {
+    AsyncHttpClient providesAsyncHttpClient() {
         ExecutorService executorService = DaemonExecutors
                 .newCachedThreadPool("Informant-AsyncHttpClient");
         ScheduledExecutorService scheduledExecutorService = DaemonExecutors
@@ -144,13 +144,13 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    protected static Clock providesClock() {
+    static Clock providesClock() {
         return Clock.systemClock();
     }
 
     @Provides
     @Singleton
-    protected static Ticker providesTicker() {
+    static Ticker providesTicker() {
         return Ticker.systemTicker();
     }
 }

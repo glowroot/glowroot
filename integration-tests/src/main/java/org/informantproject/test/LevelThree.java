@@ -1,5 +1,5 @@
 /**
- * Copyright 2011 the original author or authors.
+ * Copyright 2011-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.plugin.servlet;
+package org.informantproject.test;
 
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.annotation.Nullable;
 
 /**
- * Mock servlet.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MockServlet extends HttpServlet {
+class LevelThree {
 
-    private static final long serialVersionUID = 1L;
+    @Nullable
+    private final Exception exception;
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {}
+    LevelThree(@Nullable Exception e) {
+        this.exception = e;
+    }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) {}
+    void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2)
+            throws Exception {
+
+        // this method corresponds to LevelThreeAspect
+        if (exception != null) {
+            throw exception;
+        }
+    }
 }

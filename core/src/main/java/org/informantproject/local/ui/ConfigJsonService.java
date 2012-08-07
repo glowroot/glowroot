@@ -22,7 +22,6 @@ import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
 import org.informantproject.core.util.RollingFile;
-import org.informantproject.local.ui.HttpServer.JsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class ConfigJsonService implements JsonService {
+class ConfigJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
 
@@ -50,29 +49,33 @@ public class ConfigJsonService implements JsonService {
     private final Gson gson = new Gson();
 
     @Inject
-    public ConfigJsonService(ConfigService configService, RollingFile rollingFile) {
+    ConfigJsonService(ConfigService configService, RollingFile rollingFile) {
         this.configService = configService;
         this.rollingFile = rollingFile;
     }
 
-    public void enableCore() {
+    @JsonServiceMethod
+    void enableCore() {
         configService.setCoreEnabled(true);
     }
 
-    public void disableCore() {
+    @JsonServiceMethod
+    void disableCore() {
         configService.setCoreEnabled(false);
     }
 
-    public void enablePlugin(String pluginId) {
+    @JsonServiceMethod
+    void enablePlugin(String pluginId) {
         configService.setPluginEnabled(pluginId, true);
     }
 
-    public void disablePlugin(String pluginId) {
+    @JsonServiceMethod
+    void disablePlugin(String pluginId) {
         configService.setPluginEnabled(pluginId, false);
     }
 
-    // called dynamically from HttpServer
-    public String getConfig() {
+    @JsonServiceMethod
+    String getConfig() {
         logger.debug("getConfig()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
@@ -84,8 +87,8 @@ public class ConfigJsonService implements JsonService {
                 + ",\"actualRollingSizeMb\":" + rollingSizeMb + "}";
     }
 
-    // called dynamically from HttpServer
-    public void storeCoreProperties(String properties) {
+    @JsonServiceMethod
+    void storeCoreProperties(String properties) {
         logger.debug("storeCoreProperties(): properties={}", properties);
         JsonObject propertiesJson = new JsonParser().parse(properties).getAsJsonObject();
         configService.updateCoreConfig(propertiesJson);
@@ -99,8 +102,8 @@ public class ConfigJsonService implements JsonService {
         }
     }
 
-    // called dynamically from HttpServer
-    public void storePluginProperties(String pluginId, String properties) {
+    @JsonServiceMethod
+    void storePluginProperties(String pluginId, String properties) {
         logger.debug("storePluginProperties(): pluginId={}, properties={}", pluginId, properties);
         JsonObject propertiesJson = new JsonParser().parse(properties).getAsJsonObject();
         configService.storePluginConfig(pluginId, propertiesJson);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.trace;
+package org.informantproject.core;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -32,6 +32,10 @@ import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.config.PluginConfig;
 import org.informantproject.core.metric.MetricCache;
+import org.informantproject.core.trace.MetricImpl;
+import org.informantproject.core.trace.Trace;
+import org.informantproject.core.trace.TraceRegistry;
+import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +53,7 @@ import com.google.inject.assistedinject.Assisted;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PluginServicesImpl extends PluginServices implements ConfigListener {
+class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
 
@@ -303,7 +307,7 @@ public class PluginServicesImpl extends PluginServices implements ConfigListener
         public void end() {}
     }
 
-    public interface PluginServicesImplFactory {
+    interface PluginServicesImplFactory {
         PluginServicesImpl create(String pluginId);
     }
 }

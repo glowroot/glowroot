@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.test.api;
-
-import javax.annotation.Nullable;
+package org.informantproject.local.ui;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LevelThree {
+// marker interface
+interface JsonService {}
 
-    @Nullable
-    private final Exception exception;
+// marker annotation
+@interface JsonServiceMethod {}
 
-    public LevelThree(@Nullable Exception e) {
-        this.exception = e;
-    }
-
-    @SuppressWarnings("unused")
-    public void call(String arg1, String arg2) throws Exception {
-        // this method corresponds to LevelThreeAspect
-        if (exception != null) {
-            throw exception;
-        }
-    }
-}

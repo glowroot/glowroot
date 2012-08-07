@@ -56,6 +56,8 @@ public abstract class PluginServices {
         return pluginServices.getUnchecked(pluginId);
     }
 
+    protected PluginServices() {}
+
     public abstract Metric getMetric(Class<?> adviceClass);
 
     public abstract void registerConfigListener(ConfigListener listener);

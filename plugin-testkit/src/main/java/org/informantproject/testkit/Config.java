@@ -164,7 +164,7 @@ public class Config {
         }
     }
 
-    public static class PluginConfigJsonDeserializer implements JsonDeserializer<PluginConfig> {
+    static class PluginConfigJsonDeserializer implements JsonDeserializer<PluginConfig> {
         public PluginConfig deserialize(JsonElement json, Type typeOfT,
                 JsonDeserializationContext context) {
 

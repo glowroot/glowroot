@@ -34,7 +34,7 @@ public class MetricSinkLocal implements MetricSink {
     private final MetricDao metricDao;
 
     @Inject
-    public MetricSinkLocal(MetricDao metricDao) {
+    MetricSinkLocal(MetricDao metricDao) {
         this.metricDao = metricDao;
     }
 
