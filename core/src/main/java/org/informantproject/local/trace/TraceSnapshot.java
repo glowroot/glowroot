@@ -15,12 +15,15 @@
  */
 package org.informantproject.local.trace;
 
+import java.util.Map;
+
 import javax.annotation.Nullable;
 
 import org.informantproject.core.util.ByteStream;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Structure used as part of the response to "/trace/details".
@@ -28,7 +31,8 @@ import com.google.common.base.Objects.ToStringHelper;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class StoredTrace {
+// Immutable
+public class TraceSnapshot {
 
     private final String id;
     private final long startAt;
@@ -48,11 +52,14 @@ class StoredTrace {
     @Nullable
     private final ByteStream spans;
     @Nullable
+    private final ImmutableMap<String, String> spanStackTraces;
+    @Nullable
     private final ByteStream mergedStackTree;
 
-    private StoredTrace(String id, long startAt, boolean stuck, boolean error, long duration,
+    private TraceSnapshot(String id, long startAt, boolean stuck, boolean error, long duration,
             boolean completed, String description, @Nullable String username,
             @Nullable String attributes, @Nullable String metrics, @Nullable ByteStream spans,
+            @Nullable ImmutableMap<String, String> spanStackTraces,
             @Nullable ByteStream mergedStackTree) {
 
         this.id = id;
@@ -67,6 +74,7 @@ class StoredTrace {
         this.metrics = metrics;
         this.spans = spans;
         this.mergedStackTree = mergedStackTree;
+        this.spanStackTraces = spanStackTraces;
     }
 
     String getId() {
@@ -118,6 +126,11 @@ class StoredTrace {
     }
 
     @Nullable
+    Map<String, String> getSpanStackTraces() {
+        return spanStackTraces;
+    }
+
+    @Nullable
     ByteStream getMergedStackTree() {
         return mergedStackTree;
     }
@@ -158,6 +171,8 @@ class StoredTrace {
         private String metrics;
         @Nullable
         private ByteStream spans;
+        @Nullable
+        private ImmutableMap<String, String> spanStackTraces;
         @Nullable
         private ByteStream mergedStackTree;
 
@@ -218,14 +233,19 @@ class StoredTrace {
             return this;
         }
 
+        Builder spanStackTraces(@Nullable ImmutableMap<String, String> spanStackTraces) {
+            this.spanStackTraces = spanStackTraces;
+            return this;
+        }
+
         Builder mergedStackTree(@Nullable ByteStream mergedStackTree) {
             this.mergedStackTree = mergedStackTree;
             return this;
         }
 
-        StoredTrace build() {
-            return new StoredTrace(id, startAt, stuck, error, duration, completed, description,
-                    username, attributes, metrics, spans, mergedStackTree);
+        TraceSnapshot build() {
+            return new TraceSnapshot(id, startAt, stuck, error, duration, completed, description,
+                    username, attributes, metrics, spans, spanStackTraces, mergedStackTree);
         }
     }
 }

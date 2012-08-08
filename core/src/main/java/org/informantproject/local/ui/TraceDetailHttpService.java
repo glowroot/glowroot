@@ -24,7 +24,6 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.local.trace.TraceCommonJsonService;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -50,11 +49,11 @@ class TraceDetailHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDetailHttpService.class);
 
-    private final TraceCommonJsonService traceCommonJsonService;
+    private final TraceCommonService traceCommon;
 
     @Inject
-    TraceDetailHttpService(TraceCommonJsonService traceCommonJsonService) {
-        this.traceCommonJsonService = traceCommonJsonService;
+    TraceDetailHttpService(TraceCommonService traceCommon) {
+        this.traceCommon = traceCommon;
     }
 
     @Nullable
@@ -62,7 +61,7 @@ class TraceDetailHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ByteStream byteStreams = traceCommonJsonService.getStoredOrActiveTraceJson(id, true);
+        ByteStream byteStreams = traceCommon.getSnapshotOrActiveJson(id, true);
         if (byteStreams == null) {
             logger.error("no trace found for id '{}'", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);

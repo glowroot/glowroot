@@ -26,9 +26,9 @@ import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.Clock;
-import org.informantproject.local.trace.StoredTraceDuration;
-import org.informantproject.local.trace.TraceDao;
-import org.informantproject.local.trace.TraceDao.StringComparator;
+import org.informantproject.local.trace.TraceSnapshotDao;
+import org.informantproject.local.trace.TraceSnapshotDao.StringComparator;
+import org.informantproject.local.trace.TraceSnapshotSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ class TracePointJsonService implements JsonService {
 
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
-    private final TraceDao traceDao;
+    private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
     private final ConfigService configService;
     private final Ticker ticker;
@@ -61,10 +61,10 @@ class TracePointJsonService implements JsonService {
     private final Gson gson = new Gson();
 
     @Inject
-    TracePointJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
+    TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
             ConfigService configService, Ticker ticker, Clock clock) {
 
-        this.traceDao = traceDao;
+        this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
         this.configService = configService;
         this.ticker = ticker;
@@ -108,17 +108,17 @@ class TracePointJsonService implements JsonService {
         if (request.getTo() == 0) {
             request.setTo(requestAt);
         }
-        List<StoredTraceDuration> storedTraceDurations = traceDao.readStoredTraceDurations(
+        List<TraceSnapshotSummary> summaries = traceSnapshotDao.readSummaries(
                 request.getFrom(), request.getTo(), low, high, usernameComparator,
                 request.getUsername());
         // remove duplicates between active and stored traces
         for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
             Trace activeTrace = i.next();
-            for (Iterator<StoredTraceDuration> j = storedTraceDurations.iterator(); j.hasNext();) {
-                StoredTraceDuration storedTraceDuration = j.next();
-                if (activeTrace.getId().equals(storedTraceDuration.getId())) {
+            for (Iterator<TraceSnapshotSummary> j = summaries.iterator(); j.hasNext();) {
+                TraceSnapshotSummary summary = j.next();
+                if (activeTrace.getId().equals(summary.getId())) {
                     // prefer stored trace if it is completed, otherwise prefer active trace
-                    if (storedTraceDuration.isCompleted()) {
+                    if (summary.isCompleted()) {
                         i.remove();
                     } else {
                         j.remove();
@@ -128,7 +128,7 @@ class TracePointJsonService implements JsonService {
                 }
             }
         }
-        return writeResponse(storedTraceDurations, activeTraces, capturedAt, captureTick);
+        return writeResponse(summaries, activeTraces, capturedAt, captureTick);
     }
 
     private List<Trace> getActiveTraces(long low, long high) {
@@ -147,13 +147,13 @@ class TracePointJsonService implements JsonService {
         return activeTraces;
     }
 
-    private static String writeResponse(List<StoredTraceDuration> storedTraceDurations,
+    private static String writeResponse(List<TraceSnapshotSummary> summaries,
             List<Trace> activeTraces, long capturedAt, long captureTick) throws IOException {
 
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
         jw.beginObject();
-        jw.name("activeTracePoints").beginArray();
+        jw.name("activePoints").beginArray();
         for (Trace activeTrace : activeTraces) {
             jw.beginArray();
             jw.value(capturedAt);
@@ -162,12 +162,12 @@ class TracePointJsonService implements JsonService {
             jw.endArray();
         }
         jw.endArray();
-        jw.name("storedTracePoints").beginArray();
-        for (StoredTraceDuration storedTraceDuration : storedTraceDurations) {
+        jw.name("snapshotPoints").beginArray();
+        for (TraceSnapshotSummary summary : summaries) {
             jw.beginArray();
-            jw.value(storedTraceDuration.getCapturedAt());
-            jw.value(storedTraceDuration.getDuration() / 1000000000.0);
-            jw.value(storedTraceDuration.getId());
+            jw.value(summary.getCapturedAt());
+            jw.value(summary.getDuration() / 1000000000.0);
+            jw.value(summary.getId());
             jw.endArray();
         }
         jw.endArray();

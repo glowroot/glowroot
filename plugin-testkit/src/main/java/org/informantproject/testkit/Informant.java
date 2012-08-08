@@ -107,7 +107,7 @@ public class Informant {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
-                .get("storedTracePoints").getAsJsonArray();
+                .get("snapshotPoints").getAsJsonArray();
         if (points.size() == 0) {
             throw new AssertionError("no trace found");
         } else {
@@ -123,7 +123,7 @@ public class Informant {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
-                .get("activeTracePoints").getAsJsonArray();
+                .get("activePoints").getAsJsonArray();
         if (points.size() == 0) {
             return null;
         } else if (points.size() > 1) {

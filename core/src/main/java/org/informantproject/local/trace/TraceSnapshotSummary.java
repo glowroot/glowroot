@@ -24,19 +24,19 @@ import com.google.common.base.Objects;
  * @since 0.5
  */
 // Immutable
-public class StoredTraceDuration {
+public class TraceSnapshotSummary {
 
     private final String id;
     private final long capturedAt;
     private final double duration; // nanoseconds
     private final boolean completed;
 
-    static StoredTraceDuration from(String id, long capturedAt, double duration,
+    static TraceSnapshotSummary from(String id, long capturedAt, double duration,
             boolean completed) {
-        return new StoredTraceDuration(id, capturedAt, duration, completed);
+        return new TraceSnapshotSummary(id, capturedAt, duration, completed);
     }
 
-    private StoredTraceDuration(String id, long capturedAt, double duration, boolean completed) {
+    private TraceSnapshotSummary(String id, long capturedAt, double duration, boolean completed) {
         this.id = id;
         this.capturedAt = capturedAt;
         this.duration = duration;
@@ -61,10 +61,10 @@ public class StoredTraceDuration {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof StoredTraceDuration)) {
+        if (!(o instanceof TraceSnapshotSummary)) {
             return false;
         }
-        StoredTraceDuration other = (StoredTraceDuration) o;
+        TraceSnapshotSummary other = (TraceSnapshotSummary) o;
         return Objects.equal(id, other.getId())
                 && Objects.equal(capturedAt, other.getCapturedAt())
                 && Objects.equal(duration, other.getDuration())

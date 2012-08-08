@@ -44,8 +44,9 @@ import com.google.inject.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// TODO hide inside of TraceSnapshotDao?
 @Singleton
-public class StackTraceDao {
+class StackTraceDao {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceDao.class);
 
@@ -119,7 +120,7 @@ public class StackTraceDao {
     }
 
     @Nullable
-    public String readStackTrace(String hash) {
+    String readStackTrace(String hash) {
         logger.debug("readStackTrace(): hash={}", hash);
         if (!valid) {
             return null;

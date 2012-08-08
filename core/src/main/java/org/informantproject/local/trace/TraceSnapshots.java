@@ -21,6 +21,7 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,187 +34,129 @@ import org.informantproject.api.Message;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
+import org.informantproject.core.trace.Trace.TraceAttribute;
 import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
-import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
-import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
-import com.google.inject.Inject;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceCommonJsonService {
+public final class TraceSnapshots {
 
-    private final TraceDao traceDao;
-    private final TraceRegistry traceRegistry;
-    private final StackTraceDao stackTraceDao;
-    private final Ticker ticker;
-    private final Gson gson = new Gson();
+    private static final Gson gson = new Gson();
 
-    @Inject
-    TraceCommonJsonService(TraceDao traceDao, TraceRegistry traceRegistry,
-            StackTraceDao stackTraceDao, Ticker ticker) {
-
-        this.traceDao = traceDao;
-        this.traceRegistry = traceRegistry;
-        this.stackTraceDao = stackTraceDao;
-        this.ticker = ticker;
+    public static TraceSnapshot from(Trace trace, long captureTick) throws IOException {
+        return from(trace, captureTick, true);
     }
 
-    @Nullable
-    public ByteStream getStoredOrActiveTraceJson(String id, boolean includeDetail)
+    public static TraceSnapshot from(Trace trace, long captureTick, boolean includeDetail)
             throws IOException {
 
-        // check active traces first to make sure that the trace is not missed if it should complete
-        // after checking stored traces but before checking active traces
-        for (Trace active : traceRegistry.getTraces()) {
-            if (active.getId().equals(id)) {
-                return getActiveTraceJson(active, includeDetail);
-            }
-        }
-        StoredTrace storedTrace = traceDao.readStoredTrace(id);
-        if (storedTrace == null) {
-            return null;
+        TraceSnapshot.Builder builder = TraceSnapshot.builder();
+        builder.id(trace.getId());
+        builder.startAt(trace.getStartDate().getTime());
+        builder.stuck(trace.isStuck() && !trace.isCompleted());
+        builder.error(trace.isError());
+        // timings for traces that are still active are normalized to the capture tick in order to
+        // *attempt* to present a picture of the trace at that exact tick
+        // (without using synchronization to block updates to the trace while it is being read)
+        long endTick = trace.getEndTick();
+        if (endTick != 0 && endTick <= captureTick) {
+            builder.duration(trace.getDuration());
+            builder.completed(true);
         } else {
-            return getStoredTraceJson(storedTrace, includeDetail);
+            builder.duration(captureTick - trace.getStartTick());
+            builder.completed(false);
         }
+        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
+        Message message = rootSpan.getMessageSupplier().get();
+        builder.description(message.getText());
+        builder.username(trace.getUsername().get());
+        Collection<TraceAttribute> attributes = trace.getAttributes();
+        if (!attributes.isEmpty()) {
+            builder.attributes(gson.toJson(attributes));
+        }
+        builder.metrics(getMetricsJson(trace));
+        if (includeDetail) {
+            SpansByteStream spansByteStream = new SpansByteStream(trace.getRootSpan().getSpans()
+                    .iterator(), captureTick);
+            builder.spans(spansByteStream);
+            builder.spanStackTraces(spansByteStream.stackTraces.build());
+            builder.mergedStackTree(TraceSnapshots.getMergedStackTree(trace));
+        }
+        return builder.build();
     }
 
-    private ByteStream getStoredTraceJson(StoredTrace storedTrace, boolean includeDetail)
+    public static ByteStream toByteStream(TraceSnapshot snapshot, boolean includeDetail)
             throws UnsupportedEncodingException {
 
         List<ByteStream> byteStreams = Lists.newArrayList();
         StringBuilder sb = new StringBuilder();
         sb.append("{\"id\":\"");
-        sb.append(storedTrace.getId());
+        sb.append(snapshot.getId());
         sb.append("\",\"start\":");
-        sb.append(storedTrace.getStartAt());
+        sb.append(snapshot.getStartAt());
         sb.append(",\"stuck\":");
-        sb.append(storedTrace.isStuck());
+        sb.append(snapshot.isStuck());
         sb.append(",\"error\":");
-        sb.append(storedTrace.isError());
+        sb.append(snapshot.isError());
         sb.append(",\"duration\":");
-        sb.append(storedTrace.getDuration());
+        sb.append(snapshot.getDuration());
         sb.append(",\"completed\":");
-        sb.append(storedTrace.isCompleted());
+        sb.append(snapshot.isCompleted());
         sb.append(",\"description\":\"");
-        sb.append(storedTrace.getDescription());
+        sb.append(snapshot.getDescription());
         sb.append("\"");
-        if (storedTrace.getUsername() != null) {
+        if (snapshot.getUsername() != null) {
             sb.append(",\"username\":\"");
-            sb.append(storedTrace.getUsername());
+            sb.append(snapshot.getUsername());
             sb.append("\"");
         }
         // inject raw json into stream
-        if (storedTrace.getAttributes() != null) {
+        if (snapshot.getAttributes() != null) {
             sb.append(",\"attributes\":");
-            sb.append(storedTrace.getAttributes());
+            sb.append(snapshot.getAttributes());
         }
-        if (storedTrace.getMetrics() != null) {
+        if (snapshot.getMetrics() != null) {
             sb.append(",\"metrics\":");
-            sb.append(storedTrace.getMetrics());
+            sb.append(snapshot.getMetrics());
         }
-        if (includeDetail && storedTrace.getSpans() != null) {
+        if (includeDetail && snapshot.getSpans() != null) {
             // spans could be null if spans text has been rolled out
             sb.append(",\"spans\":");
             // flush current StringBuilder as its own chunk and reset StringBuffer
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
-            byteStreams.add(storedTrace.getSpans());
+            byteStreams.add(snapshot.getSpans());
         }
-        if (includeDetail && storedTrace.getMergedStackTree() != null) {
+        if (includeDetail && snapshot.getMergedStackTree() != null) {
             sb.append(",\"mergedStackTree\":");
             // flush current StringBuilder as its own chunk and reset StringBuffer
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
-            byteStreams.add(storedTrace.getMergedStackTree());
+            byteStreams.add(snapshot.getMergedStackTree());
         }
         sb.append("}");
         // flush current StringBuilder as its own chunk
         byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
         return ByteStream.of(byteStreams);
-    }
-
-    private ByteStream getActiveTraceJson(Trace activeTrace, boolean includeDetail)
-            throws IOException {
-
-        long captureTick = ticker.read();
-        // there is a chance for slight inconsistency since this is reading active traces which are
-        // still being modified and/or may even reach completion while they are being written
-        List<ByteStream> byteStreams = Lists.newArrayList();
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"active\":true");
-        sb.append(",\"id\":\"");
-        sb.append(activeTrace.getId());
-        sb.append("\",\"start\":");
-        sb.append(activeTrace.getStartDate().getTime());
-        sb.append(",\"stuck\":");
-        sb.append(activeTrace.isStuck());
-        sb.append(",\"duration\":");
-        sb.append(activeTrace.getDuration());
-        sb.append(",\"completed\":");
-        sb.append(activeTrace.isCompleted());
-        Span rootSpan = activeTrace.getRootSpan().getSpans().iterator().next();
-        Message message = rootSpan.getMessageSupplier().get();
-        sb.append(",\"description\":\"");
-        sb.append(message.getText());
-        sb.append("\"");
-        String username = activeTrace.getUsername().get();
-        if (username != null) {
-            sb.append(",\"username\":\"");
-            sb.append(username);
-            sb.append("\"");
-        }
-        String attributes = getAttributesJson(activeTrace);
-        if (attributes != null) {
-            sb.append(",\"attributes\":");
-            sb.append(attributes);
-        }
-        String metrics = getMetricsJson(activeTrace);
-        if (metrics != null) {
-            sb.append(",\"metrics\":");
-            sb.append(metrics);
-        }
-        if (includeDetail) {
-            ByteStream spans = getSpansByteStream(activeTrace, captureTick);
-            sb.append(",\"spans\":");
-            // flush current StringBuilder as its own chunk and reset StringBuffer
-            byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
-            sb.setLength(0);
-            byteStreams.add(spans);
-            ByteStream mergedStackTree = getMergedStackTree(activeTrace);
-            if (mergedStackTree != null) {
-                sb.append(",\"mergedStackTree\":");
-                // flush current StringBuilder as its own chunk and reset StringBuffer
-                byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
-                sb.setLength(0);
-                byteStreams.add(mergedStackTree);
-            }
-        }
-        sb.append("}");
-        // flush current StringBuilder as its own chunk
-        byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
-        return ByteStream.of(byteStreams);
-    }
-
-    ByteStream getSpansByteStream(Trace trace, long captureTick) throws IOException {
-        return new SpansByteStream(trace.getRootSpan().getSpans().iterator(), captureTick);
     }
 
     @Nullable
-    String getMetricsJson(Trace trace) {
+    private static String getMetricsJson(Trace trace) {
         List<TraceMetric> traceMetrics = trace.getTraceMetrics();
         if (traceMetrics.isEmpty()) {
             return null;
@@ -231,22 +174,7 @@ public class TraceCommonJsonService {
         return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
     }
 
-    @Nullable
-    private String getAttributesJson(Trace trace) throws IOException {
-        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
-        Message message = rootSpan.getMessageSupplier().get();
-        Map<String, ?> contextMap = message.getContextMap();
-        if (contextMap == null) {
-            return null;
-        } else {
-            StringBuilder sb = new StringBuilder();
-            JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-            new ContextMapSerializer(jw).write(contextMap);
-            jw.close();
-            return sb.toString();
-        }
-    }
-
+    @VisibleForTesting
     @Nullable
     static ByteStream getMergedStackTree(Trace trace) {
         MergedStackTreeNode rootNode = trace.getMergedStackTree().getRootNode();
@@ -272,12 +200,12 @@ public class TraceCommonJsonService {
         return sb.toString();
     }
 
-    private class SpansByteStream extends ByteStream {
+    private static class SpansByteStream extends ByteStream {
 
         private static final int TARGET_CHUNK_SIZE = 8192;
 
         private final Iterator<Span> spans;
-        private final Map<String, String> stackTraces = Maps.newHashMap();
+        private final ImmutableMap.Builder<String, String> stackTraces = ImmutableMap.builder();
         private final long captureTick;
         private final ByteArrayOutputStream baos;
         private final Writer raw;
@@ -306,9 +234,6 @@ public class TraceCommonJsonService {
             if (!hasNext()) {
                 jw.endArray();
                 jw.close();
-                if (!stackTraces.isEmpty()) {
-                    stackTraceDao.storeStackTraces(stackTraces);
-                }
             }
             byte[] chunk = baos.toByteArray();
             baos.reset();

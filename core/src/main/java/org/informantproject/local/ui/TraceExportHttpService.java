@@ -31,7 +31,6 @@ import java.util.zip.ZipOutputStream;
 import javax.annotation.Nullable;
 
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.local.trace.TraceCommonJsonService;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -61,11 +60,11 @@ class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
 
-    private final TraceCommonJsonService traceCommonJsonService;
+    private final TraceCommonService traceCommon;
 
     @Inject
-    TraceExportHttpService(TraceCommonJsonService traceCommonJsonService) {
-        this.traceCommonJsonService = traceCommonJsonService;
+    TraceExportHttpService(TraceCommonService traceCommon) {
+        this.traceCommon = traceCommon;
     }
 
     @Nullable
@@ -73,7 +72,7 @@ class TraceExportHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ByteStream traceBuffer = traceCommonJsonService.getStoredOrActiveTraceJson(id, true);
+        ByteStream traceBuffer = traceCommon.getSnapshotOrActiveJson(id, true);
         // TODO handle stackTraces
         if (traceBuffer == null) {
             logger.error("no trace found for id '{}'", id);

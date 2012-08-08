@@ -19,8 +19,8 @@ import java.sql.SQLException;
 
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.local.trace.TraceDao;
 import org.informantproject.local.trace.TraceSinkLocal;
+import org.informantproject.local.trace.TraceSnapshotDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,16 +40,16 @@ class MiscJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(MiscJsonService.class);
 
-    private final TraceDao traceDao;
+    private final TraceSnapshotDao traceSnapshotDao;
     private final TraceSinkLocal traceSinkLocal;
     private final DataSource dataSource;
     private final Clock clock;
 
     @Inject
-    MiscJsonService(TraceDao traceDao, TraceSinkLocal traceSinkLocal, DataSource dataSource,
-            Clock clock) {
+    MiscJsonService(TraceSnapshotDao traceSnapshotDao, TraceSinkLocal traceSinkLocal,
+            DataSource dataSource, Clock clock) {
 
-        this.traceDao = traceDao;
+        this.traceSnapshotDao = traceSnapshotDao;
         this.traceSinkLocal = traceSinkLocal;
         this.dataSource = dataSource;
         this.clock = clock;
@@ -62,9 +62,9 @@ class MiscJsonService implements JsonService {
         long keepMillis = request.get("keepMillis").getAsLong();
         boolean compact = request.get("compact").getAsBoolean();
         if (keepMillis == 0) {
-            traceDao.deleteAllStoredTraces();
+            traceSnapshotDao.deleteAllSnapshots();
         } else {
-            traceDao.deleteStoredTraces(0, clock.currentTimeMillis() - keepMillis);
+            traceSnapshotDao.deleteSnapshots(0, clock.currentTimeMillis() - keepMillis);
         }
         if (compact) {
             try {

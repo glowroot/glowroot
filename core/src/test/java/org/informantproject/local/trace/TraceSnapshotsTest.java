@@ -32,7 +32,7 @@ import org.junit.Test;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceCommonJsonServiceTest {
+public class TraceSnapshotsTest {
 
     @Test
     public void shouldStoreVeryLargeMergedStackTree() throws IOException {
@@ -44,12 +44,12 @@ public class TraceCommonJsonServiceTest {
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
         for (int i = 0; i < stackTraceElements.length; i++) {
-            stackTraceElements[i] = new StackTraceElement(TraceCommonJsonServiceTest.class
-                    .getName(), "method" + i, "TraceDaoTest.java", 100 + 10 * i);
+            stackTraceElements[i] = new StackTraceElement(TraceSnapshotsTest.class
+                    .getName(), "method" + i, "TraceSnapshotsTest.java", 100 + 10 * i);
         }
         mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
         // when
-        ByteStream mergedStackTreeByteStream = TraceCommonJsonService.getMergedStackTree(trace);
+        ByteStream mergedStackTreeByteStream = TraceSnapshots.getMergedStackTree(trace);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         assertThat(mergedStackTreeByteStream).isNotNull();
         mergedStackTreeByteStream.writeTo(baos);

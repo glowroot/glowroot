@@ -53,7 +53,7 @@
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
   $(document).ready(function() {
-    var plot, storedTracePoints, activeTracePoints, currentItem, prospectiveItem, tooltipShowing
+    var plot, snapshotPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
 
     var options = {
       legend: { show: false },
@@ -65,7 +65,7 @@
       yaxis: { ticks: 10, zoomRange : false },
       zoom: { interactive: true, amount : 1.5 },
     }
-    function plotResponseData(storedTracePoints, activeTracePoints, from, to) {
+    function plotResponseData(snapshotPoints, activePoints, from, to) {
       var fromAsDate = new Date(from)
       fromAsDate.setHours(0,0,0,0)
       var zoomRangeFrom = fromAsDate.getTime()
@@ -77,7 +77,7 @@
       overrideOptions = {
         xaxis: { min : from, max : to, zoomRange : [ zoomRangeFrom, zoomRangeTo ] }
       }
-      plot = $.plot($('#placeholder'), [storedTracePoints, activeTracePoints],
+      plot = $.plot($('#placeholder'), [snapshotPoints, activePoints],
           $.extend(true, {}, options, overrideOptions))
       updateTimeFilter()
     }
@@ -199,21 +199,19 @@
         queryString += '&username=' + username
       }
       $.getJSON('trace/points?' + queryString, function(response) {
-        storedTracePoints = response.storedTracePoints
-        activeTracePoints = response.activeTracePoints
+        snapshotPoints = response.snapshotPoints
+        activePoints = response.activePoints
         hideTooltip()
         currentItem = null
         $('#detailTab').html('')
         // shift for timezone
-        for (var i = 0; i < storedTracePoints.length; i++) {
-          storedTracePoints[i][0] -= new Date(storedTracePoints[i][0]).getTimezoneOffset() * 60
-              * 1000
+        for (var i = 0; i < snapshotPoints.length; i++) {
+          snapshotPoints[i][0] -= new Date(snapshotPoints[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        for (var i = 0; i < activeTracePoints.length; i++) {
-          activeTracePoints[i][0] -= new Date(activeTracePoints[i][0]).getTimezoneOffset() * 60
-              * 1000
+        for (var i = 0; i < activePoints.length; i++) {
+          activePoints[i][0] -= new Date(activePoints[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        plotResponseData(storedTracePoints, activeTracePoints, from, to)
+        plotResponseData(snapshotPoints, activePoints, from, to)
       })
     }
     function showTraceDetailTooltip(item) {
@@ -221,9 +219,9 @@
       var y = item.pageY
       var id
       if (item.seriesIndex == 0) {
-        id = storedTracePoints[item.dataIndex][2]
+        id = snapshotPoints[item.dataIndex][2]
       } else {
-        id = activeTracePoints[item.dataIndex][2]
+        id = activePoints[item.dataIndex][2]
       }
       var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 })
       function displaySpinner() {

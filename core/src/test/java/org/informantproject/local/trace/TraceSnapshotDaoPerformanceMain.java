@@ -32,9 +32,10 @@ import com.google.inject.Injector;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceDaoPerformanceMain {
+public class TraceSnapshotDaoPerformanceMain {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceDaoPerformanceMain.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(TraceSnapshotDaoPerformanceMain.class);
 
     public static class Module extends AbstractModule {
         @Override
@@ -47,14 +48,14 @@ public class TraceDaoPerformanceMain {
 
     public static void main(String... args) {
         Injector injector = Guice.createInjector(new Module());
-        TraceTestData traceTestData = injector.getInstance(TraceTestData.class);
-        TraceDao traceDao = injector.getInstance(TraceDao.class);
+        TraceSnapshotTestData snapshotTestData = injector.getInstance(TraceSnapshotTestData.class);
+        TraceSnapshotDao snapshotDao = injector.getInstance(TraceSnapshotDao.class);
 
         Stopwatch stopwatch = new Stopwatch().start();
         for (int i = 0; i < 1000; i++) {
-            traceDao.storeTrace(traceTestData.createTrace());
+            snapshotDao.storeSnapshot(snapshotTestData.createSnapshot());
         }
         logger.info("elapsed time: {}", stopwatch.elapsedMillis());
-        logger.info("num traces: {}", traceDao.count());
+        logger.info("num traces: {}", snapshotDao.count());
     }
 }

@@ -29,19 +29,19 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class TraceTestData {
+class TraceSnapshotTestData {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final Clock clock;
 
     @Inject
-    TraceTestData(Clock clock) {
+    TraceSnapshotTestData(Clock clock) {
         this.clock = clock;
     }
 
-    StoredTrace createTrace() {
-        return StoredTrace.builder()
+    TraceSnapshot createSnapshot() {
+        return TraceSnapshot.builder()
                 .id("abc" + counter.getAndIncrement())
                 .startAt(clock.currentTimeMillis() - 10)
                 .stuck(false)

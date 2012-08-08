@@ -20,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -34,7 +35,6 @@ import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockId;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
-import org.informantproject.local.trace.StoredTrace.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,9 +50,9 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class TraceDao {
+public class TraceSnapshotDao {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotDao.class);
 
     private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("id", Types.VARCHAR),
@@ -72,6 +72,7 @@ public class TraceDao {
     private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("trace_idx",
             "captured_at", "duration"));
 
+    private final StackTraceDao stackTraceDao;
     private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final Clock clock;
@@ -79,7 +80,10 @@ public class TraceDao {
     private final boolean valid;
 
     @Inject
-    TraceDao(DataSource dataSource, RollingFile rollingFile, Clock clock) {
+    TraceSnapshotDao(StackTraceDao stackTraceDao, DataSource dataSource,
+            RollingFile rollingFile, Clock clock) {
+
+        this.stackTraceDao = stackTraceDao;
         this.dataSource = dataSource;
         this.rollingFile = rollingFile;
         this.clock = clock;
@@ -104,15 +108,19 @@ public class TraceDao {
         this.valid = !errorOnInit;
     }
 
-    void storeTrace(StoredTrace storedTrace) {
-        logger.debug("storeTrace(): storedTrace={}", storedTrace);
+    void storeSnapshot(TraceSnapshot snapshot) {
+        logger.debug("storeSnapshot(): snapshot={}", snapshot);
         if (!valid) {
             return;
+        }
+        Map<String, String> spanStackTraces = snapshot.getSpanStackTraces();
+        if (spanStackTraces != null && !spanStackTraces.isEmpty()) {
+            stackTraceDao.storeStackTraces(spanStackTraces);
         }
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
         String spansBlockId = null;
-        ByteStream spans = storedTrace.getSpans();
+        ByteStream spans = snapshot.getSpans();
         if (spans != null) {
             try {
                 spansBlockId = rollingFile.write(spans).getId();
@@ -121,7 +129,7 @@ public class TraceDao {
             }
         }
         String mergedStackTreeBlockId = null;
-        ByteStream mergedStackTree = storedTrace.getMergedStackTree();
+        ByteStream mergedStackTree = snapshot.getMergedStackTree();
         if (mergedStackTree != null) {
             try {
                 mergedStackTreeBlockId = rollingFile.write(mergedStackTree).getId();
@@ -133,23 +141,22 @@ public class TraceDao {
             dataSource.update("merge into trace (id, captured_at, start_at, stuck, error,"
                     + " duration, completed, description, username, attributes, metrics, spans,"
                     + " merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    storedTrace.getId(), capturedAt, storedTrace.getStartAt(),
-                    storedTrace.isStuck(), storedTrace.isError(), storedTrace.getDuration(),
-                    storedTrace.isCompleted(), storedTrace.getDescription(),
-                    storedTrace.getUsername(), storedTrace.getAttributes(),
-                    storedTrace.getMetrics(), spansBlockId, mergedStackTreeBlockId);
+                    snapshot.getId(), capturedAt, snapshot.getStartAt(), snapshot.isStuck(),
+                    snapshot.isError(), snapshot.getDuration(), snapshot.isCompleted(),
+                    snapshot.getDescription(), snapshot.getUsername(), snapshot.getAttributes(),
+                    snapshot.getMetrics(), spansBlockId, mergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
     }
 
-    public List<StoredTraceDuration> readStoredTraceDurations(long capturedFrom, long capturedTo,
+    public List<TraceSnapshotSummary> readSummaries(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable StringComparator usernameComparator,
             @Nullable String username) {
 
-        logger.debug("readStoredTraceDurations(): capturedFrom={}, capturedTo={}, durationLow={},"
-                + " durationHigh={}", new Object[] { capturedFrom, capturedTo, durationLow,
-                durationHigh });
+        logger.debug("readSummaries(): capturedFrom={}, capturedTo={}, durationLow={},"
+                + " durationHigh={}", new Object[] { capturedFrom, capturedTo,
+                durationLow, durationHigh });
         if (!valid) {
             return ImmutableList.of();
         }
@@ -171,7 +178,7 @@ public class TraceDao {
                 sql += " and username " + usernameComparator.getComparator() + " ?";
                 args.add(usernameComparator.formatParameter(username));
             }
-            return dataSource.query(sql, args.toArray(), new TraceDurationRowMapper());
+            return dataSource.query(sql, args.toArray(), new SummaryRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -179,8 +186,8 @@ public class TraceDao {
     }
 
     @Nullable
-    StoredTrace readStoredTrace(String id) {
-        logger.debug("readStoredTrace(): id={}", id);
+    public TraceSnapshot readSnapshot(String id) {
+        logger.debug("readSnapshot(): id={}", id);
         if (!valid) {
             return null;
         }
@@ -203,8 +210,12 @@ public class TraceDao {
         return partiallyHydratedTraces.get(0).fullyHydrate();
     }
 
-    public int deleteStoredTraces(final long capturedFrom, final long capturedTo) {
-        logger.debug("deleteStoredTraces(): capturedFrom={}, capturedTo={}", capturedFrom,
+    public String readStackTrace(String hash) {
+        return stackTraceDao.readStackTrace(hash);
+    }
+
+    public int deleteSnapshots(final long capturedFrom, final long capturedTo) {
+        logger.debug("deleteSnapshots(): capturedFrom={}, capturedTo={}", capturedFrom,
                 capturedTo);
         if (!valid) {
             return 0;
@@ -218,8 +229,8 @@ public class TraceDao {
         }
     }
 
-    public void deleteAllStoredTraces() {
-        logger.debug("deleteAllStoredTraces()");
+    public void deleteAllSnapshots() {
+        logger.debug("deleteAllSnapshots()");
         if (!valid) {
             return;
         }
@@ -264,10 +275,10 @@ public class TraceDao {
         }
     }
 
-    private static class TraceDurationRowMapper implements RowMapper<StoredTraceDuration> {
+    private static class SummaryRowMapper implements RowMapper<TraceSnapshotSummary> {
 
-        public StoredTraceDuration mapRow(ResultSet resultSet) throws SQLException {
-            return StoredTraceDuration.from(resultSet.getString(1), resultSet.getLong(2),
+        public TraceSnapshotSummary mapRow(ResultSet resultSet) throws SQLException {
+            return TraceSnapshotSummary.from(resultSet.getString(1), resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4));
         }
     }
@@ -275,7 +286,7 @@ public class TraceDao {
     private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
 
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
-            StoredTrace.Builder builder = StoredTrace.builder()
+            TraceSnapshot.Builder builder = TraceSnapshot.builder()
                     .id(resultSet.getString(1))
                     // column 2 is 'captured_at'
                     .startAt(resultSet.getLong(3))
@@ -297,7 +308,7 @@ public class TraceDao {
 
     private class PartiallyHydratedTrace {
 
-        private final StoredTrace.Builder builder;
+        private final TraceSnapshot.Builder builder;
         // file block ids are stored temporarily while reading the stored trace from the
         // database so that reading from the rolling file can occur outside of the jdbc connection
         @Nullable
@@ -305,15 +316,15 @@ public class TraceDao {
         @Nullable
         private final String mergedStackTreeFileBlockId;
 
-        private PartiallyHydratedTrace(Builder builder, @Nullable String spansFileBlockId,
-                @Nullable String mergedStackTreeFileBlockId) {
+        private PartiallyHydratedTrace(TraceSnapshot.Builder builder,
+                @Nullable String spansFileBlockId, @Nullable String mergedStackTreeFileBlockId) {
 
             this.builder = builder;
             this.spansFileBlockId = spansFileBlockId;
             this.mergedStackTreeFileBlockId = mergedStackTreeFileBlockId;
         }
 
-        private StoredTrace fullyHydrate() {
+        private TraceSnapshot fullyHydrate() {
             if (spansFileBlockId != null) {
                 FileBlock block;
                 try {

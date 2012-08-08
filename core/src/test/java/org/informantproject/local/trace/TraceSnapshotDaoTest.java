@@ -39,7 +39,7 @@ import org.junit.runner.RunWith;
  * @since 0.5
  */
 @RunWith(JukitoRunner.class)
-public class TraceDaoTest {
+public class TraceSnapshotDaoTest {
 
     private Collection<Thread> preExistingThreads;
 
@@ -69,74 +69,78 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTrace(TraceDao traceDao, TraceTestData traceTestData) {
+    public void shouldReadSnapshot(TraceSnapshotDao snapshotDao,
+            TraceSnapshotTestData snapshotTestData) {
+
         // given
-        StoredTrace storedTrace = traceTestData.createTrace();
-        traceDao.storeTrace(storedTrace);
+        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        snapshotDao.storeSnapshot(snapshot);
         // when
-        List<StoredTraceDuration> storedTraceDurations = traceDao.readStoredTraceDurations(0, 0, 0,
+        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0, 0,
                 Long.MAX_VALUE, null, null);
-        StoredTrace storedTrace2 = traceDao.readStoredTrace(storedTraceDurations.get(0).getId());
+        TraceSnapshot snapshot2 = snapshotDao.readSnapshot(summaries.get(0).getId());
         // then
-        assertThat(storedTrace2.getStartAt()).isEqualTo(storedTrace.getStartAt());
-        assertThat(storedTrace2.isStuck()).isEqualTo(storedTrace.isStuck());
-        assertThat(storedTrace2.getId()).isEqualTo(storedTrace.getId());
-        assertThat(storedTrace2.getDuration()).isEqualTo(storedTrace.getDuration());
-        assertThat(storedTrace2.isCompleted()).isEqualTo(storedTrace.isCompleted());
-        assertThat(storedTrace2.getDescription()).isEqualTo("test description");
-        assertThat(storedTrace2.getUsername()).isEqualTo(storedTrace.getUsername());
+        assertThat(snapshot2.getStartAt()).isEqualTo(snapshot.getStartAt());
+        assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
+        assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
+        assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());
+        assertThat(snapshot2.isCompleted()).isEqualTo(snapshot.isCompleted());
+        assertThat(snapshot2.getDescription()).isEqualTo("test description");
+        assertThat(snapshot2.getUsername()).isEqualTo(snapshot.getUsername());
         // TODO verify metricData, trace and mergedStackTree
     }
 
     @Test
-    public void shouldReadTraceWithDurationQualifier(TraceDao traceDao,
-            TraceTestData traceTestData) {
+    public void shouldReadSnapshotWithDurationQualifier(TraceSnapshotDao snapshotDao,
+            TraceSnapshotTestData snapshotTestData) {
 
         // given
-        StoredTrace storedTrace = traceTestData.createTrace();
-        traceDao.storeTrace(storedTrace);
+        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        snapshotDao.storeSnapshot(snapshot);
         // when
-        List<StoredTraceDuration> storedTraces = traceDao.readStoredTraceDurations(0, 0,
-                storedTrace.getDuration(), storedTrace.getDuration(), null, null);
+        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
+                snapshot.getDuration(), snapshot.getDuration(), null, null);
         // then
-        assertThat(storedTraces).hasSize(1);
+        assertThat(summaries).hasSize(1);
     }
 
     @Test
-    public void shouldNotReadTraceWithHighDurationQualifier(TraceDao traceDao,
-            TraceTestData traceTestData) {
+    public void shouldNotReadSnapshotWithHighDurationQualifier(TraceSnapshotDao snapshotDao,
+            TraceSnapshotTestData snapshotTestData) {
 
         // given
-        StoredTrace storedTrace = traceTestData.createTrace();
-        traceDao.storeTrace(storedTrace);
+        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        snapshotDao.storeSnapshot(snapshot);
         // when
-        List<StoredTraceDuration> storedTraces = traceDao.readStoredTraceDurations(0, 0,
-                storedTrace.getDuration() + 1, storedTrace.getDuration() + 2, null, null);
+        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
+                snapshot.getDuration() + 1, snapshot.getDuration() + 2, null, null);
         // then
-        assertThat(storedTraces).isEmpty();
+        assertThat(summaries).isEmpty();
     }
 
     @Test
-    public void shouldNotReadTraceWithLowDurationQualifier(TraceDao traceDao,
-            TraceTestData traceTestData) {
+    public void shouldNotReadSnapshotWithLowDurationQualifier(TraceSnapshotDao snapshotDao,
+            TraceSnapshotTestData snapshotTestData) {
 
         // given
-        StoredTrace storedTrace = traceTestData.createTrace();
-        traceDao.storeTrace(storedTrace);
+        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        snapshotDao.storeSnapshot(snapshot);
         // when
-        List<StoredTraceDuration> storedTraces = traceDao.readStoredTraceDurations(0, 0,
-                storedTrace.getDuration() - 2, storedTrace.getDuration() - 1, null, null);
+        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
+                snapshot.getDuration() - 2, snapshot.getDuration() - 1, null, null);
         // then
-        assertThat(storedTraces).isEmpty();
+        assertThat(summaries).isEmpty();
     }
 
     @Test
-    public void shouldDeletedTrace(TraceDao traceDao, TraceTestData traceTestData) {
+    public void shouldDeletedTrace(TraceSnapshotDao snapshotDao,
+            TraceSnapshotTestData snapshotTestData) {
+
         // given
-        traceDao.storeTrace(traceTestData.createTrace());
+        snapshotDao.storeSnapshot(snapshotTestData.createSnapshot());
         // when
-        traceDao.deleteStoredTraces(0, 0);
+        snapshotDao.deleteSnapshots(0, 0);
         // then
-        assertThat(traceDao.count()).isEqualTo(0);
+        assertThat(snapshotDao.count()).isEqualTo(0);
     }
 }
