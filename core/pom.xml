@@ -318,9 +318,14 @@
         <configuration>
           <includeDependency>false</includeDependency>
           <obfuscate>false</obfuscate>
+          <libs>
+            <!-- this path is overridden on osx, see the mac profile below -->
+            <lib>${java.home}/lib/rt.jar</lib>
+          </libs>
           <options>
             <option>-dontoptimize</option>
-            <option>-ignorewarnings</option>
+            <option>-dontnote **</option>
+            <option>-dontwarn **</option>
             <option>-keep class org.informantproject.core.MainEntryPoint { *; }</option>
             <option>-keep class org.informantproject.core.InformantModule { *; }</option>
             <option>
@@ -340,9 +345,6 @@
             <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
             <option>-keep class org.informantproject.shaded.google.common.** { *; }</option>
           </options>
-          <libs>
-            <lib>${java.home}/lib/rt.jar</lib>
-          </libs>
         </configuration>
         <dependencies>
           <dependency>
@@ -356,6 +358,27 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <build>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <libs>
+                  <lib>${java.home}/../Classes/classes.jar</lib>
+                </libs>
+              </configuration>
+            </plugin>
+          </plugins>
+      </build>
+    </profile>
     <profile>
       <id>release</id>
       <build>
