@@ -79,6 +79,7 @@ class ThreadDumpJsonService implements JsonService {
             jw.endObject();
         }
         jw.endArray();
+        jw.close();
         return sb.toString();
     }
 }

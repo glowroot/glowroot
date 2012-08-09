@@ -67,6 +67,7 @@ public class JdbcPluginPerformanceMain {
         }
     }
 
+    @SuppressWarnings("unused")
     private static void testWithoutInformant() throws Exception {
         System.out.print("without informant:         ");
         new ExecuteJdbcSelectAndIterateOverResults().executeApp();
@@ -83,6 +84,7 @@ public class JdbcPluginPerformanceMain {
         container.closeAndDeleteFiles();
     }
 
+    @SuppressWarnings("unused")
     private static void testWithInformantCoreDisabled() throws Exception {
         System.out.print("with informant disabled:   ");
         InformantContainer container = setUpContainer();
@@ -91,6 +93,7 @@ public class JdbcPluginPerformanceMain {
         container.closeAndDeleteFiles();
     }
 
+    @SuppressWarnings("unused")
     private static void testWithInformantJdbcPluginDisabled() throws Exception {
         System.out.print("with jdbc plugin disabled: ");
         InformantContainer container = setUpContainer();
@@ -115,6 +118,7 @@ public class JdbcPluginPerformanceMain {
         return dataSource.getConnection();
     }
 
+    @SuppressWarnings("unused")
     private static void printGarbageCollectionStats() {
         for (GarbageCollectorMXBean mbean : ManagementFactory.getGarbageCollectorMXBeans()) {
             System.out.format("%s %d %d%n", mbean.getName(), mbean.getCollectionTime(),
