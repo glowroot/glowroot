@@ -50,8 +50,6 @@ final class Beans {
                 }
             });
 
-    private Beans() {}
-
     @Nullable
     static Object value(@Nullable Object o, String[] path, int currIndex) {
         if (o == null) {
@@ -75,4 +73,6 @@ final class Beans {
             }
         }
     }
+
+    private Beans() {}
 }

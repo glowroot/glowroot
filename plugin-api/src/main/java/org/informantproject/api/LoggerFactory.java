@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class LoggerFactory {
+public final class LoggerFactory {
 
     private static final String LOGGER_FACTORY_IMPL_CLASS_NAME =
             "org.informantproject.core.LoggerFactoryImpl";
@@ -53,8 +53,6 @@ public class LoggerFactory {
             throw new IllegalStateException(e);
         }
     }
-
-    private LoggerFactory() {}
 
     public static Logger getLogger(Class<?> type) {
         try {
@@ -81,4 +79,6 @@ public class LoggerFactory {
             throw new IllegalStateException(e);
         }
     }
+
+    private LoggerFactory() {}
 }

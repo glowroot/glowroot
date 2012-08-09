@@ -68,8 +68,6 @@ public final class MainEntryPoint {
     private static final List<PluginServicesProxy> pluginServicesProxies = Lists.newArrayList();
     private static final AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
 
-    private MainEntryPoint() {}
-
     // javaagent entry point
     public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
@@ -153,4 +151,6 @@ public final class MainEntryPoint {
             injector = null;
         }
     }
+
+    private MainEntryPoint() {}
 }

@@ -30,8 +30,6 @@ public final class JdbcPluginProperties {
     private static volatile Multimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
 
-    private JdbcPluginProperties() {}
-
     public static void setDisplayBinaryParameterAsHex(String sql, int parameterIndex) {
         HashMultimap<String, Integer> mutableMultimap = HashMultimap
                 .create(displayBinaryParameterAsHex);
@@ -51,4 +49,6 @@ public final class JdbcPluginProperties {
     static boolean displayBinaryParameterAsHex(String sql, int parameterIndex) {
         return displayBinaryParameterAsHex.containsEntry(sql, parameterIndex);
     }
+
+    private JdbcPluginProperties() {}
 }

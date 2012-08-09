@@ -25,8 +25,6 @@ import java.io.RandomAccessFile;
  */
 final class RandomAccessFiles {
 
-    private RandomAccessFiles() {}
-
     static int readFully(RandomAccessFile in, byte[] b) throws IOException {
         return readFully(in, b, 0, b.length);
     }
@@ -57,4 +55,6 @@ final class RandomAccessFiles {
             total += n;
         }
     }
+
+    private RandomAccessFiles() {}
 }

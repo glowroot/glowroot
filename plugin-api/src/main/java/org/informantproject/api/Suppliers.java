@@ -23,8 +23,6 @@ import javax.annotation.Nullable;
  */
 public final class Suppliers {
 
-    private Suppliers() {}
-
     public static <T> Supplier<T> ofInstance(@Nullable final T reference) {
         return new Supplier<T>() {
             public T get() {
@@ -32,4 +30,6 @@ public final class Suppliers {
             }
         };
     }
+
+    private Suppliers() {}
 }

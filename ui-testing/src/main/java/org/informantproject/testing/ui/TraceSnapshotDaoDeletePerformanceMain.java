@@ -34,8 +34,6 @@ public final class TraceSnapshotDaoDeletePerformanceMain {
     private static final Logger logger = LoggerFactory
             .getLogger(TraceSnapshotDaoDeletePerformanceMain.class);
 
-    private TraceSnapshotDaoDeletePerformanceMain() {}
-
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create();
         // set thresholds low so there will be lots of data to view
@@ -71,4 +69,6 @@ public final class TraceSnapshotDaoDeletePerformanceMain {
             }
         }
     }
+
+    private TraceSnapshotDaoDeletePerformanceMain() {}
 }

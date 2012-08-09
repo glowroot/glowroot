@@ -50,8 +50,6 @@ public final class XmlDocuments {
 
     private static final Logger logger = LoggerFactory.getLogger(XmlDocuments.class);
 
-    private XmlDocuments() {}
-
     public static Document newDocument(InputSupplier<? extends InputStream> inputSupplier)
             throws ParserConfigurationException, SAXException, IOException {
 
@@ -132,4 +130,6 @@ public final class XmlDocuments {
             throw e;
         }
     }
+
+    private XmlDocuments() {}
 }

@@ -30,8 +30,6 @@ public final class Files {
 
     private static final int TEMP_DIR_ATTEMPTS = 10000;
 
-    private Files() {}
-
     public static void delete(File file) throws IOException {
         if (!file.exists()) {
             throw new IOException("could not find file to delete '" + file.getCanonicalPath()
@@ -64,4 +62,6 @@ public final class Files {
                 + " attempts (tried " + baseName + "0 to " + baseName + (TEMP_DIR_ATTEMPTS - 1)
                 + ')');
     }
+
+    private Files() {}
 }

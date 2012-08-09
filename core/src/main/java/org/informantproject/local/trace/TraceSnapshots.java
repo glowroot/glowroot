@@ -402,4 +402,6 @@ public final class TraceSnapshots {
             END_OBJECT, END_ARRAY, POP_METRIC_NAME;
         }
     }
+
+    private TraceSnapshots() {}
 }

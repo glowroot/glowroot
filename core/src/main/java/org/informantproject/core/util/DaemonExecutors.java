@@ -35,8 +35,6 @@ public final class DaemonExecutors {
 
     private static final String NAME_COUNTER_SUFFIX = "-%d";
 
-    private DaemonExecutors() {}
-
     public static ExecutorService newCachedThreadPool(String name) {
         return Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -67,4 +65,6 @@ public final class DaemonExecutors {
             logger.error(e.getMessage(), e);
         }
     }
+
+    private DaemonExecutors() {}
 }

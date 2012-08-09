@@ -52,9 +52,6 @@ final class ServletPluginProperties {
     private static volatile boolean isCaptureAllSessionAttributes = false;
     private static volatile String cachedSessionAttributesText;
 
-    // utility class
-    private ServletPluginProperties() {}
-
     @Nullable
     static String sessionUsernameAttributePath() {
         return pluginServices.getStringProperty(SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME);
@@ -109,4 +106,6 @@ final class ServletPluginProperties {
             }
         };
     }
+
+    private ServletPluginProperties() {}
 }

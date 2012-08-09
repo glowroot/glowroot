@@ -33,8 +33,6 @@ import org.slf4j.LoggerFactory;
 // called via reflection from org.informantproject.api.LoggerFactory
 public final class LoggerFactoryImpl {
 
-    private LoggerFactoryImpl() {}
-
     public static Logger getLogger(String name) {
         return new LoggerImpl(LoggerFactory.getLogger(name));
     }
@@ -137,4 +135,6 @@ public final class LoggerFactoryImpl {
             logger.error(msg, t);
         }
     }
+
+    private LoggerFactoryImpl() {}
 }

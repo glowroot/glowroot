@@ -40,8 +40,6 @@ import com.google.common.collect.Collections2;
  */
 public final class UnitTests {
 
-    private UnitTests() {}
-
     // marker annotation
     @Documented
     public @interface OnlyUsedByTests {}
@@ -179,4 +177,6 @@ public final class UnitTests {
             return toStringHelper.toString();
         }
     }
+
+    private UnitTests() {}
 }

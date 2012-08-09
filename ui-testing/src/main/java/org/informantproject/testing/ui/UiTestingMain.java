@@ -31,8 +31,6 @@ public final class UiTestingMain {
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
-    private UiTestingMain() {}
-
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(UI_PORT, false);
         // set thresholds low so there will be lots of data to view
@@ -60,4 +58,6 @@ public final class UiTestingMain {
             }
         }
     }
+
+    private UiTestingMain() {}
 }
