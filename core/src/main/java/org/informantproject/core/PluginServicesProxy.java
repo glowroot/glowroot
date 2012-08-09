@@ -136,22 +136,22 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void addSpan(Supplier<Message> message) {
+    public void addSpan(Supplier<Message> messageSupplier) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.addSpan(message);
+            pluginServices.addSpan(messageSupplier);
         }
     }
 
     @Override
-    public void addErrorSpan(Supplier<Message> message, Throwable t) {
+    public void addErrorSpan(Supplier<Message> messageSupplier, Throwable t) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.addErrorSpan(message, t);
+            pluginServices.addErrorSpan(messageSupplier, t);
         }
     }
 

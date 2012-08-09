@@ -30,6 +30,6 @@ public interface Span {
     void updateMessage(MessageUpdater updater);
 
     public interface MessageUpdater {
-        void update(Supplier<Message> message);
+        void update(Supplier<Message> messageSupplier);
     }
 }

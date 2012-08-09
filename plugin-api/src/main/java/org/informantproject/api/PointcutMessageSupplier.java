@@ -61,8 +61,8 @@ public class PointcutMessageSupplier implements Supplier<Message> {
 
     public static void updateWithReturnValue(final Object returnValue, Span span) {
         span.updateMessage(new MessageUpdater() {
-            public void update(Supplier<Message> message) {
-                ((PointcutMessageSupplier) message).setReturnValue(returnValue);
+            public void update(Supplier<Message> messageSupplier) {
+                ((PointcutMessageSupplier) messageSupplier).setReturnValue(returnValue);
             }
         });
     }

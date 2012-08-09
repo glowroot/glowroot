@@ -72,15 +72,15 @@ public abstract class PluginServices {
     @Nullable
     public abstract Double getDoubleProperty(String propertyName);
 
-    public abstract Span startTrace(Supplier<Message> message, Metric metric);
+    public abstract Span startTrace(Supplier<Message> messageSupplier, Metric metric);
 
-    public abstract Span startSpan(Supplier<Message> message, Metric metric);
+    public abstract Span startSpan(Supplier<Message> messageSupplier, Metric metric);
 
     public abstract Timer startTimer(Metric metric);
 
-    public abstract void addSpan(Supplier<Message> message);
+    public abstract void addSpan(Supplier<Message> messageSupplier);
 
-    public abstract void addErrorSpan(Supplier<Message> message, Throwable t);
+    public abstract void addErrorSpan(Supplier<Message> messageSupplier, Throwable t);
 
     public abstract void setUsername(Supplier<String> username);
 
@@ -155,11 +155,11 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public Span startTrace(Supplier<Message> message, Metric metric) {
+        public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
             return NopSpan.INSTANCE;
         }
         @Override
-        public Span startSpan(Supplier<Message> message, Metric metric) {
+        public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
             return NopSpan.INSTANCE;
         }
         @Override
@@ -167,9 +167,9 @@ public abstract class PluginServices {
             return NopTimer.INSTANCE;
         }
         @Override
-        public void addSpan(Supplier<Message> message) {}
+        public void addSpan(Supplier<Message> messageSupplier) {}
         @Override
-        public void addErrorSpan(Supplier<Message> message, Throwable t) {}
+        public void addErrorSpan(Supplier<Message> messageSupplier, Throwable t) {}
         @Override
         public void setUsername(Supplier<String> username) {}
         @Override
