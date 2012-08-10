@@ -34,7 +34,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.5.2.Final</version>
+      <version>3.5.3.Final</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -44,7 +44,7 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <version>2.0.0</version>
+      <version>2.0.1</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -55,7 +55,7 @@
     <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-assert-core</artifactId>
-      <version>2.0M6</version>
+      <version>2.0M7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
