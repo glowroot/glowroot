@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 import org.informantproject.shaded.google.common.collect.ImmutableList;
 
@@ -32,6 +33,7 @@ import org.informantproject.shaded.google.common.collect.ImmutableList;
  * @see java.sql.Statement#addBatch(String)
  * @since 0.5
  */
+@NotThreadSafe
 class StatementMirror {
 
     // this doesn't apply to PreparedStatementMirror
@@ -63,7 +65,7 @@ class StatementMirror {
 
     // just in case someone executes a batch statement and then adds more batches (on top of
     // previous ones) and re-executes (is this possible? TODO write a test case for this)
-    Collection<String> getBatchedSqlCopy() {
+    ImmutableList<String> getBatchedSqlCopy() {
         return ImmutableList.copyOf(batchedSql);
     }
 

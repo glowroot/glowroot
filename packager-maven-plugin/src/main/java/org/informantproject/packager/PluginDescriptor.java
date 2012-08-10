@@ -18,22 +18,26 @@ package org.informantproject.packager;
 import java.util.List;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class PluginDescriptor {
 
     private final String name;
     private final String groupId;
     private final String artifactId;
     private final String version;
-    private final List<PropertyDescriptor> properties;
-    private final List<String> aspects;
+    private final ImmutableList<PropertyDescriptor> properties;
+    private final ImmutableList<String> aspects;
 
     public PluginDescriptor(String name, String groupId, String artifactId, String version,
-            List<PropertyDescriptor> properties, List<String> aspects) {
+            ImmutableList<PropertyDescriptor> properties, ImmutableList<String> aspects) {
 
         this.name = name;
         this.groupId = groupId;
@@ -71,6 +75,7 @@ public class PluginDescriptor {
         return aspects;
     }
 
+    @Immutable
     public static class PropertyDescriptor {
         private final String prompt;
         private final String name;

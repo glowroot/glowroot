@@ -60,6 +60,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
@@ -420,7 +421,7 @@ public class PackagerMojo extends AbstractMojo {
                 .getTextContent();
         String version = pluginElement.getElementsByTagName("version").item(0).getTextContent();
         NodeList propertiesNodes = pluginElement.getElementsByTagName("properties");
-        List<PropertyDescriptor> properties = Lists.newArrayList();
+        ImmutableList.Builder<PropertyDescriptor> properties = ImmutableList.builder();
         if (propertiesNodes.getLength() > 0) {
             NodeList propertyNodes = ((Element) propertiesNodes.item(0))
                     .getElementsByTagName("property");
@@ -428,13 +429,14 @@ public class PackagerMojo extends AbstractMojo {
                 properties.add(createPropertyDescriptor((Element) propertyNodes.item(i)));
             }
         }
-        List<String> aspects = Lists.newArrayList();
+        ImmutableList.Builder<String> aspects = ImmutableList.builder();
         NodeList aspectsNodes = pluginElement.getElementsByTagName("aspects");
         NodeList aspectNodes = ((Element) aspectsNodes.item(0)).getElementsByTagName("aspect");
         for (int i = 0; i < aspectNodes.getLength(); i++) {
             aspects.add(aspectNodes.item(i).getTextContent());
         }
-        return new PluginDescriptor(name, groupId, artifactId, version, properties, aspects);
+        return new PluginDescriptor(name, groupId, artifactId, version, properties.build(),
+                aspects.build());
     }
 
     private static PropertyDescriptor createPropertyDescriptor(Element propertyElement) {

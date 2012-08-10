@@ -17,6 +17,7 @@ package org.informantproject.testing.ui;
 
 import java.io.File;
 
+import org.informantproject.core.util.Static;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
@@ -29,6 +30,7 @@ import com.google.common.base.Stopwatch;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public final class TraceSnapshotDaoDeletePerformanceMain {
 
     private static final Logger logger = LoggerFactory

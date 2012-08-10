@@ -19,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ import com.google.common.cache.LoadingCache;
  * @since 0.5
  */
 // TODO write javadocs for all public methods
+@ThreadSafe
 public abstract class PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
@@ -72,6 +74,8 @@ public abstract class PluginServices {
     @Nullable
     public abstract Double getDoubleProperty(String propertyName);
 
+    // if there is no trace already bound to the current thread, a new trace is created and bound.
+    // if there is already a trace bound to the current thread, this method delegates to startSpan()
     public abstract Span startTrace(Supplier<Message> messageSupplier, Metric metric);
 
     public abstract Span startSpan(Supplier<Message> messageSupplier, Metric metric);
@@ -84,6 +88,7 @@ public abstract class PluginServices {
 
     public abstract void setUsername(Supplier<String> username);
 
+    // sets trace attribute in
     public abstract void putTraceAttribute(String name, @Nullable String value);
 
     @Nullable
@@ -180,6 +185,7 @@ public abstract class PluginServices {
             return null;
         }
 
+        @ThreadSafe
         private static class NopMetric implements Metric {
             private static final NopMetric INSTANCE = new NopMetric();
             public String getName() {
@@ -187,6 +193,7 @@ public abstract class PluginServices {
             }
         }
 
+        @ThreadSafe
         private static class NopSpan implements Span {
             private static final NopSpan INSTANCE = new NopSpan();
             public void end() {}
@@ -194,6 +201,7 @@ public abstract class PluginServices {
             public void updateMessage(MessageUpdater updater) {}
         }
 
+        @ThreadSafe
         private static class NopTimer implements Timer {
             private static final NopTimer INSTANCE = new NopTimer();
             public void end() {}

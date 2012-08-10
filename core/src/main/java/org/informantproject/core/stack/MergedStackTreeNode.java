@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Element of {@link MergedStackTree}.
@@ -27,6 +28,7 @@ import javax.annotation.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class MergedStackTreeNode {
 
     @Nullable

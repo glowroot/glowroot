@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
+import org.informantproject.core.util.Static;
 import org.informantproject.core.util.XmlDocuments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,8 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class Plugins {
+@Static
+public final class Plugins {
 
     private static final Logger logger = LoggerFactory.getLogger(Plugins.class);
 
@@ -73,8 +75,6 @@ public class Plugins {
                     return ImmutableMap.copyOf(buildPluginDescriptorMap());
                 }
             });
-
-    private Plugins() {}
 
     public static List<PluginDescriptor> getPackagedPluginDescriptors() {
         return packagedPluginDescriptors.get();
@@ -256,4 +256,6 @@ public class Plugins {
             return nodes.item(0).getTextContent();
         }
     }
+
+    private Plugins() {}
 }

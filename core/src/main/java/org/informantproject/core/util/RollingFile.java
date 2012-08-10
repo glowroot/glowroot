@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +41,8 @@ public class RollingFile {
     private final RollingOutputStream rollingOut;
     private final OutputStream compressedOut;
 
-    // guarded by lock
+    @GuardedBy("lock")
     private RandomAccessFile inFile;
-
     private final Object lock = new Object();
 
     // TODO handle exceptions better

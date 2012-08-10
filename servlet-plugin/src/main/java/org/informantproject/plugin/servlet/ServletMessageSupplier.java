@@ -18,8 +18,10 @@ package org.informantproject.plugin.servlet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
@@ -27,7 +29,6 @@ import org.informantproject.api.TemplateMessage;
 import org.informantproject.shaded.google.common.base.Objects;
 import org.informantproject.shaded.google.common.base.Optional;
 import org.informantproject.shaded.google.common.collect.ImmutableMap;
-import org.informantproject.shaded.google.common.collect.Maps;
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -42,6 +43,7 @@ import org.informantproject.shaded.google.common.collect.Maps;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class ServletMessageSupplier implements Supplier<Message> {
 
     // TODO allow additional notation for session attributes to capture, e.g.
@@ -67,7 +69,7 @@ class ServletMessageSupplier implements Supplier<Message> {
     @Nullable
     private final String requestURI;
     @Nullable
-    private volatile Map<String, String[]> requestParameterMap;
+    private volatile ImmutableMap<String, String[]> requestParameterMap;
 
     // the initial value is the sessionId as it was present at the beginning of the request
     @Nullable
@@ -81,14 +83,15 @@ class ServletMessageSupplier implements Supplier<Message> {
     // the initial value map contains the session attributes as they were present at the beginning
     // of the request
     @Nullable
-    private final Map<String, String> sessionAttributeInitialValueMap;
+    private final ImmutableMap<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
     @Nullable
-    private volatile Map<String, Optional<String>> sessionAttributeUpdatedValueMap;
+    private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(@Nullable String requestMethod, @Nullable String requestURI,
-            @Nullable String sessionId, @Nullable Map<String, String> sessionAttributeMap) {
+            @Nullable String sessionId,
+            @Nullable ImmutableMap<String, String> sessionAttributeMap) {
 
         this.requestMethod = requestMethod;
         this.requestURI = requestURI;
@@ -101,9 +104,9 @@ class ServletMessageSupplier implements Supplier<Message> {
     }
 
     public Message get() {
-        ImmutableMap.Builder<String, Object> mapBuilder = ImmutableMap.builder();
-        addRequestParametersContextMap(mapBuilder);
-        addSessionAttributesContextMap(mapBuilder);
+        ImmutableMap.Builder<String, Object> contextMap = ImmutableMap.builder();
+        addRequestParametersContextMap(contextMap);
+        addSessionAttributesContextMap(contextMap);
         String message;
         if (requestMethod == null && requestURI == null) {
             message = "";
@@ -114,7 +117,7 @@ class ServletMessageSupplier implements Supplier<Message> {
         } else {
             message = requestMethod + " " + requestURI;
         }
-        return TemplateMessage.of(message, mapBuilder.build());
+        return TemplateMessage.of(message, contextMap.build());
     }
 
     boolean isRequestParameterMapCaptured() {
@@ -124,11 +127,19 @@ class ServletMessageSupplier implements Supplier<Message> {
     void captureRequestParameterMap(Map<?, ?> requestParameterMap) {
         // shallow copy is necessary because request may not be thread safe
         // shallow copy is also necessary because of the note about tomcat above
-        Map<String, String[]> map = Maps.newHashMapWithExpectedSize(requestParameterMap.size());
+        ImmutableMap.Builder<String, String[]> map = ImmutableMap.builder();
         for (Entry<?, ?> entry : requestParameterMap.entrySet()) {
-            map.put((String) entry.getKey(), (String[]) entry.getValue());
+            String key = (String) entry.getKey();
+            String[] value = (String[]) entry.getValue();
+            if (value == null) {
+                // just to be safe since ImmutableMap won't accept nulls
+                map.put(key, new String[0]);
+            } else {
+                // the clone() is just to be safe to ensure immutability
+                map.put(key, value.clone());
+            }
         }
-        this.requestParameterMap = map;
+        this.requestParameterMap = map.build();
     }
 
     void setSessionIdUpdatedValue(String sessionId) {
@@ -168,7 +179,7 @@ class ServletMessageSupplier implements Supplier<Message> {
     private void addSessionAttributesContextMap(ImmutableMap.Builder<String, Object> contextMap) {
         if (sessionIdUpdatedValue != null) {
             contextMap.put("session id (at beginning of this request)",
-                    Optional.fromNullable(sessionIdInitialValue));
+                    Objects.firstNonNull(sessionIdInitialValue, ""));
             contextMap.put("session id (updated during this request)", sessionIdUpdatedValue);
         } else if (sessionIdInitialValue != null) {
             contextMap.put("session id", sessionIdInitialValue);

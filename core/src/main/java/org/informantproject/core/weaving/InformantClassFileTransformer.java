@@ -22,6 +22,8 @@ import java.security.ProtectionDomain;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Timer;
@@ -44,6 +46,7 @@ import com.google.common.collect.Sets;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class InformantClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory

@@ -16,6 +16,7 @@
 package org.informantproject.core.trace;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
@@ -29,6 +30,7 @@ import org.informantproject.api.Supplier;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class Span {
 
     private final Supplier<Message> messageSupplier;

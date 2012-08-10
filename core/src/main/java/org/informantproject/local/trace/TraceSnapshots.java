@@ -21,7 +21,6 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,7 @@ import org.informantproject.core.trace.Trace.TraceAttribute;
 import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
+import org.informantproject.core.util.Static;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -54,6 +54,7 @@ import com.google.gson.stream.JsonWriter;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public final class TraceSnapshots {
 
     private static final Gson gson = new Gson();
@@ -81,18 +82,16 @@ public final class TraceSnapshots {
             builder.duration(captureTick - trace.getStartTick());
             builder.completed(false);
         }
-        Span rootSpan = trace.getRootSpan().getSpans().iterator().next();
-        Message message = rootSpan.getMessageSupplier().get();
+        Message message = trace.getRootSpan().getMessageSupplier().get();
         builder.description(message.getText());
         builder.username(trace.getUsername().get());
-        Collection<TraceAttribute> attributes = trace.getAttributes();
+        List<TraceAttribute> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }
         builder.metrics(getMetricsJson(trace));
         if (includeDetail) {
-            SpansByteStream spansByteStream = new SpansByteStream(trace.getRootSpan().getSpans()
-                    .iterator(), captureTick);
+            SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick);
             builder.spans(spansByteStream);
             builder.spanStackTraces(spansByteStream.stackTraces.build());
             builder.mergedStackTree(TraceSnapshots.getMergedStackTree(trace));
@@ -163,7 +162,7 @@ public final class TraceSnapshots {
         }
         List<Snapshot> items = Lists.newArrayList();
         for (TraceMetric traceMetric : traceMetrics) {
-            items.add(traceMetric.copyOf());
+            items.add(traceMetric.getSnapshot());
         }
         Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
                 new Function<Snapshot, Long>() {

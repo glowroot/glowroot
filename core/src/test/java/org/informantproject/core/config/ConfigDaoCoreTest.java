@@ -100,7 +100,7 @@ public class ConfigDaoCoreTest {
         // when
         CoreConfig coreConfig = configDao.readCoreConfig();
         // then
-        assertThat(coreConfig).isEqualTo(CoreConfig.builder().setEnabled(false).build());
+        assertThat(coreConfig).isEqualTo(CoreConfig.builder().enabled(false).build());
     }
 
     @Test

@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,7 @@ import com.google.common.io.Files;
  */
 // TODO implement good error reporting for command line args
 // to help users get up and running with minimal trouble
-//
-// Immutable
+@Immutable
 class AgentArgs {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentArgs.class);

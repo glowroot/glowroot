@@ -20,6 +20,7 @@ import java.security.ProtectionDomain;
 import java.util.List;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.weaving.WeavingClassVisitor.NothingToWeaveException;
@@ -36,6 +37,7 @@ import com.google.common.collect.ImmutableList;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class Weaver implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);

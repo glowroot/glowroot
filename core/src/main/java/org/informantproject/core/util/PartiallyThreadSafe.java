@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.trace;
+package org.informantproject.core.util;
 
-import org.informantproject.core.util.Static;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 
 /**
- * Convenience method for nanosecond comparison.
+ * Marker to identify classes that are partially thread safe, e.g. safe for observation by multiple
+ * threads, but only supports updates from a single threads.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
-final class Nanoseconds {
-
-    // nano times roll over every 292 years, so it is important to test differences between
-    // nano times (e.g. nano2 - nano1 >= 0, not nano1 <= nano2)
-    // (see http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
-    public static boolean lessThan(long nano1, long nano2) {
-        return nano2 - nano1 >= 0;
-    }
-
-    private Nanoseconds() {}
+@Documented
+@Target(ElementType.TYPE)
+public @interface PartiallyThreadSafe {
+    // explanation
+    String value();
 }

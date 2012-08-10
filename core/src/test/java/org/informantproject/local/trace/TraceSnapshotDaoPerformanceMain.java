@@ -20,6 +20,7 @@ import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.RollingFileTestProvider;
+import org.informantproject.core.util.Static;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,8 @@ import com.google.inject.Injector;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceSnapshotDaoPerformanceMain {
+@Static
+public final class TraceSnapshotDaoPerformanceMain {
 
     private static final Logger logger = LoggerFactory
             .getLogger(TraceSnapshotDaoPerformanceMain.class);
@@ -58,4 +60,6 @@ public class TraceSnapshotDaoPerformanceMain {
         logger.info("elapsed time: {}", stopwatch.elapsedMillis());
         logger.info("num traces: {}", snapshotDao.count());
     }
+
+    private TraceSnapshotDaoPerformanceMain() {}
 }

@@ -26,6 +26,7 @@ import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public final class Files {
 
     private static final int TEMP_DIR_ATTEMPTS = 10000;

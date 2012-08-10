@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
+import org.informantproject.core.util.PartiallyThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,8 @@ import com.google.common.collect.Lists;
  * @since 0.5
  */
 // TODO make it work with spawned threads
-public class RootSpan {
+@PartiallyThreadSafe("pushSpan(), addSpan(), popSpan() can only be called from constructing thread")
+class RootSpan {
 
     private static final Logger logger = LoggerFactory.getLogger(RootSpan.class);
 
@@ -65,32 +67,32 @@ public class RootSpan {
         pushSpanInternal(rootSpan);
     }
 
-    public Span getRootSpan() {
+    Span getRootSpan() {
         return rootSpan;
     }
 
-    public Iterable<Span> getSpans() {
+    Iterable<Span> getSpans() {
         return spans;
     }
 
-    public int getSize() {
+    int getSize() {
         return size;
     }
 
-    public long getStartTick() {
+    long getStartTick() {
         return startTick;
     }
 
-    public long getEndTick() {
+    long getEndTick() {
         return endTick;
     }
 
     // duration of trace in nanoseconds
-    public long getDuration() {
+    long getDuration() {
         return endTick == 0 ? ticker.read() - startTick : endTick - startTick;
     }
 
-    public boolean isCompleted() {
+    boolean isCompleted() {
         return endTick != 0;
     }
 

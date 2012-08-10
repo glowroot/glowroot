@@ -15,12 +15,15 @@
  */
 package org.informantproject.plugin.servlet;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import org.informantproject.api.UnresolvedMethod;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@NotThreadSafe
 class HttpServletResponse {
 
     private static final UnresolvedMethod getStatusMethod = UnresolvedMethod.from(

@@ -17,6 +17,7 @@ package org.informantproject.plugin.servlet;
 
 import java.io.IOException;
 
+import javax.annotation.concurrent.ThreadSafe;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -32,6 +33,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class TestFilter implements Filter, AppUnderTest {
 
     public void executeApp() throws Exception {

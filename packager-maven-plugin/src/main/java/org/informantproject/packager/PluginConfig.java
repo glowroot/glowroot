@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Nullable
 public class PluginConfig {
 
     private String groupId;
@@ -60,7 +59,6 @@ public class PluginConfig {
         this.properties = properties;
     }
 
-    @Nullable
     public static class PropertyConfig {
         private String prompt;
         private String name;

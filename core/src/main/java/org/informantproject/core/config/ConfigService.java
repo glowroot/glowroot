@@ -113,7 +113,7 @@ public class ConfigService {
         synchronized (updateLock) {
             coreConfig = CoreConfig.builder()
                     .copy(coreConfig)
-                    .setEnabled(enabled)
+                    .enabled(enabled)
                     .build();
         }
         // it is safe to send the notification to the listeners outside of the update lock because

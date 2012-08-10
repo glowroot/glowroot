@@ -21,6 +21,7 @@ import org.informantproject.core.metric.MetricSink;
 import org.informantproject.core.metric.MetricValue;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * Implementation of MetricSink for local storage in embedded H2 database. Some day there may be
@@ -29,6 +30,7 @@ import com.google.inject.Inject;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Singleton
 public class MetricSinkLocal implements MetricSink {
 
     private final MetricDao metricDao;

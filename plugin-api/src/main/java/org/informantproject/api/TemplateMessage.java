@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// Immutable
+@Immutable
 public class TemplateMessage implements Message, Supplier<Message> {
 
     private static final Logger logger = LoggerFactory.getLogger(TemplateMessage.class);

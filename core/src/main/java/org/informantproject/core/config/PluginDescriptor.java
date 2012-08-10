@@ -16,9 +16,9 @@
 package org.informantproject.core.config;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.Pointcut;
@@ -28,13 +28,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class PluginDescriptor {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginDescriptor.class);
@@ -45,11 +46,11 @@ public class PluginDescriptor {
     private final String version;
     private final ImmutableList<PropertyDescriptor> propertyDescriptors;
     // marked transient for gson serialization
-    private final transient List<Mixin> mixins;
+    private final transient ImmutableList<Mixin> mixins;
     // marked transient for gson serialization
-    private final transient List<Advice> advisors;
+    private final transient ImmutableList<Advice> advisors;
 
-    private final Map<String, PropertyDescriptor> propertyDescriptorsByName;
+    private final ImmutableMap<String, PropertyDescriptor> propertyDescriptorsByName;
 
     public PluginDescriptor(String name, String groupId, String artifactId, String version,
             List<PropertyDescriptor> propertyDescriptors, List<String> aspects) {
@@ -59,8 +60,8 @@ public class PluginDescriptor {
         this.artifactId = artifactId;
         this.version = version;
         this.propertyDescriptors = ImmutableList.copyOf(propertyDescriptors);
-        List<Mixin> mixins = Lists.newArrayList();
-        List<Advice> advisors = Lists.newArrayList();
+        ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
+        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
         for (String aspect : aspects) {
             try {
                 // don't initialize the aspect since that will trigger static initializers which
@@ -73,12 +74,14 @@ public class PluginDescriptor {
                 continue;
             }
         }
-        this.mixins = ImmutableList.copyOf(mixins);
-        this.advisors = ImmutableList.copyOf(advisors);
-        propertyDescriptorsByName = Maps.newHashMap();
+        this.mixins = mixins.build();
+        this.advisors = advisors.build();
+        ImmutableMap.Builder<String, PropertyDescriptor> propertyDescriptorsByName =
+                ImmutableMap.builder();
         for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
             propertyDescriptorsByName.put(propertyDescriptor.getName(), propertyDescriptor);
         }
+        this.propertyDescriptorsByName = propertyDescriptorsByName.build();
     }
 
     public String getId() {
@@ -154,6 +157,7 @@ public class PluginDescriptor {
         return mixins;
     }
 
+    @Immutable
     public static class PropertyDescriptor {
         private final String prompt;
         private final String name;

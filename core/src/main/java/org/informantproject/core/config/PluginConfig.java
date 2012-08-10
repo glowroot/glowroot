@@ -16,20 +16,20 @@
 package org.informantproject.core.config;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
@@ -43,17 +43,10 @@ import com.google.gson.stream.JsonWriter;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class PluginConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
-
-    private static final ImmutableList<Class<?>> validValueTypes;
-
-    static {
-        // TODO write unit tests using each of these data types
-        validValueTypes = ImmutableList.copyOf(new Class<?>[] { String.class, Boolean.class,
-                Double.class });
-    }
 
     private final boolean enabled;
 
@@ -61,40 +54,25 @@ public class PluginConfig {
     // included in the property map, even those properties with null value, so that an appropriate
     // error can be logged if a plugin tries to access a property value that it hasn't defined in
     // its plugin.xml file
-    //
-    // map values are @Nullable
-    private final Map<String, Object> properties = Maps.newHashMap();
+    private final ImmutableMap<String, Optional<?>> properties;
 
     static PluginConfig getEnabledInstance() {
-        return new PluginConfig(true, new HashMap<String, Object>());
+        ImmutableMap<String, Optional<?>> properties = ImmutableMap.of();
+        return new PluginConfig(true, properties);
     }
 
     static PluginConfig getDisabledInstance() {
-        return new PluginConfig(false, new HashMap<String, Object>());
+        ImmutableMap<String, Optional<?>> properties = ImmutableMap.of();
+        return new PluginConfig(false, properties);
     }
 
     static Builder builder(PluginDescriptor pluginDescriptor) {
         return new Builder(pluginDescriptor);
     }
 
-    private PluginConfig(boolean enabled, Map<String, Object> properties) {
+    private PluginConfig(boolean enabled, ImmutableMap<String, Optional<?>> properties) {
         this.enabled = enabled;
-        // make a copy and validate value types at the same time
-        for (Entry<String, Object> subEntry : properties.entrySet()) {
-            String propertyName = subEntry.getKey();
-            if (subEntry.getValue() == null) {
-                this.properties.put(propertyName, null);
-            } else {
-                Object value = subEntry.getValue();
-                if (validValueTypes.contains(value.getClass())) {
-                    this.properties.put(propertyName, value);
-                } else {
-                    logger.error("unexpected plugin config value type '" + value.getClass()
-                            + "' for property name '" + propertyName + "' (expecting one of "
-                            + Joiner.on(", ").join(validValueTypes) + ")", new Throwable());
-                }
-            }
-        }
+        this.properties = properties;
     }
 
     public boolean isEnabled() {
@@ -103,34 +81,49 @@ public class PluginConfig {
 
     @Nullable
     public String getStringProperty(String name) {
-        Object value = properties.get(name);
+        Optional<?> optional = properties.get(name);
+        if (optional == null) {
+            logger.error("unexpected property name '{}'", name);
+            return null;
+        }
+        Object value = optional.orNull();
         if (value == null) {
             return null;
         } else if (value instanceof String) {
             return (String) value;
         } else {
-            logger.error("expecting string value type, but found value type '" + value.getClass()
-                    + "' for property name '" + name + "'");
+            logger.error("expecting string value type, but found value type '"
+                    + value.getClass() + "' for property name '" + name + "'");
             return null;
         }
     }
 
     public boolean getBooleanProperty(String name) {
-        Object value = properties.get(name);
+        Optional<?> optional = properties.get(name);
+        if (optional == null) {
+            logger.error("unexpected property name '{}'", name);
+            return false;
+        }
+        Object value = optional.orNull();
         if (value == null) {
             return false;
         } else if (value instanceof Boolean) {
             return (Boolean) value;
         } else {
-            logger.error("expecting boolean value type, but found value type '" + value.getClass()
-                    + "' for property name '" + name + "'");
+            logger.error("expecting boolean value type, but found value type '"
+                    + value.getClass() + "' for property name '" + name + "'");
             return false;
         }
     }
 
     @Nullable
     public Double getDoubleProperty(String name) {
-        Object value = properties.get(name);
+        Optional<?> optional = properties.get(name);
+        if (optional == null) {
+            logger.error("unexpected property name '{}'", name);
+            return null;
+        }
+        Object value = optional.orNull();
         if (value == null) {
             return null;
         } else if (value instanceof Double) {
@@ -151,7 +144,8 @@ public class PluginConfig {
                 if (property.isHidden()) {
                     continue;
                 }
-                Object value = properties.get(property.getName());
+                Optional<?> optional = properties.get(property.getName());
+                Object value = optional == null ? null : optional.orNull();
                 jw.name(property.getName());
                 if (value == null) {
                     jw.nullValue();
@@ -163,6 +157,7 @@ public class PluginConfig {
                     jw.value((Double) value);
                 } else {
                     logger.error("unexpected property value type '{}'", value.getClass().getName());
+                    jw.value("");
                 }
             }
             jw.endObject();
@@ -205,15 +200,14 @@ public class PluginConfig {
         private static final Gson gson = new Gson();
 
         private final PluginDescriptor pluginDescriptor;
-        // map values are @Nullable
-        private final Map<String, Object> properties;
+        private final Map<String, Optional<?>> properties;
         private boolean enabled;
 
         private Builder(PluginDescriptor pluginDescriptor) {
             this.pluginDescriptor = pluginDescriptor;
             properties = Maps.newHashMap();
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
-                properties.put(property.getName(), property.getDefault());
+                properties.put(property.getName(), Optional.fromNullable(property.getDefault()));
             }
         }
 
@@ -257,9 +251,9 @@ public class PluginConfig {
             }
             if (value == null && property.getJavaClass() == Boolean.class) {
                 logger.error("boolean property types do not accept null values");
-                properties.put(name, false);
+                properties.put(name, Optional.of(false));
             } else {
-                properties.put(name, value);
+                properties.put(name, Optional.fromNullable(value));
             }
             return this;
         }
@@ -269,7 +263,7 @@ public class PluginConfig {
             return this;
         }
 
-        private Builder setProperties(JsonObject jsonObject, boolean ignoreExtraProperties) {
+        private void setProperties(JsonObject jsonObject, boolean ignoreExtraProperties) {
             Map<String, Object> overlayProperties = gson.fromJson(jsonObject,
                     new TypeToken<Map<String, Object>>() {}.getType());
             // overlay new values
@@ -282,11 +276,10 @@ public class PluginConfig {
                 }
                 setProperty(name, value, ignoreExtraProperties);
             }
-            return this;
         }
 
         PluginConfig build() {
-            return new PluginConfig(enabled, properties);
+            return new PluginConfig(enabled, ImmutableMap.copyOf(properties));
         }
     }
 }

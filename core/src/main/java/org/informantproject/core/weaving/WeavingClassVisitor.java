@@ -162,8 +162,9 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             }
         }
         List<Advice> matchingAdvisors = Lists.newArrayList();
+        ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc));
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
-            if (adviceMatcher.isMethodLevelMatch(access, name, desc)) {
+            if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
             }
         }

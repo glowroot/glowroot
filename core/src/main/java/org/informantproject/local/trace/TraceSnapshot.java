@@ -18,6 +18,7 @@ package org.informantproject.local.trace;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.core.util.ByteStream;
 
@@ -31,7 +32,7 @@ import com.google.common.collect.ImmutableMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// Immutable
+@Immutable
 public class TraceSnapshot {
 
     private final String id;

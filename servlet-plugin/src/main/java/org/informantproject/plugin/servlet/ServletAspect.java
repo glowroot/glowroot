@@ -16,7 +16,6 @@
 package org.informantproject.plugin.servlet;
 
 import java.util.Enumeration;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -40,7 +39,8 @@ import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.OnReturn;
 import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.api.weaving.Pointcut;
-import org.informantproject.shaded.google.common.collect.Maps;
+import org.informantproject.shaded.google.common.base.Objects;
+import org.informantproject.shaded.google.common.collect.ImmutableMap;
 
 /**
  * Defines pointcuts and captures data on
@@ -461,26 +461,26 @@ public class ServletAspect {
     }
 
     @Nullable
-    private static Map<String, String> getSessionAttributes(HttpSession session) {
+    private static ImmutableMap<String, String> getSessionAttributes(HttpSession session) {
         Set<String> sessionAttributePaths = ServletPluginProperties.sessionAttributePaths();
         if (sessionAttributePaths.isEmpty()) {
             return null;
         }
         if (ServletPluginProperties.captureAllSessionAttributes()) {
             // special single value of "*" means dump all http session attributes
-            Map<String, String> sessionAttributeMap = Maps.newHashMap();
+            ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
             for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
                 String attributeName = (String) e.nextElement();
                 Object value = session.getAttribute(attributeName);
                 // value shouldn't be null, but its (remotely) possible that a concurrent request
                 // for the same session just removed the attribute
-                String valueString = value == null ? null : value.toString();
-                sessionAttributeMap.put(attributeName, valueString);
+                String valueString = value == null ? "" : value.toString();
+                // taking no chances on value.toString() possibly returning null
+                sessionAttributeMap.put(attributeName, Objects.firstNonNull(valueString, ""));
             }
-            return sessionAttributeMap;
+            return sessionAttributeMap.build();
         } else {
-            Map<String, String> sessionAttributeMap = Maps
-                    .newHashMapWithExpectedSize(sessionAttributePaths.size());
+            ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
             // dump only http session attributes in list
             for (String attributePath : sessionAttributePaths) {
                 String value = getSessionAttributeTextValue(session, attributePath);
@@ -488,7 +488,7 @@ public class ServletAspect {
                     sessionAttributeMap.put(attributePath, value);
                 }
             }
-            return sessionAttributeMap;
+            return sessionAttributeMap.build();
         }
     }
 

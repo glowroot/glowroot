@@ -15,12 +15,10 @@
  */
 package org.informantproject.core.weaving;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
-import org.objectweb.asm.Type;
+import javax.annotation.concurrent.Immutable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -29,7 +27,7 @@ import com.google.common.collect.ImmutableList;
  * @since 0.5
  */
 // a ParsedType is never created for Object.class
-// Immutable
+@Immutable
 class ParsedType {
 
     private final boolean missing;
@@ -79,26 +77,12 @@ class ParsedType {
     }
 
     @Nullable
-    ParsedMethod getMethod(String name, Type[] types) {
+    ParsedMethod getMethod(ParsedMethod parsedMethod) {
         for (ParsedMethod method : methods) {
-            if (!method.name.equals(name)) {
-                continue;
-            }
-            if (Arrays.equals(method.args, types)) {
+            if (method.equals(parsedMethod)) {
                 return method;
             }
         }
         return null;
-    }
-
-    static class ParsedMethod {
-
-        private final String name;
-        private final Type[] args;
-
-        ParsedMethod(String name, Type[] args) {
-            this.name = name;
-            this.args = args;
-        }
     }
 }

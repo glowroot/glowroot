@@ -65,9 +65,8 @@ public class TraceSinkLocal implements TraceSink {
         CoreConfig config = configService.getCoreConfig();
         int thresholdMillis = config.getThresholdMillis();
         boolean thresholdDisabled = (thresholdMillis == CoreConfig.THRESHOLD_DISABLED);
-        long durationInNanoseconds = trace.getRootSpan().getDuration();
 
-        if ((!thresholdDisabled && durationInNanoseconds >= TimeUnit.MILLISECONDS
+        if ((!thresholdDisabled && trace.getDuration() >= TimeUnit.MILLISECONDS
                 .toNanos(thresholdMillis)) || trace.isStuck() || trace.isError()) {
 
             queueLength.incrementAndGet();

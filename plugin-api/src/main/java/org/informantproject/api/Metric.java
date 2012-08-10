@@ -15,10 +15,13 @@
  */
 package org.informantproject.api;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public interface Metric {
     String getName();
 }

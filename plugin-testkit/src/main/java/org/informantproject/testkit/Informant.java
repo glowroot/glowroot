@@ -18,6 +18,7 @@ package org.informantproject.testkit;
 import java.io.IOException;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.Config.PluginConfig;
@@ -36,6 +37,9 @@ import com.ning.http.client.Response;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// even though this is thread safe, it is not useful for running tests in parallel since
+// getLastTrace() and others are not scoped to a particular test
+@ThreadSafe
 public class Informant {
 
     private final int uiPort;

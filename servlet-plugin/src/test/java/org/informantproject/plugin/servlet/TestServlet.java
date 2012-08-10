@@ -15,6 +15,7 @@
  */
 package org.informantproject.plugin.servlet;
 
+import javax.annotation.concurrent.ThreadSafe;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +28,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 @SuppressWarnings("serial")
 class TestServlet extends HttpServlet implements AppUnderTest {
 

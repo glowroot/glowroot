@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.Clock;
@@ -275,6 +276,7 @@ public class TraceSnapshotDao {
         }
     }
 
+    @ThreadSafe
     private static class SummaryRowMapper implements RowMapper<TraceSnapshotSummary> {
 
         public TraceSnapshotSummary mapRow(ResultSet resultSet) throws SQLException {
@@ -283,6 +285,7 @@ public class TraceSnapshotDao {
         }
     }
 
+    @ThreadSafe
     private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
 
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {

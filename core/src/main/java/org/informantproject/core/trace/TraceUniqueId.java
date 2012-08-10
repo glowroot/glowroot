@@ -19,6 +19,8 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Strings;
 
 /**
@@ -29,6 +31,7 @@ import com.google.common.base.Strings;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class TraceUniqueId {
 
     // used to populate id (below)

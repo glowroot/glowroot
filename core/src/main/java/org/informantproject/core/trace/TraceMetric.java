@@ -15,7 +15,10 @@
  */
 package org.informantproject.core.trace;
 
+import javax.annotation.concurrent.Immutable;
+
 import org.informantproject.api.Timer;
+import org.informantproject.core.util.PartiallyThreadSafe;
 
 import com.google.common.base.Ticker;
 
@@ -27,6 +30,7 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@PartiallyThreadSafe("getSnapshot() can be called from any thread")
 public class TraceMetric implements Timer {
 
     private final String name;
@@ -53,40 +57,8 @@ public class TraceMetric implements Timer {
         this.ticker = ticker;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public long getTotal() {
-        return total;
-    }
-
-    public long getMin() {
-        return min;
-    }
-
-    public long getMax() {
-        return max;
-    }
-
-    public long getAverageTime() {
-        return total / count;
-    }
-
-    public long getCount() {
-        return count;
-    }
-
-    boolean isFirstStart() {
-        return firstStart;
-    }
-
-    void firstStartSeen() {
-        firstStart = false;
-    }
-
     // safe to be called from another thread
-    public Snapshot copyOf() {
+    public Snapshot getSnapshot() {
         // try to grab a quick, consistent snapshot, but no guarantees on consistency if trace is
         // active
 
@@ -109,6 +81,23 @@ public class TraceMetric implements Timer {
         }
     }
 
+    public void end() {
+        if (selfNestingLevel == 1) {
+            recordData(ticker.read() - startTick);
+        }
+        // selfNestingLevel is decremented after recording data since it is used as a memory barrier
+        // so that all updated fields will be visible to other threads in copyOf()
+        selfNestingLevel--;
+    }
+
+    boolean isFirstStart() {
+        return firstStart;
+    }
+
+    void firstStartSeen() {
+        firstStart = false;
+    }
+
     void start() {
         if (selfNestingLevel == 0) {
             startTick = ticker.read();
@@ -125,15 +114,6 @@ public class TraceMetric implements Timer {
         // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
         // as a memory barrier so startTick will be visible to other threads in copyOf()
         selfNestingLevel++;
-    }
-
-    public void end() {
-        if (selfNestingLevel == 1) {
-            recordData(ticker.read() - startTick);
-        }
-        // selfNestingLevel is decremented after recording data since it is used as a memory barrier
-        // so that all updated fields will be visible to other threads in copyOf()
-        selfNestingLevel--;
     }
 
     void stop(long endTick) {
@@ -156,6 +136,7 @@ public class TraceMetric implements Timer {
         total += time;
     }
 
+    @Immutable
     public static class Snapshot {
 
         private final String name;

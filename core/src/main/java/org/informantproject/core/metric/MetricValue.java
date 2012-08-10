@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.metric;
 
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 
 /**
@@ -23,10 +25,11 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class MetricValue {
 
-    private String metricId;
-    private double value;
+    private final String metricId;
+    private final double value;
 
     public MetricValue(String metricId, double value) {
         this.metricId = metricId;
@@ -37,16 +40,8 @@ public class MetricValue {
         return metricId;
     }
 
-    public void setMetricId(String metricId) {
-        this.metricId = metricId;
-    }
-
     public double getValue() {
         return value;
-    }
-
-    public void setValue(double value) {
-        this.value = value;
     }
 
     @Override

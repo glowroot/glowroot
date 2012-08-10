@@ -18,6 +18,7 @@ package org.informantproject.plugin.servlet;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 import org.informantproject.api.UnresolvedMethod;
 import org.informantproject.shaded.google.common.collect.ImmutableMap;
@@ -29,6 +30,7 @@ import org.informantproject.shaded.google.common.collect.ImmutableMap;
 // HttpServletRequest wrapper does not make assumptions about the @Nullable properties of the
 // underlying javax.servlet.http.HttpServletRequest since it's just an interface and could
 // theoretically return null even where it seems to not make sense
+@NotThreadSafe
 class HttpServletRequest {
 
     private static final UnresolvedMethod getSessionOneArgMethod = UnresolvedMethod.from(

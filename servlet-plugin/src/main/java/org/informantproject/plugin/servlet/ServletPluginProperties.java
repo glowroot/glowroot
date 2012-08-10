@@ -18,6 +18,7 @@ package org.informantproject.plugin.servlet;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.PluginServices;
 import org.informantproject.shaded.google.common.base.Function;
@@ -32,6 +33,7 @@ import org.informantproject.shaded.google.common.collect.Iterables;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 final class ServletPluginProperties {
 
     private static final String SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME =
@@ -47,8 +49,8 @@ final class ServletPluginProperties {
             .get("org.informantproject.plugins:servlet-plugin");
 
     // optimization
-    private static volatile Set<String> cachedSessionAttributePaths = ImmutableSet.of();
-    private static volatile Set<String> cachedSessionAttributeNames = ImmutableSet.of();
+    private static volatile ImmutableSet<String> cachedSessionAttributePaths = ImmutableSet.of();
+    private static volatile ImmutableSet<String> cachedSessionAttributeNames = ImmutableSet.of();
     private static volatile boolean isCaptureAllSessionAttributes = false;
     private static volatile String cachedSessionAttributesText;
 

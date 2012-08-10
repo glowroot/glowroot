@@ -23,6 +23,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DaemonExecutors;
@@ -30,22 +32,22 @@ import org.informantproject.core.util.UnitTests;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalJvmExecutionAdapter.class);
 
     private final Process process;
-    private final ExecutorService executorService;
+    private final ExecutorService consolePipeExecutorService;
 
-    private final Socket socket;
-    private final ObjectOutputStream objectOut;
-    private final ObjectInputStream objectIn;
+    private final SocketCommander socketCommander;
 
     ExternalJvmExecutionAdapter(String agentArgs) throws IOException {
         String classpath = System.getProperty("java.class.path");
@@ -61,8 +63,9 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                         .getLocalPort()));
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
-        executorService = DaemonExecutors.newSingleThreadExecutor("ExternalMainPipe");
-        executorService.submit(new Runnable() {
+        consolePipeExecutorService = DaemonExecutors
+                .newSingleThreadExecutor("ExternalJvmConsolePipe");
+        consolePipeExecutorService.submit(new Runnable() {
             public void run() {
                 try {
                     ByteStreams.copy(process.getInputStream(), System.out);
@@ -71,40 +74,26 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                 }
             }
         });
-        socket = serverSocket.accept();
-        objectOut = new ObjectOutputStream(socket.getOutputStream());
-        objectIn = new ObjectInputStream(socket.getInputStream());
+        // TODO should ServerSocket.accept() be called to start listening before external process is
+        // started?
+        socketCommander = new SocketCommander(serverSocket.accept());
     }
 
-    public int getPort() throws IOException, ClassNotFoundException {
-        objectOut.writeObject(SocketCommandProcessor.GET_PORT_COMMAND);
-        return (Integer) getNextNonPingValue();
-    }
-
-    private Object getNextNonPingValue() throws IOException, ClassNotFoundException {
-        while (true) {
-            Object value = objectIn.readObject();
-            if (value == null || !value.equals(SocketHeartbeat.PING_COMMAND)) {
-                return value;
-            }
-        }
+    public int getPort() throws InterruptedException {
+        return (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
-            String threadName) throws IOException, ClassNotFoundException {
+            String threadName) throws InterruptedException {
 
-        objectOut.writeObject(SocketCommandProcessor.EXECUTE_APP_COMMAND);
-        objectOut.writeObject(appUnderTestClass.getName());
-        objectOut.writeObject(threadName);
-        getNextNonPingValue();
+        socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP_COMMAND,
+                appUnderTestClass.getName(), threadName));
     }
 
     public void closeImpl() throws IOException, InterruptedException {
-        objectOut.close();
-        objectIn.close();
-        socket.close();
+        socketCommander.close();
         process.waitFor();
-        executorService.shutdownNow();
+        consolePipeExecutorService.shutdownNow();
     }
 
     public static void main(String[] args) {

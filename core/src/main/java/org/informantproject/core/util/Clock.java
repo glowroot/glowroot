@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.util;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import com.google.common.base.Ticker;
 
 /**
@@ -23,6 +25,7 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public abstract class Clock {
 
     public abstract long currentTimeMillis();

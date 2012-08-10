@@ -18,18 +18,20 @@ package org.informantproject.core.weaving;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import javax.annotation.concurrent.Immutable;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class AdviceMatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
@@ -48,15 +50,12 @@ class AdviceMatcher {
         return targetTypeMatch || !preMatchedSuperTypes.isEmpty();
     }
 
-    boolean isMethodLevelMatch(int access, String name, String desc) {
-        if (!isMethodNameMatch(name)) {
-            return false;
-        }
-        if (!isMethodArgsMatch(desc)) {
+    boolean isMethodLevelMatch(int access, ParsedMethod parsedMethod) {
+        if (!isMethodMatch(parsedMethod)) {
             return false;
         }
         if ((access & Opcodes.ACC_STATIC) == 0) {
-            return isMethodOverrideMatch(name, desc);
+            return isMethodOverrideMatch(parsedMethod);
         } else {
             // static methods only match at the target type (no inheritance worries)
             return targetTypeMatch;
@@ -68,7 +67,7 @@ class AdviceMatcher {
     }
 
     private ImmutableList<ParsedType> buildPreMatchedSuperTypes(List<ParsedType> superTypes) {
-        Builder<ParsedType> builder = ImmutableList.builder();
+        ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
         for (ParsedType superType : superTypes) {
             if (isTypeMatch(superType.getClassName())) {
                 builder.add(superType);
@@ -80,6 +79,14 @@ class AdviceMatcher {
     private boolean isTypeMatch(String className) {
         // currently only exact matching is supported
         return advice.getPointcut().typeName().equals(className);
+    }
+
+    private boolean isMethodMatch(ParsedMethod parsedMethod) {
+        if (!isMethodNameMatch(parsedMethod.getName())) {
+            return false;
+        } else {
+            return isMethodArgsMatch(parsedMethod.getArgs());
+        }
     }
 
     private boolean isMethodNameMatch(String name) {
@@ -94,9 +101,8 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgsMatch(String desc) {
+    private boolean isMethodArgsMatch(Type[] argumentTypes) {
         String[] pointcutMethodArgs = advice.getPointcut().methodArgs();
-        Type[] argumentTypes = Type.getArgumentTypes(desc);
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
                 if (i != pointcutMethodArgs.length - 1) {
@@ -121,12 +127,12 @@ class AdviceMatcher {
         return argumentTypes.length == pointcutMethodArgs.length;
     }
 
-    private boolean isMethodOverrideMatch(String name, String desc) {
+    private boolean isMethodOverrideMatch(ParsedMethod parsedMethod) {
         if (targetTypeMatch) {
             return true;
         }
         for (ParsedType type : preMatchedSuperTypes) {
-            if (type.getMethod(name, Type.getArgumentTypes(desc)) != null) {
+            if (type.getMethod(parsedMethod) != null) {
                 // found overridden method in one of the matching super types
                 return true;
             }

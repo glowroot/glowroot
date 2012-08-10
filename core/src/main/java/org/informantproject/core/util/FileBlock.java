@@ -15,13 +15,15 @@
  */
 package org.informantproject.core.util;
 
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-// Immutable
+@Immutable
 public class FileBlock {
 
     private final long startIndex;

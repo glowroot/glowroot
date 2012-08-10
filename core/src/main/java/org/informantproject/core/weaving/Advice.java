@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectMethodName;
@@ -46,6 +47,7 @@ import com.google.common.collect.ImmutableMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class Advice {
 
     private static final Logger logger = LoggerFactory.getLogger(Advice.class);

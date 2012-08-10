@@ -18,6 +18,8 @@ package org.informantproject.core.trace;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.core.stack.MergedStackTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class CollectStackCommand implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CollectStackCommand.class);

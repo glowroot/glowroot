@@ -15,10 +15,13 @@
  */
 package org.informantproject.plugin.jdbc;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class HasStatementMirrorImpl implements HasStatementMirror {
 
     private volatile StatementMirror statementMirror;

@@ -16,13 +16,16 @@
 package org.informantproject.testkit;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.concurrent.ExecutionException;
+import java.util.List;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.MainEntryPoint;
+import org.informantproject.testkit.SocketCommander.CommandWrapper;
+import org.informantproject.testkit.SocketCommander.ResponseWrapper;
 
 /**
  * @author Trask Stalnaker
@@ -32,6 +35,7 @@ class SocketCommandProcessor implements Runnable {
 
     public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
     public static final String GET_PORT_COMMAND = "GET_PORT";
+    public static final String EXCEPTION_RESPONSE = "EXCEPTION";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -58,37 +62,63 @@ class SocketCommandProcessor implements Runnable {
 
     private void runInternal() throws Exception {
         while (true) {
-            String commandName = (String) objectIn.readObject();
-            if (commandName.equals(GET_PORT_COMMAND)) {
-                // sychronizing with SocketHeartbeat
-                synchronized (objectOut) {
-                    objectOut.writeObject(MainEntryPoint.getPort());
+            CommandWrapper commandWrapper = (CommandWrapper) objectIn.readObject();
+            Object command = commandWrapper.getCommand();
+            int commandNum = commandWrapper.getCommandNum();
+            if (command instanceof String) {
+                if (command.equals(GET_PORT_COMMAND)) {
+                    respond(MainEntryPoint.getPort(), commandNum);
+                } else {
+                    logger.error("Unexpected command '" + command + "'");
+                    respond(EXCEPTION_RESPONSE, commandNum);
                 }
-            } else if (commandName.equals(EXECUTE_APP_COMMAND)) {
-                String appClassName = (String) objectIn.readObject();
-                String threadName = (String) objectIn.readObject();
-                Class<?> appClass = Class.forName(appClassName);
-                String previousThreadName = Thread.currentThread().getName();
-                Thread.currentThread().setName(threadName);
-                try {
-                    executeApp(appClass);
-                } catch (Throwable t) {
-                    logger.error(t.getMessage(), t);
-                    throw new ExecutionException(t);
-                } finally {
-                    Thread.currentThread().setName(previousThreadName);
-                }
-                // sychronizing with SocketHeartbeat
-                synchronized (objectOut) {
-                    objectOut.writeObject("ok");
+            } else if (command instanceof List) {
+                List<?> argList = (List<?>) command;
+                if (argList.isEmpty()) {
+                    logger.error("Unexpected empty command");
+                    respond(EXCEPTION_RESPONSE, commandNum);
+                } else {
+                    Object commandName = argList.get(0);
+                    if (commandName.equals(EXECUTE_APP_COMMAND)) {
+                        String appClassName = (String) argList.get(1);
+                        String threadName = (String) argList.get(2);
+                        executeAppAndRespond(appClassName, threadName, commandNum);
+                    } else {
+                        logger.error("Unexpected command '" + commandName + "'");
+                        respond(EXCEPTION_RESPONSE, commandNum);
+                    }
                 }
             } else {
-                throw new IllegalStateException("Unexpected command '" + commandName + "'");
+                logger.error("Unexpected command type '" + command.getClass().getName() + "'");
+                respond(EXCEPTION_RESPONSE, commandNum);
             }
         }
     }
-    private static void executeApp(Class<?> appClass) throws Exception {
-        AppUnderTest app = (AppUnderTest) appClass.newInstance();
-        app.executeApp();
+
+    private void executeAppAndRespond(String appClassName, String threadName, int commandNum)
+            throws Exception {
+
+        Class<?> appClass = Class.forName(appClassName);
+        String previousThreadName = Thread.currentThread().getName();
+        Thread.currentThread().setName(threadName);
+        try {
+            AppUnderTest app = (AppUnderTest) appClass.newInstance();
+            app.executeApp();
+            respond("", commandNum);
+        } catch (Throwable t) {
+            // catch Throwable so response can (hopefully) be sent even under extreme
+            // circumstances like OutOfMemoryError
+            logger.error(t.getMessage(), t);
+            respond(EXCEPTION_RESPONSE, commandNum);
+        } finally {
+            Thread.currentThread().setName(previousThreadName);
+        }
+    }
+
+    private void respond(Object response, int commandNum) throws IOException {
+        // sychronizing with SocketHeartbeat
+        synchronized (objectOut) {
+            objectOut.writeObject(new ResponseWrapper(commandNum, response));
+        }
     }
 }

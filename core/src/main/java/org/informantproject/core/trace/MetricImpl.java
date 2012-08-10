@@ -16,6 +16,7 @@
 package org.informantproject.core.trace;
 
 import org.informantproject.api.Metric;
+import org.informantproject.core.util.PartiallyThreadSafe;
 
 import com.google.common.base.Ticker;
 
@@ -23,6 +24,7 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@PartiallyThreadSafe("get(), getName() can be called from any thread")
 public class MetricImpl implements Metric {
 
     private final String name;
@@ -69,7 +71,7 @@ public class MetricImpl implements Metric {
         return traceMetric.get();
     }
 
-    void remove() {
+    void resetThreadLocal() {
         traceMetric.remove();
     }
 }

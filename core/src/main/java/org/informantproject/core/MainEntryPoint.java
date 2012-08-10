@@ -29,6 +29,7 @@ import org.informantproject.api.PluginServices;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCache;
+import org.informantproject.core.util.Static;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.informantproject.core.weaving.InformantClassFileTransformer;
 import org.informantproject.local.ui.HttpServer;
@@ -51,6 +52,7 @@ import com.google.inject.Injector;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public final class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);

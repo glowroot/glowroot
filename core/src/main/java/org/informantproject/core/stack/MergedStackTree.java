@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.Lists;
 
@@ -39,6 +40,7 @@ import com.google.common.collect.Lists;
 // (e.g. to optimize for trace captures which are never persisted)
 // in this case, it should be configurable how many stack traces to store unmerged
 // after which the existing stack traces are merged as well as future stack traces
+@ThreadSafe
 public class MergedStackTree {
 
     private final Collection<MergedStackTreeNode> rootNodes =

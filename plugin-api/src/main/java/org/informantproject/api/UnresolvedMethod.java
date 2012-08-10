@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ import com.google.common.collect.MapMaker;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// Immutable
+@Immutable
 public class UnresolvedMethod {
 
     private static final Logger logger = LoggerFactory.getLogger(UnresolvedMethod.class);

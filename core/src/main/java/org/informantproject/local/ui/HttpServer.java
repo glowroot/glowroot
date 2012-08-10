@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.core.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -73,7 +74,7 @@ public class HttpServer extends HttpServerBase {
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
 
     private final ImmutableMap<Pattern, Object> uriMappings;
-    private final ImmutableList<JsonServiceMappings> jsonServiceMappings;
+    private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final Gson gson = new Gson();
 
     @Inject
@@ -111,42 +112,42 @@ public class HttpServer extends HttpServerBase {
         // the parentheses define the part of the match that is used to construct the args for
         // calling the method in json service, e.g. /trace/detail/abc123 below calls the method
         // getDetail("abc123") in TraceJsonService
-        ImmutableList.Builder<JsonServiceMappings> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/points$"),
+        ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/trace/points$"),
                 tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/trace/summary/(.*)$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/trace/summary/(.*)$"),
                 traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/stacktrace/(.*)$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/stacktrace/(.*)$"),
                 stackTraceJsonService, "getStackTrace"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/metrics/read$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/metrics/read$"),
                 metricJsonService, "getMetrics"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/read$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/read$"),
                 configJsonService, "getConfig"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/core"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"
                 + "/properties"), configJsonService, "storeCoreProperties"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/core"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"
                 + "/enable"), configJsonService, "enableCore"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/core"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"
                 + "/disable"), configJsonService, "disableCore"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/plugin"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)/enable"), configJsonService, "enablePlugin"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/plugin"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)/disable"), configJsonService, "disablePlugin"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/config/plugin"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)/properties$"), configJsonService, "storePluginProperties"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/packaged$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/plugin/packaged$"),
                 pluginJsonService, "getPackagedPlugins"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/installed$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/plugin/installed$"),
                 pluginJsonService, "getInstalledPlugins"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/plugin/installable$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/plugin/installable$"),
                 pluginJsonService, "getInstallablePlugins"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/cleardata$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/cleardata$"),
                 miscJsonService, "clearData"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc"
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc"
                 + "/numPendingTraceWrites$"), miscJsonService, "getNumPendingTraceWrites"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/dbFile$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/dbFile$"),
                 miscJsonService, "getDbFilePath"));
-        jsonServiceMappings.add(new JsonServiceMappings(Pattern.compile("^/misc/threaddump$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/threaddump$"),
                 threadDumpJsonService, "getThreadDump"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
@@ -171,7 +172,7 @@ public class HttpServer extends HttpServerBase {
                 }
             }
         }
-        for (JsonServiceMappings jsonServiceMapping : jsonServiceMappings) {
+        for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
             Matcher matcher = jsonServiceMapping.pattern.matcher(path);
             if (matcher.matches()) {
                 String requestText = getRequestText(request, decoder);
@@ -358,11 +359,12 @@ public class HttpServer extends HttpServerBase {
     @BindingAnnotation
     public @interface LocalHttpServerPort {}
 
-    private static class JsonServiceMappings {
+    @Immutable
+    private static class JsonServiceMapping {
         private final Pattern pattern;
         private final JsonService service;
         private final String methodName;
-        private JsonServiceMappings(Pattern pattern, JsonService service, String methodName) {
+        private JsonServiceMapping(Pattern pattern, JsonService service, String methodName) {
             this.pattern = pattern;
             this.service = service;
             this.methodName = methodName;

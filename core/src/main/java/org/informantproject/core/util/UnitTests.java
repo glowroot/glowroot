@@ -38,6 +38,7 @@ import com.google.common.collect.Collections2;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public final class UnitTests {
 
     // marker annotation

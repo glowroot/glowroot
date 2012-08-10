@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.UnresolvedMethod;
 import org.informantproject.shaded.google.common.collect.ImmutableSet;
@@ -30,6 +31,7 @@ import org.informantproject.shaded.google.common.collect.ImmutableSet;
 // HttpSession wrapper does not make assumptions about the @Nullable properties of the underlying
 // javax.servlet.http.HttpSession since it's just an interface and could theoretically return null
 // even where it seems to not make sense
+@ThreadSafe
 class HttpSession {
 
     private static final UnresolvedMethod getIdMethod = UnresolvedMethod.from(

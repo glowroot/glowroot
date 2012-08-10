@@ -15,10 +15,13 @@
  */
 package org.informantproject.testing.ui;
 
+import javax.annotation.concurrent.Immutable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class NestableCall {
 
     private final NestableCall child;

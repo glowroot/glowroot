@@ -15,6 +15,8 @@
  */
 package org.informantproject.local.trace;
 
+import javax.annotation.concurrent.Immutable;
+
 import com.google.common.base.Objects;
 
 /**
@@ -23,7 +25,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// Immutable
+@Immutable
 public class TraceSnapshotSummary {
 
     private final String id;

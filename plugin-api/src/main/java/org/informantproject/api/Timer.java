@@ -15,10 +15,13 @@
  */
 package org.informantproject.api;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@NotThreadSafe
 public interface Timer {
 
     void end();

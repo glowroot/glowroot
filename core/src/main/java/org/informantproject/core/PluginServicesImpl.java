@@ -20,6 +20,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
@@ -53,6 +55,7 @@ import com.google.inject.assistedinject.Assisted;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
@@ -129,7 +132,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTrace == null) {
             currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker);
             traceRegistry.addTrace(currentTrace);
-            return new SpanImpl(currentTrace.getRootSpan().getRootSpan(), currentTrace);
+            return new SpanImpl(currentTrace.getRootSpan(), currentTrace);
         } else {
             return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
         }
@@ -162,7 +165,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTrace != null) {
             int maxEntries = coreConfig.getMaxEntries();
             if (maxEntries == CoreConfig.SPAN_LIMIT_DISABLED
-                    || currentTrace.getRootSpan().getSize() < maxEntries) {
+                    || currentTrace.getSpanCount() < maxEntries) {
                 // the trace limit has not been exceeded
                 currentTrace.addSpan(messageSupplier, false);
             }
@@ -204,7 +207,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (trace == null) {
             return null;
         } else {
-            return trace.getRootSpan().getRootSpan().getMessageSupplier();
+            return trace.getRootSpan().getMessageSupplier();
         }
     }
 
@@ -218,7 +221,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
         int maxEntries = coreConfig.getMaxEntries();
         if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED
-                && currentTrace.getRootSpan().getSize() >= maxEntries) {
+                && currentTrace.getSpanCount() >= maxEntries) {
             // the trace limit has been exceeded
             return new TimerWrappedInSpan(startTimer(metric));
         } else {
@@ -226,6 +229,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
+    @NotThreadSafe
     private class SpanImpl implements Span {
         private final org.informantproject.core.trace.Span span;
         private final Trace currentTrace;
@@ -281,6 +285,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
+    @NotThreadSafe
     private static class TimerWrappedInSpan implements Span {
         private final Timer timer;
         private TimerWrappedInSpan(Timer timer) {
@@ -295,6 +300,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public void updateMessage(MessageUpdater updater) {}
     }
 
+    @ThreadSafe
     private static class NopSpan implements Span {
         private static final NopSpan INSTANCE = new NopSpan();
         public void end() {}
@@ -302,6 +308,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public void updateMessage(MessageUpdater updater) {}
     }
 
+    @ThreadSafe
     private static class NopTimer implements Timer {
         private static final NopTimer INSTANCE = new NopTimer();
         public void end() {}

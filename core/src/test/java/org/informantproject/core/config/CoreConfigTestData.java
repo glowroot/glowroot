@@ -25,18 +25,17 @@ public class CoreConfigTestData {
         CoreConfig defaultCoreConfig = CoreConfig.getDefaultInstance();
         return CoreConfig.builder()
                 // cover all fields
-                .setEnabled(!defaultCoreConfig.isEnabled())
-                .setThresholdMillis(defaultCoreConfig.getThresholdMillis() + 1)
-                .setStuckThresholdSeconds(defaultCoreConfig.getStuckThresholdSeconds() + 1)
-                .setProfilerInitialDelayMillis(
-                        defaultCoreConfig.getProfilerInitialDelayMillis() + 1)
-                .setProfilerIntervalMillis(defaultCoreConfig.getProfilerIntervalMillis() + 1)
-                .setSpanStackTraceThresholdMillis(
+                .enabled(!defaultCoreConfig.isEnabled())
+                .thresholdMillis(defaultCoreConfig.getThresholdMillis() + 1)
+                .stuckThresholdSeconds(defaultCoreConfig.getStuckThresholdSeconds() + 1)
+                .profilerInitialDelayMillis(defaultCoreConfig.getProfilerInitialDelayMillis() + 1)
+                .profilerIntervalMillis(defaultCoreConfig.getProfilerIntervalMillis() + 1)
+                .spanStackTraceThresholdMillis(
                         defaultCoreConfig.getSpanStackTraceThresholdMillis() + 1)
-                .setMaxEntries(defaultCoreConfig.getMaxEntries() + 1)
-                .setRollingSizeMb(defaultCoreConfig.getRollingSizeMb() + 1)
-                .setWarnOnEntryOutsideTrace(!defaultCoreConfig.isWarnOnEntryOutsideTrace())
-                .setMetricPeriodMillis(defaultCoreConfig.getMetricPeriodMillis() + 1)
+                .maxEntries(defaultCoreConfig.getMaxEntries() + 1)
+                .rollingSizeMb(defaultCoreConfig.getRollingSizeMb() + 1)
+                .warnOnEntryOutsideTrace(!defaultCoreConfig.isWarnOnEntryOutsideTrace())
+                .metricPeriodMillis(defaultCoreConfig.getMetricPeriodMillis() + 1)
                 .build();
     }
 }

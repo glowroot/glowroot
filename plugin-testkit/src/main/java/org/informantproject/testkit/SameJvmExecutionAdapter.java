@@ -17,6 +17,8 @@ package org.informantproject.testkit;
 
 import java.util.List;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.core.config.PluginDescriptor;
@@ -31,9 +33,10 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class SameJvmExecutionAdapter implements ExecutionAdapter {
 
-    private IsolatedWeavingClassLoader isolatedWeavingClassLoader;
+    private volatile IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
     SameJvmExecutionAdapter(String agentArgs) throws InstantiationException,
             IllegalAccessException, ClassNotFoundException {

@@ -19,6 +19,8 @@ import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Files;
@@ -33,6 +35,9 @@ import com.ning.http.client.AsyncHttpClient;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// even though this is thread safe, it is not useful for running tests in parallel since
+// getLastTrace() and others are not scoped to a particular test
+@ThreadSafe
 public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
@@ -131,6 +136,7 @@ public class InformantContainer {
         }
     }
 
+    @ThreadSafe
     interface ExecutionAdapter {
         int getPort() throws Exception;
         void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,

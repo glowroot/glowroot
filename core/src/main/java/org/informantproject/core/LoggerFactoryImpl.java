@@ -15,7 +15,10 @@
  */
 package org.informantproject.core;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.Logger;
+import org.informantproject.core.util.Static;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -31,12 +34,14 @@ import org.slf4j.LoggerFactory;
  * @since 0.5
  */
 // called via reflection from org.informantproject.api.LoggerFactory
+@Static
 public final class LoggerFactoryImpl {
 
     public static Logger getLogger(String name) {
         return new LoggerImpl(LoggerFactory.getLogger(name));
     }
 
+    @ThreadSafe
     private static class LoggerImpl implements Logger {
 
         private final org.slf4j.Logger logger;

@@ -17,6 +17,8 @@ package org.informantproject.core.trace;
 
 import java.lang.ref.WeakReference;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +30,7 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class CollectStuckTraceCommand implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CollectStuckTraceCommand.class);

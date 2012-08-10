@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.h2.jdbc.JdbcConnection;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
@@ -52,6 +53,7 @@ import com.google.common.collect.Maps;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);

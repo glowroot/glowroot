@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public final class DaemonExecutors {
 
     private static final String NAME_COUNTER_SUFFIX = "-%d";

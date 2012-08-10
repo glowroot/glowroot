@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 import org.informantproject.shaded.google.common.collect.ImmutableList;
 import org.informantproject.shaded.google.common.collect.Lists;
@@ -37,6 +38,7 @@ import org.informantproject.shaded.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@NotThreadSafe
 class PreparedStatementMirror extends StatementMirror {
 
     private static final char[] hexDigits = "0123456789abcdef".toCharArray();
@@ -60,14 +62,13 @@ class PreparedStatementMirror extends StatementMirror {
         parameters = Lists.newArrayListWithCapacity(parameters.size());
     }
 
-    public Collection<List<Object>> getBatchedParametersCopy() {
+    public ImmutableList<List<Object>> getBatchedParametersCopy() {
         if (batchedParameters == null) {
             return ImmutableList.of();
         } else {
             // batched parameters cannot be changed after calling addBatch(),
             // so it is safe to not copy the inner list
-            // cannot return ImmutableList.copyOf() since ImmutableList does not allow null elements
-            return Lists.newArrayList(batchedParameters);
+            return ImmutableList.copyOf(batchedParameters);
         }
     }
 

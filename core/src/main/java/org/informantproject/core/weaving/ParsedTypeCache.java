@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
-import org.informantproject.core.weaving.ParsedType.ParsedMethod;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -40,6 +40,7 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class ParsedTypeCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ParsedTypeCache.class);
@@ -48,7 +49,7 @@ class ParsedTypeCache {
 
     // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
     // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
-    private final Map<String, List<ParsedType>> typeHierarchies = Maps.newConcurrentMap();
+    private final Map<String, ImmutableList<ParsedType>> typeHierarchies = Maps.newConcurrentMap();
 
     ParsedTypeCache(ClassLoader loader) {
         this.loader = loader;
@@ -58,7 +59,7 @@ class ParsedTypeCache {
         if (typeName == null || typeName.equals("java/lang/Object")) {
             return ImmutableList.of();
         }
-        List<ParsedType> typeHierarchy = typeHierarchies.get(typeName);
+        ImmutableList<ParsedType> typeHierarchy = typeHierarchies.get(typeName);
         if (typeHierarchy == null) {
             // just a cache, ok if two threads happen to instantiate and store in parallel
             typeHierarchy = loadTypeHierarchy(typeName);
@@ -68,7 +69,7 @@ class ParsedTypeCache {
     }
 
     // TODO is it worth removing duplicates from resulting type hierarchy list?
-    private List<ParsedType> loadTypeHierarchy(String typeName) {
+    private ImmutableList<ParsedType> loadTypeHierarchy(String typeName) {
         ParsedType parsedType = loadParsedType(typeName);
         ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
         builder.add(parsedType);
@@ -133,7 +134,7 @@ class ParsedTypeCache {
         public MethodVisitor visitMethod(int access, String name, String desc, String signature,
                 String[] exceptions) {
 
-            methods.add(new ParsedMethod(name, Type.getArgumentTypes(desc)));
+            methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc)));
             return null;
         }
 

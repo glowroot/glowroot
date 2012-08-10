@@ -15,9 +15,10 @@
  */
 package org.informantproject.plugin.jdbc;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.shaded.google.common.collect.HashMultimap;
 import org.informantproject.shaded.google.common.collect.ImmutableMultimap;
-import org.informantproject.shaded.google.common.collect.Multimap;
 
 /**
  * Public API for other plugins to modify the jdbc plugin behavior.
@@ -25,9 +26,10 @@ import org.informantproject.shaded.google.common.collect.Multimap;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public final class JdbcPluginProperties {
 
-    private static volatile Multimap<String, Integer> displayBinaryParameterAsHex =
+    private static volatile ImmutableMultimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
 
     public static void setDisplayBinaryParameterAsHex(String sql, int parameterIndex) {

@@ -107,7 +107,7 @@ class ConfigDao {
                                         resultSet.getString(2), "{}");
                                 CoreConfig.Builder builder = gson.fromJson(propertiesJson,
                                         CoreConfig.Builder.class);
-                                return builder.setEnabled(enabled).build();
+                                return builder.enabled(enabled).build();
                             } else {
                                 return null;
                             }

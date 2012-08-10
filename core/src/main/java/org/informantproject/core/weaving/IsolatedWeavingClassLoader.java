@@ -20,6 +20,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.weaving.Mixin;
 
 import com.google.common.collect.Maps;
@@ -32,12 +34,13 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private final Class<?>[] bridgeClasses;
     private final Weaver weaver;
     // guarded by 'this'
-    private final Map<String, Class<?>> classes = Maps.newHashMap();
+    private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
 
     // bridge classes can be either interfaces or base classes
     public IsolatedWeavingClassLoader(List<Mixin> mixins, List<Advice> advisors,

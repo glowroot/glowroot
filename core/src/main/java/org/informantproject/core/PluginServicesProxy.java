@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
@@ -38,6 +39,7 @@ import org.informantproject.core.metric.MetricCache;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class PluginServicesProxy extends PluginServices {
 
     private final String pluginId;

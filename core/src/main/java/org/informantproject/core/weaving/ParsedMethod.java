@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,53 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.local.metric;
+package org.informantproject.core.weaving;
+
+import java.util.Arrays;
 
 import javax.annotation.concurrent.Immutable;
+
+import org.objectweb.asm.Type;
 
 import com.google.common.base.Objects;
 
 /**
- * Structure used as part of the response to "/metrics".
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class Point {
+class ParsedMethod {
 
-    private final long capturedAt;
-    private final double value;
+    private final String name;
+    private final Type[] args;
 
-    static Point from(long capturedAt, double value) {
-        return new Point(capturedAt, value);
+    static ParsedMethod from(String name, Type[] args) {
+        return new ParsedMethod(name, args);
     }
 
-    private Point(long capturedAt, double value) {
-        this.capturedAt = capturedAt;
-        this.value = value;
+    private ParsedMethod(String name, Type[] args) {
+        this.name = name;
+        this.args = args;
     }
 
-    public long getCapturedAt() {
-        return capturedAt;
+    String getName() {
+        return name;
     }
 
-    public double getValue() {
-        return value;
+    Type[] getArgs() {
+        return args;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Point)) {
+        if (!(o instanceof ParsedMethod)) {
             return false;
         }
-        Point other = (Point) o;
-        return Objects.equal(capturedAt, other.getCapturedAt())
-                && Objects.equal(value, other.getValue());
+        ParsedMethod other = (ParsedMethod) o;
+        return Objects.equal(other.name, name) && Arrays.equals(other.args, args);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(capturedAt, value);
+        return Objects.hashCode(name, args);
     }
 }
+

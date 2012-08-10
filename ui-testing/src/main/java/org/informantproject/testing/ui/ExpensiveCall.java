@@ -17,10 +17,13 @@ package org.informantproject.testing.ui;
 
 import java.util.Random;
 
+import javax.annotation.concurrent.Immutable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class ExpensiveCall {
 
     private static final Random random = new Random();

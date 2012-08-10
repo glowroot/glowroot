@@ -17,6 +17,8 @@ package org.informantproject.core.weaving;
 
 import java.util.List;
 
+import javax.annotation.concurrent.Immutable;
+
 import org.informantproject.api.weaving.Mixin;
 import org.objectweb.asm.Type;
 
@@ -24,6 +26,7 @@ import org.objectweb.asm.Type;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class MixinMatcher {
 
     private final Mixin mixin;

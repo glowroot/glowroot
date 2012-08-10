@@ -20,24 +20,27 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ListIterator;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.Suppliers;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
+import org.informantproject.core.util.PartiallyThreadSafe;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 /**
@@ -49,6 +52,8 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@PartiallyThreadSafe("pushSpan(), addSpan(), popSpan(), startTraceMetric(),"
+        + "  resetThreadLocalMetrics() can only be called from constructing thread")
 public class Trace {
 
     // a unique identifier
@@ -65,15 +70,18 @@ public class Trace {
 
     private volatile Supplier<String> username = Suppliers.ofInstance(null);
 
-    // attribute name ordering is maintained for consistent display
-    // (assumption is order of entry is order of importance)
-    private final Queue<TraceAttribute> attributes = new ConcurrentLinkedQueue<TraceAttribute>();
+    // attribute name ordering is maintained for consistent display (assumption is order of entry is
+    // order of importance)
+    @GuardedBy("attributes")
+    private final List<TraceAttribute> attributes = new ArrayList<TraceAttribute>();
+
+    // this is mostly updated and rarely read, so it seems like synchronized ArrayList is the best
+    // collection
+    private final List<TraceMetric> traceMetrics = Collections
+            .synchronizedList(new ArrayList<TraceMetric>());
 
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricImpl> metrics = Lists.newArrayList();
-    // this is mostly updated and rarely read, so seems like synchronized list is best collection
-    private final List<TraceMetric> traceMetrics = Collections
-            .synchronizedList(new ArrayList<TraceMetric>());
 
     // root span for this trace
     private final RootSpan rootSpan;
@@ -107,8 +115,8 @@ public class Trace {
         long startTick = ticker.read();
         TraceMetric traceMetric = metric.startInternal(startTick);
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
-        metrics.add(metric);
         traceMetrics.add(traceMetric);
+        metrics.add(metric);
     }
 
     public Date getStartDate() {
@@ -145,8 +153,10 @@ public class Trace {
         return username;
     }
 
-    public Collection<TraceAttribute> getAttributes() {
-        return attributes;
+    public ImmutableList<TraceAttribute> getAttributes() {
+        synchronized (attributes) {
+            return ImmutableList.copyOf(attributes);
+        }
     }
 
     public boolean isError() {
@@ -157,8 +167,16 @@ public class Trace {
         return traceMetrics;
     }
 
-    public RootSpan getRootSpan() {
-        return rootSpan;
+    public Span getRootSpan() {
+        return rootSpan.getRootSpan();
+    }
+
+    public int getSpanCount() {
+        return rootSpan.getSize();
+    }
+
+    public Iterator<Span> getSpans() {
+        return rootSpan.getSpans().iterator();
     }
 
     public MergedStackTree getMergedStackTree() {
@@ -175,9 +193,10 @@ public class Trace {
         return stuckCommandScheduledFuture;
     }
 
+    // must be called by the trace thread
     public void resetThreadLocalMetrics() {
         for (MetricImpl metric : metrics) {
-            metric.remove();
+            metric.resetThreadLocal();
         }
     }
 
@@ -191,15 +210,15 @@ public class Trace {
     }
 
     public void putAttribute(String name, @Nullable String value) {
-        // write to orderedAttributeNames only happen in a single thread (the trace thread), so no
-        // race condition worries here
-        for (TraceAttribute attribute : attributes) {
-            if (attribute.getName().equals(name)) {
-                attribute.setValue(value);
-                return;
+        synchronized (attributes) {
+            for (ListIterator<TraceAttribute> i = attributes.listIterator(); i.hasNext();) {
+                if (i.next().getName().equals(name)) {
+                    i.set(new TraceAttribute(name, value));
+                    return;
+                }
             }
+            attributes.add(new TraceAttribute(name, value));
         }
-        attributes.add(new TraceAttribute(name, value));
     }
 
     // this method doesn't need to be synchronized
@@ -228,9 +247,9 @@ public class Trace {
         TraceMetric traceMetric = metric.startInternal(startTick);
         Span span = rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
         if (traceMetric.isFirstStart()) {
-            metrics.add(metric);
             traceMetrics.add(metric.get());
             traceMetric.firstStartSeen();
+            metrics.add(metric);
         }
         return span;
     }
@@ -260,17 +279,18 @@ public class Trace {
     public TraceMetric startTraceMetric(MetricImpl metric) {
         TraceMetric traceMetric = metric.startInternal();
         if (traceMetric.isFirstStart()) {
-            metrics.add(metric);
             traceMetrics.add(metric.get());
             traceMetric.firstStartSeen();
+            metrics.add(metric);
         }
         return traceMetric;
     }
 
+    @Immutable
     public static class TraceAttribute {
         private final String name;
         @Nullable
-        private volatile String value;
+        private final String value;
         private TraceAttribute(String name, @Nullable String value) {
             this.name = name;
             this.value = value;
@@ -281,9 +301,6 @@ public class Trace {
         @Nullable
         public String getValue() {
             return value;
-        }
-        public void setValue(@Nullable String value) {
-            this.value = value;
         }
     }
 }

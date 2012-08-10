@@ -15,14 +15,15 @@
  */
 package org.informantproject.plugin.jdbc;
 
-import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.TemplateMessage;
+import org.informantproject.shaded.google.common.collect.ImmutableList;
 import org.informantproject.shaded.google.common.collect.Lists;
 
 /**
@@ -51,6 +52,7 @@ import org.informantproject.shaded.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class JdbcMessageSupplier implements Supplier<Message> {
 
     private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
@@ -62,16 +64,16 @@ class JdbcMessageSupplier implements Supplier<Message> {
     @Nullable
     private final List<Object> parameters;
     @Nullable
-    private final Collection<List<Object>> batchedParameters;
+    private final ImmutableList<List<Object>> batchedParameters;
 
     // this is only used for batching of non-PreparedStatements
     @Nullable
-    private final Collection<String> batchedSqls;
+    private final ImmutableList<String> batchedSqls;
 
     @Nullable
     private final Integer connectionHashCode;
 
-    private int numRows = NEXT_HAS_NOT_BEEN_CALLED;
+    private volatile int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
     static JdbcMessageSupplier create(String sql, Integer connectionHashCode) {
         return new JdbcMessageSupplier(sql, null, null, null, connectionHashCode);
@@ -96,7 +98,7 @@ class JdbcMessageSupplier implements Supplier<Message> {
     }
 
     private JdbcMessageSupplier(String sql, List<Object> parameters,
-            Collection<List<Object>> batchedParameters, Collection<String> batchedSqls,
+            ImmutableList<List<Object>> batchedParameters, ImmutableList<String> batchedSqls,
             Integer connectionHashCode) {
 
         this.sql = sql;
