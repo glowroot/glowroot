@@ -64,7 +64,6 @@
           the integration-test phase at which time the Informant jar has been built and is on the
           surefire test class path -->
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.12</version>
         <configuration>
           <argLine>-XX:MaxPermSize=128m</argLine>
         </configuration>
@@ -103,7 +102,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.7</version>
         <configuration>
           <skip>true</skip>
         </configuration>
