@@ -68,7 +68,7 @@ public class Trace {
 
     private volatile boolean error;
 
-    private volatile Supplier<String> username = Suppliers.ofInstance(null);
+    private volatile Supplier<String> usernameSupplier = Suppliers.ofInstance(null);
 
     // attribute name ordering is maintained for consistent display (assumption is order of entry is
     // order of importance)
@@ -149,8 +149,8 @@ public class Trace {
         return stuck.get();
     }
 
-    public Supplier<String> getUsername() {
-        return username;
+    public Supplier<String> getUsernameSupplier() {
+        return usernameSupplier;
     }
 
     public ImmutableList<TraceAttribute> getAttributes() {
@@ -205,8 +205,8 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    public void setUsername(Supplier<String> username) {
-        this.username = username;
+    public void setUsernameSupplier(Supplier<String> usernameSupplier) {
+        this.usernameSupplier = usernameSupplier;
     }
 
     public void putAttribute(String name, @Nullable String value) {

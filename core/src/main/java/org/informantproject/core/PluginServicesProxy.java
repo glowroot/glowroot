@@ -158,12 +158,12 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void setUsername(Supplier<String> username) {
+    public void setUsername(Supplier<String> usernameSupplier) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.setUsername(username);
+            pluginServices.setUsername(usernameSupplier);
         }
     }
 

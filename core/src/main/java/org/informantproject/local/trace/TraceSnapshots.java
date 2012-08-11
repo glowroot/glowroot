@@ -84,7 +84,7 @@ public final class TraceSnapshots {
         }
         Message message = trace.getRootSpan().getMessageSupplier().get();
         builder.description(message.getText());
-        builder.username(trace.getUsername().get());
+        builder.username(trace.getUsernameSupplier().get());
         List<TraceAttribute> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));

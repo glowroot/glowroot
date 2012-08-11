@@ -86,7 +86,7 @@ public abstract class PluginServices {
 
     public abstract void addErrorSpan(Supplier<Message> messageSupplier, Throwable t);
 
-    public abstract void setUsername(Supplier<String> username);
+    public abstract void setUsername(Supplier<String> usernameSupplier);
 
     // sets trace attribute in
     public abstract void putTraceAttribute(String name, @Nullable String value);
@@ -176,7 +176,7 @@ public abstract class PluginServices {
         @Override
         public void addErrorSpan(Supplier<Message> messageSupplier, Throwable t) {}
         @Override
-        public void setUsername(Supplier<String> username) {}
+        public void setUsername(Supplier<String> usernameSupplier) {}
         @Override
         public void putTraceAttribute(String name, @Nullable String value) {}
         @Override
