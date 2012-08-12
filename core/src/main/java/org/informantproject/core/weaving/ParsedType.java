@@ -19,6 +19,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.NotThreadSafe;
 
 import com.google.common.collect.ImmutableList;
 
@@ -62,6 +63,10 @@ class ParsedType {
         return missing;
     }
 
+    String getName() {
+        return name;
+    }
+
     String getClassName() {
         // TODO cache result
         return name.replace('/', '.');
@@ -84,5 +89,33 @@ class ParsedType {
             }
         }
         return null;
+    }
+
+    static Builder builder(String name, String superName, ImmutableList<String> interfaceNames) {
+        return new Builder(name, superName, interfaceNames);
+    }
+
+    @NotThreadSafe
+    static class Builder {
+
+        private final String name;
+        @Nullable
+        private final String superName;
+        private final ImmutableList<String> interfaceNames;
+        private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
+
+        private Builder(String name, String superName, ImmutableList<String> interfaceNames) {
+            this.name = name;
+            this.superName = superName;
+            this.interfaceNames = interfaceNames;
+        }
+
+        void addMethod(ParsedMethod method) {
+            methods.add(method);
+        }
+
+        ParsedType build() {
+            return new ParsedType(false, name, superName, interfaceNames, methods.build());
+        }
     }
 }

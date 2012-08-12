@@ -23,9 +23,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.weaving.Mixin;
-import org.informantproject.core.weaving.WeavingClassVisitor.NothingToWeaveException;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
@@ -44,12 +42,17 @@ class Weaver implements Opcodes {
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
+    @Nullable
+    private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
 
-    Weaver(List<Mixin> mixins, List<Advice> advisors, ClassLoader loader) {
+    Weaver(List<Mixin> mixins, List<Advice> advisors, @Nullable ClassLoader loader,
+            ParsedTypeCache parsedTypeCache) {
+
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
-        parsedTypeCache = new ParsedTypeCache(loader);
+        this.loader = loader;
+        this.parsedTypeCache = parsedTypeCache;
     }
 
     byte[] weave(byte[] classBytes) {
@@ -62,8 +65,8 @@ class Weaver implements Opcodes {
 
     private byte[] weave(byte[] classBytes, @Nullable CodeSource codeSource) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        ClassVisitor cv = new WeavingClassVisitor(mixins, advisors, parsedTypeCache, codeSource,
-                cw);
+        WeavingClassVisitor cv = new WeavingClassVisitor(mixins, advisors, loader, parsedTypeCache,
+                codeSource, cw);
         ClassReader cr = new ClassReader(classBytes);
         try {
             // using SKIP_FRAMES in reader and not using COMPUTE_FRAMES in writer means that frames
@@ -71,12 +74,14 @@ class Weaver implements Opcodes {
             // verifier which is probably(?) less penalty than using COMPUTE_FRAMES
             // see some discussion at http://mail-archive.ow2.org/asm/2008-08/msg00043.html
             cr.accept(cv, ClassReader.SKIP_FRAMES);
-            return cw.toByteArray();
-        } catch (NothingToWeaveException e) {
-            return classBytes;
         } catch (ClassCircularityError e) {
             logger.error(e.getMessage(), e);
             return classBytes;
+        }
+        if (cv.isNothingAtAllToWeave()) {
+            return classBytes;
+        } else {
+            return cw.toByteArray();
         }
     }
 }

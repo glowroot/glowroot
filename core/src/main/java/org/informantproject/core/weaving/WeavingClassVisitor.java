@@ -33,6 +33,7 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -49,6 +50,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private final List<Mixin> mixins;
     private final List<Advice> advisors;
+    @Nullable
+    private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final CodeSource codeSource;
@@ -62,17 +65,17 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private int innerMethodCounter;
 
-    // the NothingToWeaveException is just thrown to abort asm weaving and to signal to the weaver
-    // that there is nothing to weave, there is no need to capture a stack trace each time for the
-    // exception (which is relatively expensive given the number of times this exception is thrown)
-    private final NothingToWeaveException nothingToWeaveException = new NothingToWeaveException();
+    private boolean nothingAtAllToWeave = false;
+    private ParsedType.Builder parsedType;
 
     public WeavingClassVisitor(List<Mixin> mixins, List<Advice> advisors,
-            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource, ClassVisitor cv) {
+            @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
+            @Nullable CodeSource codeSource, ClassVisitor cv) {
 
         super(ASM4, cv);
         this.mixins = mixins;
         this.advisors = advisors;
+        this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.codeSource = codeSource;
     }
@@ -81,22 +84,23 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public void visit(int version, int access, String name, String signature,
             @Nullable String superName, String[] interfaceNames) {
 
+        parsedType = ParsedType.builder(name, superName, ImmutableList.copyOf(interfaceNames));
         if ((access & ACC_INTERFACE) != 0) {
             // interfaces never get woven
-            throw nothingToWeaveException;
+            nothingAtAllToWeave = true;
+            return;
         }
         type = Type.getObjectType(name);
         List<ParsedType> superTypes = Lists.newArrayList();
-        superTypes.addAll(parsedTypeCache.getTypeHierarchy(superName));
+        superTypes.addAll(parsedTypeCache.getTypeHierarchy(superName, loader));
         for (String interfaceName : interfaceNames) {
-            superTypes.addAll(parsedTypeCache.getTypeHierarchy(interfaceName));
+            superTypes.addAll(parsedTypeCache.getTypeHierarchy(interfaceName, loader));
         }
         for (Iterator<ParsedType> i = superTypes.iterator(); i.hasNext();) {
             ParsedType superType = i.next();
             if (superType.isMissing()) {
                 i.remove();
-                // TODO change this back to debug
-                logger.error("type not found '{}' while recursing super types of '{}'{}",
+                logger.warn("type not found '{}' while recursing super types of '{}'{}",
                         new Object[] { superType.getClassName(), type.getClassName(),
                                 codeSource == null ? "" : "(" + codeSource.getLocation() + ")" });
             }
@@ -118,19 +122,18 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             adviceFlowThreadLocalNums.put(adviceMatchers.get(i).getAdvice(), i);
         }
         if (adviceMatchers.isEmpty() && matchedMixins.isEmpty()) {
-            throw nothingToWeaveException;
+            nothingAtAllToWeave = true;
+            return;
+        } else if (matchedMixins.isEmpty()) {
+            super.visit(version, access, name, signature, superName, interfaceNames);
         } else {
-            if (matchedMixins.isEmpty()) {
-                super.visit(version, access, name, signature, superName, interfaceNames);
-            } else {
-                // add mixin types
-                List<String> interfacesIncludingMixins = Lists.newArrayList(interfaceNames);
-                for (Mixin mixin : mixins) {
-                    interfacesIncludingMixins.add(Type.getInternalName(mixin.mixin()));
-                }
-                super.visit(version, access, name, signature, superName,
-                        Iterables.toArray(interfacesIncludingMixins, String.class));
+            // add mixin types
+            List<String> interfacesIncludingMixins = Lists.newArrayList(interfaceNames);
+            for (Mixin mixin : mixins) {
+                interfacesIncludingMixins.add(Type.getInternalName(mixin.mixin()));
             }
+            super.visit(version, access, name, signature, superName,
+                    Iterables.toArray(interfacesIncludingMixins, String.class));
         }
     }
 
@@ -138,6 +141,12 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature,
             String[] exceptions) {
 
+        ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc));
+        parsedType.addMethod(parsedMethod);
+        if (nothingAtAllToWeave) {
+            // no need to pass method on to class writer
+            return null;
+        }
         if ((access & ACC_ABSTRACT) != 0) {
             // abstract methods never get woven
             return cv.visitMethod(access, name, desc, signature, exceptions);
@@ -162,7 +171,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             }
         }
         List<Advice> matchingAdvisors = Lists.newArrayList();
-        ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc));
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
@@ -218,6 +226,10 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     @Override
     public void visitEnd() {
+        parsedTypeCache.add(parsedType.build(), loader);
+        if (nothingAtAllToWeave) {
+            return;
+        }
         if (!writtenAdviceFlowThreadLocals) {
             writeThreadLocalFields();
             MethodVisitor mv = super.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
@@ -251,6 +263,10 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 mg.endMethod();
             }
         }
+    }
+
+    boolean isNothingAtAllToWeave() {
+        return nothingAtAllToWeave;
     }
 
     private void writeThreadLocalFields() {
@@ -312,16 +328,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         @Override
         protected void onMethodEnter() {
             writeThreadLocalInitialization(this);
-        }
-    }
-
-    @SuppressWarnings("serial")
-    static class NothingToWeaveException extends RuntimeException {
-        private NothingToWeaveException() {}
-        @Override
-        public synchronized Throwable fillInStackTrace() {
-            // this class does not provide a stack trace
-            return this;
         }
     }
 }

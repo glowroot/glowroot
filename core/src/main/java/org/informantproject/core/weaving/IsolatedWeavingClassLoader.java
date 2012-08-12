@@ -48,7 +48,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = bridgeClasses;
-        weaver = new Weaver(mixins, advisors, this);
+        weaver = new Weaver(mixins, advisors, this, new ParsedTypeCache());
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)

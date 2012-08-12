@@ -20,8 +20,8 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Metric;
@@ -37,9 +37,12 @@ import org.objectweb.asm.commons.RemappingClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Ticker;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.MapMaker;
 import com.google.common.collect.Sets;
 
 /**
@@ -55,11 +58,21 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
 
-    // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
-    // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
+    private final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
+
+    // it is important to only have a single weaver per class loader because storing state of each
+    // previously parsed class in order to re-construct class hierarchy in case one or more .class
+    // files aren't available via ClassLoader.getResource()
     //
     // weak keys to prevent retention of class loaders
-    private final ConcurrentMap<ClassLoader, Weaver> weavers = new MapMaker().weakKeys().makeMap();
+    private final LoadingCache<Optional<ClassLoader>, Weaver> weavers =
+            CacheBuilder.newBuilder().weakKeys()
+                    .build(new CacheLoader<Optional<ClassLoader>, Weaver>() {
+                        @Override
+                        public Weaver load(Optional<ClassLoader> loader) {
+                            return new Weaver(mixins, advisors, loader.orNull(), parsedTypeCache);
+                        }
+                    });
 
     private final PluginServices pluginServices;
     private final Metric metric;
@@ -82,25 +95,21 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
         loadUsedTypes();
     }
 
-    public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
-            ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+    public byte[] transform(@Nullable ClassLoader loader, String className,
+            Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes)
+            throws IllegalClassFormatException {
 
         return transform$informant$metric$informant$weaving$0(loader, className,
                 protectionDomain, bytes);
     }
 
     // weird method name is following "metric marker" method naming
-    private byte[] transform$informant$metric$informant$weaving$0(ClassLoader loader,
+    private byte[] transform$informant$metric$informant$weaving$0(@Nullable ClassLoader loader,
             String className, ProtectionDomain protectionDomain, byte[] bytes) {
 
         Timer timer = pluginServices.startTimer(metric);
         try {
-            Weaver weaver = weavers.get(loader);
-            if (weaver == null) {
-                // just a cache, ok if two threads happen to instantiate and store in parallel
-                weaver = new Weaver(mixins, advisors, loader);
-                weavers.put(loader, weaver);
-            }
+            Weaver weaver = weavers.getUnchecked(Optional.fromNullable(loader));
             byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
             if (transformedBytes != bytes) {
                 logger.debug("transform(): transformed {}", className);
