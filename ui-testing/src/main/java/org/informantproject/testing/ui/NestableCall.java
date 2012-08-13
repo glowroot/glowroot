@@ -15,6 +15,7 @@
  */
 package org.informantproject.testing.ui;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -24,6 +25,7 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 class NestableCall {
 
+    @Nullable
     private final NestableCall child;
     private final int numExpensiveCalls;
     private final int maxTimeMillis;

@@ -17,6 +17,7 @@ package org.informantproject.core.weaving;
 
 import java.util.Arrays;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import org.objectweb.asm.Type;
@@ -51,7 +52,7 @@ class ParsedMethod {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof ParsedMethod)) {
             return false;
         }

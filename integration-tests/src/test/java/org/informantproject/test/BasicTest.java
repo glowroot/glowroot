@@ -71,7 +71,7 @@ public class BasicTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getDescription()).isEqualTo("Level One");
-        assertThat(trace.getAttributes()).isNull();
+        assertThat(trace.getAttributes()).isEmpty();
         assertThat(trace.getSpans()).hasSize(3);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getDescription()).isEqualTo("Level One");

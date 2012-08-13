@@ -52,6 +52,7 @@ final class ServletPluginProperties {
     private static volatile ImmutableSet<String> cachedSessionAttributePaths = ImmutableSet.of();
     private static volatile ImmutableSet<String> cachedSessionAttributeNames = ImmutableSet.of();
     private static volatile boolean isCaptureAllSessionAttributes = false;
+    @Nullable
     private static volatile String cachedSessionAttributesText;
 
     @Nullable

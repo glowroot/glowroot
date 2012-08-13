@@ -66,7 +66,11 @@ class StatementMirror {
     // just in case someone executes a batch statement and then adds more batches (on top of
     // previous ones) and re-executes (is this possible? TODO write a test case for this)
     ImmutableList<String> getBatchedSqlCopy() {
-        return ImmutableList.copyOf(batchedSql);
+        if (batchedSql == null) {
+            return ImmutableList.of();
+        } else {
+            return ImmutableList.copyOf(batchedSql);
+        }
     }
 
     @Nullable

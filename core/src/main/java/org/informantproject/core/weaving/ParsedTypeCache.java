@@ -95,13 +95,12 @@ class ParsedTypeCache {
         return superTypes.build();
     }
 
-    private void addSuperTypes(String typeName, ImmutableList.Builder<ParsedType> superTypes,
-            @Nullable ClassLoader loader) {
+    private void addSuperTypes(@Nullable String typeName,
+            ImmutableList.Builder<ParsedType> superTypes, @Nullable ClassLoader loader) {
 
         if (typeName == null || typeName.equals("java/lang/Object")) {
             return;
         }
-
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
         // class hasn't already been loaded, so instead, call the package protected
         // ClassLoader.findLoadClass()
@@ -245,8 +244,8 @@ class ParsedTypeCache {
 
         @Override
         @Nullable
-        public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-                String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, @Nullable String[] exceptions) {
 
             methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc)));
             return null;

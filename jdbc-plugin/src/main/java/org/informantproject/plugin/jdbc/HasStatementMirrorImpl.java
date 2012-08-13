@@ -15,6 +15,7 @@
  */
 package org.informantproject.plugin.jdbc;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -24,8 +25,10 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public class HasStatementMirrorImpl implements HasStatementMirror {
 
+    @Nullable
     private volatile StatementMirror statementMirror;
 
+    @Nullable
     public StatementMirror getInformantStatementMirror() {
         return statementMirror;
     }

@@ -75,31 +75,31 @@ class JdbcMessageSupplier implements Supplier<Message> {
 
     private volatile int numRows = NEXT_HAS_NOT_BEEN_CALLED;
 
-    static JdbcMessageSupplier create(String sql, Integer connectionHashCode) {
+    static JdbcMessageSupplier create(String sql, @Nullable Integer connectionHashCode) {
         return new JdbcMessageSupplier(sql, null, null, null, connectionHashCode);
     }
 
     static JdbcMessageSupplier createWithParameters(PreparedStatementMirror mirror,
-            Integer connectionHashCode) {
+            @Nullable Integer connectionHashCode) {
         return new JdbcMessageSupplier(mirror.getSql(), mirror.getParametersCopy(), null, null,
                 connectionHashCode);
     }
 
     static JdbcMessageSupplier createWithBatchedSqls(StatementMirror mirror,
-            Integer connectionHashCode) {
+            @Nullable Integer connectionHashCode) {
         return new JdbcMessageSupplier(null, null, null, mirror.getBatchedSqlCopy(),
                 connectionHashCode);
     }
 
     static JdbcMessageSupplier createWithBatchedParameters(PreparedStatementMirror mirror,
-            Integer connectionHashCode) {
+            @Nullable Integer connectionHashCode) {
         return new JdbcMessageSupplier(mirror.getSql(), null, mirror.getBatchedParametersCopy(),
                 null, connectionHashCode);
     }
 
-    private JdbcMessageSupplier(String sql, List<Object> parameters,
-            ImmutableList<List<Object>> batchedParameters, ImmutableList<String> batchedSqls,
-            Integer connectionHashCode) {
+    private JdbcMessageSupplier(@Nullable String sql, @Nullable List<Object> parameters,
+            @Nullable ImmutableList<List<Object>> batchedParameters,
+            @Nullable ImmutableList<String> batchedSqls, @Nullable Integer connectionHashCode) {
 
         this.sql = sql;
         this.parameters = parameters;

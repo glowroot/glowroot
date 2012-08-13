@@ -400,7 +400,7 @@ public class ServletAspect {
                 String username = getSessionAttributeTextValue(session,
                         sessionUsernameAttributePath);
                 if (username != null) {
-                    // if username is absent, don't clear it by setting SupplierOfNullable.of(null)
+                    // if username is null, don't clear it by setting Suppliers.ofInstance(null)
                     pluginServices.setUsername(Suppliers.ofInstance(username));
                 }
             }

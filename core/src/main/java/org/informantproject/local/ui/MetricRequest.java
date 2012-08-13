@@ -17,7 +17,7 @@ package org.informantproject.local.ui;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Structure used to deserialize request parameters sent to "/metrics".
@@ -27,12 +27,10 @@ import javax.annotation.Nullable;
  */
 class MetricRequest {
 
-    @Nullable
-    private List<String> metricIds;
+    private List<String> metricIds = ImmutableList.of();
     private long start;
     private long end;
 
-    @Nullable
     public List<String> getMetricIds() {
         return metricIds;
     }

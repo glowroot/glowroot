@@ -15,6 +15,7 @@
  */
 package org.informantproject.local.trace;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
@@ -62,7 +63,7 @@ public class TraceSnapshotSummary {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof TraceSnapshotSummary)) {
             return false;
         }

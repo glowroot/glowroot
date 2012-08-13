@@ -211,6 +211,7 @@ public class TraceSnapshotDao {
         return partiallyHydratedTraces.get(0).fullyHydrate();
     }
 
+    @Nullable
     public String readStackTrace(String hash) {
         return stackTraceDao.readStackTrace(hash);
     }

@@ -15,6 +15,7 @@
  */
 package org.informantproject.local.metric;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
@@ -49,7 +50,7 @@ public class Point {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof Point)) {
             return false;
         }

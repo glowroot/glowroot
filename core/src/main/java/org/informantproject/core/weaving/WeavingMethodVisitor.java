@@ -85,8 +85,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Override
-    public void visitLocalVariable(String name, String desc, String signature, Label start,
-            Label end, int index) {
+    public void visitLocalVariable(String name, String desc, @Nullable String signature,
+            Label start, Label end, int index) {
 
         if (name.equals("this")) {
             // this is only so that eclipse debugger will not display <unknown receiving type>

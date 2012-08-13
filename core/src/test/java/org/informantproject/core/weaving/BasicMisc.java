@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.weaving;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -42,7 +44,7 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
         return misc;
     }
 
-    private void withInnerArg(@SuppressWarnings("unused") Inner inner) {}
+    private void withInnerArg(@SuppressWarnings("unused") @Nullable Inner inner) {}
 
     private static class Inner {}
 }

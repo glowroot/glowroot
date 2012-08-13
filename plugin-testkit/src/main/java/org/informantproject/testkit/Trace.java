@@ -18,7 +18,11 @@ package org.informantproject.testkit;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -34,10 +38,12 @@ public class Trace {
     private long duration;
     private boolean completed;
     private String description;
+    @Nullable
     private String username;
-    private List<Attribute> attributes;
-    private List<Metric> metrics;
-    private List<Span> spans;
+    private final List<Attribute> attributes = ImmutableList.of();
+    private final List<Metric> metrics = ImmutableList.of();
+    private final List<Span> spans = ImmutableList.of();
+    @Nullable
     private MergedStackTreeNode mergedStackTree;
 
     public String getId() {
@@ -64,6 +70,7 @@ public class Trace {
     public String getDescription() {
         return description;
     }
+    @Nullable
     public String getUsername() {
         return username;
     }
@@ -76,6 +83,7 @@ public class Trace {
     public List<Span> getSpans() {
         return spans;
     }
+    @Nullable
     public MergedStackTreeNode getMergedStackTree() {
         return mergedStackTree;
     }
@@ -179,7 +187,7 @@ public class Trace {
         private int parentIndex;
         private int level;
         private String description;
-        private Map<String, Object> contextMap;
+        private final Map<String, Object> contextMap = ImmutableMap.of();
         private boolean error;
 
         public long getOffset() {
@@ -224,24 +232,33 @@ public class Trace {
 
     public static class MergedStackTreeNode {
 
+        @Nullable
         private String stackTraceElement;
+        @Nullable
         private List<MergedStackTreeNode> childNodes;
         private int sampleCount;
-        private volatile Map<String, Integer> leafThreadStateSampleCounts;
-        private volatile String singleLeafState;
+        @Nullable
+        private Map<String, Integer> leafThreadStateSampleCounts;
+        @Nullable
+        private String singleLeafState;
 
+        // null for synthetic root only
+        @Nullable
         public String getStackTraceElement() {
             return stackTraceElement;
         }
+        @Nullable
         public List<MergedStackTreeNode> getChildNodes() {
             return childNodes;
         }
         public int getSampleCount() {
             return sampleCount;
         }
+        @Nullable
         public Map<String, Integer> getLeafThreadStateSampleCounts() {
             return leafThreadStateSampleCounts;
         }
+        @Nullable
         public String getSingleLeafState() {
             return singleLeafState;
         }

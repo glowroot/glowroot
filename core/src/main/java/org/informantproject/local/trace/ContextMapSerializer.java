@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.api.UnresolvedMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ class ContextMapSerializer {
 
     private static final Logger logger = LoggerFactory.getLogger(ContextMapSerializer.class);
 
+    @Nullable
     private static final Class<?> SHADED_OPTIONAL_CLASS = getShadedOptionalClass();
     private static final UnresolvedMethod isPresentMethod = UnresolvedMethod.from(
             "org.informantproject.shaded.google.common.base.Optional", "isPresent");
@@ -64,7 +67,7 @@ class ContextMapSerializer {
         jw.endObject();
     }
 
-    private void write(Object value) throws IOException {
+    private void write(@Nullable Object value) throws IOException {
         if (value == null) {
             jw.nullValue();
         } else if (value instanceof String) {
@@ -82,7 +85,8 @@ class ContextMapSerializer {
             }
         } else if (value instanceof Map) {
             write((Map<?, ?>) value);
-        } else if (SHADED_OPTIONAL_CLASS.isAssignableFrom(value.getClass())) {
+        } else if (SHADED_OPTIONAL_CLASS != null
+                && SHADED_OPTIONAL_CLASS.isAssignableFrom(value.getClass())) {
             // this is hackery to make informant plugin unit tests (e.g. ServletPluginTest) pass
             // inside an IDE when running against unshaded informant-core
             //
@@ -100,6 +104,7 @@ class ContextMapSerializer {
         }
     }
 
+    @Nullable
     private static Class<?> getShadedOptionalClass() {
         try {
             return Class.forName("org.informantproject.shaded.google.common.base.Optional");

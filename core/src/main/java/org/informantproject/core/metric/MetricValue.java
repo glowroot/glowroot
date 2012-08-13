@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.metric;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
@@ -45,7 +46,7 @@ public class MetricValue {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof MetricValue)) {
             return false;
         }

@@ -25,7 +25,9 @@ import javax.annotation.Nullable;
  */
 public class PluginConfig {
 
+    @Nullable
     private String groupId;
+    @Nullable
     private String artifactId;
     private PropertyConfig[] properties = new PropertyConfig[0];
 
@@ -60,10 +62,15 @@ public class PluginConfig {
     }
 
     public static class PropertyConfig {
+        @Nullable
         private String prompt;
+        @Nullable
         private String name;
+        @Nullable
         private String defaultValue;
+        @Nullable
         private String hidden;
+        @Nullable
         private String description;
         @Nullable
         public String getPrompt() {

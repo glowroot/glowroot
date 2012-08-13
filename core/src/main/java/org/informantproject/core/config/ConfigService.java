@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import javax.annotation.Nullable;
-
 import org.informantproject.api.PluginServices.ConfigListener;
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.slf4j.Logger;
@@ -92,7 +90,6 @@ public class ConfigService {
         return coreConfig;
     }
 
-    @Nullable
     public PluginConfig getPluginConfig(String pluginId) {
         PluginConfig pluginConfig = pluginConfigs.get(pluginId);
         if (pluginConfig == null) {

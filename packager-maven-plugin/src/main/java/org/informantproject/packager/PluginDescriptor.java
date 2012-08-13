@@ -80,8 +80,11 @@ public class PluginDescriptor {
         private final String prompt;
         private final String name;
         private final String type;
+        @Nullable
         private final String defaultValue;
+        @Nullable
         private final String hidden;
+        @Nullable
         private final String description;
         public PropertyDescriptor(String prompt, String name, String type,
                 @Nullable String defaultValue, @Nullable String hidden,

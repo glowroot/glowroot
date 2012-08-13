@@ -91,7 +91,8 @@ class ParsedType {
         return null;
     }
 
-    static Builder builder(String name, String superName, ImmutableList<String> interfaceNames) {
+    static Builder builder(String name, @Nullable String superName,
+            ImmutableList<String> interfaceNames) {
         return new Builder(name, superName, interfaceNames);
     }
 
@@ -104,7 +105,9 @@ class ParsedType {
         private final ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
-        private Builder(String name, String superName, ImmutableList<String> interfaceNames) {
+        private Builder(String name, @Nullable String superName,
+                ImmutableList<String> interfaceNames) {
+
             this.name = name;
             this.superName = superName;
             this.interfaceNames = interfaceNames;

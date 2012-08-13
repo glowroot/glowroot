@@ -157,12 +157,14 @@ public class TraceSnapshot {
 
     static class Builder {
 
+        @Nullable
         private String id;
         private long startAt;
         private boolean stuck;
         private boolean error;
         private long duration;
         private boolean completed;
+        @Nullable
         private String description;
         @Nullable
         private String username;

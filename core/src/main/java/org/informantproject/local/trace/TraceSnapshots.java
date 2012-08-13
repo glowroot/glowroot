@@ -134,7 +134,6 @@ public final class TraceSnapshots {
             sb.append(snapshot.getMetrics());
         }
         if (includeDetail && snapshot.getSpans() != null) {
-            // spans could be null if spans text has been rolled out
             sb.append(",\"spans\":");
             // flush current StringBuilder as its own chunk and reset StringBuffer
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));

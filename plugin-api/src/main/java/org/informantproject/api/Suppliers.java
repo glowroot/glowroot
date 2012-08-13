@@ -25,11 +25,11 @@ public final class Suppliers {
 
     public static <T> Supplier<T> ofInstance(@Nullable final T reference) {
         return new Supplier<T>() {
+            @Nullable
             public T get() {
                 return reference;
             }
         };
     }
-
     private Suppliers() {}
 }

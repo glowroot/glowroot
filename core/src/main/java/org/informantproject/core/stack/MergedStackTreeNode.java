@@ -61,7 +61,7 @@ public class MergedStackTreeNode {
         return new MergedStackTreeNode(stackTraceElement, 1);
     }
 
-    private MergedStackTreeNode(StackTraceElement stackTraceElement, int sampleCount) {
+    private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement, int sampleCount) {
         this.stackTraceElement = stackTraceElement;
         this.sampleCount = sampleCount;
     }
@@ -88,6 +88,7 @@ public class MergedStackTreeNode {
         return childNodes;
     }
 
+    // only returns null for synthetic root
     @Nullable
     public StackTraceElement getStackTraceElement() {
         return stackTraceElement;

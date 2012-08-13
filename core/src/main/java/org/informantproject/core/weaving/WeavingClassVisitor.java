@@ -66,6 +66,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private int innerMethodCounter;
 
     private boolean nothingAtAllToWeave = false;
+    @Nullable
     private ParsedType.Builder parsedType;
 
     public WeavingClassVisitor(List<Mixin> mixins, List<Advice> advisors,
@@ -81,7 +82,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     @Override
-    public void visit(int version, int access, String name, String signature,
+    public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String[] interfaceNames) {
 
         parsedType = ParsedType.builder(name, superName, ImmutableList.copyOf(interfaceNames));
@@ -138,8 +139,9 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-            String[] exceptions) {
+    @Nullable
+    public MethodVisitor visitMethod(int access, String name, String desc,
+            @Nullable String signature, @Nullable String[] exceptions) {
 
         ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc));
         parsedType.addMethod(parsedMethod);
