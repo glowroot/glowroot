@@ -17,7 +17,6 @@ package org.informantproject.plugin.servlet;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
@@ -29,6 +28,8 @@ import org.informantproject.api.TemplateMessage;
 import org.informantproject.shaded.google.common.base.Objects;
 import org.informantproject.shaded.google.common.base.Optional;
 import org.informantproject.shaded.google.common.collect.ImmutableMap;
+import org.informantproject.shaded.google.common.collect.Maps;
+
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -148,7 +149,7 @@ class ServletMessageSupplier implements Supplier<Message> {
 
     void putSessionAttributeChangedValue(String name, @Nullable String value) {
         if (sessionAttributeUpdatedValueMap == null) {
-            sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, Optional<String>>();
+            sessionAttributeUpdatedValueMap = Maps.newConcurrentMap();
         }
         sessionAttributeUpdatedValueMap.put(name, Optional.fromNullable(value));
     }

@@ -16,10 +16,10 @@
 package org.informantproject.core.trace;
 
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.Queues;
 import com.google.inject.Singleton;
 
 /**
@@ -34,7 +34,7 @@ public class TraceRegistry {
 
     // collection of active running traces, ordered by start time
     // TODO precise ordering by start time would require synchronization or some other method
-    private final Collection<Trace> traces = new ConcurrentLinkedQueue<Trace>();
+    private final Collection<Trace> traces = Queues.newConcurrentLinkedQueue();
 
     // active running trace being executed by the current thread
     private final ThreadLocal<Trace> currentTraceHolder = new ThreadLocal<Trace>();

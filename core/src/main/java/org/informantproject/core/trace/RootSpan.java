@@ -17,7 +17,6 @@ package org.informantproject.core.trace;
 
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
 
@@ -29,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -52,7 +52,7 @@ class RootSpan {
     private volatile long endTick;
 
     private final Span rootSpan;
-    private final Queue<Span> spans = new ConcurrentLinkedQueue<Span>();
+    private final Queue<Span> spans = Queues.newConcurrentLinkedQueue();
     // tracking size of spans queue since ConcurrentLinkedQueue.size() is slow
     private volatile int size;
 

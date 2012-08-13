@@ -18,12 +18,12 @@ package org.informantproject.plugin.jdbc;
 import java.lang.ref.WeakReference;
 import java.sql.Statement;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import org.informantproject.shaded.google.common.collect.ImmutableList;
+import org.informantproject.shaded.google.common.collect.Queues;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of statements since the underlying
@@ -58,7 +58,7 @@ class StatementMirror {
         // synchronization isn't an issue here as this method is called only by
         // the monitored thread
         if (batchedSql == null) {
-            batchedSql = new ConcurrentLinkedQueue<String>();
+            batchedSql = Queues.newConcurrentLinkedQueue();
         }
         batchedSql.add(sql);
     }

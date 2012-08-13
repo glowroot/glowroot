@@ -18,13 +18,13 @@ package org.informantproject.plugin.jdbc;
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import org.informantproject.shaded.google.common.collect.ImmutableList;
 import org.informantproject.shaded.google.common.collect.Lists;
+import org.informantproject.shaded.google.common.collect.Queues;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of prepared statements since the underlying
@@ -56,7 +56,7 @@ class PreparedStatementMirror extends StatementMirror {
     public void addBatch() {
         // synchronization isn't an issue here as this method is called only by the monitored thread
         if (batchedParameters == null) {
-            batchedParameters = new ConcurrentLinkedQueue<List<Object>>();
+            batchedParameters = Queues.newConcurrentLinkedQueue();
         }
         batchedParameters.add(parameters);
         parameters = Lists.newArrayListWithCapacity(parameters.size());

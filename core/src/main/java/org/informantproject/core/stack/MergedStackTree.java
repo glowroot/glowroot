@@ -19,12 +19,12 @@ import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 
 /**
  * Merged stack tree built from sampled stack traces captured by periodic calls to
@@ -43,8 +43,7 @@ import com.google.common.collect.Lists;
 @ThreadSafe
 public class MergedStackTree {
 
-    private final Collection<MergedStackTreeNode> rootNodes =
-            new ConcurrentLinkedQueue<MergedStackTreeNode>();
+    private final Collection<MergedStackTreeNode> rootNodes = Queues.newConcurrentLinkedQueue();
 
     // marked transient for gson serialization
     private final transient Object lock = new Object();

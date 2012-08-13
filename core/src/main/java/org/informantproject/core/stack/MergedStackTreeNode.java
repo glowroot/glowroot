@@ -17,10 +17,11 @@ package org.informantproject.core.stack;
 
 import java.lang.Thread.State;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
+
+import com.google.common.collect.Queues;
 
 /**
  * Element of {@link MergedStackTree}.
@@ -33,8 +34,7 @@ public class MergedStackTreeNode {
 
     @Nullable
     private final StackTraceElement stackTraceElement;
-    private final Collection<MergedStackTreeNode> childNodes =
-            new ConcurrentLinkedQueue<MergedStackTreeNode>();
+    private final Collection<MergedStackTreeNode> childNodes = Queues.newConcurrentLinkedQueue();
 
     // these must be volatile since they are updated by one thread (the stack trace sampling
     // thread) and can be read by another thread (e.g. the executing thread, the stuck trace
