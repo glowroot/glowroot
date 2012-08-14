@@ -26,6 +26,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.core.util.Files;
 import org.informantproject.testkit.AppUnderTest;
@@ -39,6 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 /**
@@ -115,9 +118,8 @@ public class JdbcPluginTest {
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        List<String> metricNames = Lists.newArrayList(trace.getMetrics().get(1).getName(), trace
-                .getMetrics().get(2).getName(), trace.getMetrics().get(3).getName());
-        assertThat(metricNames).contains("jdbc execute", "jdbc commit", "jdbc statement close");
+        assertThat(getMetricNames(trace)).containsOnly("mock trace marker", "jdbc execute",
+                "jdbc commit", "jdbc statement close");
     }
 
     @Test
@@ -149,13 +151,14 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(AccessMetaData.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getSpans()).hasSize(1);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
-        // h2 calls prepared statement execute underneath jdbc metadata but other drivers may not
-        assertThat(trace.getMetrics().size()).isGreaterThanOrEqualTo(2);
+        // ordering is by total desc, so not fixed (though root span will be first since it
+        // encompasses all other timings)
+        assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
+        assertThat(getMetricNames(trace)).containsOnly("mock trace marker", "jdbc metadata");
     }
 
     // TODO testPreparedStatement
@@ -178,6 +181,14 @@ public class JdbcPluginTest {
     // against SQLServer) ensures that getParameterMetaData() doesn't sneak back in the future
     // select * from employee where (name like ?)
     // [john%]
+
+    private List<String> getMetricNames(Trace trace) {
+        return Lists.transform(trace.getMetrics(), new Function<Metric, String>() {
+            public String apply(@Nullable Metric metric) {
+                return metric.getName();
+            }
+        });
+    }
 
     private static File dbFile;
 
@@ -291,7 +302,7 @@ public class JdbcPluginTest {
             }
         }
         public void traceMarker() throws Exception {
-            connection.getMetaData().getTables(null, null, null, null).next();
+            connection.getMetaData().getTables(null, null, null, null);
         }
     }
 }

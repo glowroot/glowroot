@@ -100,7 +100,9 @@ public class JdbcAspect {
                 .getMetric(PrepareStatementTimingAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return pluginServices.isEnabled()
+                    && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
         public static Timer onBefore() {
@@ -189,6 +191,11 @@ public class JdbcAspect {
             metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
         private static final Metric metric = pluginServices.getMetric(StatementExecuteAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+        }
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Statement statement,
@@ -226,13 +233,18 @@ public class JdbcAspect {
     public static class PreparedStatementExecuteAdvice {
         private static final Metric metric = pluginServices
                 .getMetric(PreparedStatementExecuteAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+        }
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.createWithParameters(
-                        mirror, getConnectionHashCode(preparedStatement));
+                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
+                        .createWithParameters(mirror, getConnectionHashCode(preparedStatement));
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metric);
             } else {
@@ -259,6 +271,11 @@ public class JdbcAspect {
     public static class StatementExecuteBatchAdvice {
         private static final Metric metric = pluginServices
                 .getMetric(StatementExecuteBatchAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+        }
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget final Statement statement) {
@@ -334,7 +351,8 @@ public class JdbcAspect {
         }
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginEnabled;
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return pluginEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
         @Nullable
@@ -396,7 +414,8 @@ public class JdbcAspect {
         }
         @IsEnabled
         public static boolean isEnabled() {
-            return metricEnabled;
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return metricEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
         public static Timer onBefore() {
@@ -425,7 +444,8 @@ public class JdbcAspect {
         }
         @IsEnabled
         public static boolean isEnabled() {
-            return metricEnabled;
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return metricEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
         public static Timer onBefore() {
@@ -467,7 +487,9 @@ public class JdbcAspect {
         private static final Metric metric = pluginServices.getMetric(StatementCloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return pluginServices.isEnabled()
+                    && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
         public static Timer onBefore() {
@@ -485,12 +507,18 @@ public class JdbcAspect {
             metricName = "jdbc metadata", captureNested = false)
     public static class DatabaseMetaDataAdvice {
         private static final Metric metric = pluginServices.getMetric(DatabaseMetaDataAdvice.class);
-        private static final ThreadLocal<String> inDatabaseMetatDataCall =
+        // DatabaseMetaData method timings are captured below, so this thread local is used to
+        // avoid capturing driver-specific java.sql.Statement executions used to implement the
+        // method internally (especially since it is haphazard whether a particular driver
+        // internally uses a java.sql API that is woven, or an internal API, or even a mis-matched
+        // combination like using a PreparedStatement but not creating it via
+        // Connection.prepareStatement())
+        private static final ThreadLocal<String> inDatabaseMetataDataMethod =
                 new ThreadLocal<String>();
         @OnBefore
         @Nullable
         public static Timer onBefore(@InjectMethodName String methodName) {
-            inDatabaseMetatDataCall.set(methodName);
+            inDatabaseMetataDataMethod.set(methodName);
             if (pluginServices.isEnabled()) {
                 return pluginServices.startTimer(metric);
             } else {
@@ -501,7 +529,7 @@ public class JdbcAspect {
         public static void onAfter(@InjectTraveler @Nullable Timer timer) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.captureNested = false prevents re-entrant calls
-            inDatabaseMetatDataCall.set(null);
+            inDatabaseMetataDataMethod.set(null);
             if (timer != null) {
                 timer.end();
             }
@@ -523,14 +551,14 @@ public class JdbcAspect {
         PreparedStatementMirror mirror = (PreparedStatementMirror)
                 ((HasStatementMirror) preparedStatement).getInformantStatementMirror();
         if (mirror == null) {
-            String methodName = DatabaseMetaDataAdvice.inDatabaseMetatDataCall.get();
+            String methodName = DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get();
             if (methodName != null) {
-                // wrapping description in sql comment /* */
+                // wrapping description in sql comment (/* */)
                 mirror = new PreparedStatementMirror("/* internal prepared statement generated by"
                         + " java.sql.DatabaseMetaData." + methodName + "() */");
                 ((HasStatementMirror) preparedStatement).setInformantStatementMirror(mirror);
             } else {
-                // wrapping description in sql comment /* */
+                // wrapping description in sql comment (/* */)
                 mirror = new PreparedStatementMirror("/* prepared statement generated outside of"
                         + " the java.sql.Connection.prepare*() public API, no sql text available"
                         + " */");
@@ -555,5 +583,4 @@ public class JdbcAspect {
             return null;
         }
     }
-
 }
