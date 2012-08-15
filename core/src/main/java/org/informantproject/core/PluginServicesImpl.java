@@ -33,7 +33,6 @@ import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.config.PluginConfig;
-import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.MetricImpl;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;

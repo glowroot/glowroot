@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.metric;
+package org.informantproject.core;
 
 import org.informantproject.api.Metric;
 import org.informantproject.api.weaving.Pointcut;
@@ -33,7 +33,7 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-public class MetricCache {
+class MetricCache {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricCache.class);
 
@@ -52,7 +52,7 @@ public class MetricCache {
         this.ticker = ticker;
     }
 
-    public Metric getMetric(Class<?> adviceClass) {
+    Metric getMetric(Class<?> adviceClass) {
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut == null) {
             logger.error("advice class '{}' has no @Pointcut", adviceClass.getName());

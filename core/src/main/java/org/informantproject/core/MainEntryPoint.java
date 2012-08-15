@@ -31,7 +31,6 @@ import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
-import org.informantproject.core.metric.MetricCache;
 import org.informantproject.core.trace.WeavingMetricImpl;
 import org.informantproject.core.util.Static;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;

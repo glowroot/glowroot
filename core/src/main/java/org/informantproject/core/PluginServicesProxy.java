@@ -29,7 +29,6 @@ import org.informantproject.api.Supplier;
 import org.informantproject.api.Timer;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
-import org.informantproject.core.metric.MetricCache;
 
 /**
  * Plugins may get instantiated by aspectj and request their PluginServices before Informant has
