@@ -17,16 +17,13 @@ package org.informantproject.plugin.jdbc;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.h2.jdbcx.JdbcDataSource;
-import org.informantproject.core.util.Files;
+import org.hsqldb.jdbc.JDBCDriver;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.InformantContainer;
@@ -174,16 +171,9 @@ public class JdbcPluginTest {
     // select * from employee where (name like ?)
     // [john%]
 
-    private static File dbFile;
-
-    private static Connection createConnection() throws IOException, SQLException {
-        JdbcDataSource dataSource = new JdbcDataSource();
-        dbFile = File.createTempFile("informant-jdbc-plugin-test-", ".h2.db");
-        String dbPath = dbFile.getCanonicalPath().replaceFirst(".h2.db$", "");
-        dataSource.setURL("jdbc:h2:mem:" + dbPath);
-        dataSource.setUser("sa");
+    private static Connection createConnection() throws SQLException {
         // set up database
-        Connection connection = dataSource.getConnection();
+        Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
         Statement statement = connection.createStatement();
         try {
             statement.execute("create table employee (name varchar(100))");
@@ -194,9 +184,14 @@ public class JdbcPluginTest {
         return connection;
     }
 
-    private static void closeConnection(Connection connection) throws SQLException, IOException {
+    private static void closeConnection(Connection connection) throws SQLException {
+        Statement statement = connection.createStatement();
+        try {
+            statement.execute("drop table employee");
+        } finally {
+            statement.close();
+        }
         connection.close();
-        Files.delete(dbFile);
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {

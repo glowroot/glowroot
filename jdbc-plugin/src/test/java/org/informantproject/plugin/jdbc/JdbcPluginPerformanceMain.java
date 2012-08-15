@@ -23,7 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.h2.jdbcx.JdbcDataSource;
+import org.hsqldb.jdbc.JDBCDriver;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
@@ -40,7 +40,7 @@ import org.informantproject.testkit.TraceMarker;
 public class JdbcPluginPerformanceMain {
 
     private static final String PLUGIN_ID = "org.informantproject.plugins:jdbc-plugin";
-    private static final String DB_NAME = "test";
+    private static final String DB_NAME = "testdb";
 
     public static void main(String... args) throws Exception {
         setUpTestDatabase();
@@ -50,7 +50,8 @@ public class JdbcPluginPerformanceMain {
 
     private static void setUpTestDatabase() throws Exception {
         // set up database
-        new File(DB_NAME + ".h2.db").delete();
+        new File(DB_NAME + ".properties").delete();
+        new File(DB_NAME + ".script").delete();
         Connection connection = createConnection();
         Statement statement = null;
         try {
@@ -112,10 +113,7 @@ public class JdbcPluginPerformanceMain {
     }
 
     private static Connection createConnection() throws SQLException {
-        JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL("jdbc:h2:" + DB_NAME);
-        dataSource.setUser("sa");
-        return dataSource.getConnection();
+        return JDBCDriver.getConnection("jdbc:hsqldb:file:" + DB_NAME + ";shutdown=true", null);
     }
 
     @SuppressWarnings("unused")
