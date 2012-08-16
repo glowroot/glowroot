@@ -25,11 +25,11 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.TemplateMessage;
+import org.informantproject.shaded.google.common.base.Joiner;
 import org.informantproject.shaded.google.common.base.Objects;
 import org.informantproject.shaded.google.common.base.Optional;
 import org.informantproject.shaded.google.common.collect.ImmutableMap;
 import org.informantproject.shaded.google.common.collect.Maps;
-
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -169,8 +169,12 @@ class ServletMessageSupplier implements Supplier<Message> {
             ImmutableMap.Builder<String, Object> nestedContextMap = ImmutableMap.builder();
             for (String parameterName : requestParameterMap.keySet()) {
                 String[] values = requestParameterMap.get(parameterName);
-                for (String value : values) {
-                    nestedContextMap.put(parameterName, value);
+                if (values.length == 0) {
+                    nestedContextMap.put(parameterName, "");
+                } else if (values.length == 1) {
+                    nestedContextMap.put(parameterName, values[0]);
+                } else {
+                    nestedContextMap.put(parameterName, Joiner.on(", ").join(values));
                 }
             }
             contextMap.put("request parameters", nestedContextMap.build());
