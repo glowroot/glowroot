@@ -26,17 +26,24 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.store.FileLister;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.PluginDescriptor;
+import org.informantproject.core.config.Plugins;
 import org.informantproject.core.metric.MetricCache;
+import org.informantproject.core.trace.WeavingMetricImpl;
 import org.informantproject.core.util.Static;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
-import org.informantproject.core.weaving.InformantClassFileTransformer;
+import org.informantproject.core.weaving.Advice;
+import org.informantproject.core.weaving.WeavingClassFileTransformer;
+import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Ticker;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -92,9 +99,7 @@ public final class MainEntryPoint {
             return;
         }
         start(parsedAgentArgs);
-        PluginServices pluginServices = createPluginServices("org.informantproject:informant-core");
-        Ticker ticker = injector.getInstance(Ticker.class);
-        instrumentation.addTransformer(new InformantClassFileTransformer(pluginServices, ticker));
+        instrumentation.addTransformer(getWeavingClassFileTransformer());
     }
 
     // called via reflection from org.informantproject.api.PluginServices
@@ -130,6 +135,25 @@ public final class MainEntryPoint {
             // don't need reference to these proxies anymore, may as well clean up
             pluginServicesProxies.clear();
         }
+    }
+
+    private static WeavingClassFileTransformer getWeavingClassFileTransformer() {
+        ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
+        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
+            mixins.addAll(plugin.getMixins());
+            advisors.addAll(plugin.getAdvisors());
+        }
+        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
+            mixins.addAll(plugin.getMixins());
+            advisors.addAll(plugin.getAdvisors());
+        }
+        return new WeavingClassFileTransformer(mixins.build(), advisors.build(), getWeavingMetric());
+    }
+
+    @VisibleForTesting
+    public static WeavingMetric getWeavingMetric() {
+        return injector.getInstance(WeavingMetricImpl.class);
     }
 
     @OnlyUsedByTests

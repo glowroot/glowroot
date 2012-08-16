@@ -54,9 +54,7 @@ public class TraceMetricDataTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        // when running in external jvm (via javaagent), the additional "informant weaving" metric
-        // is present also
-        assertThat(trace.getMetrics().size()).isGreaterThanOrEqualTo(1);
+        assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
     }
 

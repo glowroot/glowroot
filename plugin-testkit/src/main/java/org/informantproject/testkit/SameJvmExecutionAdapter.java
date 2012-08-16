@@ -25,6 +25,7 @@ import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.IsolatedWeavingClassLoader;
+import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
 
 import com.google.common.collect.Lists;
@@ -47,17 +48,25 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
         }
+        // instantiate class loader
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
-                AppUnderTest.class, RunnableWithStringArg.class, RunnableWithIntReturn.class);
-        isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithStringArg.class)
+                AppUnderTest.class, RunnableWithArg.class, RunnableWithReturn.class);
+        // start agent inside class loader
+        // TODO fix the type safety warning in the following line using TypeToken after upgrading
+        // to guava 12.0
+        isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithArg.class)
                 .run(agentArgs);
+        // start weaving (needed to retrieve weaving metric from agent first)
+        WeavingMetric weavingMetric = (WeavingMetric) isolatedWeavingClassLoader.newInstance(
+                GetWeavingMetric.class, RunnableWithReturn.class).run();
+        isolatedWeavingClassLoader.initWeaver(weavingMetric);
     }
 
     public int getPort() throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
 
-        return isolatedWeavingClassLoader.newInstance(GetPort.class, RunnableWithIntReturn.class)
-                .run();
+        return (Integer) isolatedWeavingClassLoader.newInstance(GetPort.class,
+                RunnableWithReturn.class).run();
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
@@ -84,15 +93,15 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         isolatedWeavingClassLoader = null;
     }
 
-    public interface RunnableWithStringArg {
-        void run(String arg);
+    public interface RunnableWithArg<T> {
+        void run(T args);
     }
 
-    public interface RunnableWithIntReturn {
-        int run();
+    public interface RunnableWithReturn<T> {
+        T run();
     }
 
-    public static class StartContainer implements RunnableWithStringArg {
+    public static class StartContainer implements RunnableWithArg<String> {
         public void run(String agentArgs) {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
@@ -106,10 +115,24 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public static class GetPort implements RunnableWithIntReturn {
-        public int run() {
+    public static class GetWeavingMetric implements RunnableWithReturn<WeavingMetric> {
+        public WeavingMetric run() {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
+            Thread.currentThread().setContextClassLoader(GetWeavingMetric.class.getClassLoader());
+            try {
+                return MainEntryPoint.getWeavingMetric();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            } finally {
+                Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+            }
+        }
+    }
+
+    public static class GetPort implements RunnableWithReturn<Integer> {
+        public Integer run() {
+            ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(GetPort.class.getClassLoader());
             try {
                 return MainEntryPoint.getPort();
             } catch (Exception e) {
@@ -123,7 +146,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     public static class ShutdownContainer implements Runnable {
         public void run() {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
+            Thread.currentThread().setContextClassLoader(ShutdownContainer.class.getClassLoader());
             try {
                 MainEntryPoint.shutdown();
             } catch (Exception e) {

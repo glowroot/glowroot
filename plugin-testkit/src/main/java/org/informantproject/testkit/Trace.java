@@ -15,14 +15,17 @@
  */
 package org.informantproject.testkit;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -78,7 +81,24 @@ public class Trace {
         return attributes;
     }
     public List<Metric> getMetrics() {
-        return metrics;
+        // the informant weaving metric is a bit unpredictable since tests are often run inside the
+        // same InformantContainer for test speed, so test order affects whether any classes are
+        // woven during the test or not
+        // it's easiest to just ignore this metric completely
+        List<Metric> stableMetrics = Lists.newArrayList(metrics);
+        for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
+            if (i.next().getName().equals("informant weaving")) {
+                i.remove();
+            }
+        }
+        return stableMetrics;
+    }
+    public List<String> getMetricNames() {
+        return Lists.transform(getMetrics(), new Function<Metric, String>() {
+            public String apply(@Nullable Metric metric) {
+                return metric.getName();
+            }
+        });
     }
     public List<Span> getSpans() {
         return spans;

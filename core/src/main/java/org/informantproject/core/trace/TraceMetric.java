@@ -82,12 +82,7 @@ public class TraceMetric implements Timer {
     }
 
     public void end() {
-        if (selfNestingLevel == 1) {
-            recordData(ticker.read() - startTick);
-        }
-        // selfNestingLevel is decremented after recording data since it is used as a memory barrier
-        // so that all updated fields will be visible to other threads in copyOf()
-        selfNestingLevel--;
+        end(ticker.read());
     }
 
     boolean isFirstStart() {
@@ -99,12 +94,7 @@ public class TraceMetric implements Timer {
     }
 
     void start() {
-        if (selfNestingLevel == 0) {
-            startTick = ticker.read();
-        }
-        // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
-        // as a memory barrier so startTick will be visible to other threads in copyOf()
-        selfNestingLevel++;
+        start(ticker.read());
     }
 
     void start(long startTick) {
@@ -116,13 +106,17 @@ public class TraceMetric implements Timer {
         selfNestingLevel++;
     }
 
-    void stop(long endTick) {
+    void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
         }
         // selfNestingLevel is decremented after recording data since it is volatile and creates a
         // memory barrier so that all updated fields will be visible to other threads in copyOf()
         selfNestingLevel--;
+    }
+
+    long getCount() {
+        return count;
     }
 
     private void recordData(long time) {

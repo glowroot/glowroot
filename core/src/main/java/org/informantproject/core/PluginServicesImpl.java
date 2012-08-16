@@ -38,6 +38,7 @@ import org.informantproject.core.trace.MetricImpl;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.trace.TraceSink;
+import org.informantproject.core.trace.WeavingMetricImpl;
 import org.informantproject.core.util.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final MetricCache metricCache;
     private final Clock clock;
     private final Ticker ticker;
+    private final WeavingMetricImpl weavingMetric;
 
     // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
     // plugin's org.informantproject.plugin.xml
@@ -78,7 +80,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache, Clock clock, Ticker ticker,
-            @Assisted String pluginId) {
+            WeavingMetricImpl weavingMetric, @Assisted String pluginId) {
 
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
@@ -86,6 +88,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         this.metricCache = metricCache;
         this.clock = clock;
         this.ticker = ticker;
+        this.weavingMetric = weavingMetric;
         this.pluginId = pluginId;
         // add config listener first before caching config properties to avoid a
         // (remotely) possible race condition
@@ -130,7 +133,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
-            currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker);
+            currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker,
+                    weavingMetric);
             traceRegistry.addTrace(currentTrace);
             return new SpanImpl(currentTrace.getRootSpan(), currentTrace);
         } else {
@@ -260,7 +264,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // the root span has been popped off
                 // since the metrics are bound to the thread, they need to be recorded and reset
                 // while still in the trace thread, before the thread is reused for another trace
-                currentTrace.resetThreadLocalMetrics();
+                currentTrace.clearThreadLocalMetrics();
                 cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
                 cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
                 traceRegistry.removeTrace(currentTrace);

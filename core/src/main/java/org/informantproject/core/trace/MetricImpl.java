@@ -41,9 +41,10 @@ public class MetricImpl implements Metric {
         return name;
     }
 
-    TraceMetric startInternal() {
+    TraceMetric start() {
         TraceMetric item = traceMetric.get();
         if (item == null) {
+            // no race condition here because traceMetric is a ThreadLocal
             item = new TraceMetric(name, ticker);
             item.start();
             traceMetric.set(item);
@@ -54,9 +55,10 @@ public class MetricImpl implements Metric {
         }
     }
 
-    TraceMetric startInternal(long startTick) {
+    TraceMetric start(long startTick) {
         TraceMetric item = traceMetric.get();
         if (item == null) {
+            // no race condition here because traceMetric is a ThreadLocal
             item = new TraceMetric(name, ticker);
             item.start(startTick);
             traceMetric.set(item);
@@ -71,7 +73,13 @@ public class MetricImpl implements Metric {
         return traceMetric.get();
     }
 
-    void resetThreadLocal() {
+    void clearThreadLocal() {
         traceMetric.remove();
+    }
+
+    TraceMetric initThreadLocal() {
+        TraceMetric item = new TraceMetric(name, ticker);
+        traceMetric.set(item);
+        return item;
     }
 }

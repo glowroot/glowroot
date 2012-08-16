@@ -613,6 +613,7 @@ public class WeaverTest {
         List<Class<?>> bridgeClasses = Lists.asList(bridgeClass, adviceClass, extraBridgeClasses);
         IsolatedWeavingClassLoader weavingClassLoader = new IsolatedWeavingClassLoader(mixins,
                 advisors, Iterables.toArray(bridgeClasses, Class.class));
+        weavingClassLoader.initWeaver(NopWeavingMetric.INSTANCE);
         return weavingClassLoader.newInstance(implClass, bridgeClass);
     }
 }

@@ -24,9 +24,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
-
-import javax.annotation.Nullable;
 
 import org.h2.jdbcx.JdbcDataSource;
 import org.informantproject.core.util.Files;
@@ -40,9 +37,6 @@ import org.informantproject.testkit.TraceMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 /**
  * Basic test of the jdbc plugin.
@@ -118,7 +112,7 @@ public class JdbcPluginTest {
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        assertThat(getMetricNames(trace)).containsOnly("mock trace marker", "jdbc execute",
+        assertThat(trace.getMetricNames()).containsOnly("mock trace marker", "jdbc execute",
                 "jdbc commit", "jdbc statement close");
     }
 
@@ -154,11 +148,9 @@ public class JdbcPluginTest {
         assertThat(trace.getSpans()).hasSize(1);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
-        // ordering is by total desc, so not fixed (though root span will be first since it
-        // encompasses all other timings)
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
-        assertThat(getMetricNames(trace)).containsOnly("mock trace marker", "jdbc metadata");
+        assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
     }
 
     // TODO testPreparedStatement
@@ -181,14 +173,6 @@ public class JdbcPluginTest {
     // against SQLServer) ensures that getParameterMetaData() doesn't sneak back in the future
     // select * from employee where (name like ?)
     // [john%]
-
-    private List<String> getMetricNames(Trace trace) {
-        return Lists.transform(trace.getMetrics(), new Function<Metric, String>() {
-            public String apply(@Nullable Metric metric) {
-                return metric.getName();
-            }
-        });
-    }
 
     private static File dbFile;
 

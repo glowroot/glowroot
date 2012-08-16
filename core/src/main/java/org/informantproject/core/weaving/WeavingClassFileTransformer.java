@@ -17,20 +17,13 @@ package org.informantproject.core.weaving;
 
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-import org.informantproject.api.Metric;
-import org.informantproject.api.PluginServices;
-import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Mixin;
-import org.informantproject.core.config.PluginDescriptor;
-import org.informantproject.core.config.Plugins;
-import org.informantproject.core.trace.MetricImpl;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
@@ -38,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -50,13 +42,14 @@ import com.google.common.collect.Sets;
  * @since 0.5
  */
 @ThreadSafe
-public class InformantClassFileTransformer implements ClassFileTransformer {
+public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory
-            .getLogger(InformantClassFileTransformer.class);
+            .getLogger(WeavingClassFileTransformer.class);
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
+    private final WeavingMetric metric;
 
     private final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
 
@@ -70,54 +63,29 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
                     .build(new CacheLoader<Optional<ClassLoader>, Weaver>() {
                         @Override
                         public Weaver load(Optional<ClassLoader> loader) {
-                            return new Weaver(mixins, advisors, loader.orNull(), parsedTypeCache);
+                            return new Weaver(mixins, advisors, loader.orNull(), parsedTypeCache,
+                                    metric);
                         }
                     });
 
-    private final PluginServices pluginServices;
-    private final Metric metric;
+    public WeavingClassFileTransformer(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
+            WeavingMetric metric) {
 
-    public InformantClassFileTransformer(PluginServices pluginServices, Ticker ticker) {
-        ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
-        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
-        for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
-            mixins.addAll(plugin.getMixins());
-            advisors.addAll(plugin.getAdvisors());
-        }
-        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
-            mixins.addAll(plugin.getMixins());
-            advisors.addAll(plugin.getAdvisors());
-        }
-        this.mixins = mixins.build();
-        this.advisors = advisors.build();
-        this.pluginServices = pluginServices;
-        metric = new MetricImpl("informant weaving", ticker);
+        this.mixins = mixins;
+        this.advisors = advisors;
+        this.metric = metric;
         loadUsedTypes();
     }
 
     public byte[] transform(@Nullable ClassLoader loader, String className,
-            Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes)
-            throws IllegalClassFormatException {
+            Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
 
-        return transform$informant$metric$informant$weaving$0(loader, className,
-                protectionDomain, bytes);
-    }
-
-    // weird method name is following "metric marker" method naming
-    private byte[] transform$informant$metric$informant$weaving$0(@Nullable ClassLoader loader,
-            String className, ProtectionDomain protectionDomain, byte[] bytes) {
-
-        Timer timer = pluginServices.startTimer(metric);
-        try {
-            Weaver weaver = weavers.getUnchecked(Optional.fromNullable(loader));
-            byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
-            if (transformedBytes != bytes) {
-                logger.debug("transform(): transformed {}", className);
-            }
-            return transformedBytes;
-        } finally {
-            timer.end();
+        Weaver weaver = weavers.getUnchecked(Optional.fromNullable(loader));
+        byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
+        if (transformedBytes != bytes) {
+            logger.debug("transform(): transformed {}", className);
         }
+        return transformedBytes;
     }
 
     // "There are some things that agents are allowed to do that simply should not be permitted"
@@ -140,7 +108,7 @@ public class InformantClassFileTransformer implements ClassFileTransformer {
     //
     private static void loadUsedTypes() {
         try {
-            new UsedTypeCollector().processType(InformantClassFileTransformer.class.getName());
+            new UsedTypeCollector().processType(WeavingClassFileTransformer.class.getName());
         } catch (ClassNotFoundException e) {
             logger.error(e.getMessage(), e);
         } catch (IOException e) {

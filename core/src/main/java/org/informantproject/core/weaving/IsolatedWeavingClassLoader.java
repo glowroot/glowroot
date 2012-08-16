@@ -20,35 +20,51 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Mixin;
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 
 /**
- * Only used by tests.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
+@OnlyUsedByTests
 @ThreadSafe
 public class IsolatedWeavingClassLoader extends ClassLoader {
 
-    private final Class<?>[] bridgeClasses;
-    private final Weaver weaver;
+    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<Advice> advisors;
+    private final List<Class<?>> bridgeClasses;
     // guarded by 'this'
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
+    @Nullable
+    private volatile Weaver weaver;
+
+    private final ThreadLocal<Boolean> inWeaving = new ThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     // bridge classes can be either interfaces or base classes
     public IsolatedWeavingClassLoader(List<Mixin> mixins, List<Advice> advisors,
             Class<?>... bridgeClasses) {
 
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        this.bridgeClasses = bridgeClasses;
-        weaver = new Weaver(mixins, advisors, this, new ParsedTypeCache());
+        this.mixins = ImmutableList.copyOf(mixins);
+        this.advisors = ImmutableList.copyOf(advisors);
+        this.bridgeClasses = ImmutableList.copyOf(Lists.asList(WeavingMetric.class,
+                Timer.class, bridgeClasses));
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -61,11 +77,13 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
     }
 
+    // TODO this api is a bit awkward requiring construction and then initialization
+    public void initWeaver(WeavingMetric weavingMetric) {
+        weaver = new Weaver(mixins, advisors, this, new ParsedTypeCache(), weavingMetric);
+    }
+
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (isInBootClassLoader(name)) {
-            return super.findClass(name);
-        }
         for (Class<?> bridgeClass : bridgeClasses) {
             if (bridgeClass.getName().equals(name)) {
                 return bridgeClass;
@@ -82,7 +100,17 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        b = weaver.weave(b);
+        // don't weave before the weaver has been set via initWeaver()
+        // also don't do recursive weaving (i.e. don't weave any of the classes which are performing
+        // the weaving itself)
+        if (weaver != null && !inWeaving.get()) {
+            inWeaving.set(true);
+            try {
+                b = weaver.weave(b);
+            } finally {
+                inWeaving.remove();
+            }
+        }
         if (name.indexOf('.') != -1) {
             String packageName = name.substring(0, name.lastIndexOf('.'));
             if (getPackage(packageName) == null) {

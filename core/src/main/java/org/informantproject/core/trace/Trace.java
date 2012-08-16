@@ -53,7 +53,7 @@ import com.google.common.collect.Lists;
  * @since 0.5
  */
 @PartiallyThreadSafe("pushSpan(), addSpan(), popSpan(), startTraceMetric(),"
-        + "  resetThreadLocalMetrics() can only be called from constructing thread")
+        + "  clearThreadLocalMetrics() can only be called from constructing thread")
 public class Trace {
 
     // a unique identifier
@@ -104,19 +104,26 @@ public class Trace {
     private volatile ScheduledFuture<?> stuckCommandScheduledFuture;
 
     private final Ticker ticker;
+    private final WeavingMetricImpl weavingMetric;
+    private final TraceMetric weavingTraceMetric;
 
     public Trace(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier,
-            Clock clock, Ticker ticker) {
+            Clock clock, Ticker ticker, WeavingMetricImpl weavingMetric) {
 
         this.ticker = ticker;
         long startTimeMillis = clock.currentTimeMillis();
         id = new TraceUniqueId(startTimeMillis);
         startDate = new Date(startTimeMillis);
         long startTick = ticker.read();
-        TraceMetric traceMetric = metric.startInternal(startTick);
+        TraceMetric traceMetric = metric.start(startTick);
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
         traceMetrics.add(traceMetric);
         metrics.add(metric);
+        // the weaving metric thread local is initialized to an empty TraceMetric instance so that
+        // it can be cached in this class (otherwise it is painful to synchronize properly between
+        // clearThreadLocalMetrics() and getTraceMetrics())
+        weavingTraceMetric = weavingMetric.initThreadLocal();
+        this.weavingMetric = weavingMetric;
     }
 
     public Date getStartDate() {
@@ -164,7 +171,13 @@ public class Trace {
     }
 
     public List<TraceMetric> getTraceMetrics() {
-        return traceMetrics;
+        if (weavingTraceMetric.getCount() == 0) {
+            return traceMetrics;
+        } else {
+            List<TraceMetric> values = Lists.newArrayList(traceMetrics);
+            values.add(weavingTraceMetric);
+            return values;
+        }
     }
 
     public Span getRootSpan() {
@@ -194,10 +207,14 @@ public class Trace {
     }
 
     // must be called by the trace thread
-    public void resetThreadLocalMetrics() {
+    public void clearThreadLocalMetrics() {
+        // reset metric thread locals to clear their state for next time
         for (MetricImpl metric : metrics) {
-            metric.resetThreadLocal();
+            metric.clearThreadLocal();
         }
+        // reset weaving metric thread local to prevent the thread from continuing to
+        // increment the one associated to this trace
+        weavingMetric.clearThreadLocal();
     }
 
     // returns previous value
@@ -244,7 +261,7 @@ public class Trace {
             org.informantproject.api.Supplier<Message> messageSupplier) {
 
         long startTick = ticker.read();
-        TraceMetric traceMetric = metric.startInternal(startTick);
+        TraceMetric traceMetric = metric.start(startTick);
         Span span = rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
         if (traceMetric.isFirstStart()) {
             traceMetrics.add(metric.get());
@@ -272,12 +289,15 @@ public class Trace {
         rootSpan.popSpan(span, endTick, error);
         TraceMetric traceMetric = span.getTraceMetric();
         if (traceMetric != null) {
-            traceMetric.stop(endTick);
+            traceMetric.end(endTick);
+        }
+        if (rootSpan.isCompleted()) {
+
         }
     }
 
     public TraceMetric startTraceMetric(MetricImpl metric) {
-        TraceMetric traceMetric = metric.startInternal();
+        TraceMetric traceMetric = metric.start();
         if (traceMetric.isFirstStart()) {
             traceMetrics.add(metric.get());
             traceMetric.firstStartSeen();
