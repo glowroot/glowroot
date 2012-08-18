@@ -36,13 +36,12 @@ import org.informantproject.core.util.Static;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.WeavingClassFileTransformer;
-import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -137,8 +136,8 @@ public final class MainEntryPoint {
     }
 
     private static WeavingClassFileTransformer getWeavingClassFileTransformer() {
-        ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
-        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        List<Mixin> mixins = Lists.newArrayList();
+        List<Advice> advisors = Lists.newArrayList();
         for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
@@ -147,11 +146,12 @@ public final class MainEntryPoint {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
         }
-        return new WeavingClassFileTransformer(mixins.build(), advisors.build(), getWeavingMetric());
+        return new WeavingClassFileTransformer(Iterables.toArray(mixins, Mixin.class),
+                Iterables.toArray(advisors, Advice.class), getWeavingMetric());
     }
 
     @VisibleForTesting
-    public static WeavingMetric getWeavingMetric() {
+    public static WeavingMetricImpl getWeavingMetric() {
         return injector.getInstance(WeavingMetricImpl.class);
     }
 

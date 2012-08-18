@@ -76,8 +76,7 @@ class Weaver implements Opcodes {
         try {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             WeavingClassVisitor cv = new WeavingClassVisitor(mixins, advisors, loader,
-                    parsedTypeCache,
-                    codeSource, cw);
+                    parsedTypeCache, codeSource, cw);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 // using SKIP_FRAMES in reader and not using COMPUTE_FRAMES in writer means that

@@ -124,7 +124,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     protected synchronized Class<?> loadClass(String name, boolean resolve)
             throws ClassNotFoundException {
 
-        if (isInBootClassLoader(name)) {
+        if (isInBootstrapClassLoader(name)) {
             return super.loadClass(name, resolve);
         }
         Class<?> c = classes.get(name);
@@ -137,7 +137,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private <S> boolean isBridgeable(String name) {
-        if (isInBootClassLoader(name)) {
+        if (isInBootstrapClassLoader(name)) {
             return true;
         }
         for (Class<?> bridgeClass : bridgeClasses) {
@@ -148,7 +148,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return false;
     }
 
-    private static boolean isInBootClassLoader(String name) {
+    private static boolean isInBootstrapClassLoader(String name) {
         try {
             Class<?> c = Class.forName(name, false, ClassLoader.getSystemClassLoader());
             return c.getClassLoader() == null;
