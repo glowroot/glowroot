@@ -53,7 +53,7 @@ public class TraceMetricDataTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
     }

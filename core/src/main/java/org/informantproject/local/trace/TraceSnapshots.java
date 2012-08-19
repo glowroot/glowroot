@@ -99,7 +99,7 @@ public final class TraceSnapshots {
         return builder.build();
     }
 
-    public static ByteStream toByteStream(TraceSnapshot snapshot, boolean includeDetail)
+    public static ByteStream toByteStream(TraceSnapshot snapshot)
             throws UnsupportedEncodingException {
 
         List<ByteStream> byteStreams = Lists.newArrayList();
@@ -133,14 +133,14 @@ public final class TraceSnapshots {
             sb.append(",\"metrics\":");
             sb.append(snapshot.getMetrics());
         }
-        if (includeDetail && snapshot.getSpans() != null) {
+        if (snapshot.getSpans() != null) {
             sb.append(",\"spans\":");
             // flush current StringBuilder as its own chunk and reset StringBuffer
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
             byteStreams.add(snapshot.getSpans());
         }
-        if (includeDetail && snapshot.getMergedStackTree() != null) {
+        if (snapshot.getMergedStackTree() != null) {
             sb.append(",\"mergedStackTree\":");
             // flush current StringBuilder as its own chunk and reset StringBuffer
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));

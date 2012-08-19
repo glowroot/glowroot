@@ -123,7 +123,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         boolean found = false;
         for (Metric metric : trace.getMetrics()) {
             if (metric.getName().equals("jdbc resultset value")) {

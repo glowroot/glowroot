@@ -103,7 +103,7 @@ public class PluginPropertyTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getDescription()).isEqualTo("Level 1");
     }
 
@@ -120,7 +120,7 @@ public class PluginPropertyTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getDescription()).isEqualTo("Level One*");
     }
 

@@ -47,7 +47,7 @@ public class ErrorCaptureTest {
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
-        container.getInformant().getLastTrace();
+        container.getInformant().getLastTraceSummary();
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

@@ -108,6 +108,14 @@ public class Informant {
     }
 
     public Trace getLastTrace() throws Exception {
+        return getLastTrace(false);
+    }
+
+    public Trace getLastTraceSummary() throws Exception {
+        return getLastTrace(true);
+    }
+
+    private Trace getLastTrace(boolean summary) throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE);
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
@@ -117,8 +125,9 @@ public class Informant {
         } else {
             JsonArray values = points.get(points.size() - 1).getAsJsonArray();
             String traceId = values.get(2).getAsString();
-            String traceDetailJson = get("/trace/detail/" + traceId);
-            return gson.fromJson(traceDetailJson, Trace.class);
+            String url = summary ? "/trace/summary/" : "/trace/detail/";
+            String traceJson = get(url + traceId);
+            return gson.fromJson(traceJson, Trace.class);
         }
     }
 
@@ -135,7 +144,7 @@ public class Informant {
         } else {
             JsonArray values = points.get(0).getAsJsonArray();
             String traceId = values.get(2).getAsString();
-            String traceDetailJson = get("/trace/detail/" + traceId);
+            String traceDetailJson = get("/trace/summary/" + traceId);
             return gson.fromJson(traceDetailJson, Trace.class);
         }
     }

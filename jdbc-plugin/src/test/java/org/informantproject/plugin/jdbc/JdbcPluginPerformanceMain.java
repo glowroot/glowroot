@@ -78,7 +78,7 @@ public class JdbcPluginPerformanceMain {
         System.out.print("with informant:            ");
         InformantContainer container = setUpContainer();
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         for (Metric metric : trace.getMetrics()) {
             System.out.format("%s %d %d%n", metric.getName(), metric.getTotal(), metric.getCount());
         }

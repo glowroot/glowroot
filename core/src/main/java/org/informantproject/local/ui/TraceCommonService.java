@@ -57,14 +57,19 @@ public class TraceCommonService {
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
                 TraceSnapshot snapshot = TraceSnapshots.from(active, ticker.read(), includeDetail);
-                return TraceSnapshots.toByteStream(snapshot, includeDetail);
+                return TraceSnapshots.toByteStream(snapshot);
             }
         }
-        TraceSnapshot snapshot = traceSnapshotDao.readSnapshot(id);
+        TraceSnapshot snapshot;
+        if (includeDetail) {
+            snapshot = traceSnapshotDao.readSnapshot(id);
+        } else {
+            snapshot = traceSnapshotDao.readSnapshotWithoutDetail(id);
+        }
         if (snapshot == null) {
             return null;
         } else {
-            return TraceSnapshots.toByteStream(snapshot, includeDetail);
+            return TraceSnapshots.toByteStream(snapshot);
         }
     }
 

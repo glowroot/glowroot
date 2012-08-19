@@ -212,6 +212,29 @@ public class TraceSnapshotDao {
     }
 
     @Nullable
+    public TraceSnapshot readSnapshotWithoutDetail(String id) {
+        logger.debug("readSnapshot(): id={}", id);
+        if (!valid) {
+            return null;
+        }
+        List<TraceSnapshot> snapshots;
+        try {
+            snapshots = dataSource.query("select id, captured_at, start_at, stuck,"
+                    + " error, duration, completed, description, username, attributes, metrics"
+                    + " from trace where id = ?", new Object[] { id },
+                    new TraceSummaryRowMapper());
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+        if (snapshots.isEmpty()) {
+            return null;
+        } else if (snapshots.size() > 1) {
+            logger.error("multiple records returned for id '{}'", id);
+        }
+        return snapshots.get(0);
+    }
+
     public String readStackTrace(String hash) {
         return stackTraceDao.readStackTrace(hash);
     }
@@ -307,6 +330,26 @@ public class TraceSnapshotDao {
             String mergedStackTreeFileBlockId = resultSet.getString(13);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     mergedStackTreeFileBlockId);
+        }
+    }
+
+    @ThreadSafe
+    private class TraceSummaryRowMapper implements RowMapper<TraceSnapshot> {
+
+        public TraceSnapshot mapRow(ResultSet resultSet) throws SQLException {
+            return TraceSnapshot.builder()
+                    .id(resultSet.getString(1))
+                    // column 2 is 'captured_at'
+                    .startAt(resultSet.getLong(3))
+                    .stuck(resultSet.getBoolean(4))
+                    .error(resultSet.getBoolean(5))
+                    .duration(resultSet.getLong(6))
+                    .completed(resultSet.getBoolean(7))
+                    .description(resultSet.getString(8))
+                    .username(resultSet.getString(9))
+                    .attributes(resultSet.getString(10))
+                    .metrics(resultSet.getString(11))
+                    .build();
         }
     }
 

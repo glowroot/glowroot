@@ -87,7 +87,7 @@ public class StuckTraceTest {
         assertThat(trace.isCompleted()).isFalse();
         future.get();
         // should now be reported as unstuck
-        trace = container.getInformant().getLastTrace();
+        trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.isStuck()).isFalse();
         assertThat(trace.isCompleted()).isTrue();
         // cleanup

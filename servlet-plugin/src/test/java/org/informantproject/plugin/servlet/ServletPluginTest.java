@@ -113,7 +113,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(GetParameters.class);
         // then don't fall into an infinite loop! (yes, at one time it did)
-        container.getInformant().getLastTrace();
+        container.getInformant().getLastTraceSummary();
     }
 
     @Test
@@ -126,7 +126,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getUsername()).isEqualTo("abc");
     }
 
@@ -140,7 +140,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionUsernameAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getUsername()).isEqualTo("abc");
     }
 
@@ -154,7 +154,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetSessionUsernameAttributeNull.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         // this is intentional, setting username attribute to null shouldn't clear out username for
         // that particular request (since the request was in fact, originally, for that username)
         assertThat(trace.getUsername()).isEqualTo("something");
@@ -170,7 +170,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getUsername()).isEqualTo("xyz");
     }
 
@@ -184,7 +184,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getUsername()).isEqualTo("xyz");
     }
 
@@ -198,7 +198,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getUsername()).isNull();
     }
 
@@ -212,7 +212,7 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getUsername()).isNull();
     }
 
