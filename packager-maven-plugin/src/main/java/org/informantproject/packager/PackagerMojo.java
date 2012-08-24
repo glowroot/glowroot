@@ -98,6 +98,9 @@ public class PackagerMojo extends AbstractMojo {
     @Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
     private ArtifactRepository localRepository;
 
+    @Parameter(readonly = true, required = true, defaultValue = "${project.build.finalName}")
+    private String finalName;
+
     @Parameter
     private PluginConfig[] plugins;
 
@@ -150,17 +153,11 @@ public class PackagerMojo extends AbstractMojo {
     }
 
     private File getArtifactJarFile() {
-        Artifact artifact = project.getArtifact();
-        String artifactJarName = artifact.getArtifactId() + "-" + artifact.getVersion() + "."
-                + artifact.getArtifactHandler().getExtension();
-        return new File(project.getBuild().getDirectory(), artifactJarName);
+        return new File(project.getBuild().getDirectory(), finalName + ".jar");
     }
 
     private File getSourceJarFile() {
-        Artifact artifact = project.getArtifact();
-        String sourceArtifactJarName = artifact.getArtifactId() + "-" + artifact.getVersion()
-                + "-sources." + artifact.getArtifactHandler().getExtension();
-        return new File(project.getBuild().getDirectory(), sourceArtifactJarName);
+        return new File(project.getBuild().getDirectory(), finalName + "-sources.jar");
     }
 
     private void createArtifactJar(List<Artifact> artifacts, File outputJarFile)
