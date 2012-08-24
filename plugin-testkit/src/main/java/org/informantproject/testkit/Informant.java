@@ -16,6 +16,7 @@
 package org.informantproject.testkit;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -29,6 +30,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
@@ -147,6 +149,12 @@ public class Informant {
             String traceDetailJson = get("/trace/summary/" + traceId);
             return gson.fromJson(traceDetailJson, Trace.class);
         }
+    }
+
+    @Nullable
+    public List<String> getStackTrace(String stackTraceHash) throws Exception {
+        String stackTraceJson = get("/stacktrace/" + stackTraceHash);
+        return gson.fromJson(stackTraceJson, new TypeToken<List<String>>() {}.getType());
     }
 
     public void deleteAllTraces() throws Exception {

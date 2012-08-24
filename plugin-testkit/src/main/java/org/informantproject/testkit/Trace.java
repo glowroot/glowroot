@@ -207,8 +207,9 @@ public class Trace {
         private int parentIndex;
         private int level;
         private String description;
-        private final Map<String, Object> contextMap = ImmutableMap.of();
         private boolean error;
+        private final Map<String, Object> contextMap = ImmutableMap.of();
+        private String stackTraceHash;
 
         public long getOffset() {
             return offset;
@@ -228,11 +229,14 @@ public class Trace {
         public String getDescription() {
             return description;
         }
+        public boolean isError() {
+            return error;
+        }
         public Map<String, Object> getContextMap() {
             return contextMap;
         }
-        public boolean isError() {
-            return error;
+        public String getStackTraceHash() {
+            return stackTraceHash;
         }
 
         @Override

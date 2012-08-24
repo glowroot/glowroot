@@ -37,7 +37,6 @@ import org.informantproject.core.trace.Trace.TraceAttribute;
 import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.core.util.Static;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -49,21 +48,30 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
-public final class TraceSnapshots {
+@Singleton
+public class TraceSnapshotService {
 
     private static final Gson gson = new Gson();
 
-    public static TraceSnapshot from(Trace trace, long captureTick) throws IOException {
+    private final StackTraceDao stackTraceDao;
+
+    @Inject
+    TraceSnapshotService(StackTraceDao stackTraceDao) {
+        this.stackTraceDao = stackTraceDao;
+    }
+
+    public TraceSnapshot from(Trace trace, long captureTick) throws IOException {
         return from(trace, captureTick, true);
     }
 
-    public static TraceSnapshot from(Trace trace, long captureTick, boolean includeDetail)
+    public TraceSnapshot from(Trace trace, long captureTick, boolean includeDetail)
             throws IOException {
 
         TraceSnapshot.Builder builder = TraceSnapshot.builder();
@@ -91,10 +99,11 @@ public final class TraceSnapshots {
         }
         builder.metrics(getMetricsJson(trace));
         if (includeDetail) {
-            SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick);
+            SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick,
+                    stackTraceDao);
             builder.spans(spansByteStream);
             builder.spanStackTraces(spansByteStream.stackTraces.build());
-            builder.mergedStackTree(TraceSnapshots.getMergedStackTree(trace));
+            builder.mergedStackTree(TraceSnapshotService.getMergedStackTree(trace));
         }
         return builder.build();
     }
@@ -203,15 +212,19 @@ public final class TraceSnapshots {
         private static final int TARGET_CHUNK_SIZE = 8192;
 
         private final Iterator<Span> spans;
-        private final ImmutableMap.Builder<String, String> stackTraces = ImmutableMap.builder();
         private final long captureTick;
+        private final StackTraceDao stackTraceDao;
         private final ByteArrayOutputStream baos;
         private final Writer raw;
         private final JsonWriter jw;
+        private final ImmutableMap.Builder<String, String> stackTraces = ImmutableMap.builder();
 
-        private SpansByteStream(Iterator<Span> spans, long captureTick) throws IOException {
+        private SpansByteStream(Iterator<Span> spans, long captureTick,
+                StackTraceDao stackTraceDao) throws IOException {
+
             this.spans = spans;
             this.captureTick = captureTick;
+            this.stackTraceDao = stackTraceDao;
             baos = new ByteArrayOutputStream(2 * TARGET_CHUNK_SIZE);
             raw = new OutputStreamWriter(baos, Charsets.UTF_8);
             jw = new JsonWriter(raw);
@@ -232,6 +245,9 @@ public final class TraceSnapshots {
             if (!hasNext()) {
                 jw.endArray();
                 jw.close();
+                // store the captured stack traces so they are available to anyone who receives the
+                // spans byte stream
+                stackTraceDao.storeStackTraces(stackTraces.build());
             }
             byte[] chunk = baos.toByteArray();
             baos.reset();
@@ -400,6 +416,4 @@ public final class TraceSnapshots {
             END_OBJECT, END_ARRAY, POP_METRIC_NAME;
         }
     }
-
-    private TraceSnapshots() {}
 }

@@ -17,7 +17,7 @@ package org.informantproject.local.ui;
 
 import javax.annotation.Nullable;
 
-import org.informantproject.local.trace.TraceSnapshotDao;
+import org.informantproject.local.trace.StackTraceDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,17 +35,17 @@ class StackTraceJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceJsonService.class);
 
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final StackTraceDao stackTraceDao;
 
     @Inject
-    StackTraceJsonService(TraceSnapshotDao traceSnapshotDao) {
-        this.traceSnapshotDao = traceSnapshotDao;
+    StackTraceJsonService(StackTraceDao stackTraceDao) {
+        this.stackTraceDao = stackTraceDao;
     }
 
     @JsonServiceMethod
     @Nullable
     String getStackTrace(String hash) {
         logger.debug("getStackTrace(): hash={}", hash);
-        return traceSnapshotDao.readStackTrace(hash);
+        return stackTraceDao.readStackTrace(hash);
     }
 }

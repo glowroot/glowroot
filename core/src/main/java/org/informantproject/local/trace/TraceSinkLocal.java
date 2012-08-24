@@ -48,15 +48,17 @@ public class TraceSinkLocal implements TraceSink {
             .newSingleThreadExecutor("Informant-StackCollector");
 
     private final ConfigService configService;
+    private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Ticker ticker;
     private final AtomicInteger queueLength = new AtomicInteger(0);
 
     @Inject
-    TraceSinkLocal(ConfigService configService, TraceSnapshotDao traceSnapshotDao,
-            Ticker ticker) {
+    TraceSinkLocal(ConfigService configService, TraceSnapshotService traceSnapshotService,
+            TraceSnapshotDao traceSnapshotDao, Ticker ticker) {
 
         this.configService = configService;
+        this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
     }
@@ -73,7 +75,8 @@ public class TraceSinkLocal implements TraceSink {
             executorService.execute(new Runnable() {
                 public void run() {
                     try {
-                        traceSnapshotDao.storeSnapshot(TraceSnapshots.from(trace, Long.MAX_VALUE));
+                        traceSnapshotDao.storeSnapshot(traceSnapshotService.from(trace,
+                                Long.MAX_VALUE));
                     } catch (IOException e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -85,7 +88,7 @@ public class TraceSinkLocal implements TraceSink {
 
     public void onStuckTrace(Trace trace) {
         try {
-            traceSnapshotDao.storeSnapshot(TraceSnapshots.from(trace, ticker.read()));
+            traceSnapshotDao.storeSnapshot(traceSnapshotService.from(trace, ticker.read()));
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }

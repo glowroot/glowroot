@@ -44,9 +44,8 @@ import com.google.inject.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO hide inside of TraceSnapshotDao?
 @Singleton
-class StackTraceDao {
+public class StackTraceDao {
 
     private static final Logger logger = LoggerFactory.getLogger(StackTraceDao.class);
 
@@ -85,6 +84,21 @@ class StackTraceDao {
         this.valid = !errorOnInit;
     }
 
+    @Nullable
+    public String readStackTrace(String hash) {
+        logger.debug("readStackTrace(): hash={}", hash);
+        if (!valid) {
+            return null;
+        }
+        try {
+            return dataSource.queryForString("select stack_trace from stack_trace where hash = ?",
+                    hash);
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     void storeStackTraces(Map<String, String> stackTraces) {
         logger.debug("storeStackTraces()");
         if (!valid) {
@@ -116,21 +130,6 @@ class StackTraceDao {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return;
-        }
-    }
-
-    @Nullable
-    String readStackTrace(String hash) {
-        logger.debug("readStackTrace(): hash={}", hash);
-        if (!valid) {
-            return null;
-        }
-        try {
-            return dataSource.queryForString("select stack_trace from stack_trace where hash = ?",
-                    hash);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return null;
         }
     }
 }

@@ -49,7 +49,7 @@ public class TraceSnapshotsTest {
         }
         mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
         // when
-        ByteStream mergedStackTreeByteStream = TraceSnapshots.getMergedStackTree(trace);
+        ByteStream mergedStackTreeByteStream = TraceSnapshotService.getMergedStackTree(trace);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         assertThat(mergedStackTreeByteStream).isNotNull();
         mergedStackTreeByteStream.writeTo(baos);

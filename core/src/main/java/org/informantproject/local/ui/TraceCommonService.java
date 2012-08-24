@@ -24,7 +24,7 @@ import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.local.trace.TraceSnapshot;
 import org.informantproject.local.trace.TraceSnapshotDao;
-import org.informantproject.local.trace.TraceSnapshots;
+import org.informantproject.local.trace.TraceSnapshotService;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;
@@ -37,14 +37,17 @@ import com.google.inject.Singleton;
 @Singleton
 public class TraceCommonService {
 
+    private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
     @Inject
-    public TraceCommonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
-            Ticker ticker) {
+    public TraceCommonService(TraceSnapshotService traceSnapshotService,
+            TraceSnapshotDao traceSnapshotDao,
+            TraceRegistry traceRegistry, Ticker ticker) {
 
+        this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
         this.ticker = ticker;
@@ -56,8 +59,9 @@ public class TraceCommonService {
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                TraceSnapshot snapshot = TraceSnapshots.from(active, ticker.read(), includeDetail);
-                return TraceSnapshots.toByteStream(snapshot);
+                TraceSnapshot snapshot = traceSnapshotService.from(active, ticker.read(),
+                        includeDetail);
+                return TraceSnapshotService.toByteStream(snapshot);
             }
         }
         TraceSnapshot snapshot;
@@ -69,7 +73,7 @@ public class TraceCommonService {
         if (snapshot == null) {
             return null;
         } else {
-            return TraceSnapshots.toByteStream(snapshot);
+            return TraceSnapshotService.toByteStream(snapshot);
         }
     }
 

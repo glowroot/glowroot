@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -73,7 +72,6 @@ public class TraceSnapshotDao {
     private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("trace_idx",
             "captured_at", "duration"));
 
-    private final StackTraceDao stackTraceDao;
     private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final Clock clock;
@@ -81,10 +79,7 @@ public class TraceSnapshotDao {
     private final boolean valid;
 
     @Inject
-    TraceSnapshotDao(StackTraceDao stackTraceDao, DataSource dataSource,
-            RollingFile rollingFile, Clock clock) {
-
-        this.stackTraceDao = stackTraceDao;
+    TraceSnapshotDao(DataSource dataSource, RollingFile rollingFile, Clock clock) {
         this.dataSource = dataSource;
         this.rollingFile = rollingFile;
         this.clock = clock;
@@ -113,10 +108,6 @@ public class TraceSnapshotDao {
         logger.debug("storeSnapshot(): snapshot={}", snapshot);
         if (!valid) {
             return;
-        }
-        Map<String, String> spanStackTraces = snapshot.getSpanStackTraces();
-        if (spanStackTraces != null && !spanStackTraces.isEmpty()) {
-            stackTraceDao.storeStackTraces(spanStackTraces);
         }
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
@@ -233,10 +224,6 @@ public class TraceSnapshotDao {
             logger.error("multiple records returned for id '{}'", id);
         }
         return snapshots.get(0);
-    }
-
-    public String readStackTrace(String hash) {
-        return stackTraceDao.readStackTrace(hash);
     }
 
     public int deleteSnapshots(final long capturedFrom, final long capturedTo) {
