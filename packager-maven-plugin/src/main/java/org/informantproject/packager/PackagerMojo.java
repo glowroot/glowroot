@@ -48,6 +48,11 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.plugins.shade.pom.PomWriter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
@@ -67,62 +72,33 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 /**
- * @goal package
- * @phase package
- * @requiresDependencyResolution compile
- * @requiresProject
- * @threadSafe
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Mojo(name = "package", defaultPhase = LifecyclePhase.PACKAGE,
+        requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = true)
 public class PackagerMojo extends AbstractMojo {
 
-    /**
-     * @parameter default-value="${project}"
-     * @required
-     * @readonly
-     */
+    @Parameter(readonly = true, defaultValue = "${project}")
     private MavenProject project;
 
-    /**
-     * @component
-     * @required
-     * @readonly
-     */
+    @Component
     private MavenProjectHelper projectHelper;
 
-    /**
-     * @component
-     * @required
-     * @readonly
-     */
+    @Component
     private ArtifactFactory artifactFactory;
 
-    /**
-     * @component
-     * @required
-     * @readonly
-     */
+    @Component
     private ArtifactResolver artifactResolver;
 
-    /**
-     * @parameter default-value="${project.remoteArtifactRepositories}"
-     * @required
-     * @readonly
-     */
+    @Parameter(readonly = true, required = true,
+            defaultValue = "${project.remoteArtifactRepositories}")
     private List<ArtifactRepository> remoteArtifactRepositories;
 
-    /**
-     * @parameter default-value="${localRepository}"
-     * @required
-     * @readonly
-     */
+    @Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
     private ArtifactRepository localRepository;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private PluginConfig[] plugins;
 
     public void execute() throws MojoExecutionException {

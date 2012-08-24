@@ -41,9 +41,14 @@
       <version>${mavenVersion}</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>3.1</version>
+    </dependency>
+    <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
-      <version>2.1</version>
+      <version>3.0.5</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugins</groupId>
@@ -64,18 +69,20 @@
   </dependencies>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- versions prior to 2.6 depend on an old qdox version that throws an exception when
-            processing package-info.java files with package level annotations (see package-info.java
-            for org.informantproject.packager, and see http://jira.codehaus.org/browse/QDOX-98).
-            maven 3.0 defaults to maven-plugin-plugin version 2.6, so this won't be necessary once
-            maven 2.2.1 support is dropped -->
-          <artifactId>maven-plugin-plugin</artifactId>
-          <version>2.6</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+    <plugins>
+      <plugin>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <configuration>
+          <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>descriptor</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>
