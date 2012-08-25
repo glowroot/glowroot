@@ -18,6 +18,7 @@ package org.informantproject.core.weaving;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.informantproject.core.weaving.preinit.GlobalCollector;
 import org.informantproject.core.weaving.preinit.ReferencedMethod;
@@ -48,12 +49,14 @@ public class PreInitializeClassesTest {
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertions
-        assertThat(Sets.difference(Sets.newHashSet(globalCollector.usedTypes()),
+        List<String> globalCollectorUsedTypes = globalCollector.usedTypes();
+        globalCollectorUsedTypes.removeAll(PreInitializeClasses.maybeUsedTypes());
+        assertThat(Sets.difference(Sets.newHashSet(globalCollectorUsedTypes),
                 Sets.newHashSet(PreInitializeClasses.usedTypes()))).isEmpty();
         assertThat(Sets.difference(Sets.newHashSet(PreInitializeClasses.usedTypes()),
-                Sets.newHashSet(globalCollector.usedTypes()))).isEmpty();
+                Sets.newHashSet(globalCollectorUsedTypes))).isEmpty();
 
         // these are the real assertions
-        assertThat(PreInitializeClasses.usedTypes()).isEqualTo(globalCollector.usedTypes());
+        assertThat(PreInitializeClasses.usedTypes()).isEqualTo(globalCollectorUsedTypes);
     }
 }

@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -31,7 +33,6 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -64,26 +65,35 @@ class ParsedTypeCache {
         findLoadedClassMethod.setAccessible(true);
     }
 
-    // TODO make me readable
-    private final LoadingCache<Optional<ClassLoader>, LoadingCache<String, ParsedType>> parsedTypes =
-            CacheBuilder.newBuilder().build(
-                    new CacheLoader<Optional<ClassLoader>, LoadingCache<String, ParsedType>>() {
+    // weak keys to prevent retention of class loaders
+    // it's important that the weak keys point directly to the class loaders themselves (as opposed
+    // to through another instance, e.g. Optional<ClassLoader>) so that the keys won't be cleared
+    // while their associated class loaders are still being used
+    private final LoadingCache<ClassLoader, ConcurrentMap<String, ParsedType>> parsedTypes =
+            CacheBuilder.newBuilder().weakKeys()
+                    .build(new CacheLoader<ClassLoader, ConcurrentMap<String, ParsedType>>() {
                         @Override
-                        public LoadingCache<String, ParsedType> load(
-                                final Optional<ClassLoader> loader) {
-                            return CacheBuilder.newBuilder().build(
-                                    new CacheLoader<String, ParsedType>() {
-                                        @Override
-                                        public ParsedType load(String typeName) {
-                                            return createParsedType(typeName, loader.orNull());
-                                        }
-                                    });
+                        public ConcurrentMap<String, ParsedType> load(ClassLoader loader)
+                                throws Exception {
+                            // intentionally avoiding Maps.newConcurrentMap() since it uses many
+                            // additional classes that must then be pre-initialized since this
+                            // is called from inside ClassFileTransformer.transform()
+                            // (see PreInitializeClasses)
+                            return new ConcurrentHashMap<String, ParsedType>();
                         }
                     });
 
+    // the parsed types for the boot class loader (null) have to be stored separately since
+    // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
+    // the weakness on the Optional instance which is not strongly referenced from anywhere and
+    // therefore the keys will most likely be cleared while their class loaders are still being used
+    //
+    // intentionally avoiding Maps.newConcurrentMap() for the same reason as above
+    private final ConcurrentMap<String, ParsedType> bootLoaderParsedTypes =
+            new ConcurrentHashMap<String, ParsedType>();
+
     void add(ParsedType parsedType, @Nullable ClassLoader loader) {
-        parsedTypes.getUnchecked(Optional.fromNullable(loader)).put(parsedType.getName(),
-                parsedType);
+        getParsedTypes(loader).put(parsedType.getName(), parsedType);
     }
 
     // TODO is it worth removing duplicates from resulting type hierarchy list?
@@ -133,8 +143,13 @@ class ParsedTypeCache {
             // ClassLoader.getResource(), as well as being a good optimization in other cases
             parsedTypeLoader = type.getClassLoader();
         }
-        ParsedType parsedType = parsedTypes.getUnchecked(Optional.fromNullable(parsedTypeLoader))
-                .getUnchecked(typeName);
+        ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(parsedTypeLoader);
+        ParsedType parsedType = loaderParsedTypes.get(typeName);
+        if (parsedType == null) {
+            parsedType = createParsedType(typeName, parsedTypeLoader);
+            loaderParsedTypes.putIfAbsent(typeName, parsedType);
+            parsedType = loaderParsedTypes.get(typeName);
+        }
         superTypes.add(parsedType);
         addSuperTypes(parsedType.getSuperName(), superTypes, loader);
         for (String interfaceName : parsedType.getInterfaceNames()) {
@@ -168,9 +183,10 @@ class ParsedTypeCache {
         }
     }
 
-    private ParsedType createParsedTypePlanB(String typeName,
-            @Nullable ClassLoader loader) {
-
+    // plan B covers some class loaders like
+    // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader that delegate loadClass() to some
+    // other loader where the type may have already been loaded
+    private ParsedType createParsedTypePlanB(String typeName, @Nullable ClassLoader loader) {
         Class<?> type;
         try {
             type = Class.forName(typeName.replace('/', '.'), false, loader);
@@ -179,16 +195,16 @@ class ParsedTypeCache {
                     typeName.replace('/', '.'), loader);
             return ParsedType.fromMissing(typeName);
         }
-        ParsedType parsedType = parsedTypes.getUnchecked(
-                Optional.fromNullable(type.getClassLoader())).getIfPresent(typeName);
+        ParsedType parsedType = getParsedTypes(type.getClassLoader()).get(typeName);
         if (parsedType == null) {
-            // a class was loaded that was not previously loaded which means weaving was bypassed
-            // since ClassFileTransformer.transform() is not re-entrant
+            // a class was loaded by Class.forName() above that was not previously loaded which
+            // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
             logger.warn("could not find resource '{}.class' in class loader '{}', so the class"
                     + " was loaded during weaving of a subclass and was not woven itself", type,
                     loader);
             return createParsedTypePlanC(typeName, type);
         } else {
+            // the type was previously loaded so weaving was not bypassed, yay!
             return parsedType;
         }
     }
@@ -209,6 +225,14 @@ class ParsedTypeCache {
         }
         return ParsedType.from(typeName, internalName(type.getSuperclass().getName()),
                 interfaceNames.build(), parsedMethods.build());
+    }
+
+    private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
+        if (loader == null) {
+            return bootLoaderParsedTypes;
+        } else {
+            return parsedTypes.getUnchecked(loader);
+        }
     }
 
     private static String internalName(String typeName) {

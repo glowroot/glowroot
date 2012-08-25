@@ -26,7 +26,6 @@ import org.informantproject.core.trace.WeavingMetricImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -52,15 +51,18 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // files aren't available via ClassLoader.getResource()
     //
     // weak keys to prevent retention of class loaders
-    private final LoadingCache<Optional<ClassLoader>, Weaver> weavers =
+    private final LoadingCache<ClassLoader, Weaver> weavers =
             CacheBuilder.newBuilder().weakKeys()
-                    .build(new CacheLoader<Optional<ClassLoader>, Weaver>() {
+                    .build(new CacheLoader<ClassLoader, Weaver>() {
                         @Override
-                        public Weaver load(Optional<ClassLoader> loader) {
-                            return new Weaver(mixins, advisors, loader.orNull(), parsedTypeCache,
-                                    metric);
+                        public Weaver load(ClassLoader loader) {
+                            return new Weaver(mixins, advisors, loader, parsedTypeCache, metric);
                         }
                     });
+    // the weaver for the boot class loader (null) has to be stored separately since LoadingCache
+    // doesn't accept null keys, and using an Optional<ClassLoader> for the key makes the weakness
+    // on the Optional instance instead of on the ClassLoader instance
+    private final Weaver bootLoaderWeaver;
 
     // because of the crazy pre-initialization of javaagent classes (see
     // org.informantproject.core.weaving.PreInitializeClasses), all inputs into this class should be
@@ -74,13 +76,20 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
         this.metric = metric;
-        PreInitializeClasses.preInitializeClasses(ClassLoader.getSystemClassLoader());
+        bootLoaderWeaver = new Weaver(this.mixins, this.advisors, null, parsedTypeCache, metric);
+        PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
+                .getClassLoader());
     }
 
     public byte[] transform(@Nullable ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
 
-        Weaver weaver = weavers.getUnchecked(Optional.fromNullable(loader));
+        Weaver weaver;
+        if (loader == null) {
+            weaver = bootLoaderWeaver;
+        } else {
+            weaver = weavers.getUnchecked(loader);
+        }
         byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
         if (transformedBytes != bytes) {
             logger.debug("transform(): transformed {}", className);
