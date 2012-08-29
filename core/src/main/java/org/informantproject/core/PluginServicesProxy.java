@@ -21,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -147,12 +148,12 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void addErrorSpan(Supplier<Message> messageSupplier, Throwable t) {
+    public void addErrorSpan(ErrorMessage errorMessage) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.addErrorSpan(messageSupplier, t);
+            pluginServices.addErrorSpan(errorMessage);
         }
     }
 
@@ -167,12 +168,12 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void putTraceAttribute(String name, @Nullable String value) {
+    public void setTraceAttribute(String name, @Nullable String value) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.putTraceAttribute(name, value);
+            pluginServices.setTraceAttribute(name, value);
         }
     }
 

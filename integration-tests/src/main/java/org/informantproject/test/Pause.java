@@ -13,26 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.api;
-
-import javax.annotation.concurrent.NotThreadSafe;
+package org.informantproject.test;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@NotThreadSafe
-public interface Span {
+class Pause {
 
-    void end();
-
-    // only marks trace as error if this is the root span
-    void endWithError(ErrorMessage errorMessage);
-
-    // TODO revisit this, what about setMessage(Supplier<Message>) instead?
-    void updateMessage(MessageUpdater updater);
-
-    public interface MessageUpdater {
-        void update(Supplier<Message> messageSupplier);
+    // this method corresponds to PauseAspect
+    void pause(int millis) throws InterruptedException {
+        Thread.sleep(millis);
     }
 }

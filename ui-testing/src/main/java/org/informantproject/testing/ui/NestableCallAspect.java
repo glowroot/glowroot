@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.informantproject.api.ErrorMessages;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -53,8 +54,8 @@ public class NestableCallAspect {
 
     @Pointcut(typeName = "org.informantproject.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable")
-    public static class LevelOneAdvice {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice.class);
+    public static class NestableCallAdvice {
+        private static final Metric metric = pluginServices.getMetric(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
@@ -73,30 +74,30 @@ public class NestableCallAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
+            if (random.nextDouble() < 0.8) {
                 span.end();
             } else {
-                span.endWithError(null);
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
             }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable and very long")
-    public static class LevelOneLongMetricAdvice {
+    public static class NestableCallLongMetricAdvice {
         private static final Metric metric = pluginServices
-                .getMetric(LevelOneLongMetricAdvice.class);
+                .getMetric(NestableCallLongMetricAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && pluginServices.getRootMessageSupplier() != null;
         }
         @OnBefore
         public static Span onBefore() {
-            pluginServices.putTraceAttribute("my first attribute", "hello world");
-            pluginServices.putTraceAttribute("and second", "val");
-            pluginServices.putTraceAttribute("and a very long attribute value", "abcdefghijkl"
+            pluginServices.setTraceAttribute("my first attribute", "hello world");
+            pluginServices.setTraceAttribute("and second", "val");
+            pluginServices.setTraceAttribute("and a very long attribute value", "abcdefghijkl"
                     + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
-            pluginServices.putTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
+            pluginServices.setTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
                     + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
             return pluginServices.startSpan(TemplateMessage.of("Nestable"), metric);
         }
@@ -109,13 +110,13 @@ public class NestableCallAspect {
     private static Supplier<Message> getRootMessageSupplier() {
         return new Supplier<Message>() {
             public Message get() {
-                Map<String, ?> contextMap = ImmutableMap.of("attr1", "value1", "attr2", "value2",
+                Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
                 return TemplateMessage.of("Nestable with a very long description to test"
                         + " wrapping abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz",
-                        contextMap);
+                        detail);
             }
         };
     }

@@ -15,9 +15,14 @@
  */
 package org.informantproject.test;
 
-import org.informantproject.test.LevelOne;
+import static org.fest.assertions.api.Assertions.assertThat;
+
+import java.util.List;
+
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
+import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.TraceMarker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,13 +46,36 @@ public class ErrorCaptureTest {
     }
 
     @Test
-    public void shouldReadTraces() throws Exception {
+    public void shouldShouldCaptureError() throws Exception {
         // given
         container.getInformant().setThresholdMillis(10000);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
-        container.getInformant().getLastTraceSummary();
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getError()).isNotNull();
+        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans().get(0).getError()).isNotNull();
+        assertThat(trace.getSpans().get(1).getError()).isNull();
+        assertThat(trace.getSpans().get(2).getError()).isNull();
+    }
+
+    @Test
+    public void shouldShouldCaptureErrorWithSpanStackTrace() throws Exception {
+        // given
+        container.getInformant().setThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getError()).isNull();
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getSpans().get(1).getError()).isNotNull();
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
+        String stackTraceHash = trace.getSpans().get(1).getError().getStackTraceHash();
+        List<String> stackTrace = container.getInformant().getStackTrace(stackTraceHash);
+        assertThat(stackTrace.get(0)).startsWith(
+                ShouldCaptureErrorWithSpanStackTrace.class.getName() + ".traceMarker(");
     }
 
     public static class ShouldCaptureError implements AppUnderTest {
@@ -61,6 +89,15 @@ public class ErrorCaptureTest {
                     throw e;
                 }
             }
+        }
+    }
+
+    public static class ShouldCaptureErrorWithSpanStackTrace implements AppUnderTest, TraceMarker {
+        public void executeApp() throws Exception {
+            traceMarker();
+        }
+        public void traceMarker() throws Exception {
+            new LogError().log("abc");
         }
     }
 }

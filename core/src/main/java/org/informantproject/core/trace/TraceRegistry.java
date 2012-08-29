@@ -50,7 +50,7 @@ public class TraceRegistry {
     }
 
     public void removeTrace(Trace trace) {
-        currentTraceHolder.set(null);
+        currentTraceHolder.remove();
         traces.remove(trace);
     }
 

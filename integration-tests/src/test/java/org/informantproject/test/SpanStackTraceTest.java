@@ -56,9 +56,15 @@ public class SpanStackTraceTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithSpanStackTrace.class);
         Trace trace = container.getInformant().getLastTrace();
-        String stackTraceHash = trace.getSpans().get(0).getStackTraceHash();
+        assertThat(trace.getSpans()).hasSize(2);
+        String stackTraceHash = trace.getSpans().get(1).getStackTraceHash();
         List<String> stackTrace = container.getInformant().getStackTrace(stackTraceHash);
         assertThat(stackTrace).isNotEmpty();
+        for (String element : stackTrace) {
+            assertThat(element).doesNotContain("$informant$");
+            // assert that element contains line number (or is a native method
+            assertThat(element).matches(".*\\.java:[0-9]+\\)|.*Native Method\\)");
+        }
     }
 
     public static class ShouldGenerateTraceWithSpanStackTrace implements AppUnderTest, TraceMarker {
@@ -66,7 +72,7 @@ public class SpanStackTraceTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            Thread.sleep(150);
+            new Pause().pause(150);
         }
     }
 }

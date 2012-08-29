@@ -24,7 +24,7 @@ import javax.annotation.concurrent.Immutable;
  * @since 0.5
  */
 @Immutable
-class ExpensiveCall {
+public class ExpensiveCall {
 
     private static final Random random = new Random();
 

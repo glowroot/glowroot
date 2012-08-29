@@ -18,6 +18,7 @@ package org.informantproject.local.trace;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -29,7 +30,9 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
+import org.informantproject.api.Supplier;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
@@ -41,8 +44,8 @@ import org.informantproject.core.util.ByteStream;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
@@ -78,7 +81,6 @@ public class TraceSnapshotService {
         builder.id(trace.getId());
         builder.startAt(trace.getStartDate().getTime());
         builder.stuck(trace.isStuck() && !trace.isCompleted());
-        builder.error(trace.isError());
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
         // (without using synchronization to block updates to the trace while it is being read)
@@ -92,17 +94,32 @@ public class TraceSnapshotService {
         }
         Message message = trace.getRootSpan().getMessageSupplier().get();
         builder.description(message.getText());
-        builder.username(trace.getUsernameSupplier().get());
+        ErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
+        if (errorMessage != null) {
+            builder.errorText(errorMessage.getText());
+            Map<String, ?> detail = errorMessage.getDetail();
+            if (detail != null) {
+                StringBuilder sb = new StringBuilder();
+                JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+                new MessageDetailSerializer(jw).write(detail);
+                jw.close();
+                builder.errorDetail(sb.toString());
+            }
+            StackTraceElement[] stackTrace = errorMessage.getStackTrace();
+            if (stackTrace != null) {
+                builder.errorStackTrace(getStackTraceJson(stackTrace));
+            }
+        }
         List<TraceAttribute> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }
+        builder.username(trace.getUsernameSupplier().get());
         builder.metrics(getMetricsJson(trace));
         if (includeDetail) {
             SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick,
                     stackTraceDao);
             builder.spans(spansByteStream);
-            builder.spanStackTraces(spansByteStream.stackTraces.build());
             builder.mergedStackTree(TraceSnapshotService.getMergedStackTree(trace));
         }
         return builder.build();
@@ -119,24 +136,32 @@ public class TraceSnapshotService {
         sb.append(snapshot.getStartAt());
         sb.append(",\"stuck\":");
         sb.append(snapshot.isStuck());
-        sb.append(",\"error\":");
-        sb.append(snapshot.isError());
         sb.append(",\"duration\":");
         sb.append(snapshot.getDuration());
         sb.append(",\"completed\":");
         sb.append(snapshot.isCompleted());
-        sb.append(",\"description\":\"");
-        sb.append(snapshot.getDescription());
-        sb.append("\"");
-        if (snapshot.getUsername() != null) {
-            sb.append(",\"username\":\"");
-            sb.append(snapshot.getUsername());
-            sb.append("\"");
-        }
-        // inject raw json into stream
+        sb.append(",\"description\":");
+        sb.append(escapeJson(snapshot.getDescription()));
         if (snapshot.getAttributes() != null) {
             sb.append(",\"attributes\":");
             sb.append(snapshot.getAttributes());
+        }
+        if (snapshot.getUsername() != null) {
+            sb.append(",\"username\":");
+            sb.append(escapeJson(snapshot.getUsername()));
+        }
+        if (snapshot.getErrorText() != null) {
+            sb.append(",\"error\":{\"text\":");
+            sb.append(escapeJson(snapshot.getErrorText()));
+            if (snapshot.getErrorDetail() != null) {
+                sb.append(",\"detail\":");
+                sb.append(snapshot.getErrorDetail());
+            }
+            if (snapshot.getErrorStackTrace() != null) {
+                sb.append(",\"stackTrace\":");
+                sb.append(snapshot.getErrorStackTrace());
+            }
+            sb.append("}");
         }
         if (snapshot.getMetrics() != null) {
             sb.append(",\"metrics\":");
@@ -160,6 +185,20 @@ public class TraceSnapshotService {
         // flush current StringBuilder as its own chunk
         byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
         return ByteStream.of(byteStreams);
+    }
+
+    private static String escapeJson(String s) {
+        StringWriter sw = new StringWriter();
+        JsonWriter jw = new JsonWriter(sw);
+        jw.setLenient(true);
+        try {
+            jw.value(s);
+            jw.close();
+            return sw.toString();
+        } catch (IOException e) {
+            // this can't really happen since StringWriter doesn't throw IOException
+            return "error (" + e.getClass().getName() + ") occurred escaping json string";
+        }
     }
 
     @Nullable
@@ -193,14 +232,28 @@ public class TraceSnapshotService {
         return new MergedStackTreeByteStream(toVisit);
     }
 
-    private static String getStackTraceJson(StackTraceElement[] stackTraceElements)
-            throws IOException {
-
+    private static String getStackTraceJson(StackTraceElement[] stackTrace) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginArray();
-        for (StackTraceElement stackTraceElement : stackTraceElements) {
-            jw.value(stackTraceElement.toString());
+        String realDescription = null;
+        for (StackTraceElement stackTraceElement : stackTrace) {
+            if (stackTraceElement.getMethodName().contains("$informant$")) {
+                if (realDescription == null) {
+                    realDescription = stackTraceElement.toString().replaceFirst(
+                            "\\$informant\\$[^(]+\\(", "(");
+                } else {
+                    // this is an extra wrapping around the same method, e.g. for multiple metrics
+                    // around the same method
+                }
+            } else {
+                if (realDescription == null) {
+                    jw.value(stackTraceElement.toString());
+                } else {
+                    jw.value(realDescription);
+                    realDescription = null;
+                }
+            }
         }
         jw.endArray();
         jw.close();
@@ -217,7 +270,7 @@ public class TraceSnapshotService {
         private final ByteArrayOutputStream baos;
         private final Writer raw;
         private final JsonWriter jw;
-        private final ImmutableMap.Builder<String, String> stackTraces = ImmutableMap.builder();
+        private final Map<String, String> stackTraces = Maps.newHashMap();
 
         private SpansByteStream(Iterator<Span> spans, long captureTick,
                 StackTraceDao stackTraceDao) throws IOException {
@@ -247,7 +300,7 @@ public class TraceSnapshotService {
                 jw.close();
                 // store the captured stack traces so they are available to anyone who receives the
                 // spans byte stream
-                stackTraceDao.storeStackTraces(stackTraces.build());
+                stackTraceDao.storeStackTraces(stackTraces);
             }
             byte[] chunk = baos.toByteArray();
             baos.reset();
@@ -278,33 +331,55 @@ public class TraceSnapshotService {
             jw.value(span.getIndex());
             jw.name("parentIndex");
             jw.value(span.getParentIndex());
-            jw.name("level");
-            jw.value(span.getLevel());
-            // inject raw json into stream
-            Message message = span.getMessageSupplier().get();
-            jw.name("description");
-            jw.value(message.getText());
-            boolean error = span.isError();
-            if (error) {
-                // no need to clutter up json with this mostly unused attribute
+            jw.name("nestingLevel");
+            jw.value(span.getNestingLevel());
+            Supplier<Message> messageSupplier = span.getMessageSupplier();
+            if (messageSupplier != null) {
+                Message message = messageSupplier.get();
+                jw.name("message");
+                jw.beginObject();
+                jw.name("text");
+                jw.value(message.getText());
+                Map<String, ?> detail = message.getDetail();
+                if (detail != null && !detail.isEmpty()) {
+                    jw.name("detail");
+                    new MessageDetailSerializer(jw).write(detail);
+                }
+                jw.endObject();
+            }
+            ErrorMessage errorMessage = span.getErrorMessage();
+            if (errorMessage != null) {
                 jw.name("error");
-                jw.value(true);
+                jw.beginObject();
+                jw.name("text");
+                jw.value(errorMessage.getText());
+                Map<String, ?> detail = errorMessage.getDetail();
+                if (detail != null) {
+                    jw.name("detail");
+                    new MessageDetailSerializer(jw).write(detail);
+                }
+                StackTraceElement[] stackTrace = errorMessage.getStackTrace();
+                if (stackTrace != null) {
+                    writeStackTraceHash(stackTrace, jw);
+                }
+                jw.endObject();
             }
-            Map<String, ?> contextMap = message.getContextMap();
-            if (contextMap != null) {
-                jw.name("contextMap");
-                new ContextMapSerializer(jw).write(contextMap);
-            }
-            StackTraceElement[] stackTraceElements = span.getStackTraceElements();
-            if (stackTraceElements != null) {
-                String stackTraceJson = getStackTraceJson(stackTraceElements);
-                String stackTraceHash = Hashing.sha1().hashString(stackTraceJson, Charsets.UTF_8)
-                        .toString();
-                stackTraces.put(stackTraceHash, stackTraceJson);
-                jw.name("stackTraceHash");
-                jw.value(stackTraceHash);
+            StackTraceElement[] stackTrace = span.getStackTrace();
+            if (stackTrace != null) {
+                writeStackTraceHash(stackTrace, jw);
             }
             jw.endObject();
+        }
+
+        private void writeStackTraceHash(StackTraceElement[] stackTrace, JsonWriter jw)
+                throws IOException {
+
+            String stackTraceJson = getStackTraceJson(stackTrace);
+            String stackTraceHash = Hashing.sha1().hashString(stackTraceJson, Charsets.UTF_8)
+                    .toString();
+            stackTraces.put(stackTraceHash, stackTraceJson);
+            jw.name("stackTraceHash");
+            jw.value(stackTraceHash);
         }
     }
 

@@ -16,13 +16,16 @@
 package org.informantproject.testing.ui;
 
 import java.util.Map;
+import java.util.Random;
 
+import org.informantproject.api.ErrorMessages;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.TemplateMessage;
+import org.informantproject.api.UnresolvedMethod;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTarget;
 import org.informantproject.api.weaving.InjectTraveler;
@@ -43,200 +46,243 @@ public class ExpensiveCallAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-ui-testing");
 
+    private static final UnresolvedMethod getDescription = UnresolvedMethod.from(
+            "org.informantproject.testing.ui.ExpensiveCall", "getDescription");
+
+    private static final Random random = new Random();
+
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute0",
             metricName = "expensive 0")
-    public static class LevelOneAdvice0 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice0.class);
+    public static class ExpensiveCallAdvice0 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice0.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
-            return pluginServices.startSpan(getMessageSupplierWithContextMap(expensive), metric);
+        public static Span onBefore(@InjectTarget Object expensive) {
+            return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute1",
             metricName = "expensive 1")
-    public static class LevelOneAdvice1 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice1.class);
+    public static class ExpensiveCallAdvice1 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice1.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute2",
             metricName = "expensive 2")
-    public static class LevelOneAdvice2 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice2.class);
+    public static class ExpensiveCallAdvice2 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice2.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute3",
             metricName = "expensive 3")
-    public static class LevelOneAdvice3 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice3.class);
+    public static class ExpensiveCallAdvice3 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice3.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute4",
             metricName = "expensive 4")
-    public static class LevelOneAdvice4 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice4.class);
+    public static class ExpensiveCallAdvice4 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice4.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute5",
             metricName = "expensive 5")
-    public static class LevelOneAdvice5 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice5.class);
+    public static class ExpensiveCallAdvice5 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice5.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute6",
             metricName = "expensive 6")
-    public static class LevelOneAdvice6 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice6.class);
+    public static class ExpensiveCallAdvice6 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice6.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute7",
             metricName = "expensive 7")
-    public static class LevelOneAdvice7 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice7.class);
+    public static class ExpensiveCallAdvice7 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice7.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute8",
             metricName = "expensive 8")
-    public static class LevelOneAdvice8 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice8.class);
+    public static class ExpensiveCallAdvice8 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice8.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute9",
             metricName = "expensive 9")
-    public static class LevelOneAdvice9 {
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice9.class);
+    public static class ExpensiveCallAdvice9 {
+        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice9.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget ExpensiveCall expensive) {
+        public static Span onBefore(@InjectTarget Object expensive) {
             return pluginServices.startSpan(getMessageSupplier(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (random.nextDouble() < 0.9) {
+                span.end();
+            } else {
+                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+            }
         }
     }
 
-    private static Supplier<Message> getMessageSupplier(ExpensiveCall expensive) {
-        return TemplateMessage.of(expensive.getDescription());
+    private static Supplier<Message> getMessageSupplier(Object expensive) {
+        return TemplateMessage.of((String) getDescription.invoke(expensive));
     }
 
-    private static Supplier<Message> getMessageSupplierWithContextMap(
-            final ExpensiveCall expensive) {
-
+    private static Supplier<Message> getMessageSupplierWithDetail(final Object expensive) {
         return new Supplier<Message>() {
             public Message get() {
-                Map<String, ?> contextMap = ImmutableMap.of("attr1", "value1", "attr2", "value2",
+                Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return TemplateMessage.of(expensive.getDescription(), contextMap);
+                return TemplateMessage.of((String) getDescription.invoke(expensive), detail);
             }
         };
     }

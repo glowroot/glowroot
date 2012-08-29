@@ -20,16 +20,16 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * The context map can contain {@link String}, {@link Double}, {@link Boolean} and null value types.
+ * The detail map can contain {@link String}, {@link Double}, {@link Boolean} and null value types.
  * It can also contain nested maps (which have the same restrictions on value types, including
- * additional levels of nested maps). The context map cannot have null keys.
+ * additional levels of nested maps). The detail map cannot have null keys.
  * 
- * As an extra bonus, context map can also contain
+ * As an extra bonus, detail map can also contain
  * org.informantproject.shaded.google.common.base.Optional values which is useful for Maps that do
  * not accept null values, e.g. org.informantproject.shaded.google.common.collect.ImmutableMap.
  * 
- * The context map does not need to be thread safe as long as it is only instantiated in response to
- * either Supplier<Message>.get() or Message.getContext() which are called by the thread that needs
+ * The detail map does not need to be thread safe as long as it is only instantiated in response to
+ * either Supplier<Message>.get() or Message.getDetail() which are called by the thread that needs
  * the map.
  * 
  * @author Trask Stalnaker
@@ -40,5 +40,5 @@ public interface Message {
     String getText();
 
     @Nullable
-    public Map<String, ?> getContextMap();
+    Map<String, ?> getDetail();
 }

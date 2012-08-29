@@ -23,8 +23,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 /**
@@ -37,50 +35,82 @@ public class Trace {
     private long from;
     private long to;
     private boolean stuck;
-    private boolean error;
     private long duration;
     private boolean completed;
     private String description;
     @Nullable
+    private List<Attribute> attributes;
+    @Nullable
     private String username;
-    private final List<Attribute> attributes = ImmutableList.of();
-    private final List<Metric> metrics = ImmutableList.of();
-    private final List<Span> spans = ImmutableList.of();
+    @Nullable
+    private TraceError error;
+    @Nullable
+    private List<Metric> metrics;
+    @Nullable
+    private List<Span> spans;
     @Nullable
     private MergedStackTreeNode mergedStackTree;
+
+    private boolean summary;
 
     public String getId() {
         return id;
     }
+
     public long getFrom() {
         return from;
     }
+
     public long getTo() {
         return to;
     }
+
     public boolean isStuck() {
         return stuck;
     }
-    public boolean isError() {
-        return error;
-    }
+
     public long getDuration() {
         return duration;
     }
+
     public boolean isCompleted() {
         return completed;
     }
+
     public String getDescription() {
         return description;
     }
+
+    @Nullable
+    public List<Attribute> getAttributes() {
+        return attributes;
+    }
+
+    @Nullable
+    public Attribute getAttribute(String name) {
+        for (Attribute attribute : attributes) {
+            if (attribute.getName().equals(name)) {
+                return attribute;
+            }
+        }
+        return null;
+    }
+
     @Nullable
     public String getUsername() {
         return username;
     }
-    public List<Attribute> getAttributes() {
-        return attributes;
+
+    @Nullable
+    public TraceError getError() {
+        return error;
     }
+
+    @Nullable
     public List<Metric> getMetrics() {
+        if (metrics == null) {
+            return null;
+        }
         // the informant weaving metric is a bit unpredictable since tests are often run inside the
         // same InformantContainer for test speed, so test order affects whether any classes are
         // woven during the test or not
@@ -93,18 +123,35 @@ public class Trace {
         }
         return stableMetrics;
     }
+
+    @Nullable
     public List<String> getMetricNames() {
-        return Lists.transform(getMetrics(), new Function<Metric, String>() {
+        List<Metric> metrics = getMetrics();
+        if (metrics == null) {
+            return null;
+        }
+        return Lists.transform(metrics, new Function<Metric, String>() {
             public String apply(@Nullable Metric metric) {
                 return metric.getName();
             }
         });
     }
+
+    @Nullable
     public List<Span> getSpans() {
+        if (summary) {
+            throw new IllegalStateException("Use Informant.getLastTrace() instead of"
+                    + " Informant.getLastTraceSummary() to retrieve spans");
+        }
         return spans;
     }
+
     @Nullable
     public MergedStackTreeNode getMergedStackTree() {
+        if (summary) {
+            throw new IllegalStateException("Use Informant.getLastTrace() instead of"
+                    + " Informant.getLastTraceSummary() to retrieve mergedStackTree");
+        }
         return mergedStackTree;
     }
 
@@ -115,16 +162,20 @@ public class Trace {
                 .add("from", from)
                 .add("to", to)
                 .add("stuck", stuck)
-                .add("error", error)
                 .add("duration", duration)
                 .add("completed", completed)
                 .add("description", description)
-                .add("username", username)
                 .add("attributes", attributes)
+                .add("username", username)
+                .add("error", error)
                 .add("metrics", metrics)
                 .add("spans", spans)
                 .add("mergedStackTree", mergedStackTree)
                 .toString();
+    }
+
+    void setSummary(boolean summary) {
+        this.summary = summary;
     }
 
     public static class Attribute {
@@ -138,12 +189,40 @@ public class Trace {
         public String getValue() {
             return value;
         }
-
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("name", name)
                     .add("value", value)
+                    .toString();
+        }
+    }
+
+    public static class TraceError {
+
+        private String text;
+        @Nullable
+        private Map<String, Object> detail;
+        @Nullable
+        private List<String> stackTrace;
+
+        public String getText() {
+            return text;
+        }
+        @Nullable
+        public Map<String, Object> getDetail() {
+            return detail;
+        }
+        @Nullable
+        public List<String> getStackTrace() {
+            return stackTrace;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("text", text)
+                    .add("detail", detail)
+                    .add("stackTrace", stackTrace)
                     .toString();
         }
     }
@@ -183,7 +262,6 @@ public class Trace {
         public boolean isMaxActive() {
             return maxActive;
         }
-
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
@@ -205,10 +283,13 @@ public class Trace {
         private long duration;
         private int index;
         private int parentIndex;
-        private int level;
-        private String description;
-        private boolean error;
-        private final Map<String, Object> contextMap = ImmutableMap.of();
+        private int nesting;
+        // message is null for spans created via PluginServices.addErrorSpan()
+        @Nullable
+        private Message message;
+        @Nullable
+        private ErrorMessage error;
+        @Nullable
         private String stackTraceHash;
 
         public long getOffset() {
@@ -223,22 +304,21 @@ public class Trace {
         public int getParentIndex() {
             return parentIndex;
         }
-        public int getLevel() {
-            return level;
+        public int getNesting() {
+            return nesting;
         }
-        public String getDescription() {
-            return description;
+        @Nullable
+        public Message getMessage() {
+            return message;
         }
-        public boolean isError() {
+        @Nullable
+        public ErrorMessage getError() {
             return error;
         }
-        public Map<String, Object> getContextMap() {
-            return contextMap;
-        }
+        @Nullable
         public String getStackTraceHash() {
             return stackTraceHash;
         }
-
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
@@ -246,10 +326,51 @@ public class Trace {
                     .add("duration", duration)
                     .add("index", index)
                     .add("parentIndex", parentIndex)
-                    .add("level", level)
-                    .add("description", description)
-                    .add("contextMap", contextMap)
+                    .add("nesting", nesting)
+                    .add("message", message)
                     .add("error", error)
+                    .add("stackTraceHash", stackTraceHash)
+                    .toString();
+        }
+    }
+
+    public static class Message {
+
+        private String text;
+        @Nullable
+        private Map<String, Object> detail;
+
+        public String getText() {
+            return text;
+        }
+        @Nullable
+        public Map<String, Object> getDetail() {
+            return detail;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("text", text)
+                    .add("detail", detail)
+                    .toString();
+        }
+    }
+
+    public static class ErrorMessage extends Message {
+
+        @Nullable
+        private String stackTraceHash;
+
+        @Nullable
+        public String getStackTraceHash() {
+            return stackTraceHash;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("text", getText())
+                    .add("detail", getDetail())
+                    .add("stackTraceHash", stackTraceHash)
                     .toString();
         }
     }
@@ -286,7 +407,6 @@ public class Trace {
         public String getSingleLeafState() {
             return singleLeafState;
         }
-
         @Override
         public String toString() {
             return Objects.toStringHelper(this)

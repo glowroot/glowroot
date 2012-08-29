@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -170,20 +171,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             if (maxEntries == CoreConfig.SPAN_LIMIT_DISABLED
                     || currentTrace.getSpanCount() < maxEntries) {
                 // the trace limit has not been exceeded
-                currentTrace.addSpan(messageSupplier, false);
+                currentTrace.addSpan(messageSupplier, null);
             }
         }
     }
 
     @Override
-    public void addErrorSpan(Supplier<Message> messageSupplier, @Nullable Throwable t) {
+    public void addErrorSpan(ErrorMessage errorMessage) {
         // don't use span limit when adding errors
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace != null) {
-            org.informantproject.core.trace.Span span = currentTrace.addSpan(messageSupplier, true);
-            if (t != null) {
-                span.setStackTraceElements(t.getStackTrace());
-            }
+            currentTrace.addSpan(null, errorMessage);
         }
     }
 
@@ -196,10 +194,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void putTraceAttribute(String name, @Nullable String value) {
+    public void setTraceAttribute(String name, @Nullable String value) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.putAttribute(name, value);
+            trace.setAttribute(name, value);
         }
     }
 
@@ -219,6 +217,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         pluginConfig = configService.getPluginConfig(pluginId);
     }
 
+    // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR
     private Span startSpan(Trace currentTrace, MetricImpl metric,
             Supplier<Message> messageSupplier) {
 
@@ -226,7 +225,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED
                 && currentTrace.getSpanCount() >= maxEntries) {
             // the trace limit has been exceeded
-            return new TimerWrappedInSpan(startTimer(metric));
+            return new TimerWrappedInSpan(currentTrace, metric, messageSupplier);
         } else {
             return new SpanImpl(currentTrace.pushSpan(metric, messageSupplier), currentTrace);
         }
@@ -240,25 +239,33 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.span = span;
             this.currentTrace = currentTrace;
         }
-        public void endWithError(@Nullable Throwable t) {
-            stopInternal(true, t);
-        }
         public void end() {
-            stopInternal(false, null);
+            endInternal(null);
+        }
+        public void endWithError(ErrorMessage errorMessage) {
+            if (errorMessage == null) {
+                logger.warn("endWithError(): errorMessage must be non-null");
+                // fallback to end() without error
+                end();
+            } else {
+                endInternal(errorMessage);
+            }
         }
         public void updateMessage(MessageUpdater updater) {
-            updater.update(span.getMessageSupplier());
+            if (updater == null) {
+                logger.warn("updateMessage(): updater must be non-null");
+            } else {
+                updater.update(span.getMessageSupplier());
+            }
         }
-        private void stopInternal(boolean error, @Nullable Throwable t) {
+        private void endInternal(ErrorMessage errorMessage) {
             long endTick = ticker.read();
-            if (t != null) {
-                span.setStackTraceElements(t.getStackTrace());
-            } else if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
+            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
                     .getSpanStackTraceThresholdMillis())) {
                 // TODO remove last few stack trace elements?
-                span.setStackTraceElements(Thread.currentThread().getStackTrace());
+                span.setStackTrace(Thread.currentThread().getStackTrace());
             }
-            currentTrace.popSpan(span, endTick, error);
+            currentTrace.popSpan(span, endTick, errorMessage);
             if (currentTrace.isCompleted()) {
                 // the root span has been popped off
                 // since the metrics are bound to the thread, they need to be recorded and reset
@@ -290,24 +297,44 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private static class TimerWrappedInSpan implements Span {
+        private final Trace currentTrace;
+        private final Supplier<Message> messageSupplier;
         private final Timer timer;
-        private TimerWrappedInSpan(Timer timer) {
-            this.timer = timer;
+        public TimerWrappedInSpan(Trace currentTrace, MetricImpl metric,
+                Supplier<Message> messageSupplier) {
+            this.currentTrace = currentTrace;
+            this.messageSupplier = messageSupplier;
+            timer = currentTrace.startTraceMetric(metric);
         }
         public void end() {
             timer.end();
         }
-        public void endWithError(@Nullable Throwable t) {
-            timer.end();
+        public void endWithError(ErrorMessage errorMessage) {
+            if (errorMessage == null) {
+                logger.warn("endWithError(): errorMessage must be non-null");
+                // fallback to end() without error
+                end();
+            } else {
+                timer.end();
+                // span won't necessarily be nested properly, and won't have any timing data, but at
+                // least the error will get captured
+                currentTrace.addSpan(messageSupplier, errorMessage);
+            }
         }
-        public void updateMessage(MessageUpdater updater) {}
+        public void updateMessage(MessageUpdater updater) {
+            if (updater == null) {
+                logger.warn("updateMessage(): updater must be non-null");
+            } else {
+                updater.update(messageSupplier);
+            }
+        }
     }
 
     @ThreadSafe
     private static class NopSpan implements Span {
         private static final NopSpan INSTANCE = new NopSpan();
         public void end() {}
-        public void endWithError(@Nullable Throwable t) {}
+        public void endWithError(ErrorMessage errorMessage) {}
         public void updateMessage(MessageUpdater updater) {}
     }
 

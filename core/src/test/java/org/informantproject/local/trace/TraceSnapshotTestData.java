@@ -50,16 +50,16 @@ class TraceSnapshotTestData {
                 .description("test description")
                 .username("j")
                 .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
-                        + "\"parentIndex\":-1,\"level\":0,\"description\":\"Level One\","
-                        + "\"contextMap\":\"{\"arg1\":\"a\",arg2\":\"b\",\"nested1\":"
-                        + "{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\",\"subnestedkey1\":"
-                        + "{\"subnestedkey1\":\"a\",\"subnestedkey2\":\"b\"}},\"nested2\":"
-                        + "{\"nestedkey21\":\"a\",\"nestedkey22\":\"b\"}}},{\"offset\":0,"
-                        + "\"duration\":0,\"index\":1,\"parentIndex\":0,\"level\":1,"
-                        + "\"description\":\"Level Two\",\"contextMap\":{\"arg1\":\"ax\",\"arg2\":"
-                        + "\"bx\"}},{\"offset\":0,\"duration\":0,\"index\":2,\"parentIndex\":1,"
-                        + "\"level\":2,\"description\":\"Level Three\",\"contextMap\":{\"arg1\":"
-                        + "\"axy\",\"arg2\":\"bxy\"}}]"))
+                        + "\"parentIndex\":-1,\"level\":0,\"message\":{\"text\":\"Level One\","
+                        + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","
+                        + "\"nested1\":{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\","
+                        + "\"subnestedkey1\":{\"subnestedkey1\":\"a\",\"subnestedkey2\":\"b\"}},"
+                        + "\"nested2\":{\"nestedkey21\":\"a\",\"nestedkey22\":\"b\"}}}},"
+                        + "{\"offset\":0,\"duration\":0,\"index\":1,\"parentIndex\":0,\"level\":1,"
+                        + "\"message\":{\"text\":\"Level Two\",\"detail\":{\"arg1\":\"ax\","
+                        + "\"arg2\":\"bx\"}}},{\"offset\":0,\"duration\":0,\"index\":2,"
+                        + "\"parentIndex\":1,\"level\":2,\"message\":{\"text\":\"Level Three\","
+                        + "\"detail\":{\"arg1\":\"axy\",\"arg2\":\"bxy\"}}}]"))
                 .build();
     }
 }

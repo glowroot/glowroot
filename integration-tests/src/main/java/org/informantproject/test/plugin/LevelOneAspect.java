@@ -17,6 +17,7 @@ package org.informantproject.test.plugin;
 
 import java.util.Map;
 
+import org.informantproject.api.ErrorMessages;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -65,12 +66,11 @@ public class LevelOneAspect {
                     if (pluginServices.getBooleanProperty("starredDescription")) {
                         traceDescription += "*";
                     }
-                    Map<String, ?> contextMap = ImmutableMap.of("arg1", arg1, "arg2", arg2,
-                            "nested1", ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2,
-                                    "subnested1",
+                    Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", arg2, "nested1",
+                            ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2, "subnested1",
                                     ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return TemplateMessage.of(traceDescription, contextMap);
+                    return TemplateMessage.of(traceDescription, detail);
                 }
             };
             return pluginServices.startTrace(messageSupplier, metric);
@@ -78,7 +78,7 @@ public class LevelOneAspect {
 
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
-            span.endWithError(t);
+            span.endWithError(ErrorMessages.from(t));
         }
 
         @OnReturn

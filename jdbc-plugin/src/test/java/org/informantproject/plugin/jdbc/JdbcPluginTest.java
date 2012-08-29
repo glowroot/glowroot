@@ -67,9 +67,9 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
+        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription()).startsWith(
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee => 1 row [connection: ");
     }
 
@@ -83,10 +83,11 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
+        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
-        assertThat(jdbcSpan.getDescription()).startsWith("jdbc execution: select * from employee"
-                + " where name like ? ['john%'] => 1 row [connection: ");
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee"
+                        + " where name like ? ['john%'] => 1 row [connection: ");
     }
 
     @Test
@@ -99,12 +100,12 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
+        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcInsertSpan = trace.getSpans().get(1);
-        assertThat(jdbcInsertSpan.getDescription()).startsWith(
+        assertThat(jdbcInsertSpan.getMessage().getText()).startsWith(
                 "jdbc execution: insert into employee (name) values ('john doe') [connection: ");
         Span jdbcCommitSpan = trace.getSpans().get(2);
-        assertThat(jdbcCommitSpan.getDescription()).startsWith("jdbc commit [connection: ");
+        assertThat(jdbcCommitSpan.getMessage().getText()).startsWith("jdbc commit [connection: ");
         assertThat(trace.getMetrics()).hasSize(4);
         // ordering is by total desc, so not fixed (though root span will be first since it
         // encompasses all other timings)
@@ -144,7 +145,7 @@ public class JdbcPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getDescription()).isEqualTo("mock trace marker");
+        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");

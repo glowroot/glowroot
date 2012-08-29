@@ -20,6 +20,7 @@ import java.util.Queue;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.core.util.PartiallyThreadSafe;
@@ -97,25 +98,16 @@ class RootSpan {
     }
 
     Span pushSpan(long startTick, Supplier<Message> messageSupplier, TraceMetric traceMetric) {
-        Span span = createSpan(startTick, messageSupplier, traceMetric);
+        Span span = createSpan(startTick, messageSupplier, null, traceMetric);
         pushSpanInternal(span);
-        return span;
-    }
-
-    Span addSpan(long startTick, Supplier<Message> messageSupplier, boolean error) {
-        Span span = createSpan(startTick, messageSupplier, null);
-        span.setError(error);
-        spans.add(span);
-        size++;
-        span.setEndTick(startTick);
         return span;
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the span is
     // passed in just to make sure it is the one on top (and if not, then pop until it is found,
     // preventing any nasty bugs from a missed pop, e.g. a span never being marked as complete)
-    void popSpan(Span span, long endTick, boolean error) {
-        span.setError(error);
+    void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
+        span.setErrorMessage(errorMessage);
         span.setEndTick(endTick);
         popSpanSafe(span);
         if (spanStack.isEmpty()) {
@@ -123,12 +115,23 @@ class RootSpan {
         }
     }
 
-    private Span createSpan(long startTick, Supplier<Message> messageSupplier,
-            @Nullable TraceMetric traceMetric) {
+    Span addSpan(long startTick, @Nullable Supplier<Message> messageSupplier,
+            @Nullable ErrorMessage errorMessage) {
+
+        Span span = createSpan(startTick, messageSupplier, errorMessage, null);
+        spans.add(span);
+        size++;
+        span.setEndTick(startTick);
+        return span;
+    }
+
+    private Span createSpan(long startTick, @Nullable Supplier<Message> messageSupplier,
+            @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric) {
 
         Span currentSpan = spanStack.get(spanStack.size() - 1);
         Span span = new Span(messageSupplier, this.startTick, startTick, size,
-                currentSpan.getIndex(), currentSpan.getLevel() + 1, traceMetric);
+                currentSpan.getIndex(), currentSpan.getNestingLevel() + 1, traceMetric);
+        span.setErrorMessage(errorMessage);
         return span;
     }
 

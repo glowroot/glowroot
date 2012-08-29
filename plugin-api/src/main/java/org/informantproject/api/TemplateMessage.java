@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +26,9 @@ import org.slf4j.LoggerFactory;
 /**
  * For convenience, this is both a Message and a Supplier<Message> (supplying itself).
  * 
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 public class TemplateMessage implements Message, Supplier<Message> {
 
     private static final Logger logger = LoggerFactory.getLogger(TemplateMessage.class);
@@ -40,7 +37,7 @@ public class TemplateMessage implements Message, Supplier<Message> {
     @Nullable
     private final Object[] args;
     @Nullable
-    private final Map<String, ?> contextMap;
+    private final Map<String, ?> detail;
 
     public static TemplateMessage of(String message) {
         return new TemplateMessage(message, null, null);
@@ -50,23 +47,26 @@ public class TemplateMessage implements Message, Supplier<Message> {
         return new TemplateMessage(template, args, null);
     }
 
+    // the objects in args must be thread safe
     public static TemplateMessage of(String template, List<?> args) {
         return new TemplateMessage(template, args.toArray(), null);
     }
 
-    public static TemplateMessage of(String message, Map<String, ?> contextMap) {
-        return new TemplateMessage(message, null, contextMap);
+    // the objects in detail must be thread safe
+    public static TemplateMessage of(String message, Map<String, ?> detail) {
+        return new TemplateMessage(message, null, detail);
     }
 
-    public static TemplateMessage of(String template, Object[] args, Map<String, ?> contextMap) {
-        return new TemplateMessage(template, args, contextMap);
+    // the objects in args and detail must be thread safe
+    public static TemplateMessage of(String template, List<?> args, Map<String, ?> detail) {
+        return new TemplateMessage(template, args.toArray(), detail);
     }
 
     private TemplateMessage(String template, @Nullable Object[] args,
-            @Nullable Map<String, ?> contextMap) {
+            @Nullable Map<String, ?> detail) {
         this.template = template;
         this.args = args;
-        this.contextMap = contextMap;
+        this.detail = detail;
     }
 
     public String getText() {
@@ -96,8 +96,8 @@ public class TemplateMessage implements Message, Supplier<Message> {
     }
 
     @Nullable
-    public Map<String, ?> getContextMap() {
-        return contextMap;
+    public Map<String, ?> getDetail() {
+        return detail;
     }
 
     public Message get() {

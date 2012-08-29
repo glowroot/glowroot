@@ -15,7 +15,10 @@
  */
 package org.informantproject.plugin.servlet;
 
+import java.io.IOException;
+
 import javax.annotation.concurrent.ThreadSafe;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,8 +47,10 @@ class TestServlet extends HttpServlet implements AppUnderTest {
             @SuppressWarnings("unused") HttpServletResponse response) {}
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {}
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {}
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) {}
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {}
 }

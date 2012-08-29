@@ -20,7 +20,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.util.Map;
 import java.util.Random;
 
-import org.informantproject.test.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
@@ -71,21 +70,20 @@ public class BasicTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getDescription()).isEqualTo("Level One");
-        assertThat(trace.getAttributes()).isEmpty();
+        assertThat(trace.getAttributes()).isNull();
         assertThat(trace.getSpans()).hasSize(3);
         Span span1 = trace.getSpans().get(0);
-        assertThat(span1.getDescription()).isEqualTo("Level One");
-        assertThat(span1.getContextMap()).isEqualTo(
-                mapOf("arg1", "a", "arg2", "b",
-                        "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
-                                "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
-                        "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
+        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
+        assertThat(span1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
+                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
+                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+                "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         Span span2 = trace.getSpans().get(1);
-        assertThat(span2.getDescription()).isEqualTo("Level Two");
-        assertThat(span2.getContextMap()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
+        assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
+        assertThat(span2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
         Span span3 = trace.getSpans().get(2);
-        assertThat(span3.getDescription()).isEqualTo("Level Three");
-        assertThat(span3.getContextMap()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
+        assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
+        assertThat(span3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(span3.getOffset()).isGreaterThan(0);
     }

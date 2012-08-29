@@ -529,7 +529,7 @@ public class JdbcAspect {
         public static void onAfter(@InjectTraveler @Nullable Timer timer) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.captureNested = false prevents re-entrant calls
-            inDatabaseMetataDataMethod.set(null);
+            inDatabaseMetataDataMethod.remove();
             if (timer != null) {
                 timer.end();
             }

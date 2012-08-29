@@ -15,24 +15,21 @@
  */
 package org.informantproject.api;
 
-import javax.annotation.concurrent.NotThreadSafe;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@NotThreadSafe
-public interface Span {
+public interface ErrorMessage {
 
-    void end();
+    String getText();
 
-    // only marks trace as error if this is the root span
-    void endWithError(ErrorMessage errorMessage);
+    @Nullable
+    Map<String, ?> getDetail();
 
-    // TODO revisit this, what about setMessage(Supplier<Message>) instead?
-    void updateMessage(MessageUpdater updater);
-
-    public interface MessageUpdater {
-        void update(Supplier<Message> messageSupplier);
-    }
+    @Nullable
+    StackTraceElement[] getStackTrace();
 }

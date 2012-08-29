@@ -56,18 +56,21 @@ public class TraceSnapshotDao {
 
     private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("id", Types.VARCHAR),
-            new Column("captured_at", Types.BIGINT),
+            new Column("captured_at", Types.BIGINT), // for searching only
             new Column("start_at", Types.BIGINT),
             new Column("stuck", Types.BOOLEAN),
-            new Column("error", Types.BOOLEAN),
+            new Column("error", Types.BOOLEAN), // for searching only
             new Column("duration", Types.BIGINT),
             new Column("completed", Types.BOOLEAN),
             new Column("description", Types.VARCHAR),
+            new Column("attributes", Types.VARCHAR), // json data
             new Column("username", Types.VARCHAR),
-            new Column("attributes", Types.VARCHAR),
-            new Column("metrics", Types.VARCHAR),
-            new Column("spans", Types.VARCHAR),
-            new Column("merged_stack_tree", Types.VARCHAR));
+            new Column("error_text", Types.VARCHAR),
+            new Column("error_detail", Types.VARCHAR), // json data
+            new Column("error_stack_trace", Types.VARCHAR), // json data
+            new Column("metrics", Types.VARCHAR), // json data
+            new Column("spans", Types.VARCHAR), // rolling file block id
+            new Column("merged_stack_tree", Types.VARCHAR)); // rolling file block id
 
     private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("trace_idx",
             "captured_at", "duration"));
@@ -131,12 +134,15 @@ public class TraceSnapshotDao {
         }
         try {
             dataSource.update("merge into trace (id, captured_at, start_at, stuck, error,"
-                    + " duration, completed, description, username, attributes, metrics, spans,"
-                    + " merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    snapshot.getId(), capturedAt, snapshot.getStartAt(), snapshot.isStuck(),
-                    snapshot.isError(), snapshot.getDuration(), snapshot.isCompleted(),
-                    snapshot.getDescription(), snapshot.getUsername(), snapshot.getAttributes(),
-                    snapshot.getMetrics(), spansBlockId, mergedStackTreeBlockId);
+                    + " duration, completed, description, attributes, username, error_text,"
+                    + " error_detail, error_stack_trace, metrics, spans, merged_stack_tree) values"
+                    + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
+                    capturedAt, snapshot.getStartAt(), snapshot.isStuck(),
+                    snapshot.getErrorText() != null, snapshot.getDuration(),
+                    snapshot.isCompleted(), snapshot.getDescription(), snapshot.getAttributes(),
+                    snapshot.getUsername(), snapshot.getErrorText(), snapshot.getErrorDetail(),
+                    snapshot.getErrorStackTrace(), snapshot.getMetrics(), spansBlockId,
+                    mergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -185,10 +191,10 @@ public class TraceSnapshotDao {
         }
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
-            partiallyHydratedTraces = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " error, duration, completed, description, username, attributes, metrics,"
-                    + " spans, merged_stack_tree from trace where id = ?", new Object[] { id },
-                    new TraceRowMapper());
+            partiallyHydratedTraces = dataSource.query("select id, start_at, stuck, duration,"
+                    + " completed, description, attributes, username, error_text, error_detail,"
+                    + " error_stack_trace, metrics, spans, merged_stack_tree from trace where"
+                    + " id = ?", new Object[] { id }, new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -210,9 +216,9 @@ public class TraceSnapshotDao {
         }
         List<TraceSnapshot> snapshots;
         try {
-            snapshots = dataSource.query("select id, captured_at, start_at, stuck,"
-                    + " error, duration, completed, description, username, attributes, metrics"
-                    + " from trace where id = ?", new Object[] { id },
+            snapshots = dataSource.query("select id, start_at, stuck, duration, completed,"
+                    + " description, attributes, username, error_text, error_detail,"
+                    + " error_stack_trace, metrics from trace where id = ?", new Object[] { id },
                     new TraceSummaryRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -266,77 +272,32 @@ public class TraceSnapshotDao {
         }
     }
 
-    public static enum StringComparator {
-
-        BEGINS("like", "%s%%"), EQUALS("=", "%s"), CONTAINS("like", "%%%s%%");
-
-        private final String comparator;
-        private final String parameterFormat;
-
-        private StringComparator(String comparator, String parameterTemplate) {
-            this.comparator = comparator;
-            this.parameterFormat = parameterTemplate;
-        }
-
-        public String formatParameter(String parameter) {
-            return String.format(parameterFormat, parameter);
-        }
-
-        public String getComparator() {
-            return comparator;
-        }
-    }
-
-    @ThreadSafe
-    private static class SummaryRowMapper implements RowMapper<TraceSnapshotSummary> {
-
-        public TraceSnapshotSummary mapRow(ResultSet resultSet) throws SQLException {
-            return TraceSnapshotSummary.from(resultSet.getString(1), resultSet.getLong(2),
-                    resultSet.getLong(3), resultSet.getBoolean(4));
-        }
+    private static TraceSnapshot.Builder createBuilder(ResultSet resultSet) throws SQLException {
+        return TraceSnapshot.builder()
+                .id(resultSet.getString(1))
+                .startAt(resultSet.getLong(2))
+                .stuck(resultSet.getBoolean(3))
+                .duration(resultSet.getLong(4))
+                .completed(resultSet.getBoolean(5))
+                .description(resultSet.getString(6))
+                .attributes(resultSet.getString(7))
+                .username(resultSet.getString(8))
+                .errorText(resultSet.getString(9))
+                .errorDetail(resultSet.getString(10))
+                .errorStackTrace(resultSet.getString(11))
+                .metrics(resultSet.getString(12));
     }
 
     @ThreadSafe
     private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
 
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
-            TraceSnapshot.Builder builder = TraceSnapshot.builder()
-                    .id(resultSet.getString(1))
-                    // column 2 is 'captured_at'
-                    .startAt(resultSet.getLong(3))
-                    .stuck(resultSet.getBoolean(4))
-                    .error(resultSet.getBoolean(5))
-                    .duration(resultSet.getLong(6))
-                    .completed(resultSet.getBoolean(7))
-                    .description(resultSet.getString(8))
-                    .username(resultSet.getString(9))
-                    .attributes(resultSet.getString(10))
-                    .metrics(resultSet.getString(11));
+            TraceSnapshot.Builder builder = createBuilder(resultSet);
             // wait and read from rolling file outside of the jdbc connection
-            String spansFileBlockId = resultSet.getString(12);
-            String mergedStackTreeFileBlockId = resultSet.getString(13);
+            String spansFileBlockId = resultSet.getString(13);
+            String mergedStackTreeFileBlockId = resultSet.getString(14);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
                     mergedStackTreeFileBlockId);
-        }
-    }
-
-    @ThreadSafe
-    private class TraceSummaryRowMapper implements RowMapper<TraceSnapshot> {
-
-        public TraceSnapshot mapRow(ResultSet resultSet) throws SQLException {
-            return TraceSnapshot.builder()
-                    .id(resultSet.getString(1))
-                    // column 2 is 'captured_at'
-                    .startAt(resultSet.getLong(3))
-                    .stuck(resultSet.getBoolean(4))
-                    .error(resultSet.getBoolean(5))
-                    .duration(resultSet.getLong(6))
-                    .completed(resultSet.getBoolean(7))
-                    .description(resultSet.getString(8))
-                    .username(resultSet.getString(9))
-                    .attributes(resultSet.getString(10))
-                    .metrics(resultSet.getString(11))
-                    .build();
         }
     }
 
@@ -378,6 +339,44 @@ public class TraceSnapshotDao {
                 }
             }
             return builder.build();
+        }
+    }
+
+    public static enum StringComparator {
+
+        BEGINS("like", "%s%%"), EQUALS("=", "%s"), CONTAINS("like", "%%%s%%");
+
+        private final String comparator;
+        private final String parameterFormat;
+
+        private StringComparator(String comparator, String parameterTemplate) {
+            this.comparator = comparator;
+            this.parameterFormat = parameterTemplate;
+        }
+
+        public String formatParameter(String parameter) {
+            return String.format(parameterFormat, parameter);
+        }
+
+        public String getComparator() {
+            return comparator;
+        }
+    }
+
+    @ThreadSafe
+    private static class SummaryRowMapper implements RowMapper<TraceSnapshotSummary> {
+
+        public TraceSnapshotSummary mapRow(ResultSet resultSet) throws SQLException {
+            return TraceSnapshotSummary.from(resultSet.getString(1), resultSet.getLong(2),
+                    resultSet.getLong(3), resultSet.getBoolean(4));
+        }
+    }
+
+    @ThreadSafe
+    private static class TraceSummaryRowMapper implements RowMapper<TraceSnapshot> {
+
+        public TraceSnapshot mapRow(ResultSet resultSet) throws SQLException {
+            return createBuilder(resultSet).build();
         }
     }
 }

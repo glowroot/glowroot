@@ -32,12 +32,15 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.Immutable;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.Suppliers;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.PartiallyThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -56,6 +59,8 @@ import com.google.common.collect.Lists;
         + "  clearThreadLocalMetrics() can only be called from constructing thread")
 public class Trace {
 
+    private static final Logger logger = LoggerFactory.getLogger(Trace.class);
+
     // a unique identifier
     private final TraceUniqueId id;
 
@@ -66,14 +71,12 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
-    private volatile boolean error;
-
-    private volatile Supplier<String> usernameSupplier = Suppliers.ofInstance(null);
-
     // attribute name ordering is maintained for consistent display (assumption is order of entry is
     // order of importance)
     @GuardedBy("attributes")
     private final List<TraceAttribute> attributes = new ArrayList<TraceAttribute>();
+
+    private volatile Supplier<String> usernameSupplier = Suppliers.ofInstance(null);
 
     // this is mostly updated and rarely read, so it seems like synchronized ArrayList is the best
     // collection
@@ -156,18 +159,18 @@ public class Trace {
         return stuck.get();
     }
 
-    public Supplier<String> getUsernameSupplier() {
-        return usernameSupplier;
-    }
-
     public ImmutableList<TraceAttribute> getAttributes() {
         synchronized (attributes) {
             return ImmutableList.copyOf(attributes);
         }
     }
 
+    public Supplier<String> getUsernameSupplier() {
+        return usernameSupplier;
+    }
+
     public boolean isError() {
-        return error;
+        return rootSpan.getRootSpan().getErrorMessage() != null;
     }
 
     public List<TraceMetric> getTraceMetrics() {
@@ -226,7 +229,7 @@ public class Trace {
         this.usernameSupplier = usernameSupplier;
     }
 
-    public void putAttribute(String name, @Nullable String value) {
+    public void setAttribute(String name, @Nullable String value) {
         synchronized (attributes) {
             for (ListIterator<TraceAttribute> i = attributes.listIterator(); i.hasNext();) {
                 if (i.next().getName().equals(name)) {
@@ -271,28 +274,24 @@ public class Trace {
         return span;
     }
 
-    public Span addSpan(org.informantproject.api.Supplier<Message> messageSupplier, boolean error) {
-        Span span = rootSpan.addSpan(ticker.read(), messageSupplier, error);
-        if (error) {
-            this.error = true;
+    // one but not both args can be null
+    public Span addSpan(@Nullable org.informantproject.api.Supplier<Message> messageSupplier,
+            @Nullable ErrorMessage errorMessage) {
+
+        if (messageSupplier == null && errorMessage == null) {
+            logger.error("addSpan(): both args cannot be null");
         }
-        return span;
+        return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    public void popSpan(Span span, long endTick, boolean error) {
-        if (error) {
-            this.error = true;
-        }
-        rootSpan.popSpan(span, endTick, error);
+    public void popSpan(Span span, long endTick, ErrorMessage errorMessage) {
+        rootSpan.popSpan(span, endTick, errorMessage);
         TraceMetric traceMetric = span.getTraceMetric();
         if (traceMetric != null) {
             traceMetric.end(endTick);
-        }
-        if (rootSpan.isCompleted()) {
-
         }
     }
 

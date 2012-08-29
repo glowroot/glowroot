@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package org.informantproject.test.plugin;
 
+import org.informantproject.api.ErrorMessages;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.PointcutStackTrace;
 import org.informantproject.api.Span;
 import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
@@ -26,23 +28,21 @@ import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.Pointcut;
 
-import com.google.common.collect.ImmutableMap;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Aspect
-public class LevelTwoAspect {
+public class LogErrorAspect {
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-integration-tests");
 
-    @Pointcut(typeName = "org.informantproject.test.LevelTwo", methodName = "call",
-            methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level two")
-    public static class LevelTwoAdvice {
+    @Pointcut(typeName = "org.informantproject.test.LogError", methodName = "log",
+            methodArgs = { "java.lang.String" }, metricName = "log error")
+    public static class LogErrorAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LevelTwoAdvice.class);
+        private static final Metric metric = pluginServices.getMetric(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -50,14 +50,21 @@ public class LevelTwoAspect {
         }
 
         @OnBefore
-        public static Span onBefore(String arg1, String arg2) {
-            return pluginServices.startSpan(TemplateMessage.of("Level Two",
-                    ImmutableMap.of("arg1", arg1, "arg2", arg2)), metric);
+        public static Span onBefore(String message) {
+            return pluginServices.startSpan(TemplateMessage.of("ERROR -- {{message}}",
+                    message), metric);
+
         }
 
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            span.endWithError(ErrorMessages.from(new PointcutStackTrace(LogErrorAdvice.class)));
         }
     }
+
+    // this is just to generate an additional $informant$ method to test that consecutive
+    // $informant$ methods in a span stack trace are stripped out correctly
+    @Pointcut(typeName = "org.informantproject.test.LogError", methodName = "log",
+            methodArgs = { "java.lang.String" }, metricName = "log error 2")
+    public static class LogErrorAdvice2 {}
 }

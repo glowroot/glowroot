@@ -143,7 +143,7 @@ class JdbcMessageSupplier implements Supplier<Message> {
         return TemplateMessage.of(sb.toString(), args);
     }
 
-    // TODO put row num and bind parameters in context map?
+    // TODO put row num and bind parameters in detail map?
 
     void setHasPerformedNext() {
         if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {

@@ -93,8 +93,14 @@ public class TraceMetric implements Timer {
         firstStart = false;
     }
 
+    // start() avoids a ticker read in some cases, so don't just implement as start(ticker.read())
     void start() {
-        start(ticker.read());
+        if (selfNestingLevel == 0) {
+            this.startTick = ticker.read();
+        }
+        // selfNestingLevel is incremented after updating startTick since selfNestingLevel is used
+        // as a memory barrier so startTick will be visible to other threads in copyOf()
+        selfNestingLevel++;
     }
 
     void start(long startTick) {

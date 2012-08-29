@@ -41,6 +41,8 @@ public class MetricImpl implements Metric {
         return name;
     }
 
+    // item.start() avoids a ticker read in some cases, so don't just implement as
+    // start(ticker.read())
     TraceMetric start() {
         TraceMetric item = traceMetric.get();
         if (item == null) {

@@ -32,9 +32,9 @@ import com.google.gson.stream.JsonWriter;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class ContextMapSerializer {
+class MessageDetailSerializer {
 
-    private static final Logger logger = LoggerFactory.getLogger(ContextMapSerializer.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageDetailSerializer.class);
 
     @Nullable
     private static final Class<?> SHADED_OPTIONAL_CLASS = getShadedOptionalClass();
@@ -45,21 +45,21 @@ class ContextMapSerializer {
 
     private final JsonWriter jw;
 
-    ContextMapSerializer(JsonWriter jw) {
+    MessageDetailSerializer(JsonWriter jw) {
         this.jw = jw;
     }
 
-    void write(Map<?, ?> contextMap) throws IOException {
+    void write(Map<?, ?> detail) throws IOException {
         jw.beginObject();
-        for (Entry<?, ?> entry : contextMap.entrySet()) {
+        for (Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();
             if (key instanceof String) {
                 jw.name((String) key);
             } else if (key == null) {
-                logger.warn("context map has null key");
+                logger.warn("detail map has null key");
                 jw.name("");
             } else {
-                logger.warn("context map has unexpected key type '{}'", key.getClass().getName());
+                logger.warn("detail map has unexpected key type '{}'", key.getClass().getName());
                 jw.name(key.toString());
             }
             write(entry.getValue());
@@ -91,7 +91,7 @@ class ContextMapSerializer {
             // inside an IDE when running against unshaded informant-core
             //
             // informant plugins are compiled directly against shaded guava, so when they pass a
-            // context map with a value of type Optional, it is the shaded Optional class
+            // detail map with a value of type Optional, it is the shaded Optional class
             boolean present = (Boolean) isPresentMethod.invoke(value);
             if (present) {
                 write(getMethod.invoke(value));
@@ -99,7 +99,7 @@ class ContextMapSerializer {
                 jw.nullValue();
             }
         } else {
-            logger.warn("context map has unexpected value type '{}'", value.getClass().getName());
+            logger.warn("detail map has unexpected value type '{}'", value.getClass().getName());
             jw.value(value.toString());
         }
     }

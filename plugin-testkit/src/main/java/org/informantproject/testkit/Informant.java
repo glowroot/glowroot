@@ -127,9 +127,15 @@ public class Informant {
         } else {
             JsonArray values = points.get(points.size() - 1).getAsJsonArray();
             String traceId = values.get(2).getAsString();
-            String url = summary ? "/trace/summary/" : "/trace/detail/";
-            String traceJson = get(url + traceId);
-            return gson.fromJson(traceJson, Trace.class);
+            if (summary) {
+                String traceJson = get("/trace/summary/" + traceId);
+                Trace trace = gson.fromJson(traceJson, Trace.class);
+                trace.setSummary(true);
+                return trace;
+            } else {
+                String traceJson = get("/trace/detail/" + traceId);
+                return gson.fromJson(traceJson, Trace.class);
+            }
         }
     }
 

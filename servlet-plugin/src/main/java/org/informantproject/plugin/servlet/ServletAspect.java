@@ -20,9 +20,12 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.ErrorMessage;
+import org.informantproject.api.ErrorMessages;
 import org.informantproject.api.Message;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
+import org.informantproject.api.PointcutStackTrace;
 import org.informantproject.api.Span;
 import org.informantproject.api.Supplier;
 import org.informantproject.api.Suppliers;
@@ -65,8 +68,13 @@ public class ServletAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject.plugins:servlet-plugin");
 
-    private static final ThreadLocal<ServletMessageSupplier> topLevelServletMessageSupplier =
+    private static final ThreadLocal<ServletMessageSupplier> topLevel =
             new ThreadLocal<ServletMessageSupplier>();
+
+    // the life of this thread local is tied to the life of the topLevel thread local
+    // it is only created if the topLevel thread local exists, and it is cleared when topLevel
+    // thread local is cleared
+    private static final ThreadLocal<ErrorMessage> sendError = new ThreadLocal<ErrorMessage>();
 
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service",
             methodArgs = { "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
@@ -76,7 +84,7 @@ public class ServletAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
-            return pluginServices.isEnabled() && topLevelServletMessageSupplier.get() == null;
+            return pluginServices.isEnabled() && topLevel.get() == null;
         }
         @OnBefore
         public static Span onBefore(@InjectMethodArg Object realRequest) {
@@ -93,7 +101,7 @@ public class ServletAspect {
                 messageSupplier = new ServletMessageSupplier(request.getMethod(),
                         request.getRequestURI(), session.getId(), getSessionAttributes(session));
             }
-            topLevelServletMessageSupplier.set(messageSupplier);
+            topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(messageSupplier, metric);
             if (session != null) {
                 String sessionUsernameAttributePath = ServletPluginProperties
@@ -109,21 +117,21 @@ public class ServletAspect {
         }
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
-            span.endWithError(t);
-            topLevelServletMessageSupplier.set(null);
+            // ignoring potential sendError since this seems worse
+            span.endWithError(ErrorMessages.from(t));
+            sendError.remove();
+            topLevel.remove();
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span,
-                @InjectMethodArg @SuppressWarnings("unused") Object realRequest,
-                @InjectMethodArg Object realResponse) {
-
-            span.end();
-            topLevelServletMessageSupplier.set(null);
-
-            HttpServletResponse response = HttpServletResponse.from(realResponse);
-            int responseStatus = response.getStatus();
-            pluginServices.putTraceAttribute("Response status code",
-                    Integer.toString(responseStatus));
+        public static void onReturn(@InjectTraveler Span span) {
+            ErrorMessage errorMessage = sendError.get();
+            if (errorMessage != null) {
+                span.endWithError(errorMessage);
+                sendError.remove();
+            } else {
+                span.end();
+            }
+            topLevel.remove();
         }
     }
 
@@ -144,10 +152,8 @@ public class ServletAspect {
             ServletAdvice.onThrow(t, span);
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span, @InjectMethodArg Object realRequest,
-                @InjectMethodArg Object realResponse) {
-
-            ServletAdvice.onReturn(span, realRequest, realResponse);
+        public static void onReturn(@InjectTraveler Span span) {
+            ServletAdvice.onReturn(span);
         }
     }
 
@@ -168,10 +174,8 @@ public class ServletAspect {
             ServletAdvice.onThrow(t, span);
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span, @InjectMethodArg Object realRequest,
-                @InjectMethodArg Object realResponse) {
-
-            ServletAdvice.onReturn(span, realRequest, realResponse);
+        public static void onReturn(@InjectTraveler Span span) {
+            ServletAdvice.onReturn(span);
         }
     }
 
@@ -199,7 +203,7 @@ public class ServletAspect {
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
             try {
-                ServletMessageSupplier messageSupplier = topLevelServletMessageSupplier.get();
+                ServletMessageSupplier messageSupplier = topLevel.get();
                 if (messageSupplier != null && !messageSupplier.isRequestParameterMapCaptured()) {
                     // this request is being traced and the request parameter map hasn't been
                     // captured yet
@@ -234,7 +238,7 @@ public class ServletAspect {
             // pointcut
             // after calls to the first two (no-arg, and passing true), a new session may have been
             // created (the third one -- passing false -- could be ignored but is harmless)
-            ServletMessageSupplier messageSupplier = topLevelServletMessageSupplier.get();
+            ServletMessageSupplier messageSupplier = topLevel.get();
             if (messageSupplier != null && session.isNew()) {
                 messageSupplier.setSessionIdUpdatedValue(session.getId());
             }
@@ -366,19 +370,14 @@ public class ServletAspect {
      * ================== Response Status Code ==================
      */
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
-            methodArgs = { "int" })
-    public static class SetStatusAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
-        @OnBefore
-        public static void onBefore(Integer sc) {
-            if (sc >= 400) {
-                pluginServices.addErrorSpan(
-                        TemplateMessage.of("HttpServletResponse.setStatus({{statusCode}})", sc),
-                        new Throwable());
+    @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
+            methodArgs = { "int", ".." })
+    public static class SendErrorAdvice {
+        @OnAfter
+        public static void onAfter(Integer statusCode) {
+            if (topLevel.get() != null) {
+                sendError.set(ErrorMessages.from("sendError, HTTP status code " + statusCode,
+                        new PointcutStackTrace(SendErrorAdvice.class)));
             }
         }
     }

@@ -31,10 +31,11 @@ var traceSummaryTemplateText = ''
 + '</div>'
 + 'start: {{date start}}<br>'
 + 'duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
-+ '{{#if username}}<div class="second-line-indent">username: {{username}}</div>{{/if}}'
 + '{{#each attributes}}'
 + '  <div class="second-line-indent">{{name}}: {{value}}</div>'
 + '{{/each}}'
++ '{{#if username}}<div class="second-line-indent">username: {{username}}</div>{{/if}}'
++ '{{#if error}}<div class="second-line-indent"><b>error: {{error.text}}</b></div>{{/if}}'
 + 'breakdown (in milliseconds):<br>'
 + '<table class="metrics-table" style="margin-left: 1em; border-spacing:0">'
 + '  <thead>'
@@ -85,43 +86,62 @@ var spansTemplateText = ''
 + '<div style="float: left; margin-left: 1em; width: 3em; text-align: right">'
 + '    +{{nanosToMillis offset}}'
 + '  </div>'
-+ '  <div style="margin-left: {{margin level}}em">'
-+ '    <div style="width: 3em; float: left; text-align: right">'
++ '  <div style="margin-left: {{margin nestingLevel}}em">'
++ '    <div style="width: 2em; float: left; text-align: right">'
 + '      {{nanosToMillis duration}}{{#if active}}..{{/if}}&nbsp;'
 + '    </div>'
 + '    <div style="margin-left: 4em">'
-+ '      {{#ifLongDescription description}}'
++ '      {{#ifLongDescription message.text}}'
 + '        {{! have to use ../.. to get to the parent context from inside of a block'
 + '            helper, see https://github.com/wycats/handlebars.js/issues/196 }}'
 + '        <span class="sp_{{../../id}}_{{index}}">'
 + '          <a href="#" onclick="$(\'.sp_{{../../id}}_{{index}}\').toggle(); return false"'
 + '              style="color: #333">'
-+ '            {{#short description}}{{/short}}'
++ '            {{#short message.text}}{{/short}}'
 + '          </a>'
 + '        </span>'
 + '        <span class="sp_{{../../id}}_{{index}}" style="display: none">'
 + '          <a href="#" onclick="$(\'.sp_{{../../id}}_{{index}}\').toggle(); return false">'
-+ '            {{description}}'
++ '            {{message.text}}'
 + '          </a>'
 + '        </span>'
 + '      {{^}}'
-+ '        {{description}}'
++ '        {{message.text}}'
 + '      {{/ifLongDescription}}'
-+ '      {{#if contextMap}}'
-+ '        <br>'
++ '      <br>'
++ '      {{#if message.detail}}'
 + '        <a style="margin-left: 1em" href="#"'
 + '            onclick="$(\'#cm_{{../../id}}_{{index}}\').toggle(); return false">'
-+ '          context map'
++ '          detail'
 + '        </a>'
 + '        <br>'
 + '        <div id="cm_{{../../id}}_{{index}}" style="display: none">'
-+ '          <div style="margin-left: 1em">{{#contextMapHtml contextMap}}{{/contextMapHtml}}</div>'
++ '          <div style="margin-left: 1em">'
++ '            {{#messageDetailHtml message.detail}}{{/messageDetailHtml}}'
++ '          </div>'
 + '        </div>'
++ '      {{/if}}'
++ '      {{#if error}}'
++ '        <b>{{error.text}}</b>'
++ '        <br>'
++ '        {{#if error.detail}}'
++ '          <div style="margin-left: 1em">'
++ '            {{#messageDetailHtml error.detail}}{{/messageDetailHtml}}'
++ '          </div>'
++ '        {{/if}}'
++ '        {{#if error.stackTraceHash}}'
++ '          <div style="margin-left: 1em">'
++ '            <a href="#" onclick="viewStackTrace(\'{{error.stackTraceHash}}\'); return false">'
++ '              error stack trace'
++ '            </a>'
++ '          </div>'
++ '        {{/if}}'
 + '      {{/if}}'
 + '      {{#if stackTraceHash}}'
 + '        <a href="#" onclick="viewStackTrace(\'{{stackTraceHash}}\'); return false">'
-+ '          view stack trace'
++ '          span stack trace'
 + '        </a>'
++ '        <br>'
 + '      {{/if}}'
 + '    </div>'
 + '  </div>'
@@ -132,15 +152,15 @@ Handlebars.registerHelper('date', function(timestamp) {
 Handlebars.registerHelper('nanosToMillis', function(nanos) {
   return (nanos / 1000000).toFixed(1)
 })
-Handlebars.registerHelper('contextMapHtml', function(contextMap) {
-  function contextMapHtml(contextMap) {
+Handlebars.registerHelper('messageDetailHtml', function(detail) {
+  function messageDetailHtml(detail) {
     var ret = ''
-    $.each(contextMap, function(propName, propVal) {
+    $.each(detail, function(propName, propVal) {
       ret += propName + ':'
       if (typeof propVal == 'object') {
         ret += '<br>'
         ret += '<div style="margin-left: 1em">'
-        ret += contextMapHtml(propVal)
+        ret += messageDetailHtml(propVal)
         ret += '</div>'
       } else {
         ret += ' ' + propVal + '<br>'
@@ -148,7 +168,7 @@ Handlebars.registerHelper('contextMapHtml', function(contextMap) {
     })
     return ret
   }
-  return contextMapHtml(contextMap)
+  return messageDetailHtml(detail)
 })
 Handlebars.registerHelper('ifLongDescription', function(description, options) {
   if (description.length > 160) {
@@ -157,8 +177,8 @@ Handlebars.registerHelper('ifLongDescription', function(description, options) {
     return options.inverse(this)
   }
 })
-Handlebars.registerHelper('margin', function(level) {
-  return 5 + level
+Handlebars.registerHelper('margin', function(nestingLevel) {
+  return 5 + nestingLevel
 })
 Handlebars.registerHelper('short', function(description) {
   if (description.length <= 160) {

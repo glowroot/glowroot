@@ -84,12 +84,13 @@ public abstract class PluginServices {
 
     public abstract void addSpan(Supplier<Message> messageSupplier);
 
-    public abstract void addErrorSpan(Supplier<Message> messageSupplier, Throwable t);
+    // does not mark trace as error
+    public abstract void addErrorSpan(ErrorMessage errorMessage);
 
     public abstract void setUsername(Supplier<String> usernameSupplier);
 
     // sets trace attribute in
-    public abstract void putTraceAttribute(String name, @Nullable String value);
+    public abstract void setTraceAttribute(String name, @Nullable String value);
 
     @Nullable
     public abstract Supplier<Message> getRootMessageSupplier();
@@ -174,11 +175,11 @@ public abstract class PluginServices {
         @Override
         public void addSpan(Supplier<Message> messageSupplier) {}
         @Override
-        public void addErrorSpan(Supplier<Message> messageSupplier, Throwable t) {}
+        public void addErrorSpan(ErrorMessage errorMessage) {}
         @Override
         public void setUsername(Supplier<String> usernameSupplier) {}
         @Override
-        public void putTraceAttribute(String name, @Nullable String value) {}
+        public void setTraceAttribute(String name, @Nullable String value) {}
         @Override
         @Nullable
         public Supplier<Message> getRootMessageSupplier() {
@@ -197,7 +198,7 @@ public abstract class PluginServices {
         private static class NopSpan implements Span {
             private static final NopSpan INSTANCE = new NopSpan();
             public void end() {}
-            public void endWithError(@Nullable Throwable t) {}
+            public void endWithError(ErrorMessage errorMessage) {}
             public void updateMessage(MessageUpdater updater) {}
         }
 

@@ -42,8 +42,10 @@ import org.informantproject.testkit.Trace.Span;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.mock.web.MockFilterConfig;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.mock.web.MockServletConfig;
 
 /**
  * Basic test of the servlet plugin.
@@ -77,7 +79,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /testservlet");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
     }
 
     @Test
@@ -90,7 +92,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /testfilter");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
     }
 
     @Test
@@ -103,7 +105,7 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /testfilter");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
     }
 
     @Test
@@ -409,12 +411,12 @@ public class ServletPluginTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getDescription()).isEqualTo("GET /testservlet");
-        assertThat(trace.getSpans().get(0).getContextMap()
+        assertThat(trace.getSpans().get(0).getMessage().getDetail()
                 .get("session id (at beginning of this request)")).isEqualTo("1234");
-        assertThat(trace.getSpans().get(0).getContextMap()
+        assertThat(trace.getSpans().get(0).getMessage().getDetail()
                 .get("session id (updated during this request)")).isEqualTo("");
         Span span = trace.getSpans().get(0);
-        assertThat(span.getDescription()).isEqualTo("GET /testservlet");
+        assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
     }
 
     @Test
@@ -474,23 +476,24 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.isError()).isTrue();
+        assertThat(trace.getError()).isNotNull();
+        assertThat(trace.getError().getText()).isNotNull();
+        assertThat(trace.getError().getStackTrace()).isNotNull();
     }
 
     @Test
-    public void testReturns404() throws Exception {
+    public void testSend404Error() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(10000);
+        container.getInformant().setThresholdMillis(0);
         // when
-        container.executeAppUnderTest(Returns404.class);
+        container.executeAppUnderTest(Send404Error.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.isError()).isTrue();
-        assertThat(trace.getSpans().get(0).isError()).isFalse();
-        assertThat(trace.getSpans().get(1).isError()).isTrue();
-        assertThat(trace.getSpans().get(1).getDescription()).isEqualTo(
-                "HttpServletResponse.setStatus(404)");
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.getError()).isNotNull();
+        assertThat(trace.getSpans().get(0).getError()).isNotNull();
+        assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
+                "sendError, HTTP status code 404");
     }
 
     private PluginConfig getPluginConfig() throws Exception {
@@ -504,14 +507,14 @@ public class ServletPluginTest {
     @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, String> getSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getSpans().get(0).getContextMap()
+        return (Map<String, String>) trace.getSpans().get(0).getMessage().getDetail()
                 .get("session attributes");
     }
 
     @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getSpans().get(0).getContextMap()
+        return (Map<String, String>) trace.getSpans().get(0).getMessage().getDetail()
                 .get("session attributes (updated during this request)");
     }
 
@@ -524,7 +527,7 @@ public class ServletPluginTest {
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {
-            new TestServlet().service(request, response);
+            new TestFilter().doFilter(request, response, chain);
         }
     }
 
@@ -539,7 +542,7 @@ public class ServletPluginTest {
     @SuppressWarnings("serial")
     public static class TestServletInit extends HttpServlet implements AppUnderTest {
         public void executeApp() throws ServletException {
-            init(null);
+            init(new MockServletConfig());
         }
         @Override
         public void init(ServletConfig config) throws ServletException {
@@ -551,7 +554,7 @@ public class ServletPluginTest {
 
     public static class TestFilterInit implements AppUnderTest, Filter {
         public void executeApp() {
-            init(null);
+            init(new MockFilterConfig());
         }
         public void init(FilterConfig filterConfig) {}
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -659,8 +662,7 @@ public class ServletPluginTest {
     public static class InvalidateSession extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            ((MockHttpServletRequest) request).setSession(new MockHttpSession(request
-                    .getServletContext(), "1234"));
+            ((MockHttpServletRequest) request).setSession(new MockHttpSession(null, "1234"));
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
@@ -689,10 +691,11 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class Returns404 extends TestServlet {
+    public static class Send404Error extends TestServlet {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            response.setStatus(404);
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws IOException {
+            response.sendError(404);
         }
     }
 

@@ -219,11 +219,11 @@ public class SomeAspect {
             onAfterTarget.set(target);
         }
         public static void resetThreadLocals() {
-            isEnabledTarget.set(null);
-            onBeforeTarget.set(null);
-            onReturnTarget.set(null);
-            onThrowTarget.set(null);
-            onAfterTarget.set(null);
+            isEnabledTarget.remove();
+            onBeforeTarget.remove();
+            onReturnTarget.remove();
+            onThrowTarget.remove();
+            onAfterTarget.remove();
         }
     }
 
@@ -257,11 +257,11 @@ public class SomeAspect {
             onAfterParams.set(new Object[] { one, two });
         }
         public static void resetThreadLocals() {
-            isEnabledParams.set(null);
-            onBeforeParams.set(null);
-            onReturnParams.set(null);
-            onThrowParams.set(null);
-            onAfterParams.set(null);
+            isEnabledParams.remove();
+            onBeforeParams.remove();
+            onReturnParams.remove();
+            onThrowParams.remove();
+            onAfterParams.remove();
         }
     }
 
@@ -287,9 +287,9 @@ public class SomeAspect {
             onAfterTraveler.set(traveler);
         }
         public static void resetThreadLocals() {
-            onReturnTraveler.set(null);
-            onThrowTraveler.set(null);
-            onAfterTraveler.set(null);
+            onReturnTraveler.remove();
+            onThrowTraveler.remove();
+            onAfterTraveler.remove();
         }
     }
 
@@ -301,7 +301,7 @@ public class SomeAspect {
             returnValue.set(value);
         }
         public static void resetThreadLocals() {
-            returnValue.set(null);
+            returnValue.remove();
         }
     }
 
@@ -313,7 +313,7 @@ public class SomeAspect {
             throwable.set(t);
         }
         public static void resetThreadLocals() {
-            throwable.set(null);
+            throwable.remove();
         }
     }
 
@@ -346,11 +346,11 @@ public class SomeAspect {
             onAfterMethodName.set(methodName);
         }
         public static void resetThreadLocals() {
-            isEnabledMethodName.set(null);
-            onBeforeMethodName.set(null);
-            onReturnMethodName.set(null);
-            onThrowMethodName.set(null);
-            onAfterMethodName.set(null);
+            isEnabledMethodName.remove();
+            onBeforeMethodName.remove();
+            onReturnMethodName.remove();
+            onThrowMethodName.remove();
+            onAfterMethodName.remove();
         }
     }
 

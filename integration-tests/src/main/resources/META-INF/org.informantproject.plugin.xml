@@ -43,5 +43,7 @@
       <aspect>org.informantproject.test.plugin.LevelOneAspect</aspect>
       <aspect>org.informantproject.test.plugin.LevelTwoAspect</aspect>
       <aspect>org.informantproject.test.plugin.LevelThreeAspect</aspect>
+      <aspect>org.informantproject.test.plugin.LogErrorAspect</aspect>
+      <aspect>org.informantproject.test.plugin.PauseAspect</aspect>
     </aspects>
 </plugin>

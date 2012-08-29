@@ -18,6 +18,7 @@ package org.informantproject.core.trace;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.Supplier;
 
@@ -33,7 +34,10 @@ import org.informantproject.api.Supplier;
 @ThreadSafe
 public class Span {
 
+    @Nullable
     private final Supplier<Message> messageSupplier;
+    @Nullable
+    private volatile ErrorMessage errorMessage;
 
     private final long traceStartTick;
     private final long startTick;
@@ -43,32 +47,36 @@ public class Span {
     private final int index;
     private final int parentIndex;
 
-    // level is just a convenience for output
-    private final int level;
+    // nesting is just a convenience for output
+    private final int nestingLevel;
 
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
     private final TraceMetric traceMetric;
 
-    private volatile boolean error;
-
     @Nullable
-    private volatile StackTraceElement[] stackTraceElements;
+    private volatile StackTraceElement[] stackTrace;
 
-    Span(Supplier<Message> messageSupplier, long traceStartTick, long startTick, int index,
-            int parentIndex, int level, @Nullable TraceMetric traceMetric) {
+    Span(@Nullable Supplier<Message> messageSupplier, long traceStartTick, long startTick,
+            int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
 
         this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
         this.startTick = startTick;
         this.index = index;
         this.parentIndex = parentIndex;
-        this.level = level;
+        this.nestingLevel = nesting;
         this.traceMetric = traceMetric;
     }
 
+    @Nullable
     public Supplier<Message> getMessageSupplier() {
         return messageSupplier;
+    }
+
+    @Nullable
+    public ErrorMessage getErrorMessage() {
+        return errorMessage;
     }
 
     public long getStartTick() {
@@ -92,17 +100,13 @@ public class Span {
         return parentIndex;
     }
 
-    public int getLevel() {
-        return level;
-    }
-
-    public boolean isError() {
-        return error;
+    public int getNestingLevel() {
+        return nestingLevel;
     }
 
     @Nullable
-    public StackTraceElement[] getStackTraceElements() {
-        return stackTraceElements;
+    public StackTraceElement[] getStackTrace() {
+        return stackTrace;
     }
 
     @Nullable
@@ -110,15 +114,15 @@ public class Span {
         return traceMetric;
     }
 
+    void setErrorMessage(ErrorMessage errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
     void setEndTick(long endTick) {
         this.endTick = endTick;
     }
 
-    void setError(boolean error) {
-        this.error = error;
-    }
-
-    public void setStackTraceElements(@Nullable StackTraceElement[] stackTraceElements) {
-        this.stackTraceElements = stackTraceElements;
+    public void setStackTrace(@Nullable StackTraceElement[] stackTrace) {
+        this.stackTrace = stackTrace;
     }
 }

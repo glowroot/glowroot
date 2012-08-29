@@ -15,16 +15,13 @@
  */
 package org.informantproject.local.trace;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.core.util.ByteStream;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Structure used as part of the response to "/trace/details".
@@ -32,50 +29,55 @@ import com.google.common.collect.ImmutableMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
+// TODO make this Immutable by storing Supplier<ByteStream> for spans and mergedStackTrace
+@ThreadSafe
 public class TraceSnapshot {
 
     private final String id;
     private final long startAt;
     private final boolean stuck;
-    private final boolean error;
     private final long duration; // nanoseconds
     private final boolean completed;
     private final String description;
     @Nullable
+    private final String attributes; // json data
+    @Nullable
     private final String username;
     @Nullable
-    private final String attributes;
+    private final String errorText;
     @Nullable
-    private final String metrics;
+    private final String errorDetail; // json data
+    @Nullable
+    private final String errorStackTrace; // json data
+    @Nullable
+    private final String metrics; // json data
     // using ByteStream so these potentially very large strings can be streamed without consuming
     // large amounts of memory
     @Nullable
-    private final ByteStream spans;
+    private final ByteStream spans; // json data
     @Nullable
-    private final ImmutableMap<String, String> spanStackTraces;
-    @Nullable
-    private final ByteStream mergedStackTree;
+    private final ByteStream mergedStackTree; // json data
 
-    private TraceSnapshot(String id, long startAt, boolean stuck, boolean error, long duration,
-            boolean completed, String description, @Nullable String username,
-            @Nullable String attributes, @Nullable String metrics, @Nullable ByteStream spans,
-            @Nullable ImmutableMap<String, String> spanStackTraces,
+    private TraceSnapshot(String id, long startAt, boolean stuck, long duration, boolean completed,
+            String description, @Nullable String attributes, @Nullable String username,
+            @Nullable String errorText, @Nullable String errorDetail,
+            @Nullable String errorStackTrace, @Nullable String metrics, @Nullable ByteStream spans,
             @Nullable ByteStream mergedStackTree) {
 
         this.id = id;
         this.startAt = startAt;
         this.stuck = stuck;
-        this.error = error;
         this.duration = duration;
         this.completed = completed;
         this.description = description;
-        this.username = username;
         this.attributes = attributes;
+        this.username = username;
+        this.errorText = errorText;
+        this.errorDetail = errorDetail;
+        this.errorStackTrace = errorStackTrace;
         this.metrics = metrics;
         this.spans = spans;
         this.mergedStackTree = mergedStackTree;
-        this.spanStackTraces = spanStackTraces;
     }
 
     String getId() {
@@ -88,10 +90,6 @@ public class TraceSnapshot {
 
     boolean isStuck() {
         return stuck;
-    }
-
-    boolean isError() {
-        return error;
     }
 
     long getDuration() {
@@ -107,13 +105,28 @@ public class TraceSnapshot {
     }
 
     @Nullable
+    String getAttributes() {
+        return attributes;
+    }
+
+    @Nullable
     String getUsername() {
         return username;
     }
 
     @Nullable
-    String getAttributes() {
-        return attributes;
+    String getErrorText() {
+        return errorText;
+    }
+
+    @Nullable
+    String getErrorDetail() {
+        return errorDetail;
+    }
+
+    @Nullable
+    String getErrorStackTrace() {
+        return errorStackTrace;
     }
 
     @Nullable
@@ -124,11 +137,6 @@ public class TraceSnapshot {
     @Nullable
     ByteStream getSpans() {
         return spans;
-    }
-
-    @Nullable
-    Map<String, String> getSpanStackTraces() {
-        return spanStackTraces;
     }
 
     @Nullable
@@ -145,8 +153,11 @@ public class TraceSnapshot {
                 .add("duration", duration)
                 .add("completed", completed)
                 .add("description", description)
-                .add("username", username)
                 .add("attributes", attributes)
+                .add("username", username)
+                .add("errorText", errorText)
+                .add("errorDetail", errorDetail)
+                .add("errorStackTrace", errorStackTrace)
                 .add("metrics", metrics);
         return toStringHelper.toString();
     }
@@ -161,21 +172,24 @@ public class TraceSnapshot {
         private String id;
         private long startAt;
         private boolean stuck;
-        private boolean error;
         private long duration;
         private boolean completed;
         @Nullable
         private String description;
         @Nullable
+        private String attributes;
+        @Nullable
         private String username;
         @Nullable
-        private String attributes;
+        private String errorText;
+        @Nullable
+        private String errorDetail;
+        @Nullable
+        private String errorStackTrace;
         @Nullable
         private String metrics;
         @Nullable
         private ByteStream spans;
-        @Nullable
-        private ImmutableMap<String, String> spanStackTraces;
         @Nullable
         private ByteStream mergedStackTree;
 
@@ -196,11 +210,6 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder error(boolean error) {
-            this.error = error;
-            return this;
-        }
-
         Builder duration(long duration) {
             this.duration = duration;
             return this;
@@ -216,13 +225,28 @@ public class TraceSnapshot {
             return this;
         }
 
+        Builder attributes(@Nullable String attributes) {
+            this.attributes = attributes;
+            return this;
+        }
+
         Builder username(@Nullable String username) {
             this.username = username;
             return this;
         }
 
-        Builder attributes(@Nullable String attributes) {
-            this.attributes = attributes;
+        Builder errorText(String errorText) {
+            this.errorText = errorText;
+            return this;
+        }
+
+        Builder errorDetail(@Nullable String errorDetail) {
+            this.errorDetail = errorDetail;
+            return this;
+        }
+
+        Builder errorStackTrace(String errorStackTrace) {
+            this.errorStackTrace = errorStackTrace;
             return this;
         }
 
@@ -236,19 +260,15 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder spanStackTraces(@Nullable ImmutableMap<String, String> spanStackTraces) {
-            this.spanStackTraces = spanStackTraces;
-            return this;
-        }
-
         Builder mergedStackTree(@Nullable ByteStream mergedStackTree) {
             this.mergedStackTree = mergedStackTree;
             return this;
         }
 
         TraceSnapshot build() {
-            return new TraceSnapshot(id, startAt, stuck, error, duration, completed, description,
-                    username, attributes, metrics, spans, spanStackTraces, mergedStackTree);
+            return new TraceSnapshot(id, startAt, stuck, duration, completed, description,
+                    attributes, username, errorText, errorDetail, errorStackTrace, metrics, spans,
+                    mergedStackTree);
         }
     }
 }

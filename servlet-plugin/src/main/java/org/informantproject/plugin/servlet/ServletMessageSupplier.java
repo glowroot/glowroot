@@ -105,9 +105,9 @@ class ServletMessageSupplier implements Supplier<Message> {
     }
 
     public Message get() {
-        ImmutableMap.Builder<String, Object> contextMap = ImmutableMap.builder();
-        addRequestParametersContextMap(contextMap);
-        addSessionAttributesContextMap(contextMap);
+        ImmutableMap.Builder<String, Object> detail = ImmutableMap.builder();
+        addRequestParameterDetail(detail);
+        addSessionAttributeDetail(detail);
         String message;
         if (requestMethod == null && requestURI == null) {
             message = "";
@@ -118,7 +118,7 @@ class ServletMessageSupplier implements Supplier<Message> {
         } else {
             message = requestMethod + " " + requestURI;
         }
-        return TemplateMessage.of(message, contextMap.build());
+        return TemplateMessage.of(message, detail.build());
     }
 
     boolean isRequestParameterMapCaptured() {
@@ -164,40 +164,40 @@ class ServletMessageSupplier implements Supplier<Message> {
         return sessionIdUpdatedValue;
     }
 
-    private void addRequestParametersContextMap(ImmutableMap.Builder<String, Object> contextMap) {
+    private void addRequestParameterDetail(ImmutableMap.Builder<String, Object> detail) {
         if (requestParameterMap != null && !requestParameterMap.isEmpty()) {
-            ImmutableMap.Builder<String, Object> nestedContextMap = ImmutableMap.builder();
+            ImmutableMap.Builder<String, Object> nestedDetail = ImmutableMap.builder();
             for (String parameterName : requestParameterMap.keySet()) {
                 String[] values = requestParameterMap.get(parameterName);
                 if (values.length == 0) {
-                    nestedContextMap.put(parameterName, "");
+                    nestedDetail.put(parameterName, "");
                 } else if (values.length == 1) {
-                    nestedContextMap.put(parameterName, values[0]);
+                    nestedDetail.put(parameterName, values[0]);
                 } else {
-                    nestedContextMap.put(parameterName, Joiner.on(", ").join(values));
+                    nestedDetail.put(parameterName, Joiner.on(", ").join(values));
                 }
             }
-            contextMap.put("request parameters", nestedContextMap.build());
+            detail.put("request parameters", nestedDetail.build());
         }
     }
 
-    private void addSessionAttributesContextMap(ImmutableMap.Builder<String, Object> contextMap) {
+    private void addSessionAttributeDetail(ImmutableMap.Builder<String, Object> detail) {
         if (sessionIdUpdatedValue != null) {
-            contextMap.put("session id (at beginning of this request)",
+            detail.put("session id (at beginning of this request)",
                     Objects.firstNonNull(sessionIdInitialValue, ""));
-            contextMap.put("session id (updated during this request)", sessionIdUpdatedValue);
+            detail.put("session id (updated during this request)", sessionIdUpdatedValue);
         } else if (sessionIdInitialValue != null) {
-            contextMap.put("session id", sessionIdInitialValue);
+            detail.put("session id", sessionIdInitialValue);
         }
         if (sessionAttributeInitialValueMap != null && sessionAttributeUpdatedValueMap == null) {
             // session attributes were captured at the beginning of the request, and no session
             // attributes were updated mid-request
-            contextMap.put("session attributes", sessionAttributeInitialValueMap);
+            detail.put("session attributes", sessionAttributeInitialValueMap);
         } else if (sessionAttributeInitialValueMap == null
                 && sessionAttributeUpdatedValueMap != null) {
             // no session attributes were available at the beginning of the request, and session
             // attributes were updated mid-request
-            contextMap.put("session attributes (updated during this request)",
+            detail.put("session attributes (updated during this request)",
                     sessionAttributeUpdatedValueMap);
         } else if (sessionAttributeUpdatedValueMap != null) {
             // session attributes were updated mid-request
@@ -205,20 +205,20 @@ class ServletMessageSupplier implements Supplier<Message> {
                     ImmutableMap.builder();
             sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
             // add empty values into initial values for any updated attributes that are not already
-            // present in initial values nested context map
+            // present in initial values nested detail map
             for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
                     .entrySet()) {
                 if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
                     sessionAttributeInitialValuePlusMap.put(entry.getKey(), Optional.absent());
                 }
             }
-            contextMap.put("session attributes (at beginning of this request)",
+            detail.put("session attributes (at beginning of this request)",
                     sessionAttributeInitialValuePlusMap.build());
-            contextMap.put("session attributes (updated during this request)",
+            detail.put("session attributes (updated during this request)",
                     sessionAttributeUpdatedValueMap);
         } else {
             // both initial and updated value maps are null so there is nothing to add to the
-            // context map
+            // detail map
         }
     }
 }
