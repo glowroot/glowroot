@@ -52,11 +52,11 @@ public class StuckTraceTest {
     }
 
     @Test
-    public void shouldReadTraces() throws Exception {
+    public void shouldReadActiveStuckTrace() throws Exception {
         // given
         CoreProperties coreProperties = container.getInformant().getCoreProperties();
         coreProperties.setThresholdMillis(0);
-        coreProperties.setStuckThresholdSeconds(1);
+        coreProperties.setStuckThresholdSeconds(0);
         container.getInformant().updateCoreProperties(coreProperties);
         // when
         ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
@@ -71,14 +71,12 @@ public class StuckTraceTest {
         // need to give container enough time to start up and for the trace to get stuck
         // loop in order to not wait too little or too much
         Trace trace = null;
-        // sleep a bit, no point in over polling
-        Thread.sleep(1000);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 200; i++) {
             trace = container.getInformant().getActiveTrace();
             if (trace != null && trace.isStuck()) {
                 break;
             }
-            Thread.sleep(50);
+            Thread.sleep(25);
         }
         if (trace == null) {
             throw new AssertionError("no active trace found");
@@ -99,7 +97,9 @@ public class StuckTraceTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            Thread.sleep(1200);
+            // stuck trace collector polls for stuck traces every 100 milliseconds,
+            // and this test polls for active stuck traces every 25 milliseconds
+            Thread.sleep(150);
         }
     }
 }
