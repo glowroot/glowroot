@@ -40,6 +40,8 @@ import org.informantproject.core.trace.Trace.TraceAttribute;
 import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -60,6 +62,8 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class TraceSnapshotService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotService.class);
 
     private static final Gson gson = new Gson();
 
@@ -339,7 +343,15 @@ public class TraceSnapshotService {
                 jw.name("message");
                 jw.beginObject();
                 jw.name("text");
-                jw.value(message.getText());
+                String text;
+                try {
+                    text = message.getText();
+                } catch (Throwable t) {
+                    // getText() could be plugin provided, e.g. if not using TemplateMessage
+                    text = "an error occurred calling getText() on " + message.getClass().getName();
+                    logger.warn(text, t);
+                }
+                jw.value(text);
                 Map<String, ?> detail = message.getDetail();
                 if (detail != null && !detail.isEmpty()) {
                     jw.name("detail");

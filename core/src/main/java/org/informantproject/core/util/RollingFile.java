@@ -21,6 +21,8 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 
 import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.slf4j.Logger;
@@ -33,14 +35,16 @@ import com.ning.compress.lzf.LZFOutputStream;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 public class RollingFile {
 
     private static final Logger logger = LoggerFactory.getLogger(RollingFile.class);
 
     private final File rollingFile;
+    @GuardedBy("lock")
     private final RollingOutputStream rollingOut;
+    @GuardedBy("lock")
     private final OutputStream compressedOut;
-
     @GuardedBy("lock")
     private RandomAccessFile inFile;
     private final Object lock = new Object();
@@ -96,6 +100,7 @@ public class RollingFile {
         Files.delete(rollingFile);
     }
 
+    @NotThreadSafe
     private class FileBlockByteStream extends ByteStream {
 
         private final FileBlock block;

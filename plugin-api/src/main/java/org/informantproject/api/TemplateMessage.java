@@ -88,7 +88,15 @@ public class TemplateMessage implements Message, Supplier<Message> {
                 text.append(" -- error, not enough args --");
                 break;
             }
-            text.append(args[argIndex++]);
+            String argText;
+            try {
+                argText = String.valueOf(args[argIndex++]);
+            } catch (Throwable t) {
+                argText = "an error occurred calling toString() on an instance of "
+                        + args[argIndex++].getClass().getName();
+                logger.warn(argText, t);
+            }
+            text.append(argText);
             curr = next + 2; // +2 to skip over "}}"
         }
         text.append(template.substring(curr));
