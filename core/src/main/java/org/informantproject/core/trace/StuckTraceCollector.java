@@ -70,7 +70,7 @@ public class StuckTraceCollector implements Runnable {
         try {
             runInternal();
         } catch (Exception e) {
-            // log and terminate this thread successfully
+            // log and terminate successfully
             logger.error(e.getMessage(), e);
         } catch (Error e) {
             // log and re-throw serious error which will terminate subsequent scheduled executions

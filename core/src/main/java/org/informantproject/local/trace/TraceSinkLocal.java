@@ -88,7 +88,10 @@ public class TraceSinkLocal implements TraceSink {
 
     public void onStuckTrace(Trace trace) {
         try {
-            traceSnapshotDao.storeSnapshot(traceSnapshotService.from(trace, ticker.read()));
+            TraceSnapshot snaphsot = traceSnapshotService.from(trace, ticker.read());
+            if (!trace.isCompleted()) {
+                traceSnapshotDao.storeSnapshot(snaphsot);
+            }
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }

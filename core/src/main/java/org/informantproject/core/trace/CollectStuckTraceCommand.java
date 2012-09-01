@@ -15,8 +15,6 @@
  */
 package org.informantproject.core.trace;
 
-import java.lang.ref.WeakReference;
-
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.slf4j.Logger;
@@ -35,25 +33,30 @@ class CollectStuckTraceCommand implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CollectStuckTraceCommand.class);
 
-    // since it's possible for this scheduled command to live for a while
-    // after the trace has completed, a weak reference is used to make sure
-    // it won't prevent the (larger) trace structure from being garbage collected
-    private final WeakReference<Trace> traceHolder;
-
+    private final Trace trace;
     private final TraceSink traceSink;
+    private volatile boolean tracePreviouslyCompleted;
 
     CollectStuckTraceCommand(Trace trace, TraceSink traceSink) {
-        this.traceHolder = new WeakReference<Trace>(trace);
+        this.trace = trace;
         this.traceSink = traceSink;
     }
 
     public void run() {
-        Trace trace = traceHolder.get();
-        if (trace == null || trace.isCompleted()) {
-            // already completed
-            return;
-        }
         logger.debug("run(): trace.id={}", trace.getId());
+        if (trace.isCompleted()) {
+            if (tracePreviouslyCompleted) {
+                logger.warn("trace '{}' already completed", trace.getRootSpan()
+                        .getMessageSupplier().get().getText());
+                throw new IllegalStateException("Trace already completed, just throwing to"
+                        + " terminate subsequent scheduled executions");
+            } else {
+                // there is a small window between trace completion and cancellation of this command
+                // so give it one extra chance to be completed normally
+                tracePreviouslyCompleted = true;
+                return;
+            }
+        }
         if (trace.setStuck()) {
             // already marked as stuck
             return;

@@ -100,7 +100,7 @@ public class Trace {
     private final WeakReference<Thread> threadHolder = new WeakReference<Thread>(
             Thread.currentThread());
 
-    // these are stored in the trace so that they can be cancelled
+    // these are stored in the trace so that they can be canceled
     @Nullable
     private volatile ScheduledFuture<?> captureStackTraceScheduledFuture;
     @Nullable
@@ -256,7 +256,11 @@ public class Trace {
         if (thread != null) {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
-            mergedStackTree.addStackTrace(threadInfo);
+            // check if trace is completed to avoid small window between trace completion and
+            // canceling the scheduled command that invokes this method
+            if (!rootSpan.isCompleted()) {
+                mergedStackTree.addStackTrace(threadInfo);
+            }
         }
     }
 

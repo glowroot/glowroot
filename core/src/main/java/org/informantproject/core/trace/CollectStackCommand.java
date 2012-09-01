@@ -15,7 +15,6 @@
  */
 package org.informantproject.core.trace;
 
-import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -40,25 +39,31 @@ class CollectStackCommand implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CollectStackCommand.class);
 
-    // since it's possible for this scheduled command to live for a while
-    // after the trace has completed, a weak reference is used to make sure
-    // it won't prevent the (larger) trace structure from being garbage collected
-    private final WeakReference<Trace> traceHolder;
+    private final Trace trace;
+    private volatile boolean tracePreviouslyCompleted;
 
     CollectStackCommand(Trace trace) {
-        this.traceHolder = new WeakReference<Trace>(trace);
+        this.trace = trace;
     }
 
     public void run() {
-        Trace trace = traceHolder.get();
-        if (trace == null || trace.isCompleted()) {
-            throw new IllegalStateException("Don't log me, just want to tell"
-                    + " the scheduler to cancel subsequent executions");
+        if (trace.isCompleted()) {
+            if (tracePreviouslyCompleted) {
+                logger.warn("trace '{}' already completed", trace.getRootSpan()
+                        .getMessageSupplier().get().getText());
+                throw new IllegalStateException("Trace already completed, just throwing to"
+                        + " terminate subsequent scheduled executions");
+            } else {
+                // there is a small window between trace completion and cancellation of this command
+                // so give it one extra chance to be completed normally
+                tracePreviouslyCompleted = true;
+                return;
+            }
         }
         try {
             trace.captureStackTrace();
         } catch (Exception e) {
-            // log and terminate this thread successfully
+            // log and terminate successfully
             logger.error(e.getMessage(), e);
         } catch (Error e) {
             // log and re-throw serious error which will terminate subsequent scheduled executions
