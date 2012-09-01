@@ -110,27 +110,51 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     @Nullable
     public String getStringProperty(String propertyName) {
+        if (propertyName == null) {
+            logger.warn("getStringProperty(): argument 'propertyName' must be non-null");
+            return null;
+        }
         return pluginConfig.getStringProperty(propertyName);
     }
 
     @Override
     public boolean getBooleanProperty(String propertyName) {
+        if (propertyName == null) {
+            logger.warn("getBooleanProperty(): argument 'propertyName' must be non-null");
+            return false;
+        }
         return pluginConfig.getBooleanProperty(propertyName);
     }
 
     @Override
     @Nullable
     public Double getDoubleProperty(String propertyName) {
+        if (propertyName == null) {
+            logger.warn("getDoubleProperty(): argument 'propertyName' must be non-null");
+            return null;
+        }
         return pluginConfig.getDoubleProperty(propertyName);
     }
 
     @Override
     public void registerConfigListener(ConfigListener listener) {
+        if (listener == null) {
+            logger.warn("registerConfigListener(): argument 'listener' must be non-null");
+            return;
+        }
         configService.addConfigListener(listener);
     }
 
     @Override
     public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
+        if (messageSupplier == null) {
+            logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
+            return NopSpan.INSTANCE;
+        }
+        if (metric == null) {
+            logger.warn("startTrace(): argument 'metric' must be non-null");
+            return NopSpan.INSTANCE;
+        }
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
             currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker,
@@ -144,6 +168,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
+        if (messageSupplier == null) {
+            logger.warn("startSpan(): argument 'messageSupplier' must be non-null");
+            return NopSpan.INSTANCE;
+        }
+        if (metric == null) {
+            logger.warn("startSpan(): argument 'metric' must be non-null");
+            return NopSpan.INSTANCE;
+        }
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
             return NopSpan.INSTANCE;
@@ -154,6 +186,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public Timer startTimer(Metric metric) {
+        if (metric == null) {
+            logger.warn("startTimer(): argument 'metric' must be non-null");
+            return NopTimer.INSTANCE;
+        }
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace == null) {
             // TODO return global collector?
@@ -165,6 +201,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void addSpan(Supplier<Message> messageSupplier) {
+        if (messageSupplier == null) {
+            logger.warn("addSpan(): argument 'messageSupplier' must be non-null");
+            return;
+        }
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace != null) {
             int maxEntries = coreConfig.getMaxEntries();
@@ -178,6 +218,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void addErrorSpan(ErrorMessage errorMessage) {
+        if (errorMessage == null) {
+            logger.warn("addErrorSpan(): argument 'errorMessage' must be non-null");
+            return;
+        }
         // don't use span limit when adding errors
         Trace currentTrace = traceRegistry.getCurrentTrace();
         if (currentTrace != null) {
@@ -187,6 +231,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void setUsername(Supplier<String> usernameSupplier) {
+        if (usernameSupplier == null) {
+            logger.warn("setUsername(): argument 'usernameSupplier' must be non-null");
+            return;
+        }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUsernameSupplier(usernameSupplier);
@@ -195,6 +243,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void setTraceAttribute(String name, @Nullable String value) {
+        if (name == null) {
+            logger.warn("setTraceAttribute(): argument 'name' must be non-null");
+            return;
+        }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setAttribute(name, value);
@@ -244,7 +296,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         public void endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
-                logger.warn("endWithError(): errorMessage must be non-null");
+                logger.warn("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
                 end();
             } else {
@@ -253,7 +305,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         public void updateMessage(MessageUpdater updater) {
             if (updater == null) {
-                logger.warn("updateMessage(): updater must be non-null");
+                logger.warn("updateMessage(): argument 'updater' must be non-null");
             } else {
                 updater.update(span.getMessageSupplier());
             }
@@ -311,22 +363,22 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         public void endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
-                logger.warn("endWithError(): errorMessage must be non-null");
+                logger.warn("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
                 end();
-            } else {
-                timer.end();
-                // span won't necessarily be nested properly, and won't have any timing data, but at
-                // least the error will get captured
-                currentTrace.addSpan(messageSupplier, errorMessage);
+                return;
             }
+            timer.end();
+            // span won't necessarily be nested properly, and won't have any timing data, but at
+            // least the error will get captured
+            currentTrace.addSpan(messageSupplier, errorMessage);
         }
         public void updateMessage(MessageUpdater updater) {
             if (updater == null) {
-                logger.warn("updateMessage(): updater must be non-null");
-            } else {
-                updater.update(messageSupplier);
+                logger.warn("updateMessage(): argument 'updater' must be non-null");
+                return;
             }
+            updater.update(messageSupplier);
         }
     }
 
