@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
  * not accept null values, e.g. org.informantproject.shaded.google.common.collect.ImmutableMap.
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to
- * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs
- * the map.
+ * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the
+ * map.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -103,8 +103,8 @@ public abstract class Message {
                     argText = String.valueOf(args[argIndex++]);
                 } catch (Throwable t) {
                     argText = "an error occurred calling toString() on an instance of "
-                            + args[argIndex++].getClass().getName();
-                    logger.warn(argText, t);
+                            + args[argIndex - 1].getClass().getName();
+                    logger.warn(argText + ", while rendering template: " + template, t);
                 }
                 text.append(argText);
                 curr = next + 2; // +2 to skip over "}}"

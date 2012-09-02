@@ -25,7 +25,7 @@ import java.sql.Statement;
 
 import org.hsqldb.jdbc.JDBCDriver;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Metric;
@@ -105,10 +105,9 @@ public class JdbcPluginPerformanceMain {
 
     private static InformantContainer setUpContainer() throws Exception {
         InformantContainer container = InformantContainer.create();
-        CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        coreProperties.setThresholdMillis(60000);
-        coreProperties.setProfilerInitialDelayMillis(60000);
-        container.getInformant().updateCoreProperties(coreProperties);
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(60000);
+        container.getInformant().updateCoreConfig(coreConfig);
         return container;
     }
 

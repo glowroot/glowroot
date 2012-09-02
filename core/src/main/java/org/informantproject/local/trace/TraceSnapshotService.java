@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
+import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
@@ -124,7 +125,10 @@ public class TraceSnapshotService {
             SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick,
                     stackTraceDao);
             builder.spans(spansByteStream);
-            builder.mergedStackTree(TraceSnapshotService.getMergedStackTree(trace));
+            builder.coarseMergedStackTree(TraceSnapshotService.getMergedStackTree(trace
+                    .getCoarseMergedStackTree()));
+            builder.fineMergedStackTree(TraceSnapshotService.getMergedStackTree(trace
+                    .getFineMergedStackTree()));
         }
         return builder.build();
     }
@@ -178,12 +182,19 @@ public class TraceSnapshotService {
             sb.setLength(0);
             byteStreams.add(snapshot.getSpans());
         }
-        if (snapshot.getMergedStackTree() != null) {
-            sb.append(",\"mergedStackTree\":");
+        if (snapshot.getCoarseMergedStackTree() != null) {
+            sb.append(",\"coarseMergedStackTree\":");
             // flush current StringBuilder as its own chunk and reset StringBuffer
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
-            byteStreams.add(snapshot.getMergedStackTree());
+            byteStreams.add(snapshot.getCoarseMergedStackTree());
+        }
+        if (snapshot.getFineMergedStackTree() != null) {
+            sb.append(",\"fineMergedStackTree\":");
+            // flush current StringBuilder as its own chunk and reset StringBuffer
+            byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
+            sb.setLength(0);
+            byteStreams.add(snapshot.getFineMergedStackTree());
         }
         sb.append("}");
         // flush current StringBuilder as its own chunk
@@ -191,6 +202,7 @@ public class TraceSnapshotService {
         return ByteStream.of(byteStreams);
     }
 
+    // this feels more performant than gson.toJson(s)
     private static String escapeJson(String s) {
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
@@ -226,8 +238,11 @@ public class TraceSnapshotService {
 
     @VisibleForTesting
     @Nullable
-    static ByteStream getMergedStackTree(Trace trace) {
-        MergedStackTreeNode rootNode = trace.getMergedStackTree().getRootNode();
+    static ByteStream getMergedStackTree(MergedStackTree mergedStackTree) {
+        if (mergedStackTree == null) {
+            return null;
+        }
+        MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
         if (rootNode == null) {
             return null;
         }

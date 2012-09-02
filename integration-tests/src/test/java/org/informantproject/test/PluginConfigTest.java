@@ -19,7 +19,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Random;
 
-import org.informantproject.test.LevelOne;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.InformantContainer;
@@ -32,7 +31,7 @@ import org.junit.Test;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PluginPropertyTest {
+public class PluginConfigTest {
 
     private static final String PLUGIN_ID = "org.informantproject:informant-integration-tests";
 
@@ -51,6 +50,15 @@ public class PluginPropertyTest {
     }
 
     @Test
+    public void shouldDisablePluginConfigBeforeAnyUpdates() throws Exception {
+        // when
+        container.getInformant().disablePlugin(PLUGIN_ID);
+        // then
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        assertThat(pluginConfig.isEnabled()).isFalse();
+    }
+
+    @Test
     public void shouldUpdateAndReadBackPluginConfig() throws Exception {
         // given
         String randomText = "Level " + random.nextLong();
@@ -58,8 +66,7 @@ public class PluginPropertyTest {
         PluginConfig randomPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         randomPluginConfig.setProperty("alternateDescription", randomText);
         randomPluginConfig.setProperty("starredDescription", randomBoolean);
-        container.getInformant().storePluginProperties(PLUGIN_ID,
-                randomPluginConfig.getPropertiesJson());
+        container.getInformant().updatePluginConfig(PLUGIN_ID, randomPluginConfig);
         // when
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         // then
@@ -80,11 +87,11 @@ public class PluginPropertyTest {
         // given
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateDescription", "a non-null value");
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateDescription", null);
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // then
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         assertThat(pluginConfig.getProperty("alternateDescription")).isNull();
@@ -93,13 +100,14 @@ public class PluginPropertyTest {
     @Test
     public void shouldReadAlternateDescription() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "org.informantproject:informant-integration-tests");
+        pluginConfig.setEnabled(true);
         pluginConfig.setProperty("alternateDescription", "Level 1");
         pluginConfig.setProperty("starredDescription", false);
-        container.getInformant().storePluginProperties("org.informantproject"
-                + ":informant-integration-tests", pluginConfig.getPropertiesJson());
+        container.getInformant().updatePluginConfig("org.informantproject"
+                + ":informant-integration-tests", pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
@@ -110,13 +118,14 @@ public class PluginPropertyTest {
     @Test
     public void shouldReadStarredDescription() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "org.informantproject:informant-integration-tests");
+        pluginConfig.setEnabled(true);
         pluginConfig.setProperty("alternateDescription", null);
         pluginConfig.setProperty("starredDescription", true);
-        container.getInformant().storePluginProperties("org.informantproject"
-                + ":informant-integration-tests", pluginConfig.getPropertiesJson());
+        container.getInformant().updatePluginConfig("org.informantproject"
+                + ":informant-integration-tests", pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then

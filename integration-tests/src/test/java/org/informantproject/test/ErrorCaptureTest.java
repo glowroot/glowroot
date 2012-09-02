@@ -48,7 +48,7 @@ public class ErrorCaptureTest {
     @Test
     public void shouldShouldCaptureError() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(10000);
+        container.getInformant().setPersistenceThresholdMillis(10000);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
@@ -63,7 +63,7 @@ public class ErrorCaptureTest {
     @Test
     public void shouldShouldCaptureErrorWithSpanStackTrace() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
         // then

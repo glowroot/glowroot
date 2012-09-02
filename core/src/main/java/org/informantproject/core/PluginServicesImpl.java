@@ -15,6 +15,7 @@
  */
 package org.informantproject.core;
 
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,8 +33,11 @@ import org.informantproject.api.Span;
 import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
+import org.informantproject.core.config.FineProfilingConfig;
 import org.informantproject.core.config.PluginConfig;
+import org.informantproject.core.trace.FineGrainedProfiler;
 import org.informantproject.core.trace.MetricImpl;
+import org.informantproject.core.trace.TerminateScheduledActionException;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.trace.TraceSink;
@@ -64,8 +68,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TraceSink traceSink;
     private final ConfigService configService;
     private final MetricCache metricCache;
+    private final FineGrainedProfiler fineGrainedProfiler;
     private final Clock clock;
     private final Ticker ticker;
+    private final Random random;
     private final WeavingMetricImpl weavingMetric;
 
     // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
@@ -78,15 +84,18 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
-            ConfigService configService, MetricCache metricCache, Clock clock, Ticker ticker,
-            WeavingMetricImpl weavingMetric, @Assisted String pluginId) {
+            ConfigService configService, MetricCache metricCache,
+            FineGrainedProfiler fineGrainedProfiler, Clock clock, Ticker ticker,
+            Random random, WeavingMetricImpl weavingMetric, @Assisted String pluginId) {
 
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configService = configService;
         this.metricCache = metricCache;
+        this.fineGrainedProfiler = fineGrainedProfiler;
         this.clock = clock;
         this.ticker = ticker;
+        this.random = random;
         this.weavingMetric = weavingMetric;
         this.pluginId = pluginId;
         // add config listener first before caching config properties to avoid a
@@ -158,6 +167,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTrace == null) {
             currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker,
                     weavingMetric);
+            FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
+            if (fineProfilingConfig.isEnabled()
+                    && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
+                fineGrainedProfiler.scheduleProfiling(currentTrace);
+            }
             traceRegistry.addTrace(currentTrace);
             return new SpanImpl(currentTrace.getRootSpan(), currentTrace);
         } else {
@@ -318,8 +332,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // since the metrics are bound to the thread, they need to be recorded and reset
                 // while still in the trace thread, before the thread is reused for another trace
                 currentTrace.clearThreadLocalMetrics();
-                cancelScheduledFuture(currentTrace.getCaptureStackTraceScheduledFuture());
-                cancelScheduledFuture(currentTrace.getStuckCommandScheduledFuture());
+                cancelScheduledFuture(currentTrace.getCoarseProfilingScheduledFuture());
+                cancelScheduledFuture(currentTrace.getStuckScheduledFuture());
+                cancelScheduledFuture(currentTrace.getFineProfilingScheduledFuture());
                 traceRegistry.removeTrace(currentTrace);
                 traceSink.onCompletedTrace(currentTrace);
             }
@@ -336,7 +351,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 } catch (InterruptedException e) {
                     logger.error(e.getMessage(), e);
                 } catch (ExecutionException e) {
-                    logger.error(e.getMessage(), e.getCause());
+                    if (!(e.getCause() instanceof TerminateScheduledActionException)) {
+                        logger.error(e.getMessage(), e.getCause());
+                    }
                 }
             }
         }

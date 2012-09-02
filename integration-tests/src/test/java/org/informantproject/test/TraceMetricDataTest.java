@@ -18,7 +18,7 @@ package org.informantproject.test;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;
@@ -47,9 +47,9 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadTraceMetricData() throws Exception {
         // given
-        CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        coreProperties.setThresholdMillis(0);
-        container.getInformant().updateCoreProperties(coreProperties);
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        container.getInformant().updateCoreConfig(coreConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then

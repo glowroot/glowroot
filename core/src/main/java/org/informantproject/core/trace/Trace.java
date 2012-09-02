@@ -87,10 +87,10 @@ public class Trace {
     // root span for this trace
     private final RootSpan rootSpan;
 
-    // stack trace data constructed from sampled stack traces
-    // this is lazy instantiated since most traces won't exceed the threshold for stack sampling
-    // and early initialization would use up memory unnecessarily
-    private volatile MergedStackTree mergedStackTree = new MergedStackTree();
+    // stack trace data constructed from coarse-grained profiling
+    private volatile MergedStackTree coarseMergedStackTree;
+    // stack trace data constructed from fine-grained profiling
+    private volatile MergedStackTree fineMergedStackTree;
 
     // the thread is needed so that stack traces can be taken from a different thread
     // a weak reference is used just to be safe and make sure it can't accidentally prevent a thread
@@ -98,11 +98,14 @@ public class Trace {
     private final WeakReference<Thread> threadHolder = new WeakReference<Thread>(
             Thread.currentThread());
 
-    // these are stored in the trace so that they can be canceled
+    // these are stored in the trace so they are only scheduled a single time, and also so they can
+    // be canceled at trace completion
     @Nullable
-    private volatile ScheduledFuture<?> captureStackTraceScheduledFuture;
+    private volatile ScheduledFuture<?> coarseProfilingScheduledFuture;
     @Nullable
-    private volatile ScheduledFuture<?> stuckCommandScheduledFuture;
+    private volatile ScheduledFuture<?> fineProfilingScheduledFuture;
+    @Nullable
+    private volatile ScheduledFuture<?> stuckScheduledFuture;
 
     private final Ticker ticker;
     private final WeavingMetricImpl weavingMetric;
@@ -172,6 +175,10 @@ public class Trace {
         return rootSpan.getRootSpan().getErrorMessage() != null;
     }
 
+    public boolean isFine() {
+        return fineMergedStackTree != null;
+    }
+
     public List<TraceMetric> getTraceMetrics() {
         if (weavingTraceMetric.getCount() == 0) {
             return traceMetrics;
@@ -194,18 +201,26 @@ public class Trace {
         return rootSpan.getSpans().iterator();
     }
 
-    public MergedStackTree getMergedStackTree() {
-        return mergedStackTree;
+    @Nullable
+    public MergedStackTree getCoarseMergedStackTree() {
+        return coarseMergedStackTree;
     }
 
     @Nullable
-    public ScheduledFuture<?> getCaptureStackTraceScheduledFuture() {
-        return captureStackTraceScheduledFuture;
+    public MergedStackTree getFineMergedStackTree() {
+        return fineMergedStackTree;
     }
 
-    @Nullable
-    public ScheduledFuture<?> getStuckCommandScheduledFuture() {
-        return stuckCommandScheduledFuture;
+    public ScheduledFuture<?> getCoarseProfilingScheduledFuture() {
+        return coarseProfilingScheduledFuture;
+    }
+
+    public ScheduledFuture<?> getFineProfilingScheduledFuture() {
+        return fineProfilingScheduledFuture;
+    }
+
+    public ScheduledFuture<?> getStuckScheduledFuture() {
+        return stuckScheduledFuture;
     }
 
     // must be called by the trace thread
@@ -240,25 +255,42 @@ public class Trace {
         }
     }
 
-    // this method doesn't need to be synchronized
-    void setCaptureStackTraceScheduledFuture(ScheduledFuture<?> stackTraceScheduledFuture) {
-        this.captureStackTraceScheduledFuture = stackTraceScheduledFuture;
+    public void setCoarseProfilingScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        this.coarseProfilingScheduledFuture = scheduledFuture;
     }
 
-    // this method doesn't need to be synchronized
-    void setStuckCommandScheduledFuture(ScheduledFuture<?> stuckCommandScheduledFuture) {
-        this.stuckCommandScheduledFuture = stuckCommandScheduledFuture;
+    public void setFineProfilingScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        this.fineProfilingScheduledFuture = scheduledFuture;
     }
 
-    void captureStackTrace() {
+    public void setStuckScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        this.stuckScheduledFuture = scheduledFuture;
+    }
+
+    void captureStackTrace(boolean fine) {
         Thread thread = threadHolder.get();
         if (thread != null) {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
             // check if trace is completed to avoid small window between trace completion and
             // canceling the scheduled command that invokes this method
-            if (!rootSpan.isCompleted()) {
-                mergedStackTree.addStackTrace(threadInfo);
+            if (rootSpan.isCompleted()) {
+                return;
+            }
+            if (fine) {
+                if (fineMergedStackTree == null) {
+                    // initialization possible race condition is ok, worst case scenario it misses
+                    // an almost simultaneously captured stack trace
+                    fineMergedStackTree = new MergedStackTree();
+                }
+                fineMergedStackTree.addStackTrace(threadInfo);
+            } else {
+                if (coarseMergedStackTree == null) {
+                    // initialization possible race condition is ok, worst case scenario it misses
+                    // an almost simultaneously captured stack trace
+                    coarseMergedStackTree = new MergedStackTree();
+                }
+                coarseMergedStackTree.addStackTrace(threadInfo);
             }
         }
     }

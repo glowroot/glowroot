@@ -56,13 +56,15 @@ public class TraceSnapshot {
     @Nullable
     private final ByteStream spans; // json data
     @Nullable
-    private final ByteStream mergedStackTree; // json data
+    private final ByteStream coarseMergedStackTree; // json data
+    @Nullable
+    private final ByteStream fineMergedStackTree; // json data
 
     private TraceSnapshot(String id, long startAt, boolean stuck, long duration, boolean completed,
             String description, @Nullable String attributes, @Nullable String username,
             @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String errorStackTrace, @Nullable String metrics, @Nullable ByteStream spans,
-            @Nullable ByteStream mergedStackTree) {
+            @Nullable ByteStream coarseMergedStackTree, @Nullable ByteStream fineMergedStackTree) {
 
         this.id = id;
         this.startAt = startAt;
@@ -77,7 +79,8 @@ public class TraceSnapshot {
         this.errorStackTrace = errorStackTrace;
         this.metrics = metrics;
         this.spans = spans;
-        this.mergedStackTree = mergedStackTree;
+        this.coarseMergedStackTree = coarseMergedStackTree;
+        this.fineMergedStackTree = fineMergedStackTree;
     }
 
     String getId() {
@@ -140,8 +143,13 @@ public class TraceSnapshot {
     }
 
     @Nullable
-    ByteStream getMergedStackTree() {
-        return mergedStackTree;
+    ByteStream getCoarseMergedStackTree() {
+        return coarseMergedStackTree;
+    }
+
+    @Nullable
+    ByteStream getFineMergedStackTree() {
+        return fineMergedStackTree;
     }
 
     @Override
@@ -191,7 +199,9 @@ public class TraceSnapshot {
         @Nullable
         private ByteStream spans;
         @Nullable
-        private ByteStream mergedStackTree;
+        private ByteStream coarseMergedStackTree;
+        @Nullable
+        private ByteStream fineMergedStackTree;
 
         private Builder() {}
 
@@ -260,15 +270,20 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder mergedStackTree(@Nullable ByteStream mergedStackTree) {
-            this.mergedStackTree = mergedStackTree;
+        Builder coarseMergedStackTree(@Nullable ByteStream coarseMergedStackTree) {
+            this.coarseMergedStackTree = coarseMergedStackTree;
+            return this;
+        }
+
+        Builder fineMergedStackTree(@Nullable ByteStream fineMergedStackTree) {
+            this.fineMergedStackTree = fineMergedStackTree;
             return this;
         }
 
         TraceSnapshot build() {
             return new TraceSnapshot(id, startAt, stuck, duration, completed, description,
                     attributes, username, errorText, errorDetail, errorStackTrace, metrics, spans,
-                    mergedStackTree);
+                    coarseMergedStackTree, fineMergedStackTree);
         }
     }
 }

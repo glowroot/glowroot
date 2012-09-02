@@ -49,7 +49,9 @@ public class Trace {
     @Nullable
     private List<Span> spans;
     @Nullable
-    private MergedStackTreeNode mergedStackTree;
+    private MergedStackTreeNode coarseMergedStackTree;
+    @Nullable
+    private MergedStackTreeNode fineMergedStackTree;
 
     private boolean summary;
 
@@ -147,12 +149,21 @@ public class Trace {
     }
 
     @Nullable
-    public MergedStackTreeNode getMergedStackTree() {
+    public MergedStackTreeNode getCoarseMergedStackTree() {
         if (summary) {
             throw new IllegalStateException("Use Informant.getLastTrace() instead of"
                     + " Informant.getLastTraceSummary() to retrieve mergedStackTree");
         }
-        return mergedStackTree;
+        return coarseMergedStackTree;
+    }
+
+    @Nullable
+    public MergedStackTreeNode getFineMergedStackTree() {
+        if (summary) {
+            throw new IllegalStateException("Use Informant.getLastTrace() instead of"
+                    + " Informant.getLastTraceSummary() to retrieve mergedStackTree");
+        }
+        return fineMergedStackTree;
     }
 
     @Override
@@ -170,7 +181,8 @@ public class Trace {
                 .add("error", error)
                 .add("metrics", metrics)
                 .add("spans", spans)
-                .add("mergedStackTree", mergedStackTree)
+                .add("coarseMergedStackTree", coarseMergedStackTree)
+                .add("fineMergedStackTree", fineMergedStackTree)
                 .toString();
     }
 

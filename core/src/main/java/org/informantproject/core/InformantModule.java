@@ -24,7 +24,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCollector;
-import org.informantproject.core.trace.StackCollector;
+import org.informantproject.core.trace.CoarseGrainedProfiler;
+import org.informantproject.core.trace.FineGrainedProfiler;
 import org.informantproject.core.trace.StuckTraceCollector;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DaemonExecutors;
@@ -73,7 +74,7 @@ class InformantModule extends AbstractModule {
     static void start(Injector injector) {
         logger.debug("start()");
         injector.getInstance(StuckTraceCollector.class);
-        injector.getInstance(StackCollector.class);
+        injector.getInstance(CoarseGrainedProfiler.class);
         injector.getInstance(MetricCollector.class);
         LocalModule.start(injector);
     }
@@ -82,7 +83,8 @@ class InformantModule extends AbstractModule {
         logger.debug("close()");
         LocalModule.close(injector);
         injector.getInstance(StuckTraceCollector.class).close();
-        injector.getInstance(StackCollector.class).close();
+        injector.getInstance(CoarseGrainedProfiler.class).close();
+        injector.getInstance(FineGrainedProfiler.class).close();
         injector.getInstance(MetricCollector.class).close();
         injector.getInstance(TraceSinkLocal.class).close();
         injector.getInstance(AsyncHttpClient.class).close();

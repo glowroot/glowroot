@@ -15,22 +15,17 @@
  */
 package org.informantproject.core.config;
 
-import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.informantproject.api.PluginServices.ConfigListener;
-import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.common.io.CharStreams;
-import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -52,16 +47,15 @@ public class ConfigService {
     private final Set<ConfigListener> configListeners = new CopyOnWriteArraySet<ConfigListener>();
 
     private volatile CoreConfig coreConfig;
-    private final Map<String, PluginConfig> pluginConfigs;
-
-    private final Object updateLock = new Object();
+    private volatile CoarseProfilingConfig coarseProfilingConfig;
+    private volatile FineProfilingConfig fineProfilingConfig;
+    private final ConcurrentMap<String, PluginConfig> pluginConfigs;
 
     @Inject
     ConfigService(ConfigDao configDao) {
         logger.debug("<init>()");
         this.configDao = configDao;
-        // initialize config using locally stored values, falling back to defaults if no locally
-        // stored values exist
+
         CoreConfig coreConfig = configDao.readCoreConfig();
         if (coreConfig == null) {
             logger.debug("<init>(): default core config is being used");
@@ -70,18 +64,37 @@ public class ConfigService {
             logger.debug("<init>(): core config was read from local data store: {}", coreConfig);
             this.coreConfig = coreConfig;
         }
-        pluginConfigs = Maps.newHashMap();
-        // add the "built-in" plugin config for the weaving metrics
-        pluginConfigs.put("org.informantproject:informant-core", PluginConfig.getEnabledInstance());
+
+        CoarseProfilingConfig coarseProfilingConfig = configDao.readCoarseProfilingConfig();
+        if (coarseProfilingConfig == null) {
+            logger.debug("<init>(): default coarse profiling config is being used");
+            this.coarseProfilingConfig = CoarseProfilingConfig.getDefaultInstance();
+        } else {
+            logger.debug("<init>(): coarse profiling config was read from local data store: {}",
+                    coarseProfilingConfig);
+            this.coarseProfilingConfig = coarseProfilingConfig;
+        }
+
+        FineProfilingConfig fineProfilingConfig = configDao.readFineProfilingConfig();
+        if (fineProfilingConfig == null) {
+            logger.debug("<init>(): default fine profiling config is being used");
+            this.fineProfilingConfig = FineProfilingConfig.getDefaultInstance();
+        } else {
+            logger.debug("<init>(): fine profiling config was read from local data store: {}",
+                    fineProfilingConfig);
+            this.fineProfilingConfig = fineProfilingConfig;
+        }
+
+        pluginConfigs = Maps.newConcurrentMap();
         Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            PluginConfig pluginConfig = configDao.readPluginConfig(pluginDescriptor);
+            PluginConfig pluginConfig = configDao.readPluginConfig(pluginDescriptor.getId());
             if (pluginConfig != null) {
                 pluginConfigs.put(pluginDescriptor.getId(), pluginConfig);
             } else {
-                pluginConfigs.put(pluginDescriptor.getId(), PluginConfig.builder(pluginDescriptor)
-                        .setEnabled(true).build());
+                pluginConfigs.put(pluginDescriptor.getId(),
+                        PluginConfig.builder(pluginDescriptor.getId()).build());
             }
         }
     }
@@ -90,12 +103,20 @@ public class ConfigService {
         return coreConfig;
     }
 
+    public CoarseProfilingConfig getCoarseProfilingConfig() {
+        return coarseProfilingConfig;
+    }
+
+    public FineProfilingConfig getFineProfilingConfig() {
+        return fineProfilingConfig;
+    }
+
     public PluginConfig getPluginConfig(String pluginId) {
         PluginConfig pluginConfig = pluginConfigs.get(pluginId);
         if (pluginConfig == null) {
             logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId, Joiner
                     .on(", ").join(pluginConfigs.keySet()));
-            return PluginConfig.getDisabledInstance();
+            return PluginConfig.getNopInstance();
         } else {
             return pluginConfig;
         }
@@ -106,135 +127,103 @@ public class ConfigService {
     }
 
     public void setCoreEnabled(boolean enabled) {
-        configDao.setCoreEnabled(enabled);
-        synchronized (updateLock) {
-            coreConfig = CoreConfig.builder()
-                    .copy(coreConfig)
-                    .enabled(enabled)
-                    .build();
+        synchronized (configDao.getWriteLock()) {
+            CoreConfig config = configDao.readCoreConfig();
+            if (config == null) {
+                config = CoreConfig.getDefaultInstance();
+            }
+            CoreConfig updatedConfig = CoreConfig.builder(config).enabled(enabled).build();
+            configDao.storeCoreConfig(updatedConfig);
+            // re-read from dao just to fail quickly in case of an issue
+            this.coreConfig = configDao.readCoreConfig();
         }
-        // it is safe to send the notification to the listeners outside of the update lock because
-        // the updated config is not passed to the listeners so there shouldn't be a problem even if
-        // notifications happen to get sent out of order
         notifyConfigListeners();
     }
 
-    // updates only the supplied properties, in a synchronized block ensuring no clobbering
-    public void updateCoreConfig(JsonObject propertiesJson) {
-        synchronized (updateLock) {
-            coreConfig = CoreConfig.builder()
-                    // copy existing properties
-                    .copy(coreConfig)
-                    // overlay updated properties
-                    .setFromJson(propertiesJson)
-                    .build();
-            configDao.storeCoreProperties(coreConfig.getPropertiesJson());
+    // TODO pass around config version to avoid possible clobbering
+    public void storeCoreConfig(CoreConfig config) {
+        configDao.storeCoreConfig(config);
+        // re-read from dao just to fail quickly in case of an issue
+        this.coreConfig = configDao.readCoreConfig();
+        notifyConfigListeners();
+    }
+
+    public void setCoarseProfilingEnabled(boolean enabled) {
+        synchronized (configDao.getWriteLock()) {
+            CoarseProfilingConfig config = configDao.readCoarseProfilingConfig();
+            if (config == null) {
+                config = CoarseProfilingConfig.getDefaultInstance();
+            }
+            CoarseProfilingConfig updatedConfig = CoarseProfilingConfig.builder(config)
+                    .enabled(enabled).build();
+            configDao.storeCoarseProfilingConfig(updatedConfig);
+            // re-read from dao just to fail quickly in case of an issue
+            this.coarseProfilingConfig = configDao.readCoarseProfilingConfig();
         }
-        // it is safe to send the notification to the listeners outside of the update lock because
-        // the updated config is not passed to the listeners so there shouldn't be a problem even if
-        // notifications happen to get sent out of order
+        notifyConfigListeners();
+    }
+
+    // TODO pass around config version to avoid possible clobbering
+    public void storeCoarseProfilingConfig(CoarseProfilingConfig config) {
+        configDao.storeCoarseProfilingConfig(config);
+        // re-read from dao just to fail quickly in case of an issue
+        this.coarseProfilingConfig = configDao.readCoarseProfilingConfig();
+        notifyConfigListeners();
+    }
+
+    public void setFineProfilingEnabled(boolean enabled) {
+        synchronized (configDao.getWriteLock()) {
+            FineProfilingConfig config = configDao.readFineProfilingConfig();
+            if (config == null) {
+                config = FineProfilingConfig.getDefaultInstance();
+            }
+            FineProfilingConfig updatedConfig = FineProfilingConfig.builder(config)
+                    .enabled(enabled).build();
+            configDao.storeFineProfilingConfig(updatedConfig);
+            // re-read from dao just to fail quickly in case of an issue
+            this.fineProfilingConfig = configDao.readFineProfilingConfig();
+        }
+        notifyConfigListeners();
+    }
+
+    // TODO pass around config version to avoid possible clobbering
+    public void storeFineProfilingConfig(FineProfilingConfig config) {
+        configDao.storeFineProfilingConfig(config);
+        // re-read from dao just to fail quickly in case of an issue
+        this.fineProfilingConfig = configDao.readFineProfilingConfig();
         notifyConfigListeners();
     }
 
     public void setPluginEnabled(String pluginId, boolean enabled) {
-        configDao.setPluginEnabled(pluginId, enabled);
-        synchronized (updateLock) {
-            PluginDescriptor pluginDescriptor = Plugins.getDescriptor(pluginId);
-            PluginConfig pluginConfig = PluginConfig.builder(pluginDescriptor)
-                    .copy(pluginConfigs.get(pluginId))
-                    .setEnabled(enabled)
-                    .build();
-            pluginConfigs.put(pluginId, pluginConfig);
-        }
-        // it is safe to send the notification to the listeners outside of the update lock because
-        // the updated config is not passed to the listeners so there shouldn't be a problem even if
-        // notifications happen to get sent out of order
-        notifyConfigListeners();
-    }
-
-    // updates only the supplied properties, in a synchronized block ensuring no clobbering
-    public void storePluginConfig(String pluginId, JsonObject propertiesJson) {
-        synchronized (updateLock) {
-            PluginDescriptor pluginDescriptor = Plugins.getDescriptor(pluginId);
-            PluginConfig pluginConfig = PluginConfig.builder(pluginDescriptor)
-                    // start with existing plugin config
-                    .copy(pluginConfigs.get(pluginId))
-                    // overlay updated properties
-                    .setProperties(propertiesJson)
-                    .build();
-            // only store non-hidden properties
-            configDao.storePluginProperties(pluginId,
-                    pluginConfig.getNonHiddenPropertiesJson(pluginDescriptor));
-            pluginConfigs.put(pluginId, pluginConfig);
-        }
-        // it is safe to send the notification to the listeners outside of the update lock because
-        // the updated config is not passed to the listeners so there shouldn't be a problem even if
-        // notifications happen to get sent out of order
-        notifyConfigListeners();
-    }
-
-    public String getPluginConfigsJson() {
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        try {
-            jw.beginObject();
-            Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
-                    Plugins.getPackagedPluginDescriptors(),
-                    Plugins.getInstalledPluginDescriptors());
-            for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-                jw.name(pluginDescriptor.getId());
-                jw.beginObject();
-                PluginConfig pluginConfig = pluginConfigs.get(pluginDescriptor.getId());
-                jw.name("enabled");
-                jw.value(pluginConfig.isEnabled());
-                jw.name("properties");
-                jw.beginObject();
-                writeProperties(pluginDescriptor, pluginConfig, jw);
-                jw.endObject();
-                jw.endObject();
+        synchronized (configDao.getWriteLock()) {
+            PluginConfig config = configDao.readPluginConfig(pluginId);
+            if (config == null) {
+                config = PluginConfig.builder(pluginId).build();
             }
-            jw.endObject();
-            jw.close();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            PluginConfig updatedConfig = PluginConfig.builder(pluginId, config)
+                    .enabled(enabled).build();
+            configDao.storePluginConfig(pluginId, updatedConfig);
+            // re-read from dao just to fail quickly in case of an issue
+            pluginConfigs.put(pluginId, configDao.readPluginConfig(pluginId));
         }
-        return sb.toString();
+        notifyConfigListeners();
     }
 
+    // TODO pass around config version to avoid possible clobbering
+    public void storePluginConfig(String pluginId, PluginConfig pluginConfig) {
+        configDao.storePluginConfig(pluginId, pluginConfig);
+        // re-read from dao just to fail quickly in case of an issue
+        pluginConfigs.put(pluginId, configDao.readPluginConfig(pluginId));
+        notifyConfigListeners();
+    }
+
+    // the updated config is not passed to the listeners to avoid the race condition of multiple
+    // config updates being sent out of order, instead listeners must call get*Config() which will
+    // never return the updates out of order (at worst it may return the most recent update twice
+    // which is ok)
     private void notifyConfigListeners() {
         for (ConfigListener configListener : configListeners) {
             configListener.onChange();
-        }
-    }
-
-    private void writeProperties(PluginDescriptor pluginDescriptor, PluginConfig pluginConfig,
-            JsonWriter jw) throws IOException {
-
-        for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
-            if (property.isHidden()) {
-                continue;
-            }
-            jw.name(property.getName());
-            if (property.getType().equals("string")) {
-                String value = pluginConfig.getStringProperty(property.getName());
-                if (value == null) {
-                    jw.nullValue();
-                } else {
-                    jw.value(value);
-                }
-            } else if (property.getType().equals("boolean")) {
-                jw.value(pluginConfig.getBooleanProperty(property.getName()));
-            } else if (property.getType().equals("double")) {
-                Double value = pluginConfig.getDoubleProperty(property.getName());
-                if (value == null) {
-                    jw.nullValue();
-                } else {
-                    jw.value(value);
-                }
-            } else {
-                logger.error("unexpected type '" + property.getType() + "', this should have"
-                        + " been caught by schema validation");
-            }
         }
     }
 }

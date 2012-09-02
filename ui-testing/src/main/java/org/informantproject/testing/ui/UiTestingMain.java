@@ -17,7 +17,9 @@ package org.informantproject.testing.ui;
 
 import org.informantproject.core.util.Static;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.CoarseProfilingConfig;
+import org.informantproject.testkit.Config.CoreConfig;
+import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,12 +38,21 @@ public final class UiTestingMain {
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(UI_PORT, false);
         // set thresholds low so there will be lots of data to view
-        CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        coreProperties.setThresholdMillis(0);
-        coreProperties.setProfilerInitialDelayMillis(100);
-        coreProperties.setProfilerIntervalMillis(10);
-        coreProperties.setSpanStackTraceThresholdMillis(100);
-        container.getInformant().updateCoreProperties(coreProperties);
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        coreConfig.setSpanStackTraceThresholdMillis(100);
+        container.getInformant().updateCoreConfig(coreConfig);
+        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+                .getCoarseProfilingConfig();
+        coarseProfilingConfig.setInitialDelayMillis(500);
+        coarseProfilingConfig.setIntervalMillis(500);
+        coarseProfilingConfig.setTotalSeconds(2);
+        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        fineProfilingConfig.setTracePercentage(50);
+        fineProfilingConfig.setIntervalMillis(10);
+        fineProfilingConfig.setTotalSeconds(1);
+        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
         logger.info("view trace ui at localhost:" + UI_PORT + "/traces.html");
         container.executeAppUnderTest(GenerateTraces.class);
     }

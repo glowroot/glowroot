@@ -61,24 +61,35 @@ var traceSummaryTemplateText = ''
 + '</table>'
 var traceDetailTemplateText = ''
 + '{{#if spans}}'
-+ '  <a href="#" onclick="toggleSpan(\'{{id}}\'); return false">spans</a> ({{spans.length}})<br>'
-+ '  <div id="sp_{{id}}" style="display: none"></div>'
++ '  <a href="#" onclick="toggleSpan(); return false">spans</a> ({{spans.length}})<br>'
++ '  <div id="sp" style="display: none"></div>'
 + '{{/if}}'
-+ '{{#if mergedStackTree.sampleCount}}'
-+ '  <a href="#" onclick="toggleMergedStackTree(\'{{id}}\'); return false">merged stack tree</a>'
-+ '  ({{mergedStackTree.sampleCount}})<br>'
-+ '  <div id="mst_outer_{{id}}" style="display: none; white-space: nowrap">'
++ '{{#if coarseMergedStackTree.sampleCount}}'
++ '  <a href="#" onclick="toggleCoarseMergedStackTree(); return false">'
++ '      coarse merged stack tree</a> ({{coarseMergedStackTree.sampleCount}})<br>'
++ '  <div id="mst_coarse_outer" style="display: none; white-space: nowrap">'
 + '    <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
-+ '        id="mst_filter_{{id}}"></select>'
-+ '    <br>'
-+ '    <div id="mst_uninteresting_outer_{{id}}" style="display: none">'
-+ '      <a style="margin-left: 1em" href="#" id="mst_uninteresting_link_{{id}}"'
-+ '          onclick="toggleUninteresting(\'{{id}}\'); return false">'
-+ '        expand common base'
-+ '      </a>'
-+ '      <div id="mst_uninteresting_{{id}}" style="display: none"></div>'
++ '        id="mst_coarse_filter"></select><br>'
++ '    <div id="mst_coarse_uninteresting_outer" style="display: none">'
++ '      <a style="margin-left: 1em" href="#" id="mst_coarse_uninteresting_link"'
++ '          onclick="toggleUninteresting(\'coarse\'); return false">expand common base</a>'
++ '      <div id="mst_coarse_uninteresting" style="display: none"></div>'
 + '    </div>'
-+ '    <div id="mst_interesting_{{id}}"></div>'
++ '    <div id="mst_coarse_interesting"></div>'
++ '  </div>'
++ '{{/if}}'
++ '{{#if fineMergedStackTree.sampleCount}}'
++ '  <a href="#" onclick="toggleFineMergedStackTree(); return false">'
++ '      fine merged stack tree</a> ({{fineMergedStackTree.sampleCount}})<br>'
++ '  <div id="mst_fine_outer" style="display: none; white-space: nowrap">'
++ '    <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
++ '        id="mst_fine_filter"></select><br>'
++ '    <div id="mst_fine_uninteresting_outer" style="display: none">'
++ '      <a style="margin-left: 1em" href="#" id="mst_fine_uninteresting_link"'
++ '          onclick="toggleUninteresting(\'fine\'); return false">expand common base</a>'
++ '      <div id="mst_fine_uninteresting" style="display: none"></div>'
++ '    </div>'
++ '    <div id="mst_fine_interesting"></div>'
 + '  </div>'
 + '{{/if}}'
 var spansTemplateText = ''
@@ -201,28 +212,33 @@ $(document).ready(function() {
   traceDetailTemplate = Handlebars.compile(traceDetailTemplateText)
   spansTemplate = Handlebars.compile(spansTemplateText)
 })
-function toggleSpan(id) {
-  if ($('#sp_' + id).is(':visible')) {
-    $('#sp_' + id).hide()
+function toggleSpan() {
+  if ($('#sp').is(':visible')) {
+    $('#sp').hide()
   } else {
-    if (! $('#sp_' + id).html()) {
+    if (! $('#sp').html()) {
       var html = spansTemplate(detailTrace)
-      $(html).appendTo('#sp_' + id)
+      $(html).appendTo('#sp')
     }
-    $('#sp_' + id).show()
+    $('#sp').show()
   }
 }
-function toggleUninteresting(id) {
-  if ($('#mst_uninteresting_' + id).is(':visible')) {
-    $('#mst_uninteresting_link_' + id).html('expand common base')
-    $('#mst_uninteresting_' + id).hide()
+function toggleUninteresting(granularity) {
+  if ($('#mst_' + granularity + '_uninteresting').is(':visible')) {
+    $('#mst_' + granularity + '_uninteresting_link').html('expand common base')
+    $('#mst_' + granularity + '_uninteresting').hide()
   } else {
-    $('#mst_uninteresting_link_' + id).html('shrink common base')
-    $('#mst_uninteresting_' + id).show()
+    $('#mst_' + granularity + '_uninteresting_link').html('shrink common base')
+    $('#mst_' + granularity + '_uninteresting').show()
   }
 }
-function toggleMergedStackTree(id) {
-  var rootNode = detailTrace.mergedStackTree
+function toggleCoarseMergedStackTree() {
+  toggleMergedStackTree(detailTrace.coarseMergedStackTree, 'coarse')
+}
+function toggleFineMergedStackTree() {
+  toggleMergedStackTree(detailTrace.fineMergedStackTree, 'fine')
+}
+function toggleMergedStackTree(rootNode, granularity) {
   function curr(node, level, metricName) {
     var rootNodeSampleCount
     var nodeSampleCount
@@ -269,12 +285,12 @@ function toggleMergedStackTree(id) {
     }
     return ret
   }
-  if ($('#mst_outer_' + id).is(':visible')) {
-    $('#mst_outer_' + id).hide()
+  if ($('#mst_' + granularity + '_outer').is(':visible')) {
+    $('#mst_' + granularity + '_outer').hide()
   } else {
-    if (! $('#mst_' + id).html()) {
+    if (! $('#mst_' + granularity).html()) {
       // first time only, process merged stack tree and populate dropdown
-      processMergedStackTree()
+      processMergedStackTree(rootNode)
       // build tree
       var tree = { name : '', childNodes : {} }
       $.each(rootNode.metricNameCounts, function(metricName, count) {
@@ -318,10 +334,10 @@ function toggleMergedStackTree(id) {
       // remove the root '' since all nodes are already under the single root span metric
       orderedNodes.splice(0, 1)
       // build filter dropdown
-      $('#mst_filter_' + id).html('')
+      $('#mst_' + granularity + '_filter').html('')
       $.each(orderedNodes, function(i, node) {
-        $('#mst_filter_' + id).append($('<option />').val(node.name).text(node.name + ' ('
-            + rootNode.metricNameCounts[node.name] + ')'))
+        $('#mst_' + granularity + '_filter').append($('<option />').val(node.name)
+            .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'))
       })
       var i = 0
       var interestingRootNode = rootNode
@@ -339,24 +355,24 @@ function toggleMergedStackTree(id) {
         interestingRootNode = childNode
         i++
       }
-      $('#mst_filter_' + id).change(function() {
+      $('#mst_' + granularity + '_filter').change(function() {
         // update merged stack tree based on filter
         var interestingHtml = curr(interestingRootNode, 0, $(this).val())
-        $('#mst_uninteresting_outer_' + id).show()
-        $('#mst_uninteresting_' + id).html(uninterestingHtml)
-        $('#mst_interesting_' + id).html(interestingHtml)
+        $('#mst_' + granularity + '_uninteresting_outer').show()
+        $('#mst_' + granularity + '_uninteresting').html(uninterestingHtml)
+        $('#mst_' + granularity + '_interesting').html(interestingHtml)
       })
       // build initial merged stack tree
       var interestingHtml = curr(interestingRootNode, 0)
-      $('#mst_uninteresting_outer_' + id).show()
-      $('#mst_uninteresting_' + id).html(uninterestingHtml)
-      $('#mst_interesting_' + id).html(interestingHtml)
+      $('#mst_' + granularity + '_uninteresting_outer').show()
+      $('#mst_' + granularity + '_uninteresting').html(uninterestingHtml)
+      $('#mst_' + granularity + '_interesting').html(interestingHtml)
     }
-    $('#mst_outer_' + id).show()
+    $('#mst_' + granularity + '_outer').show()
   }
 }
-function processMergedStackTree() {
-  var rootNode = detailTrace.mergedStackTree
+// TODO move inside toggleMergedStackTree enclosure
+function processMergedStackTree(rootNode) {
   function calculateMetricNameCounts(node) {
     var mergedCounts = {}
     if (node.leafThreadState) {

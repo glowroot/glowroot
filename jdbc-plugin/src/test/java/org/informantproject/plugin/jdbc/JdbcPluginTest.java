@@ -60,7 +60,7 @@ public class JdbcPluginTest {
     @Test
     public void testStatement() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -76,7 +76,7 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatement() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
@@ -93,7 +93,7 @@ public class JdbcPluginTest {
     @Test
     public void testCommit() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
@@ -117,10 +117,10 @@ public class JdbcPluginTest {
     @Test
     public void testResultSetValueMetric() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureResultSetGet", true);
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -138,7 +138,7 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetric() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then

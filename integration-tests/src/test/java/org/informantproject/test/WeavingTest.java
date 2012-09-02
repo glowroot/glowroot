@@ -46,7 +46,7 @@ public class WeavingTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then

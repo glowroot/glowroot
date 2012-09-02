@@ -15,13 +15,13 @@
  */
 package org.informantproject.core.config;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+
+import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 /**
  * Immutable structure to hold the current core config.
@@ -35,7 +35,7 @@ import com.google.gson.JsonObject;
 public class CoreConfig {
 
     public static final int SPAN_LIMIT_DISABLED = -1;
-    public static final int THRESHOLD_DISABLED = -1;
+    public static final int PERSISTENCE_THRESHOLD_DISABLED = -1;
 
     private static final Gson gson = new Gson();
 
@@ -53,17 +53,11 @@ public class CoreConfig {
     // TODO convert from millis to seconds, support 0.1, etc
     // 0 means log all traces, -1 means log no traces
     // (though stuck threshold can still be used in this case)
-    private final int thresholdMillis;
+    private final int persistenceThresholdMillis;
 
     // minimum is imposed because of StuckTraceCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stuck messages are gathered, should be minimum 100 milliseconds
     private final int stuckThresholdSeconds;
-
-    // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
-    // -1 means no stack traces are gathered, should be minimum 100 milliseconds
-    private final int profilerInitialDelayMillis;
-
-    private final int profilerIntervalMillis;
 
     // TODO this doesn't really make sense for Filters/servlets? or maybe just not top-level?
     // though even those might be interesting occasionally
@@ -87,20 +81,26 @@ public class CoreConfig {
         return new Builder().build();
     }
 
+    static CoreConfig fromJson(String json) {
+        return gson.fromJson(json, CoreConfig.Builder.class).build();
+    }
+
+    @OnlyUsedByTests
     static Builder builder() {
         return new Builder();
     }
 
-    private CoreConfig(boolean enabled, int thresholdMillis, int stuckThresholdSeconds,
-            int profilerInitialDelayMillis, int profilerIntervalMillis,
+    public static Builder builder(CoreConfig base) {
+        return new Builder(base);
+    }
+
+    private CoreConfig(boolean enabled, int persistenceThresholdMillis, int stuckThresholdSeconds,
             int spanStackTraceThresholdMillis, int maxEntries, int rollingSizeMb,
             boolean warnOnEntryOutsideTrace, int metricPeriodMillis) {
 
         this.enabled = enabled;
-        this.thresholdMillis = thresholdMillis;
+        this.persistenceThresholdMillis = persistenceThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
-        this.profilerInitialDelayMillis = profilerInitialDelayMillis;
-        this.profilerIntervalMillis = profilerIntervalMillis;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.maxEntries = maxEntries;
         this.rollingSizeMb = rollingSizeMb;
@@ -108,24 +108,20 @@ public class CoreConfig {
         this.metricPeriodMillis = metricPeriodMillis;
     }
 
+    public String toJson() {
+        return gson.toJson(this);
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
 
-    public int getThresholdMillis() {
-        return thresholdMillis;
+    public int getPersistenceThresholdMillis() {
+        return persistenceThresholdMillis;
     }
 
     public int getStuckThresholdSeconds() {
         return stuckThresholdSeconds;
-    }
-
-    public int getProfilerInitialDelayMillis() {
-        return profilerInitialDelayMillis;
-    }
-
-    public int getProfilerIntervalMillis() {
-        return profilerIntervalMillis;
     }
 
     public int getSpanStackTraceThresholdMillis() {
@@ -148,28 +144,12 @@ public class CoreConfig {
         return metricPeriodMillis;
     }
 
-    public String getPropertiesJson() {
-        JsonObject propertiesJson = new JsonObject();
-        propertiesJson.addProperty("thresholdMillis", thresholdMillis);
-        propertiesJson.addProperty("stuckThresholdSeconds", stuckThresholdSeconds);
-        propertiesJson.addProperty("profilerInitialDelayMillis", profilerInitialDelayMillis);
-        propertiesJson.addProperty("profilerIntervalMillis", profilerIntervalMillis);
-        propertiesJson.addProperty("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis);
-        propertiesJson.addProperty("maxEntries", maxEntries);
-        propertiesJson.addProperty("rollingSizeMb", rollingSizeMb);
-        propertiesJson.addProperty("warnOnEntryOutsideTrace", warnOnEntryOutsideTrace);
-        propertiesJson.addProperty("metricPeriodMillis", metricPeriodMillis);
-        return gson.toJson(propertiesJson);
-    }
-
     @Override
     public String toString() {
         ToStringHelper toStringHelper = Objects.toStringHelper(this)
                 .add("enabed", enabled)
-                .add("thresholdMillis", thresholdMillis)
+                .add("persistenceThresholdMillis", persistenceThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
-                .add("profilerInitialDelayMillis", profilerInitialDelayMillis)
-                .add("profilerIntervalMillis", profilerIntervalMillis)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxEntries", maxEntries)
                 .add("rollingSizeMb", rollingSizeMb)
@@ -178,39 +158,11 @@ public class CoreConfig {
         return toStringHelper.toString();
     }
 
-    @Override
-    public boolean equals(@Nullable Object o) {
-        if (!(o instanceof CoreConfig)) {
-            return false;
-        }
-        CoreConfig other = (CoreConfig) o;
-        return Objects.equal(enabled, other.isEnabled())
-                && Objects.equal(thresholdMillis, other.getThresholdMillis())
-                && Objects.equal(stuckThresholdSeconds, other.getStuckThresholdSeconds())
-                && Objects.equal(profilerInitialDelayMillis, other.getProfilerInitialDelayMillis())
-                && Objects.equal(profilerIntervalMillis, other.getProfilerIntervalMillis())
-                && Objects.equal(spanStackTraceThresholdMillis,
-                        other.getSpanStackTraceThresholdMillis())
-                && Objects.equal(maxEntries, other.getMaxEntries())
-                && Objects.equal(rollingSizeMb, other.getRollingSizeMb())
-                && Objects.equal(warnOnEntryOutsideTrace, other.isWarnOnEntryOutsideTrace())
-                && Objects.equal(metricPeriodMillis, other.getMetricPeriodMillis());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(enabled, thresholdMillis, stuckThresholdSeconds,
-                profilerInitialDelayMillis, profilerIntervalMillis, spanStackTraceThresholdMillis,
-                maxEntries, rollingSizeMb, warnOnEntryOutsideTrace, metricPeriodMillis);
-    }
-
-    static class Builder {
+    public static class Builder {
 
         private boolean enabled = true;
-        private int thresholdMillis = 3000;
+        private int persistenceThresholdMillis = 3000;
         private int stuckThresholdSeconds = 180;
-        private int profilerInitialDelayMillis = 1000;
-        private int profilerIntervalMillis = 100;
         private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
         private int maxEntries = 5000;
         private int rollingSizeMb = 1000;
@@ -218,109 +170,52 @@ public class CoreConfig {
         private int metricPeriodMillis = 15000;
 
         private Builder() {}
-
-        Builder copy(CoreConfig base) {
+        private Builder(CoreConfig base) {
             enabled = base.enabled;
-            thresholdMillis = base.thresholdMillis;
+            persistenceThresholdMillis = base.persistenceThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
-            profilerInitialDelayMillis = base.profilerInitialDelayMillis;
-            profilerIntervalMillis = base.profilerIntervalMillis;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
             maxEntries = base.maxEntries;
             rollingSizeMb = base.rollingSizeMb;
             warnOnEntryOutsideTrace = base.warnOnEntryOutsideTrace;
             metricPeriodMillis = base.metricPeriodMillis;
-            return this;
         }
-
-        CoreConfig build() {
-            return new CoreConfig(enabled, thresholdMillis, stuckThresholdSeconds,
-                    profilerInitialDelayMillis, profilerIntervalMillis,
-                    spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
-                    warnOnEntryOutsideTrace, metricPeriodMillis);
-        }
-
-        Builder setFromJson(JsonObject jsonObject) {
-            if (jsonObject.get("thresholdMillis") != null) {
-                thresholdMillis = jsonObject.get("thresholdMillis").getAsInt();
-            }
-            if (jsonObject.get("stuckThresholdSeconds") != null) {
-                stuckThresholdSeconds = jsonObject.get("stuckThresholdSeconds").getAsInt();
-            }
-            if (jsonObject.get("profilerInitialDelayMillis") != null) {
-                profilerInitialDelayMillis = jsonObject.get("profilerInitialDelayMillis")
-                        .getAsInt();
-            }
-            if (jsonObject.get("profilerIntervalMillis") != null) {
-                profilerIntervalMillis = jsonObject.get("profilerIntervalMillis").getAsInt();
-            }
-            if (jsonObject.get("spanStackTraceThresholdMillis") != null) {
-                spanStackTraceThresholdMillis = jsonObject.get("spanStackTraceThresholdMillis")
-                        .getAsInt();
-            }
-            if (jsonObject.get("maxEntries") != null) {
-                maxEntries = jsonObject.get("maxEntries").getAsInt();
-            }
-            if (jsonObject.get("rollingSizeMb") != null) {
-                rollingSizeMb = jsonObject.get("rollingSizeMb").getAsInt();
-            }
-            if (jsonObject.get("warnOnEntryOutsideTrace") != null) {
-                warnOnEntryOutsideTrace = jsonObject.get("warnOnEntryOutsideTrace").getAsBoolean();
-            }
-            if (jsonObject.get("metricPeriodMillis") != null) {
-                metricPeriodMillis = jsonObject.get("metricPeriodMillis").getAsInt();
-            }
-            return this;
-        }
-
-        Builder enabled(boolean enabled) {
+        public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
-
-        Builder thresholdMillis(int thresholdMillis) {
-            this.thresholdMillis = thresholdMillis;
+        public Builder persistenceThresholdMillis(int persistenceThresholdMillis) {
+            this.persistenceThresholdMillis = persistenceThresholdMillis;
             return this;
         }
-
-        Builder stuckThresholdSeconds(int stuckThresholdSeconds) {
+        public Builder stuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
             return this;
         }
-
-        Builder profilerInitialDelayMillis(int profilerInitialDelayMillis) {
-            this.profilerInitialDelayMillis = profilerInitialDelayMillis;
+        public Builder spanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
+            this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
-
-        Builder profilerIntervalMillis(int profilerIntervalMillis) {
-            this.profilerIntervalMillis = profilerIntervalMillis;
-            return this;
-        }
-
-        Builder spanStackTraceThresholdMillis(int thresholdMillis) {
-            this.spanStackTraceThresholdMillis = thresholdMillis;
-            return this;
-        }
-
-        Builder maxEntries(int maxEntries) {
+        public Builder maxEntries(int maxEntries) {
             this.maxEntries = maxEntries;
             return this;
         }
-
-        Builder rollingSizeMb(int rollingSizeMb) {
+        public Builder rollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
         }
-
-        Builder warnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
+        public Builder warnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
             this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
             return this;
         }
-
-        Builder metricPeriodMillis(int metricPeriodMillis) {
+        public Builder metricPeriodMillis(int metricPeriodMillis) {
             this.metricPeriodMillis = metricPeriodMillis;
             return this;
+        }
+        public CoreConfig build() {
+            return new CoreConfig(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
+                    spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
+                    warnOnEntryOutsideTrace, metricPeriodMillis);
         }
     }
 }

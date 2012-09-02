@@ -32,9 +32,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
-import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 
 /**
@@ -56,23 +57,33 @@ public class PluginConfig {
     // its plugin.xml file
     private final ImmutableMap<String, Optional<?>> properties;
 
-    static PluginConfig getEnabledInstance() {
-        ImmutableMap<String, Optional<?>> properties = ImmutableMap.of();
-        return new PluginConfig(true, properties);
+    @Nullable
+    private final PluginDescriptor pluginDescriptor;
+
+    public static Builder builder(String pluginId, PluginConfig base) {
+        return new Builder(pluginId, base);
     }
 
-    static PluginConfig getDisabledInstance() {
-        ImmutableMap<String, Optional<?>> properties = ImmutableMap.of();
-        return new PluginConfig(false, properties);
+    static PluginConfig getNopInstance() {
+        return new PluginConfig(false, ImmutableMap.<String, Optional<?>> of(), null);
     }
 
-    static Builder builder(PluginDescriptor pluginDescriptor) {
-        return new Builder(pluginDescriptor);
+    static PluginConfig fromJson(final String pluginId, String json) {
+        PluginConfig.Builder builder = PluginConfig.builder(pluginId);
+        builder.overlay(json, true);
+        return builder.build();
     }
 
-    private PluginConfig(boolean enabled, ImmutableMap<String, Optional<?>> properties) {
+    static Builder builder(String pluginId) {
+        return new Builder(pluginId);
+    }
+
+    private PluginConfig(boolean enabled, ImmutableMap<String, Optional<?>> properties,
+            PluginDescriptor pluginDescriptor) {
+
         this.enabled = enabled;
         this.properties = properties;
+        this.pluginDescriptor = pluginDescriptor;
     }
 
     public boolean isEnabled() {
@@ -135,32 +146,12 @@ public class PluginConfig {
         }
     }
 
-    String getNonHiddenPropertiesJson(PluginDescriptor pluginDescriptor) {
+    // only non-hidden properties
+    String toJson() {
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         try {
-            jw.beginObject();
-            for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
-                if (property.isHidden()) {
-                    continue;
-                }
-                Optional<?> optional = properties.get(property.getName());
-                Object value = optional == null ? null : optional.orNull();
-                jw.name(property.getName());
-                if (value == null) {
-                    jw.nullValue();
-                } else if (value instanceof String) {
-                    jw.value((String) value);
-                } else if (value instanceof Boolean) {
-                    jw.value((Boolean) value);
-                } else if (value instanceof Double) {
-                    jw.value((Double) value);
-                } else {
-                    logger.error("unexpected property value type '{}'", value.getClass().getName());
-                    jw.value("");
-                }
-            }
-            jw.endObject();
+            toJson(jw);
             jw.close();
             return sb.toString();
         } catch (IOException e) {
@@ -169,117 +160,144 @@ public class PluginConfig {
         }
     }
 
+    public void toJson(JsonWriter jw) throws IOException {
+        // pluginDescriptor can be null for anonymous disabled instance, see getDisabledInstance()
+        jw.beginObject();
+        jw.name("enabled");
+        jw.value(enabled);
+        if (pluginDescriptor != null) {
+            for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
+                if (property.isHidden()) {
+                    continue;
+                }
+                jw.name(property.getName());
+                if (property.getType().equals("string")) {
+                    String value = getStringProperty(property.getName());
+                    if (value == null) {
+                        jw.nullValue();
+                    } else {
+                        jw.value(value);
+                    }
+                } else if (property.getType().equals("boolean")) {
+                    jw.value(getBooleanProperty(property.getName()));
+                } else if (property.getType().equals("double")) {
+                    Double value = getDoubleProperty(property.getName());
+                    if (value == null) {
+                        jw.nullValue();
+                    } else {
+                        jw.value(value);
+                    }
+                } else {
+                    logger.error("unexpected type '" + property.getType() + "', this should have"
+                            + " been caught by schema validation");
+                }
+            }
+        }
+        jw.endObject();
+    }
+
     @Override
     public String toString() {
         ToStringHelper toStringHelper = Objects.toStringHelper(this).add("properties", properties);
         return toStringHelper.toString();
     }
 
-    @Override
-    public boolean equals(@Nullable Object object) {
-        if (object == null) {
-            return false;
-        }
-        if (object == this) {
-            return true;
-        }
-        if (object.getClass() != getClass()) {
-            return false;
-        }
-        PluginConfig rhs = (PluginConfig) object;
-        return enabled == rhs.enabled && properties.equals(rhs.properties);
-    }
+    public static class Builder {
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(enabled, properties);
-    }
-
-    static class Builder {
-
-        private static final Gson gson = new Gson();
-
+        private boolean enabled = true;
         private final PluginDescriptor pluginDescriptor;
         private final Map<String, Optional<?>> properties;
-        private boolean enabled;
 
-        private Builder(PluginDescriptor pluginDescriptor) {
-            this.pluginDescriptor = pluginDescriptor;
+        private Builder(String pluginId) {
+            this.pluginDescriptor = Plugins.getDescriptor(pluginId);
             properties = Maps.newHashMap();
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
                 properties.put(property.getName(), Optional.fromNullable(property.getDefault()));
             }
         }
-
-        Builder copy(PluginConfig base) {
+        private Builder(String pluginId, PluginConfig base) {
+            this(pluginId);
             this.enabled = base.enabled;
             properties.putAll(base.properties);
-            return this;
         }
-
-        Builder setEnabled(boolean enabled) {
+        public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
-
+        public void overlay(String json) {
+            overlay(json, false);
+        }
+        public PluginConfig build() {
+            return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginDescriptor);
+        }
+        private void overlay(String json, boolean ignoreWarnings) {
+            JsonObject jsonObject = new JsonParser().parse(json).getAsJsonObject();
+            if (jsonObject.get("enabled") != null) {
+                enabled(jsonObject.get("enabled").getAsBoolean());
+            }
+            for (Entry<String, JsonElement> subEntry : jsonObject.entrySet()) {
+                String name = subEntry.getKey();
+                if (name.equals("enabled")) {
+                    continue;
+                }
+                JsonElement value = subEntry.getValue();
+                if (value.isJsonNull()) {
+                    setProperty(name, null, ignoreWarnings);
+                } else if (value.isJsonPrimitive()) {
+                    JsonPrimitive primitive = value.getAsJsonPrimitive();
+                    if (primitive.isBoolean()) {
+                        setProperty(name, primitive.getAsBoolean(), ignoreWarnings);
+                    } else if (primitive.isNumber()) {
+                        // convert all numbers to double
+                        setProperty(name, primitive.getAsDouble(), ignoreWarnings);
+                    } else if (primitive.isString()) {
+                        setProperty(name, primitive.getAsString(), ignoreWarnings);
+                    } else {
+                        throw new IllegalStateException("Unexpected json primitive '" + primitive
+                                + "'");
+                    }
+                } else {
+                    throw new IllegalStateException("Unexpected json element type '"
+                            + value.getClass().getName() + "'");
+                }
+            }
+        }
         // ignoreExtraProperties option exists for instantiating plugin config from a stored json
         // value which may be out of sync if the plugin has been updated and the given property has
         // changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        private Builder setProperty(String name, @Nullable Object value,
-                boolean ignoreExtraProperties) {
-
+        private Builder setProperty(String name, @Nullable Object value, boolean ignoreWarnings) {
             PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
             if (property == null) {
-                logger.error("unexpected property name '{}'", name);
+                if (!ignoreWarnings) {
+                    logger.warn("unexpected property name '{}'", name);
+                }
                 return this;
             }
             if (property.isHidden()) {
-                if (!ignoreExtraProperties) {
-                    logger.error("cannot set hidden property '{}' with value '{}', hidden"
+                if (!ignoreWarnings) {
+                    logger.warn("cannot set hidden property '{}' with value '{}', hidden"
                             + " properties can only be set by via org.informantproject.plugin"
                             + ".xml or org.informantproject.package.xml", name, value);
                 }
                 return this;
             }
             if (value != null && !property.getJavaClass().isAssignableFrom(value.getClass())) {
-                if (!ignoreExtraProperties) {
-                    logger.error("unexpected property type '{}' for property name '{}'", value
+                if (!ignoreWarnings) {
+                    logger.warn("unexpected property type '{}' for property name '{}'", value
                             .getClass().getName(), name);
                 }
                 return this;
             }
             if (value == null && property.getJavaClass() == Boolean.class) {
-                logger.error("boolean property types do not accept null values");
+                if (!ignoreWarnings) {
+                    logger.warn("boolean property types do not accept null values");
+                }
                 properties.put(name, Optional.of(false));
             } else {
                 properties.put(name, Optional.fromNullable(value));
             }
             return this;
-        }
-
-        Builder setProperties(JsonObject jsonObject) {
-            setProperties(jsonObject, false);
-            return this;
-        }
-
-        private void setProperties(JsonObject jsonObject, boolean ignoreExtraProperties) {
-            Map<String, Object> overlayProperties = gson.fromJson(jsonObject,
-                    new TypeToken<Map<String, Object>>() {}.getType());
-            // overlay new values
-            for (Entry<String, Object> subEntry : overlayProperties.entrySet()) {
-                String name = subEntry.getKey();
-                Object value = subEntry.getValue();
-                // convert all numbers to double
-                if (value instanceof Number) {
-                    value = ((Number) value).doubleValue();
-                }
-                setProperty(name, value, ignoreExtraProperties);
-            }
-        }
-
-        PluginConfig build() {
-            return new PluginConfig(enabled, ImmutableMap.copyOf(properties));
         }
     }
 }

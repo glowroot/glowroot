@@ -155,16 +155,41 @@
   }
   function read() {
     $.getJSON('config/read', function(config) {
-      setUpOnOffButton('', config.enabled, 'config/core')
-      var coreProperties = config.coreProperties
-      $('#thresholdMillis').val(coreProperties.thresholdMillis)
-      $('#stuckThresholdSeconds').val(coreProperties.stuckThresholdSeconds)
-      $('#profilerInitialDelayMillis').val(coreProperties.profilerInitialDelayMillis)
-      $('#profilerIntervalMillis').val(coreProperties.profilerIntervalMillis)
-      $('#spanStackTraceThresholdMillis').val(coreProperties.spanStackTraceThresholdMillis)
-      $('#maxEntries').val(coreProperties.maxEntries)
-      $('#rollingSizeMb').val(coreProperties.rollingSizeMb)
-      if (config.actualRollingSizeMb != coreProperties.rollingSizeMb) {
+      var coreConfig = config.coreConfig
+      setUpOnOffButton('', coreConfig.enabled, 'config/core')
+      $('#persistenceThresholdMillis').val(coreConfig.persistenceThresholdMillis)
+      $('#stuckThresholdSeconds').val(coreConfig.stuckThresholdSeconds)
+      $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
+      $('#maxEntries').val(coreConfig.maxEntries)
+      $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
+      if (config.actualRollingSizeMb != coreConfig.rollingSizeMb) {
+        $('#actualRollingSizeMb').html(config.actualRollingSizeMb)
+        $('#rollingSizeHelp').css('display', 'inline-block')
+      }
+      var coarseProfilingConfig = config.coarseProfilingConfig
+      setUpOnOffButton('profiling_coarse_', coarseProfilingConfig.enabled,
+          'config/profiling/coarse')
+      $('#coarseInitialDelayMillis').val(coarseProfilingConfig.initialDelayMillis)
+      $('#coarseIntervalMillis').val(coarseProfilingConfig.intervalMillis)
+      $('#coarseTotalSeconds').val(coarseProfilingConfig.totalSeconds)
+      var fineProfilingConfig = config.fineProfilingConfig
+      setUpOnOffButton('profiling_fine_', fineProfilingConfig.enabled, 'config/profiling/fine')
+      $('#fineTracePercentage').val(fineProfilingConfig.tracePercentage)
+      $('#fineIntervalMillis').val(fineProfilingConfig.intervalMillis)
+      $('#fineTotalSeconds').val(fineProfilingConfig.totalSeconds)
+      if (fineProfilingConfig.persistenceThresholdMillis == -1) {
+        $('#finePersistenceThresholdMillis').attr('readonly','readonly')
+      } else {
+        $('#finePersistenceThresholdOverride').attr('checked', true)
+        $('#finePersistenceThresholdMillis').val(fineProfilingConfig.persistenceThresholdMillis)
+      }
+      var coreConfig = config.coreConfig
+      $('#persistenceThresholdMillis').val(coreConfig.persistenceThresholdMillis)
+      $('#stuckThresholdSeconds').val(coreConfig.stuckThresholdSeconds)
+      $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
+      $('#maxEntries').val(coreConfig.maxEntries)
+      $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
+      if (config.actualRollingSizeMb != coreConfig.rollingSizeMb) {
         $('#actualRollingSizeMb').html(config.actualRollingSizeMb)
         $('#rollingSizeHelp').css('display', 'inline-block')
       }
@@ -183,10 +208,10 @@
         $(html).appendTo('#plugins')
         setUpOnOffButton(escapeForSelector(plugin.id) + '_',
             config.pluginConfigs[plugin.id].enabled, 'config/plugin/' + plugin.id)
-        var pluginProperties = config.pluginConfigs[plugin.id].properties
+        var pluginConfig = config.pluginConfigs[plugin.id]
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
           var propertyDescriptors = plugin.propertyDescriptors[j]
-          var value = pluginProperties[propertyDescriptors.name]
+          var value = pluginConfig[propertyDescriptors.name]
           if (propertyDescriptors.type == 'boolean') {
             $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).attr('checked',
                 value)
@@ -197,18 +222,41 @@
       }
     })
   }
-  function updateCoreProperties() {
-    var properties = {
-      'thresholdMillis': $('#thresholdMillis').val(),
+  function updateCoreConfig() {
+    var config = {
+      'persistenceThresholdMillis': $('#persistenceThresholdMillis').val(),
       'stuckThresholdSeconds': $('#stuckThresholdSeconds').val(),
-      'profilerInitialDelayMillis': $('#profilerInitialDelayMillis').val(),
-      'profilerIntervalMillis': $('#profilerIntervalMillis').val(),
       'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
       'maxEntries': $('#maxEntries').val(),
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
-    $.post('config/core/properties', JSON.stringify(properties), function() {
-      showAndFadeSuccessMessage('#saveComplete')
+    $.post('config/core', JSON.stringify(config), function() {
+      showAndFadeSuccessMessage('#saveCoreComplete')
+    })
+  }
+  function updateCoarseProfilingConfig() {
+    var config = {
+      'initialDelayMillis': $('#coarseInitialDelayMillis').val(),
+      'intervalMillis': $('#coarseIntervalMillis').val(),
+      'totalSeconds': $('#coarseTotalSeconds').val()
+    }
+    $.post('config/profiling/coarse', JSON.stringify(config), function() {
+      showAndFadeSuccessMessage('#saveCoarseProfilingComplete')
+    })
+  }
+  function updateFineProfilingConfig() {
+    var persistenceThresholdMillis = $('#finePersistenceThresholdMillis').val()
+    if (!persistenceThresholdMillis) {
+      persistenceThresholdMillis = -1
+    }
+    var config = {
+      'tracePercentage': $('#fineTracePercentage').val(),
+      'intervalMillis': $('#fineIntervalMillis').val(),
+      'totalSeconds': $('#fineTotalSeconds').val(),
+      'persistenceThresholdMillis': persistenceThresholdMillis
+    }
+    $.post('config/profiling/fine', JSON.stringify(config), function() {
+      showAndFadeSuccessMessage('#saveFineProfilingComplete')
     })
   }
   function updatePluginConfig(pluginId) {
@@ -230,7 +278,7 @@
         config[propertyDescriptors.name] = value
       }
     }
-    $.post('config/plugin/' + pluginId + '/properties', JSON.stringify(config),
+    $.post('config/plugin/' + pluginId, JSON.stringify(config),
         function() {
           showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
         })
@@ -244,6 +292,14 @@
     return null
   }
   $(document).ready(function() {
+    $('#finePersistenceThresholdOverride').change(function() {
+      if ($('#finePersistenceThresholdOverride').is(':checked')) {
+        $('#finePersistenceThresholdMillis').removeAttr('readonly')
+      } else {
+        $('#finePersistenceThresholdMillis').val('')
+        $('#finePersistenceThresholdMillis').attr('readonly','readonly')
+      }
+    })
     read()
   })
 </script>
@@ -269,10 +325,10 @@
   <form class="well form-horizontal">
     <fieldset>
       <div class="control-group">
-        <label class="control-label" for="thresholdMillis">Main threshold</label>
+        <label class="control-label" for="persistenceThresholdMillis">Persistence threshold</label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="thresholdMillis"
+            <input style="width: 6em" id="persistenceThresholdMillis"
               type="text"><span class="add-on">milliseconds</span>
           </div>
           <span class="help-block">
@@ -292,40 +348,6 @@
             Any trace that exceeds this amount of time will be persisted to disk immediately (prior
             to its completion). This is to guard against threads which get stuck forever (or at
             least long enough and do enough harm to the jvm that it has to be restarted).
-          </div>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="profilerInitialDelayMillis">
-          Sampling profiler initial delay
-        </label>
-        <div class="controls">
-          <div class="input-append">
-            <input style="width: 6em" id="profilerInitialDelayMillis"
-              type="text"><span class="add-on">milliseconds</span>
-          </div>
-          <div class="help-block">
-            Once a trace exceeds this amount of time, the sampling profiler captures stack traces
-            periodically.
-            The interval between successive stack trace captures is defined by the property directly
-            below.
-            The stack traces captured for an individual trace are merged into a tree view and
-            provide a sample based profile of the time spent in various portions of the code.
-          </div>
-        </div>
-      </div>
-      <div class="control-group">
-        <label class="control-label" for="profilerIntervalMillis">
-          Sampling profiler interval
-        </label>
-        <div class="controls">
-          <div class="input-append">
-            <input style="width: 6em" id="profilerIntervalMillis"
-              type="text"><span class="add-on">milliseconds</span>
-          </div>
-          <div class="help-block">
-            The interval at which the sampling profiler captures stack traces (once a trace exceeds
-            the initial delay directly above).
           </div>
         </div>
       </div>
@@ -373,8 +395,175 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn" onclick="updateCoreProperties()">Save changes</button>
-        <div id="saveComplete" class="button-success-message">Saved</div>
+        <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
+        <div id="saveCoreComplete" class="button-success-message">Saved</div>
+      </div>
+    </fieldset>
+  </form>
+  <div>
+    <span style="vertical-align: middle; font-size: 19px">Coarse-Grained Profiling</span>
+    <span class="btn-group"
+        style="display: inline-block; margin-left: 10px; vertical-align: middle">
+      <button id="profiling_coarse_enabled_on" class="btn btn-on">ON</button>
+      <button id="profiling_coarse_enabled_off" class="btn btn-off">OFF</button>
+    </span>
+    <span id="profiling_coarse_enableComplete" class="button-success-message"
+        style="line-height: 18px">
+      Enabled
+    </span>
+    <span id="profiling_coarse_disableComplete" class="button-success-message" style="color: gray">
+      Disabled
+    </span>
+  </div>
+  <br>
+  <form class="well form-horizontal" style="margin-left: 40px">
+    <fieldset>
+      <div class="control-group">
+        <label class="control-label" for="coarseInitialDelayMillis">
+          Initial delay
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="coarseInitialDelayMillis"
+                type="text"><span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            Once a trace exceeds this amount of time, the coarse profiler captures stack traces
+            periodically.
+            The interval between successive stack trace captures is defined by the property directly
+            below.
+            The stack traces captured for an individual trace are merged into a tree view and
+            provide a profile of the time spent in various portions of the code.
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="coarseIntervalMillis">
+          Interval
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="coarseIntervalMillis"
+                type="text"><span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            The interval at which the coarse profiler captures stack traces (once a trace exceeds
+            the initial delay directly above).
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="coarseTotalSeconds">
+          Total
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="coarseTotalSeconds"
+                type="text"><span class="add-on">seconds</span>
+          </div>
+          <div class="help-block">
+            The total length of time that the coarse profiler captures stack traces (once a trace
+            exceeds the initial delay above).
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="updateCoarseProfilingConfig()">
+          Save changes
+        </button>
+        <div id="saveCoarseProfilingComplete" class="button-success-message">Saved</div>
+      </div>
+    </fieldset>
+  </form>
+  <div>
+    <span style="vertical-align: middle; font-size: 19px">Fine-Grained Profiling</span>
+    <span class="btn-group"
+        style="display: inline-block; margin-left: 10px; vertical-align: middle">
+      <button id="profiling_fine_enabled_on" class="btn btn-on">ON</button>
+      <button id="profiling_fine_enabled_off" class="btn btn-off">OFF</button>
+    </span>
+    <span id="profiling_fine_enableComplete" class="button-success-message"
+        style="line-height: 18px">
+      Enabled
+    </span>
+    <span id="profiling_fine_disableComplete" class="button-success-message" style="color: gray">
+      Disabled
+    </span>
+  </div>
+  <br>
+  <form class="well form-horizontal" style="margin-left: 40px">
+    <fieldset>
+      <div class="control-group">
+        <label class="control-label" for="fineTracePercentage">
+          Trace percentage
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="fineTracePercentage"
+                type="text"><span class="add-on">%</span>
+          </div>
+          <div class="help-block">
+            Apply fine grained profiling to this percentage of traces.
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="fineIntervalMillis">
+          Interval
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="fineIntervalMillis"
+                type="text"><span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            The interval at which the fine grained profiler captures stack traces (once a trace
+            exceeds the initial delay directly above).
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="fineTotalSeconds">
+          Total
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input style="width: 6em" id="fineTotalSeconds"
+                type="text"><span class="add-on">seconds</span>
+          </div>
+          <div class="help-block">
+            The total length of time that the fine grained profiler captures stack traces (once a
+            trace exceeds the initial delay above).
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="finePersistenceThresholdMillis">
+          Persistence threshold
+        </label>
+        <div class="controls">
+          <div style="padding-top: 5px; padding-bottom: 5px">
+            <label class="checkbox">
+              <input id="finePersistenceThresholdOverride" type="checkbox" value="true">
+              Override general persistence threshold
+            </label>
+          </div>
+          <div class="input-append">
+            <input style="width: 6em" id="finePersistenceThresholdMillis"
+                type="text"><span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            After going through the trouble of collecting fine-grained profiling info, it may be
+            worthwhile to persist the given trace even if it doesn't hit the general persistence
+            threshold.
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="updateFineProfilingConfig()">
+          Save changes
+        </button>
+        <div id="saveFineProfilingComplete" class="button-success-message">Saved</div>
       </div>
     </fieldset>
   </form>

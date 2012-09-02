@@ -15,7 +15,6 @@
  */
 package org.informantproject.core.config;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
@@ -23,16 +22,11 @@ import javax.annotation.Nullable;
 
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.Column;
-import org.informantproject.core.util.DataSource.NullableResultSetExtractor;
 import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -48,15 +42,16 @@ class ConfigDao {
     private static final Logger logger = LoggerFactory.getLogger(ConfigDao.class);
 
     private static final String CORE = "core";
+    private static final String PROFILING_COARSE = "profiling-coarse";
+    private static final String PROFILING_FINE = "profiling-fine";
 
     private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("ID", Types.VARCHAR),
-            new Column("ENABLED", Types.VARCHAR),
-            new Column("PROPERTIES", Types.VARCHAR));
+            new Column("CONFIG", Types.VARCHAR));
 
     private final DataSource dataSource;
     private final boolean valid;
-    private final Gson gson = new Gson();
+    private final Object writeLock = new Object();
 
     @Inject
     ConfigDao(DataSource dataSource) {
@@ -81,149 +76,97 @@ class ConfigDao {
         valid = localValid;
     }
 
+    Object getWriteLock() {
+        return writeLock;
+    }
+
     @Nullable
     CoreConfig readCoreConfig() {
         logger.debug("readCoreConfig()");
-        if (!valid) {
+        String configJson = readConfig(CORE);
+        if (configJson == null) {
             return null;
-        }
-        try {
-            return dataSource.query("select enabled, properties from config where id = ?",
-                    new Object[] { CORE }, new NullableResultSetExtractor<CoreConfig>() {
-                        @Nullable
-                        public CoreConfig extractData(ResultSet resultSet) throws SQLException {
-                            if (resultSet.next()) {
-                                // default value for enabled is true (so can't just use
-                                // ResultSet.getBoolean() which defaults to false)
-                                boolean enabled;
-                                if (resultSet.getObject(1) == null) {
-                                    enabled = true;
-                                } else {
-                                    enabled = resultSet.getBoolean(1);
-                                }
-                                // default value for propertiesJson is {} which doesn't override any
-                                // of the default property values
-                                String propertiesJson = Objects.firstNonNull(
-                                        resultSet.getString(2), "{}");
-                                CoreConfig.Builder builder = gson.fromJson(propertiesJson,
-                                        CoreConfig.Builder.class);
-                                return builder.enabled(enabled).build();
-                            } else {
-                                return null;
-                            }
-                        }
-                    });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return null;
+        } else {
+            return CoreConfig.fromJson(configJson);
         }
     }
 
     @Nullable
-    PluginConfig readPluginConfig(final PluginDescriptor pluginDescriptor) {
-        logger.debug("readPluginConfig(): pluginDescriptor.id={}", pluginDescriptor.getId());
-        if (!valid) {
+    CoarseProfilingConfig readCoarseProfilingConfig() {
+        logger.debug("readCoarseProfilingConfig()");
+        String configJson = readConfig(PROFILING_COARSE);
+        if (configJson == null) {
             return null;
-        }
-        try {
-            return dataSource.query("select enabled, properties from config where id = ?",
-                    new Object[] { pluginDescriptor.getId() },
-                    new NullableResultSetExtractor<PluginConfig>() {
-                        @Nullable
-                        public PluginConfig extractData(ResultSet resultSet) throws SQLException {
-                            if (resultSet.next()) {
-                                return buildPluginConfig(pluginDescriptor, resultSet);
-                            } else {
-                                // no existing plugin config record
-                                return null;
-                            }
-                        }
-                    });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    void setCoreEnabled(boolean enabled) {
-        logger.debug("setCoreEnabled(): enabled={}", enabled);
-        try {
-            dataSource.update("merge into config (id, enabled) values (?, ?)", new Object[] { CORE,
-                    enabled });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    void setPluginEnabled(String pluginId, boolean enabled) {
-        logger.debug("setPluginEnabled(): pluginId={}, enabled={}", pluginId, enabled);
-        try {
-            dataSource.update("merge into config (id, enabled) values (?, ?)", new Object[] {
-                    pluginId, enabled });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    void storeCoreProperties(String propertiesJson) {
-        logger.debug("storeCoreProperties(): propertiesJson={}", propertiesJson);
-        if (!valid) {
-            return;
-        }
-        try {
-            dataSource.update("merge into config (id, properties) values (?, ?)", new Object[] {
-                    CORE, propertiesJson });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    void storePluginProperties(String pluginId, String propertiesJson) {
-        logger.debug("storePluginProperties(): pluginId={}, propertiesJson={}", pluginId,
-                propertiesJson);
-        if (!valid) {
-            return;
-        }
-        try {
-            dataSource.update("merge into config (id, properties) values (?, ?)", new Object[] {
-                    pluginId, propertiesJson });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private PluginConfig buildPluginConfig(PluginDescriptor pluginDescriptor, ResultSet resultSet)
-            throws SQLException {
-
-        Object enabledObject = resultSet.getObject(1);
-        // default value for enabled is true
-        boolean enabled = true;
-        if (enabledObject != null) {
-            enabled = resultSet.getBoolean(1);
-        }
-        String json = resultSet.getString(2);
-        if (json == null) {
-            return defaultPluginConfig(pluginDescriptor, enabled);
-        }
-        JsonElement propertiesElement;
-        try {
-            propertiesElement = gson.fromJson(json, JsonElement.class);
-        } catch (JsonSyntaxException e) {
-            logger.error(e.getMessage(), e);
-            return defaultPluginConfig(pluginDescriptor, enabled);
-        }
-        if (propertiesElement.isJsonObject()) {
-            return PluginConfig.builder(pluginDescriptor)
-                    .setEnabled(enabled)
-                    .setProperties(propertiesElement.getAsJsonObject())
-                    .build();
         } else {
-            logger.error("config for plugin id '{}' is not json object", pluginDescriptor.getId());
-            return defaultPluginConfig(pluginDescriptor, enabled);
+            return CoarseProfilingConfig.fromJson(configJson);
         }
     }
 
-    private PluginConfig defaultPluginConfig(PluginDescriptor pluginDescriptor, boolean enabled) {
-        return PluginConfig.builder(pluginDescriptor).setEnabled(enabled).build();
+    @Nullable
+    FineProfilingConfig readFineProfilingConfig() {
+        logger.debug("readFineProfilingConfig()");
+        String configJson = readConfig(PROFILING_FINE);
+        if (configJson == null) {
+            return null;
+        } else {
+            return FineProfilingConfig.fromJson(configJson);
+        }
+    }
+
+    @Nullable
+    PluginConfig readPluginConfig(String pluginId) {
+        logger.debug("readPluginConfig(): pluginId={}", pluginId);
+        String configJson = readConfig(pluginId);
+        if (configJson == null) {
+            return null;
+        } else {
+            return PluginConfig.fromJson(pluginId, configJson);
+        }
+    }
+
+    void storeCoreConfig(CoreConfig config) {
+        logger.debug("storeCoreConfig(): config={}", config);
+        storeConfig(CORE, config.toJson());
+    }
+
+    void storeCoarseProfilingConfig(CoarseProfilingConfig config) {
+        logger.debug("storeCoarseProfilingConfig(): config={}", config);
+        storeConfig(PROFILING_COARSE, config.toJson());
+    }
+
+    void storeFineProfilingConfig(FineProfilingConfig config) {
+        logger.debug("storeFineProfilingConfig(): config={}", config);
+        storeConfig(PROFILING_FINE, config.toJson());
+    }
+
+    void storePluginConfig(String pluginId, PluginConfig config) {
+        logger.debug("storePluginConfig(): pluginId={}, config={}", pluginId, config);
+        storeConfig(pluginId, config.toJson());
+    }
+
+    @Nullable
+    private String readConfig(String id) {
+        if (!valid) {
+            return null;
+        }
+        try {
+            return dataSource.queryForString("select config from config where id = ?",
+                    new Object[] { id });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private void storeConfig(String id, String config) {
+        if (!valid) {
+            return;
+        }
+        try {
+            dataSource.update("merge into config (id, config) values (?, ?)", new Object[] {
+                    id, config });
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 }

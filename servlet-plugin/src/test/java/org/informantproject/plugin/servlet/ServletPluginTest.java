@@ -72,7 +72,7 @@ public class ServletPluginTest {
     @Test
     public void testServlet() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
@@ -85,7 +85,7 @@ public class ServletPluginTest {
     @Test
     public void testFilter() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
@@ -98,7 +98,7 @@ public class ServletPluginTest {
     @Test
     public void testCombination() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
@@ -111,7 +111,7 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameters() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(GetParameters.class);
         // then don't fall into an infinite loop! (yes, at one time it did)
@@ -121,10 +121,10 @@ public class ServletPluginTest {
     @Test
     public void testHasSessionUsernameAttribute() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
@@ -135,10 +135,10 @@ public class ServletPluginTest {
     @Test
     public void testSetSessionUsernameAttribute() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionUsernameAttribute.class);
         // then
@@ -149,10 +149,10 @@ public class ServletPluginTest {
     @Test
     public void testSetSessionUsernameAttributeNull() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionUsernameAttributeNull.class);
         // then
@@ -165,10 +165,10 @@ public class ServletPluginTest {
     @Test
     public void testHasNestedSessionUsernameAttributePath() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.two");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
@@ -179,10 +179,10 @@ public class ServletPluginTest {
     @Test
     public void testSetNestedSessionUsernameAttributePath() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.two");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
         // then
@@ -193,10 +193,10 @@ public class ServletPluginTest {
     @Test
     public void testHasMissingSessionUsernameAttribute() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "missingusernameattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionUsernameAttribute.class);
         // then
@@ -207,10 +207,10 @@ public class ServletPluginTest {
     @Test
     public void testHasMissingNestedSessionUsernameAttributePath() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.missingtwo");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
         // then
@@ -221,10 +221,10 @@ public class ServletPluginTest {
     @Test
     public void testHasSessionAttribute() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "testattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -238,10 +238,10 @@ public class ServletPluginTest {
     @Test
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "*");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -255,10 +255,10 @@ public class ServletPluginTest {
     @Test
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", null);
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -271,10 +271,10 @@ public class ServletPluginTest {
     @Test
     public void testSetSessionAttribute() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "testattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -288,10 +288,10 @@ public class ServletPluginTest {
     @Test
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "*");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -305,10 +305,10 @@ public class ServletPluginTest {
     @Test
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", null);
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -321,10 +321,10 @@ public class ServletPluginTest {
     @Test
     public void testSetSessionAttributeNull() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "*");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
@@ -338,10 +338,10 @@ public class ServletPluginTest {
     @Test
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.two");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -355,10 +355,10 @@ public class ServletPluginTest {
     @Test
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.two");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -372,10 +372,10 @@ public class ServletPluginTest {
     @Test
     public void testHasMissingSessionAttribute() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "missingtestattr");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -388,10 +388,10 @@ public class ServletPluginTest {
     @Test
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.missingtwo");
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -404,7 +404,7 @@ public class ServletPluginTest {
     @Test
     public void testSessionInvalidate() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then
@@ -422,10 +422,10 @@ public class ServletPluginTest {
     @Test
     public void testServletContextInitialized() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureStartup", true);
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
@@ -438,10 +438,10 @@ public class ServletPluginTest {
     @Test
     public void testServletInit() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureStartup", true);
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(TestServletInit.class);
         // then
@@ -454,10 +454,10 @@ public class ServletPluginTest {
     @Test
     public void testFilterInit() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
-        PluginConfig pluginConfig = getPluginConfig();
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureStartup", true);
-        storePluginConfig(pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(TestFilterInit.class);
         // then
@@ -470,7 +470,7 @@ public class ServletPluginTest {
     @Test
     public void testThrowsException() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(10000);
+        container.getInformant().setPersistenceThresholdMillis(10000);
         // when
         container.executeAppUnderTest(ThrowsException.class);
         // then
@@ -484,7 +484,7 @@ public class ServletPluginTest {
     @Test
     public void testSend404Error() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(Send404Error.class);
         // then
@@ -494,14 +494,6 @@ public class ServletPluginTest {
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
         assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
                 "sendError, HTTP status code 404");
-    }
-
-    private PluginConfig getPluginConfig() throws Exception {
-        return container.getInformant().getPluginConfig(PLUGIN_ID);
-    }
-
-    private void storePluginConfig(PluginConfig pluginConfig) throws Exception {
-        container.getInformant().storePluginProperties(PLUGIN_ID, pluginConfig.getPropertiesJson());
     }
 
     @Nullable

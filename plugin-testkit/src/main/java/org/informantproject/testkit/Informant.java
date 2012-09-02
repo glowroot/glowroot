@@ -21,7 +21,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.CoarseProfilingConfig;
+import org.informantproject.testkit.Config.CoreConfig;
+import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.Config.PluginConfigJsonDeserializer;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -55,10 +57,10 @@ public class Informant {
         this.asyncHttpClient = asyncHttpClient;
     }
 
-    public void setThresholdMillis(int thresholdMillis) throws Exception {
-        CoreProperties coreProperties = getCoreProperties();
-        coreProperties.setThresholdMillis(thresholdMillis);
-        updateCoreProperties(coreProperties);
+    public void setPersistenceThresholdMillis(int persistenceThresholdMillis) throws Exception {
+        CoreConfig coreConfig = getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(persistenceThresholdMillis);
+        updateCoreConfig(coreConfig);
     }
 
     public String get(String path) throws Exception {
@@ -76,37 +78,81 @@ public class Informant {
         return validateAndReturnBody(response);
     }
 
-    public CoreProperties getCoreProperties() throws Exception {
-        return getConfig().getCoreProperties();
-    }
-
-    public void updateCoreProperties(CoreProperties properties) throws Exception {
-        post("/config/core/properties",
-                new GsonBuilder().serializeNulls().create().toJson(properties));
+    public CoreConfig getCoreConfig() throws Exception {
+        return getConfig().getCoreConfig();
     }
 
     public void disableCore() throws Exception {
-        get("/config/core/disable");
+        post("/config/core/disable", "");
     }
 
     public void enableCore() throws Exception {
-        get("/config/core/enable");
+        post("/config/core/enable", "");
+    }
+
+    public void updateCoreConfig(CoreConfig config) throws Exception {
+        // need to serialize nulls since the /config service treats absence of attribute different
+        // from null attribute (the former doesn't update the attribute, the latter sets the
+        // attribute to null)
+        post("/config/core", new GsonBuilder().serializeNulls().create().toJson(config));
+    }
+
+    public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
+        return getConfig().getCoarseProfilingConfig();
+    }
+
+    public void disableCoarseProfiling() throws Exception {
+        post("/config/profiling/coarse/disable", "");
+    }
+
+    public void enableCoarseProfiling() throws Exception {
+        post("/config/profiling/coarse/enable", "");
+    }
+
+    public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
+        // need to serialize nulls since the /config service treats absence of attribute different
+        // from null attribute (the former doesn't update the attribute, the latter sets the
+        // attribute to null)
+        post("/config/profiling/coarse", new GsonBuilder().serializeNulls().create()
+                .toJson(config));
+    }
+
+    public FineProfilingConfig getFineProfilingConfig() throws Exception {
+        return getConfig().getFineProfilingConfig();
+    }
+
+    public void disableFineProfiling() throws Exception {
+        post("/config/profiling/fine/disable", "");
+    }
+
+    public void enableFineProfiling() throws Exception {
+        post("/config/profiling/fine/enable", "");
+    }
+
+    public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
+        // need to serialize nulls since the /config service treats absence of attribute different
+        // from null attribute (the former doesn't update the attribute, the latter sets the
+        // attribute to null)
+        post("/config/profiling/fine", new GsonBuilder().serializeNulls().create().toJson(config));
     }
 
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
         return getConfig().getPluginConfigs().get(pluginId);
     }
 
-    public void storePluginProperties(String pluginId, String propertiesJson) throws Exception {
-        post("/config/plugin/" + pluginId + "/properties", propertiesJson);
-    }
-
     public void disablePlugin(String pluginId) throws Exception {
-        get("/config/plugin/" + pluginId + "/disable");
+        post("/config/plugin/" + pluginId + "/disable", "");
     }
 
     public void enablePlugin(String pluginId) throws Exception {
-        get("/config/plugin/" + pluginId + "/enable");
+        post("/config/plugin/" + pluginId + "/enable", "");
+    }
+
+    public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
+        // need to serialize nulls since the /config service treats absence of attribute different
+        // from null attribute (the former doesn't update the attribute, the latter sets the
+        // attribute to null)
+        post("/config/plugin/" + pluginId, config.toJson());
     }
 
     public Trace getLastTrace() throws Exception {

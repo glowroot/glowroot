@@ -20,7 +20,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.util.List;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;
@@ -49,10 +49,10 @@ public class SpanStackTraceTest {
     @Test
     public void shouldReadSpanStackTrace() throws Exception {
         // given
-        CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        coreProperties.setThresholdMillis(0);
-        coreProperties.setSpanStackTraceThresholdMillis(100);
-        container.getInformant().updateCoreProperties(coreProperties);
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        coreConfig.setSpanStackTraceThresholdMillis(100);
+        container.getInformant().updateCoreConfig(coreConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithSpanStackTrace.class);
         Trace trace = container.getInformant().getLastTrace();

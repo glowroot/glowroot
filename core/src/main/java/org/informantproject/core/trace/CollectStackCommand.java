@@ -23,13 +23,15 @@ import org.informantproject.core.stack.MergedStackTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Ticker;
+
 /**
  * Captures a stack trace for the thread executing a trace and stores the stack trace in the
  * {@link Trace}'s {@link MergedStackTree}.
  * 
  * Designed to be scheduled and run in a separate thread as soon as the trace exceeds a given
  * threshold, and then again at specified intervals after that (e.g. via
- * {@link ScheduledExecutorService#scheduleWithFixedDelay}).
+ * {@link ScheduledExecutorService#scheduleAtFixedRate}).
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -40,13 +42,23 @@ class CollectStackCommand implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(CollectStackCommand.class);
 
     private final Trace trace;
+    private final long endTick;
+    private final boolean fine;
+    private final Ticker ticker;
     private volatile boolean tracePreviouslyCompleted;
 
-    CollectStackCommand(Trace trace) {
+    CollectStackCommand(Trace trace, long endTick, boolean fine, Ticker ticker) {
         this.trace = trace;
+        this.endTick = endTick;
+        this.fine = fine;
+        this.ticker = ticker;
     }
 
     public void run() {
+        if (ticker.read() >= endTick) {
+            // just throwing to terminate subsequent scheduled executions
+            throw new TerminateScheduledActionException();
+        }
         if (trace.isCompleted()) {
             if (tracePreviouslyCompleted) {
                 logger.warn("trace '{}' already completed", trace.getRootSpan()
@@ -61,13 +73,13 @@ class CollectStackCommand implements Runnable {
             }
         }
         try {
-            trace.captureStackTrace();
+            trace.captureStackTrace(fine);
         } catch (Exception e) {
             // log and terminate successfully
             logger.error(e.getMessage(), e);
         } catch (Error e) {
             // log and re-throw serious error which will terminate subsequent scheduled executions
-            // (see ScheduledExecutorService.scheduleWithFixedDelay())
+            // (see ScheduledExecutorService.scheduleAtFixedRate())
             logger.error(e.getMessage(), e);
             throw e;
         }

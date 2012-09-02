@@ -134,7 +134,7 @@ class TracePointJsonService implements JsonService {
     private List<Trace> getActiveTraces(long low, long high) {
         List<Trace> activeTraces = Lists.newArrayList();
         long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService.getCoreConfig()
-                .getThresholdMillis());
+                .getPersistenceThresholdMillis());
         for (Trace trace : traceRegistry.getTraces()) {
             long duration = trace.getDuration();
             if (duration >= thresholdNanos && duration >= low && duration <= high) {

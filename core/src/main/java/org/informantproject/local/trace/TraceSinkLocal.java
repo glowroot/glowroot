@@ -64,13 +64,7 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public void onCompletedTrace(final Trace trace) {
-        CoreConfig config = configService.getCoreConfig();
-        int thresholdMillis = config.getThresholdMillis();
-        boolean thresholdDisabled = (thresholdMillis == CoreConfig.THRESHOLD_DISABLED);
-
-        if ((!thresholdDisabled && trace.getDuration() >= TimeUnit.MILLISECONDS
-                .toNanos(thresholdMillis)) || trace.isStuck() || trace.isError()) {
-
+        if (shouldPersist(trace)) {
             queueLength.incrementAndGet();
             executorService.execute(new Runnable() {
                 public void run() {
@@ -104,5 +98,31 @@ public class TraceSinkLocal implements TraceSink {
     public void close() {
         logger.debug("close()");
         executorService.shutdownNow();
+    }
+
+    private boolean shouldPersist(Trace trace) {
+        if (trace.isStuck() || trace.isError()) {
+            return true;
+        }
+        if (trace.isFine()) {
+            int finePersistenceThresholdMillis = configService.getFineProfilingConfig()
+                    .getPersistenceThresholdMillis();
+            if (finePersistenceThresholdMillis == CoreConfig.PERSISTENCE_THRESHOLD_DISABLED) {
+                // fall back to core persistence threshold
+                return persistBasedOnCorePersistenceThreshold(trace);
+            } else {
+                return trace.getDuration() >= TimeUnit.MILLISECONDS
+                        .toNanos(finePersistenceThresholdMillis);
+            }
+        } else {
+            return persistBasedOnCorePersistenceThreshold(trace);
+        }
+    }
+
+    private boolean persistBasedOnCorePersistenceThreshold(Trace trace) {
+        int persistenceThresholdMillis = configService.getCoreConfig()
+                .getPersistenceThresholdMillis();
+        return persistenceThresholdMillis != CoreConfig.PERSISTENCE_THRESHOLD_DISABLED
+                && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(persistenceThresholdMillis);
     }
 }

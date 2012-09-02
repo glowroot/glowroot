@@ -146,7 +146,7 @@ public class DataSource {
 
     @Nullable
     public String queryForString(String sql, final Object... args) throws SQLException {
-        return query(sql, args, new NullableResultSetExtractor<String>() {
+        return query(sql, args, new ResultSetExtractor<String>() {
             @Nullable
             public String extractData(ResultSet resultSet) throws SQLException {
                 if (resultSet.next()) {
@@ -184,28 +184,6 @@ public class DataSource {
     }
 
     public <T> T query(String sql, Object[] args, ResultSetExtractor<T> rse) throws SQLException {
-        synchronized (lock) {
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            try {
-                for (int i = 0; i < args.length; i++) {
-                    preparedStatement.setObject(i + 1, args[i]);
-                }
-                ResultSet resultSet = preparedStatement.executeQuery();
-                try {
-                    return rse.extractData(resultSet);
-                } finally {
-                    resultSet.close();
-                }
-            } finally {
-                closeStatement(preparedStatement);
-            }
-        }
-    }
-
-    @Nullable
-    public <T> T query(String sql, Object[] args, NullableResultSetExtractor<T> rse)
-            throws SQLException {
-
         synchronized (lock) {
             PreparedStatement preparedStatement = prepareStatement(sql);
             try {
@@ -439,11 +417,6 @@ public class DataSource {
     }
 
     public interface ResultSetExtractor<T> {
-        T extractData(ResultSet resultSet) throws SQLException;
-    }
-
-    public interface NullableResultSetExtractor<T> {
-        @Nullable
         T extractData(ResultSet resultSet) throws SQLException;
     }
 

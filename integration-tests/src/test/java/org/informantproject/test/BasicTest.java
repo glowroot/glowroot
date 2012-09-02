@@ -18,10 +18,8 @@ package org.informantproject.test;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Map;
-import java.util.Random;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreProperties;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.Trace.Span;
@@ -37,7 +35,6 @@ import com.google.common.collect.ImmutableMap;
  */
 public class BasicTest {
 
-    private static final Random random = new Random();
     private static InformantContainer container;
 
     @BeforeClass
@@ -51,20 +48,9 @@ public class BasicTest {
     }
 
     @Test
-    public void shouldUpdateAndReadBackConfig() throws Exception {
-        // given
-        CoreProperties randomCoreProperties = makeRandomCoreProperties();
-        container.getInformant().updateCoreProperties(randomCoreProperties);
-        // when
-        CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        // then
-        assertThat(coreProperties).isEqualTo(randomCoreProperties);
-    }
-
-    @Test
     public void shouldReadTraces() throws Exception {
         // given
-        container.getInformant().setThresholdMillis(0);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
@@ -86,19 +72,6 @@ public class BasicTest {
         assertThat(span3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(span3.getOffset()).isGreaterThan(0);
-    }
-
-    private static CoreProperties makeRandomCoreProperties() {
-        CoreProperties randomCoreProperties = new CoreProperties();
-        randomCoreProperties.setThresholdMillis(1000 + random.nextInt(60000));
-        randomCoreProperties.setStuckThresholdSeconds(1 + random.nextInt(60));
-        randomCoreProperties.setProfilerInitialDelayMillis(1000 + random.nextInt(60000));
-        randomCoreProperties.setProfilerIntervalMillis(1000 + random.nextInt(60000));
-        randomCoreProperties.setMaxEntries(1000 + random.nextInt(10000));
-        randomCoreProperties.setRollingSizeMb(100 + random.nextInt(10));
-        randomCoreProperties.setWarnOnEntryOutsideTrace(random.nextBoolean());
-        randomCoreProperties.setMetricPeriodMillis(1000 + random.nextInt(60000));
-        return randomCoreProperties;
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {

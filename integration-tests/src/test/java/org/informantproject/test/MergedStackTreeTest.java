@@ -18,7 +18,9 @@ package org.informantproject.test;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreProperties;
+import org.informantproject.testkit.Config.CoarseProfilingConfig;
+import org.informantproject.testkit.Config.CoreConfig;
+import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;
@@ -45,18 +47,73 @@ public class MergedStackTreeTest {
     }
 
     @Test
-    public void shouldReadMergedStackTree() throws Exception {
+    public void shouldReadCoarseMergedStackTree() throws Exception {
         // given
-        CoreProperties coreProperties = container.getInformant().getCoreProperties();
-        coreProperties.setThresholdMillis(0);
-        coreProperties.setProfilerInitialDelayMillis(100);
-        coreProperties.setProfilerIntervalMillis(10);
-        container.getInformant().updateCoreProperties(coreProperties);
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        container.getInformant().updateCoreConfig(coreConfig);
+        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        profilingConfig.setInitialDelayMillis(100);
+        profilingConfig.setIntervalMillis(10);
+        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getMergedStackTree()).isNotNull();
+        assertThat(trace.getCoarseMergedStackTree()).isNotNull();
+        // coarse profiler should have captured about 5 stack traces
+        assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isGreaterThan(0);
+        assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isLessThan(10);
+        assertThat(trace.getFineMergedStackTree()).isNull();
+    }
+
+    @Test
+    public void shouldReadFineMergedStackTree() throws Exception {
+        // given
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        container.getInformant().updateCoreConfig(coreConfig);
+        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+                .getCoarseProfilingConfig();
+        coarseProfilingConfig.setInitialDelayMillis(200);
+        coarseProfilingConfig.setIntervalMillis(10);
+        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        fineProfilingConfig.setTracePercentage(100);
+        fineProfilingConfig.setIntervalMillis(10);
+        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getCoarseMergedStackTree()).isNull();
+        assertThat(trace.getFineMergedStackTree()).isNotNull();
+        // fine profiler should have captured about 15 stack traces
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThan(10);
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(20);
+    }
+
+    @Test
+    public void shouldNotReadMergedStackTreeWhenDisabled() throws Exception {
+        // given
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        container.getInformant().updateCoreConfig(coreConfig);
+        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+                .getCoarseProfilingConfig();
+        coarseProfilingConfig.setEnabled(false);
+        coarseProfilingConfig.setInitialDelayMillis(100);
+        coarseProfilingConfig.setIntervalMillis(10);
+        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        fineProfilingConfig.setEnabled(false);
+        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getCoarseMergedStackTree()).isNull();
+        assertThat(trace.getFineMergedStackTree()).isNull();
     }
 
     public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,

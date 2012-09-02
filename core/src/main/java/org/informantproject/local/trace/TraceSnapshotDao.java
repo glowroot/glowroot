@@ -60,6 +60,7 @@ public class TraceSnapshotDao {
             new Column("start_at", Types.BIGINT),
             new Column("stuck", Types.BOOLEAN),
             new Column("error", Types.BOOLEAN), // for searching only
+            new Column("fine", Types.BOOLEAN), // for searching only
             new Column("duration", Types.BIGINT),
             new Column("completed", Types.BOOLEAN),
             new Column("description", Types.VARCHAR),
@@ -70,7 +71,8 @@ public class TraceSnapshotDao {
             new Column("error_stack_trace", Types.VARCHAR), // json data
             new Column("metrics", Types.VARCHAR), // json data
             new Column("spans", Types.VARCHAR), // rolling file block id
-            new Column("merged_stack_tree", Types.VARCHAR)); // rolling file block id
+            new Column("coarse_merged_stack_tree", Types.VARCHAR), // rolling file block id
+            new Column("fine_merged_stack_tree", Types.VARCHAR)); // rolling file block id
 
     private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("trace_idx",
             "captured_at", "duration"));
@@ -123,26 +125,36 @@ public class TraceSnapshotDao {
                 logger.error(e.getMessage(), e);
             }
         }
-        String mergedStackTreeBlockId = null;
-        ByteStream mergedStackTree = snapshot.getMergedStackTree();
-        if (mergedStackTree != null) {
+        String coarseMergedStackTreeBlockId = null;
+        ByteStream coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
+        if (coarseMergedStackTree != null) {
             try {
-                mergedStackTreeBlockId = rollingFile.write(mergedStackTree).getId();
+                coarseMergedStackTreeBlockId = rollingFile.write(coarseMergedStackTree).getId();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+        String fineMergedStackTreeBlockId = null;
+        ByteStream fineMergedStackTree = snapshot.getFineMergedStackTree();
+        if (fineMergedStackTree != null) {
+            try {
+                fineMergedStackTreeBlockId = rollingFile.write(fineMergedStackTree).getId();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
         }
         try {
-            dataSource.update("merge into trace (id, captured_at, start_at, stuck, error,"
+            dataSource.update("merge into trace (id, captured_at, start_at, stuck, error, fine,"
                     + " duration, completed, description, attributes, username, error_text,"
-                    + " error_detail, error_stack_trace, metrics, spans, merged_stack_tree) values"
-                    + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(),
-                    capturedAt, snapshot.getStartAt(), snapshot.isStuck(),
-                    snapshot.getErrorText() != null, snapshot.getDuration(),
+                    + " error_detail, error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
+                    + " fine_merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?)", snapshot.getId(), capturedAt, snapshot.getStartAt(),
+                    snapshot.isStuck(), snapshot.getErrorText() != null,
+                    fineMergedStackTreeBlockId != null, snapshot.getDuration(),
                     snapshot.isCompleted(), snapshot.getDescription(), snapshot.getAttributes(),
                     snapshot.getUsername(), snapshot.getErrorText(), snapshot.getErrorDetail(),
                     snapshot.getErrorStackTrace(), snapshot.getMetrics(), spansBlockId,
-                    mergedStackTreeBlockId);
+                    coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -193,8 +205,9 @@ public class TraceSnapshotDao {
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, stuck, duration,"
                     + " completed, description, attributes, username, error_text, error_detail,"
-                    + " error_stack_trace, metrics, spans, merged_stack_tree from trace where"
-                    + " id = ?", new Object[] { id }, new TraceRowMapper());
+                    + " error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
+                    + " fine_merged_stack_tree from trace where id = ?", new Object[] { id },
+                    new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -295,9 +308,10 @@ public class TraceSnapshotDao {
             TraceSnapshot.Builder builder = createBuilder(resultSet);
             // wait and read from rolling file outside of the jdbc connection
             String spansFileBlockId = resultSet.getString(13);
-            String mergedStackTreeFileBlockId = resultSet.getString(14);
+            String coarseMergedStackTreeFileBlockId = resultSet.getString(14);
+            String fineMergedStackTreeFileBlockId = resultSet.getString(15);
             return new PartiallyHydratedTrace(builder, spansFileBlockId,
-                    mergedStackTreeFileBlockId);
+                    coarseMergedStackTreeFileBlockId, fineMergedStackTreeFileBlockId);
         }
     }
 
@@ -309,14 +323,19 @@ public class TraceSnapshotDao {
         @Nullable
         private final String spansFileBlockId;
         @Nullable
-        private final String mergedStackTreeFileBlockId;
+        private final String coarseMergedStackTreeFileBlockId;
+        @Nullable
+        private final String fineMergedStackTreeFileBlockId;
 
         private PartiallyHydratedTrace(TraceSnapshot.Builder builder,
-                @Nullable String spansFileBlockId, @Nullable String mergedStackTreeFileBlockId) {
+                @Nullable String spansFileBlockId,
+                @Nullable String coarseMergedStackTreeFileBlockId,
+                @Nullable String fineMergedStackTreeFileBlockId) {
 
             this.builder = builder;
             this.spansFileBlockId = spansFileBlockId;
-            this.mergedStackTreeFileBlockId = mergedStackTreeFileBlockId;
+            this.coarseMergedStackTreeFileBlockId = coarseMergedStackTreeFileBlockId;
+            this.fineMergedStackTreeFileBlockId = fineMergedStackTreeFileBlockId;
         }
 
         private TraceSnapshot fullyHydrate() {
@@ -329,11 +348,20 @@ public class TraceSnapshotDao {
                     logger.error(e.getMessage(), e);
                 }
             }
-            if (mergedStackTreeFileBlockId != null) {
+            if (coarseMergedStackTreeFileBlockId != null) {
                 FileBlock block;
                 try {
-                    block = FileBlock.from(mergedStackTreeFileBlockId);
-                    builder.mergedStackTree(rollingFile.read(block));
+                    block = FileBlock.from(coarseMergedStackTreeFileBlockId);
+                    builder.coarseMergedStackTree(rollingFile.read(block));
+                } catch (InvalidBlockId e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            if (fineMergedStackTreeFileBlockId != null) {
+                FileBlock block;
+                try {
+                    block = FileBlock.from(fineMergedStackTreeFileBlockId);
+                    builder.fineMergedStackTree(rollingFile.read(block));
                 } catch (InvalidBlockId e) {
                     logger.error(e.getMessage(), e);
                 }

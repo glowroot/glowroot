@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -35,59 +36,55 @@ import com.google.gson.JsonObject;
  */
 public class Config {
 
-    private boolean enabled;
-    private CoreProperties coreProperties;
+    private CoreConfig coreConfig;
+    private CoarseProfilingConfig coarseProfilingConfig;
+    private FineProfilingConfig fineProfilingConfig;
     private Map<String, PluginConfig> pluginConfigs;
 
-    public boolean isEnabled() {
-        return enabled;
+    public CoreConfig getCoreConfig() {
+        return coreConfig;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public CoarseProfilingConfig getCoarseProfilingConfig() {
+        return coarseProfilingConfig;
     }
 
-    public CoreProperties getCoreProperties() {
-        return coreProperties;
+    public FineProfilingConfig getFineProfilingConfig() {
+        return fineProfilingConfig;
     }
 
     public Map<String, PluginConfig> getPluginConfigs() {
         return pluginConfigs;
     }
 
-    public static class CoreProperties {
-        private int thresholdMillis;
+    public static class CoreConfig {
+
+        private boolean enabled;
+        private int persistenceThresholdMillis;
         private int stuckThresholdSeconds;
-        private int profilerInitialDelayMillis;
-        private int profilerIntervalMillis;
         private int spanStackTraceThresholdMillis;
         private int maxEntries;
         private int rollingSizeMb;
         private boolean warnOnEntryOutsideTrace;
         private int metricPeriodMillis;
-        public int getThresholdMillis() {
-            return thresholdMillis;
+
+        public boolean isEnabled() {
+            return enabled;
         }
-        public void setThresholdMillis(int thresholdMillis) {
-            this.thresholdMillis = thresholdMillis;
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        public int getPersistenceThresholdMillis() {
+            return persistenceThresholdMillis;
+        }
+        public void setPersistenceThresholdMillis(int persistenceThresholdMillis) {
+            this.persistenceThresholdMillis = persistenceThresholdMillis;
         }
         public int getStuckThresholdSeconds() {
             return stuckThresholdSeconds;
         }
         public void setStuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
-        }
-        public int getProfilerInitialDelayMillis() {
-            return profilerInitialDelayMillis;
-        }
-        public void setProfilerInitialDelayMillis(int profilerInitialDelayMillis) {
-            this.profilerInitialDelayMillis = profilerInitialDelayMillis;
-        }
-        public int getProfilerIntervalMillis() {
-            return profilerIntervalMillis;
-        }
-        public void setProfilerIntervalMillis(int profilerIntervalMillis) {
-            this.profilerIntervalMillis = profilerIntervalMillis;
         }
         public int getSpanStackTraceThresholdMillis() {
             return spanStackTraceThresholdMillis;
@@ -121,21 +118,19 @@ public class Config {
         }
         @Override
         public int hashCode() {
-            return Objects.hashCode(thresholdMillis, stuckThresholdSeconds,
-                    profilerInitialDelayMillis, profilerIntervalMillis,
+            return Objects.hashCode(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
                     spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
                     warnOnEntryOutsideTrace, metricPeriodMillis);
         }
         @Override
         public boolean equals(@Nullable Object o) {
-            if (!(o instanceof CoreProperties)) {
+            if (!(o instanceof CoreConfig)) {
                 return false;
             }
-            CoreProperties other = (CoreProperties) o;
-            return Objects.equal(thresholdMillis, other.thresholdMillis)
+            CoreConfig other = (CoreConfig) o;
+            return Objects.equal(enabled, other.enabled)
+                    && Objects.equal(persistenceThresholdMillis, other.persistenceThresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, other.stuckThresholdSeconds)
-                    && Objects.equal(profilerInitialDelayMillis, other.profilerInitialDelayMillis)
-                    && Objects.equal(profilerIntervalMillis, other.profilerIntervalMillis)
                     && Objects.equal(spanStackTraceThresholdMillis,
                             other.spanStackTraceThresholdMillis)
                     && Objects.equal(maxEntries, other.maxEntries)
@@ -145,12 +140,119 @@ public class Config {
         }
     }
 
+    public static class CoarseProfilingConfig {
+
+        private boolean enabled;
+        private int initialDelayMillis;
+        private int intervalMillis;
+        private int totalSeconds;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        public int getInitialDelayMillis() {
+            return initialDelayMillis;
+        }
+        public void setInitialDelayMillis(int initialDelayMillis) {
+            this.initialDelayMillis = initialDelayMillis;
+        }
+        public int getIntervalMillis() {
+            return intervalMillis;
+        }
+        public void setIntervalMillis(int intervalMillis) {
+            this.intervalMillis = intervalMillis;
+        }
+        public int getTotalSeconds() {
+            return totalSeconds;
+        }
+        public void setTotalSeconds(int totalSeconds) {
+            this.totalSeconds = totalSeconds;
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(enabled, initialDelayMillis, intervalMillis, totalSeconds);
+        }
+        @Override
+        public boolean equals(@Nullable Object o) {
+            if (!(o instanceof CoarseProfilingConfig)) {
+                return false;
+            }
+            CoarseProfilingConfig other = (CoarseProfilingConfig) o;
+            return Objects.equal(enabled, other.enabled)
+                    && Objects.equal(initialDelayMillis, other.initialDelayMillis)
+                    && Objects.equal(intervalMillis, other.intervalMillis)
+                    && Objects.equal(totalSeconds, other.totalSeconds);
+        }
+    }
+
+    public static class FineProfilingConfig {
+
+        private boolean enabled;
+        private double tracePercentage;
+        private int intervalMillis;
+        private int totalSeconds;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        public double getTracePercentage() {
+            return tracePercentage;
+        }
+        public void setTracePercentage(double tracePercentage) {
+            this.tracePercentage = tracePercentage;
+        }
+        public int getIntervalMillis() {
+            return intervalMillis;
+        }
+        public void setIntervalMillis(int intervalMillis) {
+            this.intervalMillis = intervalMillis;
+        }
+        public int getTotalSeconds() {
+            return totalSeconds;
+        }
+        public void setTotalSeconds(int totalSeconds) {
+            this.totalSeconds = totalSeconds;
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds);
+        }
+        @Override
+        public boolean equals(@Nullable Object o) {
+            if (!(o instanceof FineProfilingConfig)) {
+                return false;
+            }
+            FineProfilingConfig other = (FineProfilingConfig) o;
+            return Objects.equal(enabled, other.enabled)
+                    && Objects.equal(tracePercentage, other.tracePercentage)
+                    && Objects.equal(intervalMillis, other.intervalMillis)
+                    && Objects.equal(totalSeconds, other.totalSeconds);
+        }
+    }
+
     public static class PluginConfig {
+
         private boolean enabled;
         // map values are @Nullable
         private final Map<String, Object> properties = Maps.newHashMap();
+
+        String toJson() {
+            Gson gson = new GsonBuilder().serializeNulls().create();
+            JsonObject jsonObject = gson.toJsonTree(properties).getAsJsonObject();
+            jsonObject.addProperty("enabled", enabled);
+            return gson.toJson(jsonObject);
+        }
         public boolean isEnabled() {
             return enabled;
+        }
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
         @Nullable
         public Object getProperty(String name) {
@@ -159,8 +261,18 @@ public class Config {
         public void setProperty(String name, @Nullable Object value) {
             properties.put(name, value);
         }
-        public String getPropertiesJson() {
-            return new GsonBuilder().serializeNulls().create().toJson(properties);
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(enabled, properties);
+        }
+        @Override
+        public boolean equals(@Nullable Object o) {
+            if (!(o instanceof PluginConfig)) {
+                return false;
+            }
+            PluginConfig other = (PluginConfig) o;
+            return Objects.equal(enabled, other.enabled)
+                    && Objects.equal(properties, other.properties);
         }
     }
 
@@ -169,10 +281,10 @@ public class Config {
                 JsonDeserializationContext context) {
 
             PluginConfig pluginConfig = new PluginConfig();
-            pluginConfig.enabled = json.getAsJsonObject().get("enabled").getAsBoolean();
-            JsonObject properties = json.getAsJsonObject().get("properties").getAsJsonObject();
-            for (Entry<String, JsonElement> entry : properties.entrySet()) {
-                if (entry.getValue().isJsonNull()) {
+            for (Entry<String, JsonElement> entry : json.getAsJsonObject().entrySet()) {
+                if (entry.getKey().equals("enabled")) {
+                    pluginConfig.enabled = entry.getValue().getAsBoolean();
+                } else if (entry.getValue().isJsonNull()) {
                     pluginConfig.setProperty(entry.getKey(), null);
                 } else {
                     pluginConfig.setProperty(entry.getKey(),
