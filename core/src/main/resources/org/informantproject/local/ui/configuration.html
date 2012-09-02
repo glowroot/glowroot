@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="libs/jquery/1.7.2/jquery.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
+<script type="text/javascript" src="libs/spin/1.2.5/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script id="pluginTemplate" type="text/x-handlebars-template">
 <br>
@@ -222,7 +223,12 @@
       }
     })
   }
+  // updateCoreConfig can take a while if resizing large rolling database
+  var postingUpdateCore = false
   function updateCoreConfig() {
+    // handling crazy user clicking on the button
+    if (postingUpdateCore) return
+    postingUpdateCore = true
     var config = {
       'persistenceThresholdMillis': $('#persistenceThresholdMillis').val(),
       'stuckThresholdSeconds': $('#stuckThresholdSeconds').val(),
@@ -231,8 +237,13 @@
       'rollingSizeMb': $('#rollingSizeMb').val()
     }
     $.post('config/core', JSON.stringify(config), function() {
+      postingUpdateCore = false
+      hideSpinner('#saveCoreButtonSpinner')
       showAndFadeSuccessMessage('#saveCoreComplete')
     })
+    // in case button is clicked again before success message is hidden
+    $('#saveCoreComplete').hide()
+    showSpinner('#saveCoreButtonSpinner')
   }
   function updateCoarseProfilingConfig() {
     var config = {
@@ -396,6 +407,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
+        <div id="saveCoreButtonSpinner" class="button-spinner"></div>
         <div id="saveCoreComplete" class="button-success-message">Saved</div>
       </div>
     </fieldset>
