@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 
 import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
-import org.informantproject.api.Supplier;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
@@ -118,7 +118,7 @@ public class TraceSnapshotService {
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }
-        builder.username(trace.getUsernameSupplier().get());
+        builder.username(trace.getUsername());
         builder.metrics(getMetricsJson(trace));
         if (includeDetail) {
             SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick,
@@ -337,7 +337,7 @@ public class TraceSnapshotService {
             jw.value(span.getParentIndex());
             jw.name("nestingLevel");
             jw.value(span.getNestingLevel());
-            Supplier<Message> messageSupplier = span.getMessageSupplier();
+            MessageSupplier messageSupplier = span.getMessageSupplier();
             if (messageSupplier != null) {
                 Message message = messageSupplier.get();
                 jw.name("message");

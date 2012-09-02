@@ -18,13 +18,12 @@ package org.informantproject.testing.ui;
 import java.util.Map;
 import java.util.Random;
 
-import org.informantproject.api.ErrorMessages;
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.UnresolvedMethod;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTarget;
@@ -68,7 +67,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -90,7 +89,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -112,7 +111,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -134,7 +133,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -156,7 +155,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -178,7 +177,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -200,7 +199,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -222,7 +221,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -244,7 +243,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -266,23 +265,24 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
 
-    private static Supplier<Message> getMessageSupplier(Object expensive) {
-        return TemplateMessage.of((String) getDescription.invoke(expensive));
+    private static MessageSupplier getMessageSupplier(Object expensive) {
+        return MessageSupplier.from((String) getDescription.invoke(expensive));
     }
 
-    private static Supplier<Message> getMessageSupplierWithDetail(final Object expensive) {
-        return new Supplier<Message>() {
+    private static MessageSupplier getMessageSupplierWithDetail(final Object expensive) {
+        return new MessageSupplier() {
+            @Override
             public Message get() {
                 Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return TemplateMessage.of((String) getDescription.invoke(expensive), detail);
+                return Message.withDetail((String) getDescription.invoke(expensive), detail);
             }
         };
     }

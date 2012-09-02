@@ -21,8 +21,7 @@ import java.util.Queue;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.ErrorMessage;
-import org.informantproject.api.Message;
-import org.informantproject.api.Supplier;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.core.util.PartiallyThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +58,7 @@ class RootSpan {
 
     private final Ticker ticker;
 
-    RootSpan(Supplier<Message> messageSupplier, TraceMetric traceMetric, long startTick,
+    RootSpan(MessageSupplier messageSupplier, TraceMetric traceMetric, long startTick,
             Ticker ticker) {
 
         this.startTick = startTick;
@@ -97,7 +96,7 @@ class RootSpan {
         return endTick != 0;
     }
 
-    Span pushSpan(long startTick, Supplier<Message> messageSupplier, TraceMetric traceMetric) {
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetric traceMetric) {
         Span span = createSpan(startTick, messageSupplier, null, traceMetric);
         pushSpanInternal(span);
         return span;
@@ -115,7 +114,7 @@ class RootSpan {
         }
     }
 
-    Span addSpan(long startTick, @Nullable Supplier<Message> messageSupplier,
+    Span addSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
 
         Span span = createSpan(startTick, messageSupplier, errorMessage, null);
@@ -125,7 +124,7 @@ class RootSpan {
         return span;
     }
 
-    private Span createSpan(long startTick, @Nullable Supplier<Message> messageSupplier,
+    private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric) {
 
         Span currentSpan = spanStack.get(spanStack.size() - 1);

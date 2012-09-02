@@ -21,15 +21,11 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.ErrorMessage;
-import org.informantproject.api.ErrorMessages;
-import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PointcutStackTrace;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.Suppliers;
-import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectReturn;
@@ -110,7 +106,7 @@ public class ServletAspect {
                     // capture username now, don't use a lazy supplier
                     String username = getSessionAttributeTextValue(session,
                             sessionUsernameAttributePath);
-                    pluginServices.setUsername(Suppliers.ofInstance(username));
+                    pluginServices.setUsername(username);
                 }
             }
             return span;
@@ -118,7 +114,7 @@ public class ServletAspect {
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
             // ignoring potential sendError since this seems worse
-            span.endWithError(ErrorMessages.from(t));
+            span.endWithError(ErrorMessage.from(t));
             sendError.remove();
             topLevel.remove();
         }
@@ -317,7 +313,7 @@ public class ServletAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object listener) {
-            return pluginServices.startTrace(TemplateMessage.of("servlet context initialized"
+            return pluginServices.startTrace(MessageSupplier.from("servlet context initialized"
                     + " ({{listener}})", listener.getClass().getName()), metric);
         }
         @OnAfter
@@ -337,7 +333,7 @@ public class ServletAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object servlet) {
-            return pluginServices.startTrace(TemplateMessage.of("servlet init ({{filter}})",
+            return pluginServices.startTrace(MessageSupplier.from("servlet init ({{filter}})",
                     servlet.getClass().getName()), metric);
         }
         @OnAfter
@@ -357,7 +353,7 @@ public class ServletAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object filter) {
-            return pluginServices.startTrace(TemplateMessage.of("filter init ({{filter}})",
+            return pluginServices.startTrace(MessageSupplier.from("filter init ({{filter}})",
                     filter.getClass().getName()), metric);
         }
         @OnAfter
@@ -376,7 +372,7 @@ public class ServletAspect {
         @OnAfter
         public static void onAfter(Integer statusCode) {
             if (topLevel.get() != null) {
-                sendError.set(ErrorMessages.from("sendError, HTTP status code " + statusCode,
+                sendError.set(ErrorMessage.from("sendError, HTTP status code " + statusCode,
                         new PointcutStackTrace(SendErrorAdvice.class)));
             }
         }
@@ -394,13 +390,13 @@ public class ServletAspect {
         if (sessionUsernameAttributePath != null) {
             // capture username now, don't use a lazy supplier
             if (sessionUsernameAttributePath.equals(name)) {
-                pluginServices.setUsername(Suppliers.ofInstance(value.toString()));
+                pluginServices.setUsername(value.toString());
             } else if (sessionUsernameAttributePath.startsWith(name + ".")) {
                 String username = getSessionAttributeTextValue(session,
                         sessionUsernameAttributePath);
                 if (username != null) {
                     // if username is null, don't clear it by setting Suppliers.ofInstance(null)
-                    pluginServices.setUsername(Suppliers.ofInstance(username));
+                    pluginServices.setUsername(username);
                 }
             }
         }
@@ -439,7 +435,7 @@ public class ServletAspect {
 
     @Nullable
     private static ServletMessageSupplier getRootServletMessageSupplier(HttpSession session) {
-        Supplier<Message> rootMessageSupplier = pluginServices.getRootMessageSupplier();
+        MessageSupplier rootMessageSupplier = pluginServices.getRootMessageSupplier();
         if (!(rootMessageSupplier instanceof ServletMessageSupplier)) {
             return null;
         }

@@ -27,25 +27,25 @@ public class MessageTest {
 
     @Test
     public void shouldFormatConstant() {
-        Message message = TemplateMessage.of("constant");
+        Message message = Message.from("constant");
         assertThat(message.getText()).isEqualTo("constant");
     }
 
     @Test
     public void shouldFormatSingle() {
-        Message message = TemplateMessage.of("{{one}}", "test");
+        Message message = Message.from("{{one}}", "test");
         assertThat(message.getText()).isEqualTo("test");
     }
 
     @Test
     public void shouldFormatSinglePlus() {
-        Message message = TemplateMessage.of("one {{one}} two", "test");
+        Message message = Message.from("one {{one}} two", "test");
         assertThat(message.getText()).isEqualTo("one test two");
     }
 
     @Test
     public void shouldFormatMultiple() {
-        Message message = TemplateMessage.of("one {{one}} two {{two}}{{three}}", "test", "2", "3");
+        Message message = Message.from("one {{one}} two {{two}}{{three}}", "test", "2", "3");
         assertThat(message.getText()).isEqualTo("one test two 23");
     }
 }

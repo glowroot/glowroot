@@ -76,24 +76,24 @@ public abstract class PluginServices {
 
     // if there is no trace already bound to the current thread, a new trace is created and bound.
     // if there is already a trace bound to the current thread, this method delegates to startSpan()
-    public abstract Span startTrace(Supplier<Message> messageSupplier, Metric metric);
+    public abstract Span startTrace(MessageSupplier messageSupplier, Metric metric);
 
-    public abstract Span startSpan(Supplier<Message> messageSupplier, Metric metric);
+    public abstract Span startSpan(MessageSupplier messageSupplier, Metric metric);
 
     public abstract Timer startTimer(Metric metric);
 
-    public abstract void addSpan(Supplier<Message> messageSupplier);
+    public abstract void addSpan(MessageSupplier messageSupplier);
 
     // does not mark trace as error
     public abstract void addErrorSpan(ErrorMessage errorMessage);
 
-    public abstract void setUsername(Supplier<String> usernameSupplier);
+    public abstract void setUsername(String username);
 
     // sets trace attribute in
     public abstract void setTraceAttribute(String name, @Nullable String value);
 
     @Nullable
-    public abstract Supplier<Message> getRootMessageSupplier();
+    public abstract MessageSupplier getRootMessageSupplier();
 
     private static PluginServices createPluginServices(String pluginId) {
         try {
@@ -161,11 +161,11 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
+        public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
             return NopSpan.INSTANCE;
         }
         @Override
-        public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
+        public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
             return NopSpan.INSTANCE;
         }
         @Override
@@ -173,16 +173,16 @@ public abstract class PluginServices {
             return NopTimer.INSTANCE;
         }
         @Override
-        public void addSpan(Supplier<Message> messageSupplier) {}
+        public void addSpan(MessageSupplier messageSupplier) {}
         @Override
         public void addErrorSpan(ErrorMessage errorMessage) {}
         @Override
-        public void setUsername(Supplier<String> usernameSupplier) {}
+        public void setUsername(String username) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
         @Override
         @Nullable
-        public Supplier<Message> getRootMessageSupplier() {
+        public MessageSupplier getRootMessageSupplier() {
             return null;
         }
 

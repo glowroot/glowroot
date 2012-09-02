@@ -29,10 +29,10 @@ public interface Span {
     // only marks trace as error if this is the root span
     void endWithError(ErrorMessage errorMessage);
 
-    // TODO revisit this, what about setMessage(Supplier<Message>) instead?
+    // TODO revisit this, what about setMessage(MessageSupplier) instead?
     void updateMessage(MessageUpdater updater);
 
     public interface MessageUpdater {
-        void update(Supplier<Message> messageSupplier);
+        void update(MessageSupplier messageSupplier);
     }
 }

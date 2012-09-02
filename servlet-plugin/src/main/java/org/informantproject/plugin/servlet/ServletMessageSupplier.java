@@ -23,8 +23,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.TemplateMessage;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.shaded.google.common.base.Joiner;
 import org.informantproject.shaded.google.common.base.Objects;
 import org.informantproject.shaded.google.common.base.Optional;
@@ -45,7 +44,7 @@ import org.informantproject.shaded.google.common.collect.Maps;
  * @since 0.5
  */
 @ThreadSafe
-class ServletMessageSupplier implements Supplier<Message> {
+class ServletMessageSupplier extends MessageSupplier {
 
     // TODO allow additional notation for session attributes to capture, e.g.
     // +currentControllerContext.key which would denote to capture the value of that attribute at
@@ -118,7 +117,7 @@ class ServletMessageSupplier implements Supplier<Message> {
         } else {
             message = requestMethod + " " + requestURI;
         }
-        return TemplateMessage.of(message, detail.build());
+        return Message.withDetail(message, detail.build());
     }
 
     boolean isRequestParameterMapCaptured() {

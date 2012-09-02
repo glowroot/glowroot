@@ -21,8 +21,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Message;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.TemplateMessage;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.shaded.google.common.collect.ImmutableList;
 import org.informantproject.shaded.google.common.collect.Lists;
 
@@ -53,7 +52,7 @@ import org.informantproject.shaded.google.common.collect.Lists;
  * @since 0.5
  */
 @ThreadSafe
-class JdbcMessageSupplier implements Supplier<Message> {
+class JdbcMessageSupplier extends MessageSupplier {
 
     private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
 
@@ -113,14 +112,14 @@ class JdbcMessageSupplier implements Supplier<Message> {
         sb.append("jdbc execution: ");
         if (batchedSqls != null) {
             appendBatchedSqls(sb);
-            return TemplateMessage.of(sb.toString());
+            return Message.from(sb.toString());
         }
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {
             // print out number of batches to make it easy to identify
             sb.append(Integer.toString(batchedParameters.size()));
             sb.append(" x ");
         }
-        List<Object> args = Lists.newArrayList();
+        List<Object> args = Lists.newArrayListWithCapacity(2);
         sb.append("{{sql}}");
         args.add(sql);
         if (isUsingParameters() && !parameters.isEmpty()) {
@@ -140,7 +139,7 @@ class JdbcMessageSupplier implements Supplier<Message> {
             sb.append(Integer.toHexString(connectionHashCode));
         }
         sb.append("]");
-        return TemplateMessage.of(sb.toString(), args);
+        return Message.from(sb.toString(), args.toArray());
     }
 
     // TODO put row num and bind parameters in detail map?

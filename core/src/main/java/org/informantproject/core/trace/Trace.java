@@ -33,9 +33,6 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.api.ErrorMessage;
-import org.informantproject.api.Message;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.Suppliers;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.PartiallyThreadSafe;
@@ -76,7 +73,8 @@ public class Trace {
     @GuardedBy("attributes")
     private final List<TraceAttribute> attributes = new ArrayList<TraceAttribute>();
 
-    private volatile Supplier<String> usernameSupplier = Suppliers.ofInstance(null);
+    @Nullable
+    private volatile String username;
 
     // this is mostly updated and rarely read, so it seems like synchronized ArrayList is the best
     // collection
@@ -110,7 +108,7 @@ public class Trace {
     private final WeavingMetricImpl weavingMetric;
     private final TraceMetric weavingTraceMetric;
 
-    public Trace(MetricImpl metric, org.informantproject.api.Supplier<Message> messageSupplier,
+    public Trace(MetricImpl metric, org.informantproject.api.MessageSupplier messageSupplier,
             Clock clock, Ticker ticker, WeavingMetricImpl weavingMetric) {
 
         this.ticker = ticker;
@@ -165,8 +163,9 @@ public class Trace {
         }
     }
 
-    public Supplier<String> getUsernameSupplier() {
-        return usernameSupplier;
+    @Nullable
+    public String getUsername() {
+        return username;
     }
 
     public boolean isError() {
@@ -225,8 +224,8 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    public void setUsernameSupplier(Supplier<String> usernameSupplier) {
-        this.usernameSupplier = usernameSupplier;
+    public void setUsername(@Nullable String username) {
+        this.username = username;
     }
 
     public void setAttribute(String name, @Nullable String value) {
@@ -265,7 +264,7 @@ public class Trace {
     }
 
     public Span pushSpan(MetricImpl metric,
-            org.informantproject.api.Supplier<Message> messageSupplier) {
+            org.informantproject.api.MessageSupplier messageSupplier) {
 
         long startTick = ticker.read();
         TraceMetric traceMetric = metric.start(startTick);
@@ -279,7 +278,7 @@ public class Trace {
     }
 
     // one but not both args can be null
-    public Span addSpan(@Nullable org.informantproject.api.Supplier<Message> messageSupplier,
+    public Span addSpan(@Nullable org.informantproject.api.MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
 
         if (messageSupplier == null && errorMessage == null) {

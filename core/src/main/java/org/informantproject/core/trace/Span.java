@@ -19,8 +19,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.ErrorMessage;
-import org.informantproject.api.Message;
-import org.informantproject.api.Supplier;
+import org.informantproject.api.MessageSupplier;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -35,7 +34,7 @@ import org.informantproject.api.Supplier;
 public class Span {
 
     @Nullable
-    private final Supplier<Message> messageSupplier;
+    private final MessageSupplier messageSupplier;
     @Nullable
     private volatile ErrorMessage errorMessage;
 
@@ -57,7 +56,7 @@ public class Span {
     @Nullable
     private volatile StackTraceElement[] stackTrace;
 
-    Span(@Nullable Supplier<Message> messageSupplier, long traceStartTick, long startTick,
+    Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
             int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
 
         this.messageSupplier = messageSupplier;
@@ -70,7 +69,7 @@ public class Span {
     }
 
     @Nullable
-    public Supplier<Message> getMessageSupplier() {
+    public MessageSupplier getMessageSupplier() {
         return messageSupplier;
     }
 

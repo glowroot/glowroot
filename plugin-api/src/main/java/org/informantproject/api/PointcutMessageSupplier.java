@@ -15,19 +15,15 @@
  */
 package org.informantproject.api;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
 
 import org.informantproject.api.Span.MessageUpdater;
-
-import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PointcutMessageSupplier implements Supplier<Message> {
+public class PointcutMessageSupplier extends MessageSupplier {
 
     private final String template;
     private final Object[] args;
@@ -49,19 +45,21 @@ public class PointcutMessageSupplier implements Supplier<Message> {
         hasReturnValue = true;
     }
 
+    @Override
     public Message get() {
         if (hasReturnValue) {
-            List<Object> messageArgs = Lists.newArrayList(args);
-            messageArgs.add(returnValue);
-            return TemplateMessage.of(template + " => {{returnValue}}", messageArgs);
+            Object[] messageArgs = new Object[args.length + 1];
+            System.arraycopy(args, 0, messageArgs, 0, args.length);
+            messageArgs[args.length] = returnValue;
+            return Message.from(template + " => {{returnValue}}", messageArgs);
         } else {
-            return TemplateMessage.of(template, args);
+            return Message.from(template, args);
         }
     }
 
     public static void updateWithReturnValue(final Object returnValue, Span span) {
         span.updateMessage(new MessageUpdater() {
-            public void update(Supplier<Message> messageSupplier) {
+            public void update(MessageSupplier messageSupplier) {
                 ((PointcutMessageSupplier) messageSupplier).setReturnValue(returnValue);
             }
         });

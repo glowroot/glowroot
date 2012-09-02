@@ -18,18 +18,79 @@ package org.informantproject.api;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
+
+import com.google.common.base.Strings;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface ErrorMessage {
+public abstract class ErrorMessage {
 
-    String getText();
-
-    @Nullable
-    Map<String, ?> getDetail();
+    public abstract String getText();
 
     @Nullable
-    StackTraceElement[] getStackTrace();
+    public abstract Map<String, ?> getDetail();
+
+    @Nullable
+    public abstract StackTraceElement[] getStackTrace();
+
+    protected ErrorMessage() {}
+
+    public static ErrorMessage from(Throwable t) {
+        Throwable root = getRootCause(t);
+        String text = root.getMessage();
+        if (Strings.isNullOrEmpty(text)) {
+            text = root.getClass().getName();
+        }
+        return new ErrorMessageImpl(text, null, root.getStackTrace());
+    }
+
+    public static ErrorMessage from(String message, Throwable t) {
+        return new ErrorMessageImpl(message, null, getRootCause(t).getStackTrace());
+    }
+
+    private static Throwable getRootCause(Throwable t) {
+        Throwable root = t;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        return root;
+    }
+
+    @Immutable
+    private static class ErrorMessageImpl extends ErrorMessage {
+
+        private final String text;
+        @Nullable
+        private final Map<String, ?> detail;
+        @Nullable
+        private final StackTraceElement[] stackTraceElements;
+
+        private ErrorMessageImpl(String text, @Nullable Map<String, ?> detail,
+                @Nullable StackTraceElement[] stackTraceElements) {
+
+            this.text = text;
+            this.detail = detail;
+            this.stackTraceElements = stackTraceElements;
+        }
+
+        @Override
+        public String getText() {
+            return text;
+        }
+
+        @Override
+        @Nullable
+        public Map<String, ?> getDetail() {
+            return detail;
+        }
+
+        @Override
+        @Nullable
+        public StackTraceElement[] getStackTrace() {
+            return stackTraceElements;
+        }
+    }
 }

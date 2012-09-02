@@ -17,13 +17,12 @@ package org.informantproject.test.plugin;
 
 import java.util.Map;
 
-import org.informantproject.api.ErrorMessages;
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectThrowable;
 import org.informantproject.api.weaving.InjectTraveler;
@@ -59,7 +58,8 @@ public class LevelOneAspect {
 
         @OnBefore
         public static Span onBefore(final String arg1, final String arg2) {
-            Supplier<Message> messageSupplier = new Supplier<Message>() {
+            MessageSupplier messageSupplier = new MessageSupplier() {
+                @Override
                 public Message get() {
                     String traceDescription = Objects.firstNonNull(
                             pluginServices.getStringProperty("alternateDescription"), "Level One");
@@ -70,7 +70,7 @@ public class LevelOneAspect {
                             ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2, "subnested1",
                                     ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return TemplateMessage.of(traceDescription, detail);
+                    return Message.withDetail(traceDescription, detail);
                 }
             };
             return pluginServices.startTrace(messageSupplier, metric);
@@ -78,7 +78,7 @@ public class LevelOneAspect {
 
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
-            span.endWithError(ErrorMessages.from(t));
+            span.endWithError(ErrorMessage.from(t));
         }
 
         @OnReturn

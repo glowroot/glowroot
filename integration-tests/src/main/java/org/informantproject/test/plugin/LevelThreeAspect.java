@@ -18,7 +18,7 @@ package org.informantproject.test.plugin;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.TemplateMessage;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -51,7 +51,7 @@ public class LevelThreeAspect {
 
         @OnBefore
         public static Span onBefore(String arg1, String arg2) {
-            return pluginServices.startSpan(TemplateMessage.of("Level Three",
+            return pluginServices.startSpan(MessageSupplier.withDetail("Level Three",
                     ImmutableMap.of("arg1", arg1, "arg2", arg2)), metric);
         }
 

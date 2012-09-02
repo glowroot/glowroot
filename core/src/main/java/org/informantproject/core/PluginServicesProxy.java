@@ -22,11 +22,10 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.ErrorMessage;
-import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
 import org.informantproject.api.Timer;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
@@ -108,7 +107,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -118,7 +117,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -138,7 +137,7 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void addSpan(Supplier<Message> messageSupplier) {
+    public void addSpan(MessageSupplier messageSupplier) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
@@ -158,12 +157,12 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public void setUsername(Supplier<String> usernameSupplier) {
+    public void setUsername(String username) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            pluginServices.setUsername(usernameSupplier);
+            pluginServices.setUsername(username);
         }
     }
 
@@ -179,7 +178,7 @@ class PluginServicesProxy extends PluginServices {
 
     @Override
     @Nullable
-    public Supplier<Message> getRootMessageSupplier() {
+    public MessageSupplier getRootMessageSupplier() {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");

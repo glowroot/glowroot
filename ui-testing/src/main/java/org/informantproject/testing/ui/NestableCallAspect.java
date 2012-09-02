@@ -19,14 +19,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.informantproject.api.ErrorMessages;
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
-import org.informantproject.api.Suppliers;
-import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -66,9 +64,9 @@ public class NestableCallAspect {
             Span span = pluginServices.startTrace(getRootMessageSupplier(), metric);
             int index = counter.getAndIncrement() % (USERNAMES.size() + 1);
             if (index < USERNAMES.size()) {
-                pluginServices.setUsername(Suppliers.ofInstance(USERNAMES.get(index)));
+                pluginServices.setUsername(USERNAMES.get(index));
             } else {
-                pluginServices.setUsername(Suppliers.ofInstance((String) null));
+                pluginServices.setUsername(null);
             }
             return span;
         }
@@ -77,7 +75,7 @@ public class NestableCallAspect {
             if (random.nextDouble() < 0.8) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessages.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
             }
         }
     }
@@ -99,7 +97,7 @@ public class NestableCallAspect {
                     + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
             pluginServices.setTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
                     + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
-            return pluginServices.startSpan(TemplateMessage.of("Nestable"), metric);
+            return pluginServices.startSpan(MessageSupplier.from("Nestable"), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
@@ -107,16 +105,16 @@ public class NestableCallAspect {
         }
     }
 
-    private static Supplier<Message> getRootMessageSupplier() {
-        return new Supplier<Message>() {
+    private static MessageSupplier getRootMessageSupplier() {
+        return new MessageSupplier() {
+            @Override
             public Message get() {
                 Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return TemplateMessage.of("Nestable with a very long description to test"
-                        + " wrapping abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz",
-                        detail);
+                return Message.withDetail("Nestable with a very long description to test wrapping"
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz", detail);
             }
         };
     }

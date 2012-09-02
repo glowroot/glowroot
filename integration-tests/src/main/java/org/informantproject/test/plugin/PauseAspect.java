@@ -18,7 +18,7 @@ package org.informantproject.test.plugin;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.Span;
-import org.informantproject.api.TemplateMessage;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -50,7 +50,7 @@ public class PauseAspect {
 
         @OnBefore
         public static Span onBefore(int millis) {
-            return pluginServices.startSpan(TemplateMessage.of("Pause.pause({{millis}})", millis),
+            return pluginServices.startSpan(MessageSupplier.from("Pause.pause({{millis}})", millis),
                     metric);
         }
 

@@ -15,12 +15,12 @@
  */
 package org.informantproject.test.plugin;
 
-import org.informantproject.api.ErrorMessages;
+import org.informantproject.api.ErrorMessage;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PointcutStackTrace;
 import org.informantproject.api.Span;
-import org.informantproject.api.TemplateMessage;
 import org.informantproject.api.weaving.Aspect;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
@@ -51,14 +51,14 @@ public class LogErrorAspect {
 
         @OnBefore
         public static Span onBefore(String message) {
-            return pluginServices.startSpan(TemplateMessage.of("ERROR -- {{message}}",
+            return pluginServices.startSpan(MessageSupplier.from("ERROR -- {{message}}",
                     message), metric);
 
         }
 
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.endWithError(ErrorMessages.from(new PointcutStackTrace(LogErrorAdvice.class)));
+            span.endWithError(ErrorMessage.from(new PointcutStackTrace(LogErrorAdvice.class)));
         }
     }
 

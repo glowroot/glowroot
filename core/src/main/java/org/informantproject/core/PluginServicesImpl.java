@@ -24,12 +24,11 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.ErrorMessage;
-import org.informantproject.api.Message;
+import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.PluginServices.ConfigListener;
 import org.informantproject.api.Span;
-import org.informantproject.api.Supplier;
 import org.informantproject.api.Timer;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
@@ -146,7 +145,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Span startTrace(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
             return NopSpan.INSTANCE;
@@ -167,7 +166,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Span startSpan(Supplier<Message> messageSupplier, Metric metric) {
+    public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
         if (messageSupplier == null) {
             logger.warn("startSpan(): argument 'messageSupplier' must be non-null");
             return NopSpan.INSTANCE;
@@ -200,7 +199,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void addSpan(Supplier<Message> messageSupplier) {
+    public void addSpan(MessageSupplier messageSupplier) {
         if (messageSupplier == null) {
             logger.warn("addSpan(): argument 'messageSupplier' must be non-null");
             return;
@@ -230,14 +229,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setUsername(Supplier<String> usernameSupplier) {
-        if (usernameSupplier == null) {
-            logger.warn("setUsername(): argument 'usernameSupplier' must be non-null");
-            return;
-        }
+    public void setUsername(@Nullable String username) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setUsernameSupplier(usernameSupplier);
+            trace.setUsername(username);
         }
     }
 
@@ -255,7 +250,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     @Nullable
-    public Supplier<Message> getRootMessageSupplier() {
+    public MessageSupplier getRootMessageSupplier() {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             return null;
@@ -271,7 +266,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR
     private Span startSpan(Trace currentTrace, MetricImpl metric,
-            Supplier<Message> messageSupplier) {
+            MessageSupplier messageSupplier) {
 
         int maxEntries = coreConfig.getMaxEntries();
         if (maxEntries != CoreConfig.SPAN_LIMIT_DISABLED
@@ -350,10 +345,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @NotThreadSafe
     private static class TimerWrappedInSpan implements Span {
         private final Trace currentTrace;
-        private final Supplier<Message> messageSupplier;
+        private final MessageSupplier messageSupplier;
         private final Timer timer;
         public TimerWrappedInSpan(Trace currentTrace, MetricImpl metric,
-                Supplier<Message> messageSupplier) {
+                MessageSupplier messageSupplier) {
             this.currentTrace = currentTrace;
             this.messageSupplier = messageSupplier;
             timer = currentTrace.startTraceMetric(metric);
