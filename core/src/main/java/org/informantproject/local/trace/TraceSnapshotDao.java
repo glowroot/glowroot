@@ -162,11 +162,12 @@ public class TraceSnapshotDao {
 
     public List<TraceSnapshotSummary> readSummaries(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable StringComparator usernameComparator,
-            @Nullable String username) {
+            @Nullable String username, boolean error, boolean fine) {
 
         logger.debug("readSummaries(): capturedFrom={}, capturedTo={}, durationLow={},"
-                + " durationHigh={}", new Object[] { capturedFrom, capturedTo,
-                durationLow, durationHigh });
+                + " durationHigh={}, usernameComparator={}, username={}, error={}, fine={}",
+                new Object[] { capturedFrom, capturedTo, durationLow, durationHigh,
+                        usernameComparator, username, error, fine });
         if (!valid) {
             return ImmutableList.of();
         }
@@ -187,6 +188,14 @@ public class TraceSnapshotDao {
             if (usernameComparator != null && username != null) {
                 sql += " and username " + usernameComparator.getComparator() + " ?";
                 args.add(usernameComparator.formatParameter(username));
+            }
+            if (error) {
+                sql += " and error = ?";
+                args.add(true);
+            }
+            if (fine) {
+                sql += " and fine = ?";
+                args.add(true);
             }
             return dataSource.query(sql, args.toArray(), new SummaryRowMapper());
         } catch (SQLException e) {

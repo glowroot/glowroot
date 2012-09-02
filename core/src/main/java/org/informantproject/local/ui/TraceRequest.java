@@ -33,6 +33,8 @@ class TraceRequest {
     private String usernameComparator;
     @Nullable
     private String username;
+    private boolean error;
+    private boolean fine;
     @Nullable
     private String extraIds;
 
@@ -84,6 +86,22 @@ class TraceRequest {
 
     public void setUsername(@Nullable String username) {
         this.username = username;
+    }
+
+    public boolean isError() {
+        return error;
+    }
+
+    public void setError(boolean error) {
+        this.error = error;
+    }
+
+    public boolean isFine() {
+        return fine;
+    }
+
+    public void setFine(boolean fine) {
+        this.fine = fine;
     }
 
     @Nullable

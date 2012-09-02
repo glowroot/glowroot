@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
@@ -99,7 +101,8 @@ class TracePointJsonService implements JsonService {
             // capture active traces first to make sure that none are missed in between reading
             // stored traces and then capturing active traces (possible duplicates are removed
             // below)
-            activeTraces = getActiveTraces(low, high);
+            activeTraces = getActiveTraces(low, high, usernameComparator, request.getUsername(),
+                    request.isError(), request.isFine());
             // take capture timings after the capture to make sure there no traces captured that
             // start after the recorded capture time (resulting in negative duration)
             capturedAt = clock.currentTimeMillis();
@@ -110,7 +113,7 @@ class TracePointJsonService implements JsonService {
         }
         List<TraceSnapshotSummary> summaries = traceSnapshotDao.readSummaries(
                 request.getFrom(), request.getTo(), low, high, usernameComparator,
-                request.getUsername());
+                request.getUsername(), request.isError(), request.isFine());
         // remove duplicates between active and stored traces
         for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
             Trace activeTrace = i.next();
@@ -131,13 +134,20 @@ class TracePointJsonService implements JsonService {
         return writeResponse(summaries, activeTraces, capturedAt, captureTick);
     }
 
-    private List<Trace> getActiveTraces(long low, long high) {
+    private List<Trace> getActiveTraces(long low, long high,
+            @Nullable StringComparator usernameComparator, @Nullable String username,
+            boolean error, boolean fine) {
+
         List<Trace> activeTraces = Lists.newArrayList();
         long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService.getCoreConfig()
                 .getPersistenceThresholdMillis());
         for (Trace trace : traceRegistry.getTraces()) {
             long duration = trace.getDuration();
-            if (duration >= thresholdNanos && duration >= low && duration <= high) {
+            if (duration >= thresholdNanos
+                    && matchesDuration(duration, low, high)
+                    && matchesUsername(trace, usernameComparator, username)
+                    && matchesError(trace, error)
+                    && matchesFine(trace, fine)) {
                 activeTraces.add(trace);
             } else {
                 // the traces are ordered by start time so it's safe to break now
@@ -145,6 +155,41 @@ class TracePointJsonService implements JsonService {
             }
         }
         return activeTraces;
+    }
+
+    private boolean matchesDuration(long duration, long low, long high) {
+        return duration >= low && duration <= high;
+    }
+
+    private boolean matchesUsername(Trace trace, @Nullable StringComparator usernameComparator,
+            @Nullable String username) {
+
+        if (usernameComparator == null || username == null) {
+            return true;
+        }
+        String traceUsername = trace.getUsername();
+        if (traceUsername == null) {
+            return false;
+        }
+        switch (usernameComparator) {
+        case BEGINS:
+            return traceUsername.startsWith(username);
+        case CONTAINS:
+            return traceUsername.contains(username);
+        case EQUALS:
+            return traceUsername.equals(username);
+        default:
+            logger.error("unexpected username comparator '{}'", usernameComparator);
+            return false;
+        }
+    }
+
+    private boolean matchesError(Trace trace, boolean error) {
+        return !error || trace.isError();
+    }
+
+    private boolean matchesFine(Trace trace, boolean fine) {
+        return !fine || trace.isFine();
     }
 
     private static String writeResponse(List<TraceSnapshotSummary> summaries,

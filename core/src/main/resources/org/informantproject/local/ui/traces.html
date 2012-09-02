@@ -193,10 +193,18 @@
         queryString += '&high=' + durationHigh
       }
       var usernameComparator = $('#usernameComparator').val()
-      var username = $('#username').val()
+      var username = $('#usernameFilter').val()
       if (username) {
         queryString += '&usernameComparator=' + usernameComparator
         queryString += '&username=' + username
+      }
+      var error = $('#errorFilter').is(':checked')
+      if (error) {
+        queryString += '&error=true'
+      }
+      var fine = $('#fineFilter').is(':checked')
+      if (fine) {
+        queryString += '&fine=true'
       }
       $.getJSON('trace/points?' + queryString, function(response) {
         snapshotPoints = response.snapshotPoints
@@ -389,7 +397,19 @@
                 <option value="equals">Equals</option>
                 <option value="contains">Contains</option>
               </select>
-              <input type="text" class="input-small" id="username">
+              <input type="text" class="input-small" id="usernameFilter">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="errorFilter">Error</label>
+            <div class="controls">
+              <input type="checkbox" class="input-small" id="errorFilter">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="fineFilter">Fine-grained profile</label>
+            <div class="controls">
+              <input type="checkbox" class="input-small" id="fineFilter">
             </div>
           </div>
           <div class="control-group">
