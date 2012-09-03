@@ -359,6 +359,10 @@
             </option>
             <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
             <option>-keep class org.informantproject.shaded.google.common.** { *; }</option>
+            <!-- keep all logback appenders -->
+            <option>
+              -keep class * extends org.informantproject.shaded.qos.logback.core.Appender { *; }
+            </option>
           </options>
         </configuration>
         <dependencies>
