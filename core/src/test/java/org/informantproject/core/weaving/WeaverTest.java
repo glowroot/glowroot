@@ -46,6 +46,7 @@ import org.informantproject.core.weaving.SomeAspect.PrimitiveAdvice;
 import org.informantproject.core.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.informantproject.core.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.informantproject.core.weaving.SomeAspect.StaticAdvice;
+import org.informantproject.core.weaving.SomeAspect.StaticInjectTargetClassAdvice;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -455,6 +456,18 @@ public class WeaverTest {
         assertThat(StaticAdvice.onAfterCount.get()).isEqualTo(1);
     }
 
+    @Test
+    public void shouldWeaveStaticMethodInjectTargetClass() throws Exception {
+        // given
+        StaticInjectTargetClassAdvice.resetThreadLocals();
+        Misc test = newWovenObject(StaticMisc.class, Misc.class,
+                StaticInjectTargetClassAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(StaticInjectTargetClassAdvice.onBeforeCount.get().getName()).isEqualTo(
+                StaticMisc.class.getName());
+    }
     // ===================== primitive args =====================
 
     @Test

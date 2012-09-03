@@ -283,8 +283,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private void writeThreadLocalInitialization(MethodVisitor mv) {
         for (int i = 0; i < adviceMatchers.size(); i++) {
             if (!adviceMatchers.get(i).getAdvice().getPointcut().captureNested()) {
-                // cannot use visitLdcInsn(Type) for .class constants since that is not supported
-                // inside of classes that were compiled to jdk 1.4
+                // cannot use visitLdcInsn(Type) since .class constants are not supported in classes
+                // that were compiled to jdk 1.4
                 mv.visitLdcInsn(adviceMatchers.get(i).getAdvice().getAdviceType().getClassName());
                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                         "(Ljava/lang/String;)Ljava/lang/Class;");

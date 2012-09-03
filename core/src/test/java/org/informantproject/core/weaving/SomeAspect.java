@@ -444,6 +444,19 @@ public class SomeAspect {
             methodName = "executeStatic")
     public static class StaticAdvice extends BasicAdvice {}
 
+    @Pointcut(typeName = "org.informantproject.core.weaving.StaticMisc",
+            methodName = "executeStatic")
+    public static class StaticInjectTargetClassAdvice {
+        public static ThreadLocal<Class<?>> onBeforeCount = new ThreadLocal<Class<?>>();
+        @OnBefore
+        public static void onBefore(@InjectTarget Class<?> type) {
+            onBeforeCount.set(type);
+        }
+        public static void resetThreadLocals() {
+            onBeforeCount.remove();
+        }
+    }
+
     @Pointcut(typeName = "org.informantproject.core.weaving.PrimitiveMisc",
             methodName = "executePrimitive", methodArgs = { "int", "double", "long", "byte[]" })
     public static class PrimitiveAdvice extends BasicAdvice {}

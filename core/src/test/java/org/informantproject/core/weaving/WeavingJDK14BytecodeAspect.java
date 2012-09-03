@@ -13,17 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.api.weaving;
+package org.informantproject.core.weaving;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import org.informantproject.api.weaving.Aspect;
+import org.informantproject.api.weaving.InjectTarget;
+import org.informantproject.api.weaving.OnBefore;
+import org.informantproject.api.weaving.Pointcut;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-// for static methods, injects class object
-@java.lang.annotation.Target(ElementType.PARAMETER)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface InjectTarget {}
+@Aspect
+public class WeavingJDK14BytecodeAspect {
+
+    @Pointcut(typeName = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
+            methodArgs = { "java.lang.String" }, metricName = "is empty")
+    public static class BasicAdvice {
+        @OnBefore
+        public static void onBefore(@SuppressWarnings("unused") @InjectTarget Class<?> target) {}
+    }
+}

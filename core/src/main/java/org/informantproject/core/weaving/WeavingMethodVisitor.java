@@ -50,6 +50,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private static final Type adviceFlowType = Type.getType(AdviceFlowThreadLocal.class);
 
+    private final int access;
     private final String name;
     private final Type owner;
     private final List<Advice> advisors;
@@ -70,6 +71,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Type owner, List<Advice> advisors, Map<Advice, Integer> adviceFlowThreadLocalNums) {
 
         super(Opcodes.ASM4, mv, access, name, desc);
+        this.access = access;
         this.name = name;
         this.owner = owner;
         this.advisors = advisors;
@@ -408,7 +410,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
         for (int i = startIndex; i < parameterTypes.length; i++) {
             ParameterKind parameterType = parameterTypes[i];
             if (parameterType == ParameterKind.TARGET) {
-                loadThis();
+                if ((access & Opcodes.ACC_STATIC) == 0) {
+                    loadThis();
+                } else {
+                    // cannot use push(Type) since .class constants are not supported in classes
+                    // that were compiled to jdk 1.4
+                    push(owner.getClassName());
+                    mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                            "(Ljava/lang/String;)Ljava/lang/Class;");
+                }
             } else if (parameterType == ParameterKind.METHOD_ARG) {
                 if (argIndex < argumentTypes.length) {
                     loadArg(argIndex);
