@@ -99,6 +99,12 @@
       tooltipShowing = false
     }
     $('#placeholder').bind('plotzoom', function (event, plot) {
+      // cancel any refresh in action
+      if (refreshQueryString) {
+        refreshQueryString = undefined
+        hideSpinner('#refreshButtonSpinner')
+        showAndFadeSuccessMessage('#refreshButtonCancelByZoom')
+      }
       updateTimeFilter()
       if (currentItem) {
         // highlight gets out of sync on zoom
@@ -161,29 +167,42 @@
           + moment(to).format('h:mm:ss A (Z)'))
     }
     function refresh() {
-      var from = moment(Math.floor(plot.getAxes().xaxis.min))
-      var to = moment(Math.ceil(plot.getAxes().xaxis.max))
-      // shift timezone
-      from.add('minutes', from.zone())
-      to.add('minutes', to.zone())
-      var fromAsDate = from.clone()
-      fromAsDate.hours(0)
-      fromAsDate.minutes(0)
-      fromAsDate.seconds(0)
-      fromAsDate.milliseconds(0)
       // TODO use localized date format, see more detailed comment at datepicker construction since
       // the format needs to be sync'd between the date picker and this parsing
       var date = moment($('#dateFilter').val(), 'MM/DD/YYYY')
-      if (date.valueOf() == fromAsDate.valueOf()) {
-        // dateFilter hasn't changed
-        getTracePoints(from.valueOf(), to.valueOf())
+      var from
+      var to
+      if (plot) {
+        from = moment(Math.floor(plot.getAxes().xaxis.min))
+        to = moment(Math.ceil(plot.getAxes().xaxis.max))
+        // shift timezone
+        from.add('minutes', from.zone())
+        to.add('minutes', to.zone())
+        var fromAsDate = from.clone()
+        fromAsDate.hours(0)
+        fromAsDate.minutes(0)
+        fromAsDate.seconds(0)
+        fromAsDate.milliseconds(0)
+        if (date.valueOf() == fromAsDate.valueOf()) {
+          // dateFilter hasn't changed
+          from = from.valueOf()
+          to = to.valueOf()
+        } else {
+          // dateFilter has changed
+          from = date.valueOf()
+          to = date.valueOf() + 24 * 60 * 60 * 1000
+        }
       } else {
-        // dateFilter has changed
-        getTracePoints(date.valueOf(), date.valueOf() + 24 * 60 * 60 * 1000)
+        // plot.getAxes() is not yet available because the refresh button was hit refresh during
+        // (a possibly very long) initial load and
+        from = date.valueOf()
+        to = date.valueOf() + 24 * 60 * 60 * 1000
       }
+      var queryString = buildQueryString()
+      getTracePoints(from, to, queryString, false)
     }
-    function getTracePoints(from, to) {
-      var queryString = 'from=' + from + '&to=' + to
+    function buildQueryString() {
+      var queryString = ''
       var durationLow = $('#durationLow').val() * 1000
       if (durationLow) {
         queryString += '&low=' + durationLow
@@ -206,7 +225,32 @@
       if (fine) {
         queryString += '&fine=true'
       }
+      return queryString
+    }
+    var refreshQueryString
+    function getTracePoints(from, to, queryString, initialLoad) {
+      queryString = 'from=' + from + '&to=' + to + queryString
+      // handling crazy user clicking on the button
+      if (!initialLoad && queryString == refreshQueryString) return
+      var prevRefreshQueryString = refreshQueryString
+      if (!initialLoad) {
+        refreshQueryString = queryString
+      }
       $.getJSON('trace/points?' + queryString, function(response) {
+        if (initialLoad && refreshQueryString) {
+          // a refresh query has been posted since this initial load
+          return
+        } else if (!initialLoad && refreshQueryString != queryString) {
+          // a different query string has been posted since this one
+          // or the refresh was 'canceled' by a zoom action
+          return
+        }
+        refreshQueryString = undefined
+        if (initialLoad) {
+          hideSpinner('#initialLoadSpinner')
+        } else {
+          hideSpinner('#refreshButtonSpinner')
+        }
         snapshotPoints = response.snapshotPoints
         activePoints = response.activePoints
         hideTooltip()
@@ -221,6 +265,16 @@
         }
         plotResponseData(snapshotPoints, activePoints, from, to)
       })
+      if (initialLoad) {
+        showSpinner('#initialLoadSpinner')
+      } else {
+        // hide initialLoadSpinner just in case the refresh button was hit during (a very long)
+        // initial load
+        hideSpinner('#initialLoadSpinner')
+        if (!prevRefreshQueryString) {
+          showSpinner('#refreshButtonSpinner')
+        }
+      }
     }
     function showTraceDetailTooltip(item) {
       var x = item.pageX
@@ -326,7 +380,7 @@
       plot.zoomOut()
       return false
     })
-    getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000)
+    getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000, '', true)
   })
 </script>
 </head>
@@ -341,7 +395,10 @@
   <br>
   <div id="tooltipboundary" style="display: none; width: 100%; height: 10000px"></div>
   <div>
-    <div id="placeholder" style="height: 300px"></div>
+    <div id="placeholder" style="height: 300px">
+      <div id="initialLoadSpinner" class="button-spinner"
+          style="width: 100%; height: 100%; margin: 0px auto"></div>
+    </div>
     <div style="width: 100%; text-align: center; font-style: italic">
       use mouse scroll wheel to zoom in and out
       (or double click to zoom in and use this link to <a href="#" id="zoomOut">zoom out</a>)
@@ -415,6 +472,11 @@
           <div class="control-group">
             <div class="controls">
               <button id="refreshButton" type="button" class="btn">Refresh</button>
+              <div id="refreshButtonSpinner" class="button-spinner"></div>
+              <span id="refreshButtonCancelByZoom" class="button-success-message"
+                  style="color: red">
+                Refresh canceled by zoom action
+              </span>
             </div>
           </div>
         </fieldset>
