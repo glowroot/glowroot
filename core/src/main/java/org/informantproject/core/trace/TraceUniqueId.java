@@ -16,7 +16,6 @@
 package org.informantproject.core.trace;
 
 import java.math.BigInteger;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.concurrent.Immutable;
@@ -64,11 +63,5 @@ class TraceUniqueId {
         } else {
             return Strings.padStart(s, 12, '0');
         }
-    }
-
-    public static void main(String... args) {
-        System.out.println(twelveDigitHex(System.currentTimeMillis()));
-        System.out.println(new Date((long) Math.pow(16, 10)));
-        System.out.println(new Date((long) Math.pow(16, 11)));
     }
 }
