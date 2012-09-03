@@ -59,6 +59,9 @@
             </goals>
             <configuration>
               <rules>
+                <requireMavenVersion>
+                  <version>3.0</version>
+                </requireMavenVersion>
                 <requirePluginVersions>
                   <!-- banSnapshots is overridden and set to true in release profile -->
                   <banSnapshots>false</banSnapshots>
