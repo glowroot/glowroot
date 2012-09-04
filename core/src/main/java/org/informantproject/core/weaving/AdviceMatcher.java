@@ -25,7 +25,11 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
+import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -138,5 +142,19 @@ class AdviceMatcher {
             }
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        List<String> preMatchedSuperTypeNames = Lists.newArrayList();
+        for (ParsedType preMatchedSuperType : preMatchedSuperTypes) {
+            preMatchedSuperTypeNames.add(preMatchedSuperType.getName());
+        }
+        ToStringHelper toStringHelper = Objects
+                .toStringHelper(this)
+                .add("advice", advice)
+                .add("targetTypeMatch", targetTypeMatch)
+                .add("preMatchedSuperTypes", Joiner.on(", ").join(preMatchedSuperTypeNames));
+        return toStringHelper.toString();
     }
 }

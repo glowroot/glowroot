@@ -40,6 +40,8 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
+import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -367,5 +369,25 @@ public class Advice {
             }
             return parameterKinds;
         }
+    }
+
+    @Override
+    public String toString() {
+        ToStringHelper toStringHelper = Objects.toStringHelper(this)
+                .add("pointcut", pointcut)
+                .add("adviceType", adviceType)
+                .add("pointcutMethodPattern", pointcutMethodPattern)
+                .add("isEnabledAdvice", isEnabledAdvice)
+                .add("onBeforeAdvice", onBeforeAdvice)
+                .add("onReturnAdvice", onReturnAdvice)
+                .add("onThrowAdvice", onThrowAdvice)
+                .add("onAfterAdvice", onAfterAdvice)
+                .add("travelerType", travelerType)
+                .add("isEnabledParameterKinds", isEnabledParameterKinds)
+                .add("onBeforeParameterKinds", onBeforeParameterKinds)
+                .add("onReturnParameterKinds", onReturnParameterKinds)
+                .add("onThrowParameterKinds", onThrowParameterKinds)
+                .add("onAfterParameterKinds", onAfterParameterKinds);
+        return toStringHelper.toString();
     }
 }

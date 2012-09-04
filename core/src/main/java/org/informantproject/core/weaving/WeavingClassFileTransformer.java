@@ -84,6 +84,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     public byte[] transform(@Nullable ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
 
+        logger.trace("transform(): className={}", className);
         Weaver weaver;
         if (loader == null) {
             weaver = bootLoaderWeaver;

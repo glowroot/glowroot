@@ -33,6 +33,7 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -85,6 +86,11 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String[] interfaceNames) {
 
+        if (logger.isTraceEnabled()) {
+            logger.trace("visit(): access={}, name={}, signature={}, superName={},"
+                    + " interfaceNames={}", new Object[] { access, name, signature, superName,
+                    Joiner.on(", ").join(interfaceNames) });
+        }
         parsedType = ParsedType.builder(name, superName, ImmutableList.copyOf(interfaceNames));
         if ((access & ACC_INTERFACE) != 0) {
             // interfaces never get woven
@@ -119,13 +125,15 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 matchedMixins.add(mixin);
             }
         }
-        for (int i = 0; i < adviceMatchers.size(); i++) {
-            adviceFlowThreadLocalNums.put(adviceMatchers.get(i).getAdvice(), i);
-        }
         if (adviceMatchers.isEmpty() && matchedMixins.isEmpty()) {
             nothingAtAllToWeave = true;
             return;
-        } else if (matchedMixins.isEmpty()) {
+        }
+        logger.debug("visit(): adviceMatchers={}", adviceMatchers);
+        for (int i = 0; i < adviceMatchers.size(); i++) {
+            adviceFlowThreadLocalNums.put(adviceMatchers.get(i).getAdvice(), i);
+        }
+        if (matchedMixins.isEmpty()) {
             super.visit(version, access, name, signature, superName, interfaceNames);
         } else {
             // add mixin types
@@ -143,6 +151,16 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, @Nullable String[] exceptions) {
 
+        if (logger.isTraceEnabled()) {
+            String exceptionsText;
+            if (exceptions == null) {
+                exceptionsText = "";
+            } else {
+                exceptionsText = Joiner.on(", ").join(exceptions);
+            }
+            logger.trace("visitMethod(): access={}, name={}, desc={}, signature={}, exceptions={}",
+                    new Object[] { access, name, desc, signature, exceptionsText });
+        }
         ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc));
         parsedType.addMethod(parsedMethod);
         if (nothingAtAllToWeave) {
@@ -185,7 +203,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 return mv;
             }
         } else {
-            logger.debug("weaving method '{}'", name);
+            logger.debug("visitMethod(): weaving method '{}'", name);
             String currMethodName = name;
             String nextMethodName = null;
             int currAccess = access;

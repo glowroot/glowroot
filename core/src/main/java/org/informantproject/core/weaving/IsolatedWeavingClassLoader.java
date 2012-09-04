@@ -26,6 +26,8 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -40,6 +42,8 @@ import com.google.common.io.Resources;
 @OnlyUsedByTests
 @ThreadSafe
 public class IsolatedWeavingClassLoader extends ClassLoader {
+
+    private static final Logger logger = LoggerFactory.getLogger(IsolatedWeavingClassLoader.class);
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
@@ -94,9 +98,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (url == null) {
             throw new ClassNotFoundException(name);
         }
-        byte[] b;
+        byte[] bytes;
         try {
-            b = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
+            bytes = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
@@ -106,7 +110,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (weaver != null && !inWeaving.get()) {
             inWeaving.set(true);
             try {
-                b = weaver.weave(b);
+                byte[] originalBytes = bytes;
+                bytes = weaver.weave(originalBytes);
+                if (bytes != originalBytes) {
+                    logger.debug("findClass(): transformed {}", name);
+                }
             } finally {
                 inWeaving.remove();
             }
@@ -117,7 +125,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 definePackage(packageName, null, null, null, null, null, null, null);
             }
         }
-        return super.defineClass(name, b, 0, b.length);
+        return super.defineClass(name, bytes, 0, bytes.length);
     }
 
     @Override
