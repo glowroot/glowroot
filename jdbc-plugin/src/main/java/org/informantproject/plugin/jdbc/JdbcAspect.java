@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.MessageSupplier;
@@ -40,12 +41,14 @@ import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectMethodName;
 import org.informantproject.api.weaving.InjectReturn;
 import org.informantproject.api.weaving.InjectTarget;
+import org.informantproject.api.weaving.InjectThrowable;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
 import org.informantproject.api.weaving.OnReturn;
+import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
 import org.informantproject.plugin.jdbc.PreparedStatementMirror.NullParameterValue;
@@ -218,8 +221,15 @@ public class JdbcAspect {
                 return null;
             }
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t,
+                @InjectTraveler @Nullable Span span) {
+            if (span != null) {
+                span.endWithError(ErrorMessage.from(t));
+            }
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
                 span.end();
             }
@@ -258,8 +268,15 @@ public class JdbcAspect {
                 return null;
             }
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t,
+                @InjectTraveler @Nullable Span span) {
+            if (span != null) {
+                span.endWithError(ErrorMessage.from(t));
+            }
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
                 span.end();
             }
@@ -317,8 +334,15 @@ public class JdbcAspect {
                 }
             }
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t,
+                @InjectTraveler @Nullable Span span) {
+            if (span != null) {
+                span.endWithError(ErrorMessage.from(t));
+            }
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
                 span.end();
             }
