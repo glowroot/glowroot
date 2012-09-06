@@ -36,13 +36,13 @@ public class PreInitializeClassesTest {
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
         GlobalCollector globalCollector = new GlobalCollector();
         // first call constructor
-        globalCollector.processMethod(ReferencedMethod.from(
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/informantproject/core/weaving/WeavingClassFileTransformer", "<init>",
                 "([Lorg/informantproject/api/weaving/Mixin;"
                         + "[Lorg/informantproject/core/weaving/Advice;"
                         + "Lorg/informantproject/core/trace/WeavingMetricImpl;)V"));
         // then call transform()
-        globalCollector.processMethod(ReferencedMethod.from(
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/informantproject/core/weaving/WeavingClassFileTransformer", "transform",
                 "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
                         + "Ljava/security/ProtectionDomain;[B)[B"));

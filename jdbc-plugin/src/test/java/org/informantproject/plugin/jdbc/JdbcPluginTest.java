@@ -18,6 +18,7 @@ package org.informantproject.plugin.jdbc;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -173,9 +174,45 @@ public class JdbcPluginTest {
     // [john%]
 
     private static Connection createConnection() throws SQLException {
+        return createHsqldbConnection();
+    }
+
+    private static Connection createHsqldbConnection() throws SQLException {
         // set up database
         Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
         Statement statement = connection.createStatement();
+        try {
+            statement.execute("create table employee (name varchar(100))");
+            statement.execute("insert into employee (name) values ('john doe')");
+        } finally {
+            statement.close();
+        }
+        return connection;
+    }
+
+    // need to add the oracle driver to the path in order to use this, e.g. install into local repo:
+    //
+    // mvn install:install-file -Dfile=ojdbc6.jar -DgroupId=com.oracle -DartifactId=ojdbc6
+    // -Dversion=11.2.0.3 -Dpackaging=jar -DgeneratePom=true
+    //
+    // then add to pom.xml
+    //
+    // <dependency>
+    // <groupId>com.oracle</groupId>
+    // <artifactId>ojdbc6</artifactId>
+    // <version>11.2.0.3</version>
+    // <scope>test</scope>
+    // </dependency>
+    private static Connection createOracleConnection() throws SQLException {
+        // set up database
+        Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@//localhost/orcl",
+                "informant", "informant");
+        Statement statement = connection.createStatement();
+        try {
+            // in case of previous failure mid-test
+            statement.execute("drop table employee");
+        } catch (SQLException e) {
+        }
         try {
             statement.execute("create table employee (name varchar(100))");
             statement.execute("insert into employee (name) values ('john doe')");

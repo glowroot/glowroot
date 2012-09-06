@@ -27,6 +27,7 @@ import org.informantproject.core.metric.MetricCollector;
 import org.informantproject.core.trace.CoarseGrainedProfiler;
 import org.informantproject.core.trace.FineGrainedProfiler;
 import org.informantproject.core.trace.StuckTraceCollector;
+import org.informantproject.core.trace.WeavingMetricImpl;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.DataSource;
@@ -59,9 +60,11 @@ class InformantModule extends AbstractModule {
     private static final boolean USE_NETTY_BLOCKING_IO = false;
 
     private final AgentArgs agentArgs;
+    private final WeavingMetricImpl weavingMetric;
 
-    InformantModule(AgentArgs agentArgs) {
+    InformantModule(AgentArgs agentArgs, WeavingMetricImpl weavingMetric) {
         this.agentArgs = agentArgs;
+        this.weavingMetric = weavingMetric;
     }
 
     @Override
@@ -100,6 +103,12 @@ class InformantModule extends AbstractModule {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
         }
+    }
+
+    @Provides
+    @Singleton
+    WeavingMetricImpl providesWeavingMetricImpl() {
+        return weavingMetric;
     }
 
     @Provides

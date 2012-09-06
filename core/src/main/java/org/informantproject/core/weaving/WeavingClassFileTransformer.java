@@ -64,6 +64,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // on the Optional instance instead of on the ClassLoader instance
     private final Weaver bootLoaderWeaver;
 
+    private volatile boolean disabled;
+
     // because of the crazy pre-initialization of javaagent classes (see
     // org.informantproject.core.weaving.PreInitializeClasses), all inputs into this class should be
     // concrete, non-subclassed types (e.g. no List or WeavingMetric interfaces) so that the correct
@@ -84,6 +86,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     public byte[] transform(@Nullable ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
 
+        if (disabled) {
+            return bytes;
+        }
         logger.trace("transform(): className={}", className);
         Weaver weaver;
         if (loader == null) {
@@ -96,5 +101,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             logger.debug("transform(): transformed {}", className);
         }
         return transformedBytes;
+    }
+
+    public void disable() {
+        disabled = true;
     }
 }

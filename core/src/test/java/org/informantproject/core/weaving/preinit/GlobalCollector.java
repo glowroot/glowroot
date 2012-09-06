@@ -48,7 +48,15 @@ public class GlobalCollector {
 
     private String indent = "";
 
+    public void processMethodFailIfNotFound(ReferencedMethod rootMethod) throws IOException {
+        processMethod(rootMethod, true);
+    }
+
     public void processMethod(ReferencedMethod rootMethod) throws IOException {
+        processMethod(rootMethod, false);
+    }
+
+    private void processMethod(ReferencedMethod rootMethod, boolean expected) throws IOException {
         if (referencedMethods.contains(rootMethod)) {
             return;
         }
@@ -73,6 +81,9 @@ public class GlobalCollector {
         TypeCollector typeCollector = optional.get();
         String methodId = rootMethod.getName() + ":" + rootMethod.getDesc();
         MethodCollector methodCollector = typeCollector.getMethodCollector(methodId);
+        if (expected && methodCollector == null) {
+            throw new IllegalStateException("Could not find method '" + rootMethod + "'");
+        }
         if (methodCollector == null && !rootMethod.getName().equals("<clinit>")
                 && typeCollector.getSuperType() != null) {
             // can't find method in type, so go up to super type

@@ -36,11 +36,12 @@ import org.informantproject.core.util.Static;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.WeavingClassFileTransformer;
+import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.local.ui.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
@@ -62,6 +63,9 @@ public final class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
+    private static final WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
+            Ticker.systemTicker());
+
     @Nullable
     private static volatile Injector injector;
     private static final Object lock = new Object();
@@ -78,6 +82,14 @@ public final class MainEntryPoint {
     // javaagent entry point
     public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
+        WeavingClassFileTransformer weavingClassFileTransformer = newWeavingClassFileTransformer();
+        // add weaving agent as early as possible to avoid missing some classes that are loaded
+        // indirectly by the Informant startup process, e.g. the H2 FileLister.tryUnlockDatabase()
+        // call below triggers java.sql.DriverManager which looks on the classpath for
+        // META-INF/services/java.sql.Driver files and loads their respective drivers which, at
+        // least in the case of the Oracle driver, loads the driver's Connection and
+        // PreparedStatement classes which need to be woven
+        instrumentation.addTransformer(weavingClassFileTransformer);
         AgentArgs parsedAgentArgs = AgentArgs.from(agentArgs);
         try {
             File h2DatabaseFile = new File(parsedAgentArgs.getDataDir(), "informant.lock.db");
@@ -94,10 +106,11 @@ public final class MainEntryPoint {
             // inevitable at least in this case, and probably others
             logger.error("Disabling Informant. Embedded database '" + parsedAgentArgs.getDataDir()
                     .getAbsolutePath() + "' is locked by another process.");
+            weavingClassFileTransformer.disable();
             return;
         }
         start(parsedAgentArgs);
-        instrumentation.addTransformer(getWeavingClassFileTransformer());
+
     }
 
     // called via reflection from org.informantproject.api.PluginServices
@@ -115,13 +128,28 @@ public final class MainEntryPoint {
         return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
     }
 
+    private static WeavingClassFileTransformer newWeavingClassFileTransformer() {
+        List<Mixin> mixins = Lists.newArrayList();
+        List<Advice> advisors = Lists.newArrayList();
+        for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
+            mixins.addAll(plugin.getMixins());
+            advisors.addAll(plugin.getAdvisors());
+        }
+        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
+            mixins.addAll(plugin.getMixins());
+            advisors.addAll(plugin.getAdvisors());
+        }
+        return new WeavingClassFileTransformer(Iterables.toArray(mixins, Mixin.class),
+                Iterables.toArray(advisors, Advice.class), weavingMetric);
+    }
+
     private static void start(AgentArgs agentArgs) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
         synchronized (lock) {
             if (injector != null) {
                 throw new IllegalStateException("Informant is already started");
             }
-            injector = Guice.createInjector(new InformantModule(agentArgs));
+            injector = Guice.createInjector(new InformantModule(agentArgs, weavingMetric));
             InformantModule.start(injector);
         }
         returnPluginServicesProxy.set(false);
@@ -135,24 +163,9 @@ public final class MainEntryPoint {
         }
     }
 
-    private static WeavingClassFileTransformer getWeavingClassFileTransformer() {
-        List<Mixin> mixins = Lists.newArrayList();
-        List<Advice> advisors = Lists.newArrayList();
-        for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
-            mixins.addAll(plugin.getMixins());
-            advisors.addAll(plugin.getAdvisors());
-        }
-        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
-            mixins.addAll(plugin.getMixins());
-            advisors.addAll(plugin.getAdvisors());
-        }
-        return new WeavingClassFileTransformer(Iterables.toArray(mixins, Mixin.class),
-                Iterables.toArray(advisors, Advice.class), getWeavingMetric());
-    }
-
-    @VisibleForTesting
-    public static WeavingMetricImpl getWeavingMetric() {
-        return injector.getInstance(WeavingMetricImpl.class);
+    @OnlyUsedByTests
+    public static WeavingMetric getWeavingMetric() {
+        return weavingMetric;
     }
 
     @OnlyUsedByTests

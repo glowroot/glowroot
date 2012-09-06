@@ -39,7 +39,7 @@ public class WeavingMetricImpl implements WeavingMetric {
     private final MetricImpl metricImpl;
 
     @Inject
-    WeavingMetricImpl(Ticker ticker) {
+    public WeavingMetricImpl(Ticker ticker) {
         metricImpl = new MetricImpl("informant weaving", ticker);
     }
 
