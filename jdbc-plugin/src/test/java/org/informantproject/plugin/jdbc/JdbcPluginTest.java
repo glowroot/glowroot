@@ -24,6 +24,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.tomcat.jdbc.pool.DataSource;
 import org.hsqldb.jdbc.JDBCDriver;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.PluginConfig;
@@ -180,6 +182,40 @@ public class JdbcPluginTest {
     private static Connection createHsqldbConnection() throws SQLException {
         // set up database
         Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
+        Statement statement = connection.createStatement();
+        try {
+            statement.execute("create table employee (name varchar(100))");
+            statement.execute("insert into employee (name) values ('john doe')");
+        } finally {
+            statement.close();
+        }
+        return connection;
+    }
+
+    private static Connection createCommonsDbcpWrappedConnection() throws SQLException {
+        // set up database
+        BasicDataSource ds = new BasicDataSource();
+        ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
+        ds.setUrl("jdbc:hsqldb:mem:test");
+        Connection connection = ds.getConnection();
+        Statement statement = connection.createStatement();
+        try {
+            statement.execute("create table employee (name varchar(100))");
+            statement.execute("insert into employee (name) values ('john doe')");
+        } finally {
+            statement.close();
+        }
+        return connection;
+    }
+
+    private static Connection createTomcatPoolWrappedConnection() throws SQLException {
+        // set up database
+        DataSource ds = new DataSource();
+        ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
+        ds.setUrl("jdbc:hsqldb:mem:test");
+        ds.setJdbcInterceptors(
+                "org.apache.tomcat.jdbc.pool.interceptor.StatementDecoratorInterceptor");
+        Connection connection = ds.getConnection();
         Statement statement = connection.createStatement();
         try {
             statement.execute("create table employee (name varchar(100))");
