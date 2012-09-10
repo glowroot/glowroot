@@ -154,6 +154,21 @@ public class JdbcPluginTest {
         assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
     }
 
+    @Test
+    public void testBatchPreparedStatement() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['lowly'] ['pig will'] [connection: ");
+    }
+
     // TODO testPreparedStatement
     // select * from employee where name like ?
     // [john%]
@@ -245,11 +260,11 @@ public class JdbcPluginTest {
                 "informant", "informant");
         Statement statement = connection.createStatement();
         try {
-            // in case of previous failure mid-test
-            statement.execute("drop table employee");
-        } catch (SQLException e) {
-        }
-        try {
+            try {
+                // in case of previous failure mid-test
+                statement.execute("drop table employee");
+            } catch (SQLException e) {
+            }
             statement.execute("create table employee (name varchar(100))");
             statement.execute("insert into employee (name) values ('john doe')");
         } finally {
@@ -308,8 +323,8 @@ public class JdbcPluginTest {
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement = connection
                     .prepareStatement("select * from employee where name like ?");
-            preparedStatement.setString(1, "john%");
             try {
+                preparedStatement.setString(1, "john%");
                 preparedStatement.execute();
                 ResultSet rs = preparedStatement.getResultSet();
                 while (rs.next()) {
@@ -356,6 +371,38 @@ public class JdbcPluginTest {
         }
         public void traceMarker() throws Exception {
             connection.getMetaData().getTables(null, null, null, null);
+        }
+    }
+
+    public static class ExecuteBatchPreparedStatement implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            connection.setAutoCommit(false);
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement = connection
+                    .prepareStatement("insert into employee (name) values (?)");
+            try {
+                preparedStatement.setString(1, "huckle");
+                preparedStatement.addBatch();
+                preparedStatement.setString(1, "sally");
+                preparedStatement.addBatch();
+                preparedStatement.executeBatch();
+                preparedStatement.clearBatch();
+                preparedStatement.setString(1, "lowly");
+                preparedStatement.addBatch();
+                preparedStatement.setString(1, "pig will");
+                preparedStatement.addBatch();
+                preparedStatement.executeBatch();
+            } finally {
+                preparedStatement.close();
+            }
         }
     }
 }
