@@ -338,9 +338,10 @@
           $.getJSON('trace/detail/' + id, function(response) {
             detailTrace = response
             var html = traceSummaryTemplate(detailTrace)
+            $('#detailTab').html(html)
             var detailHtml = traceDetailTemplate(detailTrace)
             hideTooltip()
-            $('#detailTab').html(html + detailHtml)
+            $('#detailTab').append(detailHtml)
             $('a[href="#detailTab"]').tab('show')
             $('#showDetailOuter').css('font-style', 'italic')
             $('#showDetailOuter').html('see detail tab below')

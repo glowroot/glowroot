@@ -54,8 +54,8 @@
   $(document).ready(function() {
     var html = traceSummaryTemplate(detailTrace)
     var detailHtml = traceDetailTemplate(detailTrace)
-    $(html).appendTo('#detailTrace')
-    $(detailHtml).appendTo('#detailTrace')
+    $('#detailTrace').html(html)
+    $('#detailTrace').append(detailHtml)
   })
 </script>
 </head>

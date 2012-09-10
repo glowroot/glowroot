@@ -54,7 +54,7 @@ Handlebars.registerHelper('ifBlocked', function(state, options) {
   $(document).ready(function() {
     $.getJSON('misc/threaddump', function(threads) {
       var html = threadDumpTemplate(threads)
-      $(html).appendTo('#threaddump')
+      $('#threaddump').html(html)
     })
   })
 </script>

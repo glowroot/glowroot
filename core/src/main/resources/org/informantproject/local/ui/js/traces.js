@@ -218,7 +218,7 @@ function toggleSpan() {
   } else {
     if (! $('#sp').html()) {
       var html = spansTemplate(detailTrace)
-      $(html).appendTo('#sp')
+      $('#sp').html(html)
     }
     $('#sp').show()
   }

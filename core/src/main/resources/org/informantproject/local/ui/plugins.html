@@ -91,21 +91,21 @@
       if (packagedPlugins.length > 0) {
         $('#packagedSection').show()
         var html = packagedTemplate(packagedPlugins)
-        $(html).appendTo('#packagedPlugins')
+        $('#packagedPlugins').html(html)
         $('#installedDescriptionWithoutPackage').hide()
         $('#installedDescriptionWithPackage').show()
       }
     })
     $.getJSON('plugin/installed', function(installedPlugins) {
       var html = installedTemplate(installedPlugins)
-      $(html).appendTo('#installedPlugins')
+      $('#installedPlugins').html(html)
     })
     $.getJSON('plugin/installable', function(installablePlugins) {
       $('#installableSpinner').hide()
       installableSpinner.stop()
       installableSpinner = null
       var html = installableTemplate(installablePlugins)
-      $(html).appendTo('#installablePlugins')
+      $('#installablePlugins').html(html)
     })
   })
 </script>

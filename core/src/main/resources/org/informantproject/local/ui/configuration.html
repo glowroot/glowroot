@@ -206,7 +206,7 @@
         }
         plugin.propertyDescriptors = propertyDescriptors
         var html = pluginTemplate(plugin)
-        $(html).appendTo('#plugins')
+        $('#plugins').append(html)
         setUpOnOffButton(escapeForSelector(plugin.id) + '_',
             config.pluginConfigs[plugin.id].enabled, 'config/plugin/' + plugin.id)
         var pluginConfig = config.pluginConfigs[plugin.id]
