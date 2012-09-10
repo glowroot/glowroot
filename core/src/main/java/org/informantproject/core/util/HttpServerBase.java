@@ -19,6 +19,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -52,6 +53,8 @@ import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * Base class for a very simple Netty-based http server.
  * 
@@ -62,6 +65,10 @@ import org.slf4j.LoggerFactory;
 public abstract class HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerBase.class);
+
+    private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
+            "An existing connection was forcibly closed by the remote host",
+            "An established connection was aborted by the software in your host machine");
 
     private final ServerBootstrap bootstrap;
     private final ChannelGroup allChannels;
@@ -160,9 +167,10 @@ public abstract class HttpServerBase {
             if (e.getCause() instanceof InterruptedException) {
                 // ignore, probably just termination
             } else {
-                if (e.getCause() instanceof IOException && e.getCause().getMessage() != null
-                        && e.getCause().getMessage().equals("An existing connection was forcibly"
-                                + " closed by the remote host")) {
+                if (e.getCause() instanceof IOException
+                        && BROWSER_DISCONNECT_MESSAGES.contains(e.getCause().getMessage())) {
+                    // ignore, just a browser disconnect
+                } else if (e.getCause() instanceof ClosedChannelException) {
                     // ignore, just a browser disconnect
                 } else {
                     logger.error(e.getCause().getMessage(), e.getCause());
