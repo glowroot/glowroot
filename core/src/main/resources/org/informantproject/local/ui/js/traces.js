@@ -62,7 +62,7 @@ var traceSummaryTemplateText = ''
 var traceDetailTemplateText = ''
 + '{{#if spans}}'
 + '  <a href="#" onclick="toggleSpan(); return false">spans</a> ({{spans.length}})<br>'
-+ '  <div id="sp" style="display: none"></div>'
++ '  <div id="sp"></div>'
 + '{{/if}}'
 + '{{#if coarseMergedStackTree.sampleCount}}'
 + '  <a href="#" onclick="toggleCoarseMergedStackTree(); return false">'
@@ -93,7 +93,6 @@ var traceDetailTemplateText = ''
 + '  </div>'
 + '{{/if}}'
 var spansTemplateText = ''
-+ '{{#spans}}'
 + '<div style="float: left; margin-left: 1em; width: 3em; text-align: right">'
 + '    +{{nanosToMillis offset}}'
 + '  </div>'
@@ -103,16 +102,14 @@ var spansTemplateText = ''
 + '    </div>'
 + '    <div style="margin-left: 4em">'
 + '      {{#ifLongDescription message.text}}'
-+ '        {{! have to use ../.. to get to the parent context from inside of a block'
-+ '            helper, see https://github.com/wycats/handlebars.js/issues/196 }}'
-+ '        <span class="sp_{{../../id}}_{{index}}">'
-+ '          <a href="#" onclick="$(\'.sp_{{../../id}}_{{index}}\').toggle(); return false"'
++ '        <span class="sp_{{index}}">'
++ '          <a href="#" onclick="$(\'.sp_{{index}}\').toggle(); return false"'
 + '              style="color: #333">'
 + '            {{#short message.text}}{{/short}}'
 + '          </a>'
 + '        </span>'
-+ '        <span class="sp_{{../../id}}_{{index}}" style="display: none">'
-+ '          <a href="#" onclick="$(\'.sp_{{../../id}}_{{index}}\').toggle(); return false">'
++ '        <span class="sp_{{index}}" style="display: none">'
++ '          <a href="#" onclick="$(\'.sp_{{index}}\').toggle(); return false">'
 + '            {{message.text}}'
 + '          </a>'
 + '        </span>'
@@ -122,11 +119,11 @@ var spansTemplateText = ''
 + '      <br>'
 + '      {{#if message.detail}}'
 + '        <a style="margin-left: 1em" href="#"'
-+ '            onclick="$(\'#cm_{{../../id}}_{{index}}\').toggle(); return false">'
++ '            onclick="$(\'#cm_{{index}}\').toggle(); return false">'
 + '          detail'
 + '        </a>'
 + '        <br>'
-+ '        <div id="cm_{{../../id}}_{{index}}" style="display: none">'
++ '        <div id="cm_{{index}}" style="display: none">'
 + '          <div style="margin-left: 1em">'
 + '            {{#messageDetailHtml message.detail}}{{/messageDetailHtml}}'
 + '          </div>'
@@ -156,7 +153,6 @@ var spansTemplateText = ''
 + '      {{/if}}'
 + '    </div>'
 + '  </div>'
-+ '{{/spans}}'
 Handlebars.registerHelper('date', function(timestamp) {
   return moment(timestamp).format('L h:mm:ss A (Z)')
 })
@@ -213,14 +209,25 @@ $(document).ready(function() {
   spansTemplate = Handlebars.compile(spansTemplateText)
 })
 function toggleSpan() {
-  if ($('#sp').is(':visible')) {
+  if ($('#sp').html() && $('#sp').is(':visible')) {
     $('#sp').hide()
   } else {
-    if (! $('#sp').html()) {
-      var html = spansTemplate(detailTrace)
-      $('#sp').html(html)
-    }
     $('#sp').show()
+    if (! $('#sp').html()) {
+      renderNext(detailTrace.spans, 0)
+    }
+  }
+}
+function renderNext(spans, start) {
+  // large numbers of spans (e.g. 20,000) render much faster when grouped into sub-divs
+  var html = '<div>'
+  for (var i = start; i < Math.min(start + 100, spans.length); i++) {
+    html += spansTemplate(spans[i])
+  }
+  html += '</div>'
+  $('#sp').append(html)
+  if (start + 100 < spans.length) {
+    setTimeout(function() { renderNext(spans, start + 100) }, 10)
   }
 }
 function toggleUninteresting(granularity) {

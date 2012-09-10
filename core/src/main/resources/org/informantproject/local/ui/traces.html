@@ -46,7 +46,6 @@
 <script type="text/javascript" src="libs/flot/0.7-1/jquery.flot.min.js"></script>
 <script type="text/javascript" src="libs/flot/0.7-1/jquery.flot.selection.min.js"></script>
 <script type="text/javascript" src="libs/flot/0.7-1/jquery.flot.navigate.min.js"></script>
-<script type="text/javascript" src="libs/flot/0.7-1/jquery.flot.resize.min.js"></script>
 <script type="text/javascript" src="libs/spin/1.2.5/spin.min.js"></script>
 <script type="text/javascript" src="libs/qtip/2.0.0-nightly-20120519/jquery.qtip.min.js"></script>
 <script type="text/javascript" src="js/traces.js"></script>
@@ -79,6 +78,9 @@
       }
       plot = $.plot($('#placeholder'), [snapshotPoints, activePoints],
           $.extend(true, {}, options, overrideOptions))
+      $(window).resize(function(e){
+        $.plot(placeholder, plot.getData(), plot.getOptions())
+        })
       updateTimeFilter()
     }
     function itemsEqual(plotItem1, plotItem2) {
@@ -228,11 +230,22 @@
       return queryString
     }
     var refreshQueryString
+    var loadDetailId
     function getTracePoints(from, to, queryString, initialLoad) {
       queryString = 'from=' + from + '&to=' + to + queryString
       // handling crazy user clicking on the button
       if (!initialLoad && queryString == refreshQueryString) return
-      var prevRefreshQueryString = refreshQueryString
+      if (initialLoad) {
+        showSpinner('#initialLoadSpinner')
+      } else {
+        // hide initialLoadSpinner just in case the refresh button was hit during (a very long)
+        // initial load
+        hideSpinner('#initialLoadSpinner')
+        if (!refreshQueryString) {
+          // if refreshQueryString is defined, that means spinner is already showing
+          showSpinner('#refreshButtonSpinner')
+        }
+      }
       if (!initialLoad) {
         refreshQueryString = queryString
       }
@@ -255,7 +268,7 @@
         activePoints = response.activePoints
         hideTooltip()
         currentItem = null
-        $('#detailTab').html('')
+        $('#detailTabContent').html('')
         // shift for timezone
         for (var i = 0; i < snapshotPoints.length; i++) {
           snapshotPoints[i][0] -= new Date(snapshotPoints[i][0]).getTimezoneOffset() * 60 * 1000
@@ -265,16 +278,6 @@
         }
         plotResponseData(snapshotPoints, activePoints, from, to)
       })
-      if (initialLoad) {
-        showSpinner('#initialLoadSpinner')
-      } else {
-        // hide initialLoadSpinner just in case the refresh button was hit during (a very long)
-        // initial load
-        hideSpinner('#initialLoadSpinner')
-        if (!prevRefreshQueryString) {
-          showSpinner('#refreshButtonSpinner')
-        }
-      }
     }
     function showTraceDetailTooltip(item) {
       var x = item.pageX
@@ -335,14 +338,28 @@
         })
         $('#placeholder').qtip('show')
         $('#showDetail').click(function() {
+          // handling crazy user clicking on the 'show detail' link
+          if (id == loadDetailId) return
+          if (!loadDetailId) {
+            // if loadDetailId is defined, that means spinner is already showing
+            showSpinner('#detailTabSpinner')
+          }
+          loadDetailId = id
+          $('#detailTabContent').html('')
+          $('a[href="#detailTab"]').tab('show')
           $.getJSON('trace/detail/' + id, function(response) {
+            if (loadDetailId != id) {
+              // a different id has been posted since this one
+              return
+            }
+            loadDetailId = undefined
             detailTrace = response
             var html = traceSummaryTemplate(detailTrace)
-            $('#detailTab').html(html)
+            hideSpinner('#detailTabSpinner')
+            $('#detailTabContent').html(html)
             var detailHtml = traceDetailTemplate(detailTrace)
             hideTooltip()
-            $('#detailTab').append(detailHtml)
-            $('a[href="#detailTab"]').tab('show')
+            $('#detailTabContent').append(detailHtml)
             $('#showDetailOuter').css('font-style', 'italic')
             $('#showDetailOuter').html('see detail tab below')
           })
@@ -409,7 +426,7 @@
   <br>
   <ul id="tab" class="nav nav-tabs">
     <li class="active"><a href="#filterTab" data-toggle="tab">Filter</a></li>
-    <li><a id="yak" href="#detailTab" data-toggle="tab">Detail</a></li>
+    <li><a href="#detailTab" data-toggle="tab">Detail</a></li>
   </ul>
   <div id="tabContent" class="tab-content">
     <div class="tab-pane fade in active" id="filterTab">
@@ -483,7 +500,10 @@
         </fieldset>
       </form>
     </div>
-    <div class="tab-pane fade" id="detailTab"></div>
+    <div class="tab-pane fade" id="detailTab">
+      <div id="detailTabSpinner" class="button-spinner" style="margin: 20px 30px"></div>
+      <div id="detailTabContent"></div>
+    </div>
   </div>
   <div id="stacktracemodal" class="modal hide fade"
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
