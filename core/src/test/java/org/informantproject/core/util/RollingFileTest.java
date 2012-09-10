@@ -56,7 +56,7 @@ public class RollingFileTest {
         // when
         FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
-        String text2 = toString(rollingFile.read(block));
+        String text2 = toString(rollingFile.read(block, ""));
         assertThat(text2).isEqualTo(text);
     }
 
@@ -74,7 +74,7 @@ public class RollingFileTest {
         // when
         FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
-        String text2 = toString(rollingFile.read(block));
+        String text2 = toString(rollingFile.read(block, ""));
         assertThat(text2).isEqualTo(text);
     }
 
@@ -93,7 +93,7 @@ public class RollingFileTest {
         // when
         FileBlock block = rollingFile.write(ByteStream.of(text));
         // then
-        String text2 = toString(rollingFile.read(block));
+        String text2 = toString(rollingFile.read(block, ""));
         assertThat(text2).isEqualTo(text);
     }
 
@@ -113,7 +113,7 @@ public class RollingFileTest {
         rollingFile.write(ByteStream.of(text));
         // then
         // for now, overwritten blocks return empty byte array when read
-        String text2 = toString(rollingFile.read(block));
+        String text2 = toString(rollingFile.read(block, ""));
         assertThat(text2).isEqualTo("");
     }
 

@@ -79,7 +79,7 @@ public class RollingFileResizeTest {
         // when
         rollingFile.resize(newRollingSizeKb);
         // then
-        String text2 = RollingFileTest.toString(rollingFile.read(block));
+        String text2 = RollingFileTest.toString(rollingFile.read(block, ""));
         assertThat(text2).isEqualTo(text);
     }
 }

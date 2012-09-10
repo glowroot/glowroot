@@ -352,7 +352,7 @@ public class TraceSnapshotDao {
                 FileBlock block;
                 try {
                     block = FileBlock.from(spansFileBlockId);
-                    builder.spans(rollingFile.read(block));
+                    builder.spans(rollingFile.read(block, "\"rolled over\""));
                 } catch (InvalidBlockId e) {
                     logger.error(e.getMessage(), e);
                 }
@@ -361,7 +361,7 @@ public class TraceSnapshotDao {
                 FileBlock block;
                 try {
                     block = FileBlock.from(coarseMergedStackTreeFileBlockId);
-                    builder.coarseMergedStackTree(rollingFile.read(block));
+                    builder.coarseMergedStackTree(rollingFile.read(block, "\"rolled over\""));
                 } catch (InvalidBlockId e) {
                     logger.error(e.getMessage(), e);
                 }
@@ -370,7 +370,7 @@ public class TraceSnapshotDao {
                 FileBlock block;
                 try {
                     block = FileBlock.from(fineMergedStackTreeFileBlockId);
-                    builder.fineMergedStackTree(rollingFile.read(block));
+                    builder.fineMergedStackTree(rollingFile.read(block, "\"rolled over\""));
                 } catch (InvalidBlockId e) {
                     logger.error(e.getMessage(), e);
                 }

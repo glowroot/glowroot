@@ -28,6 +28,7 @@ import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Charsets;
 import com.ning.compress.lzf.LZFDecoder;
 import com.ning.compress.lzf.LZFOutputStream;
 
@@ -67,8 +68,8 @@ public class RollingFile {
         }
     }
 
-    public ByteStream read(FileBlock block) {
-        return new FileBlockByteStream(block);
+    public ByteStream read(FileBlock block, String rolledOverResponse) {
+        return new FileBlockByteStream(block, rolledOverResponse);
     }
 
     public void resize(int newRollingSizeKb) throws IOException {
@@ -104,10 +105,12 @@ public class RollingFile {
     private class FileBlockByteStream extends ByteStream {
 
         private final FileBlock block;
+        private final String rolledOverResponse;
         private boolean end;
 
-        private FileBlockByteStream(FileBlock block) {
+        private FileBlockByteStream(FileBlock block, String rolledOverResponse) {
             this.block = block;
+            this.rolledOverResponse = rolledOverResponse;
         }
 
         @Override
@@ -123,9 +126,8 @@ public class RollingFile {
             }
             synchronized (lock) {
                 if (!rollingOut.stillExists(block)) {
-                    // TODO handle not exists case better?
                     end = true;
-                    return new byte[0];
+                    return rolledOverResponse.getBytes(Charsets.UTF_8.name());
                 }
                 long filePosition = rollingOut.convertToFilePosition(block.getStartIndex());
                 inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);

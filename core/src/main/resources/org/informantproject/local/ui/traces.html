@@ -357,6 +357,7 @@
             var html = traceSummaryTemplate(detailTrace)
             hideSpinner('#detailTabSpinner')
             $('#detailTabContent').html(html)
+            $('#detailTabContent').append('<br>')
             var detailHtml = traceDetailTemplate(detailTrace)
             hideTooltip()
             $('#detailTabContent').append(detailHtml)
