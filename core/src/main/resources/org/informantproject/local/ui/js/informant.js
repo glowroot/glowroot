@@ -54,3 +54,32 @@ function hideSpinner(selector) {
     $(this).hide()
   })
 }
+function configureAjaxError() {
+  var modalDiv = ''
+  + '<div id="ajaxErrorModal" class="modal hide fade"'
+  + '    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">'
+  + '  <div class="modal-header">'
+  + '    <button class="close" data-dismiss="modal">&times;</button>'
+  + '    <h3>Ajax Error</h3>'
+  + '  </div>'
+  + '  <div id="ajaxError" class="modal-body"></div>'
+  + '  <div class="modal-footer">'
+  + '    <button class="btn" data-dismiss="modal">Close</button>'
+  + '  </div>'
+  + '</div>'
+  $(document.body).append(modalDiv)
+  $(document).ajaxError(function(e, jqxhr, settings, exception) {
+    if (jqxhr.status == 0) {
+      $('#ajaxError').html('Can\'t connect to server')
+      $('#ajaxErrorModal').modal('show')
+    } else if (jqxhr.status == 200) {
+      $('#ajaxError').html('Error parsing json: ' + exception)
+      $('#ajaxError').append('<br><br>')
+      $('#ajaxError').append(jqxhr.responseText)
+      $('#ajaxErrorModal').modal('show')
+    } else {
+      $('#ajaxError').html('Error from server: ' + jqxhr.statusText)
+      $('#ajaxErrorModal').modal('show')
+    }
+  })
+}

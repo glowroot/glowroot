@@ -22,25 +22,30 @@
 <link rel="stylesheet" href="libs/bootstrap/2.0.4/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="libs/jquery/1.7.2/jquery.min.js"></script>
+<!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
+<script type="text/javascript" src="libs/bootstrap/2.0.4/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libs/spin/1.2.5/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
-  var postingClearData = false
-  function clearData() {
-    // handling crazy user clicking on the button
-    if (postingClearData) return
-    postingClearData = true
-    var keepMillis = $('input:radio[name=keepMillis]:checked').val()
-    var compact = $('#compact').is(':checked')
-    $.post('misc/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
-      postingClearData = false
-      hideSpinner('#clearButtonSpinner')
-      showAndFadeSuccessMessage('#clearSuccessMessage')
+  $(document).ready(function() {
+    configureAjaxError()
+    var postingClearData = false
+    $('#clearButton').click(function() {
+      // handling crazy user clicking on the button
+      if (postingClearData) return
+      postingClearData = true
+      var keepMillis = $('input:radio[name=keepMillis]:checked').val()
+      var compact = $('#compact').is(':checked')
+      $.post('misc/cleardata?keepMillis=' + keepMillis + '&compact=' + compact, function() {
+        postingClearData = false
+        hideSpinner('#clearButtonSpinner')
+        showAndFadeSuccessMessage('#clearSuccessMessage')
+      })
+      // in case button is clicked again before success message is hidden
+      $('#clearSuccessMessage').hide()
+      showSpinner('#clearButtonSpinner')
     })
-    // in case button is clicked again before success message is hidden
-    $('#clearSuccessMessage').hide()
-    showSpinner('#clearButtonSpinner')
-  }
+  })
 </script>
 </head>
 <body>
@@ -86,7 +91,7 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn" onclick="clearData()">Clear data</button>
+        <button id="clearButton" type="button" class="btn">Clear data</button>
         <div id="clearButtonSpinner" class="button-spinner"></div>
         <div id="clearSuccessMessage" class="button-success-message">Cleared</div>
       </div>

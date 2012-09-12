@@ -52,8 +52,8 @@
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
   $(document).ready(function() {
+    configureAjaxError()
     var plot, snapshotPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
-
     var options = {
       legend: { show: false },
       series: {
@@ -509,12 +509,12 @@
   <div id="stacktracemodal" class="modal hide fade"
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">
-      <a class="close" data-dismiss="modal">×</a>
+      <button class="close" data-dismiss="modal">&times;</button>
       <h3>Stack Trace</h3>
     </div>
     <div id="stacktrace" class="modal-body"></div>
     <div class="modal-footer">
-      <a href="#" class="btn">Close</a>
+      <button class="btn" data-dismiss="modal">Close</button>
     </div>
   </div>
 </body>

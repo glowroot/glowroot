@@ -22,7 +22,10 @@
 <link rel="stylesheet" href="libs/bootstrap/2.0.4/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="libs/jquery/1.7.2/jquery.min.js"></script>
+<!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
+<script type="text/javascript" src="libs/bootstrap/2.0.4/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
+<script type="text/javascript" src="js/informant.js"></script>
 </head>
 <script id="threadDumpTemplate" type="text/x-handlebars-template">
 <pre>
@@ -36,13 +39,13 @@
 </pre>
 </script>
 <script type="text/javascript">
-Handlebars.registerHelper('ifBlocked', function(state, options) {
-  if (state == 'BLOCKED') {
-    return options.fn(this)
-  } else {
-    return options.inverse(this)
-  }
-})
+  Handlebars.registerHelper('ifBlocked', function(state, options) {
+    if (state == 'BLOCKED') {
+      return options.fn(this)
+    } else {
+      return options.inverse(this)
+    }
+  })
   Handlebars.registerHelper('ifWaiting', function(state, options) {
     if (state == 'WAITING' || state == 'TIMED_WAITING') {
       return options.fn(this)
@@ -52,6 +55,7 @@ Handlebars.registerHelper('ifBlocked', function(state, options) {
   })
   var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html())
   $(document).ready(function() {
+    configureAjaxError()
     $.getJSON('misc/threaddump', function(threads) {
       var html = threadDumpTemplate(threads)
       $('#threaddump').html(html)
