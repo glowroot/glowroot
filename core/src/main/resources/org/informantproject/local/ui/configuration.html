@@ -168,6 +168,9 @@
         $('#actualRollingSizeMb').html(config.actualRollingSizeMb)
         $('#rollingSizeHelp').css('display', 'inline-block')
       }
+      $('#offscreenMeasure').text(config.dataDirFolder)
+      $('#dataDirFolder').text(config.dataDirFolder)
+      $('#dataDirFolder').css("width", ($('#offscreenMeasure').width() + 50) + "px")
       var coarseProfilingConfig = config.coarseProfilingConfig
       setUpOnOffButton('profiling_coarse_', coarseProfilingConfig.enabled,
           'config/profiling/coarse')
@@ -407,6 +410,16 @@
           </div>
         </div>
       </div>
+      <div class="control-group">
+        <label class="control-label" for="dataDirFolder">Data dir folder</label>
+        <div class="controls">
+          <span class="uneditable-input" id="dataDirFolder"></span>
+          <div class="help-block">
+            The data dir folder must be set on the command line, e.g.
+            -javaagent:informant.jar=data.dir:&lt;folder&gt;
+          </div>
+        </div>
+      </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
         <div id="saveCoreButtonSpinner" class="button-spinner"></div>
@@ -580,5 +593,6 @@
     </fieldset>
   </form>
   <div id="plugins"></div>
+  <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0px"></span>
 </body>
 </html>

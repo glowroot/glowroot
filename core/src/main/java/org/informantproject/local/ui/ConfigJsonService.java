@@ -25,6 +25,7 @@ import org.informantproject.core.config.FineProfilingConfig;
 import org.informantproject.core.config.PluginConfig;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
+import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,12 +53,14 @@ class ConfigJsonService implements JsonService {
 
     private final ConfigService configService;
     private final RollingFile rollingFile;
+    private final DataSource dataSource;
     private final Gson gson = new Gson();
 
     @Inject
-    ConfigJsonService(ConfigService configService, RollingFile rollingFile) {
+    ConfigJsonService(ConfigService configService, RollingFile rollingFile, DataSource dataSource) {
         this.configService = configService;
         this.rollingFile = rollingFile;
+        this.dataSource = dataSource;
     }
 
     @JsonServiceMethod
@@ -111,7 +114,8 @@ class ConfigJsonService implements JsonService {
                 + ",\"fineProfilingConfig\":" + configService.getFineProfilingConfig().toJson()
                 + ",\"pluginConfigs\":" + getPluginConfigsJson()
                 + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
-                + ",\"actualRollingSizeMb\":" + rollingSizeMb + "}";
+                + ",\"actualRollingSizeMb\":" + rollingSizeMb + ",\"dataDirFolder\":"
+                + gson.toJson(dataSource.getDbFile().getParent()) + "}";
     }
 
     @JsonServiceMethod
