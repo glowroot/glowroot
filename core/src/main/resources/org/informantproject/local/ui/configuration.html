@@ -164,10 +164,6 @@
       $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
       $('#maxEntries').val(coreConfig.maxEntries)
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
-      if (config.actualRollingSizeMb != coreConfig.rollingSizeMb) {
-        $('#actualRollingSizeMb').html(config.actualRollingSizeMb)
-        $('#rollingSizeHelp').css('display', 'inline-block')
-      }
       $('#offscreenMeasure').text(config.dataDirFolder)
       $('#dataDirFolder').text(config.dataDirFolder)
       $('#dataDirFolder').css("width", ($('#offscreenMeasure').width() + 50) + "px")
@@ -187,16 +183,6 @@
       } else {
         $('#finePersistenceThresholdOverride').attr('checked', true)
         $('#finePersistenceThresholdMillis').val(fineProfilingConfig.persistenceThresholdMillis)
-      }
-      var coreConfig = config.coreConfig
-      $('#persistenceThresholdMillis').val(coreConfig.persistenceThresholdMillis)
-      $('#stuckThresholdSeconds').val(coreConfig.stuckThresholdSeconds)
-      $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
-      $('#maxEntries').val(coreConfig.maxEntries)
-      $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
-      if (config.actualRollingSizeMb != coreConfig.rollingSizeMb) {
-        $('#actualRollingSizeMb').html(config.actualRollingSizeMb)
-        $('#rollingSizeHelp').css('display', 'inline-block')
       }
       plugins = config.pluginDescriptors
       for (var i = 0; i < plugins.length; i++) {
@@ -395,11 +381,7 @@
         <label class="control-label" for="rollingSizeMb">Rolling database size</label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="rollingSizeMb"
-              type="text"><span class="add-on">MB</span>
-            <div id="rollingSizeHelp" class="help-block" style="display: none; margin-left: 1em">
-              (actual rolling size <span id="actualRollingSizeMb"></span> MB)
-            </div>
+            <input style="width: 6em" id="rollingSizeMb" type="text"><span class="add-on">MB</span>
           </div>
           <div class="help-block">
             Trace detail data (trace entries, sampled profile) is persisted to disk as

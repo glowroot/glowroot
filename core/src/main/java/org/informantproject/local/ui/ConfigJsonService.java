@@ -108,13 +108,12 @@ class ConfigJsonService implements JsonService {
         logger.debug("getConfig()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
-        double rollingSizeMb = rollingFile.getRollingSizeKb() / 1024.0;
         return "{\"coreConfig\":" + configService.getCoreConfig().toJson()
                 + ",\"coarseProfilingConfig\":" + configService.getCoarseProfilingConfig().toJson()
                 + ",\"fineProfilingConfig\":" + configService.getFineProfilingConfig().toJson()
                 + ",\"pluginConfigs\":" + getPluginConfigsJson()
                 + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
-                + ",\"actualRollingSizeMb\":" + rollingSizeMb + ",\"dataDirFolder\":"
+                + ",\"dataDirFolder\":"
                 + gson.toJson(dataSource.getDbFile().getParent()) + "}";
     }
 

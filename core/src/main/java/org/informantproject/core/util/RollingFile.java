@@ -80,12 +80,6 @@ public class RollingFile {
         }
     }
 
-    public int getRollingSizeKb() {
-        // this is ok to read outside of the synchronization around startBlock()/write()/endBlock()
-        // which is useful so that the ConfigJsonService cannot blocked by large number of writes
-        return rollingOut.getRollingSizeKb();
-    }
-
     public void close() throws IOException {
         logger.debug("close()");
         synchronized (lock) {
