@@ -82,6 +82,7 @@ public class StuckTraceTest {
             throw new AssertionError("no active trace found");
         }
         assertThat(trace.isStuck()).isTrue();
+        assertThat(trace.isActive()).isTrue();
         assertThat(trace.isCompleted()).isFalse();
         future.get();
         // should now be reported as unstuck

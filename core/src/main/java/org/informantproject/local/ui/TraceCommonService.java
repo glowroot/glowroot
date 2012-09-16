@@ -61,7 +61,7 @@ public class TraceCommonService {
             if (active.getId().equals(id)) {
                 TraceSnapshot snapshot = traceSnapshotService.from(active, ticker.read(),
                         includeDetail);
-                return TraceSnapshotService.toByteStream(snapshot);
+                return TraceSnapshotService.toByteStream(snapshot, true);
             }
         }
         TraceSnapshot snapshot;
@@ -73,8 +73,7 @@ public class TraceCommonService {
         if (snapshot == null) {
             return null;
         } else {
-            return TraceSnapshotService.toByteStream(snapshot);
+            return TraceSnapshotService.toByteStream(snapshot, false);
         }
     }
-
 }

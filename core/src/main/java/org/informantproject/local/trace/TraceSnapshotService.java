@@ -133,7 +133,7 @@ public class TraceSnapshotService {
         return builder.build();
     }
 
-    public static ByteStream toByteStream(TraceSnapshot snapshot)
+    public static ByteStream toByteStream(TraceSnapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
 
         List<ByteStream> byteStreams = Lists.newArrayList();
@@ -142,10 +142,12 @@ public class TraceSnapshotService {
         sb.append(snapshot.getId());
         sb.append("\",\"start\":");
         sb.append(snapshot.getStartAt());
-        sb.append(",\"stuck\":");
-        sb.append(snapshot.isStuck());
         sb.append(",\"duration\":");
         sb.append(snapshot.getDuration());
+        sb.append(",\"active\":");
+        sb.append(active);
+        sb.append(",\"stuck\":");
+        sb.append(snapshot.isStuck());
         sb.append(",\"completed\":");
         sb.append(snapshot.isCompleted());
         sb.append(",\"description\":");

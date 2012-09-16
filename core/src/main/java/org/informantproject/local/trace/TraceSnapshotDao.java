@@ -58,11 +58,11 @@ public class TraceSnapshotDao {
             new PrimaryKeyColumn("id", Types.VARCHAR),
             new Column("captured_at", Types.BIGINT), // for searching only
             new Column("start_at", Types.BIGINT),
+            new Column("duration", Types.BIGINT),
             new Column("stuck", Types.BOOLEAN),
+            new Column("completed", Types.BOOLEAN),
             new Column("error", Types.BOOLEAN), // for searching only
             new Column("fine", Types.BOOLEAN), // for searching only
-            new Column("duration", Types.BIGINT),
-            new Column("completed", Types.BOOLEAN),
             new Column("description", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
             new Column("username", Types.VARCHAR),
@@ -144,14 +144,14 @@ public class TraceSnapshotDao {
             }
         }
         try {
-            dataSource.update("merge into trace (id, captured_at, start_at, stuck, error, fine,"
-                    + " duration, completed, description, attributes, username, error_text,"
+            dataSource.update("merge into trace (id, captured_at, start_at, duration, stuck,"
+                    + " completed, error, fine, description, attributes, username, error_text,"
                     + " error_detail, error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
                     + " fine_merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
                     + " ?, ?, ?, ?)", snapshot.getId(), capturedAt, snapshot.getStartAt(),
-                    snapshot.isStuck(), snapshot.getErrorText() != null,
-                    fineMergedStackTreeBlockId != null, snapshot.getDuration(),
-                    snapshot.isCompleted(), snapshot.getDescription(), snapshot.getAttributes(),
+                    snapshot.getDuration(), snapshot.isStuck(), snapshot.isCompleted(),
+                    snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
+                    snapshot.getDescription(), snapshot.getAttributes(),
                     snapshot.getUsername(), snapshot.getErrorText(), snapshot.getErrorDetail(),
                     snapshot.getErrorStackTrace(), snapshot.getMetrics(), spansBlockId,
                     coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
@@ -212,7 +212,7 @@ public class TraceSnapshotDao {
         }
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
-            partiallyHydratedTraces = dataSource.query("select id, start_at, stuck, duration,"
+            partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
                     + " completed, description, attributes, username, error_text, error_detail,"
                     + " error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
                     + " fine_merged_stack_tree from trace where id = ?", new Object[] { id },
@@ -238,7 +238,7 @@ public class TraceSnapshotDao {
         }
         List<TraceSnapshot> snapshots;
         try {
-            snapshots = dataSource.query("select id, start_at, stuck, duration, completed,"
+            snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
                     + " description, attributes, username, error_text, error_detail,"
                     + " error_stack_trace, metrics from trace where id = ?", new Object[] { id },
                     new TraceSummaryRowMapper());
@@ -298,8 +298,8 @@ public class TraceSnapshotDao {
         return TraceSnapshot.builder()
                 .id(resultSet.getString(1))
                 .startAt(resultSet.getLong(2))
-                .stuck(resultSet.getBoolean(3))
-                .duration(resultSet.getLong(4))
+                .duration(resultSet.getLong(3))
+                .stuck(resultSet.getBoolean(4))
                 .completed(resultSet.getBoolean(5))
                 .description(resultSet.getString(6))
                 .attributes(resultSet.getString(7))

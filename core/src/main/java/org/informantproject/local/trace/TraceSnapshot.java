@@ -35,8 +35,8 @@ public class TraceSnapshot {
 
     private final String id;
     private final long startAt;
-    private final boolean stuck;
     private final long duration; // nanoseconds
+    private final boolean stuck;
     private final boolean completed;
     private final String description;
     @Nullable
@@ -60,7 +60,7 @@ public class TraceSnapshot {
     @Nullable
     private final ByteStream fineMergedStackTree; // json data
 
-    private TraceSnapshot(String id, long startAt, boolean stuck, long duration, boolean completed,
+    private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
             String description, @Nullable String attributes, @Nullable String username,
             @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String errorStackTrace, @Nullable String metrics, @Nullable ByteStream spans,
@@ -68,8 +68,8 @@ public class TraceSnapshot {
 
         this.id = id;
         this.startAt = startAt;
-        this.stuck = stuck;
         this.duration = duration;
+        this.stuck = stuck;
         this.completed = completed;
         this.description = description;
         this.attributes = attributes;
@@ -91,12 +91,12 @@ public class TraceSnapshot {
         return startAt;
     }
 
-    boolean isStuck() {
-        return stuck;
-    }
-
     long getDuration() {
         return duration;
+    }
+
+    boolean isStuck() {
+        return stuck;
     }
 
     boolean isCompleted() {
@@ -157,8 +157,8 @@ public class TraceSnapshot {
         ToStringHelper toStringHelper = Objects.toStringHelper(this)
                 .add("id", id)
                 .add("startAt", startAt)
-                .add("stuck", stuck)
                 .add("duration", duration)
+                .add("stuck", stuck)
                 .add("completed", completed)
                 .add("description", description)
                 .add("attributes", attributes)
@@ -179,8 +179,8 @@ public class TraceSnapshot {
         @Nullable
         private String id;
         private long startAt;
-        private boolean stuck;
         private long duration;
+        private boolean stuck;
         private boolean completed;
         @Nullable
         private String description;
@@ -215,13 +215,13 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder stuck(boolean stuck) {
-            this.stuck = stuck;
+        Builder duration(long duration) {
+            this.duration = duration;
             return this;
         }
 
-        Builder duration(long duration) {
-            this.duration = duration;
+        Builder stuck(boolean stuck) {
+            this.stuck = stuck;
             return this;
         }
 
@@ -281,7 +281,7 @@ public class TraceSnapshot {
         }
 
         TraceSnapshot build() {
-            return new TraceSnapshot(id, startAt, stuck, duration, completed, description,
+            return new TraceSnapshot(id, startAt, duration, stuck, completed, description,
                     attributes, username, errorText, errorDetail, errorStackTrace, metrics, spans,
                     coarseMergedStackTree, fineMergedStackTree);
         }
