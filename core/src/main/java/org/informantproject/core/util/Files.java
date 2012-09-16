@@ -33,18 +33,18 @@ public final class Files {
 
     public static void delete(File file) throws IOException {
         if (!file.exists()) {
-            throw new IOException("could not find file to delete '" + file.getCanonicalPath()
+            throw new IOException("Could not find file to delete '" + file.getCanonicalPath()
                     + "'");
         } else if (file.isDirectory()) {
             for (File f : file.listFiles()) {
                 delete(f);
             }
             if (!file.delete()) {
-                throw new IOException("could not delete directory '" + file.getCanonicalPath()
+                throw new IOException("Could not delete directory '" + file.getCanonicalPath()
                         + "'");
             }
         } else if (!file.delete()) {
-            throw new IOException("could not delete file '" + file.getCanonicalPath() + "'");
+            throw new IOException("Could not delete file '" + file.getCanonicalPath() + "'");
         }
     }
 

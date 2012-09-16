@@ -48,7 +48,7 @@ public class PointcutStackTrace extends RuntimeException {
             }
         }
         if (i == elements.length) {
-            logger.warn("Could not find pointcut '{}' in stack trace:\n  {}",
+            logger.warn("could not find pointcut '{}' in stack trace:\n  {}",
                     pointcutType.getName(), Joiner.on("\n  ").join(elements));
             return elements;
         } else {

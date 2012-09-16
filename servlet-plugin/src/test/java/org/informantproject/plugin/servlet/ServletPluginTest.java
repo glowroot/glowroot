@@ -664,7 +664,7 @@ public class ServletPluginTest {
 
     @SuppressWarnings("serial")
     public static class ThrowsException extends TestServlet {
-        private final RuntimeException exception = new RuntimeException("something happened");
+        private final RuntimeException exception = new RuntimeException("Something happened");
         @Override
         public void executeApp() throws Exception {
             try {

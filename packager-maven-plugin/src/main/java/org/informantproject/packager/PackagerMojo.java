@@ -193,8 +193,8 @@ public class PackagerMojo extends AbstractMojo {
                 return new Manifest(new JarFile(artifact.getFile()).getManifest());
             }
         }
-        throw new MojoExecutionException("org.informantproject:informant-core must be a"
-                + " project dependency");
+        throw new MojoExecutionException("Missing project dependency"
+                + " org.informantproject:informant-core");
     }
 
     private void explode(File jarFile, JarOutputStream jarOut, Set<String> seenDirectories,

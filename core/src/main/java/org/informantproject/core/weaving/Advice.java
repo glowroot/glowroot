@@ -237,7 +237,7 @@ public class Advice {
             for (java.lang.reflect.Method method : adviceClass.getMethods()) {
                 if (method.isAnnotationPresent(IsEnabled.class)) {
                     if (isEnabledAdvice != null) {
-                        logger.error("Advice '{}' has more than one @IsEnabled method",
+                        logger.error("@Pointcut '{}' has more than one @IsEnabled method",
                                 adviceClass.getName());
                     } else {
                         isEnabledAdvice = Method.getMethod(method);
@@ -252,7 +252,7 @@ public class Advice {
                     }
                 } else if (method.isAnnotationPresent(OnBefore.class)) {
                     if (onBeforeAdvice != null) {
-                        logger.error("Advice '{}' has more than one @OnBefore method",
+                        logger.error("@Pointcut '{}' has more than one @OnBefore method",
                                 adviceClass.getName());
                     } else {
                         onBeforeAdvice = Method.getMethod(method);
@@ -261,8 +261,9 @@ public class Advice {
                                 method.getParameterTypes(), onBeforeValidParameterKinds);
                         if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
                             if (onBeforeAdvice.getReturnType().getSort() < Type.ARRAY) {
-                                logger.error("primitive types are not supported (yet) as the @OnBefore"
-                                        + " return type (and for subsequent @InjectTraveler)");
+                                logger.error("primitive types are not supported (yet) as the"
+                                        + " @OnBefore return type (and for subsequent"
+                                        + " @InjectTraveler)");
                             } else {
                                 travelerType = onBeforeAdvice.getReturnType();
                             }
@@ -270,7 +271,7 @@ public class Advice {
                     }
                 } else if (method.isAnnotationPresent(OnReturn.class)) {
                     if (onReturnAdvice != null) {
-                        logger.error("Advice '{}' has more than one @OnSucces method",
+                        logger.error("@Pointcut '{}' has more than one @OnSucces method",
                                 adviceClass.getName());
                     } else {
                         onReturnAdvice = Method.getMethod(method);
@@ -279,7 +280,8 @@ public class Advice {
                                 method.getParameterTypes(), onReturnValidParameterKinds);
                         for (int i = 1; i < onReturnParameterKinds.length; i++) {
                             if (onReturnParameterKinds[i] == ParameterKind.RETURN) {
-                                logger.error("@InjectReturn must be the first argument to @OnReturn");
+                                logger.error("@InjectReturn must be the first argument to"
+                                        + " @OnReturn");
                                 onReturnAdvice = null;
                                 onReturnParameterKinds = new ParameterKind[0];
                                 break;
@@ -288,7 +290,7 @@ public class Advice {
                     }
                 } else if (method.isAnnotationPresent(OnThrow.class)) {
                     if (onThrowAdvice != null) {
-                        logger.error("Advice '{}' has more than one @OnThrow method",
+                        logger.error("@Pointcut '{}' has more than one @OnThrow method",
                                 adviceClass.getName());
                     } else {
                         onThrowAdvice = Method.getMethod(method);
@@ -312,7 +314,7 @@ public class Advice {
                     }
                 } else if (method.isAnnotationPresent(OnAfter.class)) {
                     if (onAfterAdvice != null) {
-                        logger.error("Advice '{}' has more than one @OnAfter method",
+                        logger.error("@Pointcut '{}' has more than one @OnAfter method",
                                 adviceClass.getName());
                     } else {
                         onAfterAdvice = Method.getMethod(method);

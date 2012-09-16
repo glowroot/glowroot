@@ -69,13 +69,13 @@ class SocketCommandProcessor implements Runnable {
                 if (command.equals(GET_PORT_COMMAND)) {
                     respond(MainEntryPoint.getPort(), commandNum);
                 } else {
-                    logger.error("Unexpected command '" + command + "'");
+                    logger.error("unexpected command '" + command + "'");
                     respond(EXCEPTION_RESPONSE, commandNum);
                 }
             } else if (command instanceof List) {
                 List<?> argList = (List<?>) command;
                 if (argList.isEmpty()) {
-                    logger.error("Unexpected empty command");
+                    logger.error("unexpected empty command");
                     respond(EXCEPTION_RESPONSE, commandNum);
                 } else {
                     Object commandName = argList.get(0);
@@ -84,12 +84,12 @@ class SocketCommandProcessor implements Runnable {
                         String threadName = (String) argList.get(2);
                         executeAppAndRespond(appClassName, threadName, commandNum);
                     } else {
-                        logger.error("Unexpected command '" + commandName + "'");
+                        logger.error("unexpected command '" + commandName + "'");
                         respond(EXCEPTION_RESPONSE, commandNum);
                     }
                 }
             } else {
-                logger.error("Unexpected command type '" + command.getClass().getName() + "'");
+                logger.error("unexpected command type '" + command.getClass().getName() + "'");
                 respond(EXCEPTION_RESPONSE, commandNum);
             }
         }

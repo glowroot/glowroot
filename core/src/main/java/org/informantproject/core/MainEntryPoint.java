@@ -104,7 +104,7 @@ public final class MainEntryPoint {
             // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
             // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
             // inevitable at least in this case, and probably others
-            logger.error("Disabling Informant. Embedded database '" + parsedAgentArgs.getDataDir()
+            logger.error("disabling Informant, embedded database '" + parsedAgentArgs.getDataDir()
                     .getAbsolutePath() + "' is locked by another process.");
             weavingClassFileTransformer.disable();
             return;

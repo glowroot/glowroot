@@ -161,7 +161,7 @@ public class GlobalCollector {
                 allSuperTypes.addAll(itype.get().getAllSuperTypes());
                 allSuperTypes.add(interfaceType);
             } else {
-                logger.debug("Could not find type: {}", interfaceType);
+                logger.debug("could not find type: {}", interfaceType);
                 typeCollector.setAllSuperTypes(allSuperTypes.build());
                 return Optional.absent();
             }
@@ -177,7 +177,7 @@ public class GlobalCollector {
     @Nullable
     private TypeCollector createTypeCollector(String type) {
         if (ClassLoader.getSystemResource(type + ".class") == null) {
-            logger.debug("Could not find class: {}", type);
+            logger.debug("could not find class: {}", type);
             return null;
         }
         TypeCollector typeCollector = new TypeCollector();
@@ -187,7 +187,7 @@ public class GlobalCollector {
             cr.accept(visitor, 0);
             return typeCollector;
         } catch (IOException e) {
-            logger.error("Error parsing class: {}", type);
+            logger.error("error parsing class: {}", type);
             return null;
         }
     }
