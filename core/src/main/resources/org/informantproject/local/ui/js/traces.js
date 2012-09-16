@@ -110,7 +110,7 @@ var spansTemplateText = ''
 + '  </div>'
 + '  <div style="margin-left: {{margin nestingLevel}}em">'
 + '    <div style="width: 2em; float: left; text-align: right">'
-+ '      {{nanosToMillis duration}}{{#if active}}..{{/if}}&nbsp;'
++ '      {{nanosToMillis duration}}{{#if active}}..{{/if}}'
 + '    </div>'
 + '    <div style="margin-left: 4em">'
 + '      {{#ifLongDescription message.text}}'
@@ -291,8 +291,8 @@ function toggleMergedStackTree(rootNode, granularity) {
       ret += '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3) + 1)
           + 'em">'
       ret += samplePercentage.toFixed(1)
-      ret += '%</span>'
-      ret += '&nbsp;' + node.leafThreadState
+      ret += '%</span> '
+      ret += node.leafThreadState
       ret += '<br>'
     }
     if (node.childNodes) {
