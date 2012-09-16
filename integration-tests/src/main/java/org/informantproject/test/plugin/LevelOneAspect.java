@@ -73,7 +73,14 @@ public class LevelOneAspect {
                     return Message.withDetail(traceDescription, detail);
                 }
             };
-            return pluginServices.startTrace(messageSupplier, metric);
+            Span span = pluginServices.startTrace(messageSupplier, metric);
+            // several trace attributes to test ordering
+            pluginServices.setTraceAttribute(arg1, arg2);
+            pluginServices.setTraceAttribute("z", "zz");
+            pluginServices.setTraceAttribute("y", "yy");
+            pluginServices.setTraceAttribute("x", "xx");
+            pluginServices.setTraceAttribute("w", "ww");
+            return span;
         }
 
         @OnThrow

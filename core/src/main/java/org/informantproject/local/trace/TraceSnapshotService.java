@@ -37,7 +37,6 @@ import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
-import org.informantproject.core.trace.Trace.TraceAttribute;
 import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
@@ -115,7 +114,7 @@ public class TraceSnapshotService {
                 builder.errorStackTrace(getStackTraceJson(stackTrace));
             }
         }
-        List<TraceAttribute> attributes = trace.getAttributes();
+        Map<String, String> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }

@@ -24,13 +24,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.api.ErrorMessage;
 import org.informantproject.core.stack.MergedStackTree;
@@ -40,8 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. servlet request).
@@ -70,8 +70,10 @@ public class Trace {
 
     // attribute name ordering is maintained for consistent display (assumption is order of entry is
     // order of importance)
+    //
+    // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
-    private final List<TraceAttribute> attributes = new ArrayList<TraceAttribute>();
+    private volatile Map<String, String> attributes;
 
     @Nullable
     private volatile String username;
@@ -161,9 +163,13 @@ public class Trace {
         return stuck.get();
     }
 
-    public ImmutableList<TraceAttribute> getAttributes() {
-        synchronized (attributes) {
-            return ImmutableList.copyOf(attributes);
+    public Map<String, String> getAttributes() {
+        if (attributes == null) {
+            return ImmutableMap.of();
+        } else {
+            synchronized (attributes) {
+                return Maps.newLinkedHashMap(attributes);
+            }
         }
     }
 
@@ -245,14 +251,13 @@ public class Trace {
     }
 
     public void setAttribute(String name, @Nullable String value) {
+        if (attributes == null) {
+            // no race condition here since only trace thread calls setAttribute()
+            attributes = Maps.newLinkedHashMap();
+        }
+        // synchronization is only for visibility guarantee
         synchronized (attributes) {
-            for (ListIterator<TraceAttribute> i = attributes.listIterator(); i.hasNext();) {
-                if (i.next().getName().equals(name)) {
-                    i.set(new TraceAttribute(name, value));
-                    return;
-                }
-            }
-            attributes.add(new TraceAttribute(name, value));
+            attributes.put(name, value);
         }
     }
 
@@ -339,23 +344,5 @@ public class Trace {
             metrics.add(metric);
         }
         return traceMetric;
-    }
-
-    @Immutable
-    public static class TraceAttribute {
-        private final String name;
-        @Nullable
-        private final String value;
-        private TraceAttribute(String name, @Nullable String value) {
-            this.name = name;
-            this.value = value;
-        }
-        public String getName() {
-            return name;
-        }
-        @Nullable
-        public String getValue() {
-            return value;
-        }
     }
 }

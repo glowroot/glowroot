@@ -43,7 +43,7 @@ public class Trace {
     private boolean completed;
     private String description;
     @Nullable
-    private List<Attribute> attributes;
+    private Map<String, String> attributes;
     @Nullable
     private String username;
     @Nullable
@@ -92,18 +92,8 @@ public class Trace {
     }
 
     @Nullable
-    public List<Attribute> getAttributes() {
+    public Map<String, String> getAttributes() {
         return attributes;
-    }
-
-    @Nullable
-    public Attribute getAttribute(String name) {
-        for (Attribute attribute : attributes) {
-            if (attribute.getName().equals(name)) {
-                return attribute;
-            }
-        }
-        return null;
     }
 
     @Nullable
@@ -197,26 +187,6 @@ public class Trace {
 
     void setSummary(boolean summary) {
         this.summary = summary;
-    }
-
-    public static class Attribute {
-
-        private String name;
-        private String value;
-
-        public String getName() {
-            return name;
-        }
-        public String getValue() {
-            return value;
-        }
-        @Override
-        public String toString() {
-            return Objects.toStringHelper(this)
-                    .add("name", name)
-                    .add("value", value)
-                    .toString();
-        }
     }
 
     public static class TraceError {
