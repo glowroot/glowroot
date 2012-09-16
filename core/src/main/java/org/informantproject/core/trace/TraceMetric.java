@@ -63,14 +63,14 @@ public class TraceMetric implements Timer {
         // active
 
         // selfNestingLevel is read first since it is used as a memory barrier so that the
-        // non-volatile fields below will be visible to this threads
+        // non-volatile fields below will be visible to this thread
         boolean active = selfNestingLevel > 0;
 
         if (active) {
             long currentTick = ticker.read();
             long curr = currentTick - startTick;
-            if (min == Long.MAX_VALUE) {
-                return new Snapshot(name, total + curr, curr, max, count + 1, true, true, false);
+            if (count == 0) {
+                return new Snapshot(name, curr, curr, curr, 1, true, true, true);
             } else if (curr > max) {
                 return new Snapshot(name, total + curr, min, curr, count + 1, true, false, true);
             } else {
