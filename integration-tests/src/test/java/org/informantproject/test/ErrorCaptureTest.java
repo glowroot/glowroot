@@ -23,6 +23,7 @@ import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -43,6 +44,11 @@ public class ErrorCaptureTest {
     @AfterClass
     public static void tearDown() throws Exception {
         container.closeAndDeleteFiles();
+    }
+
+    @After
+    public void afterEachTest() throws Exception {
+        container.getInformant().deleteAllTraces();
     }
 
     @Test

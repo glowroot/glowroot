@@ -107,6 +107,9 @@ public class DataSource {
     }
 
     public void compact() throws SQLException {
+        if (memDb) {
+            return;
+        }
         synchronized (lock) {
             execute("shutdown compact");
             preparedStatementCache.invalidateAll();

@@ -22,6 +22,7 @@ import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.InformantContainer;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,6 +45,11 @@ public class ConfigTest {
     @AfterClass
     public static void tearDown() throws Exception {
         container.closeAndDeleteFiles();
+    }
+
+    @After
+    public void afterEachTest() throws Exception {
+        container.getInformant().deleteAllTraces();
     }
 
     @Test
