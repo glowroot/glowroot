@@ -123,6 +123,7 @@ public class Trace {
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
         traceMetrics.add(traceMetric);
         metrics.add(metric);
+        traceMetric.firstStartSeen();
         // the weaving metric thread local is initialized to an empty TraceMetric instance so that
         // it can be cached in this class (otherwise it is painful to synchronize properly between
         // clearThreadLocalMetrics() and getTraceMetrics())

@@ -66,6 +66,21 @@ public class TraceMetricDataTest {
     }
 
     @Test
+    public void shouldReadTraceMetricDataWithRootAndSameNested() throws Exception {
+        // given
+        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        coreConfig.setPersistenceThresholdMillis(0);
+        container.getInformant().updateCoreConfig(coreConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
+        // then
+        Trace trace = container.getInformant().getLastTraceSummary();
+        assertThat(trace.getMetrics().size()).isEqualTo(1);
+        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getMetrics().get(0).getCount()).isEqualTo(1);
+    }
+
+    @Test
     public void shouldReadActiveTraceMetricData() throws Exception {
         // given
         CoreConfig coreConfig = container.getInformant().getCoreConfig();
@@ -112,6 +127,21 @@ public class TraceMetricDataTest {
         }
         public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
+        }
+    }
+
+    public static class ShouldGenerateTraceWithRootAndSameNestedMetric implements AppUnderTest,
+            TraceMarker {
+        private int nestingLevel = 0;
+        public void executeApp() throws InterruptedException {
+            traceMarker();
+        }
+        public void traceMarker() throws InterruptedException {
+            Thread.sleep(1);
+            if (nestingLevel < 10) {
+                nestingLevel++;
+                traceMarker();
+            }
         }
     }
 
