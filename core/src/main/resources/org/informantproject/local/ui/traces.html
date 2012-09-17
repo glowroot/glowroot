@@ -395,6 +395,11 @@
     $('#refreshButton').click(function() {
       refresh()
     })
+    $(".refresh-data-on-enter-key").keypress(function(event) {
+      if (event.which == 13) {
+        refresh()
+      }
+    })
     $('#zoomOut').click(function() {
       plot.zoomOut()
       return false
@@ -436,7 +441,7 @@
           <div class="control-group">
             <label class="control-label" for="dateFilter">Date</label>
             <div class="controls">
-              <input type="text" class="input-small" id="dateFilter">
+              <input type="text" class="input-small refresh-data-on-enter-key" id="dateFilter">
             </div>
           </div>
           <div class="control-group">
@@ -455,12 +460,12 @@
                 <option value="between">Between</option>
               </select>
               <div id="durationLowDiv" class="input-append">
-                <input id="durationLow" class="input-small"
+                <input id="durationLow" class="input-small refresh-data-on-enter-key"
                   type="text"><span class="add-on">seconds</span>
               </div>
               <div id="durationAndDiv" class="input-append" style="display: none">and</div>
               <div id="durationHighDiv" class="input-append" style="display: none">
-                <input id="durationHigh" class="input-small"
+                <input id="durationHigh" class="input-small refresh-data-on-enter-key"
                   type="text"><span class="add-on">seconds</span>
               </div>
             </div>
@@ -473,7 +478,7 @@
                 <option value="equals">Equals</option>
                 <option value="contains">Contains</option>
               </select>
-              <input type="text" class="input-small" id="usernameFilter">
+              <input type="text" class="input-small refresh-data-on-enter-key" id="usernameFilter">
             </div>
           </div>
           <div class="control-group">
