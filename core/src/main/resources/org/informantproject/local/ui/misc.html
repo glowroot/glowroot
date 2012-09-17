@@ -83,7 +83,7 @@
       <div class="control-group">
         <label class="control-label" for="compact">Compact</label>
         <div class="controls">
-          <input id="compact" type="checkbox" value="true">
+          <input type="checkbox" id="compact" value="true">
           <div class="help-block">
             Compact the H2 data file that stores the trace summary data (capture time,
             duration, description, username, attributes, metrics)
@@ -91,9 +91,9 @@
         </div>
       </div>
       <div class="form-actions">
-        <button id="clearButton" type="button" class="btn">Clear data</button>
-        <div id="clearButtonSpinner" class="button-spinner"></div>
-        <div id="clearSuccessMessage" class="button-success-message">Cleared</div>
+        <button type="button" class="btn" id="clearButton">Clear data</button>
+        <div class="button-spinner" id="clearButtonSpinner"></div>
+        <div class="button-success-message" id="clearSuccessMessage">Cleared</div>
       </div>
     </fieldset>
   </form>

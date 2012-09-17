@@ -74,15 +74,15 @@ var traceDetailTemplateText = ''
 + '  {{^}}'
 + '    <a href="#" onclick="toggleCoarseMergedStackTree(); return false">'
 + '        coarse merged stack tree</a> ({{coarseMergedStackTree.sampleCount}})<br>'
-+ '    <div id="mst_coarse_outer" style="display: none; white-space: nowrap">'
-+ '      <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
-+ '          id="mst_coarse_filter" onchange="this.blur()"></select><br>'
-+ '      <div id="mst_coarse_uninteresting_outer" style="display: none">'
-+ '        <a style="margin-left: 1em" href="#" id="mst_coarse_uninteresting_link"'
-+ '            onclick="toggleUninteresting(\'coarse\'); return false">expand common base</a>'
-+ '        <div id="mst_coarse_uninteresting" style="display: none"></div>'
++ '    <div id="mstCoarseOuter" style="display: none; white-space: nowrap">'
++ '      <select class="input-large" id="mstCoarseFilter" onchange="this.blur()"'
++ '          style="margin-left: 1em; margin-bottom: 0em"></select><br>'
++ '      <div id="mstCoarseUninterestingOuter" style="display: none">'
++ '        <a id="mstCoarseUninterestingLink" href="#" style="margin-left: 1em"'
++ '            onclick="toggleUninteresting(\'Coarse\'); return false">expand common base</a>'
++ '        <div id="mstCoarseUninteresting" style="display: none"></div>'
 + '      </div>'
-+ '      <div id="mst_coarse_interesting"></div>'
++ '      <div id="mstCoarseInteresting"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -92,15 +92,15 @@ var traceDetailTemplateText = ''
 + '  {{^}}'
 + '    <a href="#" onclick="toggleFineMergedStackTree(); return false">'
 + '        fine merged stack tree</a> ({{fineMergedStackTree.sampleCount}})<br>'
-+ '    <div id="mst_fine_outer" style="display: none; white-space: nowrap">'
-+ '      <select style="margin-left: 1em; margin-bottom: 0em" class="input-large"'
-+ '          id="mst_fine_filter" onchange="this.blur()"></select><br>'
-+ '      <div id="mst_fine_uninteresting_outer" style="display: none">'
-+ '        <a style="margin-left: 1em" href="#" id="mst_fine_uninteresting_link"'
-+ '            onclick="toggleUninteresting(\'fine\'); return false">expand common base</a>'
-+ '        <div id="mst_fine_uninteresting" style="display: none"></div>'
++ '    <div id="mstFineOuter" style="display: none; white-space: nowrap">'
++ '      <select class="input-large" id="mstFineFilter" onchange="this.blur()"'
++ '          style="margin-left: 1em; margin-bottom: 0em"></select><br>'
++ '      <div id="mstFineUninterestingOuter" style="display: none">'
++ '        <a id="mstFineUninterestingLink" href="#" style="margin-left: 1em"'
++ '            onclick="toggleUninteresting(\'Fine\'); return false">expand common base</a>'
++ '        <div id="mstFineUninteresting" style="display: none"></div>'
 + '      </div>'
-+ '      <div id="mst_fine_interesting"></div>'
++ '      <div id="mstFineInteresting"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -114,14 +114,14 @@ var spansTemplateText = ''
 + '    </div>'
 + '    <div style="margin-left: 4em">'
 + '      {{#ifLongDescription message.text}}'
-+ '        <span class="sp_{{index}}">'
-+ '          <a href="#" onclick="$(\'.sp_{{index}}\').toggle(); return false"'
++ '        <span class="sp{{index}}">'
++ '          <a href="#" onclick="$(\'.sp{{index}}\').toggle(); return false"'
 + '              style="color: #333">'
 + '            {{#short message.text}}{{/short}}'
 + '          </a>'
 + '        </span>'
-+ '        <span class="sp_{{index}}" style="display: none">'
-+ '          <a href="#" onclick="$(\'.sp_{{index}}\').toggle(); return false">'
++ '        <span class="sp{{index}}" style="display: none">'
++ '          <a href="#" onclick="$(\'.sp{{index}}\').toggle(); return false">'
 + '            {{message.text}}'
 + '          </a>'
 + '        </span>'
@@ -131,11 +131,11 @@ var spansTemplateText = ''
 + '      <br>'
 + '      {{#if message.detail}}'
 + '        <a style="margin-left: 1em" href="#"'
-+ '            onclick="$(\'#cm_{{index}}\').toggle(); return false">'
++ '            onclick="$(\'#cm{{index}}\').toggle(); return false">'
 + '          detail'
 + '        </a>'
 + '        <br>'
-+ '        <div id="cm_{{index}}" style="display: none">'
++ '        <div id="cm{{index}}" style="display: none">'
 + '          <div style="margin-left: 1em">'
 + '            {{#messageDetailHtml message.detail}}{{/messageDetailHtml}}'
 + '          </div>'
@@ -250,19 +250,19 @@ function renderNext(spans, start) {
   }
 }
 function toggleUninteresting(granularity) {
-  if ($('#mst_' + granularity + '_uninteresting').is(':visible')) {
-    $('#mst_' + granularity + '_uninteresting_link').html('expand common base')
-    $('#mst_' + granularity + '_uninteresting').hide()
+  if ($('#mst' + granularity + 'Uninteresting').is(':visible')) {
+    $('#mst' + granularity + 'UninterestingLink').html('expand common base')
+    $('#mst' + granularity + 'Uninteresting').hide()
   } else {
-    $('#mst_' + granularity + '_uninteresting_link').html('shrink common base')
-    $('#mst_' + granularity + '_uninteresting').show()
+    $('#mst' + granularity + 'UninterestingLink').html('shrink common base')
+    $('#mst' + granularity + 'Uninteresting').show()
   }
 }
 function toggleCoarseMergedStackTree() {
-  toggleMergedStackTree(detailTrace.coarseMergedStackTree, 'coarse')
+  toggleMergedStackTree(detailTrace.coarseMergedStackTree, 'Coarse')
 }
 function toggleFineMergedStackTree() {
-  toggleMergedStackTree(detailTrace.fineMergedStackTree, 'fine')
+  toggleMergedStackTree(detailTrace.fineMergedStackTree, 'Fine')
 }
 function toggleMergedStackTree(rootNode, granularity) {
   function curr(node, level, metricName) {
@@ -311,10 +311,10 @@ function toggleMergedStackTree(rootNode, granularity) {
     }
     return ret
   }
-  if ($('#mst_' + granularity + '_outer').is(':visible')) {
-    $('#mst_' + granularity + '_outer').hide()
+  if ($('#mst' + granularity + 'Outer').is(':visible')) {
+    $('#mst' + granularity + 'Outer').hide()
   } else {
-    if (! $('#mst_' + granularity).html()) {
+    if (! $('#mst' + granularity).html()) {
       // first time only, process merged stack tree and populate dropdown
       processMergedStackTree(rootNode)
       // build tree
@@ -360,9 +360,9 @@ function toggleMergedStackTree(rootNode, granularity) {
       // remove the root '' since all nodes are already under the single root span metric
       orderedNodes.splice(0, 1)
       // build filter dropdown
-      $('#mst_' + granularity + '_filter').html('')
+      $('#mst' + granularity + 'Filter').html('')
       $.each(orderedNodes, function(i, node) {
-        $('#mst_' + granularity + '_filter').append($('<option />').val(node.name)
+        $('#mst' + granularity + 'Filter').append($('<option />').val(node.name)
             .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'))
       })
       var i = 0
@@ -381,20 +381,20 @@ function toggleMergedStackTree(rootNode, granularity) {
         interestingRootNode = childNode
         i++
       }
-      $('#mst_' + granularity + '_filter').change(function() {
+      $('#mst' + granularity + 'Filter').change(function() {
         // update merged stack tree based on filter
         var interestingHtml = curr(interestingRootNode, 0, $(this).val())
-        $('#mst_' + granularity + '_uninteresting_outer').show()
-        $('#mst_' + granularity + '_uninteresting').html(uninterestingHtml)
-        $('#mst_' + granularity + '_interesting').html(interestingHtml)
+        $('#mst' + granularity + 'UninterestingOuter').show()
+        $('#mst' + granularity + 'Uninteresting').html(uninterestingHtml)
+        $('#mst' + granularity + 'Interesting').html(interestingHtml)
       })
       // build initial merged stack tree
       var interestingHtml = curr(interestingRootNode, 0)
-      $('#mst_' + granularity + '_uninteresting_outer').show()
-      $('#mst_' + granularity + '_uninteresting').html(uninterestingHtml)
-      $('#mst_' + granularity + '_interesting').html(interestingHtml)
+      $('#mst' + granularity + 'UninterestingOuter').show()
+      $('#mst' + granularity + 'Uninteresting').html(uninterestingHtml)
+      $('#mst' + granularity + 'Interesting').html(interestingHtml)
     }
-    $('#mst_' + granularity + '_outer').show()
+    $('#mst' + granularity + 'Outer').show()
   }
 }
 // TODO move inside toggleMergedStackTree enclosure
@@ -432,11 +432,11 @@ function processMergedStackTree(rootNode) {
 }
 function viewStackTrace(stackTraceHash) {
   $.getJSON('stacktrace/' + stackTraceHash, function(stackTraceElements) {
-    $('#stacktrace').html('')
+    $('#stackTrace').html('')
     var clip = ''
     var newline = navigator.platform.indexOf('Win') == -1 ? "\n" : "\r\n"
     for (var i = 0; i < stackTraceElements.length; i++) {
-      $('#stacktrace').append(stackTraceElements[i] + '<br>')
+      $('#stackTrace').append(stackTraceElements[i] + '<br>')
       clip += stackTraceElements[i]
       clip += newline
     }
@@ -447,6 +447,6 @@ function viewStackTrace(stackTraceHash) {
     $('#stackTraceClippyDisposable').clippy({
       clippy_path: 'libs/clippy-jquery/0.1-nightly-20120701/clippy.swf'
     })
-    $('#stacktracemodal').modal('show')
+    $('#stackTraceModal').modal('show')
   })
 }

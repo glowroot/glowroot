@@ -323,7 +323,7 @@
         }
         summaryTrace = response
         var html = traceSummaryTemplate(summaryTrace)
-        var showDetailHtml = '<br><div style="color: #b12930" id="showDetailOuter">'
+        var showDetailHtml = '<br><div id="showDetailOuter" style="color: #b12930">'
             + '<a id="showDetail" href="#">show detail</a></div>'
         $('#placeholder').qtip({
           content: {
@@ -332,7 +332,7 @@
           position: {
             my: 'bottom center',
             target: [ x , y + 5 ],
-            viewport: $('#tooltipboundary')
+            viewport: $('#tooltipBoundary')
           },
           hide: {
             event: false
@@ -422,10 +422,10 @@
     <span class="header-see-also">see also: <a href="configuration.html">configuration</a></span>
   </h1>
   <br>
-  <div id="tooltipboundary" style="display: none; width: 100%; height: 10000px"></div>
+  <div id="tooltipBoundary" style="display: none; width: 100%; height: 10000px"></div>
   <div>
     <div id="placeholder" style="height: 300px">
-      <div id="initialLoadSpinner" class="button-spinner"
+      <div class="button-spinner" id="initialLoadSpinner"
           style="width: 100%; height: 100%; margin: 0px auto"></div>
     </div>
     <div style="width: 100%; text-align: center; font-style: italic">
@@ -435,11 +435,11 @@
   </div>
   <br>
   <br>
-  <ul id="tab" class="nav nav-tabs">
+  <ul class="nav nav-tabs" id="tab">
     <li class="active"><a href="#filterTab" data-toggle="tab">Filter</a></li>
     <li><a href="#detailTab" data-toggle="tab">Detail</a></li>
   </ul>
-  <div id="tabContent" class="tab-content">
+  <div class="tab-content" id="tabContent">
     <div class="tab-pane fade in active" id="filterTab">
       <form class="form-horizontal">
         <fieldset>
@@ -453,7 +453,7 @@
             <label class="control-label" for="timeFilter">Time</label>
             <div class="controls">
               <!-- maybe bootstrap issue that padding-top is required for vertical alignment? -->
-              <span id="timeFilter" class="help-inline" style="padding-top: 5px">All day</span>
+              <span class="help-inline" id="timeFilter" style="padding-top: 5px">All day</span>
             </div>
           </div>
           <div class="control-group">
@@ -464,14 +464,14 @@
                 <option value="less">Less than</option>
                 <option value="between">Between</option>
               </select>
-              <div id="durationLowDiv" class="input-append">
-                <input id="durationLow" class="input-small refresh-data-on-enter-key"
-                  type="text"><span class="add-on">seconds</span>
+              <div class="input-append" id="durationLowDiv">
+                <input type="text" class="input-small refresh-data-on-enter-key" id="durationLow">
+                <span class="add-on">seconds</span>
               </div>
-              <div id="durationAndDiv" class="input-append" style="display: none">and</div>
-              <div id="durationHighDiv" class="input-append" style="display: none">
-                <input id="durationHigh" class="input-small refresh-data-on-enter-key"
-                  type="text"><span class="add-on">seconds</span>
+              <div class="input-append" id="durationAndDiv" style="display: none">and</div>
+              <div class="input-append" id="durationHighDiv" style="display: none">
+                <input type="text" class="input-small refresh-data-on-enter-key" id="durationHigh">
+                <span class="add-on">seconds</span>
               </div>
             </div>
           </div>
@@ -500,9 +500,9 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <button id="refreshButton" type="button" class="btn">Refresh</button>
-              <div id="refreshButtonSpinner" class="button-spinner"></div>
-              <span id="refreshButtonCancelByZoom" class="button-success-message"
+              <button type="button" class="btn" id="refreshButton">Refresh</button>
+              <div class="button-spinner" id="refreshButtonSpinner"></div>
+              <span class="button-success-message" id="refreshButtonCancelByZoom"
                   style="color: red">
                 Refresh canceled by zoom action
               </span>
@@ -512,17 +512,17 @@
       </form>
     </div>
     <div class="tab-pane fade" id="detailTab">
-      <div id="detailTabSpinner" class="button-spinner" style="margin: 20px 30px"></div>
+      <div class="button-spinner" id="detailTabSpinner" style="margin: 20px 30px"></div>
       <div id="detailTabContent"></div>
     </div>
   </div>
-  <div id="stacktracemodal" class="modal hide fade" tabindex="-1"
+  <div class="modal hide fade" id="stackTraceModal" tabindex="-1"
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">
       <button class="close" data-dismiss="modal">&times;</button>
       <h3>Stack Trace <span id="stackTraceClippy"></span></h3>
     </div>
-    <div id="stacktrace" class="modal-body"></div>
+    <div class="modal-body" id="stackTrace"></div>
     <div class="modal-footer">
       <button class="btn" data-dismiss="modal">Close</button>
     </div>

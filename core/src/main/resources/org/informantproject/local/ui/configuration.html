@@ -26,18 +26,18 @@
 <script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
 <script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
-<script id="pluginTemplate" type="text/x-handlebars-template">
+<script type="text/x-handlebars-template" id="pluginTemplate">
 <br>
 <div>
   <span style="vertical-align: middle; font-size: 19px">{{name}}</span>
   <span class="btn-group" style="display: inline-block; margin-left: 10px; vertical-align: middle">
-    <button id="{{id}}_enabled_on" class="btn btn-on">ON</button>
-    <button id="{{id}}_enabled_off" class="btn btn-off">OFF</button>
+    <button class="btn btn-on" id="enabledOn{{id}}">ON</button>
+    <button class="btn btn-off" id="enabledOff{{id}}">OFF</button>
   </span>
-  <span id="{{id}}_enableComplete" class="button-success-message">
+  <span class="button-success-message" id="enableComplete{{id}}">
     Enabled
   </span>
-  <span id="{{id}}_disableComplete" class="button-success-message" style="color: gray">
+  <span class="button-success-message" id="disableComplete{{id}}" style="color: gray">
     Disabled
   </span>
 </div>
@@ -50,7 +50,7 @@
           <div class="control-group">
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
-              <input style="width: 12em" id="{{../../id}}_{{name}}" type="text">
+              <input type="text" id="{{../../id}}_{{name}}" style="width: 12em">
               {{#if description}}
                 <div class="help-block">
                   {{description}}
@@ -63,7 +63,7 @@
           <div class="control-group">
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
-              <input id="{{../../id}}_{{name}}" type="checkbox" value="true">
+              <input type="checkbox" id="{{../../id}}_{{name}}" value="true">
               {{#if description}}
                 <div class="help-block">
                   {{description}}
@@ -76,7 +76,7 @@
           <div class="control-group">
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
-              <input style="width: 6em" id="{{../../id}}_{{name}}" type="text">
+              <input type="text" id="{{../../id}}_{{name}}" style="width: 6em">
               {{#if description}}
                 <div class="help-block">
                   {{description}}
@@ -90,7 +90,7 @@
         <button type="button" class="btn" onclick="updatePluginConfig('{{id}}')">
           Save changes
         </button>
-        <div id="{{id}}_saveComplete" class="button-success-message">Saved</div>
+        <div class="button-success-message" id="saveComplete{{id}}">Saved</div>
       </div>
     </fieldset>
   </form>
@@ -124,34 +124,34 @@
     // '.' and ':' have to be escaped for jquery selectors
     return id.replace(/\./g, '\\.').replace(/:/g, '\\:')
   }
-  function setUpOnOffButton(selectorPrefix, initialValue, urlPrefix) {
+  function setUpOnOffButton(selectorSuffix, initialValue, urlPrefix) {
     if (initialValue) {
-      $('#' + selectorPrefix + 'enabled_on').addClass('active')
+      $('#enabledOn' + selectorSuffix).addClass('active')
     } else {
-      $('#' + selectorPrefix + 'enabled_off').addClass('active')
+      $('#enabledOff' + selectorSuffix).addClass('active')
     }
-    $('#' + selectorPrefix + 'enabled_on').click(function() {
-      if ($('#' + selectorPrefix + 'enabled_on').hasClass('active')) {
+    $('#enabledOn' + selectorSuffix).click(function() {
+      if ($('#enabledOn' + selectorSuffix).hasClass('active')) {
         return
       }
       $.post(urlPrefix + '/enable', function() {
-        $('#' + selectorPrefix + 'enabled_off').removeClass('active')
-        $('#' + selectorPrefix + 'enabled_on').addClass('active')
+        $('#enabledOff' + selectorSuffix).removeClass('active')
+        $('#enabledOn' + selectorSuffix).addClass('active')
         // in case user toggles back and forth between enable/disable
-        $('#' + selectorPrefix + 'disableComplete').hide()
-        showAndFadeSuccessMessage('#' + selectorPrefix + 'enableComplete')
+        $('#disableComplete' + selectorSuffix).hide()
+        showAndFadeSuccessMessage('#enableComplete' + selectorSuffix)
       })
     })
-    $('#' + selectorPrefix + 'enabled_off').click(function() {
-      if ($('#' + selectorPrefix + 'enabled_off').hasClass('active')) {
+    $('#enabledOff' + selectorSuffix).click(function() {
+      if ($('#enabledOff' + selectorSuffix).hasClass('active')) {
         return
       }
       $.post(urlPrefix + '/disable', function() {
-        $('#' + selectorPrefix + 'enabled_on').removeClass('active')
-        $('#' + selectorPrefix + 'enabled_off').addClass('active')
+        $('#enabledOn' + selectorSuffix).removeClass('active')
+        $('#enabledOff' + selectorSuffix).addClass('active')
         // in case user toggles back and forth between enable/disable
-        $('#' + selectorPrefix + 'enableComplete').hide()
-        showAndFadeSuccessMessage('#' + selectorPrefix + 'disableComplete')
+        $('#enableComplete' + selectorSuffix).hide()
+        showAndFadeSuccessMessage('#disableComplete' + selectorSuffix)
       })
     })
   }
@@ -168,13 +168,13 @@
       $('#dataDirFolder').text(config.dataDirFolder)
       $('#dataDirFolder').css("width", ($('#offscreenMeasure').width() + 50) + "px")
       var coarseProfilingConfig = config.coarseProfilingConfig
-      setUpOnOffButton('profiling_coarse_', coarseProfilingConfig.enabled,
+      setUpOnOffButton('ProfilingCoarse', coarseProfilingConfig.enabled,
           'config/profiling/coarse')
       $('#coarseInitialDelayMillis').val(coarseProfilingConfig.initialDelayMillis)
       $('#coarseIntervalMillis').val(coarseProfilingConfig.intervalMillis)
       $('#coarseTotalSeconds').val(coarseProfilingConfig.totalSeconds)
       var fineProfilingConfig = config.fineProfilingConfig
-      setUpOnOffButton('profiling_fine_', fineProfilingConfig.enabled, 'config/profiling/fine')
+      setUpOnOffButton('ProfilingFine', fineProfilingConfig.enabled, 'config/profiling/fine')
       $('#fineTracePercentage').val(fineProfilingConfig.tracePercentage)
       $('#fineIntervalMillis').val(fineProfilingConfig.intervalMillis)
       $('#fineTotalSeconds').val(fineProfilingConfig.totalSeconds)
@@ -197,7 +197,7 @@
         plugin.propertyDescriptors = propertyDescriptors
         var html = pluginTemplate(plugin)
         $('#plugins').append(html)
-        setUpOnOffButton(escapeForSelector(plugin.id) + '_',
+        setUpOnOffButton(escapeForSelector(plugin.id),
             config.pluginConfigs[plugin.id].enabled, 'config/plugin/' + plugin.id)
         var pluginConfig = config.pluginConfigs[plugin.id]
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
@@ -281,7 +281,7 @@
     }
     $.post('config/plugin/' + pluginId, JSON.stringify(config),
         function() {
-          showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
+          showAndFadeSuccessMessage('#saveComplete' + escapeForSelector(pluginId))
         })
   }
   function pluginForId(pluginId) {
@@ -313,13 +313,13 @@
   </h1>
   <div>
     <span class="btn-group" style="display: inline-block; vertical-align: middle">
-      <button id="enabled_on" class="btn btn-on">ON</button>
-      <button id="enabled_off" class="btn btn-off">OFF</button>
+      <button class="btn btn-on" id="enabledOn">ON</button>
+      <button class="btn btn-off" id="enabledOff">OFF</button>
     </span>
-    <span id="enableComplete" class="button-success-message">
+    <span class="button-success-message" id="enableComplete">
       Enabled
     </span>
-    <span id="disableComplete" class="button-success-message" style="color: gray">
+    <span class="button-success-message" id="disableComplete" style="color: gray">
       Disabled
     </span>
   </div>
@@ -330,8 +330,8 @@
         <label class="control-label" for="persistenceThresholdMillis">Persistence threshold</label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="persistenceThresholdMillis"
-              type="text"><span class="add-on">milliseconds</span>
+            <input type="text" id="persistenceThresholdMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
           </div>
           <span class="help-block">
             Any trace that exceeds this amount of time will be viewable in the trace explorer
@@ -343,8 +343,8 @@
         <label class="control-label" for="stuckThresholdSeconds">Stuck threshold</label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="stuckThresholdSeconds"
-              type="text"><span class="add-on">seconds</span>
+            <input type="text" id="stuckThresholdSeconds" style="width: 6em">
+            <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
             Any trace that exceeds this amount of time will be persisted to disk immediately (prior
@@ -359,15 +359,15 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="spanStackTraceThresholdMillis"
-              type="text"><span class="add-on">milliseconds</span>
+            <input type="text" id="spanStackTraceThresholdMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
           </div>
         </div>
       </div>
       <div class="control-group">
         <label class="control-label" for="maxEntries">Max trace entries</label>
         <div class="controls">
-          <input style="width: 6em" id="maxEntries" type="text">
+          <input type="text" id="maxEntries" style="width: 6em">
           <div class="help-block">
             Maximum number of trace entries collected for a given trace. This is useful for limiting
             the memory requirement of very very long traces that capture potentially hundreds of
@@ -381,7 +381,8 @@
         <label class="control-label" for="rollingSizeMb">Rolling database size</label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="rollingSizeMb" type="text"><span class="add-on">MB</span>
+            <input type="text" id="rollingSizeMb" style="width: 6em">
+            <span class="add-on">MB</span>
           </div>
           <div class="help-block">
             Trace detail data (trace entries, sampled profile) is persisted to disk as
@@ -404,8 +405,8 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
-        <div id="saveCoreButtonSpinner" class="button-spinner"></div>
-        <div id="saveCoreComplete" class="button-success-message">Saved</div>
+        <div class="button-spinner" id="saveCoreButtonSpinner"></div>
+        <div class="button-success-message" id="saveCoreComplete">Saved</div>
       </div>
     </fieldset>
   </form>
@@ -413,13 +414,13 @@
     <span style="vertical-align: middle; font-size: 19px">Coarse-Grained Profiling</span>
     <span class="btn-group"
         style="display: inline-block; margin-left: 10px; vertical-align: middle">
-      <button id="profiling_coarse_enabled_on" class="btn btn-on">ON</button>
-      <button id="profiling_coarse_enabled_off" class="btn btn-off">OFF</button>
+      <button class="btn btn-on" id="enabledOnProfilingCoarse">ON</button>
+      <button class="btn btn-off" id="enabledOffProfilingCoarse">OFF</button>
     </span>
-    <span id="profiling_coarse_enableComplete" class="button-success-message">
+    <span class="button-success-message" id="enableCompleteProfilingCoarse">
       Enabled
     </span>
-    <span id="profiling_coarse_disableComplete" class="button-success-message" style="color: gray">
+    <span class="button-success-message" id="disableCompleteProfilingCoarse" style="color: gray">
       Disabled
     </span>
   </div>
@@ -432,8 +433,8 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="coarseInitialDelayMillis"
-                type="text"><span class="add-on">milliseconds</span>
+            <input type="text" id="coarseInitialDelayMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
             Once a trace exceeds this amount of time, the coarse profiler captures stack traces
@@ -451,8 +452,8 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="coarseIntervalMillis"
-                type="text"><span class="add-on">milliseconds</span>
+            <input type="text" id="coarseIntervalMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
             The interval at which the coarse profiler captures stack traces (once a trace exceeds
@@ -466,8 +467,8 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="coarseTotalSeconds"
-                type="text"><span class="add-on">seconds</span>
+            <input type="text" id="coarseTotalSeconds" style="width: 6em">
+            <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
             The total length of time that the coarse profiler captures stack traces (once a trace
@@ -479,7 +480,7 @@
         <button type="button" class="btn" onclick="updateCoarseProfilingConfig()">
           Save changes
         </button>
-        <div id="saveCoarseProfilingComplete" class="button-success-message">Saved</div>
+        <div class="button-success-message" id="saveCoarseProfilingComplete">Saved</div>
       </div>
     </fieldset>
   </form>
@@ -487,13 +488,13 @@
     <span style="vertical-align: middle; font-size: 19px">Fine-Grained Profiling</span>
     <span class="btn-group"
         style="display: inline-block; margin-left: 10px; vertical-align: middle">
-      <button id="profiling_fine_enabled_on" class="btn btn-on">ON</button>
-      <button id="profiling_fine_enabled_off" class="btn btn-off">OFF</button>
+      <button class="btn btn-on" id="enabledOnProfilingFine">ON</button>
+      <button class="btn btn-off" id="enabledOffProfilingFine">OFF</button>
     </span>
-    <span id="profiling_fine_enableComplete" class="button-success-message">
+    <span class="button-success-message" id="enableCompleteProfilingFine">
       Enabled
     </span>
-    <span id="profiling_fine_disableComplete" class="button-success-message" style="color: gray">
+    <span class="button-success-message" id="disableCompleteProfilingFine" style="color: gray">
       Disabled
     </span>
   </div>
@@ -506,8 +507,8 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="fineTracePercentage"
-                type="text"><span class="add-on">%</span>
+            <input type="text" id="fineTracePercentage" style="width: 6em">
+            <span class="add-on">%</span>
           </div>
           <div class="help-block">
             Apply fine grained profiling to this percentage of traces.
@@ -520,8 +521,8 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="fineIntervalMillis"
-                type="text"><span class="add-on">milliseconds</span>
+            <input type="text" id="fineIntervalMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
             The interval at which the fine grained profiler captures stack traces (once a trace
@@ -535,8 +536,8 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input style="width: 6em" id="fineTotalSeconds"
-                type="text"><span class="add-on">seconds</span>
+            <input type="text" id="fineTotalSeconds" style="width: 6em">
+            <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
             The total length of time that the fine grained profiler captures stack traces (once a
@@ -551,13 +552,13 @@
         <div class="controls">
           <div style="padding-top: 5px; padding-bottom: 5px">
             <label class="checkbox">
-              <input id="finePersistenceThresholdOverride" type="checkbox" value="true">
+              <input type="checkbox" id="finePersistenceThresholdOverride" value="true">
               Override general persistence threshold
             </label>
           </div>
           <div class="input-append">
-            <input style="width: 6em" id="finePersistenceThresholdMillis"
-                type="text"><span class="add-on">milliseconds</span>
+            <input type="text" id="finePersistenceThresholdMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
             After going through the trouble of collecting fine-grained profiling info, it may be
@@ -570,7 +571,7 @@
         <button type="button" class="btn" onclick="updateFineProfilingConfig()">
           Save changes
         </button>
-        <div id="saveFineProfilingComplete" class="button-success-message">Saved</div>
+        <div class="button-success-message" id="saveFineProfilingComplete">Saved</div>
       </div>
     </fieldset>
   </form>

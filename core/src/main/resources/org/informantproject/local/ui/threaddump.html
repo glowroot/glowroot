@@ -27,7 +27,7 @@
 <script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 </head>
-<script id="threadDumpTemplate" type="text/x-handlebars-template">
+<script type="text/x-handlebars-template" id="threadDumpTemplate">
 <pre>
 {{#each .}}
 "{{name}}"
@@ -58,7 +58,7 @@
     configureAjaxError()
     $.getJSON('misc/threaddump', function(threads) {
       var html = threadDumpTemplate(threads)
-      $('#threaddump').html(html)
+      $('#threadDump').html(html)
     })
   })
 </script>
@@ -70,6 +70,6 @@
       <a href="configuration.html">configuration</a>
     </span>
   </h1>
-  <div id="threaddump"></div>
+  <div id="threadDump"></div>
 </body>
 </html>
