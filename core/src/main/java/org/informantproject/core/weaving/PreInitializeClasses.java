@@ -171,6 +171,7 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.classic.util.EnvUtil");
         types.add("ch.qos.logback.classic.util.JNDIUtil");
         types.add("ch.qos.logback.classic.util.LogbackMDCAdapter");
+        types.add("ch.qos.logback.classic.util.LoggerNameUtil");
         types.add("ch.qos.logback.classic.util.StatusListenerConfigHelper");
         types.add("ch.qos.logback.core.Appender");
         types.add("ch.qos.logback.core.AppenderBase");
@@ -202,6 +203,9 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.joran.JoranConfiguratorBase");
         types.add("ch.qos.logback.core.joran.action.AbstractEventEvaluatorAction");
         types.add("ch.qos.logback.core.joran.action.Action");
+        types.add("ch.qos.logback.core.joran.action.ActionUtil");
+        types.add("ch.qos.logback.core.joran.action.ActionUtil$1");
+        types.add("ch.qos.logback.core.joran.action.ActionUtil$Scope");
         types.add("ch.qos.logback.core.joran.action.AppenderAction");
         types.add("ch.qos.logback.core.joran.action.AppenderRefAction");
         types.add("ch.qos.logback.core.joran.action.ContextPropertyAction");
@@ -219,8 +223,6 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.joran.action.NewRuleAction");
         types.add("ch.qos.logback.core.joran.action.ParamAction");
         types.add("ch.qos.logback.core.joran.action.PropertyAction");
-        types.add("ch.qos.logback.core.joran.action.PropertyAction$1");
-        types.add("ch.qos.logback.core.joran.action.PropertyAction$Scope");
         types.add("ch.qos.logback.core.joran.action.StatusListenerAction");
         types.add("ch.qos.logback.core.joran.action.TimestampAction");
         types.add("ch.qos.logback.core.joran.conditional.Condition");
@@ -297,7 +299,6 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.pattern.parser.Node");
         types.add("ch.qos.logback.core.pattern.parser.OptionTokenizer");
         types.add("ch.qos.logback.core.pattern.parser.Parser");
-        types.add("ch.qos.logback.core.pattern.parser.ScanException");
         types.add("ch.qos.logback.core.pattern.parser.SimpleKeywordNode");
         types.add("ch.qos.logback.core.pattern.parser.Token");
         types.add("ch.qos.logback.core.pattern.parser.TokenStream");
@@ -331,6 +332,7 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.spi.PreSerializationTransformer");
         types.add("ch.qos.logback.core.spi.PropertyContainer");
         types.add("ch.qos.logback.core.spi.PropertyDefiner");
+        types.add("ch.qos.logback.core.spi.ScanException");
         types.add("ch.qos.logback.core.status.ErrorStatus");
         types.add("ch.qos.logback.core.status.InfoStatus");
         types.add("ch.qos.logback.core.status.OnConsoleStatusListener");
@@ -341,6 +343,18 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.status.StatusManager");
         types.add("ch.qos.logback.core.status.StatusUtil");
         types.add("ch.qos.logback.core.status.WarnStatus");
+        types.add("ch.qos.logback.core.subst.Node");
+        types.add("ch.qos.logback.core.subst.Node$1");
+        types.add("ch.qos.logback.core.subst.Node$Type");
+        types.add("ch.qos.logback.core.subst.NodeToStringTransformer");
+        types.add("ch.qos.logback.core.subst.NodeToStringTransformer$1");
+        types.add("ch.qos.logback.core.subst.Parser");
+        types.add("ch.qos.logback.core.subst.Parser$1");
+        types.add("ch.qos.logback.core.subst.Token");
+        types.add("ch.qos.logback.core.subst.Token$Type");
+        types.add("ch.qos.logback.core.subst.Tokenizer");
+        types.add("ch.qos.logback.core.subst.Tokenizer$1");
+        types.add("ch.qos.logback.core.subst.Tokenizer$TokenizerState");
         types.add("ch.qos.logback.core.util.AggregationType");
         types.add("ch.qos.logback.core.util.CachingDateFormatter");
         types.add("ch.qos.logback.core.util.ContextUtil");
