@@ -247,6 +247,8 @@ public class HttpServer extends HttpServerBase {
             return "application/vnd.ms-fontobject";
         } else if (extension.equals("ttf")) {
             return "application/x-font-ttf";
+        } else if (extension.equals("swf")) {
+            return "application/x-shockwave-flash";
         } else {
             return null;
         }

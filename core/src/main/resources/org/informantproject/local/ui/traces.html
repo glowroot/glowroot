@@ -51,6 +51,8 @@
 </script>
 <script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
 <script type="text/javascript" src="libs/qtip/2.0.0-nightly-20120910/jquery.qtip.min.js"></script>
+<script type="text/javascript" src="libs/clippy-jquery/0.1-nightly-20120701/jquery.clippy.min.js">
+</script>
 <script type="text/javascript" src="js/traces.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
@@ -518,7 +520,7 @@
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">
       <button class="close" data-dismiss="modal">&times;</button>
-      <h3>Stack Trace</h3>
+      <h3>Stack Trace <span id="stackTraceClippy"></span></h3>
     </div>
     <div id="stacktrace" class="modal-body"></div>
     <div class="modal-footer">

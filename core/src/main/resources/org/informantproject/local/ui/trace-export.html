@@ -27,16 +27,19 @@
   {{#include org/informantproject/local/ui/css/informant.css}}
 </style>
 <script type="text/javascript">
-{{#include org/informantproject/local/ui/libs/jquery/1.8.1/jquery.min.js}}
+  {{#include org/informantproject/local/ui/libs/jquery/1.8.1/jquery.min.js}}
 </script>
 <script type="text/javascript">
-{{#include org/informantproject/local/ui/libs/moment/1.7.0/moment.min.js}}
+  {{#include org/informantproject/local/ui/libs/moment/1.7.0/moment.min.js}}
 </script>
 <script type="text/javascript">
-{{#include org/informantproject/local/ui/libs/handlebars/1.0.0.beta.6/handlebars.js}}
+  {{#include org/informantproject/local/ui/libs/handlebars/1.0.0.beta.6/handlebars.js}}
 </script>
 <script type="text/javascript">
-{{#include org/informantproject/local/ui/js/traces.js}}
+  {{#include org/informantproject/local/ui/libs/clippy-jquery/0.1-nightly-20120701/jquery.clippy.min.js}}
+</script>
+<script type="text/javascript">
+  {{#include org/informantproject/local/ui/js/traces.js}}
 </script>
 <style type="text/css">
   .header-logo-external-font {
@@ -69,7 +72,7 @@
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">
       <button class="close" data-dismiss="modal">&times;</button>
-      <h3>Stack Trace</h3>
+      <h3>Stack Trace <span id="stackTraceClippy"></span></h3>
     </div>
     <div id="stacktrace" class="modal-body"></div>
     <div class="modal-footer">

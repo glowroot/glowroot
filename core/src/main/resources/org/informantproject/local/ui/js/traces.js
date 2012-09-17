@@ -433,9 +433,20 @@ function processMergedStackTree(rootNode) {
 function viewStackTrace(stackTraceHash) {
   $.getJSON('stacktrace/' + stackTraceHash, function(stackTraceElements) {
     $('#stacktrace').html('')
+    var clip = ''
+    var newline = navigator.platform.indexOf('Win') == -1 ? "\n" : "\r\n"
     for (var i = 0; i < stackTraceElements.length; i++) {
       $('#stacktrace').append(stackTraceElements[i] + '<br>')
+      clip += stackTraceElements[i]
+      clip += newline
     }
+    // clippy swf must be re-initialized each time with the (updated) text, but it cannot be
+    // re-initialized on the same element so a disposable inner element is created each time
+    $('#stackTraceClippy').html('<span id="stackTraceClippyDisposable"></span>')
+    $('#stackTraceClippyDisposable').data('text', clip)
+    $('#stackTraceClippyDisposable').clippy({
+      clippy_path: 'libs/clippy-jquery/0.1-nightly-20120701/clippy.swf'
+    })
     $('#stacktracemodal').modal('show')
   })
 }
