@@ -17,51 +17,45 @@ package org.informantproject.local.trace;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
+import org.informantproject.core.util.MockClock;
 import org.informantproject.core.util.RollingFile;
-import org.informantproject.core.util.RollingFileTestProvider;
 import org.informantproject.core.util.UnitTests;
-import org.jukito.JukitoModule;
-import org.jukito.JukitoRunner;
-import org.jukito.TestSingleton;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@RunWith(JukitoRunner.class)
 public class TraceSnapshotDaoTest {
 
     private Collection<Thread> preExistingThreads;
-
-    public static class Module extends JukitoModule {
-        @Override
-        protected void configureTest() {
-            bind(DataSource.class).toProvider(DataSourceTestProvider.class).in(TestSingleton.class);
-            bind(RollingFile.class).toProvider(RollingFileTestProvider.class).in(
-                    TestSingleton.class);
-        }
-    }
+    private DataSource dataSource;
+    private RollingFile rollingFile;
+    private TraceSnapshotDao snapshotDao;
 
     @Before
-    public void before(DataSource dataSource) throws SQLException {
+    public void before() throws SQLException, IOException {
         preExistingThreads = UnitTests.currentThreads();
+        dataSource = new DataSourceTestProvider().get();
         if (dataSource.tableExists("trace")) {
             dataSource.execute("drop table trace");
         }
+        rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
+        snapshotDao = new TraceSnapshotDao(dataSource, rollingFile, new MockClock());
     }
 
     @After
-    public void after(DataSource dataSource, RollingFile rollingFile) throws Exception {
+    public void after() throws Exception {
         UnitTests.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
         rollingFile.closeAndDeleteFile();
@@ -69,11 +63,9 @@ public class TraceSnapshotDaoTest {
     }
 
     @Test
-    public void shouldReadSnapshot(TraceSnapshotDao snapshotDao,
-            TraceSnapshotTestData snapshotTestData) {
-
+    public void shouldReadSnapshot() {
         // given
-        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0, 0,
@@ -91,11 +83,9 @@ public class TraceSnapshotDaoTest {
     }
 
     @Test
-    public void shouldReadSnapshotWithDurationQualifier(TraceSnapshotDao snapshotDao,
-            TraceSnapshotTestData snapshotTestData) {
-
+    public void shouldReadSnapshotWithDurationQualifier() {
         // given
-        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
@@ -105,11 +95,9 @@ public class TraceSnapshotDaoTest {
     }
 
     @Test
-    public void shouldNotReadSnapshotWithHighDurationQualifier(TraceSnapshotDao snapshotDao,
-            TraceSnapshotTestData snapshotTestData) {
-
+    public void shouldNotReadSnapshotWithHighDurationQualifier() {
         // given
-        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
@@ -119,11 +107,9 @@ public class TraceSnapshotDaoTest {
     }
 
     @Test
-    public void shouldNotReadSnapshotWithLowDurationQualifier(TraceSnapshotDao snapshotDao,
-            TraceSnapshotTestData snapshotTestData) {
-
+    public void shouldNotReadSnapshotWithLowDurationQualifier() {
         // given
-        TraceSnapshot snapshot = snapshotTestData.createSnapshot();
+        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
@@ -133,11 +119,9 @@ public class TraceSnapshotDaoTest {
     }
 
     @Test
-    public void shouldDeletedTrace(TraceSnapshotDao snapshotDao,
-            TraceSnapshotTestData snapshotTestData) {
-
+    public void shouldDeletedTrace() {
         // given
-        snapshotDao.storeSnapshot(snapshotTestData.createSnapshot());
+        snapshotDao.storeSnapshot(new TraceSnapshotTestData().createSnapshot());
         // when
         snapshotDao.deleteSnapshots(0, 0);
         // then

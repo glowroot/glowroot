@@ -24,54 +24,45 @@ import java.util.List;
 import java.util.Map;
 
 import org.informantproject.core.metric.MetricValue;
-import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.MockClock;
 import org.informantproject.core.util.UnitTests;
-import org.jukito.JukitoModule;
-import org.jukito.JukitoRunner;
-import org.jukito.TestSingleton;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@RunWith(JukitoRunner.class)
 public class MetricDaoTest {
 
     private Collection<Thread> preExistingThreads;
-
-    public static class Module extends JukitoModule {
-        @Override
-        protected void configureTest() {
-            bind(DataSource.class).toProvider(DataSourceTestProvider.class).in(TestSingleton.class);
-            bind(MockClock.class).in(TestSingleton.class);
-            bind(Clock.class).to(MockClock.class);
-        }
-    }
+    private DataSource dataSource;
+    private MockClock clock;
+    private MetricDao metricDao;
 
     @Before
-    public void before(DataSource dataSource) throws SQLException {
+    public void before() throws SQLException {
         preExistingThreads = UnitTests.currentThreads();
+        dataSource = new DataSourceTestProvider().get();
         if (dataSource.tableExists("metric_point")) {
             dataSource.execute("drop table metric_point");
         }
+        clock = new MockClock();
+        metricDao = new MetricDao(dataSource, clock);
     }
 
     @After
-    public void after(DataSource dataSource) throws Exception {
+    public void after() throws Exception {
         UnitTests.preShutdownCheck(preExistingThreads);
         dataSource.closeAndDeleteFile();
         UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     @Test
-    public void shouldReadEmptyMetricPoints(MetricDao metricDao) {
+    public void shouldReadEmptyMetricPoints() {
         // given
         List<String> metricIds = Arrays.asList("cpu", "mem", "io");
         // when
@@ -82,7 +73,7 @@ public class MetricDaoTest {
     }
 
     @Test
-    public void shouldStoreMetricPoints(MetricDao metricDao, MockClock clock) {
+    public void shouldStoreMetricPoints() {
         // given
         MetricValue mv1 = new MetricValue("cpu", 0.5);
         MetricValue mv2 = new MetricValue("mem", 10);
@@ -102,7 +93,7 @@ public class MetricDaoTest {
     }
 
     @Test
-    public void shouldOnlyReadMetricPointsInGivenTimeBand(MetricDao metricDao, MockClock clock) {
+    public void shouldOnlyReadMetricPointsInGivenTimeBand() {
         // given
         MetricValue mv1 = new MetricValue("cpu", 0.5);
         MetricValue mv2 = new MetricValue("cpu", 0.75);
@@ -126,7 +117,7 @@ public class MetricDaoTest {
     }
 
     @Test
-    public void shouldOnlyReadMetricPointsForGivenMetricIds(MetricDao metricDao, MockClock clock) {
+    public void shouldOnlyReadMetricPointsForGivenMetricIds() {
         // given
         MetricValue mv1 = new MetricValue("cpu", 0.5);
         MetricValue mv2 = new MetricValue("mem", 0.75);

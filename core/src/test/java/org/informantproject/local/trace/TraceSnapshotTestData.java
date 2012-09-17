@@ -19,31 +19,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.core.util.Clock;
-
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Singleton
 class TraceSnapshotTestData {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private final Clock clock;
-
-    @Inject
-    TraceSnapshotTestData(Clock clock) {
-        this.clock = clock;
-    }
-
     TraceSnapshot createSnapshot() {
         return TraceSnapshot.builder()
                 .id("abc" + counter.getAndIncrement())
-                .startAt(clock.currentTimeMillis() - 10)
+                .startAt(System.currentTimeMillis() - 10)
                 .stuck(false)
                 .duration(TimeUnit.MILLISECONDS.toNanos(10))
                 .completed(true)

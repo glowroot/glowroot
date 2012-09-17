@@ -15,19 +15,18 @@
  */
 package org.informantproject.local.trace;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
-import org.informantproject.core.util.RollingFileTestProvider;
 import org.informantproject.core.util.Static;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 
 /**
  * @author Trask Stalnaker
@@ -39,19 +38,12 @@ public final class TraceSnapshotDaoPerformanceMain {
     private static final Logger logger = LoggerFactory
             .getLogger(TraceSnapshotDaoPerformanceMain.class);
 
-    public static class Module extends AbstractModule {
-        @Override
-        protected void configure() {
-            bind(DataSource.class).toProvider(DataSourceTestProvider.class);
-            bind(RollingFile.class).toProvider(RollingFileTestProvider.class);
-            bind(Clock.class).toInstance(Clock.systemClock());
-        }
-    }
-
-    public static void main(String... args) {
-        Injector injector = Guice.createInjector(new Module());
-        TraceSnapshotTestData snapshotTestData = injector.getInstance(TraceSnapshotTestData.class);
-        TraceSnapshotDao snapshotDao = injector.getInstance(TraceSnapshotDao.class);
+    public static void main(String... args) throws IOException {
+        TraceSnapshotTestData snapshotTestData = new TraceSnapshotTestData();
+        DataSource dataSource = new DataSourceTestProvider().get();
+        RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
+        TraceSnapshotDao snapshotDao = new TraceSnapshotDao(dataSource, rollingFile,
+                Clock.systemClock());
 
         Stopwatch stopwatch = new Stopwatch().start();
         for (int i = 0; i < 1000; i++) {
