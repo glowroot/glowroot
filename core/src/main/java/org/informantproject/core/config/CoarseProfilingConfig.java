@@ -18,6 +18,7 @@ package org.informantproject.core.config;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the coarse-grained profiling config.
@@ -42,7 +43,7 @@ public class CoarseProfilingConfig {
         return new Builder().build();
     }
 
-    static CoarseProfilingConfig fromJson(String json) {
+    static CoarseProfilingConfig fromJson(String json) throws JsonSyntaxException {
         return gson.fromJson(json, CoarseProfilingConfig.Builder.class).build();
     }
 

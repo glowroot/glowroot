@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -87,7 +88,12 @@ class ConfigDao {
         if (configJson == null) {
             return null;
         } else {
-            return CoreConfig.fromJson(configJson);
+            try {
+                return CoreConfig.fromJson(configJson);
+            } catch (JsonSyntaxException e) {
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
         }
     }
 
@@ -98,7 +104,12 @@ class ConfigDao {
         if (configJson == null) {
             return null;
         } else {
-            return CoarseProfilingConfig.fromJson(configJson);
+            try {
+                return CoarseProfilingConfig.fromJson(configJson);
+            } catch (JsonSyntaxException e) {
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
         }
     }
 
@@ -109,7 +120,12 @@ class ConfigDao {
         if (configJson == null) {
             return null;
         } else {
-            return FineProfilingConfig.fromJson(configJson);
+            try {
+                return FineProfilingConfig.fromJson(configJson);
+            } catch (JsonSyntaxException e) {
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
         }
     }
 
@@ -120,7 +136,12 @@ class ConfigDao {
         if (configJson == null) {
             return null;
         } else {
-            return PluginConfig.fromJson(pluginId, configJson);
+            try {
+                return PluginConfig.fromJson(pluginId, configJson);
+            } catch (JsonSyntaxException e) {
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
         }
     }
 

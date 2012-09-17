@@ -36,6 +36,7 @@ import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -157,7 +158,11 @@ class ConfigJsonService implements JsonService {
         logger.debug("storePluginConfig(): pluginId={}, configJson={}", pluginId, configJson);
         PluginConfig config = configService.getPluginConfig(pluginId);
         PluginConfig.Builder builder = PluginConfig.builder(pluginId, config);
-        builder.overlay(configJson);
+        try {
+            builder.overlay(configJson);
+        } catch (JsonSyntaxException e) {
+            logger.warn(e.getMessage(), e);
+        }
         configService.storePluginConfig(pluginId, builder.build());
     }
 

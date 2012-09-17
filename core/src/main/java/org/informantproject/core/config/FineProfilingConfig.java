@@ -18,6 +18,7 @@ package org.informantproject.core.config;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the fine-grained profiling config.
@@ -45,7 +46,7 @@ public class FineProfilingConfig {
         return new Builder().build();
     }
 
-    static FineProfilingConfig fromJson(String json) {
+    static FineProfilingConfig fromJson(String json) throws JsonSyntaxException {
         return gson.fromJson(json, FineProfilingConfig.Builder.class).build();
     }
 

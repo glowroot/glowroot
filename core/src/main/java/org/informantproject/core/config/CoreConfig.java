@@ -22,6 +22,7 @@ import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the current core config.
@@ -81,7 +82,7 @@ public class CoreConfig {
         return new Builder().build();
     }
 
-    static CoreConfig fromJson(String json) {
+    static CoreConfig fromJson(String json) throws JsonSyntaxException {
         return gson.fromJson(json, CoreConfig.Builder.class).build();
     }
 

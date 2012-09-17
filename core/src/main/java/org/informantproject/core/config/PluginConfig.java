@@ -36,6 +36,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 
 /**
@@ -68,7 +69,7 @@ public class PluginConfig {
         return new PluginConfig(false, ImmutableMap.<String, Optional<?>> of(), null);
     }
 
-    static PluginConfig fromJson(final String pluginId, String json) {
+    static PluginConfig fromJson(final String pluginId, String json) throws JsonSyntaxException {
         PluginConfig.Builder builder = PluginConfig.builder(pluginId);
         builder.overlay(json, true);
         return builder.build();
@@ -224,13 +225,13 @@ public class PluginConfig {
             this.enabled = enabled;
             return this;
         }
-        public void overlay(String json) {
+        public void overlay(String json) throws JsonSyntaxException {
             overlay(json, false);
         }
         public PluginConfig build() {
             return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginDescriptor);
         }
-        private void overlay(String json, boolean ignoreWarnings) {
+        private void overlay(String json, boolean ignoreWarnings) throws JsonSyntaxException {
             JsonObject jsonObject = new JsonParser().parse(json).getAsJsonObject();
             if (jsonObject.get("enabled") != null) {
                 enabled(jsonObject.get("enabled").getAsBoolean());

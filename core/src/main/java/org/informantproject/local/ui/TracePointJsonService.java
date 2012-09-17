@@ -38,6 +38,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -76,7 +77,14 @@ class TracePointJsonService implements JsonService {
     @JsonServiceMethod
     String getPoints(String message) throws IOException {
         logger.debug("getChartPoints(): message={}", message);
-        TraceRequest request = gson.fromJson(message, TraceRequest.class);
+        TraceRequest request;
+        try {
+            request = gson.fromJson(message, TraceRequest.class);
+        } catch (JsonSyntaxException e) {
+            logger.warn(e.getMessage(), e);
+            return writeResponse(ImmutableList.<TraceSnapshotSummary> of(),
+                    ImmutableList.<Trace> of(), 0, 0);
+        }
         long requestAt = clock.currentTimeMillis();
         if (request.getFrom() < 0) {
             request.setFrom(requestAt + request.getFrom());

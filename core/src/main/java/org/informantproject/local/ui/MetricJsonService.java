@@ -27,7 +27,9 @@ import org.informantproject.local.metric.Point;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -58,7 +60,13 @@ class MetricJsonService implements JsonService {
     @JsonServiceMethod
     String getMetrics(String message) throws IOException {
         logger.debug("handleRead(): message={}", message);
-        MetricRequest request = gson.fromJson(message, MetricRequest.class);
+        MetricRequest request;
+        try {
+            request = gson.fromJson(message, MetricRequest.class);
+        } catch (JsonSyntaxException e) {
+            logger.warn(e.getMessage(), e);
+            return writeResponse(ImmutableMap.<String, List<Point>> of(), 0);
+        }
         if (request.getStart() < 0) {
             request.setStart(clock.currentTimeMillis() + request.getStart());
         }
