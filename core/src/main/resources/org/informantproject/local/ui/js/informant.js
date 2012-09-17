@@ -56,7 +56,7 @@ function hideSpinner(selector) {
 }
 function configureAjaxError() {
   var modalDiv = ''
-  + '<div id="ajaxErrorModal" class="modal hide fade"'
+  + '<div id="ajaxErrorModal" class="modal hide fade" tabindex="-1"'
   + '    style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">'
   + '  <div class="modal-header">'
   + '    <button class="close" data-dismiss="modal">&times;</button>'
