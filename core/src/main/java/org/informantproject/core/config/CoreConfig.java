@@ -20,7 +20,6 @@ import javax.annotation.concurrent.Immutable;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -147,7 +146,7 @@ public class CoreConfig {
 
     @Override
     public String toString() {
-        ToStringHelper toStringHelper = Objects.toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("enabed", enabled)
                 .add("persistenceThresholdMillis", persistenceThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
@@ -155,8 +154,8 @@ public class CoreConfig {
                 .add("maxEntries", maxEntries)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnEntryOutsideTrace", warnOnEntryOutsideTrace)
-                .add("metricPeriodMillis", metricPeriodMillis);
-        return toStringHelper.toString();
+                .add("metricPeriodMillis", metricPeriodMillis)
+                .toString();
     }
 
     public static class Builder {

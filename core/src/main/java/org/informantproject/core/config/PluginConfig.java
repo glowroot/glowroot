@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -199,8 +198,10 @@ public class PluginConfig {
 
     @Override
     public String toString() {
-        ToStringHelper toStringHelper = Objects.toStringHelper(this).add("properties", properties);
-        return toStringHelper.toString();
+        return Objects.toStringHelper(this)
+                .add("enabled", enabled)
+                .add("properties", properties)
+                .toString();
     }
 
     public static class Builder {

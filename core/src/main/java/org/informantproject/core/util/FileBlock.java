@@ -66,7 +66,9 @@ public class FileBlock {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this).add("startIndex", startIndex).add("length", length)
+        return Objects.toStringHelper(this)
+                .add("startIndex", startIndex)
+                .add("length", length)
                 .toString();
     }
 

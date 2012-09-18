@@ -41,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -375,7 +374,7 @@ public class Advice {
 
     @Override
     public String toString() {
-        ToStringHelper toStringHelper = Objects.toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("pointcut", pointcut)
                 .add("adviceType", adviceType)
                 .add("pointcutMethodPattern", pointcutMethodPattern)
@@ -389,7 +388,7 @@ public class Advice {
                 .add("onBeforeParameterKinds", onBeforeParameterKinds)
                 .add("onReturnParameterKinds", onReturnParameterKinds)
                 .add("onThrowParameterKinds", onThrowParameterKinds)
-                .add("onAfterParameterKinds", onAfterParameterKinds);
-        return toStringHelper.toString();
+                .add("onAfterParameterKinds", onAfterParameterKinds)
+                .toString();
     }
 }

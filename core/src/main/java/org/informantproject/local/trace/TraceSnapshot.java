@@ -21,7 +21,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.informantproject.core.util.ByteStream;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
 
 /**
  * Structure used as part of the response to "/trace/details".
@@ -154,7 +153,7 @@ public class TraceSnapshot {
 
     @Override
     public String toString() {
-        ToStringHelper toStringHelper = Objects.toStringHelper(this)
+        return Objects.toStringHelper(this)
                 .add("id", id)
                 .add("startAt", startAt)
                 .add("duration", duration)
@@ -166,8 +165,8 @@ public class TraceSnapshot {
                 .add("errorText", errorText)
                 .add("errorDetail", errorDetail)
                 .add("errorStackTrace", errorStackTrace)
-                .add("metrics", metrics);
-        return toStringHelper.toString();
+                .add("metrics", metrics)
+                .toString();
     }
 
     static Builder builder() {
