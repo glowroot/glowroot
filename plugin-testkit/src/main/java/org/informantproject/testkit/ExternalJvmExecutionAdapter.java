@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 
@@ -57,9 +56,9 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         if (!Strings.isNullOrEmpty(agentArgs)) {
             javaagentArg += "=" + agentArgs;
         }
-        ServerSocket serverSocket = new ServerSocket(0);
+        socketCommander = new SocketCommander();
         ProcessBuilder processBuilder = new ProcessBuilder(path, "-cp", classpath, javaagentArg,
-                ExternalJvmExecutionAdapter.class.getName(), Integer.toString(serverSocket
+                ExternalJvmExecutionAdapter.class.getName(), Integer.toString(socketCommander
                         .getLocalPort()));
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
@@ -74,17 +73,14 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                 }
             }
         });
-        // TODO should ServerSocket.accept() be called to start listening before external process is
-        // started?
-        socketCommander = new SocketCommander(serverSocket.accept());
     }
 
-    public int getPort() throws InterruptedException {
+    public int getPort() throws IOException, InterruptedException {
         return (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
     }
 
     public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
-            String threadName) throws InterruptedException {
+            String threadName) throws IOException, InterruptedException {
 
         socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP_COMMAND,
                 appUnderTestClass.getName(), threadName));

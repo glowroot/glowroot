@@ -19,12 +19,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.core.util.DaemonExecutors;
@@ -33,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 
 /**
  * @author Trask Stalnaker
@@ -44,40 +44,65 @@ class SocketCommander {
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommander.class);
 
+    private final int localPort;
+
     private final ExecutorService executorService;
-
-    private final Socket socket;
-
-    private final BlockingQueue<CommandWrapper> socketOutCommands = Queues.newLinkedBlockingQueue();
 
     private final ConcurrentMap<Integer, ResponseHolder> responseHolders = Maps.newConcurrentMap();
 
     private final AtomicInteger commandCounter = new AtomicInteger();
 
+    private final Object lock = new Object();
+    // Socket and ObjectOutputStream are not thread safe so access is synchronized using lock
+    @GuardedBy("lock")
+    private volatile Socket socket;
+    @GuardedBy("lock")
+    private volatile ObjectOutputStream objectOut;
+
     private volatile boolean closing;
 
-    SocketCommander(Socket socket) {
-        executorService = DaemonExecutors.newCachedThreadPool("SocketCommander");
-        this.socket = socket;
-        executorService.execute(new SocketOut());
-        executorService.execute(new SocketIn());
+    SocketCommander() throws IOException {
+        ServerSocket serverSocket = new ServerSocket(0);
+        localPort = serverSocket.getLocalPort();
+        executorService = DaemonExecutors.newSingleThreadExecutor("SocketCommander");
+        executorService.execute(new SocketIn(serverSocket));
     }
 
-    Object sendCommand(Object command) throws InterruptedException {
+    int getLocalPort() {
+        return localPort;
+    }
+
+    Object sendCommand(Object command) throws IOException, InterruptedException {
+        if (socket == null) {
+            synchronized (lock) {
+                if (socket == null) {
+                    // give external jvm a little time to connect
+                    lock.wait(5000);
+                }
+            }
+            if (socket == null) {
+                throw new IllegalStateException(
+                        "External JVM has not established socket connection yet");
+            }
+        }
         int commandNum = commandCounter.getAndIncrement();
         ResponseHolder responseHolder = new ResponseHolder();
         responseHolders.put(commandNum, responseHolder);
         CommandWrapper commandWrapper = new CommandWrapper(commandNum, command);
-        socketOutCommands.add(commandWrapper);
-        logger.debug("sendCommand(): command queued to be sent to external jvm: {}",
-                commandWrapper);
-        // wait for response
+        // need to acquire lock on responseHolder before sending command to ensure
+        // responseHolder.notify() cannot happen before responseHolder.wait()
+        // (in case response comes back super quick)
         synchronized (responseHolder) {
+            logger.debug("sendCommand(): sending command to external jvm: {}", commandWrapper);
+            synchronized (lock) {
+                objectOut.writeObject(commandWrapper);
+            }
+            logger.debug("sendCommand(): command sent");
             logger.debug("sendCommand(): waiting for response from external jvm");
             responseHolder.wait();
-            logger.debug("sendCommand(): response received from external jvm");
         }
         Object response = responseHolder.response;
+        logger.debug("sendCommand(): response received: {}", response);
         if (SocketCommandProcessor.EXCEPTION_RESPONSE.equals(response)) {
             throw new IllegalStateException("Exception occurred inside external JVM");
         }
@@ -87,7 +112,9 @@ class SocketCommander {
     void close() throws IOException {
         closing = true;
         executorService.shutdownNow();
-        socket.close();
+        synchronized (lock) {
+            socket.close();
+        }
     }
 
     @SuppressWarnings("serial")
@@ -140,39 +167,20 @@ class SocketCommander {
         private volatile Object response;
     }
 
-    private class SocketOut implements Runnable {
-        public void run() {
-            ObjectOutputStream objectOut;
-            try {
-                objectOut = new ObjectOutputStream(socket.getOutputStream());
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return;
-            }
-            try {
-                while (true) {
-                    Object command = socketOutCommands.take();
-                    logger.debug("sending command to external jvm: {}", command);
-                    objectOut.writeObject(command);
-                    logger.debug("command sent");
-                }
-            } catch (InterruptedException e) {
-                if (!closing) {
-                    logger.error(e.getMessage(), e);
-                }
-            } catch (IOException e) {
-                if (!closing) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
-        }
-    }
-
     private class SocketIn implements Runnable {
+        private final ServerSocket serverSocket;
+        public SocketIn(ServerSocket serverSocket) {
+            this.serverSocket = serverSocket;
+        }
         public void run() {
             ObjectInputStream objectIn;
             try {
-                objectIn = new ObjectInputStream(socket.getInputStream());
+                synchronized (lock) {
+                    socket = serverSocket.accept();
+                    lock.notifyAll();
+                    objectOut = new ObjectOutputStream(socket.getOutputStream());
+                    objectIn = new ObjectInputStream(socket.getInputStream());
+                }
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return;
@@ -185,9 +193,9 @@ class SocketCommander {
                         logger.debug("response received from external jvm: {}", responseWrapper);
                         ResponseHolder responseHolder = responseHolders.get(responseWrapper
                                 .getCommandNum());
-                        responseHolder.response = responseWrapper.getResponse();
                         synchronized (responseHolder) {
-                            responseHolder.notify();
+                            responseHolder.response = responseWrapper.getResponse();
+                            responseHolder.notifyAll();
                         }
                     }
                 }
