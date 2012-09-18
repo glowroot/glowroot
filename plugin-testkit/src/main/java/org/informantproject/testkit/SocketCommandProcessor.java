@@ -63,6 +63,7 @@ class SocketCommandProcessor implements Runnable {
     private void runInternal() throws Exception {
         while (true) {
             CommandWrapper commandWrapper = (CommandWrapper) objectIn.readObject();
+            logger.debug("command received by external jvm: {}", commandWrapper);
             Object command = commandWrapper.getCommand();
             int commandNum = commandWrapper.getCommandNum();
             if (command instanceof String) {
@@ -116,9 +117,12 @@ class SocketCommandProcessor implements Runnable {
     }
 
     private void respond(Object response, int commandNum) throws IOException {
+        ResponseWrapper responseWrapper = new ResponseWrapper(commandNum, response);
+        logger.debug("sending response to unit test jvm: {}", responseWrapper);
         // sychronizing with SocketHeartbeat
         synchronized (objectOut) {
-            objectOut.writeObject(new ResponseWrapper(commandNum, response));
+            objectOut.writeObject(responseWrapper);
+            logger.debug("response sent");
         }
     }
 }

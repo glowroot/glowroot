@@ -31,6 +31,7 @@ import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 
@@ -66,10 +67,15 @@ class SocketCommander {
         int commandNum = commandCounter.getAndIncrement();
         ResponseHolder responseHolder = new ResponseHolder();
         responseHolders.put(commandNum, responseHolder);
-        socketOutCommands.add(new CommandWrapper(commandNum, command));
+        CommandWrapper commandWrapper = new CommandWrapper(commandNum, command);
+        socketOutCommands.add(commandWrapper);
+        logger.debug("sendCommand(): command queued to be sent to external jvm: {}",
+                commandWrapper);
         // wait for response
         synchronized (responseHolder) {
+            logger.debug("sendCommand(): waiting for response from external jvm");
             responseHolder.wait();
+            logger.debug("sendCommand(): response received from external jvm");
         }
         Object response = responseHolder.response;
         if (SocketCommandProcessor.EXCEPTION_RESPONSE.equals(response)) {
@@ -98,6 +104,13 @@ class SocketCommander {
         Object getCommand() {
             return command;
         }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("commandNum", commandNum)
+                    .add("command", command)
+                    .toString();
+        }
     }
 
     @SuppressWarnings("serial")
@@ -113,6 +126,13 @@ class SocketCommander {
         }
         private Object getResponse() {
             return response;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("commandNum", commandNum)
+                    .add("response", response)
+                    .toString();
         }
     }
 
@@ -132,7 +152,9 @@ class SocketCommander {
             try {
                 while (true) {
                     Object command = socketOutCommands.take();
+                    logger.debug("sending command to external jvm: {}", command);
                     objectOut.writeObject(command);
+                    logger.debug("command sent");
                 }
             } catch (InterruptedException e) {
                 if (!closing) {
@@ -160,6 +182,7 @@ class SocketCommander {
                     Object value = objectIn.readObject();
                     if (!value.equals(SocketHeartbeat.PING_COMMAND)) {
                         ResponseWrapper responseWrapper = (ResponseWrapper) value;
+                        logger.debug("response received from external jvm: {}", responseWrapper);
                         ResponseHolder responseHolder = responseHolders.get(responseWrapper
                                 .getCommandNum());
                         responseHolder.response = responseWrapper.getResponse();
@@ -173,9 +196,7 @@ class SocketCommander {
                     logger.error(e.getMessage(), e);
                 }
             } catch (ClassNotFoundException e) {
-                if (!closing) {
-                    logger.error(e.getMessage(), e);
-                }
+                logger.error(e.getMessage(), e);
             }
         }
     }
