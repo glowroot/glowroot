@@ -139,16 +139,40 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testMetadataMetric() throws Exception {
+    public void testMetadataMetricDisabledSpan() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
+                "org.informantproject.plugins:jdbc-plugin");
+        pluginConfig.setProperty("spanForDatabaseMetaData", false);
+        container.getInformant().updatePluginConfig("org.informantproject.plugins:jdbc-plugin",
+                pluginConfig);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
+        assertThat(trace.getMetrics().size()).isEqualTo(2);
+        assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");
+    }
+
+    @Test
+    public void testMetadataMetricEnabledSpan() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
+                "org.informantproject.plugins:jdbc-plugin");
+        pluginConfig.setProperty("spanForDatabaseMetaData", true);
+        container.getInformant().updatePluginConfig("org.informantproject.plugins:jdbc-plugin",
+                pluginConfig);
+        // when
+        container.executeAppUnderTest(AccessMetaData.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc metadata:"
+                + " DatabaseMetaData.getTables() [connection: ");
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(1).getName()).isEqualTo("jdbc metadata");

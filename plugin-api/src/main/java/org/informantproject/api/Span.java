@@ -22,7 +22,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  * @since 0.5
  */
 @NotThreadSafe
-public interface Span {
+public interface Span extends Timer {
 
     void end();
 

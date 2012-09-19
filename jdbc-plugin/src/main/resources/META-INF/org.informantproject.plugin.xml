@@ -45,6 +45,11 @@
           overhead.
         </description>
       </property>
+      <property>
+        <prompt>Capture spans for executions of DatabaseMetaData.*()</prompt>
+        <name>spanForDatabaseMetaData</name>
+        <type>boolean</type>
+      </property>
     </properties>
     <aspects>
       <aspect>org.informantproject.plugin.jdbc.JdbcAspect</aspect>

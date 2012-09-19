@@ -317,7 +317,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1")
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1",
+            metricName = "efg")
     public static class InjectMethodNameAdvice {
         public static ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
         public static ThreadLocal<String> onBeforeMethodName = new ThreadLocal<String>();

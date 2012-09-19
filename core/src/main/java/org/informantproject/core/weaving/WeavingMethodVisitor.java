@@ -434,7 +434,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 // no autobox
                 loadArg(argIndex++);
             } else if (parameterType == ParameterKind.METHOD_NAME) {
-                push(name);
+                if (name.contains("$informant$metric$")) {
+                    // strip off internal metric identifier from method name
+                    push(name.substring(0, name.indexOf("$informant$metric$")));
+                } else {
+                    push(name);
+                }
             } else if (parameterType == ParameterKind.TRAVELER) {
                 if (travelerLocal == null) {
                     logger.error("the @" + annotationType.getSimpleName() + " method in "

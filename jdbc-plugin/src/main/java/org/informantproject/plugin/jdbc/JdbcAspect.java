@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -362,6 +363,7 @@ public class JdbcAspect {
     public static class ResultSetNextAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetNextAdvice.class);
         private static volatile boolean pluginEnabled;
+        // plugin configuration property captureResultSetNext is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
@@ -427,6 +429,7 @@ public class JdbcAspect {
             captureNested = false, metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
+        // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
@@ -458,6 +461,7 @@ public class JdbcAspect {
             metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice2 {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice2.class);
+        // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
@@ -542,12 +546,35 @@ public class JdbcAspect {
         // Connection.prepareStatement())
         private static final ThreadLocal<String> inDatabaseMetataDataMethod =
                 new ThreadLocal<String>();
+        // plugin configuration property spanForDatabaseMetaData is cached to limit map lookups
+        private static volatile boolean pluginEnabled;
+        private static volatile boolean spanEnabled;
+        static {
+            pluginServices.registerConfigListener(new ConfigListener() {
+                public void onChange() {
+                    pluginEnabled = pluginServices.isEnabled();
+                    spanEnabled = pluginEnabled
+                            && pluginServices.getBooleanProperty("spanForDatabaseMetaData");
+                }
+            });
+            pluginEnabled = pluginServices.isEnabled();
+            spanEnabled = pluginEnabled
+                    && pluginServices.getBooleanProperty("spanForDatabaseMetaData");
+        }
         @OnBefore
         @Nullable
-        public static Timer onBefore(@InjectMethodName String methodName) {
+        public static Timer onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
+                @InjectMethodName String methodName) {
+
             inDatabaseMetataDataMethod.set(methodName);
             if (pluginServices.isEnabled()) {
-                return pluginServices.startTimer(metric);
+                if (spanEnabled) {
+                    return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
+                            + " DatabaseMetaData.{{methodName}}() [connection: {{hashCode}}]",
+                            methodName, getConnectionHashCode(databaseMetaData)), metric);
+                } else {
+                    return pluginServices.startTimer(metric);
+                }
             } else {
                 return null;
             }
@@ -601,6 +628,8 @@ public class JdbcAspect {
         return mirror;
     }
 
+    // return Integer (as opposed to DatabaseMetaData method below) in order to delay the
+    // hex conversion until/if needed
     @Nullable
     private static Integer getConnectionHashCode(Statement statement) {
         try {
@@ -608,6 +637,16 @@ public class JdbcAspect {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
+        }
+    }
+
+    @Nullable
+    private static String getConnectionHashCode(DatabaseMetaData databaseMetaData) {
+        try {
+            return Integer.toHexString(databaseMetaData.getConnection().hashCode());
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            return "???";
         }
     }
 }
