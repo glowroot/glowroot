@@ -35,6 +35,7 @@ import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.config.FineProfilingConfig;
 import org.informantproject.core.config.PluginConfig;
+import org.informantproject.core.config.UserTracingConfig;
 import org.informantproject.core.trace.FineGrainedProfiler;
 import org.informantproject.core.trace.MetricImpl;
 import org.informantproject.core.trace.TerminateScheduledActionException;
@@ -155,6 +156,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
+        return startTrace(messageSupplier, metric, null);
+    }
+
+    @Override
+    public Span startTrace(MessageSupplier messageSupplier, Metric metric,
+            @Nullable String userId) {
+
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
             return NopSpan.INSTANCE;
@@ -167,10 +175,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTrace == null) {
             currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker,
                     weavingMetric);
-            FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
-            if (fineProfilingConfig.isEnabled()
-                    && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
-                fineGrainedProfiler.scheduleProfiling(currentTrace);
+            if (!maybeScheduleFineProfilingUsingUserId(currentTrace, userId)) {
+                maybeScheduleFineProfilingUsingPercentage(currentTrace);
             }
             traceRegistry.addTrace(currentTrace);
             return new SpanImpl(currentTrace.getRootSpan(), currentTrace);
@@ -242,11 +248,18 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
+    // it is better to use startTrace(..., userId) so that fine profiling can be scheduled from the
+    // beginning of the trace in case user tracing with fine profiling is configured for this user,
+    // but if that's not possible or efficient then this method will still schedule fine profiling
+    // from this point forward if applicable
     @Override
     public void setUserId(@Nullable String userId) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUserId(userId);
+            if (trace.getFineProfilingScheduledFuture() == null) {
+                maybeScheduleFineProfilingUsingUserId(trace, userId);
+            }
         }
     }
 
@@ -276,6 +289,29 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public void onChange() {
         coreConfig = configService.getCoreConfig();
         pluginConfig = configService.getPluginConfig(pluginId);
+    }
+
+    private boolean maybeScheduleFineProfilingUsingUserId(Trace currentTrace,
+            @Nullable String userId) {
+        if (userId == null) {
+            return false;
+        }
+        UserTracingConfig userTracingConfig = configService.getUserTracingConfig();
+        if (userTracingConfig.isEnabled() && userTracingConfig.isFineProfiling()
+                && userId.equals(userTracingConfig.getUserId())) {
+            fineGrainedProfiler.scheduleProfiling(currentTrace);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private void maybeScheduleFineProfilingUsingPercentage(Trace currentTrace) {
+        FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
+        if (fineProfilingConfig.isEnabled()
+                && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
+            fineGrainedProfiler.scheduleProfiling(currentTrace);
+        }
     }
 
     // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR

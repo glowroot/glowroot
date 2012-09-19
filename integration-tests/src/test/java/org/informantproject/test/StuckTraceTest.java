@@ -74,19 +74,17 @@ public class StuckTraceTest {
             }
         });
         // then
-        // need to give container enough time to start up and for the trace to get stuck
-        // loop in order to not wait too little or too much
+        // stuck trace collector polls and marks stuck traces every 100 milliseconds
+        // so may need to wait a little
         Trace trace = null;
-        for (int i = 0; i < 200; i++) {
-            trace = container.getInformant().getActiveTrace();
-            if (trace != null && trace.isStuck()) {
+        for (int i = 0; i < 100; i++) {
+            trace = container.getInformant().getActiveTrace(5000);
+            if (trace.isStuck()) {
                 break;
             }
-            Thread.sleep(25);
+            Thread.sleep(10);
         }
-        if (trace == null) {
-            throw new AssertionError("no active trace found");
-        }
+        assertThat(trace).isNotNull();
         assertThat(trace.isStuck()).isTrue();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isCompleted()).isFalse();

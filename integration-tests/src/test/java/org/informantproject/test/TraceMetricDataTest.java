@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;
@@ -60,9 +59,7 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadTraceMetricData() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then
@@ -74,9 +71,7 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadTraceMetricDataWithRootAndSameNested() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
         // then
@@ -89,10 +84,7 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadActiveTraceMetricData() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
-        // when
+        container.getInformant().setPersistenceThresholdMillis(0);
         // when
         ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
         Future<Void> future = executorService.submit(new Callable<Void>() {
@@ -103,19 +95,8 @@ public class TraceMetricDataTest {
             }
         });
         // then
-        // need to give container enough time to start up and for the trace to get stuck
-        // loop in order to not wait too little or too much
-        Trace trace = null;
-        for (int i = 0; i < 200; i++) {
-            trace = container.getInformant().getActiveTrace();
-            if (trace != null) {
-                break;
-            }
-            Thread.sleep(25);
-        }
-        if (trace == null) {
-            throw new AssertionError("no active trace found");
-        }
+        Trace trace = container.getInformant().getActiveTrace(5000);
+        assertThat(trace).isNotNull();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(0).getCount()).isEqualTo(1);

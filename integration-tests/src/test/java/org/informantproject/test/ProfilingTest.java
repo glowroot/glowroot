@@ -17,10 +17,18 @@ package org.informantproject.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
+import javax.annotation.Nullable;
+
+import org.informantproject.api.PluginServices;
+import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoarseProfilingConfig;
-import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.Config.FineProfilingConfig;
+import org.informantproject.testkit.Config.UserTracingConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
 import org.informantproject.testkit.TraceMarker;
@@ -33,7 +41,7 @@ import org.junit.Test;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MergedStackTreeTest {
+public class ProfilingTest {
 
     private static InformantContainer container;
 
@@ -53,11 +61,9 @@ public class MergedStackTreeTest {
     }
 
     @Test
-    public void shouldReadCoarseMergedStackTree() throws Exception {
+    public void shouldReadCoarseProfilingTree() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
@@ -74,11 +80,9 @@ public class MergedStackTreeTest {
     }
 
     @Test
-    public void shouldReadFineMergedStackTree() throws Exception {
+    public void shouldReadFineProfilingTree() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(10000);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
@@ -87,6 +91,7 @@ public class MergedStackTreeTest {
         FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
+        fineProfilingConfig.setPersistenceThresholdMillis(0);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
@@ -100,11 +105,66 @@ public class MergedStackTreeTest {
     }
 
     @Test
-    public void shouldNotReadMergedStackTreeWhenDisabled() throws Exception {
+    public void shouldReadFineUserProfilingTree() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(10000);
+        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+                .getCoarseProfilingConfig();
+        coarseProfilingConfig.setInitialDelayMillis(200);
+        coarseProfilingConfig.setIntervalMillis(10);
+        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        fineProfilingConfig.setTracePercentage(0);
+        fineProfilingConfig.setIntervalMillis(10);
+        fineProfilingConfig.setPersistenceThresholdMillis(10000);
+        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        UserTracingConfig userTracingConfig = container.getInformant().getUserTracingConfig();
+        userTracingConfig.setUserId("able");
+        userTracingConfig.setPersistenceThresholdMillis(0);
+        userTracingConfig.setFineProfiling(true);
+        container.getInformant().updateUserTracingConfig(userTracingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTreeForAble.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getCoarseMergedStackTree()).isNull();
+        assertThat(trace.getFineMergedStackTree()).isNotNull();
+        // fine profiler should have captured about 15 stack traces
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThan(10);
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(20);
+    }
+
+    // set fine persistence threshold to 0, and see if trace shows up in active list right away
+    @Test
+    public void shouldReadActiveFineProfilingTree() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(10000);
+        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        fineProfilingConfig.setTracePercentage(100);
+        fineProfilingConfig.setIntervalMillis(10);
+        fineProfilingConfig.setPersistenceThresholdMillis(0);
+        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        // when
+        ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
+        Future<Void> future = executorService.submit(new Callable<Void>() {
+            @Nullable
+            public Void call() throws Exception {
+                container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+                return null;
+            }
+        });
+        // then
+        Trace trace = container.getInformant().getActiveTrace(5000);
+        assertThat(trace).isNotNull();
+        // cleanup
+        future.get();
+        executorService.shutdown();
+    }
+
+    @Test
+    public void shouldNotReadProfilingTreeWhenDisabled() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setEnabled(false);
@@ -128,6 +188,20 @@ public class MergedStackTreeTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
+            Thread.sleep(150);
+        }
+    }
+
+    public static class ShouldGenerateTraceWithMergedStackTreeForAble implements AppUnderTest,
+            TraceMarker {
+        private static final PluginServices pluginServices = PluginServices
+                .get("org.informantproject:informant-integration-tests");
+        public void executeApp() throws InterruptedException {
+            traceMarker();
+        }
+        public void traceMarker() throws InterruptedException {
+            // normally the plugin/aspect should set the user id, this is just a shortcut for test
+            pluginServices.setUserId("able");
             Thread.sleep(150);
         }
     }

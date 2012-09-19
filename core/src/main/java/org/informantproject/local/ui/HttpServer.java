@@ -141,6 +141,12 @@ public class HttpServer extends HttpServerBase {
                 + "/enable"), configJsonService, "enableFineProfiling"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/fine"
                 + "/disable"), configJsonService, "disableFineProfiling"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"),
+                configJsonService, "storeUserTracingConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"
+                + "/enable"), configJsonService, "enableUserTracing"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"
+                + "/disable"), configJsonService, "disableUserTracing"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)/enable"), configJsonService, "enablePlugin"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"

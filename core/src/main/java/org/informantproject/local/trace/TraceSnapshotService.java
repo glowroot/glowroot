@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +34,8 @@ import javax.annotation.Nullable;
 import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
+import org.informantproject.core.config.ConfigService;
+import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.stack.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
@@ -68,10 +71,12 @@ public class TraceSnapshotService {
     private static final Gson gson = new Gson();
 
     private final StackTraceDao stackTraceDao;
+    private final ConfigService configService;
 
     @Inject
-    TraceSnapshotService(StackTraceDao stackTraceDao) {
+    TraceSnapshotService(StackTraceDao stackTraceDao, ConfigService configService) {
         this.stackTraceDao = stackTraceDao;
+        this.configService = configService;
     }
 
     public TraceSnapshot from(Trace trace, long captureTick) throws IOException {
@@ -130,6 +135,39 @@ public class TraceSnapshotService {
                     .getFineMergedStackTree()));
         }
         return builder.build();
+    }
+
+    public boolean shouldPersist(Trace trace) {
+        if (trace.isStuck() || trace.isError()) {
+            return true;
+        }
+        long duration = trace.getDuration();
+        // check if should persist for user tracing
+        String userId = trace.getUserId();
+        if (userId != null
+                && userId.equals(configService.getUserTracingConfig().getUserId())
+                && duration >= TimeUnit.MILLISECONDS.toNanos(configService.getUserTracingConfig()
+                        .getPersistenceThresholdMillis())) {
+            return true;
+        }
+        // check if should persist for fine profiling
+        if (trace.isFine()) {
+            int finePersistenceThresholdMillis = configService.getFineProfilingConfig()
+                    .getPersistenceThresholdMillis();
+            if (finePersistenceThresholdMillis != CoreConfig.PERSISTENCE_THRESHOLD_DISABLED) {
+                return trace.getDuration() >= TimeUnit.MILLISECONDS
+                        .toNanos(finePersistenceThresholdMillis);
+            }
+        }
+        // fall back to core persistence threshold
+        return persistBasedOnCorePersistenceThreshold(trace);
+    }
+
+    private boolean persistBasedOnCorePersistenceThreshold(Trace trace) {
+        int persistenceThresholdMillis = configService.getCoreConfig()
+                .getPersistenceThresholdMillis();
+        return persistenceThresholdMillis != CoreConfig.PERSISTENCE_THRESHOLD_DISABLED
+                && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(persistenceThresholdMillis);
     }
 
     public static ByteStream toByteStream(TraceSnapshot snapshot, boolean active)

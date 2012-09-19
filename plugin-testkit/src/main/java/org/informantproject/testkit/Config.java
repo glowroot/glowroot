@@ -39,6 +39,7 @@ public class Config {
     private CoreConfig coreConfig;
     private CoarseProfilingConfig coarseProfilingConfig;
     private FineProfilingConfig fineProfilingConfig;
+    private UserTracingConfig userTracingConfig;
     private Map<String, PluginConfig> pluginConfigs;
 
     public CoreConfig getCoreConfig() {
@@ -51,6 +52,10 @@ public class Config {
 
     public FineProfilingConfig getFineProfilingConfig() {
         return fineProfilingConfig;
+    }
+
+    public UserTracingConfig getUserTracingConfig() {
+        return userTracingConfig;
     }
 
     public Map<String, PluginConfig> getPluginConfigs() {
@@ -194,6 +199,7 @@ public class Config {
         private double tracePercentage;
         private int intervalMillis;
         private int totalSeconds;
+        private int persistenceThresholdMillis;
 
         public boolean isEnabled() {
             return enabled;
@@ -219,9 +225,16 @@ public class Config {
         public void setTotalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
         }
+        public int getPersistenceThresholdMillis() {
+            return persistenceThresholdMillis;
+        }
+        public void setPersistenceThresholdMillis(int persistenceThresholdMillis) {
+            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        }
         @Override
         public int hashCode() {
-            return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds);
+            return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds,
+                    persistenceThresholdMillis);
         }
         @Override
         public boolean equals(@Nullable Object o) {
@@ -232,7 +245,56 @@ public class Config {
             return Objects.equal(enabled, other.enabled)
                     && Objects.equal(tracePercentage, other.tracePercentage)
                     && Objects.equal(intervalMillis, other.intervalMillis)
-                    && Objects.equal(totalSeconds, other.totalSeconds);
+                    && Objects.equal(totalSeconds, other.totalSeconds)
+                    && Objects.equal(persistenceThresholdMillis, other.persistenceThresholdMillis);
+        }
+    }
+
+    public static class UserTracingConfig {
+
+        private boolean enabled;
+        private String userId;
+        private int persistenceThresholdMillis;
+        private boolean fineProfiling;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        public String getUserId() {
+            return userId;
+        }
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+        public int getPersistenceThresholdMillis() {
+            return persistenceThresholdMillis;
+        }
+        public void setPersistenceThresholdMillis(int persistenceThresholdMillis) {
+            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        }
+        public boolean isFineProfiling() {
+            return fineProfiling;
+        }
+        public void setFineProfiling(boolean fineProfiling) {
+            this.fineProfiling = fineProfiling;
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(enabled, userId, persistenceThresholdMillis, fineProfiling);
+        }
+        @Override
+        public boolean equals(@Nullable Object o) {
+            if (!(o instanceof UserTracingConfig)) {
+                return false;
+            }
+            UserTracingConfig other = (UserTracingConfig) o;
+            return Objects.equal(enabled, other.enabled)
+                    && Objects.equal(userId, other.userId)
+                    && Objects.equal(persistenceThresholdMillis, other.persistenceThresholdMillis)
+                    && Objects.equal(fineProfiling, other.fineProfiling);
         }
     }
 

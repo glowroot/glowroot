@@ -20,16 +20,15 @@ import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.Clock;
 import org.informantproject.local.trace.TraceSnapshotDao;
 import org.informantproject.local.trace.TraceSnapshotDao.StringComparator;
+import org.informantproject.local.trace.TraceSnapshotService;
 import org.informantproject.local.trace.TraceSnapshotSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,18 +57,18 @@ class TracePointJsonService implements JsonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
-    private final ConfigService configService;
+    private final TraceSnapshotService traceSnapshotService;
     private final Ticker ticker;
     private final Clock clock;
     private final Gson gson = new Gson();
 
     @Inject
     TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
-            ConfigService configService, Ticker ticker, Clock clock) {
+            TraceSnapshotService traceSnapshotService, Ticker ticker, Clock clock) {
 
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
-        this.configService = configService;
+        this.traceSnapshotService = traceSnapshotService;
         this.ticker = ticker;
         this.clock = clock;
     }
@@ -147,11 +146,9 @@ class TracePointJsonService implements JsonService {
             boolean fine) {
 
         List<Trace> activeTraces = Lists.newArrayList();
-        long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService.getCoreConfig()
-                .getPersistenceThresholdMillis());
         for (Trace trace : traceRegistry.getTraces()) {
             long duration = trace.getDuration();
-            if (duration >= thresholdNanos
+            if (traceSnapshotService.shouldPersist(trace)
                     && matchesDuration(duration, low, high)
                     && matchesUserId(trace, userIdComparator, userId)
                     && matchesError(trace, error)

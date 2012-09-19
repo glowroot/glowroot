@@ -33,14 +33,14 @@ public class FineProfilingConfig {
 
     private final boolean enabled;
 
-    // persistence threshold of -1 means use core config persistence threshold
-    // for fine-grained profiled traces, the real threshold is the minimum of this and the core
-    // threshold
-    private final int persistenceThresholdMillis;
     // percentage of traces to apply fine profiling, between 0.0 and 100.0
     private final double tracePercentage;
     private final int intervalMillis;
     private final int totalSeconds;
+    // persistence threshold of -1 means use core config persistence threshold
+    // for fine-grained profiled traces, the real threshold is the minimum of this and the core
+    // threshold
+    private final int persistenceThresholdMillis;
 
     static FineProfilingConfig getDefaultInstance() {
         return new Builder().build();
@@ -54,14 +54,14 @@ public class FineProfilingConfig {
         return new Builder(base);
     }
 
-    private FineProfilingConfig(boolean enabled, int persistenceThresholdMillis,
-            double tracePercentage, int intervalMillis, int totalSeconds) {
+    private FineProfilingConfig(boolean enabled, double tracePercentage, int intervalMillis,
+            int totalSeconds, int persistenceThresholdMillis) {
 
         this.enabled = enabled;
-        this.persistenceThresholdMillis = persistenceThresholdMillis;
         this.tracePercentage = tracePercentage;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
+        this.persistenceThresholdMillis = persistenceThresholdMillis;
     }
 
     public String toJson() {
@@ -70,10 +70,6 @@ public class FineProfilingConfig {
 
     public boolean isEnabled() {
         return enabled;
-    }
-
-    public int getPersistenceThresholdMillis() {
-        return persistenceThresholdMillis;
     }
 
     public double getTracePercentage() {
@@ -88,13 +84,17 @@ public class FineProfilingConfig {
         return totalSeconds;
     }
 
+    public int getPersistenceThresholdMillis() {
+        return persistenceThresholdMillis;
+    }
+
     public static class Builder {
 
         private boolean enabled = true;
-        private int persistenceThresholdMillis = -1;
         private double tracePercentage = 0;
         private int intervalMillis = 50;
         private int totalSeconds = 10;
+        private int persistenceThresholdMillis = -1;
 
         private Builder() {}
         private Builder(FineProfilingConfig base) {
@@ -102,13 +102,10 @@ public class FineProfilingConfig {
             tracePercentage = base.tracePercentage;
             intervalMillis = base.intervalMillis;
             totalSeconds = base.totalSeconds;
+            persistenceThresholdMillis = base.persistenceThresholdMillis;
         }
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
-            return this;
-        }
-        public Builder persistenceThresholdMillis(int persistenceThresholdMillis) {
-            this.persistenceThresholdMillis = persistenceThresholdMillis;
             return this;
         }
         public Builder tracePercentage(double tracePercentage) {
@@ -123,9 +120,13 @@ public class FineProfilingConfig {
             this.totalSeconds = totalSeconds;
             return this;
         }
+        public Builder persistenceThresholdMillis(int persistenceThresholdMillis) {
+            this.persistenceThresholdMillis = persistenceThresholdMillis;
+            return this;
+        }
         public FineProfilingConfig build() {
-            return new FineProfilingConfig(enabled, persistenceThresholdMillis, tracePercentage,
-                    intervalMillis, totalSeconds);
+            return new FineProfilingConfig(enabled, tracePercentage, intervalMillis, totalSeconds,
+                    persistenceThresholdMillis);
         }
     }
 }

@@ -45,6 +45,7 @@ class ConfigDao {
     private static final String CORE = "core";
     private static final String PROFILING_COARSE = "profiling-coarse";
     private static final String PROFILING_FINE = "profiling-fine";
+    private static final String TRACING_USER = "tracing-user";
 
     private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("ID", Types.VARCHAR),
@@ -130,6 +131,22 @@ class ConfigDao {
     }
 
     @Nullable
+    UserTracingConfig readUserTracingConfig() {
+        logger.debug("readUserTracingConfig()");
+        String configJson = readConfig(TRACING_USER);
+        if (configJson == null) {
+            return null;
+        } else {
+            try {
+                return UserTracingConfig.fromJson(configJson);
+            } catch (JsonSyntaxException e) {
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
+        }
+    }
+
+    @Nullable
     PluginConfig readPluginConfig(String pluginId) {
         logger.debug("readPluginConfig(): pluginId={}", pluginId);
         String configJson = readConfig(pluginId);
@@ -158,6 +175,11 @@ class ConfigDao {
     void storeFineProfilingConfig(FineProfilingConfig config) {
         logger.debug("storeFineProfilingConfig(): config={}", config);
         storeConfig(PROFILING_FINE, config.toJson());
+    }
+
+    void storeUserTracingConfig(UserTracingConfig config) {
+        logger.debug("storeUserTracingConfig(): config={}", config);
+        storeConfig(TRACING_USER, config.toJson());
     }
 
     void storePluginConfig(String pluginId, PluginConfig config) {

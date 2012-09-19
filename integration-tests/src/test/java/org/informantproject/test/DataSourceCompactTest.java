@@ -20,7 +20,6 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import java.io.File;
 
 import org.informantproject.testkit.AppUnderTest;
-import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.TraceMarker;
 import org.junit.After;
@@ -54,9 +53,7 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(0);
         File dbFile = new File(container.getInformant().get("/misc/dbFile"));
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);

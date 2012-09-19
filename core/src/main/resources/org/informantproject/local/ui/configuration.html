@@ -184,6 +184,11 @@
         $('#finePersistenceThresholdOverride').attr('checked', true)
         $('#finePersistenceThresholdMillis').val(fineProfilingConfig.persistenceThresholdMillis)
       }
+      var userTracingConfig = config.userTracingConfig
+      setUpOnOffButton('UserTracing', userTracingConfig.enabled, 'config/tracing/user')
+      $('#userUserId').val(userTracingConfig.userId)
+      $('#userPersistenceThresholdMillis').val(userTracingConfig.persistenceThresholdMillis)
+      $('#userFineProfiling').attr('checked', userTracingConfig.fineProfiling)
       plugins = config.pluginDescriptors
       for (var i = 0; i < plugins.length; i++) {
         var plugin = plugins[i]
@@ -258,6 +263,16 @@
     }
     $.post('config/profiling/fine', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#saveFineProfilingComplete')
+    })
+  }
+  function updateUserTracingConfig() {
+    var config = {
+      'userId': $('#userUserId').val(),
+      'persistenceThresholdMillis': $('#userPersistenceThresholdMillis').val(),
+      'fineProfiling': $('#userFineProfiling').is(':checked')
+    }
+    $.post('config/tracing/user', JSON.stringify(config), function() {
+      showAndFadeSuccessMessage('#saveUserTracingComplete')
     })
   }
   function updatePluginConfig(pluginId) {
@@ -437,8 +452,8 @@
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
-            Once a trace exceeds this amount of time, the coarse profiler captures stack traces
-            periodically.
+            Once a trace exceeds this amount of time, the coarse-grained profiler captures stack
+            traces periodically.
             The interval between successive stack trace captures is defined by the property directly
             below.
             The stack traces captured for an individual trace are merged into a tree view and
@@ -456,8 +471,8 @@
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
-            The interval at which the coarse profiler captures stack traces (once a trace exceeds
-            the initial delay directly above).
+            The interval at which the coarse-grained profiler captures stack traces (once a trace
+            exceeds the initial delay directly above).
           </div>
         </div>
       </div>
@@ -471,8 +486,8 @@
             <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
-            The total length of time that the coarse profiler captures stack traces (once a trace
-            exceeds the initial delay above).
+            The total length of time that the coarse-grained profiler captures stack traces (once a
+            trace exceeds the initial delay above).
           </div>
         </div>
       </div>
@@ -511,7 +526,7 @@
             <span class="add-on">%</span>
           </div>
           <div class="help-block">
-            Apply fine grained profiling to this percentage of traces.
+            Apply fine-grained profiling to this percentage of traces.
           </div>
         </div>
       </div>
@@ -525,8 +540,8 @@
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
-            The interval at which the fine grained profiler captures stack traces (once a trace
-            exceeds the initial delay directly above).
+            The interval at which the fine-grained profiler captures stack traces (there is no
+            initial delay for the fine-grained profiler).
           </div>
         </div>
       </div>
@@ -540,8 +555,7 @@
             <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
-            The total length of time that the fine grained profiler captures stack traces (once a
-            trace exceeds the initial delay above).
+            The total length of time that the fine-grained profiler captures stack traces.
           </div>
         </div>
       </div>
@@ -572,6 +586,70 @@
           Save changes
         </button>
         <div class="button-success-message" id="saveFineProfilingComplete">Saved</div>
+      </div>
+    </fieldset>
+  </form>
+  <div>
+    <span style="vertical-align: middle; font-size: 19px">User Tracing</span>
+    <span class="btn-group"
+        style="display: inline-block; margin-left: 10px; vertical-align: middle">
+      <button class="btn btn-on" id="enabledOnUserTracing">ON</button>
+      <button class="btn btn-off" id="enabledOffUserTracing">OFF</button>
+    </span>
+    <span class="button-success-message" id="enableCompleteUserTracing">
+      Enabled
+    </span>
+    <span class="button-success-message" id="disableCompleteUserTracing" style="color: gray">
+      Disabled
+    </span>
+  </div>
+  <br>
+  <form class="well form-horizontal" style="margin-left: 40px">
+    <fieldset>
+      <div class="control-group">
+        <label class="control-label" for="userUserId">
+          User ID
+        </label>
+        <div class="controls">
+          <input type="text" id="userUserId" style="width: 6em">
+          <div class="help-block">
+            Traces for the given user will use the persistence threshold and profiling configuration
+            below.
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="userPersistenceThresholdMillis">
+          Persistence threshold
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input type="text" id="userPersistenceThresholdMillis" style="width: 6em">
+            <span class="add-on">milliseconds</span>
+          </div>
+          <div class="help-block">
+            Any trace for the given user that exceeds this amount of time will be viewable in the
+            trace explorer immediately as an active trace and will be persisted to disk at its
+            completion.
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="userFineProfiling">
+          Fine profiling
+        </label>
+        <div class="controls">
+          <input type="checkbox" id="userFineProfiling" value="true">
+          <div class="help-block">
+            Traces for the given user will be profiled using the fine-grained profiler.
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" onclick="updateUserTracingConfig()">
+          Save changes
+        </button>
+        <div class="button-success-message" id="saveUserTracingComplete">Saved</div>
       </div>
     </fieldset>
   </form>

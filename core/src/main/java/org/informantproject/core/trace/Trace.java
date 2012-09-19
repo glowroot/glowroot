@@ -262,14 +262,25 @@ public class Trace {
     }
 
     public void setCoarseProfilingScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        if (coarseProfilingScheduledFuture != null) {
+            logger.warn("setCoarseProfilingScheduledFuture(): overwriting non-null"
+                    + " coarseProfilingScheduledFuture");
+        }
         this.coarseProfilingScheduledFuture = scheduledFuture;
     }
 
     public void setFineProfilingScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        if (fineProfilingScheduledFuture != null) {
+            logger.warn("setFineProfilingScheduledFuture(): overwriting non-null"
+                    + " fineProfilingScheduledFuture");
+        }
         this.fineProfilingScheduledFuture = scheduledFuture;
     }
 
     public void setStuckScheduledFuture(ScheduledFuture<?> scheduledFuture) {
+        if (stuckScheduledFuture != null) {
+            logger.warn("setStuckScheduledFuture(): overwriting non-null stuckScheduledFuture");
+        }
         this.stuckScheduledFuture = scheduledFuture;
     }
 

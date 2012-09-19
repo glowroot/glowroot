@@ -17,11 +17,8 @@ package org.informantproject.local.trace;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.informantproject.core.config.ConfigService;
-import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
@@ -47,24 +44,22 @@ public class TraceSinkLocal implements TraceSink {
     private final ExecutorService executorService = DaemonExecutors
             .newSingleThreadExecutor("Informant-StackCollector");
 
-    private final ConfigService configService;
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Ticker ticker;
     private final AtomicInteger queueLength = new AtomicInteger(0);
 
     @Inject
-    TraceSinkLocal(ConfigService configService, TraceSnapshotService traceSnapshotService,
-            TraceSnapshotDao traceSnapshotDao, Ticker ticker) {
+    TraceSinkLocal(TraceSnapshotService traceSnapshotService, TraceSnapshotDao traceSnapshotDao,
+            Ticker ticker) {
 
-        this.configService = configService;
         this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
     }
 
     public void onCompletedTrace(final Trace trace) {
-        if (shouldPersist(trace)) {
+        if (traceSnapshotService.shouldPersist(trace)) {
             queueLength.incrementAndGet();
             executorService.execute(new Runnable() {
                 public void run() {
@@ -100,29 +95,4 @@ public class TraceSinkLocal implements TraceSink {
         executorService.shutdownNow();
     }
 
-    private boolean shouldPersist(Trace trace) {
-        if (trace.isStuck() || trace.isError()) {
-            return true;
-        }
-        if (trace.isFine()) {
-            int finePersistenceThresholdMillis = configService.getFineProfilingConfig()
-                    .getPersistenceThresholdMillis();
-            if (finePersistenceThresholdMillis == CoreConfig.PERSISTENCE_THRESHOLD_DISABLED) {
-                // fall back to core persistence threshold
-                return persistBasedOnCorePersistenceThreshold(trace);
-            } else {
-                return trace.getDuration() >= TimeUnit.MILLISECONDS
-                        .toNanos(finePersistenceThresholdMillis);
-            }
-        } else {
-            return persistBasedOnCorePersistenceThreshold(trace);
-        }
-    }
-
-    private boolean persistBasedOnCorePersistenceThreshold(Trace trace) {
-        int persistenceThresholdMillis = configService.getCoreConfig()
-                .getPersistenceThresholdMillis();
-        return persistenceThresholdMillis != CoreConfig.PERSISTENCE_THRESHOLD_DISABLED
-                && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(persistenceThresholdMillis);
-    }
 }

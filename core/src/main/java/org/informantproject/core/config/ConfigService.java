@@ -49,6 +49,7 @@ public class ConfigService {
     private volatile CoreConfig coreConfig;
     private volatile CoarseProfilingConfig coarseProfilingConfig;
     private volatile FineProfilingConfig fineProfilingConfig;
+    private volatile UserTracingConfig userTracingConfig;
     private final ConcurrentMap<String, PluginConfig> pluginConfigs;
 
     @Inject
@@ -85,6 +86,16 @@ public class ConfigService {
             this.fineProfilingConfig = fineProfilingConfig;
         }
 
+        UserTracingConfig userTracingConfig = configDao.readUserTracingConfig();
+        if (userTracingConfig == null) {
+            logger.debug("<init>(): default user tracing config is being used");
+            this.userTracingConfig = UserTracingConfig.getDefaultInstance();
+        } else {
+            logger.debug("<init>(): user tracing config was read from local data store: {}",
+                    userTracingConfig);
+            this.userTracingConfig = userTracingConfig;
+        }
+
         pluginConfigs = Maps.newConcurrentMap();
         Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
@@ -109,6 +120,10 @@ public class ConfigService {
 
     public FineProfilingConfig getFineProfilingConfig() {
         return fineProfilingConfig;
+    }
+
+    public UserTracingConfig getUserTracingConfig() {
+        return userTracingConfig;
     }
 
     public PluginConfig getPluginConfig(String pluginId) {
@@ -191,6 +206,29 @@ public class ConfigService {
         configDao.storeFineProfilingConfig(config);
         // re-read from dao just to fail quickly in case of an issue
         this.fineProfilingConfig = configDao.readFineProfilingConfig();
+        notifyConfigListeners();
+    }
+
+    public void setUserTracingEnabled(boolean enabled) {
+        synchronized (configDao.getWriteLock()) {
+            UserTracingConfig config = configDao.readUserTracingConfig();
+            if (config == null) {
+                config = UserTracingConfig.getDefaultInstance();
+            }
+            UserTracingConfig updatedConfig = UserTracingConfig.builder(config)
+                    .enabled(enabled).build();
+            configDao.storeUserTracingConfig(updatedConfig);
+            // re-read from dao just to fail quickly in case of an issue
+            this.userTracingConfig = configDao.readUserTracingConfig();
+        }
+        notifyConfigListeners();
+    }
+
+    // TODO pass around config version to avoid possible clobbering
+    public void storeUserTracingConfig(UserTracingConfig config) {
+        configDao.storeUserTracingConfig(config);
+        // re-read from dao just to fail quickly in case of an issue
+        this.userTracingConfig = configDao.readUserTracingConfig();
         notifyConfigListeners();
     }
 

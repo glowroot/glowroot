@@ -20,7 +20,6 @@ import java.io.File;
 import org.informantproject.core.util.Static;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoarseProfilingConfig;
-import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +39,7 @@ public final class TraceSnapshotDaoDeletePerformanceMain {
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create();
         // set thresholds low so there will be lots of data to view
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        container.getInformant().setPersistenceThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);

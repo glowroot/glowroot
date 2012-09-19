@@ -58,6 +58,8 @@ public class FineGrainedProfiler {
         scheduledExecutor.shutdownNow();
     }
 
+    // schedules the first stack collection for configured interval after trace start (or
+    // immediately, if trace duration already exceeds configured collection interval)
     public void scheduleProfiling(Trace trace) {
         FineProfilingConfig config = configService.getFineProfilingConfig();
         // extra half interval at the end to make sure the final stack trace is grabbed if it aligns
@@ -65,9 +67,11 @@ public class FineGrainedProfiler {
         long endTick = trace.getStartTick() + TimeUnit.SECONDS.toNanos(config.getTotalSeconds())
                 + TimeUnit.MILLISECONDS.toNanos(config.getIntervalMillis()) / 2;
         CollectStackCommand command = new CollectStackCommand(trace, endTick, true, ticker);
+        long initialDelay = Math.max(0, config.getIntervalMillis()
+                - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
         ScheduledFuture<?> scheduledFuture = scheduledExecutor
-                .scheduleAtFixedRate(command, config.getIntervalMillis(),
-                        config.getIntervalMillis(), TimeUnit.MILLISECONDS);
+                .scheduleAtFixedRate(command, initialDelay, config.getIntervalMillis(),
+                        TimeUnit.MILLISECONDS);
         trace.setFineProfilingScheduledFuture(scheduledFuture);
     }
 }

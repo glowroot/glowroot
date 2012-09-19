@@ -21,6 +21,7 @@ import org.informantproject.testkit.Config.CoarseProfilingConfig;
 import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.PluginConfig;
+import org.informantproject.testkit.Config.UserTracingConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -80,6 +81,15 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldDisableUserTracingConfigBeforeAnyUpdates() throws Exception {
+        // when
+        container.getInformant().disableUserTracing();
+        // then
+        UserTracingConfig updatedConfig = container.getInformant().getUserTracingConfig();
+        assertThat(updatedConfig.isEnabled()).isFalse();
+    }
+
+    @Test
     public void shouldUpdateCoreConfig() throws Exception {
         // given
         CoreConfig config = container.getInformant().getCoreConfig();
@@ -112,6 +122,18 @@ public class ConfigTest {
         container.getInformant().updateFineProfilingConfig(config);
         // then
         FineProfilingConfig updatedConfig = container.getInformant().getFineProfilingConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdateUserTracingConfig() throws Exception {
+        // given
+        UserTracingConfig config = container.getInformant().getUserTracingConfig();
+        // when
+        config = updateAllFields(config);
+        container.getInformant().updateUserTracingConfig(config);
+        // then
+        UserTracingConfig updatedConfig = container.getInformant().getUserTracingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -154,6 +176,15 @@ public class ConfigTest {
         updatedConfig.setTracePercentage(config.getTracePercentage() + 1);
         updatedConfig.setIntervalMillis(config.getIntervalMillis() + 1);
         updatedConfig.setTotalSeconds(config.getTotalSeconds() + 1);
+        return updatedConfig;
+    }
+
+    private static UserTracingConfig updateAllFields(UserTracingConfig config) {
+        UserTracingConfig updatedConfig = new UserTracingConfig();
+        updatedConfig.setEnabled(!config.isEnabled());
+        updatedConfig.setUserId(config.getUserId() + "x");
+        updatedConfig.setPersistenceThresholdMillis(config.getPersistenceThresholdMillis() + 1);
+        updatedConfig.setFineProfiling(!config.isFineProfiling());
         return updatedConfig;
     }
 

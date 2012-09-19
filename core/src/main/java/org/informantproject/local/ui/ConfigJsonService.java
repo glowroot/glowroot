@@ -25,6 +25,7 @@ import org.informantproject.core.config.FineProfilingConfig;
 import org.informantproject.core.config.PluginConfig;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
+import org.informantproject.core.config.UserTracingConfig;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
@@ -95,6 +97,16 @@ class ConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
+    void enableUserTracing() {
+        configService.setUserTracingEnabled(true);
+    }
+
+    @JsonServiceMethod
+    void disableUserTracing() {
+        configService.setUserTracingEnabled(false);
+    }
+
+    @JsonServiceMethod
     void enablePlugin(String pluginId) {
         configService.setPluginEnabled(pluginId, true);
     }
@@ -112,6 +124,7 @@ class ConfigJsonService implements JsonService {
         return "{\"coreConfig\":" + configService.getCoreConfig().toJson()
                 + ",\"coarseProfilingConfig\":" + configService.getCoarseProfilingConfig().toJson()
                 + ",\"fineProfilingConfig\":" + configService.getFineProfilingConfig().toJson()
+                + ",\"userTracingConfig\":" + configService.getUserTracingConfig().toJson()
                 + ",\"pluginConfigs\":" + getPluginConfigsJson()
                 + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
                 + ",\"dataDirFolder\":"
@@ -154,6 +167,15 @@ class ConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
+    void storeUserTracingConfig(String configJson) {
+        logger.debug("storeUserTracingConfig(): configJson={}", configJson);
+        UserTracingConfig config = configService.getUserTracingConfig();
+        UserTracingConfig.Builder builder = UserTracingConfig.builder(config);
+        overlayOntoBuilder(builder, configJson);
+        configService.storeUserTracingConfig(builder.build());
+    }
+
+    @JsonServiceMethod
     void storePluginConfig(String pluginId, String configJson) {
         logger.debug("storePluginConfig(): pluginId={}, configJson={}", pluginId, configJson);
         PluginConfig config = configService.getPluginConfig(pluginId);
@@ -168,68 +190,104 @@ class ConfigJsonService implements JsonService {
 
     private void overlayOntoBuilder(CoreConfig.Builder builder, String overlayJson) {
         JsonObject jsonObject = new JsonParser().parse(overlayJson).getAsJsonObject();
-        if (jsonObject.get("enabled") != null) {
-            builder.enabled(jsonObject.get("enabled").getAsBoolean());
+        JsonElement enabled = jsonObject.get("enabled");
+        if (enabled != null) {
+            builder.enabled(enabled.getAsBoolean());
         }
-        if (jsonObject.get("persistenceThresholdMillis") != null) {
-            builder.persistenceThresholdMillis(jsonObject.get("persistenceThresholdMillis")
-                    .getAsInt());
+        JsonElement persistenceThresholdMillis = jsonObject.get("persistenceThresholdMillis");
+        if (persistenceThresholdMillis != null) {
+            builder.persistenceThresholdMillis(persistenceThresholdMillis.getAsInt());
         }
-        if (jsonObject.get("stuckThresholdSeconds") != null) {
-            builder.stuckThresholdSeconds(jsonObject.get("stuckThresholdSeconds").getAsInt());
+        JsonElement stuckThresholdSeconds = jsonObject.get("stuckThresholdSeconds");
+        if (stuckThresholdSeconds != null) {
+            builder.stuckThresholdSeconds(stuckThresholdSeconds.getAsInt());
         }
-        if (jsonObject.get("spanStackTraceThresholdMillis") != null) {
-            builder.spanStackTraceThresholdMillis(jsonObject.get("spanStackTraceThresholdMillis")
-                    .getAsInt());
+        JsonElement spanStackTraceThresholdMillis = jsonObject.get("spanStackTraceThresholdMillis");
+        if (spanStackTraceThresholdMillis != null) {
+            builder.spanStackTraceThresholdMillis(spanStackTraceThresholdMillis.getAsInt());
         }
-        if (jsonObject.get("maxEntries") != null) {
-            builder.maxEntries(jsonObject.get("maxEntries").getAsInt());
+        JsonElement maxEntries = jsonObject.get("maxEntries");
+        if (maxEntries != null) {
+            builder.maxEntries(maxEntries.getAsInt());
         }
-        if (jsonObject.get("rollingSizeMb") != null) {
-            builder.rollingSizeMb(jsonObject.get("rollingSizeMb").getAsInt());
+        JsonElement rollingSizeMb = jsonObject.get("rollingSizeMb");
+        if (rollingSizeMb != null) {
+            builder.rollingSizeMb(rollingSizeMb.getAsInt());
         }
-        if (jsonObject.get("warnOnEntryOutsideTrace") != null) {
-            builder.warnOnEntryOutsideTrace(jsonObject.get("warnOnEntryOutsideTrace")
-                    .getAsBoolean());
+        JsonElement warnOnEntryOutsideTrace = jsonObject.get("warnOnEntryOutsideTrace");
+        if (warnOnEntryOutsideTrace != null) {
+            builder.warnOnEntryOutsideTrace(warnOnEntryOutsideTrace.getAsBoolean());
         }
-        if (jsonObject.get("metricPeriodMillis") != null) {
-            builder.metricPeriodMillis(jsonObject.get("metricPeriodMillis").getAsInt());
+        JsonElement metricPeriodMillis = jsonObject.get("metricPeriodMillis");
+        if (metricPeriodMillis != null) {
+            builder.metricPeriodMillis(metricPeriodMillis.getAsInt());
         }
     }
 
     private void overlayOntoBuilder(CoarseProfilingConfig.Builder builder, String overlayJson) {
         JsonObject jsonObject = new JsonParser().parse(overlayJson).getAsJsonObject();
-        if (jsonObject.get("enabled") != null) {
-            builder.enabled(jsonObject.get("enabled").getAsBoolean());
+        JsonElement enabled = jsonObject.get("enabled");
+        if (enabled != null) {
+            builder.enabled(enabled.getAsBoolean());
         }
-        if (jsonObject.get("initialDelayMillis") != null) {
-            builder.initialDelayMillis(jsonObject.get("initialDelayMillis").getAsInt());
+        JsonElement initialDelayMillis = jsonObject.get("initialDelayMillis");
+        if (initialDelayMillis != null) {
+            builder.initialDelayMillis(initialDelayMillis.getAsInt());
         }
-        if (jsonObject.get("intervalMillis") != null) {
-            builder.intervalMillis(jsonObject.get("intervalMillis").getAsInt());
+        JsonElement intervalMillis = jsonObject.get("intervalMillis");
+        if (intervalMillis != null) {
+            builder.intervalMillis(intervalMillis.getAsInt());
         }
-        if (jsonObject.get("totalSeconds") != null) {
-            builder.totalSeconds(jsonObject.get("totalSeconds").getAsInt());
+        JsonElement totalSeconds = jsonObject.get("totalSeconds");
+        if (totalSeconds != null) {
+            builder.totalSeconds(totalSeconds.getAsInt());
         }
     }
 
     private void overlayOntoBuilder(FineProfilingConfig.Builder builder, String overlayJson) {
         JsonObject jsonObject = new JsonParser().parse(overlayJson).getAsJsonObject();
+        JsonElement enabled = jsonObject.get("enabled");
+        if (enabled != null) {
+            builder.enabled(enabled.getAsBoolean());
+        }
+        JsonElement tracePercentage = jsonObject.get("tracePercentage");
+        if (tracePercentage != null) {
+            builder.tracePercentage(tracePercentage.getAsDouble());
+        }
+        JsonElement intervalMillis = jsonObject.get("intervalMillis");
+        if (intervalMillis != null) {
+            builder.intervalMillis(intervalMillis.getAsInt());
+        }
+        JsonElement totalSeconds = jsonObject.get("totalSeconds");
+        if (totalSeconds != null) {
+            builder.totalSeconds(totalSeconds.getAsInt());
+        }
+        JsonElement persistenceThresholdMillis = jsonObject.get("persistenceThresholdMillis");
+        if (persistenceThresholdMillis != null) {
+            builder.persistenceThresholdMillis(persistenceThresholdMillis.getAsInt());
+        }
+    }
+
+    private void overlayOntoBuilder(UserTracingConfig.Builder builder, String overlayJson) {
+        JsonObject jsonObject = new JsonParser().parse(overlayJson).getAsJsonObject();
         if (jsonObject.get("enabled") != null) {
             builder.enabled(jsonObject.get("enabled").getAsBoolean());
         }
-        if (jsonObject.get("tracePercentage") != null) {
-            builder.tracePercentage(jsonObject.get("tracePercentage").getAsDouble());
+        JsonElement userId = jsonObject.get("userId");
+        if (userId != null) {
+            if (userId.isJsonNull()) {
+                builder.userId(null);
+            } else {
+                builder.userId(userId.getAsString());
+            }
         }
-        if (jsonObject.get("intervalMillis") != null) {
-            builder.intervalMillis(jsonObject.get("intervalMillis").getAsInt());
+        JsonElement persistenceThresholdMillis = jsonObject.get("persistenceThresholdMillis");
+        if (persistenceThresholdMillis != null) {
+            builder.persistenceThresholdMillis(persistenceThresholdMillis.getAsInt());
         }
-        if (jsonObject.get("totalSeconds") != null) {
-            builder.totalSeconds(jsonObject.get("totalSeconds").getAsInt());
-        }
-        if (jsonObject.get("persistenceThresholdMillis") != null) {
-            builder.persistenceThresholdMillis(jsonObject.get("persistenceThresholdMillis")
-                    .getAsInt());
+        JsonElement fineProfiling = jsonObject.get("fineProfiling");
+        if (fineProfiling != null) {
+            builder.fineProfiling(fineProfiling.getAsBoolean());
         }
     }
 

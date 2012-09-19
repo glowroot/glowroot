@@ -74,9 +74,12 @@ public abstract class PluginServices {
     @Nullable
     public abstract Double getDoubleProperty(String propertyName);
 
+    public abstract Span startTrace(MessageSupplier messageSupplier, Metric metric);
+
     // if there is no trace already bound to the current thread, a new trace is created and bound.
     // if there is already a trace bound to the current thread, this method delegates to startSpan()
-    public abstract Span startTrace(MessageSupplier messageSupplier, Metric metric);
+    public abstract Span startTrace(MessageSupplier messageSupplier, Metric metric,
+            @Nullable String userId);
 
     public abstract Span startSpan(MessageSupplier messageSupplier, Metric metric);
 
@@ -162,6 +165,11 @@ public abstract class PluginServices {
         public void registerConfigListener(ConfigListener listener) {}
         @Override
         public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
+            return NopSpan.INSTANCE;
+        }
+        @Override
+        public Span startTrace(MessageSupplier messageSupplier, Metric metric,
+                @Nullable String userId) {
             return NopSpan.INSTANCE;
         }
         @Override

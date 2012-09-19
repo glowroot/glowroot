@@ -26,6 +26,7 @@ import org.informantproject.testkit.Config.CoreConfig;
 import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.Config.PluginConfigJsonDeserializer;
+import org.informantproject.testkit.Config.UserTracingConfig;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
@@ -136,6 +137,25 @@ public class Informant {
         post("/config/profiling/fine", new GsonBuilder().serializeNulls().create().toJson(config));
     }
 
+    public UserTracingConfig getUserTracingConfig() throws Exception {
+        return getConfig().getUserTracingConfig();
+    }
+
+    public void enableUserTracing() throws Exception {
+        post("/config/tracing/user/enable", "");
+    }
+
+    public void disableUserTracing() throws Exception {
+        post("/config/tracing/user/disable", "");
+    }
+
+    public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
+        // need to serialize nulls since the /config service treats absence of attribute different
+        // from null attribute (the former doesn't update the attribute, the latter sets the
+        // attribute to null)
+        post("/config/tracing/user", new GsonBuilder().serializeNulls().create().toJson(config));
+    }
+
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
         return getConfig().getPluginConfigs().get(pluginId);
     }
@@ -185,22 +205,21 @@ public class Informant {
         }
     }
 
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
-    public Trace getActiveTrace() throws Exception {
-        String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
-                + Long.MAX_VALUE);
-        JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
-                .get("activePoints").getAsJsonArray();
-        if (points.size() == 0) {
-            return null;
-        } else if (points.size() > 1) {
-            throw new IllegalStateException("Unexpected number of active traces");
-        } else {
-            JsonArray values = points.get(0).getAsJsonArray();
-            String traceId = values.get(2).getAsString();
-            String traceDetailJson = get("/trace/summary/" + traceId);
-            return gson.fromJson(traceDetailJson, Trace.class);
+    public Trace getActiveTrace(int timeout) throws Exception {
+        long startTick = System.currentTimeMillis();
+        Trace trace = null;
+        // try at least once (e.g. in case timeout == 0)
+        while (true) {
+            trace = getActiveTrace();
+            if (trace != null || System.currentTimeMillis() - startTick >= timeout) {
+                break;
+            }
+            Thread.sleep(20);
         }
+        return trace;
     }
 
     @Nullable
@@ -224,6 +243,23 @@ public class Informant {
             Thread.sleep(1);
         }
         this.baselineTime = System.currentTimeMillis();
+    }
+
+    private Trace getActiveTrace() throws Exception {
+        String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
+                + Long.MAX_VALUE);
+        JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
+                .get("activePoints").getAsJsonArray();
+        if (points.size() == 0) {
+            return null;
+        } else if (points.size() > 1) {
+            throw new IllegalStateException("Unexpected number of active traces");
+        } else {
+            JsonArray values = points.get(0).getAsJsonArray();
+            String traceId = values.get(2).getAsString();
+            String traceDetailJson = get("/trace/summary/" + traceId);
+            return gson.fromJson(traceDetailJson, Trace.class);
+        }
     }
 
     private Config getConfig() throws Exception {
