@@ -137,12 +137,12 @@ class InformantModule extends AbstractModule {
     AsyncHttpClient providesAsyncHttpClient() {
         ExecutorService executorService = DaemonExecutors
                 .newCachedThreadPool("Informant-AsyncHttpClient");
-        ScheduledExecutorService scheduledExecutorService = DaemonExecutors
+        ScheduledExecutorService scheduledExecutor = DaemonExecutors
                 .newSingleThreadScheduledExecutor("Informant-AsyncHttpClient-Reaper");
         AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
                 .setMaxRequestRetry(0)
                 .setExecutorService(executorService)
-                .setScheduledExecutorService(scheduledExecutorService);
+                .setScheduledExecutorService(scheduledExecutor);
         NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
         if (USE_NETTY_BLOCKING_IO) {
             providerConfig.addProperty(NettyAsyncHttpProviderConfig.USE_BLOCKING_IO, true);

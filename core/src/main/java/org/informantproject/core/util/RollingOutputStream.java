@@ -38,7 +38,7 @@ class RollingOutputStream extends OutputStream {
 
     private static final Logger logger = LoggerFactory.getLogger(RollingOutputStream.class);
 
-    private final ScheduledExecutorService executorService = DaemonExecutors
+    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
             .newSingleThreadScheduledExecutor("Informant-RollingOutputFsync");
 
     private static final int FSYNC_INTERVAL_MILLIS = 2000;
@@ -87,7 +87,7 @@ class RollingOutputStream extends OutputStream {
             currPosition = (currIndex - lastCompactionBaseIndex) % rollingSizeBytes;
             out.seek(HEADER_SKIP_BYTES + currPosition);
         }
-        executorService.scheduleWithFixedDelay(new Runnable() {
+        scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
             public void run() {
                 if (fsyncNeeded.getAndSet(false)) {
                     try {
@@ -201,7 +201,7 @@ class RollingOutputStream extends OutputStream {
     @Override
     public void close() throws IOException {
         super.close();
-        executorService.shutdownNow();
+        scheduledExecutor.shutdownNow();
         out.close();
     }
 
