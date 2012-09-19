@@ -36,7 +36,7 @@ class TraceSnapshotTestData {
                 .duration(TimeUnit.MILLISECONDS.toNanos(10))
                 .completed(true)
                 .description("test description")
-                .username("j")
+                .userId("j")
                 .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"parentIndex\":-1,\"level\":0,\"message\":{\"text\":\"Level One\","
                         + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","

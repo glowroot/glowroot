@@ -118,7 +118,7 @@ public class TraceSnapshotService {
         if (!attributes.isEmpty()) {
             builder.attributes(gson.toJson(attributes));
         }
-        builder.username(trace.getUsername());
+        builder.userId(trace.getUserId());
         builder.metrics(getMetricsJson(trace));
         if (includeDetail) {
             SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans(), captureTick,
@@ -155,9 +155,9 @@ public class TraceSnapshotService {
             sb.append(",\"attributes\":");
             sb.append(snapshot.getAttributes());
         }
-        if (snapshot.getUsername() != null) {
-            sb.append(",\"username\":");
-            sb.append(escapeJson(snapshot.getUsername()));
+        if (snapshot.getUserId() != null) {
+            sb.append(",\"userId\":");
+            sb.append(escapeJson(snapshot.getUserId()));
         }
         if (snapshot.getErrorText() != null) {
             sb.append(",\"error\":{\"text\":");

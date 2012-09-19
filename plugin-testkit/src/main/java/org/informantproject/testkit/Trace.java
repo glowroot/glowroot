@@ -45,7 +45,7 @@ public class Trace {
     @Nullable
     private Map<String, String> attributes;
     @Nullable
-    private String username;
+    private String userId;
     @Nullable
     private TraceError error;
     @Nullable
@@ -97,8 +97,8 @@ public class Trace {
     }
 
     @Nullable
-    public String getUsername() {
-        return username;
+    public String getUserId() {
+        return userId;
     }
 
     @Nullable
@@ -176,7 +176,7 @@ public class Trace {
                 .add("completed", completed)
                 .add("description", description)
                 .add("attributes", attributes)
-                .add("username", username)
+                .add("userId", userId)
                 .add("error", error)
                 .add("metrics", metrics)
                 .add("spans", spans)

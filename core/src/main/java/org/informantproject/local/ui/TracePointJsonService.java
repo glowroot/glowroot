@@ -95,10 +95,10 @@ class TracePointJsonService implements JsonService {
         long low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
         long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                 * NANOSECONDS_PER_MILLISECOND);
-        StringComparator usernameComparator = null;
-        String comparatorText = request.getUsernameComparator();
+        StringComparator userIdComparator = null;
+        String comparatorText = request.getUserIdComparator();
         if (comparatorText != null) {
-            usernameComparator = StringComparator.valueOf(comparatorText
+            userIdComparator = StringComparator.valueOf(comparatorText
                     .toUpperCase(Locale.ENGLISH));
         }
         List<Trace> activeTraces = ImmutableList.of();
@@ -109,7 +109,7 @@ class TracePointJsonService implements JsonService {
             // capture active traces first to make sure that none are missed in between reading
             // stored traces and then capturing active traces (possible duplicates are removed
             // below)
-            activeTraces = getActiveTraces(low, high, usernameComparator, request.getUsername(),
+            activeTraces = getActiveTraces(low, high, userIdComparator, request.getUserId(),
                     request.isError(), request.isFine());
             // take capture timings after the capture to make sure there no traces captured that
             // start after the recorded capture time (resulting in negative duration)
@@ -120,8 +120,8 @@ class TracePointJsonService implements JsonService {
             request.setTo(requestAt);
         }
         List<TraceSnapshotSummary> summaries = traceSnapshotDao.readSummaries(
-                request.getFrom(), request.getTo(), low, high, usernameComparator,
-                request.getUsername(), request.isError(), request.isFine());
+                request.getFrom(), request.getTo(), low, high, userIdComparator,
+                request.getUserId(), request.isError(), request.isFine());
         // remove duplicates between active and stored traces
         for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
             Trace activeTrace = i.next();
@@ -143,8 +143,8 @@ class TracePointJsonService implements JsonService {
     }
 
     private List<Trace> getActiveTraces(long low, long high,
-            @Nullable StringComparator usernameComparator, @Nullable String username,
-            boolean error, boolean fine) {
+            @Nullable StringComparator userIdComparator, @Nullable String userId, boolean error,
+            boolean fine) {
 
         List<Trace> activeTraces = Lists.newArrayList();
         long thresholdNanos = TimeUnit.MILLISECONDS.toNanos(configService.getCoreConfig()
@@ -153,7 +153,7 @@ class TracePointJsonService implements JsonService {
             long duration = trace.getDuration();
             if (duration >= thresholdNanos
                     && matchesDuration(duration, low, high)
-                    && matchesUsername(trace, usernameComparator, username)
+                    && matchesUserId(trace, userIdComparator, userId)
                     && matchesError(trace, error)
                     && matchesFine(trace, fine)) {
                 activeTraces.add(trace);
@@ -169,25 +169,25 @@ class TracePointJsonService implements JsonService {
         return duration >= low && duration <= high;
     }
 
-    private boolean matchesUsername(Trace trace, @Nullable StringComparator usernameComparator,
-            @Nullable String username) {
+    private boolean matchesUserId(Trace trace, @Nullable StringComparator userIdComparator,
+            @Nullable String userId) {
 
-        if (usernameComparator == null || username == null) {
+        if (userIdComparator == null || userId == null) {
             return true;
         }
-        String traceUsername = trace.getUsername();
-        if (traceUsername == null) {
+        String traceUserId = trace.getUserId();
+        if (traceUserId == null) {
             return false;
         }
-        switch (usernameComparator) {
+        switch (userIdComparator) {
         case BEGINS:
-            return traceUsername.startsWith(username);
+            return traceUserId.startsWith(userId);
         case CONTAINS:
-            return traceUsername.contains(username);
+            return traceUserId.contains(userId);
         case EQUALS:
-            return traceUsername.equals(username);
+            return traceUserId.equals(userId);
         default:
-            logger.error("unexpected username comparator '{}'", usernameComparator);
+            logger.error("unexpected user id comparator '{}'", userIdComparator);
             return false;
         }
     }

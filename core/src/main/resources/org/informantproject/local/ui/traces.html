@@ -218,11 +218,11 @@
       if (durationHigh) {
         queryString += '&high=' + durationHigh
       }
-      var usernameComparator = $('#usernameComparator').val()
-      var username = $('#usernameFilter').val()
-      if (username) {
-        queryString += '&usernameComparator=' + usernameComparator
-        queryString += '&username=' + username
+      var userIdComparator = $('#userIdComparator').val()
+      var userId = $('#userIdFilter').val()
+      if (userId) {
+        queryString += '&userIdComparator=' + userIdComparator
+        queryString += '&userId=' + userId
       }
       var error = $('#errorFilter').is(':checked')
       if (error) {
@@ -476,14 +476,14 @@
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label" for="username">Username</label>
+            <label class="control-label" for="userId">User ID</label>
             <div class="controls">
-              <select class="input-medium0" id="usernameComparator">
+              <select class="input-medium0" id="userIdComparator">
                 <option value="begins">Begins with</option>
                 <option value="equals">Equals</option>
                 <option value="contains">Contains</option>
               </select>
-              <input type="text" class="input-small refresh-data-on-enter-key" id="usernameFilter">
+              <input type="text" class="input-small refresh-data-on-enter-key" id="userIdFilter">
             </div>
           </div>
           <div class="control-group">

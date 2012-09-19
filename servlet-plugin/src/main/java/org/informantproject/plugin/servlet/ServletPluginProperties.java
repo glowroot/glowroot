@@ -36,11 +36,11 @@ import org.informantproject.shaded.google.common.collect.Iterables;
 @ThreadSafe
 final class ServletPluginProperties {
 
-    private static final String SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME =
-            "sessionUsernameAttribute";
+    private static final String SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME =
+            "sessionUserIdAttribute";
 
     // a special single value of "*" means capture all session attributes
-    // this can be useful for finding the session attribute that represents the username
+    // this can be useful for finding the session attribute that represents the user id
     // TODO support "*.*", "*.*.*", etc
     // TODO support partial wildcards, e.g. "context*"
     private static final String SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME = "sessionAttributes";
@@ -56,8 +56,8 @@ final class ServletPluginProperties {
     private static volatile String cachedSessionAttributesText;
 
     @Nullable
-    static String sessionUsernameAttributePath() {
-        return pluginServices.getStringProperty(SESSION_USERNAME_ATTRIBUTE_PATH_PROPERTY_NAME);
+    static String sessionUserIdAttributePath() {
+        return pluginServices.getStringProperty(SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME);
     }
 
     static Set<String> sessionAttributePaths() {

@@ -78,7 +78,7 @@ public class TraceSnapshotDaoTest {
         assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());
         assertThat(snapshot2.isCompleted()).isEqualTo(snapshot.isCompleted());
         assertThat(snapshot2.getDescription()).isEqualTo("test description");
-        assertThat(snapshot2.getUsername()).isEqualTo(snapshot.getUsername());
+        assertThat(snapshot2.getUserId()).isEqualTo(snapshot.getUserId());
         // TODO verify metricData, trace and mergedStackTree
     }
 

@@ -41,7 +41,7 @@ public class TraceSnapshot {
     @Nullable
     private final String attributes; // json data
     @Nullable
-    private final String username;
+    private final String userId;
     @Nullable
     private final String errorText;
     @Nullable
@@ -60,7 +60,7 @@ public class TraceSnapshot {
     private final ByteStream fineMergedStackTree; // json data
 
     private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
-            String description, @Nullable String attributes, @Nullable String username,
+            String description, @Nullable String attributes, @Nullable String userId,
             @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String errorStackTrace, @Nullable String metrics, @Nullable ByteStream spans,
             @Nullable ByteStream coarseMergedStackTree, @Nullable ByteStream fineMergedStackTree) {
@@ -72,7 +72,7 @@ public class TraceSnapshot {
         this.completed = completed;
         this.description = description;
         this.attributes = attributes;
-        this.username = username;
+        this.userId = userId;
         this.errorText = errorText;
         this.errorDetail = errorDetail;
         this.errorStackTrace = errorStackTrace;
@@ -112,8 +112,8 @@ public class TraceSnapshot {
     }
 
     @Nullable
-    String getUsername() {
-        return username;
+    String getUserId() {
+        return userId;
     }
 
     @Nullable
@@ -161,7 +161,7 @@ public class TraceSnapshot {
                 .add("completed", completed)
                 .add("description", description)
                 .add("attributes", attributes)
-                .add("username", username)
+                .add("userId", userId)
                 .add("errorText", errorText)
                 .add("errorDetail", errorDetail)
                 .add("errorStackTrace", errorStackTrace)
@@ -186,7 +186,7 @@ public class TraceSnapshot {
         @Nullable
         private String attributes;
         @Nullable
-        private String username;
+        private String userId;
         @Nullable
         private String errorText;
         @Nullable
@@ -239,8 +239,8 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder username(@Nullable String username) {
-            this.username = username;
+        Builder userId(@Nullable String userId) {
+            this.userId = userId;
             return this;
         }
 
@@ -281,7 +281,7 @@ public class TraceSnapshot {
 
         TraceSnapshot build() {
             return new TraceSnapshot(id, startAt, duration, stuck, completed, description,
-                    attributes, username, errorText, errorDetail, errorStackTrace, metrics, spans,
+                    attributes, userId, errorText, errorDetail, errorStackTrace, metrics, spans,
                     coarseMergedStackTree, fineMergedStackTree);
         }
     }

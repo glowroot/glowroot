@@ -100,13 +100,13 @@ public class ServletAspect {
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(messageSupplier, metric);
             if (session != null) {
-                String sessionUsernameAttributePath = ServletPluginProperties
-                        .sessionUsernameAttributePath();
-                if (sessionUsernameAttributePath != null) {
-                    // capture username now, don't use a lazy supplier
-                    String username = getSessionAttributeTextValue(session,
-                            sessionUsernameAttributePath);
-                    pluginServices.setUsername(username);
+                String sessionUserIdAttributePath = ServletPluginProperties
+                        .sessionUserIdAttributePath();
+                if (sessionUserIdAttributePath != null) {
+                    // capture user id now, don't use a lazy supplier
+                    String userId = getSessionAttributeTextValue(session,
+                            sessionUserIdAttributePath);
+                    pluginServices.setUserId(userId);
                 }
             }
             return span;
@@ -275,7 +275,7 @@ public class ServletAspect {
             // (which per the javadoc is the same as calling removeAttribute())
             ServletMessageSupplier messageSupplier = getRootServletMessageSupplier(session);
             if (messageSupplier != null) {
-                updateUsernameIfApplicable(name, value, session);
+                updateUserIdIfApplicable(name, value, session);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
             }
         }
@@ -378,25 +378,23 @@ public class ServletAspect {
         }
     }
 
-    private static void updateUsernameIfApplicable(String name, @Nullable Object value,
+    private static void updateUserIdIfApplicable(String name, @Nullable Object value,
             HttpSession session) {
 
         if (value == null) {
-            // if username value is set to null, don't clear it
+            // if user id value is set to null, don't clear it
             return;
         }
-        String sessionUsernameAttributePath = ServletPluginProperties
-                .sessionUsernameAttributePath();
-        if (sessionUsernameAttributePath != null) {
-            // capture username now, don't use a lazy supplier
-            if (sessionUsernameAttributePath.equals(name)) {
-                pluginServices.setUsername(value.toString());
-            } else if (sessionUsernameAttributePath.startsWith(name + ".")) {
-                String username = getSessionAttributeTextValue(session,
-                        sessionUsernameAttributePath);
-                if (username != null) {
-                    // if username is null, don't clear it by setting Suppliers.ofInstance(null)
-                    pluginServices.setUsername(username);
+        String sessionUserIdAttributePath = ServletPluginProperties.sessionUserIdAttributePath();
+        if (sessionUserIdAttributePath != null) {
+            // capture user id now, don't use a lazy supplier
+            if (sessionUserIdAttributePath.equals(name)) {
+                pluginServices.setUserId(value.toString());
+            } else if (sessionUserIdAttributePath.startsWith(name + ".")) {
+                String userId = getSessionAttributeTextValue(session, sessionUserIdAttributePath);
+                if (userId != null) {
+                    // if user id is null, don't clear it by setting Suppliers.ofInstance(null)
+                    pluginServices.setUserId(userId);
                 }
             }
         }

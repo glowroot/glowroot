@@ -243,10 +243,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setUsername(@Nullable String username) {
+    public void setUserId(@Nullable String userId) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setUsername(username);
+            trace.setUserId(userId);
         }
     }
 

@@ -23,12 +23,12 @@
     <version>0.5-SNAPSHOT</version>
     <properties>
       <property>
-        <prompt>Session username attribute</prompt>
-        <name>sessionUsernameAttribute</name>
+        <prompt>Session user ID attribute</prompt>
+        <name>sessionUserIdAttribute</name>
         <type>string</type>
         <description>
-          Session attribute to capture as the username of the trace.
-          Traces can be filtered by username in the trace explorer.
+          Session attribute to capture as the user ID of the trace.
+          Traces can be filtered by user ID in the trace explorer.
           Nested paths are supported, e.g. something.user.username.
           The attribute value is converted into a String if necessary via toString().
         </description>

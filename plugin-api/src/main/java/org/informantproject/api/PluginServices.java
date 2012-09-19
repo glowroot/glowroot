@@ -87,7 +87,7 @@ public abstract class PluginServices {
     // does not mark trace as error
     public abstract void addErrorSpan(ErrorMessage errorMessage);
 
-    public abstract void setUsername(String username);
+    public abstract void setUserId(@Nullable String userId);
 
     // sets trace attribute in
     public abstract void setTraceAttribute(String name, @Nullable String value);
@@ -177,7 +177,7 @@ public abstract class PluginServices {
         @Override
         public void addErrorSpan(ErrorMessage errorMessage) {}
         @Override
-        public void setUsername(String username) {}
+        public void setUserId(@Nullable String userId) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
         @Override

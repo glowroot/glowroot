@@ -65,7 +65,7 @@ public class TraceSnapshotDao {
             new Column("fine", Types.BOOLEAN), // for searching only
             new Column("description", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
-            new Column("username", Types.VARCHAR),
+            new Column("user_id", Types.VARCHAR),
             new Column("error_text", Types.VARCHAR),
             new Column("error_detail", Types.VARCHAR), // json data
             new Column("error_stack_trace", Types.VARCHAR), // json data
@@ -145,14 +145,14 @@ public class TraceSnapshotDao {
         }
         try {
             dataSource.update("merge into trace (id, captured_at, start_at, duration, stuck,"
-                    + " completed, error, fine, description, attributes, username, error_text,"
+                    + " completed, error, fine, description, attributes, user_id, error_text,"
                     + " error_detail, error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
                     + " fine_merged_stack_tree) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
                     + " ?, ?, ?, ?)", snapshot.getId(), capturedAt, snapshot.getStartAt(),
                     snapshot.getDuration(), snapshot.isStuck(), snapshot.isCompleted(),
                     snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
                     snapshot.getDescription(), snapshot.getAttributes(),
-                    snapshot.getUsername(), snapshot.getErrorText(), snapshot.getErrorDetail(),
+                    snapshot.getUserId(), snapshot.getErrorText(), snapshot.getErrorDetail(),
                     snapshot.getErrorStackTrace(), snapshot.getMetrics(), spansBlockId,
                     coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
         } catch (SQLException e) {
@@ -161,13 +161,13 @@ public class TraceSnapshotDao {
     }
 
     public List<TraceSnapshotSummary> readSummaries(long capturedFrom, long capturedTo,
-            long durationLow, long durationHigh, @Nullable StringComparator usernameComparator,
-            @Nullable String username, boolean error, boolean fine) {
+            long durationLow, long durationHigh, @Nullable StringComparator userIdComparator,
+            @Nullable String userId, boolean error, boolean fine) {
 
         logger.debug("readSummaries(): capturedFrom={}, capturedTo={}, durationLow={},"
-                + " durationHigh={}, usernameComparator={}, username={}, error={}, fine={}",
+                + " durationHigh={}, userIdComparator={}, userId={}, error={}, fine={}",
                 new Object[] { capturedFrom, capturedTo, durationLow, durationHigh,
-                        usernameComparator, username, error, fine });
+                        userIdComparator, userId, error, fine });
         if (!valid) {
             return ImmutableList.of();
         }
@@ -185,9 +185,9 @@ public class TraceSnapshotDao {
                 sql += " and duration <= ?";
                 args.add(durationHigh);
             }
-            if (usernameComparator != null && username != null) {
-                sql += " and username " + usernameComparator.getComparator() + " ?";
-                args.add(usernameComparator.formatParameter(username));
+            if (userIdComparator != null && userId != null) {
+                sql += " and user_id " + userIdComparator.getComparator() + " ?";
+                args.add(userIdComparator.formatParameter(userId));
             }
             if (error) {
                 sql += " and error = ?";
@@ -213,7 +213,7 @@ public class TraceSnapshotDao {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
-                    + " completed, description, attributes, username, error_text, error_detail,"
+                    + " completed, description, attributes, user_id, error_text, error_detail,"
                     + " error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
                     + " fine_merged_stack_tree from trace where id = ?", new Object[] { id },
                     new TraceRowMapper());
@@ -239,7 +239,7 @@ public class TraceSnapshotDao {
         List<TraceSnapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
-                    + " description, attributes, username, error_text, error_detail,"
+                    + " description, attributes, user_id, error_text, error_detail,"
                     + " error_stack_trace, metrics from trace where id = ?", new Object[] { id },
                     new TraceSummaryRowMapper());
         } catch (SQLException e) {
@@ -303,7 +303,7 @@ public class TraceSnapshotDao {
                 .completed(resultSet.getBoolean(5))
                 .description(resultSet.getString(6))
                 .attributes(resultSet.getString(7))
-                .username(resultSet.getString(8))
+                .userId(resultSet.getString(8))
                 .errorText(resultSet.getString(9))
                 .errorDetail(resultSet.getString(10))
                 .errorStackTrace(resultSet.getString(11))

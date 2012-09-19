@@ -30,9 +30,9 @@ class TraceRequest {
     private double low; // milliseconds, with nanosecond precision
     private double high; // milliseconds, with nanosecond precision
     @Nullable
-    private String usernameComparator;
+    private String userIdComparator;
     @Nullable
-    private String username;
+    private String userId;
     private boolean error;
     private boolean fine;
     @Nullable
@@ -71,21 +71,21 @@ class TraceRequest {
     }
 
     @Nullable
-    public String getUsernameComparator() {
-        return usernameComparator;
+    public String getUserIdComparator() {
+        return userIdComparator;
     }
 
-    public void setUsernameComparator(@Nullable String usernameComparator) {
-        this.usernameComparator = usernameComparator;
+    public void setUserIdComparator(@Nullable String userIdComparator) {
+        this.userIdComparator = userIdComparator;
     }
 
     @Nullable
-    public String getUsername() {
-        return username;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setUsername(@Nullable String username) {
-        this.username = username;
+    public void setUserId(@Nullable String userId) {
+        this.userId = userId;
     }
 
     public boolean isError() {

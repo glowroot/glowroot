@@ -119,103 +119,103 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testHasSessionUsernameAttribute() throws Exception {
+    public void testHasSessionUserIdAttribute() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
+        pluginConfig.setProperty("sessionUserIdAttribute", "useridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(HasSessionUsernameAttribute.class);
+        container.executeAppUnderTest(HasSessionUserIdAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getUsername()).isEqualTo("abc");
+        assertThat(trace.getUserId()).isEqualTo("abc");
     }
 
     @Test
-    public void testSetSessionUsernameAttribute() throws Exception {
+    public void testSetSessionUserIdAttribute() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
+        pluginConfig.setProperty("sessionUserIdAttribute", "useridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(SetSessionUsernameAttribute.class);
+        container.executeAppUnderTest(SetSessionUserIdAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getUsername()).isEqualTo("abc");
+        assertThat(trace.getUserId()).isEqualTo("abc");
     }
 
     @Test
-    public void testSetSessionUsernameAttributeNull() throws Exception {
+    public void testSetSessionUserIdAttributeNull() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "usernameattr");
+        pluginConfig.setProperty("sessionUserIdAttribute", "useridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(SetSessionUsernameAttributeNull.class);
+        container.executeAppUnderTest(SetSessionUserIdAttributeNull.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        // this is intentional, setting username attribute to null shouldn't clear out username for
-        // that particular request (since the request was in fact, originally, for that username)
-        assertThat(trace.getUsername()).isEqualTo("something");
+        // this is intentional, setting user id attribute to null shouldn't clear out user id for
+        // that particular request (since the request was in fact, originally, for that user id)
+        assertThat(trace.getUserId()).isEqualTo("something");
     }
 
     @Test
-    public void testHasNestedSessionUsernameAttributePath() throws Exception {
+    public void testHasNestedSessionUserIdAttributePath() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.two");
+        pluginConfig.setProperty("sessionUserIdAttribute", "useridone.two");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
+        container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getUsername()).isEqualTo("xyz");
+        assertThat(trace.getUserId()).isEqualTo("xyz");
     }
 
     @Test
-    public void testSetNestedSessionUsernameAttributePath() throws Exception {
+    public void testSetNestedSessionUserIdAttributePath() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.two");
+        pluginConfig.setProperty("sessionUserIdAttribute", "useridone.two");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(SetNestedSessionUsernameAttribute.class);
+        container.executeAppUnderTest(SetNestedSessionUserIdAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getUsername()).isEqualTo("xyz");
+        assertThat(trace.getUserId()).isEqualTo("xyz");
     }
 
     @Test
-    public void testHasMissingSessionUsernameAttribute() throws Exception {
+    public void testHasMissingSessionUserIdAttribute() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "missingusernameattr");
+        pluginConfig.setProperty("sessionUserIdAttribute", "missinguseridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(HasSessionUsernameAttribute.class);
+        container.executeAppUnderTest(HasSessionUserIdAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getUsername()).isNull();
+        assertThat(trace.getUserId()).isNull();
     }
 
     @Test
-    public void testHasMissingNestedSessionUsernameAttributePath() throws Exception {
+    public void testHasMissingNestedSessionUserIdAttributePath() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionUsernameAttribute", "usernameone.missingtwo");
+        pluginConfig.setProperty("sessionUserIdAttribute", "useridone.missingtwo");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        container.executeAppUnderTest(HasNestedSessionUsernameAttribute.class);
+        container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getUsername()).isNull();
+        assertThat(trace.getUserId()).isNull();
     }
 
     @Test
@@ -563,46 +563,46 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class HasSessionUsernameAttribute extends TestServlet {
+    public static class HasSessionUserIdAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("usernameattr", "abc");
+            request.getSession().setAttribute("useridattr", "abc");
         }
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionUsernameAttribute extends TestServlet {
+    public static class SetSessionUserIdAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("usernameattr", "abc");
+            request.getSession().setAttribute("useridattr", "abc");
         }
     }
 
     @SuppressWarnings("serial")
-    public static class SetSessionUsernameAttributeNull extends TestServlet {
+    public static class SetSessionUserIdAttributeNull extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("usernameattr", "something");
+            request.getSession().setAttribute("useridattr", "something");
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("usernameattr", null);
+            request.getSession().setAttribute("useridattr", null);
         }
     }
 
     @SuppressWarnings("serial")
-    public static class HasNestedSessionUsernameAttribute extends TestServlet {
+    public static class HasNestedSessionUserIdAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("usernameone", new NestedTwo("xyz"));
+            request.getSession().setAttribute("useridone", new NestedTwo("xyz"));
         }
     }
 
     @SuppressWarnings("serial")
-    public static class SetNestedSessionUsernameAttribute extends TestServlet {
+    public static class SetNestedSessionUserIdAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("usernameone", new NestedTwo("xyz"));
+            request.getSession().setAttribute("useridone", new NestedTwo("xyz"));
         }
     }
 

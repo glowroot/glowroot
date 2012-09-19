@@ -76,7 +76,7 @@ public class Trace {
     private volatile Map<String, String> attributes;
 
     @Nullable
-    private volatile String username;
+    private volatile String userId;
 
     // this is mostly updated and rarely read, so it seems like synchronized ArrayList is the best
     // collection
@@ -174,8 +174,8 @@ public class Trace {
     }
 
     @Nullable
-    public String getUsername() {
-        return username;
+    public String getUserId() {
+        return userId;
     }
 
     public boolean isError() {
@@ -246,8 +246,8 @@ public class Trace {
         return stuck.getAndSet(true);
     }
 
-    public void setUsername(@Nullable String username) {
-        this.username = username;
+    public void setUserId(@Nullable String userId) {
+        this.userId = userId;
     }
 
     public void setAttribute(String name, @Nullable String value) {

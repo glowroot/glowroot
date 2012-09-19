@@ -42,7 +42,7 @@ import com.google.common.collect.ImmutableMap;
 @Aspect
 public class NestableCallAspect {
 
-    private static final ImmutableList<String> USERNAMES = ImmutableList.of("able", "baker",
+    private static final ImmutableList<String> USER_IDS = ImmutableList.of("able", "baker",
             "charlie");
 
     private static final AtomicInteger counter = new AtomicInteger();
@@ -62,11 +62,11 @@ public class NestableCallAspect {
         @OnBefore
         public static Span onBefore() {
             Span span = pluginServices.startTrace(getRootMessageSupplier(), metric);
-            int index = counter.getAndIncrement() % (USERNAMES.size() + 1);
-            if (index < USERNAMES.size()) {
-                pluginServices.setUsername(USERNAMES.get(index));
+            int index = counter.getAndIncrement() % (USER_IDS.size() + 1);
+            if (index < USER_IDS.size()) {
+                pluginServices.setUserId(USER_IDS.get(index));
             } else {
-                pluginServices.setUsername(null);
+                pluginServices.setUserId(null);
             }
             return span;
         }
