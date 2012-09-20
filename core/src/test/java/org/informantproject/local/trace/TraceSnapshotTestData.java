@@ -35,6 +35,7 @@ class TraceSnapshotTestData {
                 .stuck(false)
                 .duration(TimeUnit.MILLISECONDS.toNanos(10))
                 .completed(true)
+                .background(false)
                 .description("test description")
                 .userId("j")
                 .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"

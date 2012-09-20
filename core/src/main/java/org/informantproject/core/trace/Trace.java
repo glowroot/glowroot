@@ -68,6 +68,8 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
+    private volatile boolean background;
+
     // attribute name ordering is maintained for consistent display (assumption is order of entry is
     // order of importance)
     //
@@ -155,12 +157,16 @@ public class Trace {
         return rootSpan.getDuration();
     }
 
+    public boolean isStuck() {
+        return stuck.get();
+    }
+
     public boolean isCompleted() {
         return rootSpan.isCompleted();
     }
 
-    public boolean isStuck() {
-        return stuck.get();
+    public boolean isBackground() {
+        return background;
     }
 
     public Map<String, String> getAttributes() {
@@ -244,6 +250,10 @@ public class Trace {
     // returns previous value
     boolean setStuck() {
         return stuck.getAndSet(true);
+    }
+
+    public void setBackground(boolean background) {
+        this.background = background;
     }
 
     public void setUserId(@Nullable String userId) {

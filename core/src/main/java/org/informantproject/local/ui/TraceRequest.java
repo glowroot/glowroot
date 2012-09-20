@@ -30,11 +30,13 @@ class TraceRequest {
     private double low; // milliseconds, with nanosecond precision
     private double high; // milliseconds, with nanosecond precision
     @Nullable
+    private Boolean background;
+    private boolean errorOnly;
+    private boolean fineOnly;
+    @Nullable
     private String userIdComparator;
     @Nullable
     private String userId;
-    private boolean error;
-    private boolean fine;
     @Nullable
     private String extraIds;
 
@@ -71,6 +73,31 @@ class TraceRequest {
     }
 
     @Nullable
+    public Boolean isBackground() {
+        return background;
+    }
+
+    public void setBackground(@Nullable Boolean background) {
+        this.background = background;
+    }
+
+    public boolean isErrorOnly() {
+        return errorOnly;
+    }
+
+    public void setErrorOnly(boolean errorOnly) {
+        this.errorOnly = errorOnly;
+    }
+
+    public boolean isFineOnly() {
+        return fineOnly;
+    }
+
+    public void setFineOnly(boolean fineOnly) {
+        this.fineOnly = fineOnly;
+    }
+
+    @Nullable
     public String getUserIdComparator() {
         return userIdComparator;
     }
@@ -86,22 +113,6 @@ class TraceRequest {
 
     public void setUserId(@Nullable String userId) {
         this.userId = userId;
-    }
-
-    public boolean isError() {
-        return error;
-    }
-
-    public void setError(boolean error) {
-        this.error = error;
-    }
-
-    public boolean isFine() {
-        return fine;
-    }
-
-    public void setFine(boolean fine) {
-        this.fine = fine;
     }
 
     @Nullable

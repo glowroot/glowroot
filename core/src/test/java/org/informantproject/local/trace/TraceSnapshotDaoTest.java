@@ -69,7 +69,7 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0, 0,
-                Long.MAX_VALUE, null, null, false, false);
+                Long.MAX_VALUE, false, false, false, null, null);
         TraceSnapshot snapshot2 = snapshotDao.readSnapshot(summaries.get(0).getId());
         // then
         assertThat(snapshot2.getStartAt()).isEqualTo(snapshot.getStartAt());
@@ -89,7 +89,7 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
-                snapshot.getDuration(), snapshot.getDuration(), null, null, false, false);
+                snapshot.getDuration(), snapshot.getDuration(), false, false, false, null, null);
         // then
         assertThat(summaries).hasSize(1);
     }
@@ -101,7 +101,8 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
-                snapshot.getDuration() + 1, snapshot.getDuration() + 2, null, null, false, false);
+                snapshot.getDuration() + 1, snapshot.getDuration() + 2, false, false, false, null,
+                null);
         // then
         assertThat(summaries).isEmpty();
     }
@@ -113,7 +114,8 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
-                snapshot.getDuration() - 2, snapshot.getDuration() - 1, null, null, false, false);
+                snapshot.getDuration() - 2, snapshot.getDuration() - 1, false, false, false, null,
+                null);
         // then
         assertThat(summaries).isEmpty();
     }

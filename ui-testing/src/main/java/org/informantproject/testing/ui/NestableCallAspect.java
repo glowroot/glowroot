@@ -61,8 +61,14 @@ public class NestableCallAspect {
         }
         @OnBefore
         public static Span onBefore() {
-            Span span = pluginServices.startTrace(getRootMessageSupplier(), metric);
-            int index = counter.getAndIncrement() % (USER_IDS.size() + 1);
+            int count = counter.getAndIncrement();
+            Span span;
+            if (count % 2 == 0) {
+                span = pluginServices.startTrace(getRootMessageSupplier(), metric);
+            } else {
+                span = pluginServices.startBackgroundTrace(getRootMessageSupplier(), metric);
+            }
+            int index = count % (USER_IDS.size() + 1);
             if (index < USER_IDS.size()) {
                 pluginServices.setUserId(USER_IDS.get(index));
             } else {

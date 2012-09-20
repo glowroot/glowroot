@@ -81,6 +81,11 @@ public abstract class PluginServices {
     public abstract Span startTrace(MessageSupplier messageSupplier, Metric metric,
             @Nullable String userId);
 
+    // if there is no trace already bound to the current thread, a new background trace is created
+    // and bound.
+    // if there is already a trace bound to the current thread, this method delegates to startSpan()
+    public abstract Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric);
+
     public abstract Span startSpan(MessageSupplier messageSupplier, Metric metric);
 
     public abstract Timer startTimer(Metric metric);
@@ -170,6 +175,10 @@ public abstract class PluginServices {
         @Override
         public Span startTrace(MessageSupplier messageSupplier, Metric metric,
                 @Nullable String userId) {
+            return NopSpan.INSTANCE;
+        }
+        @Override
+        public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
             return NopSpan.INSTANCE;
         }
         @Override

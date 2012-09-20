@@ -108,8 +108,9 @@ class TracePointJsonService implements JsonService {
             // capture active traces first to make sure that none are missed in between reading
             // stored traces and then capturing active traces (possible duplicates are removed
             // below)
-            activeTraces = getActiveTraces(low, high, userIdComparator, request.getUserId(),
-                    request.isError(), request.isFine());
+            activeTraces = getActiveTraces(low, high, request.isBackground(),
+                    request.isErrorOnly(),
+                    request.isFineOnly(), userIdComparator, request.getUserId());
             // take capture timings after the capture to make sure there no traces captured that
             // start after the recorded capture time (resulting in negative duration)
             capturedAt = clock.currentTimeMillis();
@@ -119,8 +120,8 @@ class TracePointJsonService implements JsonService {
             request.setTo(requestAt);
         }
         List<TraceSnapshotSummary> summaries = traceSnapshotDao.readSummaries(
-                request.getFrom(), request.getTo(), low, high, userIdComparator,
-                request.getUserId(), request.isError(), request.isFine());
+                request.getFrom(), request.getTo(), low, high, request.isBackground(),
+                request.isErrorOnly(), request.isFineOnly(), userIdComparator, request.getUserId());
         // remove duplicates between active and stored traces
         for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
             Trace activeTrace = i.next();
@@ -141,18 +142,19 @@ class TracePointJsonService implements JsonService {
         return writeResponse(summaries, activeTraces, capturedAt, captureTick);
     }
 
-    private List<Trace> getActiveTraces(long low, long high,
-            @Nullable StringComparator userIdComparator, @Nullable String userId, boolean error,
-            boolean fine) {
+    private List<Trace> getActiveTraces(long low, long high, @Nullable Boolean background,
+            boolean errorOnly, boolean fineOnly, @Nullable StringComparator userIdComparator,
+            @Nullable String userId) {
 
         List<Trace> activeTraces = Lists.newArrayList();
         for (Trace trace : traceRegistry.getTraces()) {
             long duration = trace.getDuration();
             if (traceSnapshotService.shouldPersist(trace)
                     && matchesDuration(duration, low, high)
-                    && matchesUserId(trace, userIdComparator, userId)
-                    && matchesError(trace, error)
-                    && matchesFine(trace, fine)) {
+                    && matchesBackground(trace, background)
+                    && matchesErrorOnly(trace, errorOnly)
+                    && matchesFineOnly(trace, fineOnly)
+                    && matchesUserId(trace, userIdComparator, userId)) {
                 activeTraces.add(trace);
             } else {
                 // the traces are ordered by start time so it's safe to break now
@@ -164,6 +166,18 @@ class TracePointJsonService implements JsonService {
 
     private boolean matchesDuration(long duration, long low, long high) {
         return duration >= low && duration <= high;
+    }
+
+    private boolean matchesBackground(Trace trace, @Nullable Boolean background) {
+        return background == null || background == trace.isBackground();
+    }
+
+    private boolean matchesErrorOnly(Trace trace, boolean errorOnly) {
+        return !errorOnly || trace.isError();
+    }
+
+    private boolean matchesFineOnly(Trace trace, boolean fineOnly) {
+        return !fineOnly || trace.isFine();
     }
 
     private boolean matchesUserId(Trace trace, @Nullable StringComparator userIdComparator,
@@ -187,14 +201,6 @@ class TracePointJsonService implements JsonService {
             logger.error("unexpected user id comparator '{}'", userIdComparator);
             return false;
         }
-    }
-
-    private boolean matchesError(Trace trace, boolean error) {
-        return !error || trace.isError();
-    }
-
-    private boolean matchesFine(Trace trace, boolean fine) {
-        return !fine || trace.isFine();
     }
 
     private static String writeResponse(List<TraceSnapshotSummary> summaries,

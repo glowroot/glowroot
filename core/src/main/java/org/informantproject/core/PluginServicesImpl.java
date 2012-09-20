@@ -156,12 +156,22 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
-        return startTrace(messageSupplier, metric, null);
+        return startTrace(messageSupplier, metric, null, false);
     }
 
     @Override
     public Span startTrace(MessageSupplier messageSupplier, Metric metric,
             @Nullable String userId) {
+        return startTrace(messageSupplier, metric, userId, false);
+    }
+
+    @Override
+    public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
+        return startTrace(messageSupplier, metric, null, true);
+    }
+
+    private Span startTrace(MessageSupplier messageSupplier, Metric metric,
+            @Nullable String userId, boolean background) {
 
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
@@ -175,6 +185,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTrace == null) {
             currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker,
                     weavingMetric);
+            currentTrace.setBackground(background);
             if (!maybeScheduleFineProfilingUsingUserId(currentTrace, userId)) {
                 maybeScheduleFineProfilingUsingPercentage(currentTrace);
             }

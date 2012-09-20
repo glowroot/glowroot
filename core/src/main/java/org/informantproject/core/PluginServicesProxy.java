@@ -129,6 +129,16 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
+    public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
+        if (pluginServices == null) {
+            throw new IllegalStateException("Informant hasn't finished initializing yet."
+                    + "  Plugins should check isEnabled() first.");
+        } else {
+            return pluginServices.startBackgroundTrace(messageSupplier, metric);
+        }
+    }
+
+    @Override
     public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."

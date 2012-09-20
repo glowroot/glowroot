@@ -101,6 +101,7 @@ public class TraceSnapshotService {
             builder.duration(captureTick - trace.getStartTick());
             builder.completed(false);
         }
+        builder.background(trace.isBackground());
         Message message = trace.getRootSpan().getMessageSupplier().get();
         builder.description(message.getText());
         ErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
@@ -187,6 +188,8 @@ public class TraceSnapshotService {
         sb.append(snapshot.isStuck());
         sb.append(",\"completed\":");
         sb.append(snapshot.isCompleted());
+        sb.append(",\"background\":");
+        sb.append(snapshot.isBackground());
         sb.append(",\"description\":");
         sb.append(escapeJson(snapshot.getDescription()));
         if (snapshot.getAttributes() != null) {

@@ -218,19 +218,21 @@
       if (durationHigh) {
         queryString += '&high=' + durationHigh
       }
+      var background = $('#backgroundFilter').val()
+      if (background) {
+        queryString += '&background=' + background
+      }
+      if ($('#errorOnlyFilter').is(':checked')) {
+        queryString += '&errorOnly=true'
+      }
+      if ($('#fineOnlyFilter').is(':checked')) {
+        queryString += '&fineOnly=true'
+      }
       var userIdComparator = $('#userIdComparator').val()
       var userId = $('#userIdFilter').val()
       if (userId) {
         queryString += '&userIdComparator=' + userIdComparator
         queryString += '&userId=' + userId
-      }
-      var error = $('#errorFilter').is(':checked')
-      if (error) {
-        queryString += '&error=true'
-      }
-      var fine = $('#fineFilter').is(':checked')
-      if (fine) {
-        queryString += '&fine=true'
       }
       return queryString
     }
@@ -439,7 +441,7 @@
     <li class="active"><a href="#filterTab" data-toggle="tab">Filter</a></li>
     <li><a href="#detailTab" data-toggle="tab">Detail</a></li>
   </ul>
-  <div class="tab-content" id="tabContent">
+  <div class="tab-content" id="tabContent" style="padding-top: 10px">
     <div class="tab-pane fade in active" id="filterTab">
       <form class="form-horizontal">
         <fieldset>
@@ -476,6 +478,16 @@
             </div>
           </div>
           <div class="control-group">
+            <label class="control-label" for="backgroundFilter">Background traces</label>
+            <div class="controls">
+              <select class="input-xlarge0" id="backgroundFilter">
+                <option value="" selected="selected"></option>
+                <option value="false">Exclude background traces</option>
+                <option value="true">Include only background traces</option>
+              </select>
+            </div>
+          </div>
+          <div class="control-group">
             <label class="control-label" for="userId">User ID</label>
             <div class="controls">
               <select class="input-medium0" id="userIdComparator">
@@ -487,15 +499,21 @@
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label" for="errorFilter">Error</label>
             <div class="controls">
-              <input type="checkbox" class="input-small" id="errorFilter">
+              <label class="checkbox">
+                <input type="checkbox" class="input-small" id="errorOnlyFilter" value="true">
+                <span class="help-inline">Display only errors</span>
+              </label>
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label" for="fineFilter">Fine-grained profile</label>
             <div class="controls">
-              <input type="checkbox" class="input-small" id="fineFilter">
+              <label class="checkbox">
+                <input type="checkbox" class="input-small" id="fineOnlyFilter" value="true">
+                <span class="help-inline">
+                  Display only traces with fine-grained profiling data
+                </span>
+              </label>
             </div>
           </div>
           <div class="control-group">

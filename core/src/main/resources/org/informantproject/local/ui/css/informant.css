@@ -94,7 +94,10 @@ a, a:hover {
   font-weight: bold;
 }
 .input-medium0 {
-  width:120px;
+  width:135px;
+}
+.input-xlarge0 {
+  width:270px;
 }
 /* override properties on qtip tooltip from query.qtip.min.css */
 .ui-tooltip, .qtip {

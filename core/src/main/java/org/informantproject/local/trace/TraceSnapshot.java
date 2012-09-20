@@ -37,6 +37,7 @@ public class TraceSnapshot {
     private final long duration; // nanoseconds
     private final boolean stuck;
     private final boolean completed;
+    private final boolean background;
     private final String description;
     @Nullable
     private final String attributes; // json data
@@ -60,8 +61,8 @@ public class TraceSnapshot {
     private final ByteStream fineMergedStackTree; // json data
 
     private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
-            String description, @Nullable String attributes, @Nullable String userId,
-            @Nullable String errorText, @Nullable String errorDetail,
+            boolean background, String description, @Nullable String attributes,
+            @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String errorStackTrace, @Nullable String metrics, @Nullable ByteStream spans,
             @Nullable ByteStream coarseMergedStackTree, @Nullable ByteStream fineMergedStackTree) {
 
@@ -70,6 +71,7 @@ public class TraceSnapshot {
         this.duration = duration;
         this.stuck = stuck;
         this.completed = completed;
+        this.background = background;
         this.description = description;
         this.attributes = attributes;
         this.userId = userId;
@@ -100,6 +102,10 @@ public class TraceSnapshot {
 
     boolean isCompleted() {
         return completed;
+    }
+
+    boolean isBackground() {
+        return background;
     }
 
     String getDescription() {
@@ -181,6 +187,7 @@ public class TraceSnapshot {
         private long duration;
         private boolean stuck;
         private boolean completed;
+        private boolean background;
         @Nullable
         private String description;
         @Nullable
@@ -226,6 +233,11 @@ public class TraceSnapshot {
 
         Builder completed(boolean completed) {
             this.completed = completed;
+            return this;
+        }
+
+        Builder background(boolean background) {
+            this.background = background;
             return this;
         }
 
@@ -280,9 +292,9 @@ public class TraceSnapshot {
         }
 
         TraceSnapshot build() {
-            return new TraceSnapshot(id, startAt, duration, stuck, completed, description,
-                    attributes, userId, errorText, errorDetail, errorStackTrace, metrics, spans,
-                    coarseMergedStackTree, fineMergedStackTree);
+            return new TraceSnapshot(id, startAt, duration, stuck, completed, background,
+                    description, attributes, userId, errorText, errorDetail, errorStackTrace,
+                    metrics, spans, coarseMergedStackTree, fineMergedStackTree);
         }
     }
 }
