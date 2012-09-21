@@ -31,7 +31,7 @@
     configureAjaxError()
     var postingClearData = false
     $('#clearButton').click(function() {
-      // handling crazy user clicking on the button
+      // handle crazy user clicking on the button
       if (postingClearData) return
       postingClearData = true
       var keepMillis = $('input:radio[name=keepMillis]:checked').val()

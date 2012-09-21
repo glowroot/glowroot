@@ -160,10 +160,15 @@
       var coreConfig = config.coreConfig
       setUpOnOffButton('', coreConfig.enabled, 'config/core')
       $('#persistenceThresholdMillis').val(coreConfig.persistenceThresholdMillis)
+      addIntegerValidator('#persistenceThresholdMillis')
       $('#stuckThresholdSeconds').val(coreConfig.stuckThresholdSeconds)
+      addIntegerValidator('#stuckThresholdSeconds')
       $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
+      addIntegerValidator('#spanStackTraceThresholdMillis')
       $('#maxEntries').val(coreConfig.maxEntries)
+      addIntegerValidator('#maxEntries')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
+      addIntegerValidator('#rollingSizeMb')
       $('#offscreenMeasure').text(config.dataDirFolder)
       $('#dataDirFolder').text(config.dataDirFolder)
       $('#dataDirFolder').css("width", ($('#offscreenMeasure').width() + 50) + "px")
@@ -171,23 +176,31 @@
       setUpOnOffButton('ProfilingCoarse', coarseProfilingConfig.enabled,
           'config/profiling/coarse')
       $('#coarseInitialDelayMillis').val(coarseProfilingConfig.initialDelayMillis)
+      addIntegerValidator('#coarseInitialDelayMillis')
       $('#coarseIntervalMillis').val(coarseProfilingConfig.intervalMillis)
+      addIntegerValidator('#coarseIntervalMillis')
       $('#coarseTotalSeconds').val(coarseProfilingConfig.totalSeconds)
+      addIntegerValidator('#coarseTotalSeconds')
       var fineProfilingConfig = config.fineProfilingConfig
       setUpOnOffButton('ProfilingFine', fineProfilingConfig.enabled, 'config/profiling/fine')
       $('#fineTracePercentage').val(fineProfilingConfig.tracePercentage)
+      addPercentageValidator('#fineTracePercentage')
       $('#fineIntervalMillis').val(fineProfilingConfig.intervalMillis)
+      addIntegerValidator('#fineIntervalMillis')
       $('#fineTotalSeconds').val(fineProfilingConfig.totalSeconds)
+      addIntegerValidator('#fineTotalSeconds')
       if (fineProfilingConfig.persistenceThresholdMillis == -1) {
         $('#finePersistenceThresholdMillis').attr('readonly','readonly')
       } else {
         $('#finePersistenceThresholdOverride').attr('checked', true)
         $('#finePersistenceThresholdMillis').val(fineProfilingConfig.persistenceThresholdMillis)
       }
+      addIntegerOrEmptyValidator('#finePersistenceThresholdMillis')
       var userTracingConfig = config.userTracingConfig
       setUpOnOffButton('UserTracing', userTracingConfig.enabled, 'config/tracing/user')
       $('#userUserId').val(userTracingConfig.userId)
       $('#userPersistenceThresholdMillis').val(userTracingConfig.persistenceThresholdMillis)
+      addIntegerValidator('#userPersistenceThresholdMillis')
       $('#userFineProfiling').attr('checked', userTracingConfig.fineProfiling)
       plugins = config.pluginDescriptors
       for (var i = 0; i < plugins.length; i++) {
@@ -208,11 +221,14 @@
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
           var propertyDescriptors = plugin.propertyDescriptors[j]
           var value = pluginConfig[propertyDescriptors.name]
+          var selector = '#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)
           if (propertyDescriptors.type == 'boolean') {
-            $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).attr('checked',
-                value)
+            $(selector).attr('checked', value)
+          } else if (propertyDescriptors.type == 'double') {
+            addDoubleValidator(selector)
+            $(selector).val(value)
           } else {
-            $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).val(value)
+            $(selector).val(value)
           }
         }
       }
@@ -221,15 +237,27 @@
   // updateCoreConfig can take a while if resizing large rolling database
   var postingUpdateCore = false
   function updateCoreConfig() {
-    // handling crazy user clicking on the button
+    // handle crazy user clicking on the button because this can take a while if resizing large
+    // rolling database
     if (postingUpdateCore) return
+    var persistenceThresholdMillis = $('#persistenceThresholdMillis').val()
+    var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
+    var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
+    var maxEntries = $('#maxEntries').val()
+    var rollingSizeMb = $('#rollingSizeMb').val()
+    // handle validation
+    if (!isInteger(persistenceThresholdMillis) || !isInteger(stuckThresholdSeconds)
+        || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxEntries)
+        || !isInteger(rollingSizeMb)) {
+      return
+    }
     postingUpdateCore = true
     var config = {
-      'persistenceThresholdMillis': $('#persistenceThresholdMillis').val(),
-      'stuckThresholdSeconds': $('#stuckThresholdSeconds').val(),
-      'spanStackTraceThresholdMillis': $('#spanStackTraceThresholdMillis').val(),
-      'maxEntries': $('#maxEntries').val(),
-      'rollingSizeMb': $('#rollingSizeMb').val()
+      'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis),
+      'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
+      'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
+      'maxEntries': parseInteger(maxEntries),
+      'rollingSizeMb': parseInteger(rollingSizeMb)
     }
     $.post('config/core', JSON.stringify(config), function() {
       postingUpdateCore = false
@@ -241,34 +269,54 @@
     showSpinner('#saveCoreButtonSpinner')
   }
   function updateCoarseProfilingConfig() {
+    var initialDelayMillis = $('#coarseInitialDelayMillis').val()
+    var intervalMillis = $('#coarseIntervalMillis').val()
+    var totalSeconds = $('#coarseTotalSeconds').val()
+    // handle validation
+    if (!isInteger(initialDelayMillis) || !isInteger(intervalMillis) || !isInteger(totalSeconds)) {
+      return
+    }
     var config = {
-      'initialDelayMillis': $('#coarseInitialDelayMillis').val(),
-      'intervalMillis': $('#coarseIntervalMillis').val(),
-      'totalSeconds': $('#coarseTotalSeconds').val()
+      'initialDelayMillis': parseInteger(initialDelayMillis),
+      'intervalMillis': parseInteger(intervalMillis),
+      'totalSeconds': parseInteger(totalSeconds)
     }
     $.post('config/profiling/coarse', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#saveCoarseProfilingComplete')
     })
   }
   function updateFineProfilingConfig() {
+    var tracePercentage = $('#fineTracePercentage').val()
+    var intervalMillis = $('#fineIntervalMillis').val()
+    var totalSeconds = $('#fineTotalSeconds').val()
     var persistenceThresholdMillis = $('#finePersistenceThresholdMillis').val()
-    if (!persistenceThresholdMillis) {
-      persistenceThresholdMillis = -1
+    // handle validation
+    if (!isPercentage(tracePercentage) || !isInteger(intervalMillis) || !isInteger(totalSeconds)
+        || (persistenceThresholdMillis != '' && !isInteger(persistenceThresholdMillis))) {
+      return
+    }
+    if (persistenceThresholdMillis == '') {
+      persistenceThresholdMillis = '-1'
     }
     var config = {
-      'tracePercentage': $('#fineTracePercentage').val(),
-      'intervalMillis': $('#fineIntervalMillis').val(),
-      'totalSeconds': $('#fineTotalSeconds').val(),
-      'persistenceThresholdMillis': persistenceThresholdMillis
+      'tracePercentage': parsePercentage(tracePercentage),
+      'intervalMillis': parseInteger(intervalMillis),
+      'totalSeconds': parseInteger(totalSeconds),
+      'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis)
     }
     $.post('config/profiling/fine', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#saveFineProfilingComplete')
     })
   }
   function updateUserTracingConfig() {
+    var persistenceThresholdMillis = $('#userPersistenceThresholdMillis').val()
+    // handle validation
+    if (!isInteger(persistenceThresholdMillis)) {
+      return
+    }
     var config = {
       'userId': $('#userUserId').val(),
-      'persistenceThresholdMillis': $('#userPersistenceThresholdMillis').val(),
+      'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis),
       'fineProfiling': $('#userFineProfiling').is(':checked')
     }
     $.post('config/tracing/user', JSON.stringify(config), function() {
@@ -278,21 +326,29 @@
   function updatePluginConfig(pluginId) {
     var plugin = pluginForId(pluginId)
     var config = {}
+    var validationError = false
     for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
       var propertyDescriptors = plugin.propertyDescriptors[j]
       if (!propertyDescriptors.hidden) {
         var value
+        var selector = '#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)
         if (propertyDescriptors.type == 'boolean') {
-          value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).is(
-              ':checked')
+          value = $(selector).is(':checked')
         } else if (propertyDescriptors.type == 'double') {
-          value = parseFloat($('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name))
-              .val())
+          if (isDouble($(selector).val())) {
+            value = parseDouble($(selector).val())
+          } else {
+            validationError = true
+          }
         } else {
-          value = $('#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)).val()
+          value = $(selector).val()
         }
         config[propertyDescriptors.name] = value
       }
+    }
+    // check for validation error
+    if (validationError) {
+      return
     }
     $.post('config/plugin/' + pluginId, JSON.stringify(config),
         function() {
@@ -314,6 +370,7 @@
         $('#finePersistenceThresholdMillis').removeAttr('readonly')
       } else {
         $('#finePersistenceThresholdMillis').val('')
+        $('#finePersistenceThresholdMillis').closest('.control-group').removeClass('error')
         $('#finePersistenceThresholdMillis').attr('readonly','readonly')
       }
     })
@@ -347,6 +404,7 @@
           <div class="input-append">
             <input type="text" id="persistenceThresholdMillis" style="width: 6em">
             <span class="add-on">milliseconds</span>
+            <span class="help-inline">Invalid input</span>
           </div>
           <span class="help-block">
             Any trace that exceeds this amount of time will be viewable in the trace explorer

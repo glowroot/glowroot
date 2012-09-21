@@ -15,7 +15,7 @@
  */
 function showAndFadeSuccessMessage(selector) {
   $(selector).each(function() {
-    // handling crazy user clicking on the button
+    // handle crazy user clicking on the button
     if ($(this).data('timeout')) {
       clearTimeout($(this).data('timeout'))
     }
@@ -82,4 +82,70 @@ function configureAjaxError() {
       $('#ajaxErrorModal').modal('show')
     }
   })
+}
+function addIntegerValidator(selector) {
+  $(selector).keyup(function() {
+    if (isInteger($(this).val())) {
+      $(selector).closest('.control-group').removeClass('error')
+    } else {
+      $(selector).closest('.control-group').addClass('error')
+    }
+  })
+}
+function addIntegerOrEmptyValidator(selector) {
+  $(selector).keyup(function() {
+    if ($(this).val() == '' || isInteger($(this).val())) {
+      $(selector).closest('.control-group').removeClass('error')
+    } else {
+      $(selector).closest('.control-group').addClass('error')
+    }
+  })
+}
+function isInteger(str) {
+  // tolerant of commas and leading/trailing spaces
+  return /^(0|[1-9][0-9,]*)$/.test($.trim(str))
+}
+function parseInteger(str) {
+  // tolerant of commas and leading/trailing spaces
+  return parseInt($.trim(str).replace(/,/g, ''))
+}
+function addDoubleValidator(selector) {
+  $(selector).keyup(function() {
+    if (isDouble($(this).val())) {
+      $(selector).closest('.control-group').removeClass('error')
+    } else {
+      $(selector).closest('.control-group').addClass('error')
+    }
+  })
+}
+function isDouble(str) {
+  // tolerant of leading/trailing spaces
+  // tolerant of missing whole (.2) and missing decimal (2.)
+  return /^-?(0|[1-9][0-9,]*)?\.?[0-9]*$/.test($.trim(str))
+}
+function parseDouble(str) {
+  // tolerant of commas and leading/trailing spaces
+  return parseFloat($.trim(str).replace(/,/g, ''))
+}
+function addPercentageValidator(selector) {
+  $(selector).keyup(function() {
+    if (isPercentage($(this).val())) {
+      $(selector).closest('.control-group').removeClass('error')
+    } else {
+      $(selector).closest('.control-group').addClass('error')
+    }
+  })
+}
+function isPercentage(str) {
+  // tolerant of leading/trailing spaces
+  // tolerant of missing whole (.2) and missing decimal (2.)
+  if (/^(0|[1-9][0-9]*)?\.?[0-9]*$/.test($.trim(str))) {
+    return parseFloat($.trim(str)) <= 100
+  } else {
+    return false
+  }
+}
+function parsePercentage(str) {
+  // tolerant of leading/trailing spaces
+  return $.trim(str)
 }

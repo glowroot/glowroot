@@ -240,7 +240,7 @@
     var loadDetailId
     function getTracePoints(from, to, queryString, initialLoad) {
       queryString = 'from=' + from + '&to=' + to + queryString
-      // handling crazy user clicking on the button
+      // handle crazy user clicking on the button
       if (!initialLoad && queryString == refreshQueryString) return
       if (initialLoad) {
         showSpinner('#initialLoadSpinner')
@@ -345,7 +345,7 @@
         })
         $('#placeholder').qtip('show')
         $('#showDetail').click(function() {
-          // handling crazy user clicking on the 'show detail' link
+          // handle crazy user clicking on the 'show detail' link
           if (id == loadDetailId) return
           if (!loadDetailId) {
             // if loadDetailId is defined, that means spinner is already showing
