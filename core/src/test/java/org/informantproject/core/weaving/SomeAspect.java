@@ -25,6 +25,7 @@ import org.informantproject.api.weaving.InjectTarget;
 import org.informantproject.api.weaving.InjectThrowable;
 import org.informantproject.api.weaving.InjectTraveler;
 import org.informantproject.api.weaving.IsEnabled;
+import org.informantproject.api.weaving.MethodModifier;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.OnAfter;
 import org.informantproject.api.weaving.OnBefore;
@@ -444,6 +445,10 @@ public class SomeAspect {
     @Pointcut(typeName = "org.informantproject.core.weaving.StaticMisc",
             methodName = "executeStatic")
     public static class StaticAdvice extends BasicAdvice {}
+
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1",
+            methodModifiers = MethodModifier.STATIC)
+    public static class NonMatchingStaticAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.informantproject.core.weaving.StaticMisc",
             methodName = "executeStatic")

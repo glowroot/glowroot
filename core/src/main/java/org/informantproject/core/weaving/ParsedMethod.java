@@ -32,23 +32,29 @@ import com.google.common.base.Objects;
 class ParsedMethod {
 
     private final String name;
-    private final Type[] args;
+    private final Type[] argTypes;
+    private final int modifiers;
 
-    static ParsedMethod from(String name, Type[] args) {
-        return new ParsedMethod(name, args);
+    static ParsedMethod from(String name, Type[] argTypes, int modifiers) {
+        return new ParsedMethod(name, argTypes, modifiers);
     }
 
-    private ParsedMethod(String name, Type[] args) {
+    private ParsedMethod(String name, Type[] args, int modifiers) {
         this.name = name;
-        this.args = args;
+        this.argTypes = args;
+        this.modifiers = modifiers;
     }
 
     String getName() {
         return name;
     }
 
-    Type[] getArgs() {
-        return args;
+    Type[] getArgTypes() {
+        return argTypes;
+    }
+
+    int getModifiers() {
+        return modifiers;
     }
 
     @Override
@@ -57,12 +63,13 @@ class ParsedMethod {
             return false;
         }
         ParsedMethod other = (ParsedMethod) o;
-        return Objects.equal(other.name, name) && Arrays.equals(other.args, args);
+        return Objects.equal(other.name, name)
+                && Arrays.equals(other.argTypes, argTypes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(name, args);
+        return Objects.hashCode(name, argTypes);
     }
 }
 

@@ -15,11 +15,13 @@
  */
 package org.informantproject.core.weaving;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import javax.annotation.concurrent.Immutable;
 
+import org.informantproject.api.weaving.MethodModifier;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -87,9 +89,12 @@ class AdviceMatcher {
     private boolean isMethodMatch(ParsedMethod parsedMethod) {
         if (!isMethodNameMatch(parsedMethod.getName())) {
             return false;
-        } else {
-            return isMethodArgsMatch(parsedMethod.getArgs());
+        } else if (!isMethodArgsMatch(parsedMethod.getArgTypes())) {
+            return false;
+        } else if (!isMethodModifiersMatch(parsedMethod.getModifiers())) {
+            return false;
         }
+        return true;
     }
 
     private boolean isMethodNameMatch(String name) {
@@ -128,6 +133,34 @@ class AdviceMatcher {
         }
         // need this final test since argumentTypes may still have unmatched elements
         return argumentTypes.length == pointcutMethodArgs.length;
+    }
+
+    private boolean isMethodModifiersMatch(int modifiers) {
+        for (MethodModifier methodModifier : advice.getPointcut().methodModifiers()) {
+            if (!isMethodModifierMatch(methodModifier, modifiers)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isMethodModifierMatch(MethodModifier methodModifier, int modifiers) {
+        switch (methodModifier) {
+        case PUBLIC:
+            return Modifier.isPublic(modifiers);
+        case PROTECTED:
+            return Modifier.isProtected(modifiers);
+        case PRIVATE:
+            return Modifier.isPrivate(modifiers);
+        case PACKAGE_PRIVATE:
+            return !Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)
+                    && !Modifier.isPrivate(modifiers);
+        case STATIC:
+            return Modifier.isStatic(modifiers);
+        case NOT_STATIC:
+            return !Modifier.isStatic(modifiers);
+        }
+        return false;
     }
 
     private boolean isMethodOverrideMatch(ParsedMethod parsedMethod) {

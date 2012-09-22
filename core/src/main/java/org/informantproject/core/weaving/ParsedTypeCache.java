@@ -213,11 +213,12 @@ class ParsedTypeCache {
     private ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
         ImmutableList.Builder<ParsedMethod> parsedMethods = ImmutableList.builder();
         for (Method method : type.getDeclaredMethods()) {
-            Type[] args = new Type[method.getParameterTypes().length];
-            for (int j = 0; j < args.length; j++) {
-                args[j] = Type.getType(method.getParameterTypes()[j]);
+            Type[] argTypes = new Type[method.getParameterTypes().length];
+            for (int j = 0; j < argTypes.length; j++) {
+                argTypes[j] = Type.getType(method.getParameterTypes()[j]);
             }
-            parsedMethods.add(ParsedMethod.from(method.getName(), args));
+            Type returnType = Type.getType(method.getReturnType());
+            parsedMethods.add(ParsedMethod.from(method.getName(), argTypes, method.getModifiers()));
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
         for (Class<?> iface : type.getInterfaces()) {
@@ -271,7 +272,7 @@ class ParsedTypeCache {
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, @Nullable String[] exceptions) {
 
-            methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc)));
+            methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc), access));
             return null;
         }
 

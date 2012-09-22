@@ -15,23 +15,11 @@
  */
 package org.informantproject.api.weaving;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Pointcut {
+public enum MethodModifier {
 
-    String typeName();
-    String methodName();
-    String[] methodArgs() default {};
-    MethodModifier[] methodModifiers() default {};
-    boolean captureNested() default true;
-    String metricName() default "";
+    PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC;
 }

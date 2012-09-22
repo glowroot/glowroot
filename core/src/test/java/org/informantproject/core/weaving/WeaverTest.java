@@ -41,6 +41,7 @@ import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice1;
 import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice2;
 import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice3;
 import org.informantproject.core.weaving.SomeAspect.MultipleMethodsAdvice;
+import org.informantproject.core.weaving.SomeAspect.NonMatchingStaticAdvice;
 import org.informantproject.core.weaving.SomeAspect.NotNestingAdvice;
 import org.informantproject.core.weaving.SomeAspect.PrimitiveAdvice;
 import org.informantproject.core.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
@@ -552,16 +553,16 @@ public class WeaverTest {
     @Test
     public void shouldHandlePointcutWithMultipleMethods() throws Exception {
         // given
-        BasicAdvice.resetThreadLocals();
+        MultipleMethodsAdvice.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MultipleMethodsAdvice.class);
         // when
         test.execute1();
         test.executeWithArgs("one", 2);
         // then
-        assertThat(BasicAdvice.onBeforeCount.get()).isEqualTo(2);
-        assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(2);
-        assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
-        assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(2);
+        assertThat(MultipleMethodsAdvice.onBeforeCount.get()).isEqualTo(2);
+        assertThat(MultipleMethodsAdvice.onReturnCount.get()).isEqualTo(2);
+        assertThat(MultipleMethodsAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(MultipleMethodsAdvice.onAfterCount.get()).isEqualTo(2);
     }
 
     @Test
@@ -573,6 +574,20 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(test.executeWithReturn()).isEqualTo("caught");
+    }
+
+    @Test
+    public void shouldPayAttentionToStaticKeyword() throws Exception {
+        // given
+        NonMatchingStaticAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, NonMatchingStaticAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(NonMatchingStaticAdvice.onBeforeCount.get()).isEqualTo(0);
+        assertThat(NonMatchingStaticAdvice.onReturnCount.get()).isEqualTo(0);
+        assertThat(NonMatchingStaticAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(NonMatchingStaticAdvice.onAfterCount.get()).isEqualTo(0);
     }
 
     @Test
