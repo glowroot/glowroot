@@ -124,6 +124,7 @@ public final class DaemonExecutors {
             Object result = method.invoke(executor, args);
             String methodName = method.getName();
             if (methodName.equals("shutdown") || methodName.equals("shutdownNow")) {
+                executor.getQueue().clear();
                 executor.setThreadFactory(Executors.defaultThreadFactory());
             }
             return result;

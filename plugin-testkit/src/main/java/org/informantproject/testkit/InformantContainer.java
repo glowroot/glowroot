@@ -17,16 +17,21 @@ package org.informantproject.testkit;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.Files;
 import org.informantproject.core.util.UnitTests;
 
 import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
  * {@link AppUnderTest}s are intended to be run serially within a given InformantContainer.
@@ -75,13 +80,12 @@ public class InformantContainer {
     }
 
     private InformantContainer(ExecutionAdapter executionAdapter,
-            Collection<Thread> preExistingThreads,
-            File dataDir) throws Exception {
+            Collection<Thread> preExistingThreads, File dataDir) throws Exception {
 
         this.preExistingThreads = preExistingThreads;
         this.executionAdapter = executionAdapter;
         this.dataDir = dataDir;
-        asyncHttpClient = new AsyncHttpClient();
+        asyncHttpClient = createAsyncHttpClient();
         informant = new Informant(executionAdapter.getPort(), asyncHttpClient);
     }
 
@@ -108,6 +112,27 @@ public class InformantContainer {
         }
     }
 
+    public void closeAndDeleteFiles() throws Exception {
+        close();
+        Files.delete(dataDir);
+    }
+
+    private AsyncHttpClient createAsyncHttpClient() {
+        ExecutorService executorService = DaemonExecutors
+                .newCachedThreadPool("InformantContainer-AsyncHttpClient");
+        ScheduledExecutorService scheduledExecutor = DaemonExecutors
+                .newSingleThreadScheduledExecutor("InformantContainer-AsyncHttpClient-Reaper");
+        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
+                .setMaxRequestRetry(0)
+                .setExecutorService(executorService)
+                .setScheduledExecutorService(scheduledExecutor);
+        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
+        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
+                executorService);
+        builder.setAsyncHttpClientProviderConfig(providerConfig);
+        return new AsyncHttpClient(builder.build());
+    }
+
     private void close() throws Exception {
         // asyncHttpClient is not part of the "app under test", so shut it down
         // first before checking for non-daemon threads
@@ -115,11 +140,6 @@ public class InformantContainer {
         UnitTests.preShutdownCheck(preExistingThreads);
         executionAdapter.closeImpl();
         UnitTests.postShutdownCheck(preExistingThreads);
-    }
-
-    public void closeAndDeleteFiles() throws Exception {
-        close();
-        Files.delete(dataDir);
     }
 
     private static boolean useExternalJvmAppContainer() {
