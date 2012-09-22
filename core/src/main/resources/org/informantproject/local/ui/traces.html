@@ -58,7 +58,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
     configureAjaxError()
-    var plot, snapshotPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
+    var plot, storedPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
     var options = {
       legend: { show: false },
       series: {
@@ -69,7 +69,7 @@
       yaxis: { ticks: 10, zoomRange : false },
       zoom: { interactive: true, amount : 1.5 },
     }
-    function plotResponseData(snapshotPoints, activePoints, from, to) {
+    function plotResponseData(storedPoints, activePoints, from, to) {
       var fromAsDate = new Date(from)
       fromAsDate.setHours(0,0,0,0)
       var zoomRangeFrom = fromAsDate.getTime()
@@ -81,7 +81,7 @@
       overrideOptions = {
         xaxis: { min : from, max : to, zoomRange : [ zoomRangeFrom, zoomRangeTo ] }
       }
-      plot = $.plot($('#placeholder'), [snapshotPoints, activePoints],
+      plot = $.plot($('#placeholder'), [storedPoints, activePoints],
           $.extend(true, {}, options, overrideOptions))
       $(window).resize(function(e){
         $.plot(placeholder, plot.getData(), plot.getOptions())
@@ -272,7 +272,7 @@
         } else {
           hideSpinner('#refreshButtonSpinner')
         }
-        snapshotPoints = response.snapshotPoints
+        storedPoints = response.storedPoints
         activePoints = response.activePoints
         if (response.limitExceeded) {
           $('#limit').text(limit)
@@ -284,13 +284,13 @@
         currentItem = null
         $('#detailTabContent').html('')
         // shift for timezone
-        for (var i = 0; i < snapshotPoints.length; i++) {
-          snapshotPoints[i][0] -= new Date(snapshotPoints[i][0]).getTimezoneOffset() * 60 * 1000
+        for (var i = 0; i < storedPoints.length; i++) {
+          storedPoints[i][0] -= new Date(storedPoints[i][0]).getTimezoneOffset() * 60 * 1000
         }
         for (var i = 0; i < activePoints.length; i++) {
           activePoints[i][0] -= new Date(activePoints[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        plotResponseData(snapshotPoints, activePoints, from, to)
+        plotResponseData(storedPoints, activePoints, from, to)
       })
     }
     function showTraceDetailTooltip(item) {
@@ -298,7 +298,7 @@
       var y = item.pageY
       var id
       if (item.seriesIndex == 0) {
-        id = snapshotPoints[item.dataIndex][2]
+        id = storedPoints[item.dataIndex][2]
       } else {
         id = activePoints[item.dataIndex][2]
       }

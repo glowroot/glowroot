@@ -78,7 +78,7 @@ class MiscJsonService implements JsonService {
     @JsonServiceMethod
     String getNumPendingTraceWrites() {
         logger.debug("handleNumPendingTraceWrites()");
-        return Integer.toString(traceSinkLocal.getQueueLength());
+        return Integer.toString(traceSinkLocal.getPendingCount());
     }
 
     @JsonServiceMethod

@@ -34,7 +34,7 @@ public class TraceSnapshotSummary {
     private final double duration; // nanoseconds
     private final boolean completed;
 
-    static TraceSnapshotSummary from(String id, long capturedAt, double duration,
+    public static TraceSnapshotSummary from(String id, long capturedAt, double duration,
             boolean completed) {
         return new TraceSnapshotSummary(id, capturedAt, duration, completed);
     }

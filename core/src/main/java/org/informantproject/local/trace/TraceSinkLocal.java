@@ -16,8 +16,11 @@
 package org.informantproject.local.trace;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceSink;
@@ -41,13 +44,18 @@ public class TraceSinkLocal implements TraceSink {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSinkLocal.class);
 
+    private static final int PENDING_LIMIT = 100;
+
     private final ExecutorService executorService = DaemonExecutors
             .newSingleThreadExecutor("Informant-StackCollector");
 
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Ticker ticker;
-    private final AtomicInteger queueLength = new AtomicInteger(0);
+    private final Set<Trace> pendingCompleteTraces = new CopyOnWriteArraySet<Trace>();
+
+    private volatile long lastWarningTick;
+    private volatile int countSinceLastWarning;
 
     @Inject
     TraceSinkLocal(TraceSnapshotService traceSnapshotService, TraceSnapshotDao traceSnapshotDao,
@@ -56,11 +64,15 @@ public class TraceSinkLocal implements TraceSink {
         this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
+        lastWarningTick = ticker.read() - TimeUnit.SECONDS.toNanos(60);
     }
 
     public void onCompletedTrace(final Trace trace) {
         if (traceSnapshotService.shouldPersist(trace)) {
-            queueLength.incrementAndGet();
+            if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
+                logPendingLimitWarning();
+            }
+            pendingCompleteTraces.add(trace);
             executorService.execute(new Runnable() {
                 public void run() {
                     try {
@@ -69,12 +81,31 @@ public class TraceSinkLocal implements TraceSink {
                     } catch (IOException e) {
                         logger.error(e.getMessage(), e);
                     }
-                    queueLength.decrementAndGet();
+                    pendingCompleteTraces.remove(trace);
                 }
             });
         }
     }
 
+    // synchronized to prevent two threads from logging the warning at the same time (one should
+    // log it and the other should increment the count for the next log)
+    private synchronized void logPendingLimitWarning() {
+        long tick = ticker.read();
+        if (TimeUnit.NANOSECONDS.toSeconds(tick - lastWarningTick) >= 60) {
+            logger.warn("not storing a trace in the local h2 database because of an excessive"
+                    + " backlog of {} traces already waiting to be stored (this message will"
+                    + " appear at most once a minute, there were {} additional traces not stored"
+                    + " in the local h2 database since this message was last logged)",
+                    PENDING_LIMIT, countSinceLastWarning);
+            lastWarningTick = tick;
+            countSinceLastWarning = 0;
+        } else {
+            countSinceLastWarning++;
+        }
+    }
+
+    // no need to throttle stuck trace storage since throttling is handled upstream by using a
+    // single thread executor in StuckTraceCollector
     public void onStuckTrace(Trace trace) {
         try {
             TraceSnapshot snaphsot = traceSnapshotService.from(trace, ticker.read());
@@ -86,13 +117,17 @@ public class TraceSinkLocal implements TraceSink {
         }
     }
 
-    public int getQueueLength() {
-        return queueLength.get();
+    public Collection<Trace> getPendingCompleteTraces() {
+        return pendingCompleteTraces;
+    }
+
+    public int getPendingCount() {
+        // TODO need to include
+        return pendingCompleteTraces.size();
     }
 
     public void close() {
         logger.debug("close()");
         executorService.shutdownNow();
     }
-
 }

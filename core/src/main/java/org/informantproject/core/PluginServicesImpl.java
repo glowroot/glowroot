@@ -382,8 +382,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 cancelScheduledFuture(currentTrace.getCoarseProfilingScheduledFuture());
                 cancelScheduledFuture(currentTrace.getStuckScheduledFuture());
                 cancelScheduledFuture(currentTrace.getFineProfilingScheduledFuture());
-                traceRegistry.removeTrace(currentTrace);
+                // send to trace sink before removing from trace registry so that trace sink
+                // can cover the gap (via TraceSink.getPendingTraces()) between removing the trace
+                // from the registry and storing it
                 traceSink.onCompletedTrace(currentTrace);
+                traceRegistry.removeTrace(currentTrace);
             }
         }
         private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {

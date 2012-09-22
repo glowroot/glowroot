@@ -17,6 +17,7 @@ package org.informantproject.local.ui;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.Clock;
+import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.trace.TraceSnapshotDao;
 import org.informantproject.local.trace.TraceSnapshotDao.StringComparator;
 import org.informantproject.local.trace.TraceSnapshotService;
@@ -33,9 +35,11 @@ import org.informantproject.local.trace.TraceSnapshotSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
@@ -57,6 +61,7 @@ class TracePointJsonService implements JsonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
+    private final TraceSinkLocal traceSinkLocal;
     private final TraceSnapshotService traceSnapshotService;
     private final Ticker ticker;
     private final Clock clock;
@@ -64,10 +69,12 @@ class TracePointJsonService implements JsonService {
 
     @Inject
     TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
-            TraceSnapshotService traceSnapshotService, Ticker ticker, Clock clock) {
+            TraceSinkLocal traceSinkLocal, TraceSnapshotService traceSnapshotService,
+            Ticker ticker, Clock clock) {
 
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
+        this.traceSinkLocal = traceSinkLocal;
         this.traceSnapshotService = traceSnapshotService;
         this.ticker = ticker;
         this.clock = clock;
@@ -75,172 +82,249 @@ class TracePointJsonService implements JsonService {
 
     @JsonServiceMethod
     String getPoints(String message) throws IOException {
-        logger.debug("getChartPoints(): message={}", message);
-        TraceRequest request;
-        try {
-            request = gson.fromJson(message, TraceRequest.class);
-        } catch (JsonSyntaxException e) {
-            logger.warn(e.getMessage(), e);
-            return writeResponse(ImmutableList.<TraceSnapshotSummary> of(),
-                    ImmutableList.<Trace> of(), 0, 0, false);
+        return new Handler().handle(message);
+    }
+
+    private class Handler {
+
+        private TraceRequest request;
+        private long requestAt;
+        private long low;
+        private long high;
+        @Nullable
+        private StringComparator userIdComparator;
+        private List<Trace> activeTraces = ImmutableList.of();
+        private long capturedAt;
+        private long captureTick;
+        private List<TraceSnapshotSummary> summaries;
+
+        private String handle(String message) throws IOException {
+            logger.debug("getPoints(): message={}", message);
+            try {
+                request = gson.fromJson(message, TraceRequest.class);
+            } catch (JsonSyntaxException e) {
+                logger.warn(e.getMessage(), e);
+                return writeResponse(ImmutableList.<TraceSnapshotSummary> of(),
+                        ImmutableList.<Trace> of(), 0, 0, false);
+            }
+            requestAt = clock.currentTimeMillis();
+            if (request.getFrom() < 0) {
+                request.setFrom(requestAt + request.getFrom());
+            }
+            low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
+            high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
+                    * NANOSECONDS_PER_MILLISECOND);
+            String comparatorText = request.getUserIdComparator();
+            if (comparatorText != null) {
+                userIdComparator = StringComparator.valueOf(comparatorText
+                        .toUpperCase(Locale.ENGLISH));
+            }
+            boolean captureActiveTraces = shouldCaptureActiveTraces();
+            if (captureActiveTraces) {
+                // capture active traces first to make sure that none are missed in the transition
+                // between active and pending/stored (possible duplicates are removed below)
+                getMatchingActiveTraces();
+            }
+            if (request.getTo() == 0) {
+                request.setTo(requestAt);
+            }
+            summaries = getStoredAndPendingSummaries(captureActiveTraces);
+            removeDuplicatesBetweenActiveTracesAndSummaries();
+            boolean limitExceeded = (summaries.size() + activeTraces.size() > request.getLimit());
+            if (summaries.size() + activeTraces.size() > request.getLimit()) {
+                // summaries is already ordered, so just drop the last few items
+                // always include all active traces
+                summaries = summaries.subList(0, request.getLimit() - activeTraces.size());
+            }
+            return writeResponse(summaries, activeTraces, capturedAt, captureTick, limitExceeded);
         }
-        long requestAt = clock.currentTimeMillis();
-        if (request.getFrom() < 0) {
-            request.setFrom(requestAt + request.getFrom());
+
+        private boolean shouldCaptureActiveTraces() {
+            return (request.getTo() == 0 || request.getTo() > requestAt)
+                    && request.getFrom() < requestAt;
         }
-        // since low and high are qualified using <= (instead of <), and precision in the database
-        // is in whole nanoseconds, ceil(low) and floor(high) give the correct final result even in
-        // cases where low and high are not in whole nanoseconds
-        long low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
-        long high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
-                * NANOSECONDS_PER_MILLISECOND);
-        StringComparator userIdComparator = null;
-        String comparatorText = request.getUserIdComparator();
-        if (comparatorText != null) {
-            userIdComparator = StringComparator.valueOf(comparatorText
-                    .toUpperCase(Locale.ENGLISH));
+
+        private List<TraceSnapshotSummary> getStoredAndPendingSummaries(
+                boolean captureActiveTraces) {
+
+            List<TraceSnapshotSummary> matchingPendingSummaries;
+            // it only seems worth looking at pending traces if request asks for active traces
+            if (captureActiveTraces) {
+                // important to grab pending traces before stored summaries to ensure none are
+                // missed in the transition between pending and stored
+                matchingPendingSummaries = getMatchingPendingSummaries();
+            } else {
+                matchingPendingSummaries = ImmutableList.of();
+            }
+            List<TraceSnapshotSummary> storedSummaries = traceSnapshotDao.readSummaries(
+                    request.getFrom(), request.getTo(), low, high, request.isBackground(),
+                    request.isErrorOnly(), request.isFineOnly(), userIdComparator,
+                    request.getUserId(), request.getLimit() + 1);
+            if (!matchingPendingSummaries.isEmpty()) {
+                // create single merged and limited list of summaries
+                List<TraceSnapshotSummary> combinedSummaries = Lists.newArrayList(storedSummaries);
+                for (TraceSnapshotSummary pendingSummary : matchingPendingSummaries) {
+                    mergeIntoCombinedSummaries(pendingSummary, combinedSummaries);
+                }
+                return combinedSummaries;
+            } else {
+                return storedSummaries;
+            }
         }
-        List<Trace> activeTraces = ImmutableList.of();
-        long capturedAt = 0;
-        long captureTick = 0;
-        if ((request.getTo() == 0 || request.getTo() > requestAt)
-                && request.getFrom() < requestAt) {
-            // capture active traces first to make sure that none are missed in between reading
-            // stored traces and then capturing active traces (possible duplicates are removed
-            // below)
-            activeTraces = getActiveTraces(low, high, request.isBackground(),
-                    request.isErrorOnly(),
-                    request.isFineOnly(), userIdComparator, request.getUserId());
-            // take capture timings after the capture to make sure there no traces captured that
-            // start after the recorded capture time (resulting in negative duration)
+
+        private void getMatchingActiveTraces() {
+            activeTraces = Lists.newArrayList();
+            for (Trace trace : traceRegistry.getTraces()) {
+                if (traceSnapshotService.shouldPersist(trace)
+                        && matchesDuration(trace)
+                        && matchesBackground(trace)
+                        && matchesErrorOnly(trace)
+                        && matchesFineOnly(trace)
+                        && matchesUserId(trace)) {
+                    activeTraces.add(trace);
+                }
+            }
+            Collections.sort(activeTraces,
+                    Ordering.natural().onResultOf(new Function<Trace, Long>() {
+                        public Long apply(@Nullable Trace trace) {
+                            return trace.getStartTick();
+                        }
+                    }));
+            if (activeTraces.size() > request.getLimit()) {
+                activeTraces = activeTraces.subList(0, request.getLimit());
+            }
+            // take capture timings after the capture to make sure there are no traces captured
+            // that start after the recorded capture time (resulting in negative duration)
             capturedAt = clock.currentTimeMillis();
             captureTick = ticker.read();
         }
-        if (request.getTo() == 0) {
-            request.setTo(requestAt);
+
+        private List<TraceSnapshotSummary> getMatchingPendingSummaries() {
+            List<TraceSnapshotSummary> summaries = Lists.newArrayList();
+            for (Trace trace : traceSinkLocal.getPendingCompleteTraces()) {
+                if (matchesDuration(trace)
+                        && matchesBackground(trace)
+                        && matchesErrorOnly(trace)
+                        && matchesFineOnly(trace)
+                        && matchesUserId(trace)) {
+                    summaries.add(TraceSnapshotSummary.from(trace.getId(),
+                            clock.currentTimeMillis(), trace.getDuration(), true));
+                }
+            }
+            return summaries;
         }
-        List<TraceSnapshotSummary> summaries = traceSnapshotDao.readSummaries(
-                request.getFrom(), request.getTo(), low, high, request.isBackground(),
-                request.isErrorOnly(), request.isFineOnly(), userIdComparator, request.getUserId(),
-                request.getLimit() + 1);
-        boolean limitExceeded = (summaries.size() == request.getLimit() + 1);
-        // remove duplicates between active and stored traces
-        for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
-            Trace activeTrace = i.next();
-            for (Iterator<TraceSnapshotSummary> j = summaries.iterator(); j.hasNext();) {
-                TraceSnapshotSummary summary = j.next();
-                if (activeTrace.getId().equals(summary.getId())) {
-                    // prefer stored trace if it is completed, otherwise prefer active trace
-                    if (summary.isCompleted()) {
-                        i.remove();
-                    } else {
-                        j.remove();
-                    }
-                    // there can be at most one duplicate per id, so ok to break to outer
+
+        private boolean matchesDuration(Trace trace) {
+            long duration = trace.getDuration();
+            return duration >= low && duration <= high;
+        }
+
+        private boolean matchesBackground(Trace trace) {
+            return request.isBackground() == null || request.isBackground() == trace.isBackground();
+        }
+
+        private boolean matchesErrorOnly(Trace trace) {
+            return !request.isErrorOnly() || trace.isError();
+        }
+
+        private boolean matchesFineOnly(Trace trace) {
+            return !request.isFineOnly() || trace.isFine();
+        }
+
+        private boolean matchesUserId(Trace trace) {
+            if (userIdComparator == null || request.getUserId() == null) {
+                return true;
+            }
+            String traceUserId = trace.getUserId();
+            if (traceUserId == null) {
+                return false;
+            }
+            switch (userIdComparator) {
+            case BEGINS:
+                return traceUserId.startsWith(request.getUserId());
+            case CONTAINS:
+                return traceUserId.contains(request.getUserId());
+            case EQUALS:
+                return traceUserId.equals(request.getUserId());
+            default:
+                logger.error("unexpected user id comparator '{}'", userIdComparator);
+                return false;
+            }
+        }
+
+        private void mergeIntoCombinedSummaries(TraceSnapshotSummary pendingSummary,
+                List<TraceSnapshotSummary> combinedSummaries) {
+
+            boolean duplicate = false;
+            int orderedInsertionIndex = 0;
+            // check if duplicate and capture ordered insertion index at the same time
+            for (int i = 0; i < combinedSummaries.size(); i++) {
+                TraceSnapshotSummary summary = combinedSummaries.get(i);
+                if (pendingSummary.getDuration() < summary.getDuration()) {
+                    // keep pushing orderedInsertionIndex down the line
+                    orderedInsertionIndex = i + 1;
+                }
+                if (pendingSummary.getId().equals(summary.getId())) {
+                    duplicate = true;
                     break;
                 }
             }
-        }
-        if (summaries.size() + activeTraces.size() > request.getLimit()) {
-            // summaries is already ordered, so just drop the last few items
-            // always include all active traces
-            summaries = summaries.subList(0, request.getLimit() - activeTraces.size());
-        }
-        return writeResponse(summaries, activeTraces, capturedAt, captureTick, limitExceeded);
-    }
-
-    private List<Trace> getActiveTraces(long low, long high, @Nullable Boolean background,
-            boolean errorOnly, boolean fineOnly, @Nullable StringComparator userIdComparator,
-            @Nullable String userId) {
-
-        List<Trace> activeTraces = Lists.newArrayList();
-        for (Trace trace : traceRegistry.getTraces()) {
-            long duration = trace.getDuration();
-            if (traceSnapshotService.shouldPersist(trace)
-                    && matchesDuration(duration, low, high)
-                    && matchesBackground(trace, background)
-                    && matchesErrorOnly(trace, errorOnly)
-                    && matchesFineOnly(trace, fineOnly)
-                    && matchesUserId(trace, userIdComparator, userId)) {
-                activeTraces.add(trace);
-            } else {
-                // the traces are ordered by start time so it's safe to break now
-                break;
+            if (!duplicate) {
+                combinedSummaries.add(orderedInsertionIndex, pendingSummary);
             }
         }
-        return activeTraces;
-    }
 
-    private boolean matchesDuration(long duration, long low, long high) {
-        return duration >= low && duration <= high;
-    }
-
-    private boolean matchesBackground(Trace trace, @Nullable Boolean background) {
-        return background == null || background == trace.isBackground();
-    }
-
-    private boolean matchesErrorOnly(Trace trace, boolean errorOnly) {
-        return !errorOnly || trace.isError();
-    }
-
-    private boolean matchesFineOnly(Trace trace, boolean fineOnly) {
-        return !fineOnly || trace.isFine();
-    }
-
-    private boolean matchesUserId(Trace trace, @Nullable StringComparator userIdComparator,
-            @Nullable String userId) {
-
-        if (userIdComparator == null || userId == null) {
-            return true;
+        private void removeDuplicatesBetweenActiveTracesAndSummaries() {
+            for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
+                Trace activeTrace = i.next();
+                for (Iterator<TraceSnapshotSummary> j = summaries.iterator(); j.hasNext();) {
+                    TraceSnapshotSummary summary = j.next();
+                    if (activeTrace.getId().equals(summary.getId())) {
+                        // prefer stored trace if it is completed, otherwise prefer active trace
+                        if (summary.isCompleted()) {
+                            i.remove();
+                        } else {
+                            j.remove();
+                        }
+                        // there can be at most one duplicate per id, so ok to break to outer
+                        break;
+                    }
+                }
+            }
         }
-        String traceUserId = trace.getUserId();
-        if (traceUserId == null) {
-            return false;
-        }
-        switch (userIdComparator) {
-        case BEGINS:
-            return traceUserId.startsWith(userId);
-        case CONTAINS:
-            return traceUserId.contains(userId);
-        case EQUALS:
-            return traceUserId.equals(userId);
-        default:
-            logger.error("unexpected user id comparator '{}'", userIdComparator);
-            return false;
-        }
-    }
 
-    private static String writeResponse(List<TraceSnapshotSummary> summaries,
-            List<Trace> activeTraces, long capturedAt, long captureTick, boolean limitExceeded)
-            throws IOException {
+        private String writeResponse(List<TraceSnapshotSummary> summaries,
+                List<Trace> activeTraces, long capturedAt, long captureTick, boolean limitExceeded)
+                throws IOException {
 
-        StringWriter sw = new StringWriter();
-        JsonWriter jw = new JsonWriter(sw);
-        jw.beginObject();
-        jw.name("activePoints").beginArray();
-        for (Trace activeTrace : activeTraces) {
-            jw.beginArray();
-            jw.value(capturedAt);
-            jw.value((captureTick - activeTrace.getStartTick()) / 1000000000.0);
-            jw.value(activeTrace.getId());
+            StringWriter sw = new StringWriter();
+            JsonWriter jw = new JsonWriter(sw);
+            jw.beginObject();
+            jw.name("activePoints").beginArray();
+            for (Trace activeTrace : activeTraces) {
+                jw.beginArray();
+                jw.value(capturedAt);
+                jw.value((captureTick - activeTrace.getStartTick()) / 1000000000.0);
+                jw.value(activeTrace.getId());
+                jw.endArray();
+            }
             jw.endArray();
-        }
-        jw.endArray();
-        jw.name("snapshotPoints").beginArray();
-        for (TraceSnapshotSummary summary : summaries) {
-            jw.beginArray();
-            jw.value(summary.getCapturedAt());
-            jw.value(summary.getDuration() / 1000000000.0);
-            jw.value(summary.getId());
+            jw.name("storedPoints").beginArray();
+            for (TraceSnapshotSummary summary : summaries) {
+                jw.beginArray();
+                jw.value(summary.getCapturedAt());
+                jw.value(summary.getDuration() / 1000000000.0);
+                jw.value(summary.getId());
+                jw.endArray();
+            }
             jw.endArray();
+            if (limitExceeded) {
+                jw.name("limitExceeded");
+                jw.value(true);
+            }
+            jw.endObject();
+            jw.close();
+            return sw.toString();
         }
-        jw.endArray();
-        if (limitExceeded) {
-            jw.name("limitExceeded");
-            jw.value(true);
-        }
-        jw.endObject();
-        jw.close();
-        return sw.toString();
     }
 }

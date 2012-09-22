@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.trace;
 
+import java.util.Collection;
+
 /**
  * Interface for storing traces.
  * 
@@ -27,4 +29,8 @@ public interface TraceSink {
 
     // implementations must assume another thread is concurrently still writing to trace
     void onStuckTrace(Trace trace);
+
+    // this is used to cover the gap between active traces and stored traces (e.g. so that traces
+    // don't go missing from the ui for the short time between completion and storage)
+    Collection<Trace> getPendingCompleteTraces();
 }
