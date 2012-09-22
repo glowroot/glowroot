@@ -48,6 +48,7 @@ import org.informantproject.core.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.informantproject.core.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.informantproject.core.weaving.SomeAspect.StaticAdvice;
 import org.informantproject.core.weaving.SomeAspect.StaticInjectTargetClassAdvice;
+import org.informantproject.core.weaving.SomeAspect.TypeNamePatternAdvice;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -499,6 +500,20 @@ public class WeaverTest {
         // then
         assertThat(PrimitiveWithWildcardAdvice.enabledCount.get()).isEqualTo(1);
         assertThat(PrimitiveWithWildcardAdvice.onBeforeCount.get()).isEqualTo(1);
+    }
+
+    // ===================== type name pattern =====================
+
+    @Test
+    public void shouldWeaveTypeWithNamePattern() throws Exception {
+        // given
+        TypeNamePatternAdvice.resetThreadLocals();
+        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class, TypeNamePatternAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(TypeNamePatternAdvice.enabledCount.get()).isEqualTo(1);
+        assertThat(TypeNamePatternAdvice.onBeforeCount.get()).isEqualTo(1);
     }
 
     // ===================== autobox args =====================

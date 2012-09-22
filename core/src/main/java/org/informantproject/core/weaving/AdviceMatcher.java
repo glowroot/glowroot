@@ -81,9 +81,13 @@ class AdviceMatcher {
         return builder.build();
     }
 
-    private boolean isTypeMatch(String className) {
-        // currently only exact matching is supported
-        return advice.getPointcut().typeName().equals(className);
+    private boolean isTypeMatch(String typeName) {
+        Pattern pointcutTypePattern = advice.getPointcutTypePattern();
+        if (pointcutTypePattern == null) {
+            return advice.getPointcut().typeName().equals(typeName);
+        } else {
+            return pointcutTypePattern.matcher(typeName).matches();
+        }
     }
 
     private boolean isMethodMatch(ParsedMethod parsedMethod) {

@@ -79,6 +79,8 @@ public class Advice {
     private final Pointcut pointcut;
     private final Type adviceType;
     @Nullable
+    private final Pattern pointcutTypePattern;
+    @Nullable
     private final Pattern pointcutMethodPattern;
     @Nullable
     private final Method isEnabledAdvice;
@@ -103,16 +105,17 @@ public class Advice {
         return new Builder(pointcut, adviceClass).build();
     }
 
-    private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutMethodPattern,
-            @Nullable Method isEnabledAdvice, @Nullable Method onBeforeAdvice,
-            @Nullable Method onReturnAdvice, @Nullable Method onThrowAdvice,
-            @Nullable Method onAfterAdvice, @Nullable Type travelerType,
-            ParameterKind[] isEnabledParameterKinds, ParameterKind[] onBeforeParameterKinds,
-            ParameterKind[] onReturnParameterKinds, ParameterKind[] onThrowParameterKinds,
-            ParameterKind[] onAfterParameterKinds) {
+    private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutTypePattern,
+            @Nullable Pattern pointcutMethodPattern, @Nullable Method isEnabledAdvice,
+            @Nullable Method onBeforeAdvice, @Nullable Method onReturnAdvice,
+            @Nullable Method onThrowAdvice, @Nullable Method onAfterAdvice,
+            @Nullable Type travelerType, ParameterKind[] isEnabledParameterKinds,
+            ParameterKind[] onBeforeParameterKinds, ParameterKind[] onReturnParameterKinds,
+            ParameterKind[] onThrowParameterKinds, ParameterKind[] onAfterParameterKinds) {
 
         this.pointcut = pointcut;
         this.adviceType = adviceType;
+        this.pointcutTypePattern = pointcutTypePattern;
         this.pointcutMethodPattern = pointcutMethodPattern;
         this.isEnabledAdvice = isEnabledAdvice;
         this.onBeforeAdvice = onBeforeAdvice;
@@ -129,6 +132,11 @@ public class Advice {
 
     Pointcut getPointcut() {
         return pointcut;
+    }
+
+    @Nullable
+    Pattern getPointcutTypePattern() {
+        return pointcutTypePattern;
     }
 
     @Nullable
@@ -199,6 +207,8 @@ public class Advice {
         private final Pointcut pointcut;
         private final Type adviceType;
         @Nullable
+        private final Pattern pointcutTypePattern;
+        @Nullable
         private final Pattern pointcutMethodPattern;
         @Nullable
         private Method isEnabledAdvice;
@@ -223,13 +233,17 @@ public class Advice {
         private Builder(Pointcut pointcut, Class<?> adviceClass) {
             this.pointcut = pointcut;
             adviceType = Type.getType(adviceClass);
-            if (pointcut.methodName().startsWith("/") && pointcut.methodName().endsWith("/")) {
-                pointcutMethodPattern = Pattern.compile(pointcut.methodName().substring(1,
-                        pointcut.methodName().length() - 1));
-            } else {
-                pointcutMethodPattern = null;
-            }
+            pointcutTypePattern = buildPattern(pointcut.typeName());
+            pointcutMethodPattern = buildPattern(pointcut.methodName());
             initFromClass(adviceClass);
+        }
+
+        private Pattern buildPattern(String maybePattern) {
+            if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
+                return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));
+            } else {
+                return null;
+            }
         }
 
         private void initFromClass(Class<?> adviceClass) {
@@ -330,10 +344,10 @@ public class Advice {
         }
 
         private Advice build() {
-            return new Advice(pointcut, adviceType, pointcutMethodPattern, isEnabledAdvice,
-                    onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice, travelerType,
-                    isEnabledParameterKinds, onBeforeParameterKinds, onReturnParameterKinds,
-                    onThrowParameterKinds, onAfterParameterKinds);
+            return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
+                    isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
+                    travelerType, isEnabledParameterKinds, onBeforeParameterKinds,
+                    onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds);
         }
 
         private static ParameterKind[] getParameterKinds(Annotation[][] parameterAnnotations,

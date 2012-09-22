@@ -450,6 +450,10 @@ public class SomeAspect {
             methodModifiers = MethodModifier.STATIC)
     public static class NonMatchingStaticAdvice extends BasicAdvice {}
 
+    @Pointcut(typeName = "/org\\.informantproject\\.core\\.weaving\\.Mis[a-z]/",
+            methodName = "execute1")
+    public static class TypeNamePatternAdvice extends BasicAdvice {}
+
     @Pointcut(typeName = "org.informantproject.core.weaving.StaticMisc",
             methodName = "executeStatic")
     public static class StaticInjectTargetClassAdvice {
