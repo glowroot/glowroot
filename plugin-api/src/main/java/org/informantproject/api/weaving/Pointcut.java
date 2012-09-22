@@ -31,6 +31,7 @@ public @interface Pointcut {
     String typeName();
     String methodName();
     String[] methodArgs() default {};
+    String methodReturn() default "";
     MethodModifier[] methodModifiers() default {};
     boolean captureNested() default true;
     String metricName() default "";

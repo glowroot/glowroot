@@ -454,6 +454,22 @@ public class SomeAspect {
             methodName = "execute1")
     public static class TypeNamePatternAdvice extends BasicAdvice {}
 
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1",
+            methodReturn = "void")
+    public static class MethodReturnVoidAdvice extends BasicAdvice {}
+
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "executeWithReturn",
+            methodReturn = "java.lang.String")
+    public static class MethodReturnStringAdvice extends BasicAdvice {}
+
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1",
+            methodReturn = "java.lang.String")
+    public static class NonMatchingMethodReturnAdvice extends BasicAdvice {}
+
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "executeWithReturn",
+            methodReturn = "java.lang.Number")
+    public static class NonMatchingMethodReturnAdvice2 extends BasicAdvice {}
+
     @Pointcut(typeName = "org.informantproject.core.weaving.StaticMisc",
             methodName = "executeStatic")
     public static class StaticInjectTargetClassAdvice {

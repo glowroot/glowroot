@@ -40,7 +40,11 @@ import org.informantproject.core.weaving.SomeAspect.InterfaceTargetedMixin;
 import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice1;
 import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice2;
 import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice3;
+import org.informantproject.core.weaving.SomeAspect.MethodReturnStringAdvice;
+import org.informantproject.core.weaving.SomeAspect.MethodReturnVoidAdvice;
 import org.informantproject.core.weaving.SomeAspect.MultipleMethodsAdvice;
+import org.informantproject.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
+import org.informantproject.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
 import org.informantproject.core.weaving.SomeAspect.NonMatchingStaticAdvice;
 import org.informantproject.core.weaving.SomeAspect.NotNestingAdvice;
 import org.informantproject.core.weaving.SomeAspect.PrimitiveAdvice;
@@ -529,6 +533,60 @@ public class WeaverTest {
         // then
         assertThat(PrimitiveWithAutoboxAdvice.enabledCount.get()).isEqualTo(1);
     }
+
+    // ===================== return type matching =====================
+
+    @Test
+    public void shouldMatchMethodReturningVoid() throws Exception {
+        // given
+        MethodReturnVoidAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodReturnVoidAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(MethodReturnVoidAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(MethodReturnVoidAdvice.onReturnCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldMatchMethodReturningString() throws Exception {
+        // given
+        MethodReturnStringAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodReturnStringAdvice.class);
+        // when
+        test.executeWithReturn();
+        // then
+        assertThat(MethodReturnStringAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(MethodReturnStringAdvice.onReturnCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotMatchMethodBasedOnReturnType() throws Exception {
+        // given
+        NonMatchingMethodReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                NonMatchingMethodReturnAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(NonMatchingMethodReturnAdvice.onBeforeCount.get()).isEqualTo(0);
+        assertThat(NonMatchingMethodReturnAdvice.onReturnCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotMatchMethodBasedOnReturnType2() throws Exception {
+        // given
+        NonMatchingMethodReturnAdvice2.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                NonMatchingMethodReturnAdvice2.class);
+        // when
+        test.executeWithReturn();
+        // then
+        assertThat(NonMatchingMethodReturnAdvice2.onBeforeCount.get()).isEqualTo(0);
+        assertThat(NonMatchingMethodReturnAdvice2.onReturnCount.get()).isEqualTo(0);
+    }
+
+    // ===================== constructor =====================
 
     @Test
     // TODO handle @OnBefore constructor

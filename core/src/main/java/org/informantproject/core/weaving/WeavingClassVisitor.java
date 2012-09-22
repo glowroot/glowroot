@@ -161,7 +161,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             logger.trace("visitMethod(): access={}, name={}, desc={}, signature={}, exceptions={}",
                     new Object[] { access, name, desc, signature, exceptionsText });
         }
-        ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc), access);
+        ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc),
+                Type.getReturnType(desc), access);
         parsedType.addMethod(parsedMethod);
         if (nothingAtAllToWeave) {
             // no need to pass method on to class writer

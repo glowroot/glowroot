@@ -33,15 +33,17 @@ class ParsedMethod {
 
     private final String name;
     private final Type[] argTypes;
+    private final Type returnType;
     private final int modifiers;
 
-    static ParsedMethod from(String name, Type[] argTypes, int modifiers) {
-        return new ParsedMethod(name, argTypes, modifiers);
+    static ParsedMethod from(String name, Type[] argTypes, Type returnType, int modifiers) {
+        return new ParsedMethod(name, argTypes, returnType, modifiers);
     }
 
-    private ParsedMethod(String name, Type[] args, int modifiers) {
+    private ParsedMethod(String name, Type[] args, Type returnType, int modifiers) {
         this.name = name;
         this.argTypes = args;
+        this.returnType = returnType;
         this.modifiers = modifiers;
     }
 
@@ -51,6 +53,10 @@ class ParsedMethod {
 
     Type[] getArgTypes() {
         return argTypes;
+    }
+
+    Type getReturnType() {
+        return returnType;
     }
 
     int getModifiers() {

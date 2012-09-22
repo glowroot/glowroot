@@ -218,7 +218,8 @@ class ParsedTypeCache {
                 argTypes[j] = Type.getType(method.getParameterTypes()[j]);
             }
             Type returnType = Type.getType(method.getReturnType());
-            parsedMethods.add(ParsedMethod.from(method.getName(), argTypes, method.getModifiers()));
+            parsedMethods.add(ParsedMethod.from(method.getName(), argTypes, returnType,
+                    method.getModifiers()));
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
         for (Class<?> iface : type.getInterfaces()) {
@@ -272,7 +273,8 @@ class ParsedTypeCache {
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, @Nullable String[] exceptions) {
 
-            methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc), access));
+            methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc),
+                    Type.getReturnType(desc), access));
             return null;
         }
 

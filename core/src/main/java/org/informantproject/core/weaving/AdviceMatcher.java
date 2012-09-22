@@ -93,7 +93,9 @@ class AdviceMatcher {
     private boolean isMethodMatch(ParsedMethod parsedMethod) {
         if (!isMethodNameMatch(parsedMethod.getName())) {
             return false;
-        } else if (!isMethodArgsMatch(parsedMethod.getArgTypes())) {
+        } else if (!isMethodArgTypesMatch(parsedMethod.getArgTypes())) {
+            return false;
+        } else if (!isMethodReturnMatch(parsedMethod.getReturnType())) {
             return false;
         } else if (!isMethodModifiersMatch(parsedMethod.getModifiers())) {
             return false;
@@ -113,7 +115,7 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgsMatch(Type[] argumentTypes) {
+    private boolean isMethodArgTypesMatch(Type[] argTypes) {
         String[] pointcutMethodArgs = advice.getPointcut().methodArgs();
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
@@ -125,18 +127,27 @@ class AdviceMatcher {
                     return true;
                 }
             }
-            if (argumentTypes.length == i) {
+            if (argTypes.length == i) {
                 // have run out of argument types to match
                 return false;
             }
             // only supporting /.*/ regex at this point
             if (!pointcutMethodArgs[i].equals("/.*/")
-                    && !pointcutMethodArgs[i].equals(argumentTypes[i].getClassName())) {
+                    && !pointcutMethodArgs[i].equals(argTypes[i].getClassName())) {
                 return false;
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
-        return argumentTypes.length == pointcutMethodArgs.length;
+        return argTypes.length == pointcutMethodArgs.length;
+    }
+
+    private boolean isMethodReturnMatch(Type returnType) {
+        String pointcutMethodReturn = advice.getPointcut().methodReturn();
+        if (pointcutMethodReturn.equals("")) {
+            return true;
+        } else {
+            return pointcutMethodReturn.equals(returnType.getClassName());
+        }
     }
 
     private boolean isMethodModifiersMatch(int modifiers) {
