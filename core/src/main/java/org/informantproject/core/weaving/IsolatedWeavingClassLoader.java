@@ -87,11 +87,33 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     @Override
+    protected synchronized Class<?> loadClass(String name, boolean resolve)
+            throws ClassNotFoundException {
+
+        if (isInBootstrapClassLoader(name)) {
+            return super.loadClass(name, resolve);
+        }
+        Class<?> c = classes.get(name);
+        if (c != null) {
+            return c;
+        }
+        c = findClass(name);
+        classes.put(name, c);
+        return c;
+    }
+
+    @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         for (Class<?> bridgeClass : bridgeClasses) {
             if (bridgeClass.getName().equals(name)) {
                 return bridgeClass;
             }
+        }
+        // don't weave informant classes, included shaded classes like h2 jdbc driver
+        if (name.startsWith("org/informantproject/core/")
+                || name.startsWith("org/informantproject/local/")
+                || name.startsWith("org/informantproject/shaded/")) {
+            return super.findClass(name);
         }
         String resourceName = name.replace('.', '/') + ".class";
         URL url = getResource(resourceName);
@@ -126,22 +148,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             }
         }
         return super.defineClass(name, bytes, 0, bytes.length);
-    }
-
-    @Override
-    protected synchronized Class<?> loadClass(String name, boolean resolve)
-            throws ClassNotFoundException {
-
-        if (isInBootstrapClassLoader(name)) {
-            return super.loadClass(name, resolve);
-        }
-        Class<?> c = classes.get(name);
-        if (c != null) {
-            return c;
-        }
-        c = findClass(name);
-        classes.put(name, c);
-        return c;
     }
 
     private <S> boolean isBridgeable(String name) {
