@@ -128,7 +128,7 @@ public class DataSource {
         }
     }
 
-    public long queryForLong(final String sql, final Object... args) throws SQLException {
+    public long queryForLong(final String sql, Object... args) throws SQLException {
         return query(sql, args, new ResultSetExtractor<Long>() {
             public Long extractData(ResultSet resultSet) throws SQLException {
                 if (resultSet.next()) {
@@ -148,7 +148,7 @@ public class DataSource {
     }
 
     @Nullable
-    public String queryForString(String sql, final Object... args) throws SQLException {
+    public String queryForString(String sql, Object... args) throws SQLException {
         return query(sql, args, new ResultSetExtractor<String>() {
             @Nullable
             public String extractData(ResultSet resultSet) throws SQLException {

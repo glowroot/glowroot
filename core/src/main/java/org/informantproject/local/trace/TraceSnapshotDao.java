@@ -262,7 +262,7 @@ public class TraceSnapshotDao {
         return snapshots.get(0);
     }
 
-    public int deleteSnapshots(final long capturedFrom, final long capturedTo) {
+    public int deleteSnapshots(long capturedFrom, long capturedTo) {
         logger.debug("deleteSnapshots(): capturedFrom={}, capturedTo={}", capturedFrom,
                 capturedTo);
         if (!valid) {

@@ -68,7 +68,7 @@ public class PluginConfig {
         return new PluginConfig(false, ImmutableMap.<String, Optional<?>> of(), null);
     }
 
-    static PluginConfig fromJson(final String pluginId, String json) throws JsonSyntaxException {
+    static PluginConfig fromJson(String pluginId, String json) throws JsonSyntaxException {
         PluginConfig.Builder builder = PluginConfig.builder(pluginId);
         builder.overlay(json, true);
         return builder.build();

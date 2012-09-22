@@ -298,7 +298,7 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget final Statement statement) {
+        public static Span onBefore(@InjectTarget Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
@@ -393,7 +393,7 @@ public class JdbcAspect {
         }
         @OnReturn
         public static void onReturn(@InjectReturn boolean currentRowValid,
-                @InjectTarget final ResultSet resultSet) {
+                @InjectTarget ResultSet resultSet) {
 
             try {
                 if (resultSet.getStatement() == null) {
