@@ -82,7 +82,7 @@ class TracePointJsonService implements JsonService {
         } catch (JsonSyntaxException e) {
             logger.warn(e.getMessage(), e);
             return writeResponse(ImmutableList.<TraceSnapshotSummary> of(),
-                    ImmutableList.<Trace> of(), 0, 0);
+                    ImmutableList.<Trace> of(), 0, 0, false);
         }
         long requestAt = clock.currentTimeMillis();
         if (request.getFrom() < 0) {
@@ -121,7 +121,9 @@ class TracePointJsonService implements JsonService {
         }
         List<TraceSnapshotSummary> summaries = traceSnapshotDao.readSummaries(
                 request.getFrom(), request.getTo(), low, high, request.isBackground(),
-                request.isErrorOnly(), request.isFineOnly(), userIdComparator, request.getUserId());
+                request.isErrorOnly(), request.isFineOnly(), userIdComparator, request.getUserId(),
+                request.getLimit() + 1);
+        boolean limitExceeded = (summaries.size() == request.getLimit() + 1);
         // remove duplicates between active and stored traces
         for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
             Trace activeTrace = i.next();
@@ -139,7 +141,12 @@ class TracePointJsonService implements JsonService {
                 }
             }
         }
-        return writeResponse(summaries, activeTraces, capturedAt, captureTick);
+        if (summaries.size() + activeTraces.size() > request.getLimit()) {
+            // summaries is already ordered, so just drop the last few items
+            // always include all active traces
+            summaries = summaries.subList(0, request.getLimit() - activeTraces.size());
+        }
+        return writeResponse(summaries, activeTraces, capturedAt, captureTick, limitExceeded);
     }
 
     private List<Trace> getActiveTraces(long low, long high, @Nullable Boolean background,
@@ -204,7 +211,8 @@ class TracePointJsonService implements JsonService {
     }
 
     private static String writeResponse(List<TraceSnapshotSummary> summaries,
-            List<Trace> activeTraces, long capturedAt, long captureTick) throws IOException {
+            List<Trace> activeTraces, long capturedAt, long captureTick, boolean limitExceeded)
+            throws IOException {
 
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
@@ -227,6 +235,10 @@ class TracePointJsonService implements JsonService {
             jw.endArray();
         }
         jw.endArray();
+        if (limitExceeded) {
+            jw.name("limitExceeded");
+            jw.value(true);
+        }
         jw.endObject();
         jw.close();
         return sw.toString();

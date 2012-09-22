@@ -165,7 +165,7 @@ public class TraceSnapshotDao {
     public List<TraceSnapshotSummary> readSummaries(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable Boolean background,
             boolean errorOnly, boolean fineOnly, @Nullable StringComparator userIdComparator,
-            @Nullable String userId) {
+            @Nullable String userId, int limit) {
 
         logger.debug("readSummaries(): capturedFrom={}, capturedTo={}, durationLow={},"
                 + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
@@ -205,6 +205,7 @@ public class TraceSnapshotDao {
                 sql += " and user_id " + userIdComparator.getComparator() + " ?";
                 args.add(userIdComparator.formatParameter(userId));
             }
+            sql += " order by duration desc limit " + limit;
             return dataSource.query(sql, args.toArray(), new SummaryRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);

@@ -39,6 +39,7 @@ class TraceRequest {
     private String userId;
     @Nullable
     private String extraIds;
+    private int limit;
 
     public long getFrom() {
         return from;
@@ -122,5 +123,13 @@ class TraceRequest {
 
     public void setExtraIds(@Nullable String extraIds) {
         this.extraIds = extraIds;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 }

@@ -185,14 +185,14 @@ public class Informant {
 
     private Trace getLastTrace(boolean summary) throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
-                + Long.MAX_VALUE);
+                + Long.MAX_VALUE + "&limit=1000");
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
                 .get("snapshotPoints").getAsJsonArray();
         if (points.size() == 0) {
             throw new AssertionError("no trace found");
         } else {
-            JsonArray values = points.get(points.size() - 1).getAsJsonArray();
-            String traceId = values.get(2).getAsString();
+            JsonArray point = getMaxPointByCapturedAt(points);
+            String traceId = point.get(2).getAsString();
             if (summary) {
                 String traceJson = get("/trace/summary/" + traceId);
                 Trace trace = gson.fromJson(traceJson, Trace.class);
@@ -203,6 +203,20 @@ public class Informant {
                 return gson.fromJson(traceJson, Trace.class);
             }
         }
+    }
+
+    private JsonArray getMaxPointByCapturedAt(JsonArray points) {
+        long maxCapturedAt = 0;
+        JsonArray maxPoint = null;
+        for (int i = 0; i < points.size(); i++) {
+            JsonArray point = points.get(i).getAsJsonArray();
+            long time = point.get(0).getAsLong();
+            if (time > maxCapturedAt) {
+                maxCapturedAt = time;
+                maxPoint = point;
+            }
+        }
+        return maxPoint;
     }
 
     // this method blocks for an active trace to be available because
@@ -247,7 +261,7 @@ public class Informant {
 
     private Trace getActiveTrace() throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
-                + Long.MAX_VALUE);
+                + Long.MAX_VALUE + "&limit=1000");
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
                 .get("activePoints").getAsJsonArray();
         if (points.size() == 0) {

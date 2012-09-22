@@ -205,8 +205,9 @@
         from = date.valueOf()
         to = date.valueOf() + 24 * 60 * 60 * 1000
       }
+      var limit = $('#limitFilter').val()
       var queryString = buildQueryString()
-      getTracePoints(from, to, queryString, false)
+      getTracePoints(from, to, limit, queryString, false)
     }
     function buildQueryString() {
       var queryString = ''
@@ -238,8 +239,8 @@
     }
     var refreshQueryString
     var loadDetailId
-    function getTracePoints(from, to, queryString, initialLoad) {
-      queryString = 'from=' + from + '&to=' + to + queryString
+    function getTracePoints(from, to, limit, queryString, initialLoad) {
+      queryString = 'from=' + from + '&to=' + to + '&limit=' + limit + queryString
       // handle crazy user clicking on the button
       if (!initialLoad && queryString == refreshQueryString) return
       if (initialLoad) {
@@ -273,6 +274,12 @@
         }
         snapshotPoints = response.snapshotPoints
         activePoints = response.activePoints
+        if (response.limitExceeded) {
+          $('#limit').text(limit)
+          $('#limitExceeded').css('display', 'inline-block')
+        } else {
+          $('#limitExceeded').hide()
+        }
         hideTooltip()
         currentItem = null
         $('#detailTabContent').html('')
@@ -411,7 +418,7 @@
       plot.zoomOut()
       return false
     })
-    getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000, '', true)
+    getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000, 1000, '', true)
   })
 </script>
 </head>
@@ -433,6 +440,12 @@
     <div style="width: 100%; text-align: center; font-style: italic">
       use mouse scroll wheel to zoom in and out
       (or double click to zoom in and use this link to <a href="#" id="zoomOut">zoom out</a>)
+    </div>
+    <div style="text-align:center">
+    <div class="alert alert-error" id="limitExceeded"
+        style="display: none; margin: 0 auto; padding: 8px 35px; font-weight: bold">
+      Specified limit exceeded, only displaying slowest (<span id="limit"></span>) traces
+    </div>
     </div>
   </div>
   <br>
@@ -488,7 +501,7 @@
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label" for="userId">User ID</label>
+            <label class="control-label" for="userIdFilter">User ID</label>
             <div class="controls">
               <select class="input-medium0" id="userIdComparator">
                 <option value="begins">Begins with</option>
@@ -514,6 +527,16 @@
                   Display only traces with fine-grained profiling data
                 </span>
               </label>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="limitFilter">Limit</label>
+            <div class="controls">
+              <select class="input-medium0" id="limitFilter">
+                <option value="100">100</option>
+                <option value="1000" selected="selected">1,000</option>
+                <option value="10000">10,000</option>
+              </select>
             </div>
           </div>
           <div class="control-group">
