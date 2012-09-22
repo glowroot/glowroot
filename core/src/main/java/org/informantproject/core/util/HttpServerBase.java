@@ -107,7 +107,7 @@ public abstract class HttpServerBase {
             logger.debug("<init>(): binding http server to port {}", port);
             channel = bootstrap.bind(localAddress);
         } catch (ChannelException e) {
-            logger.error("could not start informant http listener on port " + port, e);
+            logger.error("could not start informant http listener on port {}", port);
             this.port = -1;
             // don't rethrow, allow everything else to proceed normally, but informant ui will not
             // be available
