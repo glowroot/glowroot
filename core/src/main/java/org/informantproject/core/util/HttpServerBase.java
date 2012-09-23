@@ -48,8 +48,6 @@ import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,14 +72,6 @@ public abstract class HttpServerBase {
     private final ChannelGroup allChannels;
 
     private final int port;
-
-    static {
-        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
-            public String determineThreadName(String currentThreadName, String proposedThreadName) {
-                return "Informant-" + proposedThreadName;
-            }
-        });
-    }
 
     public HttpServerBase(int port) {
         // thread names will be overridden by ThreadNameDeterminer above

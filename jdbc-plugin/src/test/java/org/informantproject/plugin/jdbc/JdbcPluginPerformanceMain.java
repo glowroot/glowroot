@@ -81,7 +81,7 @@ public class JdbcPluginPerformanceMain {
         for (Metric metric : trace.getMetrics()) {
             System.out.format("%s %d %d%n", metric.getName(), metric.getTotal(), metric.getCount());
         }
-        container.closeAndDeleteFiles();
+        container.close();
     }
 
     @SuppressWarnings("unused")
@@ -90,7 +90,7 @@ public class JdbcPluginPerformanceMain {
         InformantContainer container = setUpContainer();
         container.getInformant().disableCore();
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
-        container.closeAndDeleteFiles();
+        container.close();
     }
 
     @SuppressWarnings("unused")
@@ -99,7 +99,7 @@ public class JdbcPluginPerformanceMain {
         InformantContainer container = setUpContainer();
         container.getInformant().disablePlugin(PLUGIN_ID);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
-        container.closeAndDeleteFiles();
+        container.close();
     }
 
     private static InformantContainer setUpContainer() throws Exception {

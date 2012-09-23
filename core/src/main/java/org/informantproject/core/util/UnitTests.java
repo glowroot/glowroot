@@ -20,6 +20,7 @@ import java.io.FilenameFilter;
 import java.lang.Thread.State;
 import java.lang.annotation.Documented;
 import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -28,6 +29,7 @@ import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 
 /**
  * Only used by tests (except for the {@link OnlyUsedByTests} annotation itself). The placement of
@@ -55,16 +57,29 @@ public final class UnitTests {
     }
 
     // ensure the test didn't create any non-daemon threads
-    public static void preShutdownCheck(final Collection<Thread> preExistingThreads) {
-        Collection<Thread> rogueThreads = Collections2.filter(currentThreads(),
-                new Predicate<Thread>() {
-                    public boolean apply(Thread input) {
-                        return input != Thread.currentThread() && !input.isDaemon()
-                                && !preExistingThreads.contains(input);
-                    }
-                });
-        if (!rogueThreads.isEmpty()) {
-            throw new RogueThreadsException(rogueThreads);
+    public static void preShutdownCheck(final Collection<Thread> preExistingThreads)
+            throws InterruptedException {
+
+        // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
+        // time to shutdown when testing tomcat plugin
+        long startedAt = System.currentTimeMillis();
+        while (true) {
+            List<Thread> rogueThreads = Lists.newArrayList();
+            for (Thread thread : currentThreads()) {
+                if (thread != Thread.currentThread() && !preExistingThreads.contains(thread)
+                        && isRogueThread(thread)) {
+                    rogueThreads.add(thread);
+                }
+            }
+            if (rogueThreads.isEmpty()) {
+                // success
+                return;
+            } else if (System.currentTimeMillis() - startedAt > 5000) {
+                throw new RogueThreadsException(rogueThreads);
+            } else {
+                // failure, wait a few milliseconds before trying again
+                Thread.sleep(10);
+            }
         }
     }
 
@@ -110,6 +125,25 @@ public final class UnitTests {
                     + " of this git repository.  After that you can re-run this test outside of"
                     + " maven (e.g. from inside of your IDE) and it should succeed.");
         }
+    }
+
+    private static boolean isRogueThread(Thread thread) {
+        if (!thread.isDaemon()) {
+            return true;
+        } else if (isShaded() && !thread.getName().startsWith("Informant-")) {
+            return true;
+        } else if (!isShaded()
+                && !(thread.getName().startsWith("Informant-") || thread.getName().startsWith(
+                        "InformantTest-"))
+                && !thread.getName().startsWith("H2 File Lock Watchdog ")
+                && !thread.getName().startsWith("H2 Log Writer ")) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isShaded() {
+        return org.h2.Driver.class.getName().startsWith("org.informantproject.shaded.");
     }
 
     // cover the standard case when running from maven

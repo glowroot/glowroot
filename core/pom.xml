@@ -92,6 +92,18 @@
       <version>2.0.1</version>
     </dependency>
     <dependency>
+      <groupId>org.easytesting</groupId>
+      <artifactId>fest-reflect</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <!-- can't upgrade to 1.2.3 until after next fest-assert release, see
+        https://github.com/alexruiz/fest-util/commit/f2f13ce67b4b872ceaccc19faa435c39023d3cec -->
+      <groupId>org.easytesting</groupId>
+      <artifactId>fest-util</artifactId>
+      <version>1.2.2</version>
+    </dependency>
+    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>1.0.7</version>
@@ -198,7 +210,7 @@
               <!-- shade thread names as well to make it easy to identify informant threads -->
               <rawString>true</rawString>
               <pattern>H2 Log Writer</pattern>
-              <shadedPattern>H2 Log Writer</shadedPattern>
+              <shadedPattern>Informant-H2 Log Writer</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.ning.compress</pattern>
@@ -235,6 +247,10 @@
             <relocation>
               <pattern>org.aopalliance</pattern>
               <shadedPattern>org.informantproject.shaded.aopalliance</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.fest</pattern>
+              <shadedPattern>org.informantproject.shaded.fest</shadedPattern>
             </relocation>
             <relocation>
               <pattern>ch.qos.logback</pattern>
@@ -335,7 +351,14 @@
             <option>-keep class org.informantproject.shaded.google.common.** { *; }</option>
             <!-- keep all logback appenders -->
             <option>
-              -keep class * extends org.informantproject.shaded.qos.logback.core.Appender { *; }
+              -keep class * extends org.informantproject.shaded.qos.logback.core.Appender { *;
+              }
+            </option>
+            <option>
+              -keep class
+              org.informantproject.shaded.ning.http.client.providers.netty.NettyAsyncHttpProvider
+              {
+              *; }
             </option>
           </options>
         </configuration>
@@ -359,17 +382,17 @@
         </os>
       </activation>
       <build>
-          <plugins>
-            <plugin>
-              <groupId>com.github.wvengen</groupId>
-              <artifactId>proguard-maven-plugin</artifactId>
-              <configuration>
-                <libs>
-                  <lib>${java.home}/../Classes/classes.jar</lib>
-                </libs>
-              </configuration>
-            </plugin>
-          </plugins>
+        <plugins>
+          <plugin>
+            <groupId>com.github.wvengen</groupId>
+            <artifactId>proguard-maven-plugin</artifactId>
+            <configuration>
+              <libs>
+                <lib>${java.home}/../Classes/classes.jar</lib>
+              </libs>
+            </configuration>
+          </plugin>
+        </plugins>
       </build>
     </profile>
     <profile>

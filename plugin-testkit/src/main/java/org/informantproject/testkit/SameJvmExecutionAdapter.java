@@ -15,6 +15,7 @@
  */
 package org.informantproject.testkit;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -23,6 +24,7 @@ import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
+import org.informantproject.core.util.UnitTests;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.IsolatedWeavingClassLoader;
 import org.informantproject.core.weaving.WeavingMetric;
@@ -37,10 +39,13 @@ import com.google.common.collect.Lists;
 @ThreadSafe
 class SameJvmExecutionAdapter implements ExecutionAdapter {
 
+    private final Collection<Thread> preExistingThreads;
     private volatile IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
     SameJvmExecutionAdapter(String agentArgs) throws InstantiationException,
             IllegalAccessException, ClassNotFoundException {
+
+        preExistingThreads = UnitTests.currentThreads();
 
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
@@ -69,7 +74,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
                 RunnableWithReturn.class).run();
     }
 
-    public void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
+    public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass,
             String threadName) throws Exception {
 
         String previousThreadName = Thread.currentThread().getName();
@@ -85,10 +90,12 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public void closeImpl() throws InstantiationException, IllegalAccessException,
-            ClassNotFoundException {
+    public void close() throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException, InterruptedException {
 
+        UnitTests.preShutdownCheck(preExistingThreads);
         isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
+        UnitTests.postShutdownCheck(preExistingThreads);
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
         isolatedWeavingClassLoader = null;
     }

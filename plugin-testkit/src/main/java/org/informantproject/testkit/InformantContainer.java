@@ -16,7 +16,6 @@
 package org.informantproject.testkit;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +26,6 @@ import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.Files;
-import org.informantproject.core.util.UnitTests;
 
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
@@ -47,7 +45,6 @@ public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
 
-    private final Collection<Thread> preExistingThreads;
     private final ExecutionAdapter executionAdapter;
     private final File dataDir;
     private final AsyncHttpClient asyncHttpClient;
@@ -62,7 +59,6 @@ public class InformantContainer {
     public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
         File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
-        Collection<Thread> preExistingThreads = UnitTests.currentThreads();
         String agentArgs = "data.dir:" + dataDir.getAbsolutePath() + ",ui.port:" + uiPort
                 + ",internal.h2memdb:" + useMemDb;
         ExecutionAdapter executionAdapter;
@@ -76,13 +72,10 @@ public class InformantContainer {
             logger.debug("create(): using same JVM app container");
             executionAdapter = new SameJvmExecutionAdapter(agentArgs);
         }
-        return new InformantContainer(executionAdapter, preExistingThreads, dataDir);
+        return new InformantContainer(executionAdapter, dataDir);
     }
 
-    private InformantContainer(ExecutionAdapter executionAdapter,
-            Collection<Thread> preExistingThreads, File dataDir) throws Exception {
-
-        this.preExistingThreads = preExistingThreads;
+    private InformantContainer(ExecutionAdapter executionAdapter, File dataDir) throws Exception {
         this.executionAdapter = executionAdapter;
         this.dataDir = dataDir;
         asyncHttpClient = createAsyncHttpClient();
@@ -100,7 +93,7 @@ public class InformantContainer {
         String previousThreadName = Thread.currentThread().getName();
         try {
             informant.resetBaselineTime();
-            executionAdapter.executeAppUnderTestImpl(appUnderTestClass, threadName);
+            executionAdapter.executeAppUnderTest(appUnderTestClass, threadName);
             // wait for all traces to be written to the embedded db
             long startMillis = System.currentTimeMillis();
             while (informant.getNumPendingTraceWrites() > 0
@@ -112,9 +105,16 @@ public class InformantContainer {
         }
     }
 
-    public void closeAndDeleteFiles() throws Exception {
-        close();
+    public void close() throws Exception {
+        closeWithoutDeletingDataDir();
         Files.delete(dataDir);
+    }
+
+    public void closeWithoutDeletingDataDir() throws Exception {
+        // asyncHttpClient is not part of the "app under test", so shut it down
+        // first before checking for non-daemon threads
+        asyncHttpClient.close();
+        executionAdapter.close();
     }
 
     private AsyncHttpClient createAsyncHttpClient() {
@@ -131,15 +131,6 @@ public class InformantContainer {
                 executorService);
         builder.setAsyncHttpClientProviderConfig(providerConfig);
         return new AsyncHttpClient(builder.build());
-    }
-
-    private void close() throws Exception {
-        // asyncHttpClient is not part of the "app under test", so shut it down
-        // first before checking for non-daemon threads
-        asyncHttpClient.close();
-        UnitTests.preShutdownCheck(preExistingThreads);
-        executionAdapter.closeImpl();
-        UnitTests.postShutdownCheck(preExistingThreads);
     }
 
     private static boolean useExternalJvmAppContainer() {
@@ -159,8 +150,8 @@ public class InformantContainer {
     @ThreadSafe
     interface ExecutionAdapter {
         int getPort() throws Exception;
-        void executeAppUnderTestImpl(Class<? extends AppUnderTest> appUnderTestClass,
-                String threadName) throws Exception;
-        void closeImpl() throws Exception;
+        void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass, String threadName)
+                throws Exception;
+        void close() throws Exception;
     }
 }

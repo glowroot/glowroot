@@ -18,9 +18,12 @@ package org.informantproject.core;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.fest.reflect.core.Reflection;
+import org.fest.reflect.exception.ReflectionError;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCollector;
@@ -33,6 +36,8 @@ import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.trace.TraceSinkLocal;
+import org.jboss.netty.util.ThreadNameDeterminer;
+import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +49,7 @@ import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.ConnectionsPool;
 import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
@@ -72,6 +78,12 @@ class InformantModule extends AbstractModule {
         logger.debug("configure()");
         install(new LocalModule(agentArgs.getUiPort()));
         install(new FactoryModuleBuilder().build(PluginServicesImplFactory.class));
+        // this needs to be set early since both async-http-client and netty depend on it
+        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
+            public String determineThreadName(String currentThreadName, String proposedThreadName) {
+                return "Informant-" + proposedThreadName;
+            }
+        });
     }
 
     static void start(Injector injector) {
@@ -150,7 +162,44 @@ class InformantModule extends AbstractModule {
         providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
                 executorService);
         builder.setAsyncHttpClientProviderConfig(providerConfig);
-        return new AsyncHttpClient(builder.build());
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
+        setIdleConnectionTimerThreadName(asyncHttpClient);
+        return asyncHttpClient;
+    }
+
+    // this is in the name of enforcing the "Informant-" prefix on all thread names
+    // NettyConnectionsPool.idleConnectionDetector is an unexposed java.util.Timer object
+    // which has an internal Thread object
+    // TODO submit patch to netty to expose idleConnectionDetector as a configurable property
+    // (or at least its thread's name)
+    private void setIdleConnectionTimerThreadName(AsyncHttpClient asyncHttpClient) {
+        ConnectionsPool<?, ?> connectionsPool;
+        try {
+            connectionsPool = Reflection.field("connectionsPool").ofType(ConnectionsPool.class)
+                    .in(asyncHttpClient.getProvider()).get();
+        } catch (ReflectionError e) {
+            logger.warn(e.getMessage(), e);
+            return;
+        }
+        Timer timer;
+        try {
+            timer = Reflection.field("idleConnectionDetector").ofType(Timer.class)
+                    .in(connectionsPool).get();
+        } catch (ReflectionError e) {
+            logger.warn(e.getMessage(), e);
+            return;
+        }
+        Thread thread;
+        try {
+            thread = Reflection.field("thread").ofType(Thread.class).in(timer).get();
+        } catch (ReflectionError e) {
+            logger.warn(e.getMessage(), e);
+            return;
+        }
+        String threadName = thread.getName();
+        if (!threadName.startsWith("Informant-")) {
+            thread.setName("Informant-" + threadName);
+        }
     }
 
     @Provides

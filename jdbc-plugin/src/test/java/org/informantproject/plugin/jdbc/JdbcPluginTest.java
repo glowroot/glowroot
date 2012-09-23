@@ -58,7 +58,7 @@ public class JdbcPluginTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.closeAndDeleteFiles();
+        container.close();
     }
 
     @After

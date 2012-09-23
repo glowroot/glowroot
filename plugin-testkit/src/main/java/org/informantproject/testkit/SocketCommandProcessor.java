@@ -19,11 +19,14 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collection;
 import java.util.List;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.MainEntryPoint;
+import org.informantproject.core.util.UnitTests;
+import org.informantproject.core.util.UnitTests.RogueThreadsException;
 import org.informantproject.testkit.SocketCommander.CommandWrapper;
 import org.informantproject.testkit.SocketCommander.ResponseWrapper;
 
@@ -36,6 +39,8 @@ class SocketCommandProcessor implements Runnable {
     public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
     public static final String GET_PORT_COMMAND = "GET_PORT";
     public static final String EXCEPTION_RESPONSE = "EXCEPTION";
+    public static final String SHUTDOWN_COMMAND = "SHUTDOWN";
+    public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -61,6 +66,7 @@ class SocketCommandProcessor implements Runnable {
     }
 
     private void runInternal() throws Exception {
+        Collection<Thread> preExistingThreads = null;
         while (true) {
             CommandWrapper commandWrapper = (CommandWrapper) objectIn.readObject();
             logger.debug("command received by external jvm: {}", commandWrapper);
@@ -69,6 +75,21 @@ class SocketCommandProcessor implements Runnable {
             if (command instanceof String) {
                 if (command.equals(GET_PORT_COMMAND)) {
                     respond(MainEntryPoint.getPort(), commandNum);
+                } else if (command.equals(SHUTDOWN_COMMAND)) {
+                    if (preExistingThreads == null) {
+                        // EXECUTE_APP was never run
+                        respond(SHUTDOWN_RESPONSE, commandNum);
+                    } else {
+                        try {
+                            UnitTests.preShutdownCheck(preExistingThreads);
+                            MainEntryPoint.shutdown();
+                            UnitTests.postShutdownCheck(preExistingThreads);
+                            respond(SHUTDOWN_RESPONSE, commandNum);
+                        } catch (RogueThreadsException e) {
+                            logger.error(e.getMessage(), e);
+                            respond(EXCEPTION_RESPONSE, commandNum);
+                        }
+                    }
                 } else {
                     logger.error("unexpected command '" + command + "'");
                     respond(EXCEPTION_RESPONSE, commandNum);
@@ -81,6 +102,11 @@ class SocketCommandProcessor implements Runnable {
                 } else {
                     Object commandName = argList.get(0);
                     if (commandName.equals(EXECUTE_APP_COMMAND)) {
+                        if (preExistingThreads == null) {
+                            // wait until the first execute app command to capture pre-existing
+                            // threads, otherwise may pick up DestroyJavaVM thread
+                            preExistingThreads = UnitTests.currentThreads();
+                        }
                         String appClassName = (String) argList.get(1);
                         String threadName = (String) argList.get(2);
                         executeAppAndRespond(appClassName, threadName, commandNum);
