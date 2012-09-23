@@ -15,7 +15,6 @@
  */
 package org.informantproject.core.util;
 
-import org.informantproject.core.util.Clock;
 
 /**
  * @author Trask Stalnaker

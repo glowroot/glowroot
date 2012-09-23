@@ -20,11 +20,11 @@ import java.sql.Types;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.Column;
 import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;

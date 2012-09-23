@@ -22,14 +22,14 @@ import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.metric.MetricValue;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.DataSource.BatchPreparedStatementSetter;
 import org.informantproject.core.util.DataSource.Column;
 import org.informantproject.core.util.DataSource.ResultSetExtractor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

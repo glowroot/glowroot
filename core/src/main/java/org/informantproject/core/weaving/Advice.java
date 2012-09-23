@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.weaving.InjectMethodArg;
 import org.informantproject.api.weaving.InjectMethodName;
 import org.informantproject.api.weaving.InjectReturn;
@@ -37,8 +39,6 @@ import org.informantproject.api.weaving.OnThrow;
 import org.informantproject.api.weaving.Pointcut;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;

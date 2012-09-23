@@ -35,13 +35,24 @@ public class PreInitializeClassesTest {
     @Test
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
         GlobalCollector globalCollector = new GlobalCollector();
-        // first call constructor
+        // "call" LoggerFactoryImpl.getLogger() because it is called from LoggerFactory via
+        // reflection and so it is not otherwise found by the global collector
+        //
+        // intentionally not forcing the propagation from LoggerFactoryImpl to
+        // LogMessageSinkLocal.onLogMessage() since LogMessageSinkLocal is mostly executed inside of
+        // a separate thread, and including it would propagate to lots of unnecessary H2 classes
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
+                "org/informantproject/core/LoggerFactoryImpl", "getLogger",
+                "(Ljava/lang/String;)Lorg/informantproject/api/Logger;"));
+
+        // "call" WeavingClassFileTransformer constructor to capture its lazy loading weavers
+        // structure
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/informantproject/core/weaving/WeavingClassFileTransformer", "<init>",
                 "([Lorg/informantproject/api/weaving/Mixin;"
                         + "[Lorg/informantproject/core/weaving/Advice;"
                         + "Lorg/informantproject/core/trace/WeavingMetricImpl;)V"));
-        // then call transform()
+        // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/informantproject/core/weaving/WeavingClassFileTransformer", "transform",
                 "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"

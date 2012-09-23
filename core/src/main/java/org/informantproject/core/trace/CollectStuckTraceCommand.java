@@ -17,8 +17,8 @@ package org.informantproject.core.trace;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 
 /**
  * Designed to be scheduled and run as soon as the trace exceeds a given threshold.

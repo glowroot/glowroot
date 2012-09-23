@@ -24,9 +24,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Needs to be externally synchronized around startBlock()/write()/endBlock().

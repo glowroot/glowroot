@@ -24,6 +24,8 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.util.Clock;
@@ -32,8 +34,6 @@ import org.informantproject.local.trace.TraceSnapshotDao;
 import org.informantproject.local.trace.TraceSnapshotDao.StringComparator;
 import org.informantproject.local.trace.TraceSnapshotService;
 import org.informantproject.local.trace.TraceSnapshotSummary;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;

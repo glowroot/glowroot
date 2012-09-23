@@ -15,14 +15,14 @@
  */
 package org.informantproject.core;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.metric.MetricSink;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.local.metric.MetricSinkLocal;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer;
 import org.informantproject.local.ui.HttpServer.LocalHttpServerPort;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;

@@ -22,9 +22,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.objectweb.asm.ClassReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
@@ -71,7 +71,12 @@ public class GlobalCollector {
         }
         if (!optional.isPresent()) {
             // couldn't find type
-            return;
+            if (expected) {
+                throw new IllegalStateException("Could not find type '" + rootMethod.getOwner()
+                        + "'");
+            } else {
+                return;
+            }
         }
         logger.debug(indent + rootMethod);
         referencedMethods.add(rootMethod);

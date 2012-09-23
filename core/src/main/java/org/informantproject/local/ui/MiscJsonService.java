@@ -17,12 +17,12 @@ package org.informantproject.local.ui;
 
 import java.sql.SQLException;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.trace.TraceSnapshotDao;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

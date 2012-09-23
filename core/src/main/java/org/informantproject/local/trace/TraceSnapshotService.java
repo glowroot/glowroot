@@ -32,6 +32,8 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import org.informantproject.api.ErrorMessage;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.core.config.ConfigService;
@@ -43,8 +45,6 @@ import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceMetric;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;

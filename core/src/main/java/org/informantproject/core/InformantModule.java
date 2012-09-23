@@ -24,6 +24,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.fest.reflect.core.Reflection;
 import org.fest.reflect.exception.ReflectionError;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.metric.MetricCollector;
@@ -38,8 +40,6 @@ import org.informantproject.core.util.RollingFile;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.inject.AbstractModule;

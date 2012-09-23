@@ -32,11 +32,11 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.informantproject.api.ErrorMessage;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.stack.MergedStackTree;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.PartiallyThreadSafe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;

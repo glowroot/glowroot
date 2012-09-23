@@ -15,11 +15,11 @@
  */
 package org.informantproject.core;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.Metric;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.trace.MetricImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;

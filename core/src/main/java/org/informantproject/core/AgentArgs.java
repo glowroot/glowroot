@@ -23,8 +23,8 @@ import java.net.URL;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 
 import com.google.common.io.Files;
 

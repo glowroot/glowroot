@@ -25,11 +25,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.config.PluginDescriptor.PropertyDescriptor;
 import org.informantproject.core.util.Static;
 import org.informantproject.core.util.XmlDocuments;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;

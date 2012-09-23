@@ -21,9 +21,9 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.UnresolvedMethod;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 import com.google.gson.stream.JsonWriter;

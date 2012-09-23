@@ -25,6 +25,8 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.h2.store.FileLister;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.PluginServices;
 import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
@@ -38,8 +40,6 @@ import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.WeavingClassFileTransformer;
 import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.local.ui.HttpServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;

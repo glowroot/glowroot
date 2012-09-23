@@ -22,8 +22,8 @@ import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;

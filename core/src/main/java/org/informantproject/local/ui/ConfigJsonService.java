@@ -18,6 +18,8 @@ package org.informantproject.local.ui;
 import java.io.IOException;
 import java.util.List;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.config.CoarseProfilingConfig;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
@@ -28,8 +30,6 @@ import org.informantproject.core.config.Plugins;
 import org.informantproject.core.config.UserTracingConfig;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;

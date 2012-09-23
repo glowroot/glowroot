@@ -25,6 +25,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.ErrorMessage;
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.api.Metric;
 import org.informantproject.api.PluginServices;
@@ -44,8 +46,6 @@ import org.informantproject.core.trace.TraceRegistry;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.trace.WeavingMetricImpl;
 import org.informantproject.core.util.Clock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;

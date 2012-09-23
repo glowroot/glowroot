@@ -24,6 +24,8 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.informantproject.api.Logger;
+import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
@@ -35,8 +37,6 @@ import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockId;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
