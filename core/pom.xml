@@ -31,6 +31,19 @@
       <version>4.0</version>
     </dependency>
     <dependency>
+      <!-- org.objectweb.asm.util.CheckClassAdapter.verify() is used when woven byte code
+        verification is enabled via -Dinformant.weaving.verify=true -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>4.0</version>
+    </dependency>
+    <dependency>
+      <!-- this is an optional dependency of asm-util -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>4.0</version>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
       <!-- netty 4.x requires jdk 6 -->

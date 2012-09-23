@@ -133,7 +133,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             inWeaving.set(true);
             try {
                 byte[] originalBytes = bytes;
-                bytes = weaver.weave(originalBytes);
+                bytes = weaver.weave(originalBytes, name);
                 if (bytes != originalBytes) {
                     logger.debug("findClass(): transformed {}", name);
                 }

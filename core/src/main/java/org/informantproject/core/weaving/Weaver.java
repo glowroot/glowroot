@@ -15,6 +15,7 @@
  */
 package org.informantproject.core.weaving;
 
+import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.informantproject.api.weaving.Mixin;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +42,10 @@ import com.google.common.collect.ImmutableList;
 class Weaver implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
+
+    // useful for debugging java.lang.VerifyErrors
+    private static final boolean verifyWeaving = Boolean.valueOf(System
+            .getProperty("informant.weaving.verify"));
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
@@ -59,18 +65,18 @@ class Weaver implements Opcodes {
         this.metric = metric;
     }
 
-    byte[] weave(byte[] classBytes) {
-        return weave$informant$metric$informant$weaving$0(classBytes, (CodeSource) null);
+    byte[] weave(byte[] classBytes, String className) {
+        return weave$informant$metric$informant$weaving$0(classBytes, (CodeSource) null, className);
     }
 
-    byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain) {
+    byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain, String className) {
         return weave$informant$metric$informant$weaving$0(classBytes,
-                protectionDomain.getCodeSource());
+                protectionDomain.getCodeSource(), className);
     }
 
     // weird method name is following "metric marker" method naming
     private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes,
-            @Nullable CodeSource codeSource) {
+            @Nullable CodeSource codeSource, String className) {
 
         Timer timer = metric.start();
         try {
@@ -91,10 +97,26 @@ class Weaver implements Opcodes {
             if (cv.isNothingAtAllToWeave()) {
                 return classBytes;
             } else {
-                return cw.toByteArray();
+                byte[] wovenBytes = cw.toByteArray();
+                if (verifyWeaving) {
+                    verifyBytecode(classBytes, className, false);
+                    verifyBytecode(wovenBytes, className, true);
+                }
+                return wovenBytes;
             }
         } finally {
             timer.end();
+        }
+    }
+
+    private static void verifyBytecode(byte[] bytes, String className, boolean woven) {
+        ClassReader verifyClassReader = new ClassReader(bytes);
+        try {
+            CheckClassAdapter.verify(verifyClassReader, false, new PrintWriter(System.err));
+        } catch (Exception e) {
+            String beforeAfter = woven ? "after" : "before";
+            logger.warn("error verifying class " + beforeAfter + " weaving, " + className + ": "
+                    + e.getMessage(), e);
         }
     }
 }

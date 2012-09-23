@@ -99,7 +99,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         } else {
             weaver = weavers.getUnchecked(loader);
         }
-        byte[] transformedBytes = weaver.weave(bytes, protectionDomain);
+        byte[] transformedBytes = weaver.weave(bytes, protectionDomain, className);
         if (transformedBytes != bytes) {
             logger.debug("transform(): transformed {}", className);
         }
