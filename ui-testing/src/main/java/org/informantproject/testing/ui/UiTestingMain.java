@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 public final class UiTestingMain {
 
     private static final int UI_PORT = 4000;
+    // this is off by default because it is annoying to have these messages in the console
+    private static final boolean TEST_LOG_MESSAGES = false;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
@@ -58,7 +60,10 @@ public final class UiTestingMain {
     }
 
     public static class GenerateTraces implements AppUnderTest {
+        private static final org.informantproject.api.Logger logger =
+                org.informantproject.api.LoggerFactory.getLogger(GenerateTraces.class);
         public void executeApp() throws InterruptedException {
+            int count = 0;
             while (true) {
                 // one very short trace that will have an empty merged stack tree
                 new NestableCall(1, 10, 100).execute();
@@ -67,6 +72,14 @@ public final class UiTestingMain {
                 new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
                 new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
                 new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
+                if (TEST_LOG_MESSAGES) {
+                    if (count++ % 2 == 0) {
+                        logger.warn("everything is actually ok");
+                    } else {
+                        logger.warn("everything is actually ok", new IllegalStateException(
+                                "just testing"));
+                    }
+                }
                 Thread.sleep(10000);
             }
         }

@@ -17,59 +17,48 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>Informant | Thread dump</title>
+<title>Informant | Log</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
 <link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="libs/jquery/1.8.1/jquery.min.js"></script>
 <!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
 <script type="text/javascript" src="libs/bootstrap/2.1.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="libs/moment/1.7.0/moment.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 </head>
-<script type="text/x-handlebars-template" id="threadDumpTemplate">
+<script type="text/x-handlebars-template" id="logTemplate">
 <pre>
 {{#each .}}
-"{{name}}"
-   java.lang.Thread.State: {{state}}
-{{#ifBlocked state}}        - blocked on {{lockName}}
-{{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
-{{/if}}{{/ifWaiting}}{{#each stackTrace}}        {{.}}
-{{/each}}{{/each}}
+<b>{{#formatTimestamp timestamp}}{{/formatTimestamp}}</b> {{level}} {{text}}{{#if exception}}
+{{exception.display}}
+{{#each exception.stackTrace}}        {{.}}
+{{/each}}{{^}}
+{{/if}}{{/each}}
 </pre>
 </script>
 <script type="text/javascript">
-  Handlebars.registerHelper('ifBlocked', function(state, options) {
-    if (state == 'BLOCKED') {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
+  Handlebars.registerHelper('formatTimestamp', function(timestamp, options) {
+    return moment(timestamp).format('MM/DD/YYYY HH:mm:ss.SSS')
   })
-  Handlebars.registerHelper('ifWaiting', function(state, options) {
-    if (state == 'WAITING' || state == 'TIMED_WAITING') {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
-  })
-  var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html())
+  var logTemplate = Handlebars.compile($('#logTemplate').html())
   $(document).ready(function() {
     configureAjaxError()
-    $.getJSON('misc/threaddump', function(threads) {
-      var html = threadDumpTemplate(threads)
-      $('#threadDump').html(html)
+    $.getJSON('misc/log', function(logMessages) {
+      var html = logTemplate(logMessages)
+      $('#log').html(html)
     })
   })
 </script>
 <body>
   <h1 class="header">
-    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Thread dump</span>
+    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Log</span>
     <span class="header-see-also">
       see also: <a href="traces.html">trace explorer</a>,
       <a href="configuration.html">configuration</a>
     </span>
   </h1>
-  <div id="threadDump"></div>
+  <div id="log"></div>
 </body>
 </html>

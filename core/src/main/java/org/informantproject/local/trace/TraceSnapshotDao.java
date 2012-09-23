@@ -44,7 +44,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Data access object for storing and reading trace data from the embedded H2 database.
+ * Data access object for storing and reading trace snapshot data from the embedded H2 database.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -69,14 +69,14 @@ public class TraceSnapshotDao {
             new Column("user_id", Types.VARCHAR),
             new Column("error_text", Types.VARCHAR),
             new Column("error_detail", Types.VARCHAR), // json data
-            new Column("error_stack_trace", Types.VARCHAR), // json data
+            new Column("exception", Types.VARCHAR), // json data
             new Column("metrics", Types.VARCHAR), // json data
             new Column("spans", Types.VARCHAR), // rolling file block id
             new Column("coarse_merged_stack_tree", Types.VARCHAR), // rolling file block id
             new Column("fine_merged_stack_tree", Types.VARCHAR)); // rolling file block id
 
-    private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("trace_idx",
-            "captured_at", "duration"));
+    private static final ImmutableList<Index> indexes = ImmutableList.of(new Index(
+            "trace_snapshot_idx", "captured_at", "duration"));
 
     private final DataSource dataSource;
     private final RollingFile rollingFile;
@@ -91,18 +91,7 @@ public class TraceSnapshotDao {
         this.clock = clock;
         boolean errorOnInit = false;
         try {
-            if (!dataSource.tableExists("trace")) {
-                dataSource.createTable("trace", columns);
-                dataSource.createIndexes("trace", indexes);
-            } else if (dataSource.tableNeedsUpgrade("trace", columns)) {
-                logger.warn("upgrading trace table schema, which unfortunately at this point just"
-                        + " means dropping and re-create the table (losing existing data)");
-                dataSource.execute("drop table trace");
-                dataSource.createTable("trace", columns);
-                dataSource.createIndexes("trace", indexes);
-                logger.warn("the schema for the trace table was outdated so it was dropped"
-                        + " and re-created, existing trace data was lost");
-            }
+            dataSource.syncTable("trace_snapshot", columns, indexes);
         } catch (SQLException e) {
             errorOnInit = true;
             logger.error(e.getMessage(), e);
@@ -145,18 +134,18 @@ public class TraceSnapshotDao {
             }
         }
         try {
-            dataSource.update("merge into trace (id, captured_at, start_at, duration, stuck,"
-                    + " completed, background, error, fine, description, attributes, user_id,"
-                    + " error_text, error_detail, error_stack_trace, metrics, spans,"
+            dataSource.update("merge into trace_snapshot (id, captured_at, start_at, duration,"
+                    + " stuck, completed, background, error, fine, description, attributes,"
+                    + " user_id, error_text, error_detail, exception, metrics, spans,"
                     + " coarse_merged_stack_tree, fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
                     + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), capturedAt,
                     snapshot.getStartAt(), snapshot.getDuration(), snapshot.isStuck(),
                     snapshot.isCompleted(), snapshot.isBackground(),
                     snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
                     snapshot.getDescription(), snapshot.getAttributes(), snapshot.getUserId(),
-                    snapshot.getErrorText(), snapshot.getErrorDetail(),
-                    snapshot.getErrorStackTrace(), snapshot.getMetrics(), spansBlockId,
-                    coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
+                    snapshot.getErrorText(), snapshot.getErrorDetail(), snapshot.getException(),
+                    snapshot.getMetrics(), spansBlockId, coarseMergedStackTreeBlockId,
+                    fineMergedStackTreeBlockId);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -176,7 +165,7 @@ public class TraceSnapshotDao {
             return ImmutableList.of();
         }
         try {
-            String sql = "select id, captured_at, duration, completed from trace where"
+            String sql = "select id, captured_at, duration, completed from trace_snapshot where"
                     + " captured_at >= ? and captured_at <= ?";
             List<Object> args = Lists.newArrayList();
             args.add(capturedFrom);
@@ -205,7 +194,8 @@ public class TraceSnapshotDao {
                 sql += " and user_id " + userIdComparator.getComparator() + " ?";
                 args.add(userIdComparator.formatParameter(userId));
             }
-            sql += " order by duration desc limit " + limit;
+            sql += " order by duration desc limit ?";
+            args.add(limit);
             return dataSource.query(sql, args.toArray(), new SummaryRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -223,9 +213,9 @@ public class TraceSnapshotDao {
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
                     + " completed, background, description, attributes, user_id, error_text,"
-                    + " error_detail, error_stack_trace, metrics, spans, coarse_merged_stack_tree,"
-                    + " fine_merged_stack_tree from trace where id = ?", new Object[] { id },
-                    new TraceRowMapper());
+                    + " error_detail, exception, metrics, spans, coarse_merged_stack_tree,"
+                    + " fine_merged_stack_tree from trace_snapshot where id = ?",
+                    new Object[] { id }, new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -249,7 +239,7 @@ public class TraceSnapshotDao {
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
                     + " background, description, attributes, user_id, error_text, error_detail,"
-                    + " error_stack_trace, metrics from trace where id = ?", new Object[] { id },
+                    + " exception, metrics from trace_snapshot where id = ?", new Object[] { id },
                     new TraceSummaryRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
@@ -270,8 +260,8 @@ public class TraceSnapshotDao {
             return 0;
         }
         try {
-            return dataSource.update("delete from trace where captured_at >= ? and captured_at"
-                    + " <= ?", capturedFrom, capturedTo);
+            return dataSource.update("delete from trace_snapshot where captured_at >= ? and"
+                    + " captured_at <= ?", capturedFrom, capturedTo);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;
@@ -284,7 +274,7 @@ public class TraceSnapshotDao {
             return;
         }
         try {
-            dataSource.execute("truncate table trace");
+            dataSource.execute("truncate table trace_snapshot");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -296,7 +286,7 @@ public class TraceSnapshotDao {
             return 0;
         }
         try {
-            return dataSource.queryForLong("select count(*) from trace");
+            return dataSource.queryForLong("select count(*) from trace_snapshot");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;
@@ -316,7 +306,7 @@ public class TraceSnapshotDao {
                 .userId(resultSet.getString(9))
                 .errorText(resultSet.getString(10))
                 .errorDetail(resultSet.getString(11))
-                .errorStackTrace(resultSet.getString(12))
+                .exception(resultSet.getString(12))
                 .metrics(resultSet.getString(13));
     }
 
@@ -337,7 +327,7 @@ public class TraceSnapshotDao {
     private class PartiallyHydratedTrace {
 
         private final TraceSnapshot.Builder builder;
-        // file block ids are stored temporarily while reading the stored trace from the
+        // file block ids are stored temporarily while reading the trace snapshot from the
         // database so that reading from the rolling file can occur outside of the jdbc connection
         @Nullable
         private final String spansFileBlockId;

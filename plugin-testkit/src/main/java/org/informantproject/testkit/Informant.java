@@ -27,6 +27,7 @@ import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.Config.PluginConfigJsonDeserializer;
 import org.informantproject.testkit.Config.UserTracingConfig;
+import org.informantproject.testkit.Trace.CapturedException;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import com.google.gson.Gson;
@@ -183,6 +184,10 @@ public class Informant {
         return getLastTrace(true);
     }
 
+    public List<LogMessage> getLog() throws Exception {
+        return gson.fromJson(get("/misc/log"), new TypeToken<List<LogMessage>>() {}.getType());
+    }
+
     private Trace getLastTrace(boolean summary) throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
@@ -240,6 +245,12 @@ public class Informant {
     public List<String> getStackTrace(String stackTraceHash) throws Exception {
         String stackTraceJson = get("/stacktrace/" + stackTraceHash);
         return gson.fromJson(stackTraceJson, new TypeToken<List<String>>() {}.getType());
+    }
+
+    @Nullable
+    public CapturedException getException(String exceptionHash) throws Exception {
+        String exceptionJson = get("/stacktrace/" + exceptionHash);
+        return gson.fromJson(exceptionJson, CapturedException.class);
     }
 
     public void deleteAllTraces() throws Exception {

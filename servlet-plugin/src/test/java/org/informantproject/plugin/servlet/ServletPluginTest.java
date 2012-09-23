@@ -484,7 +484,7 @@ public class ServletPluginTest {
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getError().getText()).isNotNull();
-        assertThat(trace.getError().getStackTrace()).isNotNull();
+        assertThat(trace.getError().getException()).isNotNull();
     }
 
     @Test

@@ -67,16 +67,7 @@ public class StackTraceDao {
         this.dataSource = dataSource;
         boolean errorOnInit = false;
         try {
-            if (!dataSource.tableExists("stack_trace")) {
-                dataSource.createTable("stack_trace", columns);
-            } else if (dataSource.tableNeedsUpgrade("stack_trace", columns)) {
-                logger.warn("upgrading stack_trace table schema, which unfortunately at this point"
-                        + " just means dropping and re-create the table (losing existing data)");
-                dataSource.execute("drop table stack_trace");
-                dataSource.createTable("stack_trace", columns);
-                logger.warn("the schema for the stack_trace table was outdated so it was dropped"
-                        + " and re-created, existing stack_trace data was lost");
-            }
+            dataSource.syncTable("stack_trace", columns);
         } catch (SQLException e) {
             errorOnInit = true;
             logger.error(e.getMessage(), e);

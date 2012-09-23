@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.api.CapturedException;
 import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
@@ -115,9 +116,9 @@ public class TraceSnapshotService {
                 jw.close();
                 builder.errorDetail(sb.toString());
             }
-            StackTraceElement[] stackTrace = errorMessage.getStackTrace();
-            if (stackTrace != null) {
-                builder.errorStackTrace(getStackTraceJson(stackTrace));
+            CapturedException exception = errorMessage.getException();
+            if (exception != null) {
+                builder.exception(getExceptionJson(exception));
             }
         }
         Map<String, String> attributes = trace.getAttributes();
@@ -207,9 +208,9 @@ public class TraceSnapshotService {
                 sb.append(",\"detail\":");
                 sb.append(snapshot.getErrorDetail());
             }
-            if (snapshot.getErrorStackTrace() != null) {
-                sb.append(",\"stackTrace\":");
-                sb.append(snapshot.getErrorStackTrace());
+            if (snapshot.getException() != null) {
+                sb.append(",\"exception\":");
+                sb.append(snapshot.getException());
             }
             sb.append("}");
         }
@@ -293,9 +294,35 @@ public class TraceSnapshotService {
         return new MergedStackTreeByteStream(toVisit);
     }
 
-    private static String getStackTraceJson(StackTraceElement[] stackTrace) throws IOException {
+    @Nullable
+    public static String getExceptionJson(CapturedException exception) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+        writeException(exception, jw);
+        jw.close();
+        return sb.toString();
+    }
+
+    private static void writeException(CapturedException exception, JsonWriter jw)
+            throws IOException {
+
+        jw.beginObject();
+        jw.name("display");
+        jw.value(exception.getDisplay());
+        jw.name("stackTrace");
+        writeStackTrace(exception.getStackTrace(), jw);
+        jw.name("framesInCommonWithCaused");
+        jw.value(exception.getFramesInCommonWithCaused());
+        if (exception.getCause() != null) {
+            jw.name("cause");
+            writeException(exception.getCause(), jw);
+        }
+        jw.endObject();
+    }
+
+    private static void writeStackTrace(StackTraceElement[] stackTrace, JsonWriter jw)
+            throws IOException {
+
         jw.beginArray();
         String realDescription = null;
         for (StackTraceElement stackTraceElement : stackTrace) {
@@ -317,8 +344,6 @@ public class TraceSnapshotService {
             }
         }
         jw.endArray();
-        jw.close();
-        return sb.toString();
     }
 
     private static class SpansByteStream extends ByteStream {
@@ -427,28 +452,43 @@ public class TraceSnapshotService {
                     jw.name("detail");
                     new MessageDetailSerializer(jw).write(detail);
                 }
-                StackTraceElement[] stackTrace = errorMessage.getStackTrace();
+                CapturedException stackTrace = errorMessage.getException();
                 if (stackTrace != null) {
-                    writeStackTraceHash(stackTrace, jw);
+                    // conserve space for repetitive exception stack traces and minimize initial
+                    // load of trace snapshot by storing hash only
+                    jw.name("exceptionHash");
+                    jw.value(writeExceptionHash(stackTrace));
                 }
                 jw.endObject();
             }
             StackTraceElement[] stackTrace = span.getStackTrace();
             if (stackTrace != null) {
-                writeStackTraceHash(stackTrace, jw);
+                // conserve space for repetitive stack traces and minimize initial load of trace
+                // snapshot by storing hash only
+                jw.name("stackTraceHash");
+                jw.value(writeStackTraceHash(stackTrace));
             }
             jw.endObject();
         }
 
-        private void writeStackTraceHash(StackTraceElement[] stackTrace, JsonWriter jw)
-                throws IOException {
-
-            String stackTraceJson = getStackTraceJson(stackTrace);
+        private String writeExceptionHash(CapturedException stackTrace) throws IOException {
+            String stackTraceJson = getExceptionJson(stackTrace);
             String stackTraceHash = Hashing.sha1().hashString(stackTraceJson, Charsets.UTF_8)
                     .toString();
             stackTraces.put(stackTraceHash, stackTraceJson);
-            jw.name("stackTraceHash");
-            jw.value(stackTraceHash);
+            return stackTraceHash;
+        }
+
+        private String writeStackTraceHash(StackTraceElement[] stackTrace) throws IOException {
+            StringBuilder sb = new StringBuilder();
+            JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+            writeStackTrace(stackTrace, jw);
+            jw.close();
+            String stackTraceJson = sb.toString();
+            String stackTraceHash = Hashing.sha1().hashString(stackTraceJson, Charsets.UTF_8)
+                    .toString();
+            stackTraces.put(stackTraceHash, stackTraceJson);
+            return stackTraceHash;
         }
     }
 

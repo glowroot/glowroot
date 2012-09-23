@@ -20,8 +20,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
-import com.google.common.base.Strings;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -34,21 +32,16 @@ public abstract class ErrorMessage {
     public abstract Map<String, ?> getDetail();
 
     @Nullable
-    public abstract StackTraceElement[] getStackTrace();
+    public abstract CapturedException getException();
 
     protected ErrorMessage() {}
 
     public static ErrorMessage from(Throwable t) {
-        Throwable root = getRootCause(t);
-        String text = root.getMessage();
-        if (Strings.isNullOrEmpty(text)) {
-            text = root.getClass().getName();
-        }
-        return new ErrorMessageImpl(text, null, root.getStackTrace());
+        return new ErrorMessageImpl(getRootCause(t).toString(), null, CapturedException.from(t));
     }
 
     public static ErrorMessage from(String message, Throwable t) {
-        return new ErrorMessageImpl(message, null, getRootCause(t).getStackTrace());
+        return new ErrorMessageImpl(message, null, CapturedException.from(t));
     }
 
     private static Throwable getRootCause(Throwable t) {
@@ -66,14 +59,14 @@ public abstract class ErrorMessage {
         @Nullable
         private final Map<String, ?> detail;
         @Nullable
-        private final StackTraceElement[] stackTraceElements;
+        private final CapturedException exception;
 
         private ErrorMessageImpl(String text, @Nullable Map<String, ?> detail,
-                @Nullable StackTraceElement[] stackTraceElements) {
+                @Nullable CapturedException exception) {
 
             this.text = text;
             this.detail = detail;
-            this.stackTraceElements = stackTraceElements;
+            this.exception = exception;
         }
 
         @Override
@@ -89,8 +82,8 @@ public abstract class ErrorMessage {
 
         @Override
         @Nullable
-        public StackTraceElement[] getStackTrace() {
-            return stackTraceElements;
+        public CapturedException getException() {
+            return exception;
         }
     }
 }

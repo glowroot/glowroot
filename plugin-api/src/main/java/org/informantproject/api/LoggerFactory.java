@@ -34,7 +34,7 @@ import javax.annotation.concurrent.ThreadSafe;
 public final class LoggerFactory {
 
     private static final String LOGGER_FACTORY_IMPL_CLASS_NAME =
-            "org.informantproject.core.LoggerFactoryImpl";
+            "org.informantproject.core.log.LoggerFactoryImpl";
     private static final String GET_LOGGER_METHOD_NAME = "getLogger";
 
     @Nullable
@@ -103,10 +103,10 @@ public final class LoggerFactory {
         public void trace(String msg) {
             logger.trace(msg);
         }
-        public void trace(String format, Object arg) {
+        public void trace(String format, @Nullable Object arg) {
             logger.trace(format, arg);
         }
-        public void trace(String format, Object arg1, Object arg2) {
+        public void trace(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.trace(format, arg1, arg2);
         }
         public void trace(String format, Object... arguments) {
@@ -121,10 +121,10 @@ public final class LoggerFactory {
         public void debug(String msg) {
             logger.debug(msg);
         }
-        public void debug(String format, Object arg) {
+        public void debug(String format, @Nullable Object arg) {
             logger.debug(format, arg);
         }
-        public void debug(String format, Object arg1, Object arg2) {
+        public void debug(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.debug(format, arg1, arg2);
         }
         public void debug(String format, Object... arguments) {
@@ -139,10 +139,10 @@ public final class LoggerFactory {
         public void info(String msg) {
             logger.info(msg);
         }
-        public void info(String format, Object arg) {
+        public void info(String format, @Nullable Object arg) {
             logger.info(format, arg);
         }
-        public void info(String format, Object arg1, Object arg2) {
+        public void info(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.info(format, arg1, arg2);
         }
         public void info(String format, Object... arguments) {
@@ -157,10 +157,10 @@ public final class LoggerFactory {
         public void warn(String msg) {
             logger.warn(msg);
         }
-        public void warn(String format, Object arg) {
+        public void warn(String format, @Nullable Object arg) {
             logger.warn(format, arg);
         }
-        public void warn(String format, Object arg1, Object arg2) {
+        public void warn(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.warn(format, arg1, arg2);
         }
         public void warn(String format, Object... arguments) {
@@ -175,10 +175,10 @@ public final class LoggerFactory {
         public void error(String msg) {
             logger.error(msg);
         }
-        public void error(String format, Object arg) {
+        public void error(String format, @Nullable Object arg) {
             logger.error(format, arg);
         }
-        public void error(String format, Object arg1, Object arg2) {
+        public void error(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.error(format, arg1, arg2);
         }
         public void error(String format, Object... arguments) {

@@ -48,7 +48,7 @@ public class TraceSnapshot {
     @Nullable
     private final String errorDetail; // json data
     @Nullable
-    private final String errorStackTrace; // json data
+    private final String exception; // json data
     @Nullable
     private final String metrics; // json data
     // using ByteStream so these potentially very large strings can be streamed without consuming
@@ -63,7 +63,7 @@ public class TraceSnapshot {
     private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
             boolean background, String description, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
-            @Nullable String errorStackTrace, @Nullable String metrics, @Nullable ByteStream spans,
+            @Nullable String exception, @Nullable String metrics, @Nullable ByteStream spans,
             @Nullable ByteStream coarseMergedStackTree, @Nullable ByteStream fineMergedStackTree) {
 
         this.id = id;
@@ -77,7 +77,7 @@ public class TraceSnapshot {
         this.userId = userId;
         this.errorText = errorText;
         this.errorDetail = errorDetail;
-        this.errorStackTrace = errorStackTrace;
+        this.exception = exception;
         this.metrics = metrics;
         this.spans = spans;
         this.coarseMergedStackTree = coarseMergedStackTree;
@@ -133,8 +133,8 @@ public class TraceSnapshot {
     }
 
     @Nullable
-    String getErrorStackTrace() {
-        return errorStackTrace;
+    String getException() {
+        return exception;
     }
 
     @Nullable
@@ -170,7 +170,7 @@ public class TraceSnapshot {
                 .add("userId", userId)
                 .add("errorText", errorText)
                 .add("errorDetail", errorDetail)
-                .add("errorStackTrace", errorStackTrace)
+                .add("exception", exception)
                 .add("metrics", metrics)
                 .toString();
     }
@@ -199,7 +199,7 @@ public class TraceSnapshot {
         @Nullable
         private String errorDetail;
         @Nullable
-        private String errorStackTrace;
+        private String exception;
         @Nullable
         private String metrics;
         @Nullable
@@ -266,8 +266,8 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder errorStackTrace(String errorStackTrace) {
-            this.errorStackTrace = errorStackTrace;
+        Builder exception(String exception) {
+            this.exception = exception;
             return this;
         }
 
@@ -293,7 +293,7 @@ public class TraceSnapshot {
 
         TraceSnapshot build() {
             return new TraceSnapshot(id, startAt, duration, stuck, completed, background,
-                    description, attributes, userId, errorText, errorDetail, errorStackTrace,
+                    description, attributes, userId, errorText, errorDetail, exception,
                     metrics, spans, coarseMergedStackTree, fineMergedStackTree);
         }
     }

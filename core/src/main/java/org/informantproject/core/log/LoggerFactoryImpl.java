@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core;
+package org.informantproject.core.log;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
-import org.informantproject.core.util.Static;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 
 /**
  * Implementations of LoggerFactory and Logger from the Plugin API.
@@ -34,11 +35,18 @@ import org.slf4j.LoggerFactory;
  * @since 0.5
  */
 // called via reflection from org.informantproject.api.LoggerFactory
-@Static
+@ThreadSafe
 public final class LoggerFactoryImpl {
+
+    @Nullable
+    private static volatile LogMessageSink logMessageSink;
 
     public static Logger getLogger(String name) {
         return new LoggerImpl(LoggerFactory.getLogger(name));
+    }
+
+    public static void setLogMessageSink(LogMessageSink logMessageSink) {
+        LoggerFactoryImpl.logMessageSink = logMessageSink;
     }
 
     @ThreadSafe
@@ -55,14 +63,14 @@ public final class LoggerFactoryImpl {
         public void trace(String msg) {
             logger.trace(msg);
         }
-        public void trace(String format, Object arg) {
+        public void trace(String format, @Nullable Object arg) {
             logger.trace(format, arg);
         }
-        public void trace(String format, Object arg1, Object arg2) {
+        public void trace(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.trace(format, arg1, arg2);
         }
-        public void trace(String format, Object[] argArray) {
-            logger.trace(format, argArray);
+        public void trace(String format, Object... arguments) {
+            logger.trace(format, arguments);
         }
         public void trace(String msg, Throwable t) {
             logger.trace(msg, t);
@@ -73,14 +81,14 @@ public final class LoggerFactoryImpl {
         public void debug(String msg) {
             logger.debug(msg);
         }
-        public void debug(String format, Object arg) {
+        public void debug(String format, @Nullable Object arg) {
             logger.debug(format, arg);
         }
-        public void debug(String format, Object arg1, Object arg2) {
+        public void debug(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.debug(format, arg1, arg2);
         }
-        public void debug(String format, Object[] argArray) {
-            logger.debug(format, argArray);
+        public void debug(String format, Object... arguments) {
+            logger.debug(format, arguments);
         }
         public void debug(String msg, Throwable t) {
             logger.debug(msg, t);
@@ -91,14 +99,14 @@ public final class LoggerFactoryImpl {
         public void info(String msg) {
             logger.info(msg);
         }
-        public void info(String format, Object arg) {
+        public void info(String format, @Nullable Object arg) {
             logger.info(format, arg);
         }
-        public void info(String format, Object arg1, Object arg2) {
+        public void info(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.info(format, arg1, arg2);
         }
-        public void info(String format, Object[] argArray) {
-            logger.info(format, argArray);
+        public void info(String format, Object... arguments) {
+            logger.info(format, arguments);
         }
         public void info(String msg, Throwable t) {
             logger.info(msg, t);
@@ -108,36 +116,72 @@ public final class LoggerFactoryImpl {
         }
         public void warn(String msg) {
             logger.warn(msg);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.WARN, msg, null);
+            }
         }
-        public void warn(String format, Object arg) {
+        public void warn(String format, @Nullable Object arg) {
             logger.warn(format, arg);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.WARN,
+                        MessageFormatter.format(format, arg).getMessage(), null);
+            }
         }
-        public void warn(String format, Object[] argArray) {
-            logger.warn(format, argArray);
-        }
-        public void warn(String format, Object arg1, Object arg2) {
+        public void warn(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.warn(format, arg1, arg2);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.WARN,
+                        MessageFormatter.format(format, arg1, arg2).getMessage(), null);
+            }
+        }
+        public void warn(String format, Object... arguments) {
+            logger.warn(format, arguments);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.WARN,
+                        MessageFormatter.arrayFormat(format, arguments).getMessage(), null);
+            }
         }
         public void warn(String msg, Throwable t) {
             logger.warn(msg, t);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.WARN, msg, t);
+            }
         }
         public boolean isErrorEnabled() {
             return logger.isErrorEnabled();
         }
         public void error(String msg) {
             logger.error(msg);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.ERROR, msg, null);
+            }
         }
-        public void error(String format, Object arg) {
+        public void error(String format, @Nullable Object arg) {
             logger.error(format, arg);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.ERROR,
+                        MessageFormatter.format(format, arg).getMessage(), null);
+            }
         }
-        public void error(String format, Object arg1, Object arg2) {
+        public void error(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.error(format, arg1, arg2);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.ERROR,
+                        MessageFormatter.format(format, arg1, arg2).getMessage(), null);
+            }
         }
-        public void error(String format, Object[] argArray) {
-            logger.error(format, argArray);
+        public void error(String format, Object... arguments) {
+            logger.error(format, arguments);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.ERROR,
+                        MessageFormatter.arrayFormat(format, arguments).getMessage(), null);
+            }
         }
         public void error(String msg, Throwable t) {
             logger.error(msg, t);
+            if (logMessageSink != null) {
+                logMessageSink.onLogMessage(Level.ERROR, msg, t);
+            }
         }
     }
 

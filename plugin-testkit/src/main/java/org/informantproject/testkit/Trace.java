@@ -195,7 +195,7 @@ public class Trace {
         @Nullable
         private Map<String, Object> detail;
         @Nullable
-        private List<String> stackTrace;
+        private CapturedException exception;
 
         public String getText() {
             return text;
@@ -205,15 +205,46 @@ public class Trace {
             return detail;
         }
         @Nullable
-        public List<String> getStackTrace() {
-            return stackTrace;
+        public CapturedException getException() {
+            return exception;
         }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("text", text)
                     .add("detail", detail)
+                    .add("exception", exception)
+                    .toString();
+        }
+    }
+
+    public static class CapturedException {
+
+        private String display;
+        private List<String> stackTrace;
+        private int framesInCommonWithCaused;
+        @Nullable
+        private CapturedException cause;
+
+        public String getDisplay() {
+            return display;
+        }
+        public List<String> getStackTrace() {
+            return stackTrace;
+        }
+        public int getFramesInCommonWithCaused() {
+            return framesInCommonWithCaused;
+        }
+        public CapturedException getCause() {
+            return cause;
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("display", display)
                     .add("stackTrace", stackTrace)
+                    .add("framesInCommonWithCaused", framesInCommonWithCaused)
+                    .add("cause", cause)
                     .toString();
         }
     }
@@ -350,18 +381,18 @@ public class Trace {
     public static class ErrorMessage extends Message {
 
         @Nullable
-        private String stackTraceHash;
+        private String exceptionHash;
 
         @Nullable
-        public String getStackTraceHash() {
-            return stackTraceHash;
+        public String getExceptionHash() {
+            return exceptionHash;
         }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("text", getText())
                     .add("detail", getDetail())
-                    .add("stackTraceHash", stackTraceHash)
+                    .add("exceptionHash", exceptionHash)
                     .toString();
         }
     }

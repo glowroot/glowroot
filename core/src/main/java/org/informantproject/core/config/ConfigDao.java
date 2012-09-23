@@ -48,8 +48,8 @@ class ConfigDao {
     private static final String TRACING_USER = "tracing-user";
 
     private static final ImmutableList<Column> columns = ImmutableList.of(
-            new PrimaryKeyColumn("ID", Types.VARCHAR),
-            new Column("CONFIG", Types.VARCHAR));
+            new PrimaryKeyColumn("id", Types.VARCHAR),
+            new Column("config", Types.VARCHAR));
 
     private final DataSource dataSource;
     private final boolean valid;
@@ -60,16 +60,7 @@ class ConfigDao {
         this.dataSource = dataSource;
         boolean localValid;
         try {
-            if (!dataSource.tableExists("config")) {
-                dataSource.createTable("config", columns);
-            } else if (dataSource.tableNeedsUpgrade("config", columns)) {
-                logger.warn("upgrading config table schema, which unfortunately at this point just"
-                        + " means dropping and re-create the table (losing existing data)");
-                dataSource.execute("drop table config");
-                dataSource.createTable("config", columns);
-                logger.warn("the schema for the config table was outdated so it was dropped and"
-                        + " re-created, existing config data was lost");
-            }
+            dataSource.syncTable("config", columns);
             localValid = true;
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);

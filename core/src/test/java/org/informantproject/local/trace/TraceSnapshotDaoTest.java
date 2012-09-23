@@ -47,8 +47,8 @@ public class TraceSnapshotDaoTest {
     public void before() throws SQLException, IOException {
         preExistingThreads = UnitTests.currentThreads();
         dataSource = new DataSourceTestProvider().get();
-        if (dataSource.tableExists("trace")) {
-            dataSource.execute("drop table trace");
+        if (dataSource.tableExists("trace_snapshot")) {
+            dataSource.execute("drop table trace_snapshot");
         }
         rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
         snapshotDao = new TraceSnapshotDao(dataSource, rollingFile, new MockClock());

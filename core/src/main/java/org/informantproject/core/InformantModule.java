@@ -37,6 +37,7 @@ import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
+import org.informantproject.local.log.LogMessageSinkLocal;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
@@ -102,6 +103,7 @@ class InformantModule extends AbstractModule {
         injector.getInstance(FineGrainedProfiler.class).close();
         injector.getInstance(MetricCollector.class).close();
         injector.getInstance(TraceSinkLocal.class).close();
+        injector.getInstance(LogMessageSinkLocal.class).close();
         injector.getInstance(AsyncHttpClient.class).close();
         try {
             injector.getInstance(DataSource.class).close();

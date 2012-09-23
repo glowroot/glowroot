@@ -42,7 +42,7 @@ public class PreInitializeClassesTest {
         // LogMessageSinkLocal.onLogMessage() since LogMessageSinkLocal is mostly executed inside of
         // a separate thread, and including it would propagate to lots of unnecessary H2 classes
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/informantproject/core/LoggerFactoryImpl", "getLogger",
+                "org/informantproject/core/log/LoggerFactoryImpl", "getLogger",
                 "(Ljava/lang/String;)Lorg/informantproject/api/Logger;"));
 
         // "call" WeavingClassFileTransformer constructor to capture its lazy loading weavers

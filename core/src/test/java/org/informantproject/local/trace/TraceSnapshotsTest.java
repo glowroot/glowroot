@@ -42,12 +42,12 @@ public class TraceSnapshotsTest {
         when(trace.getCoarseMergedStackTree()).thenReturn(mergedStackTree);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
-        StackTraceElement[] stackTraceElements = new StackTraceElement[10000];
-        for (int i = 0; i < stackTraceElements.length; i++) {
-            stackTraceElements[i] = new StackTraceElement(TraceSnapshotsTest.class
-                    .getName(), "method" + i, "TraceSnapshotsTest.java", 100 + 10 * i);
+        StackTraceElement[] stackTrace = new StackTraceElement[10000];
+        for (int i = 0; i < stackTrace.length; i++) {
+            stackTrace[i] = new StackTraceElement(TraceSnapshotsTest.class.getName(), "method" + i,
+                    "TraceSnapshotsTest.java", 100 + 10 * i);
         }
-        mergedStackTree.addToStackTree(stackTraceElements, State.RUNNABLE);
+        mergedStackTree.addToStackTree(stackTrace, State.RUNNABLE);
         // when
         ByteStream mergedStackTreeByteStream = TraceSnapshotService.getMergedStackTree(trace
                 .getCoarseMergedStackTree());

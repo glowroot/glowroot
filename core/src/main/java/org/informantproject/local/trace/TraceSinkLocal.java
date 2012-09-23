@@ -47,7 +47,7 @@ public class TraceSinkLocal implements TraceSink {
     private static final int PENDING_LIMIT = 100;
 
     private final ExecutorService executorService = DaemonExecutors
-            .newSingleThreadExecutor("Informant-StackCollector");
+            .newSingleThreadExecutor("Informant-TraceSink");
 
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
@@ -93,10 +93,10 @@ public class TraceSinkLocal implements TraceSink {
         long tick = ticker.read();
         if (TimeUnit.NANOSECONDS.toSeconds(tick - lastWarningTick) >= 60) {
             logger.warn("not storing a trace in the local h2 database because of an excessive"
-                    + " backlog of {} traces already waiting to be stored (this message will"
+                    + " backlog of {} traces already waiting to be stored (this warning will"
                     + " appear at most once a minute, there were {} additional traces not stored"
-                    + " in the local h2 database since this message was last logged)",
-                    PENDING_LIMIT, countSinceLastWarning);
+                    + " in the local h2 database since the last warning)", PENDING_LIMIT,
+                    countSinceLastWarning);
             lastWarningTick = tick;
             countSinceLastWarning = 0;
         } else {

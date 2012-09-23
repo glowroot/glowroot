@@ -49,6 +49,10 @@ public class ExpensiveCallAspect {
             "org.informantproject.testing.ui.ExpensiveCall", "getDescription");
 
     private static final Random random = new Random();
+    private static final Exception nestedCause = new IllegalArgumentException(
+            "a cause with a different stack trace");
+    private static final Exception cause = new IllegalStateException(
+            "a cause with a different stack trace", nestedCause);
 
     @Pointcut(typeName = "org.informantproject.testing.ui.ExpensiveCall", methodName = "execute0",
             metricName = "expensive 0")
@@ -67,7 +71,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute0", cause)));
             }
         }
     }
@@ -89,7 +94,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute1", cause)));
             }
         }
     }
@@ -111,7 +117,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute2", cause)));
             }
         }
     }
@@ -133,7 +140,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute3", cause)));
             }
         }
     }
@@ -155,7 +163,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute4", cause)));
             }
         }
     }
@@ -177,7 +186,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute5", cause)));
             }
         }
     }
@@ -199,7 +209,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute6", cause)));
             }
         }
     }
@@ -221,7 +232,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute7", cause)));
             }
         }
     }
@@ -243,7 +255,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute8", cause)));
             }
         }
     }
@@ -265,7 +278,8 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.9) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                        "exception in execute9", cause)));
             }
         }
     }

@@ -557,13 +557,13 @@
       <div id="detailTabContent"></div>
     </div>
   </div>
-  <div class="modal hide fade" id="stackTraceModal" tabindex="-1"
+  <div class="modal hide fade" id="modal" tabindex="-1"
     style="width: 800px; margin: -300px 0 0 -400px; max-height: 600px">
     <div class="modal-header">
       <button class="close" data-dismiss="modal">&times;</button>
-      <h3>Stack Trace <span id="stackTraceClippy"></span></h3>
+      <h3><span id="modalTitle"></span> <span id="modalClippy"></span></h3>
     </div>
-    <div class="modal-body" id="stackTrace"></div>
+    <div class="modal-body" id="modalBody" style="white-space: nowrap"></div>
     <div class="modal-footer">
       <button class="btn" data-dismiss="modal">Close</button>
     </div>

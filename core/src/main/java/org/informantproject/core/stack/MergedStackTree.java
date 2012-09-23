@@ -76,17 +76,17 @@ public class MergedStackTree {
     }
 
     // public for unit tests (otherwise could be private)
-    public void addToStackTree(StackTraceElement[] stackTraceElements, State threadState) {
+    public void addToStackTree(StackTraceElement[] stackTrace, State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
-        for (nextIndex = stackTraceElements.length - 1; nextIndex >= 0; nextIndex--) {
+        for (nextIndex = stackTrace.length - 1; nextIndex >= 0; nextIndex--) {
             // check all child nodes
             boolean matchFound = false;
             for (MergedStackTreeNode childNode : nextChildNodes) {
-                if (matches(stackTraceElements[nextIndex], childNode, nextIndex == 0,
+                if (matches(stackTrace[nextIndex], childNode, nextIndex == 0,
                         threadState)) {
                     // match found, update lastMatchedNode and continue
                     childNode.incrementSampleCount();
@@ -102,7 +102,7 @@ public class MergedStackTree {
         }
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
-            MergedStackTreeNode nextNode = MergedStackTreeNode.create(stackTraceElements[i]);
+            MergedStackTreeNode nextNode = MergedStackTreeNode.create(stackTrace[i]);
             if (i == 0) {
                 // leaf node
                 nextNode.setLeafThreadState(threadState);

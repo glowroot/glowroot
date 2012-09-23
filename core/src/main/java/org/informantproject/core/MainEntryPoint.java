@@ -33,6 +33,8 @@ import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
+import org.informantproject.core.log.LogMessageSink;
+import org.informantproject.core.log.LoggerFactoryImpl;
 import org.informantproject.core.trace.WeavingMetricImpl;
 import org.informantproject.core.util.Static;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
@@ -110,7 +112,6 @@ public final class MainEntryPoint {
             return;
         }
         start(parsedAgentArgs);
-
     }
 
     // called via reflection from org.informantproject.api.PluginServices
@@ -152,6 +153,7 @@ public final class MainEntryPoint {
             injector = Guice.createInjector(new InformantModule(agentArgs, weavingMetric));
             InformantModule.start(injector);
         }
+        LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
         returnPluginServicesProxy.set(false);
         synchronized (returnPluginServicesProxy) {
             for (PluginServicesProxy proxy : pluginServicesProxies) {

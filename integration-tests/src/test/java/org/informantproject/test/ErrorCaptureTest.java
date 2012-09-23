@@ -17,16 +17,21 @@ package org.informantproject.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.util.List;
+import java.util.Set;
 
+import org.informantproject.test.plugin.LogCausedErrorAspect;
+import org.informantproject.test.plugin.LogCausedErrorAspect.LogCausedErrorAdvice;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.Trace.CapturedException;
 import org.informantproject.testkit.TraceMarker;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 /**
  * @author Trask Stalnaker
@@ -78,10 +83,58 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        String stackTraceHash = trace.getSpans().get(1).getError().getStackTraceHash();
-        List<String> stackTrace = container.getInformant().getStackTrace(stackTraceHash);
-        assertThat(stackTrace.get(0)).startsWith(
+        String exceptionHash = trace.getSpans().get(1).getError().getExceptionHash();
+        CapturedException exception = container.getInformant().getException(exceptionHash);
+        assertThat(exception.getStackTrace().get(0)).startsWith(
                 ShouldCaptureErrorWithSpanStackTrace.class.getName() + ".traceMarker(");
+    }
+
+    @Test
+    public void shouldShouldCaptureErrorWithCausalChain() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getError()).isNull();
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getSpans().get(1).getError()).isNotNull();
+        assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
+        String exceptionHash = trace.getSpans().get(1).getError().getExceptionHash();
+        CapturedException exception = container.getInformant().getException(exceptionHash);
+        assertThat(exception.getDisplay()).isEqualTo(
+                "java.lang.Exception: java.lang.IllegalArgumentException: caused 3");
+        assertThat(exception.getStackTrace().get(0)).startsWith(
+                LogCausedErrorAdvice.class.getName() + ".onAfter(");
+        assertThat(exception.getFramesInCommonWithCaused()).isZero();
+        CapturedException cause = exception.getCause();
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: caused 3");
+        assertThat(cause.getStackTrace().get(0)).startsWith(
+                LogCausedErrorAspect.class.getName() + ".<clinit>(");
+        assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
+        Set<Integer> causedExceptionLineNumbers = Sets.newHashSet();
+        causedExceptionLineNumbers.add(getFirstLineNumber(cause));
+        cause = cause.getCause();
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.RuntimeException: caused 2");
+        assertThat(cause.getStackTrace().get(0)).startsWith(
+                LogCausedErrorAspect.class.getName() + ".<clinit>(");
+        assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
+        causedExceptionLineNumbers.add(getFirstLineNumber(cause));
+        cause = cause.getCause();
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: caused 1");
+        assertThat(cause.getStackTrace().get(0)).startsWith(
+                LogCausedErrorAspect.class.getName() + ".<clinit>(");
+        assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
+        causedExceptionLineNumbers.add(getFirstLineNumber(cause));
+        // make sure they are all different line numbers
+        assertThat(causedExceptionLineNumbers).hasSize(3);
+    }
+
+    private static int getFirstLineNumber(CapturedException cause) {
+        String element = cause.getStackTrace().get(0);
+        return Integer.parseInt(element.substring(element.lastIndexOf(':') + 1,
+                element.length() - 1));
     }
 
     public static class ShouldCaptureError implements AppUnderTest {
@@ -104,6 +157,15 @@ public class ErrorCaptureTest {
         }
         public void traceMarker() throws Exception {
             new LogError().log("abc");
+        }
+    }
+
+    public static class ShouldCaptureErrorWithCausalChain implements AppUnderTest, TraceMarker {
+        public void executeApp() throws Exception {
+            traceMarker();
+        }
+        public void traceMarker() throws Exception {
+            new LogCausedError().log("abc");
         }
     }
 }

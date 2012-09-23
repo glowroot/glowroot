@@ -84,7 +84,7 @@ public class HttpServer extends HttpServerBase {
             TraceExportHttpService traceExportHttpService,
             StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
             ConfigJsonService configJsonService, MiscJsonService miscJsonService,
-            PluginJsonService pluginJsonService, ThreadDumpJsonService threadDumpJsonService) {
+            PluginJsonService pluginJsonService) {
 
         super(port);
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
@@ -99,6 +99,8 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/misc.html$"), "org/informantproject/local/ui/misc.html");
         uriMappings.put(Pattern.compile("^/threaddump.html$"),
                 "org/informantproject/local/ui/threaddump.html");
+        uriMappings.put(Pattern.compile("^/log.html$"),
+                "org/informantproject/local/ui/log.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
@@ -166,7 +168,9 @@ public class HttpServer extends HttpServerBase {
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/dbFile$"),
                 miscJsonService, "getDbFilePath"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/threaddump$"),
-                threadDumpJsonService, "getThreadDump"));
+                miscJsonService, "getThreadDump"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/log"),
+                miscJsonService, "getLog"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
 

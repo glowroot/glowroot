@@ -152,10 +152,10 @@ var spansTemplateText = ''
 + '            {{#messageDetailHtml error.detail}}{{/messageDetailHtml}}'
 + '          </div>'
 + '        {{/if}}'
-+ '        {{#if error.stackTraceHash}}'
++ '        {{#if error.exceptionHash}}'
 + '          <div style="margin-left: 1em">'
-+ '            <a href="#" onclick="viewStackTrace(\'{{error.stackTraceHash}}\'); return false">'
-+ '              error stack trace'
++ '            <a href="#" onclick="viewException(\'{{error.exceptionHash}}\'); return false">'
++ '              exception'
 + '            </a>'
 + '          </div>'
 + '        {{/if}}'
@@ -433,23 +433,52 @@ function processMergedStackTree(rootNode) {
   }
   calculateMetricNameCounts(rootNode)
 }
+var newline = navigator.platform.indexOf('Win') == -1 ? "\n" : "\r\n"
 function viewStackTrace(stackTraceHash) {
-  $.getJSON('stacktrace/' + stackTraceHash, function(stackTraceElements) {
-    $('#stackTrace').html('')
-    var clip = ''
-    var newline = navigator.platform.indexOf('Win') == -1 ? "\n" : "\r\n"
-    for (var i = 0; i < stackTraceElements.length; i++) {
-      $('#stackTrace').append(stackTraceElements[i] + '<br>')
-      clip += stackTraceElements[i]
-      clip += newline
+  $.getJSON('stacktrace/' + stackTraceHash, function(stackTrace) {
+    var html = ''
+    var clippyText = ''
+    for (var i = 0; i < stackTrace.length; i++) {
+      html += stackTrace[i] + '<br>'
+      clippyText += stackTrace[i] + newline
     }
-    // clippy swf must be re-initialized each time with the (updated) text, but it cannot be
-    // re-initialized on the same element so a disposable inner element is created each time
-    $('#stackTraceClippy').html('<span id="stackTraceClippyDisposable"></span>')
-    $('#stackTraceClippyDisposable').data('text', clip)
-    $('#stackTraceClippyDisposable').clippy({
-      clippy_path: 'libs/clippy-jquery/0.1-nightly-20120701/clippy.swf'
-    })
-    $('#stackTraceModal').modal('show')
+    displayModal('Stack Trace', html, clippyText)
   })
+}
+function viewException(exceptionHash) {
+  $.getJSON('stacktrace/' + exceptionHash, function(exception) {
+    var html = '<b>'
+    var clippyText = ''
+    while (exception) {
+      html += exception.display + '</b><br>'
+      clippyText += exception.display + newline
+      for (var i = 0; i < exception.stackTrace.length; i++) {
+        html += '<span style="width: 4em; display: inline-block"></span>at '
+          + exception.stackTrace[i] + '<br>'
+        clippyText += '    at ' + exception.stackTrace[i] + newline
+      }
+      if (exception.framesInCommon) {
+        html += '... ' + exception.framesInCommon + ' more<br>'
+        clippyText += '... ' + exception.framesInCommon + ' more' + newline
+      }
+      exception = exception.cause
+      if (exception) {
+        html += "<b>Caused by: "
+        clippyText += "Caused by: "
+      }
+    }
+    displayModal('Exception', html, clippyText)
+  })
+}
+function displayModal(title, html, clippyText) {
+  $('#modalTitle').text(title)
+  $('#modalBody').html(html)
+  // clippy swf must be re-initialized each time with the (updated) text, but it cannot be
+  // re-initialized on the same element so a disposable inner element is created each time
+  $('#modalClippy').html('<span id="modalClippyDisposable"></span>')
+  $('#modalClippyDisposable').data('text', clippyText)
+  $('#modalClippyDisposable').clippy({
+    clippy_path: 'libs/clippy-jquery/0.1-nightly-20120701/clippy.swf'
+  })
+  $('#modal').modal('show')
 }

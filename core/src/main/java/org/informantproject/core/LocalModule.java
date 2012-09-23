@@ -17,8 +17,10 @@ package org.informantproject.core;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.core.log.LogMessageSink;
 import org.informantproject.core.metric.MetricSink;
 import org.informantproject.core.trace.TraceSink;
+import org.informantproject.local.log.LogMessageSinkLocal;
 import org.informantproject.local.metric.MetricSinkLocal;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer;
@@ -49,6 +51,7 @@ class LocalModule extends AbstractModule {
         logger.debug("configure()");
         bind(TraceSink.class).to(TraceSinkLocal.class);
         bind(MetricSink.class).to(MetricSinkLocal.class);
+        bind(LogMessageSink.class).to(LogMessageSinkLocal.class);
         bindConstant().annotatedWith(LocalHttpServerPort.class).to(httpServerPort);
     }
 

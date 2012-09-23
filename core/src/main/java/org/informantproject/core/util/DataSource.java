@@ -234,6 +234,29 @@ public class DataSource {
         }
     }
 
+    public void syncTable(String tableName, ImmutableList<Column> columns) throws SQLException {
+        syncTable(tableName, columns, ImmutableList.<Index> of());
+    }
+
+    public void syncTable(String tableName, ImmutableList<Column> columns,
+            ImmutableList<Index> indexes) throws SQLException {
+
+        if (!tableExists(tableName)) {
+            createTable(tableName, columns);
+            if (!indexes.isEmpty()) {
+                createIndexes(tableName, indexes);
+            }
+        } else if (tableNeedsUpgrade(tableName, columns)) {
+            logger.warn("upgrading " + tableName + " table schema, which unfortunately at this"
+                    + " point just means dropping and re-create the table (losing existing data)");
+            execute("drop table " + tableName);
+            createTable(tableName, columns);
+            if (!indexes.isEmpty()) {
+                createIndexes(tableName, indexes);
+            }
+        }
+    }
+
     // TODO move schema management methods to another class
     public boolean tableExists(String tableName) throws SQLException {
         logger.debug("tableExists(): tableName={}", tableName);
