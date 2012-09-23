@@ -82,9 +82,8 @@ public class HttpServer extends HttpServerBase {
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
-            StackTraceJsonService stackTraceJsonService, MetricJsonService metricJsonService,
-            ConfigJsonService configJsonService, MiscJsonService miscJsonService,
-            PluginJsonService pluginJsonService) {
+            StackTraceJsonService stackTraceJsonService, ConfigJsonService configJsonService,
+            MiscJsonService miscJsonService, PluginJsonService pluginJsonService) {
 
         super(port);
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
@@ -121,8 +120,6 @@ public class HttpServer extends HttpServerBase {
                 traceSummaryJsonService, "getSummary"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/stacktrace/(.*)$"),
                 stackTraceJsonService, "getStackTrace"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/metrics/read$"),
-                metricJsonService, "getMetrics"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/read$"),
                 configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"),
