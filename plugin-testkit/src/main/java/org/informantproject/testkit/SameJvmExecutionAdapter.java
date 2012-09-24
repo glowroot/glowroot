@@ -17,6 +17,7 @@ package org.informantproject.testkit;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -42,7 +43,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     private final Collection<Thread> preExistingThreads;
     private volatile IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
-    SameJvmExecutionAdapter(String agentArgs) throws InstantiationException,
+    SameJvmExecutionAdapter(Map<String, String> properties) throws InstantiationException,
             IllegalAccessException, ClassNotFoundException {
 
         preExistingThreads = UnitTests.currentThreads();
@@ -60,7 +61,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         // TODO fix the type safety warning in the following line using TypeToken after upgrading
         // to guava 12.0
         isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithArg.class)
-                .run(agentArgs);
+                .run(properties);
         // start weaving (needed to retrieve weaving metric from agent first)
         WeavingMetric weavingMetric = (WeavingMetric) isolatedWeavingClassLoader.newInstance(
                 GetWeavingMetric.class, RunnableWithReturn.class).run();
@@ -108,12 +109,12 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         T run();
     }
 
-    public static class StartContainer implements RunnableWithArg<String> {
-        public void run(String agentArgs) {
+    public static class StartContainer implements RunnableWithArg<Map<String, String>> {
+        public void run(Map<String, String> properties) {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
             try {
-                MainEntryPoint.start(agentArgs);
+                MainEntryPoint.start(properties);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             } finally {

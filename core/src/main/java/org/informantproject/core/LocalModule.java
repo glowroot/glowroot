@@ -15,6 +15,8 @@
  */
 package org.informantproject.core;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.log.LogMessageSink;
@@ -22,10 +24,13 @@ import org.informantproject.core.trace.TraceSink;
 import org.informantproject.local.log.LogMessageSinkLocal;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.ui.HttpServer;
-import org.informantproject.local.ui.HttpServer.LocalHttpServerPort;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 
 /**
  * Guice module for local storage of traces and metrics. Some day there may be another module for
@@ -34,14 +39,17 @@ import com.google.inject.Injector;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class LocalModule extends AbstractModule {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalModule.class);
 
-    private final int httpServerPort;
+    private static final int DEFAULT_UI_PORT = 4000;
 
-    LocalModule(int httpServerPort) {
-        this.httpServerPort = httpServerPort;
+    private final ImmutableMap<String, String> properties;
+
+    LocalModule(ImmutableMap<String, String> properties) {
+        this.properties = properties;
     }
 
     @Override
@@ -49,7 +57,23 @@ class LocalModule extends AbstractModule {
         logger.debug("configure()");
         bind(TraceSink.class).to(TraceSinkLocal.class);
         bind(LogMessageSink.class).to(LogMessageSinkLocal.class);
-        bindConstant().annotatedWith(LocalHttpServerPort.class).to(httpServerPort);
+    }
+
+    @Provides
+    @Singleton
+    @Named("ui.port")
+    int getHttpServerPort() {
+        String uiPort = properties.get("ui.port");
+        if (uiPort == null) {
+            return DEFAULT_UI_PORT;
+        }
+        try {
+            return Integer.parseInt(uiPort);
+        } catch (NumberFormatException e) {
+            logger.warn("invalid -Dinformant.ui.port value '{}', proceeding with default value"
+                    + " '{}'", uiPort, DEFAULT_UI_PORT);
+            return DEFAULT_UI_PORT;
+        }
     }
 
     static void start(Injector injector) {

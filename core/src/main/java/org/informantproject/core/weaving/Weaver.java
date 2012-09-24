@@ -43,9 +43,11 @@ class Weaver implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
-    // useful for debugging java.lang.VerifyErrors
+    // this is an internal property sometimes useful for debugging errors in the weaver,
+    // especially exceptions of type java.lang.VerifyError
+    // the weaver is started before the guice module so this property cannot be injected from guice
     private static final boolean verifyWeaving = Boolean.valueOf(System
-            .getProperty("informant.weaving.verify"));
+            .getProperty("informant.internal.weaving.verify"));
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;

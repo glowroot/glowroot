@@ -18,9 +18,12 @@ package org.informantproject.core;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 import org.fest.reflect.core.Reflection;
 import org.fest.reflect.exception.ReflectionError;
@@ -42,11 +45,13 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.inject.name.Named;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.ConnectionsPool;
@@ -58,6 +63,7 @@ import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@ThreadSafe
 class InformantModule extends AbstractModule {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantModule.class);
@@ -65,18 +71,18 @@ class InformantModule extends AbstractModule {
     // TODO revisit this
     private static final boolean USE_NETTY_BLOCKING_IO = false;
 
-    private final AgentArgs agentArgs;
+    private final ImmutableMap<String, String> properties;
     private final WeavingMetricImpl weavingMetric;
 
-    InformantModule(AgentArgs agentArgs, WeavingMetricImpl weavingMetric) {
-        this.agentArgs = agentArgs;
+    InformantModule(Map<String, String> properties, WeavingMetricImpl weavingMetric) {
+        this.properties = ImmutableMap.copyOf(properties);
         this.weavingMetric = weavingMetric;
     }
 
     @Override
     protected void configure() {
         logger.debug("configure()");
-        install(new LocalModule(agentArgs.getUiPort()));
+        install(new LocalModule(properties));
         install(new FactoryModuleBuilder().build(PluginServicesImplFactory.class));
         // this needs to be set early since both async-http-client and netty depend on it
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
@@ -84,36 +90,6 @@ class InformantModule extends AbstractModule {
                 return "Informant-" + proposedThreadName;
             }
         });
-    }
-
-    static void start(Injector injector) {
-        logger.debug("start()");
-        injector.getInstance(StuckTraceCollector.class);
-        injector.getInstance(CoarseGrainedProfiler.class);
-        LocalModule.start(injector);
-    }
-
-    static void close(Injector injector) {
-        logger.debug("close()");
-        LocalModule.close(injector);
-        injector.getInstance(StuckTraceCollector.class).close();
-        injector.getInstance(CoarseGrainedProfiler.class).close();
-        injector.getInstance(FineGrainedProfiler.class).close();
-        injector.getInstance(TraceSinkLocal.class).close();
-        injector.getInstance(LogMessageSinkLocal.class).close();
-        injector.getInstance(AsyncHttpClient.class).close();
-        try {
-            injector.getInstance(DataSource.class).close();
-        } catch (SQLException e) {
-            // warning only since it occurs during shutdown anyways
-            logger.warn(e.getMessage(), e);
-        }
-        try {
-            injector.getInstance(RollingFile.class).close();
-        } catch (IOException e) {
-            // warning only since it occurs during shutdown anyways
-            logger.warn(e.getMessage(), e);
-        }
     }
 
     @Provides
@@ -124,23 +100,31 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    DataSource providesDataSource() {
-        return new DataSource(new File(agentArgs.getDataDir(), "informant.h2.db"),
-                agentArgs.isH2MemDb());
+    DataSource providesDataSource(@Named("data.dir") File dataDir) {
+        // mem db is for internal use (by plugin-testkit)
+        String h2MemDb = properties.get("internal.h2.memdb");
+        return new DataSource(new File(dataDir, "informant.h2.db"), Boolean.parseBoolean(h2MemDb));
     }
 
     @Provides
     @Singleton
-    RollingFile providesRollingFile(ConfigService configService) {
+    RollingFile providesRollingFile(ConfigService configService, @Named("data.dir") File dataDir) {
         int rollingSizeMb = configService.getCoreConfig().getRollingSizeMb();
         try {
             // 1gb
-            return new RollingFile(new File(agentArgs.getDataDir(), "informant.rolling.db"),
+            return new RollingFile(new File(dataDir, "informant.rolling.db"),
                     rollingSizeMb * 1024);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
         }
+    }
+
+    @Provides
+    @Singleton
+    @Named("data.dir")
+    File providesDataDir() {
+        return DataDir.getDataDir(properties);
     }
 
     @Provides
@@ -211,5 +195,35 @@ class InformantModule extends AbstractModule {
     @Singleton
     static Ticker providesTicker() {
         return Ticker.systemTicker();
+    }
+
+    static void start(Injector injector) {
+        logger.debug("start()");
+        injector.getInstance(StuckTraceCollector.class);
+        injector.getInstance(CoarseGrainedProfiler.class);
+        LocalModule.start(injector);
+    }
+
+    static void close(Injector injector) {
+        logger.debug("close()");
+        LocalModule.close(injector);
+        injector.getInstance(StuckTraceCollector.class).close();
+        injector.getInstance(CoarseGrainedProfiler.class).close();
+        injector.getInstance(FineGrainedProfiler.class).close();
+        injector.getInstance(TraceSinkLocal.class).close();
+        injector.getInstance(LogMessageSinkLocal.class).close();
+        injector.getInstance(AsyncHttpClient.class).close();
+        try {
+            injector.getInstance(DataSource.class).close();
+        } catch (SQLException e) {
+            // warning only since it occurs during shutdown anyways
+            logger.warn(e.getMessage(), e);
+        }
+        try {
+            injector.getInstance(RollingFile.class).close();
+        } catch (IOException e) {
+            // warning only since it occurs during shutdown anyways
+            logger.warn(e.getMessage(), e);
+        }
     }
 }

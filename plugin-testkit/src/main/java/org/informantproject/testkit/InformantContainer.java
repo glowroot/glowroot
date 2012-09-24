@@ -27,6 +27,7 @@ import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.Files;
 
+import com.google.common.collect.ImmutableMap;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
@@ -59,18 +60,20 @@ public class InformantContainer {
     public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
         File dataDir = Files.createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
-        String agentArgs = "data.dir:" + dataDir.getAbsolutePath() + ",ui.port:" + uiPort
-                + ",internal.h2memdb:" + useMemDb;
+        ImmutableMap<String, String> properties = ImmutableMap.of(
+                "data.dir", dataDir.getAbsolutePath(),
+                "ui.port", Integer.toString(uiPort),
+                "internal.h2.memdb", Boolean.toString(useMemDb));
         ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
-            executionAdapter = new ExternalJvmExecutionAdapter(agentArgs);
+            executionAdapter = new ExternalJvmExecutionAdapter(properties);
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using same JVM app container");
-            executionAdapter = new SameJvmExecutionAdapter(agentArgs);
+            executionAdapter = new SameJvmExecutionAdapter(properties);
         }
         return new InformantContainer(executionAdapter, dataDir);
     }
@@ -134,17 +137,7 @@ public class InformantContainer {
     }
 
     private static boolean useExternalJvmAppContainer() {
-        String property = System.getProperty("externalJvmAppContainer");
-        if (property == null) {
-            return false;
-        } else if (property.equalsIgnoreCase("true")) {
-            return true;
-        } else if (property.equalsIgnoreCase("false")) {
-            return false;
-        } else {
-            throw new IllegalStateException("Unexpected value for system property"
-                    + " 'externalJvmAppContainer', expecting 'true' or 'false'");
-        }
+        return Boolean.valueOf(System.getProperty("externalJvmAppContainer"));
     }
 
     @ThreadSafe

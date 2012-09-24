@@ -22,6 +22,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -33,7 +35,7 @@ public class MainEntryPointTest {
     @Before
     public void before() {
         preExistingThreads = UnitTests.currentThreads();
-        MainEntryPoint.start("ui.port:0");
+        MainEntryPoint.start(ImmutableMap.of("ui.port", "0"));
     }
 
     @After

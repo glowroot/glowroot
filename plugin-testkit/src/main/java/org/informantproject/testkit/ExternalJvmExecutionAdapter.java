@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -30,8 +33,8 @@ import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.core.util.UnitTests;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 
 /**
@@ -48,18 +51,23 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private final SocketCommander socketCommander;
 
-    ExternalJvmExecutionAdapter(String agentArgs) throws IOException {
+    ExternalJvmExecutionAdapter(Map<String, String> properties) throws IOException {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
         String javaagentArg = "-javaagent:" + UnitTests.findInformantCoreJarFile();
-        if (!Strings.isNullOrEmpty(agentArgs)) {
-            javaagentArg += "=" + agentArgs;
-        }
         socketCommander = new SocketCommander();
-        ProcessBuilder processBuilder = new ProcessBuilder(path, "-cp", classpath, javaagentArg,
-                ExternalJvmExecutionAdapter.class.getName(), Integer.toString(socketCommander
-                        .getLocalPort()));
+        List<String> command = Lists.newArrayList();
+        command.add(path);
+        command.add("-cp");
+        command.add(classpath);
+        command.add(javaagentArg);
+        for (Entry<String, String> agentProperty : properties.entrySet()) {
+            command.add("-Dinformant." + agentProperty.getKey() + "=" + agentProperty.getValue());
+        }
+        command.add(ExternalJvmExecutionAdapter.class.getName());
+        command.add(Integer.toString(socketCommander.getLocalPort()));
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
         consolePipeExecutorService = DaemonExecutors

@@ -19,6 +19,8 @@ import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
@@ -43,7 +45,9 @@ import org.informantproject.core.weaving.WeavingClassFileTransformer;
 import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.local.ui.HttpServer;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
@@ -92,9 +96,11 @@ public final class MainEntryPoint {
         // least in the case of the Oracle driver, loads the driver's Connection and
         // PreparedStatement classes which need to be woven
         instrumentation.addTransformer(weavingClassFileTransformer);
-        AgentArgs parsedAgentArgs = AgentArgs.from(agentArgs);
+        ImmutableMap<String, String> properties = getInformantProperties();
+        // ...WithNoWarning since warning is displayed during start so no need for it twice
+        File dataDir = DataDir.getDataDirWithNoWarning(properties);
         try {
-            File h2DatabaseFile = new File(parsedAgentArgs.getDataDir(), "informant.lock.db");
+            File h2DatabaseFile = new File(dataDir, "informant.lock.db");
             FileLister.tryUnlockDatabase(Lists.newArrayList(h2DatabaseFile.getPath()), null);
         } catch (SQLException e) {
             // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
@@ -106,12 +112,12 @@ public final class MainEntryPoint {
             // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
             // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
             // inevitable at least in this case, and probably others
-            logger.error("disabling Informant, embedded database '" + parsedAgentArgs.getDataDir()
-                    .getAbsolutePath() + "' is locked by another process.");
+            logger.error("disabling Informant, embedded database '" + dataDir.getAbsolutePath()
+                    + "' is locked by another process.");
             weavingClassFileTransformer.disable();
             return;
         }
-        start(parsedAgentArgs);
+        start(properties);
     }
 
     // called via reflection from org.informantproject.api.PluginServices
@@ -129,6 +135,28 @@ public final class MainEntryPoint {
         return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
     }
 
+    @VisibleForTesting
+    public static void start(Map<String, String> properties) {
+        logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
+        synchronized (lock) {
+            if (injector != null) {
+                throw new IllegalStateException("Informant is already started");
+            }
+            injector = Guice.createInjector(new InformantModule(properties, weavingMetric));
+            InformantModule.start(injector);
+        }
+        LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
+        returnPluginServicesProxy.set(false);
+        synchronized (returnPluginServicesProxy) {
+            for (PluginServicesProxy proxy : pluginServicesProxies) {
+                proxy.start(injector.getInstance(PluginServicesImplFactory.class),
+                        injector.getInstance(ConfigService.class));
+            }
+            // don't need reference to these proxies anymore, may as well clean up
+            pluginServicesProxies.clear();
+        }
+    }
+
     private static WeavingClassFileTransformer newWeavingClassFileTransformer() {
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
@@ -144,35 +172,21 @@ public final class MainEntryPoint {
                 Iterables.toArray(advisors, Advice.class), weavingMetric);
     }
 
-    private static void start(AgentArgs agentArgs) {
-        logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
-        synchronized (lock) {
-            if (injector != null) {
-                throw new IllegalStateException("Informant is already started");
+    private static ImmutableMap<String, String> getInformantProperties() {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+            if (entry.getKey() instanceof String && entry.getValue() instanceof String
+                    && ((String) entry.getKey()).startsWith("informant.")) {
+                String key = (String) entry.getKey();
+                builder.put(key.substring("informant.".length()), (String) entry.getValue());
             }
-            injector = Guice.createInjector(new InformantModule(agentArgs, weavingMetric));
-            InformantModule.start(injector);
         }
-        LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
-        returnPluginServicesProxy.set(false);
-        synchronized (returnPluginServicesProxy) {
-            for (PluginServicesProxy proxy : pluginServicesProxies) {
-                proxy.start(injector.getInstance(PluginServicesImplFactory.class),
-                        injector.getInstance(ConfigService.class));
-            }
-            // don't need reference to these proxies anymore, may as well clean up
-            pluginServicesProxies.clear();
-        }
+        return builder.build();
     }
 
     @OnlyUsedByTests
     public static WeavingMetric getWeavingMetric() {
         return weavingMetric;
-    }
-
-    @OnlyUsedByTests
-    public static void start(String agentArgs) {
-        start(AgentArgs.from(agentArgs));
     }
 
     @OnlyUsedByTests

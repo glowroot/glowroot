@@ -21,10 +21,6 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -56,9 +52,9 @@ import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
-import com.google.inject.BindingAnnotation;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 
 /**
  * Handles all http requests for the embedded UI (by default http://localhost:4000).
@@ -78,7 +74,7 @@ public class HttpServer extends HttpServerBase {
     private final Gson gson = new Gson();
 
     @Inject
-    HttpServer(@LocalHttpServerPort int port, TracePointJsonService tracePointJsonService,
+    HttpServer(@Named("ui.port") int port, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
@@ -374,11 +370,6 @@ public class HttpServer extends HttpServerBase {
         }
         return s;
     }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.PARAMETER)
-    @BindingAnnotation
-    public @interface LocalHttpServerPort {}
 
     @Immutable
     private static class JsonServiceMapping {
