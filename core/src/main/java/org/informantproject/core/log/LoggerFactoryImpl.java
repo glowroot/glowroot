@@ -19,8 +19,8 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
+import org.informantproject.shaded.slf4j.LoggerFactory;
+import org.informantproject.shaded.slf4j.helpers.MessageFormatter;
 
 /**
  * Implementations of LoggerFactory and Logger from the Plugin API.
@@ -42,7 +42,7 @@ public final class LoggerFactoryImpl {
     private static volatile LogMessageSink logMessageSink;
 
     public static Logger getLogger(String name) {
-        return new LoggerImpl(LoggerFactory.getLogger(name));
+        return new LoggerImpl(name);
     }
 
     public static void setLogMessageSink(LogMessageSink logMessageSink) {
@@ -52,10 +52,10 @@ public final class LoggerFactoryImpl {
     @ThreadSafe
     private static class LoggerImpl implements Logger {
 
-        private final org.slf4j.Logger logger;
+        private final org.informantproject.shaded.slf4j.Logger logger;
 
-        private LoggerImpl(org.slf4j.Logger logger) {
-            this.logger = logger;
+        private LoggerImpl(String name) {
+            this.logger = LoggerFactory.getLogger(name);
         }
         public boolean isTraceEnabled() {
             return logger.isTraceEnabled();

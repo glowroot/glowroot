@@ -50,9 +50,14 @@
       <version>3.5.7.Final</version>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.1</version>
+      <groupId>org.informantproject.shaded</groupId>
+      <artifactId>shaded-slf4j-api</artifactId>
+      <version>1.7.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.informantproject</groupId>
+      <artifactId>informant-shaded-slf4j-impl</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -76,9 +81,9 @@
       <version>0.9.6</version>
     </dependency>
     <dependency>
-      <groupId>com.ning</groupId>
-      <artifactId>async-http-client</artifactId>
-      <version>1.7.6</version>
+      <groupId>org.informantproject.shaded</groupId>
+      <artifactId>partially-shaded-async-http-client</artifactId>
+      <version>1.7.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <!-- using sisu-guice for now until guice upgrades to guava 10.0
@@ -115,12 +120,6 @@
       <groupId>org.easytesting</groupId>
       <artifactId>fest-util</artifactId>
       <version>1.2.2</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.0.7</version>
-      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -206,10 +205,6 @@
               <shadedPattern>org.informantproject.shaded.objectweb.asm</shadedPattern>
             </relocation>
             <relocation>
-              <pattern>org.slf4j</pattern>
-              <shadedPattern>org.informantproject.shaded.slf4j</shadedPattern>
-            </relocation>
-            <relocation>
               <pattern>org.h2</pattern>
               <shadedPattern>org.informantproject.shaded.h2</shadedPattern>
             </relocation>
@@ -264,51 +259,6 @@
             <relocation>
               <pattern>org.fest</pattern>
               <shadedPattern>org.informantproject.shaded.fest</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>ch.qos.logback</pattern>
-              <shadedPattern>org.informantproject.shaded.qos.logback</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- ch.qos.logback.classic.util.ContextInitializer : "logback.configurationFile" -->
-              <rawString>true</rawString>
-              <pattern>^logback.configurationFile$</pattern>
-              <shadedPattern>org.informantproject.logback.configurationFile</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- ch.qos.logback.classic.util.ContextInitializer : "logback.groovy" -->
-              <rawString>true</rawString>
-              <pattern>^logback.groovy$</pattern>
-              <shadedPattern>org.informantproject.logback.groovy</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- ch.qos.logback.classic.util.ContextInitializer : "logback.xml"
-                ch.qos.logback.classic.util.ContextInitializer : "logback-test.xml" -->
-              <rawString>true</rawString>
-              <pattern>^logback(-test)?.xml$</pattern>
-              <shadedPattern>org.informantproject.logback$1.xml</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- ch.qos.logback.classic.ClassicConstants : "logback.ContextSelector" -->
-              <rawString>true</rawString>
-              <pattern>^logback.ContextSelector$</pattern>
-              <shadedPattern>org.informantproject.logback.ContextSelector</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- ch.qos.logback.classic.ClassicConstants :
-                "java:comp/env/logback/configuration-resource" -->
-              <rawString>true</rawString>
-              <pattern>^java:comp/env/logback/configuration-resource$</pattern>
-              <shadedPattern>
-                java:comp/env/org.informantproject.logback/configuration-resource
-              </shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- ch.qos.logback.classic.ClassicConstants :
-                "java:comp/env/logback/context-name" -->
-              <rawString>true</rawString>
-              <pattern>^java:comp/env/logback/context-name$</pattern>
-              <shadedPattern>java:comp/env/org.informantproject.logback/context-name</shadedPattern>
             </relocation>
           </relocations>
           <transformers>
