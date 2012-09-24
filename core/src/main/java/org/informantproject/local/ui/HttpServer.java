@@ -82,7 +82,7 @@ public class HttpServer extends HttpServerBase {
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
-            StackTraceJsonService stackTraceJsonService, ConfigJsonService configJsonService,
+            RollingFileJsonService rollingFileJsonService, ConfigJsonService configJsonService,
             MiscJsonService miscJsonService, PluginJsonService pluginJsonService) {
 
         super(port);
@@ -118,8 +118,8 @@ public class HttpServer extends HttpServerBase {
                 tracePointJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/trace/summary/(.*)$"),
                 traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/stacktrace/(.*)$"),
-                stackTraceJsonService, "getStackTrace"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/block/(.*)$"),
+                rollingFileJsonService, "getBlock"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/read$"),
                 configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"),

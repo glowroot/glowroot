@@ -34,7 +34,7 @@ import org.informantproject.core.util.DataSource.Index;
 import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.informantproject.core.util.DataSource.RowMapper;
 import org.informantproject.core.util.FileBlock;
-import org.informantproject.core.util.FileBlock.InvalidBlockId;
+import org.informantproject.core.util.FileBlock.InvalidBlockIdFormatException;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
@@ -353,7 +353,7 @@ public class TraceSnapshotDao {
                 try {
                     block = FileBlock.from(spansFileBlockId);
                     builder.spans(rollingFile.read(block, "\"rolled over\""));
-                } catch (InvalidBlockId e) {
+                } catch (InvalidBlockIdFormatException e) {
                     logger.error(e.getMessage(), e);
                 }
             }
@@ -362,7 +362,7 @@ public class TraceSnapshotDao {
                 try {
                     block = FileBlock.from(coarseMergedStackTreeFileBlockId);
                     builder.coarseMergedStackTree(rollingFile.read(block, "\"rolled over\""));
-                } catch (InvalidBlockId e) {
+                } catch (InvalidBlockIdFormatException e) {
                     logger.error(e.getMessage(), e);
                 }
             }
@@ -371,7 +371,7 @@ public class TraceSnapshotDao {
                 try {
                     block = FileBlock.from(fineMergedStackTreeFileBlockId);
                     builder.fineMergedStackTree(rollingFile.read(block, "\"rolled over\""));
-                } catch (InvalidBlockId e) {
+                } catch (InvalidBlockIdFormatException e) {
                     logger.error(e.getMessage(), e);
                 }
             }

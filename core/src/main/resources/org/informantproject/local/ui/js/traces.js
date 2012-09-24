@@ -152,16 +152,16 @@ var spansTemplateText = ''
 + '            {{#messageDetailHtml error.detail}}{{/messageDetailHtml}}'
 + '          </div>'
 + '        {{/if}}'
-+ '        {{#if error.exceptionHash}}'
++ '        {{#if error.exceptionBlockId}}'
 + '          <div style="margin-left: 1em">'
-+ '            <a href="#" onclick="viewException(\'{{error.exceptionHash}}\'); return false">'
++ '            <a href="#" onclick="viewException(\'{{error.exceptionBlockId}}\'); return false">'
 + '              exception'
 + '            </a>'
 + '          </div>'
 + '        {{/if}}'
 + '      {{/if}}'
-+ '      {{#if stackTraceHash}}'
-+ '        <a href="#" onclick="viewStackTrace(\'{{stackTraceHash}}\'); return false">'
++ '      {{#if stackTraceBlockId}}'
++ '        <a href="#" onclick="viewStackTrace(\'{{stackTraceBlockId}}\'); return false">'
 + '          span stack trace'
 + '        </a>'
 + '        <br>'
@@ -434,8 +434,8 @@ function processMergedStackTree(rootNode) {
   calculateMetricNameCounts(rootNode)
 }
 var newline = navigator.platform.indexOf('Win') == -1 ? "\n" : "\r\n"
-function viewStackTrace(stackTraceHash) {
-  $.getJSON('stacktrace/' + stackTraceHash, function(stackTrace) {
+function viewStackTrace(stackTraceBlockId) {
+  $.getJSON('block/' + stackTraceBlockId, function(stackTrace) {
     var html = ''
     var clippyText = ''
     for (var i = 0; i < stackTrace.length; i++) {
@@ -445,8 +445,8 @@ function viewStackTrace(stackTraceHash) {
     displayModal('Stack Trace', html, clippyText)
   })
 }
-function viewException(exceptionHash) {
-  $.getJSON('stacktrace/' + exceptionHash, function(exception) {
+function viewException(exceptionBlockId) {
+  $.getJSON('block/' + exceptionBlockId, function(exception) {
     var html = '<b>'
     var clippyText = ''
     while (exception) {

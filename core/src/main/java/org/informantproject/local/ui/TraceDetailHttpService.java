@@ -61,8 +61,8 @@ class TraceDetailHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ByteStream byteStreams = traceCommon.getSnapshotOrActiveJson(id, true);
-        if (byteStreams == null) {
+        ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, true);
+        if (byteStream == null) {
             logger.error("no trace found for id '{}'", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -73,7 +73,7 @@ class TraceDetailHttpService implements HttpService {
             response.setHeader(Names.CONNECTION, "close");
         }
         channel.write(response);
-        ChannelFuture f = channel.write(byteStreams.toChunkedInput());
+        ChannelFuture f = channel.write(byteStream.toChunkedInput());
         f.addListener(ChannelFutureListener.CLOSE);
         // return null to indicate streaming
         return null;

@@ -242,14 +242,14 @@ public class Informant {
     }
 
     @Nullable
-    public List<String> getStackTrace(String stackTraceHash) throws Exception {
-        String stackTraceJson = get("/stacktrace/" + stackTraceHash);
+    public List<String> getStackTrace(String stackTraceBlockId) throws Exception {
+        String stackTraceJson = get("/block/" + stackTraceBlockId);
         return gson.fromJson(stackTraceJson, new TypeToken<List<String>>() {}.getType());
     }
 
     @Nullable
-    public CapturedException getException(String exceptionHash) throws Exception {
-        String exceptionJson = get("/stacktrace/" + exceptionHash);
+    public CapturedException getException(String exceptionBlockId) throws Exception {
+        String exceptionJson = get("/block/" + exceptionBlockId);
         return gson.fromJson(exceptionJson, CapturedException.class);
     }
 

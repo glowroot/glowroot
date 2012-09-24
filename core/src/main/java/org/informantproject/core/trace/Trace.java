@@ -22,7 +22,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -210,8 +209,8 @@ public class Trace {
         return rootSpan.getSize();
     }
 
-    public Iterator<Span> getSpans() {
-        return rootSpan.getSpans().iterator();
+    public Iterable<Span> getSpans() {
+        return rootSpan.getSpans();
     }
 
     @Nullable

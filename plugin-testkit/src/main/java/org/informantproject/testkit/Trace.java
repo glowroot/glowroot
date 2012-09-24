@@ -312,7 +312,7 @@ public class Trace {
         @Nullable
         private ErrorMessage error;
         @Nullable
-        private String stackTraceHash;
+        private String stackTraceBlockId;
 
         public long getOffset() {
             return offset;
@@ -338,8 +338,8 @@ public class Trace {
             return error;
         }
         @Nullable
-        public String getStackTraceHash() {
-            return stackTraceHash;
+        public String getStackTraceBlockId() {
+            return stackTraceBlockId;
         }
         @Override
         public String toString() {
@@ -351,7 +351,7 @@ public class Trace {
                     .add("nesting", nesting)
                     .add("message", message)
                     .add("error", error)
-                    .add("stackTraceHash", stackTraceHash)
+                    .add("stackTraceBlockId", stackTraceBlockId)
                     .toString();
         }
     }
@@ -381,18 +381,18 @@ public class Trace {
     public static class ErrorMessage extends Message {
 
         @Nullable
-        private String exceptionHash;
+        private String exceptionBlockId;
 
         @Nullable
-        public String getExceptionHash() {
-            return exceptionHash;
+        public String getExceptionBlockId() {
+            return exceptionBlockId;
         }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("text", getText())
                     .add("detail", getDetail())
-                    .add("exceptionHash", exceptionHash)
+                    .add("exceptionBlockId", exceptionBlockId)
                     .toString();
         }
     }

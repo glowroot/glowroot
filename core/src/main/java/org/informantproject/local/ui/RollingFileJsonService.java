@@ -23,6 +23,9 @@ import javax.annotation.Nullable;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.ByteStream;
+import org.informantproject.core.util.FileBlock;
+import org.informantproject.core.util.FileBlock.InvalidBlockIdFormatException;
+import org.informantproject.core.util.RollingFile;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -34,29 +37,37 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class TraceSummaryJsonService implements JsonService {
+class RollingFileJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(RollingFileJsonService.class);
 
-    private final TraceCommonService traceCommon;
+    private final RollingFile rollingFile;
 
     @Inject
-    TraceSummaryJsonService(TraceCommonService traceCommon) {
-        this.traceCommon = traceCommon;
+    RollingFileJsonService(RollingFile rollingFile) {
+        this.rollingFile = rollingFile;
     }
 
     // this method returns byte[] directly to avoid converting to it utf8 string and back again
     @JsonServiceMethod
     @Nullable
-    byte[] getSummary(String id) throws IOException {
-        logger.debug("getSummary(): id={}", id);
-        ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, false);
+    byte[] getBlock(String id) throws IOException {
+        logger.debug("getBlock(): id={}", id);
+        FileBlock fileBlock;
+        try {
+            fileBlock = FileBlock.from(id);
+        } catch (InvalidBlockIdFormatException e) {
+            logger.warn("invalid block id format '{}'", id);
+            return null;
+        }
+        ByteStream byteStream = rollingFile.read(fileBlock, "\"rolled over\"");
         if (byteStream == null) {
-            logger.error("no trace found for id '{}'", id);
-            // TODO 404
+            logger.warn("no block found for id '{}'", id);
+            // TODO need to handle rolled over
             return null;
         } else {
-            // summary is small and doesn't need to be streamed
+            // this json service is used for exceptions and stack traces which are small and don't
+            // need to be streamed
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byteStream.writeTo(baos);
             return baos.toByteArray();

@@ -33,17 +33,17 @@ public class FileBlock {
         return new FileBlock(startIndex, length);
     }
 
-    public static FileBlock from(String id) throws InvalidBlockId {
+    public static FileBlock from(String id) throws InvalidBlockIdFormatException {
         String[] parts = id.split(":");
         if (parts.length != 2) {
-            throw new InvalidBlockId();
+            throw new InvalidBlockIdFormatException();
         }
         try {
             long startIndex = Long.parseLong(parts[0]);
             long length = Long.parseLong(parts[1]);
             return new FileBlock(startIndex, length);
         } catch (NumberFormatException e) {
-            throw new InvalidBlockId(e);
+            throw new InvalidBlockIdFormatException(e);
         }
     }
 
@@ -73,9 +73,9 @@ public class FileBlock {
     }
 
     @SuppressWarnings("serial")
-    public static class InvalidBlockId extends Exception {
-        private InvalidBlockId() {}
-        private InvalidBlockId(Throwable cause) {
+    public static class InvalidBlockIdFormatException extends Exception {
+        private InvalidBlockIdFormatException() {}
+        private InvalidBlockIdFormatException(Throwable cause) {
             super(cause);
         }
     }
