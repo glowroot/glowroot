@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
 /**
  * Needs to be externally synchronized around startBlock()/write()/endBlock().

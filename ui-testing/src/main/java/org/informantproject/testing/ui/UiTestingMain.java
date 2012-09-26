@@ -15,7 +15,6 @@
  */
 package org.informantproject.testing.ui;
 
-import org.informantproject.core.util.Static;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.Config.CoarseProfilingConfig;
 import org.informantproject.testkit.Config.CoreConfig;
@@ -28,7 +27,6 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Static
 public final class UiTestingMain {
 
     private static final int UI_PORT = 4000;

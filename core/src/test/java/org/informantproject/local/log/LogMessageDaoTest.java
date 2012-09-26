@@ -17,14 +17,16 @@ package org.informantproject.local.log;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
+import org.fest.util.Files;
 import org.informantproject.core.log.Level;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.DataSourceTestProvider;
-import org.informantproject.core.util.UnitTests;
+import org.informantproject.core.util.Threads;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,13 +38,15 @@ import org.junit.Test;
 public class LogMessageDaoTest {
 
     private Collection<Thread> preExistingThreads;
+    private File dbFile;
     private DataSource dataSource;
     private LogMessageDao logMessageDao;
 
     @Before
-    public void before() throws SQLException {
-        preExistingThreads = UnitTests.currentThreads();
-        dataSource = new DataSourceTestProvider().get();
+    public void before() throws SQLException, IOException {
+        preExistingThreads = Threads.currentThreads();
+        dbFile = File.createTempFile("informant-test-", ".h2.db");
+        dataSource = new DataSource(dbFile, true);
         if (dataSource.tableExists("log_message")) {
             dataSource.execute("drop table log_message");
         }
@@ -51,9 +55,10 @@ public class LogMessageDaoTest {
 
     @After
     public void after() throws Exception {
-        UnitTests.preShutdownCheck(preExistingThreads);
-        dataSource.closeAndDeleteFile();
-        UnitTests.postShutdownCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
+        dataSource.close();
+        Files.delete(dbFile);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

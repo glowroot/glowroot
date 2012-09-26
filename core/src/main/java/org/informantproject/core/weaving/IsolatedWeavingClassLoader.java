@@ -27,7 +27,7 @@ import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.Timer;
 import org.informantproject.api.weaving.Mixin;
-import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
+import org.informantproject.core.util.OnlyUsedByTests;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

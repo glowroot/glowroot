@@ -15,6 +15,7 @@
  */
 package org.informantproject.local.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -42,6 +43,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 
 /**
  * Json service to read config data.
@@ -57,13 +59,17 @@ class ConfigJsonService implements JsonService {
     private final ConfigService configService;
     private final RollingFile rollingFile;
     private final DataSource dataSource;
+    private final File dataDir;
     private final Gson gson = new Gson();
 
     @Inject
-    ConfigJsonService(ConfigService configService, RollingFile rollingFile, DataSource dataSource) {
+    ConfigJsonService(ConfigService configService, RollingFile rollingFile, DataSource dataSource,
+            @Named("data.dir") File dataDir) {
+
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.dataSource = dataSource;
+        this.dataDir = dataDir;
     }
 
     @JsonServiceMethod
@@ -127,8 +133,7 @@ class ConfigJsonService implements JsonService {
                 + ",\"userTracingConfig\":" + configService.getUserTracingConfig().toJson()
                 + ",\"pluginConfigs\":" + getPluginConfigsJson()
                 + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
-                + ",\"dataDirFolder\":"
-                + gson.toJson(dataSource.getDbFile().getParent()) + "}";
+                + ",\"dataDir\":" + gson.toJson(dataDir.getAbsolutePath()) + "}";
     }
 
     @JsonServiceMethod

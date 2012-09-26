@@ -17,7 +17,7 @@ package org.informantproject.core;
 
 import java.util.Collection;
 
-import org.informantproject.core.util.UnitTests;
+import org.informantproject.core.util.Threads;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,15 +34,15 @@ public class MainEntryPointTest {
 
     @Before
     public void before() {
-        preExistingThreads = UnitTests.currentThreads();
+        preExistingThreads = Threads.currentThreads();
         MainEntryPoint.start(ImmutableMap.of("ui.port", "0"));
     }
 
     @After
     public void after() throws Exception {
-        UnitTests.preShutdownCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         MainEntryPoint.shutdown();
-        UnitTests.postShutdownCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

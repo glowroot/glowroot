@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.informantproject.core.util.UnitTests;
+import org.informantproject.testkit.internal.InformantCoreJar;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -37,7 +37,7 @@ public class JarFileShadingTest {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File informantCoreJarFile = UnitTests.findInformantCoreJarFile();
+        File informantCoreJarFile = InformantCoreJar.getFile();
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("org.informantproject\\..*");
         acceptableEntries.add("org/");

@@ -16,7 +16,9 @@
 package org.informantproject.testkit;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,8 +26,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.util.DaemonExecutors;
-import org.informantproject.core.util.Files;
 
 import com.google.common.collect.ImmutableMap;
 import com.ning.http.client.AsyncHttpClient;
@@ -58,7 +58,7 @@ public class InformantContainer {
     }
 
     public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
-        File dataDir = Files.createTempDir("informant-test-datadir");
+        File dataDir = createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
         ImmutableMap<String, String> properties = ImmutableMap.of(
                 "data.dir", dataDir.getAbsolutePath(),
@@ -110,7 +110,7 @@ public class InformantContainer {
 
     public void close() throws Exception {
         closeWithoutDeletingDataDir();
-        Files.delete(dataDir);
+        deleteRecursively(dataDir);
     }
 
     public void closeWithoutDeletingDataDir() throws Exception {
@@ -121,10 +121,8 @@ public class InformantContainer {
     }
 
     private AsyncHttpClient createAsyncHttpClient() {
-        ExecutorService executorService = DaemonExecutors
-                .newCachedThreadPool("InformantContainer-AsyncHttpClient");
-        ScheduledExecutorService scheduledExecutor = DaemonExecutors
-                .newSingleThreadScheduledExecutor("InformantContainer-AsyncHttpClient-Reaper");
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
                 .setMaxRequestRetry(0)
                 .setExecutorService(executorService)
@@ -134,6 +132,39 @@ public class InformantContainer {
                 executorService);
         builder.setAsyncHttpClientProviderConfig(providerConfig);
         return new AsyncHttpClient(builder.build());
+    }
+
+    // copied from guava's Files.createTempDir, with added prefix
+    private static File createTempDir(String prefix) {
+        final int tempDirAttempts = 10000;
+        File baseDir = new File(System.getProperty("java.io.tmpdir"));
+        String baseName = prefix + "-" + System.currentTimeMillis() + "-";
+        for (int counter = 0; counter < tempDirAttempts; counter++) {
+            File tempDir = new File(baseDir, baseName + counter);
+            if (tempDir.mkdir()) {
+                return tempDir;
+            }
+        }
+        throw new IllegalStateException("Failed to create directory within " + tempDirAttempts
+                + " attempts (tried " + baseName + "0 to " + baseName + (tempDirAttempts - 1)
+                + ')');
+    }
+
+    private static void deleteRecursively(File file) throws IOException {
+        if (!file.exists()) {
+            throw new IOException("Could not find file to delete '" + file.getCanonicalPath()
+                    + "'");
+        } else if (file.isDirectory()) {
+            for (File f : file.listFiles()) {
+                deleteRecursively(f);
+            }
+            if (!file.delete()) {
+                throw new IOException("Could not delete directory '" + file.getCanonicalPath()
+                        + "'");
+            }
+        } else if (!file.delete()) {
+            throw new IOException("Could not delete file '" + file.getCanonicalPath() + "'");
+        }
     }
 
     private static boolean useExternalJvmAppContainer() {

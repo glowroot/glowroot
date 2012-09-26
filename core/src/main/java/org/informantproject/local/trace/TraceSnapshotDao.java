@@ -35,8 +35,8 @@ import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.informantproject.core.util.DataSource.RowMapper;
 import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockIdFormatException;
+import org.informantproject.core.util.OnlyUsedByTests;
 import org.informantproject.core.util.RollingFile;
-import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

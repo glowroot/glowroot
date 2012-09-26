@@ -25,8 +25,8 @@ import java.util.List;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.MainEntryPoint;
-import org.informantproject.core.util.UnitTests;
-import org.informantproject.core.util.UnitTests.RogueThreadsException;
+import org.informantproject.core.util.Threads;
+import org.informantproject.core.util.Threads.RogueThreadsException;
 import org.informantproject.testkit.SocketCommander.CommandWrapper;
 import org.informantproject.testkit.SocketCommander.ResponseWrapper;
 
@@ -81,9 +81,9 @@ class SocketCommandProcessor implements Runnable {
                         respond(SHUTDOWN_RESPONSE, commandNum);
                     } else {
                         try {
-                            UnitTests.preShutdownCheck(preExistingThreads);
+                            Threads.preShutdownCheck(preExistingThreads);
                             MainEntryPoint.shutdown();
-                            UnitTests.postShutdownCheck(preExistingThreads);
+                            Threads.postShutdownCheck(preExistingThreads);
                             respond(SHUTDOWN_RESPONSE, commandNum);
                         } catch (RogueThreadsException e) {
                             logger.error(e.getMessage(), e);
@@ -105,7 +105,7 @@ class SocketCommandProcessor implements Runnable {
                         if (preExistingThreads == null) {
                             // wait until the first execute app command to capture pre-existing
                             // threads, otherwise may pick up DestroyJavaVM thread
-                            preExistingThreads = UnitTests.currentThreads();
+                            preExistingThreads = Threads.currentThreads();
                         }
                         String appClassName = (String) argList.get(1);
                         String threadName = (String) argList.get(2);

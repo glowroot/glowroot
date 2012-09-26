@@ -25,7 +25,7 @@ import org.informantproject.api.weaving.Mixin;
 import org.informantproject.core.MainEntryPoint;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
-import org.informantproject.core.util.UnitTests;
+import org.informantproject.core.util.Threads;
 import org.informantproject.core.weaving.Advice;
 import org.informantproject.core.weaving.IsolatedWeavingClassLoader;
 import org.informantproject.core.weaving.WeavingMetric;
@@ -46,7 +46,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     SameJvmExecutionAdapter(Map<String, String> properties) throws InstantiationException,
             IllegalAccessException, ClassNotFoundException {
 
-        preExistingThreads = UnitTests.currentThreads();
+        preExistingThreads = Threads.currentThreads();
 
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
@@ -94,9 +94,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     public void close() throws InstantiationException, IllegalAccessException,
             ClassNotFoundException, InterruptedException {
 
-        UnitTests.preShutdownCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
         isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
-        UnitTests.postShutdownCheck(preExistingThreads);
+        Threads.postShutdownCheck(preExistingThreads);
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
         isolatedWeavingClassLoader = null;
     }

@@ -17,8 +17,6 @@ package org.informantproject.core.config;
 
 import javax.annotation.concurrent.Immutable;
 
-import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
-
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -83,11 +81,6 @@ public class CoreConfig {
 
     static CoreConfig fromJson(String json) throws JsonSyntaxException {
         return gson.fromJson(json, CoreConfig.Builder.class).build();
-    }
-
-    @OnlyUsedByTests
-    static Builder builder() {
-        return new Builder();
     }
 
     public static Builder builder(CoreConfig base) {

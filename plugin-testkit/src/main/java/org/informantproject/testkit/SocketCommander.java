@@ -23,12 +23,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
-import org.informantproject.core.util.DaemonExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ class SocketCommander {
     SocketCommander() throws IOException {
         ServerSocket serverSocket = new ServerSocket(0);
         localPort = serverSocket.getLocalPort();
-        executorService = DaemonExecutors.newSingleThreadExecutor("SocketCommander");
+        executorService = Executors.newSingleThreadExecutor();
         executorService.execute(new SocketIn(serverSocket));
     }
 

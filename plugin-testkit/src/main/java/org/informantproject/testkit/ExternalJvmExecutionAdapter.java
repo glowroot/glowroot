@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.util.DaemonExecutors;
-import org.informantproject.core.util.UnitTests;
 import org.informantproject.testkit.InformantContainer.ExecutionAdapter;
+import org.informantproject.testkit.internal.InformantCoreJar;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -55,7 +55,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
-        String javaagentArg = "-javaagent:" + UnitTests.findInformantCoreJarFile();
+        String javaagentArg = "-javaagent:" + InformantCoreJar.getFile();
         socketCommander = new SocketCommander();
         List<String> command = Lists.newArrayList();
         command.add(path);
@@ -70,8 +70,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
-        consolePipeExecutorService = DaemonExecutors
-                .newSingleThreadExecutor("ExternalJvmConsolePipe");
+        consolePipeExecutorService = Executors.newSingleThreadExecutor();
         consolePipeExecutorService.submit(new Runnable() {
             public void run() {
                 try {

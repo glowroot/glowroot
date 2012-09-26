@@ -22,7 +22,6 @@ import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.RollingFile;
 import org.informantproject.core.util.Static;
 
@@ -40,7 +39,8 @@ public final class TraceSnapshotDaoPerformanceMain {
 
     public static void main(String... args) throws IOException {
         TraceSnapshotTestData snapshotTestData = new TraceSnapshotTestData();
-        DataSource dataSource = new DataSourceTestProvider().get();
+        File dbFile = File.createTempFile("informant-test-", ".h2.db");
+        DataSource dataSource = new DataSource(dbFile, true);
         RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
         TraceSnapshotDao snapshotDao = new TraceSnapshotDao(dataSource, rollingFile,
                 Clock.systemClock());

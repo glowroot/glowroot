@@ -169,9 +169,9 @@
       addIntegerValidator('#maxEntries')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
-      $('#offscreenMeasure').text(config.dataDirFolder)
-      $('#dataDirFolder').text(config.dataDirFolder)
-      $('#dataDirFolder').css("width", ($('#offscreenMeasure').width() + 50) + "px")
+      $('#offscreenMeasure').text(config.dataDir)
+      $('#dataDir').text(config.dataDir)
+      $('#dataDir').css("width", ($('#offscreenMeasure').width() + 50) + "px")
       var coarseProfilingConfig = config.coarseProfilingConfig
       setUpOnOffButton('ProfilingCoarse', coarseProfilingConfig.enabled,
           'config/profiling/coarse')
@@ -467,9 +467,9 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="dataDirFolder">Data dir folder</label>
+        <label class="control-label" for="dataDir">Data directory</label>
         <div class="controls">
-          <span class="uneditable-input" id="dataDirFolder"></span>
+          <span class="uneditable-input" id="dataDir"></span>
           <div class="help-block">
             The data directory must be set on the command line, e.g.
             -Dinformant.data.dir=&lt;folder&gt;

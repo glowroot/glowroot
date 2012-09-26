@@ -19,11 +19,11 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
 
-import org.informantproject.core.util.DaemonExecutors;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
@@ -86,7 +86,7 @@ public class TraceMetricDataTest {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         // when
-        ExecutorService executorService = DaemonExecutors.newSingleThreadExecutor("StackTraceTest");
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Nullable
             public Void call() throws Exception {

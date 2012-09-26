@@ -16,7 +16,6 @@
 package org.informantproject.core.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -36,7 +35,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.h2.jdbc.JdbcConnection;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -100,10 +98,6 @@ public class DataSource {
     public void close() throws SQLException {
         logger.debug("close()");
         connection.close();
-    }
-
-    public File getDbFile() {
-        return dbFile;
     }
 
     public void compact() throws SQLException {
@@ -373,13 +367,6 @@ public class DataSource {
                 resultSet.close();
             }
         }
-    }
-
-    @OnlyUsedByTests
-    public void closeAndDeleteFile() throws SQLException, IOException {
-        logger.debug("closeAndDeleteFile()");
-        close();
-        Files.delete(dbFile);
     }
 
     private boolean primaryKeyNeedsUpgrade(String tableName,

@@ -176,6 +176,10 @@ public class Informant {
         post("/config/plugin/" + pluginId, config.toJson());
     }
 
+    public String getDataDir() throws Exception {
+        return getConfig().getDataDir();
+    }
+
     public Trace getLastTrace() throws Exception {
         return getLastTrace(false);
     }

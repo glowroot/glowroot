@@ -46,7 +46,7 @@ public class RollingFileTest {
     @After
     public void onAfter() throws IOException {
         rollingFile.close();
-        Files.delete(tempFile);
+        tempFile.delete();
     }
 
     @Test

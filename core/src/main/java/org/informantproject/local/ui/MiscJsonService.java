@@ -162,9 +162,4 @@ class MiscJsonService implements JsonService {
         logger.debug("handleNumPendingTraceWrites()");
         return Integer.toString(traceSinkLocal.getPendingCount());
     }
-
-    @JsonServiceMethod
-    String getDbFilePath() {
-        return dataSource.getDbFile().getAbsolutePath();
-    }
 }

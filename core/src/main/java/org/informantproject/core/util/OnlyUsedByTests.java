@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,12 @@
  */
 package org.informantproject.core.util;
 
-import java.io.File;
-import java.io.IOException;
+import java.lang.annotation.Documented;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class DataSourceTestProvider {
-
-    public DataSource get() {
-        File dbFile;
-        try {
-            dbFile = File.createTempFile("informant-test-", ".h2.db");
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-        return new DataSource(dbFile, true);
-    }
-}
+// marker annotation
+@Documented
+public @interface OnlyUsedByTests {}

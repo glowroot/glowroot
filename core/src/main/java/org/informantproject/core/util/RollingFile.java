@@ -26,7 +26,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.util.UnitTests.OnlyUsedByTests;
 
 import com.google.common.base.Charsets;
 import com.ning.compress.lzf.LZFDecoder;
@@ -86,13 +85,6 @@ public class RollingFile {
             rollingOut.close();
             inFile.close();
         }
-    }
-
-    @OnlyUsedByTests
-    public void closeAndDeleteFile() throws IOException {
-        logger.debug("closeAndDeleteFile()");
-        close();
-        Files.delete(rollingFile);
     }
 
     @NotThreadSafe

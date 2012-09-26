@@ -24,10 +24,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.DataSourceTestProvider;
 import org.informantproject.core.util.MockClock;
 import org.informantproject.core.util.RollingFile;
-import org.informantproject.core.util.UnitTests;
+import org.informantproject.core.util.Threads;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,27 +38,33 @@ import org.junit.Test;
 public class TraceSnapshotDaoTest {
 
     private Collection<Thread> preExistingThreads;
+    private File dbFile;
     private DataSource dataSource;
+    private File rollingDbFile;
     private RollingFile rollingFile;
     private TraceSnapshotDao snapshotDao;
 
     @Before
     public void before() throws SQLException, IOException {
-        preExistingThreads = UnitTests.currentThreads();
-        dataSource = new DataSourceTestProvider().get();
+        preExistingThreads = Threads.currentThreads();
+        dbFile = File.createTempFile("informant-test-", ".h2.db");
+        dataSource = new DataSource(dbFile, true);
         if (dataSource.tableExists("trace_snapshot")) {
             dataSource.execute("drop table trace_snapshot");
         }
-        rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
+        rollingDbFile = new File("informant.rolling.db");
+        rollingFile = new RollingFile(rollingDbFile, 1000000);
         snapshotDao = new TraceSnapshotDao(dataSource, rollingFile, new MockClock());
     }
 
     @After
     public void after() throws Exception {
-        UnitTests.preShutdownCheck(preExistingThreads);
-        dataSource.closeAndDeleteFile();
-        rollingFile.closeAndDeleteFile();
-        UnitTests.postShutdownCheck(preExistingThreads);
+        Threads.preShutdownCheck(preExistingThreads);
+        dataSource.close();
+        dbFile.delete();
+        rollingFile.close();
+        rollingDbFile.delete();
+        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test
