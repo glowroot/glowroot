@@ -26,8 +26,7 @@
         already provided in the informant jar -->
       <groupId>org.informantproject.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
-      <!-- this is the last version of guava that supports jdk 5 -->
-      <version>11.0.2-SNAPSHOT</version>
+      <version>13.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

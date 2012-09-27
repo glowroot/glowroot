@@ -61,9 +61,8 @@
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <!-- this is the last version of guava that supports jdk 5 -->
-      <version>11.0.2</version>
+      <artifactId>guava-jdk5</artifactId>
+      <version>13.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -93,8 +92,9 @@
       <version>3.1.2</version>
       <exclusions>
         <exclusion>
-          <groupId>org.sonatype.sisu</groupId>
-          <artifactId>sisu-guava</artifactId>
+          <!-- exclude guava artifact so no conflict with differently named guava-jdk5 artifact -->
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
