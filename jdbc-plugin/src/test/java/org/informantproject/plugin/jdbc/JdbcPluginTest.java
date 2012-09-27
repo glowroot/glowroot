@@ -100,6 +100,23 @@ public class JdbcPluginTest {
     }
 
     @Test
+    public void testPreparedStatementWithBinary() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span rootSpan = trace.getSpans().get(0);
+        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: insert into employee values (?, ?) ['jane',"
+                        + " 0x00010203040506070809] [connection: ");
+    }
+
+    @Test
     public void testCommit() throws Exception {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
@@ -229,7 +246,7 @@ public class JdbcPluginTest {
         Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
         Statement statement = connection.createStatement();
         try {
-            statement.execute("create table employee (name varchar(100))");
+            statement.execute("create table employee (name varchar(100), misc binary(100))");
             statement.execute("insert into employee (name) values ('john doe')");
         } finally {
             statement.close();
@@ -245,7 +262,7 @@ public class JdbcPluginTest {
         Connection connection = ds.getConnection();
         Statement statement = connection.createStatement();
         try {
-            statement.execute("create table employee (name varchar(100))");
+            statement.execute("create table employee (name varchar(100), misc binary(100))");
             statement.execute("insert into employee (name) values ('john doe')");
         } finally {
             statement.close();
@@ -253,7 +270,8 @@ public class JdbcPluginTest {
         return connection;
     }
 
-    private static Connection createTomcatPoolWrappedConnection() throws SQLException {
+    // NOTE tomcat jdbc pool requires JDK 6
+    private static Connection createTomcatJdbcPoolWrappedConnection() throws SQLException {
         // set up database
         DataSource ds = new DataSource();
         ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
@@ -263,7 +281,7 @@ public class JdbcPluginTest {
         Connection connection = ds.getConnection();
         Statement statement = connection.createStatement();
         try {
-            statement.execute("create table employee (name varchar(100))");
+            statement.execute("create table employee (name varchar(100), misc binary(100))");
             statement.execute("insert into employee (name) values ('john doe')");
         } finally {
             statement.close();
@@ -295,7 +313,7 @@ public class JdbcPluginTest {
                 statement.execute("drop table employee");
             } catch (SQLException e) {
             }
-            statement.execute("create table employee (name varchar(100))");
+            statement.execute("create table employee (name varchar(100), misc raw(100))");
             statement.execute("insert into employee (name) values ('john doe')");
         } finally {
             statement.close();
@@ -360,6 +378,39 @@ public class JdbcPluginTest {
                 while (rs.next()) {
                     rs.getString(1);
                 }
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementWithBinary implements AppUnderTest, TraceMarker {
+
+        static {
+            JdbcPluginProperties.setDisplayBinaryParameterAsHex(
+                    "insert into employee values (?, ?)", 2);
+        }
+
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement = connection
+                    .prepareStatement("insert into employee values (?, ?)");
+            try {
+                preparedStatement.setString(1, "jane");
+                byte[] bytes = new byte[10];
+                for (int i = 0; i < 10; i++) {
+                    bytes[i] = (byte) i;
+                }
+                preparedStatement.setBytes(2, bytes);
+                preparedStatement.execute();
             } finally {
                 preparedStatement.close();
             }

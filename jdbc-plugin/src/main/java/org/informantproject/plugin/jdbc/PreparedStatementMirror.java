@@ -25,6 +25,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.informantproject.shaded.google.common.collect.ImmutableList;
 import org.informantproject.shaded.google.common.collect.Lists;
 import org.informantproject.shaded.google.common.collect.Queues;
+import org.informantproject.shaded.google.common.hash.HashCodes;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of prepared statements since the underlying
@@ -40,8 +41,6 @@ import org.informantproject.shaded.google.common.collect.Queues;
  */
 @NotThreadSafe
 class PreparedStatementMirror extends StatementMirror {
-
-    private static final char[] hexDigits = "0123456789abcdef".toCharArray();
 
     private final String sql;
     private List<Object> parameters;
@@ -153,13 +152,7 @@ class PreparedStatementMirror extends StatementMirror {
         }
     }
 
-    // copied from com.google.common.hash.HashCode.toString() with minor modification
     private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(2 + 2 * bytes.length);
-        sb.append("0x");
-        for (byte b : bytes) {
-            sb.append(hexDigits[(b >> 4) & 0xf]).append(hexDigits[b & 0xf]);
-        }
-        return sb.toString();
+        return "0x" + HashCodes.fromBytes(bytes).toString();
     }
 }

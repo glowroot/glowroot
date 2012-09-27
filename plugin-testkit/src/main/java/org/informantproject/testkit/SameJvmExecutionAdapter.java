@@ -56,23 +56,22 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
         // instantiate class loader
         isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
-                AppUnderTest.class, RunnableWithArg.class, RunnableWithReturn.class);
+                AppUnderTest.class, RunnableWithMapArg.class,
+                RunnableWithWeavingMetricReturn.class, RunnableWithIntegerReturn.class);
         // start agent inside class loader
-        // TODO fix the type safety warning in the following line using TypeToken after upgrading
-        // to guava 12.0
-        isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithArg.class)
+        isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithMapArg.class)
                 .run(properties);
         // start weaving (needed to retrieve weaving metric from agent first)
-        WeavingMetric weavingMetric = (WeavingMetric) isolatedWeavingClassLoader.newInstance(
-                GetWeavingMetric.class, RunnableWithReturn.class).run();
+        WeavingMetric weavingMetric = isolatedWeavingClassLoader.newInstance(
+                GetWeavingMetric.class, RunnableWithWeavingMetricReturn.class).run();
         isolatedWeavingClassLoader.initWeaver(weavingMetric);
     }
 
     public int getPort() throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
 
-        return (Integer) isolatedWeavingClassLoader.newInstance(GetPort.class,
-                RunnableWithReturn.class).run();
+        return isolatedWeavingClassLoader.newInstance(GetPort.class,
+                RunnableWithIntegerReturn.class).run();
     }
 
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass,
@@ -101,15 +100,19 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         isolatedWeavingClassLoader = null;
     }
 
-    public interface RunnableWithArg<T> {
-        void run(T args);
+    public interface RunnableWithMapArg {
+        void run(Map<String, String> args);
     }
 
-    public interface RunnableWithReturn<T> {
-        T run();
+    public interface RunnableWithIntegerReturn {
+        Integer run();
     }
 
-    public static class StartContainer implements RunnableWithArg<Map<String, String>> {
+    public interface RunnableWithWeavingMetricReturn {
+        WeavingMetric run();
+    }
+
+    public static class StartContainer implements RunnableWithMapArg {
         public void run(Map<String, String> properties) {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(StartContainer.class.getClassLoader());
@@ -123,7 +126,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public static class GetWeavingMetric implements RunnableWithReturn<WeavingMetric> {
+    public static class GetWeavingMetric implements RunnableWithWeavingMetricReturn {
         public WeavingMetric run() {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(GetWeavingMetric.class.getClassLoader());
@@ -137,7 +140,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
-    public static class GetPort implements RunnableWithReturn<Integer> {
+    public static class GetPort implements RunnableWithIntegerReturn {
         public Integer run() {
             ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(GetPort.class.getClassLoader());

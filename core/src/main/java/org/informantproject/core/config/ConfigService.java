@@ -17,7 +17,6 @@ package org.informantproject.core.config;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
@@ -26,6 +25,7 @@ import org.informantproject.api.PluginServices.ConfigListener;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -44,7 +44,7 @@ public class ConfigService {
 
     private final ConfigDao configDao;
 
-    private final Set<ConfigListener> configListeners = new CopyOnWriteArraySet<ConfigListener>();
+    private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
 
     private volatile CoreConfig coreConfig;
     private volatile CoarseProfilingConfig coarseProfilingConfig;

@@ -18,7 +18,6 @@ package org.informantproject.local.trace;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +28,7 @@ import org.informantproject.core.trace.TraceSink;
 import org.informantproject.core.util.DaemonExecutors;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -52,7 +52,7 @@ public class TraceSinkLocal implements TraceSink {
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Ticker ticker;
-    private final Set<Trace> pendingCompleteTraces = new CopyOnWriteArraySet<Trace>();
+    private final Set<Trace> pendingCompleteTraces = Sets.newCopyOnWriteArraySet();
 
     private volatile long lastWarningTick;
     private volatile int countSinceLastWarning;

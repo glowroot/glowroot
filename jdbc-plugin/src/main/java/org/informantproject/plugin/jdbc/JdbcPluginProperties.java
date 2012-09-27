@@ -32,19 +32,12 @@ public final class JdbcPluginProperties {
     private static volatile ImmutableMultimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
 
+    // this can always be called multiple times with the same sql if want to display multiple
+    // parameters in the same sql as hex
     public static void setDisplayBinaryParameterAsHex(String sql, int parameterIndex) {
         HashMultimap<String, Integer> mutableMultimap = HashMultimap
                 .create(displayBinaryParameterAsHex);
         mutableMultimap.put(sql, parameterIndex);
-        displayBinaryParameterAsHex = ImmutableMultimap.copyOf(mutableMultimap);
-    }
-
-    public static void setDisplayBinaryParamatersAsHex(String sql, int... parameterIndexes) {
-        HashMultimap<String, Integer> mutableMultimap = HashMultimap
-                .create(displayBinaryParameterAsHex);
-        for (int parameterIndex : parameterIndexes) {
-            mutableMultimap.put(sql, parameterIndex);
-        }
         displayBinaryParameterAsHex = ImmutableMultimap.copyOf(mutableMultimap);
     }
 

@@ -16,7 +16,6 @@
 package org.informantproject.core;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -29,6 +28,8 @@ import org.informantproject.api.Span;
 import org.informantproject.api.Timer;
 import org.informantproject.core.PluginServicesImpl.PluginServicesImplFactory;
 import org.informantproject.core.config.ConfigService;
+
+import com.google.common.collect.Lists;
 
 /**
  * Plugins may get instantiated by aspectj and request their PluginServices before Informant has
@@ -44,8 +45,7 @@ class PluginServicesProxy extends PluginServices {
     private final String pluginId;
     private final MetricCache metricCache;
 
-    private final List<ConfigListener> pendingListeners =
-            new CopyOnWriteArrayList<ConfigListener>();
+    private final List<ConfigListener> pendingListeners = Lists.newCopyOnWriteArrayList();
 
     @Nullable
     private volatile PluginServices pluginServices;
