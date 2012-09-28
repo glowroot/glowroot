@@ -316,8 +316,12 @@ public class ServletAspect {
             return pluginServices.startTrace(MessageSupplier.from("servlet context initialized"
                     + " ({{listener}})", listener.getClass().getName()), metric);
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span) {
             span.end();
         }
     }
@@ -336,8 +340,12 @@ public class ServletAspect {
             return pluginServices.startTrace(MessageSupplier.from("servlet init ({{filter}})",
                     servlet.getClass().getName()), metric);
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span) {
             span.end();
         }
     }
@@ -356,8 +364,12 @@ public class ServletAspect {
             return pluginServices.startTrace(MessageSupplier.from("filter init ({{filter}})",
                     filter.getClass().getName()), metric);
         }
-        @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        @OnThrow
+        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+            span.endWithError(ErrorMessage.from(t));
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler Span span) {
             span.end();
         }
     }
