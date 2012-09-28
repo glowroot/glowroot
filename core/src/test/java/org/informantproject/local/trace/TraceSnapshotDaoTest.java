@@ -73,9 +73,9 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0, 0,
-                Long.MAX_VALUE, false, false, false, null, null, 1);
-        TraceSnapshot snapshot2 = snapshotDao.readSnapshot(summaries.get(0).getId());
+        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
+                false, false, null, null, 1);
+        TraceSnapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
         assertThat(snapshot2.getStartAt()).isEqualTo(snapshot.getStartAt());
         assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
@@ -93,10 +93,10 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
-                snapshot.getDuration(), snapshot.getDuration(), false, false, false, null, null, 1);
+        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
+                snapshot.getDuration(), false, false, false, null, null, 1);
         // then
-        assertThat(summaries).hasSize(1);
+        assertThat(points).hasSize(1);
     }
 
     @Test
@@ -105,11 +105,11 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
-                snapshot.getDuration() + 1, snapshot.getDuration() + 2, false, false, false, null,
+        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
+                snapshot.getDuration() + 2, false, false, false, null,
                 null, 1);
         // then
-        assertThat(summaries).isEmpty();
+        assertThat(points).isEmpty();
     }
 
     @Test
@@ -118,11 +118,10 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotSummary> summaries = snapshotDao.readSummaries(0, 0,
-                snapshot.getDuration() - 2, snapshot.getDuration() - 1, false, false, false, null,
-                null, 1);
+        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
+                snapshot.getDuration() - 1, false, false, false, null, null, 1);
         // then
-        assertThat(summaries).isEmpty();
+        assertThat(points).isEmpty();
     }
 
     @Test

@@ -34,6 +34,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
@@ -195,8 +196,12 @@ public class Informant {
     private Trace getLastTrace(boolean summary) throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
-        JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
-                .get("storedPoints").getAsJsonArray();
+        JsonObject response = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject();
+        JsonArray normalPoints = response.get("normalPoints").getAsJsonArray();
+        JsonArray errorPoints = response.get("errorPoints").getAsJsonArray();
+        JsonArray points = new JsonArray();
+        points.addAll(normalPoints);
+        points.addAll(errorPoints);
         if (points.size() == 0) {
             throw new AssertionError("no trace found");
         } else {

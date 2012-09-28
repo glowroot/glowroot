@@ -21,29 +21,33 @@ import javax.annotation.concurrent.Immutable;
 import com.google.common.base.Objects;
 
 /**
- * Structure used in the response to "/trace/summaries".
+ * Structure used in the response to "/trace/points".
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class TraceSnapshotSummary {
+public class TraceSnapshotPoint {
 
     private final String id;
     private final long capturedAt;
     private final double duration; // nanoseconds
     private final boolean completed;
+    private final boolean error;
 
-    public static TraceSnapshotSummary from(String id, long capturedAt, double duration,
-            boolean completed) {
-        return new TraceSnapshotSummary(id, capturedAt, duration, completed);
+    public static TraceSnapshotPoint from(String id, long capturedAt, double duration,
+            boolean completed, boolean error) {
+        return new TraceSnapshotPoint(id, capturedAt, duration, completed, error);
     }
 
-    private TraceSnapshotSummary(String id, long capturedAt, double duration, boolean completed) {
+    private TraceSnapshotPoint(String id, long capturedAt, double duration, boolean completed,
+            boolean error) {
+
         this.id = id;
         this.capturedAt = capturedAt;
         this.duration = duration;
         this.completed = completed;
+        this.error = error;
     }
 
     public String getId() {
@@ -62,20 +66,25 @@ public class TraceSnapshotSummary {
         return completed;
     }
 
+    public boolean isError() {
+        return error;
+    }
+
     @Override
     public boolean equals(@Nullable Object o) {
-        if (!(o instanceof TraceSnapshotSummary)) {
+        if (!(o instanceof TraceSnapshotPoint)) {
             return false;
         }
-        TraceSnapshotSummary other = (TraceSnapshotSummary) o;
-        return Objects.equal(id, other.getId())
-                && Objects.equal(capturedAt, other.getCapturedAt())
-                && Objects.equal(duration, other.getDuration())
-                && Objects.equal(completed, other.isCompleted());
+        TraceSnapshotPoint other = (TraceSnapshotPoint) o;
+        return Objects.equal(id, other.id)
+                && Objects.equal(capturedAt, other.capturedAt)
+                && Objects.equal(duration, other.duration)
+                && Objects.equal(error, other.error)
+                && Objects.equal(completed, other.completed);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id, capturedAt, duration, completed);
+        return Objects.hashCode(id, capturedAt, duration, completed, error);
     }
 }

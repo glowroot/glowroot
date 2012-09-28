@@ -62,7 +62,7 @@ public class TraceSnapshotDao {
             new Column("stuck", Types.BOOLEAN),
             new Column("completed", Types.BOOLEAN),
             new Column("background", Types.BOOLEAN),
-            new Column("error", Types.BOOLEAN), // for searching only
+            new Column("error", Types.BOOLEAN),
             new Column("fine", Types.BOOLEAN), // for searching only
             new Column("description", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
@@ -151,12 +151,12 @@ public class TraceSnapshotDao {
         }
     }
 
-    public List<TraceSnapshotSummary> readSummaries(long capturedFrom, long capturedTo,
+    public List<TraceSnapshotPoint> readPoints(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable Boolean background,
             boolean errorOnly, boolean fineOnly, @Nullable StringComparator userIdComparator,
             @Nullable String userId, int limit) {
 
-        logger.debug("readSummaries(): capturedFrom={}, capturedTo={}, durationLow={},"
+        logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
                 + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
                 + " userIdComparator={}, userId={}", new Object[] { capturedFrom, capturedTo,
                 durationLow, durationHigh, background, errorOnly, fineOnly, userIdComparator,
@@ -165,8 +165,8 @@ public class TraceSnapshotDao {
             return ImmutableList.of();
         }
         try {
-            String sql = "select id, captured_at, duration, completed from trace_snapshot where"
-                    + " captured_at >= ? and captured_at <= ?";
+            String sql = "select id, captured_at, duration, completed, error from trace_snapshot"
+                    + " where captured_at >= ? and captured_at <= ?";
             List<Object> args = Lists.newArrayList();
             args.add(capturedFrom);
             args.add(capturedTo);
@@ -196,7 +196,7 @@ public class TraceSnapshotDao {
             }
             sql += " order by duration desc limit ?";
             args.add(limit);
-            return dataSource.query(sql, args.toArray(), new SummaryRowMapper());
+            return dataSource.query(sql, args.toArray(), new PointRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -240,7 +240,7 @@ public class TraceSnapshotDao {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
                     + " background, description, attributes, user_id, error_text, error_detail,"
                     + " exception, metrics from trace_snapshot where id = ?", new Object[] { id },
-                    new TraceSummaryRowMapper());
+                    new TraceSnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -401,16 +401,16 @@ public class TraceSnapshotDao {
     }
 
     @ThreadSafe
-    private static class SummaryRowMapper implements RowMapper<TraceSnapshotSummary> {
+    private static class PointRowMapper implements RowMapper<TraceSnapshotPoint> {
 
-        public TraceSnapshotSummary mapRow(ResultSet resultSet) throws SQLException {
-            return TraceSnapshotSummary.from(resultSet.getString(1), resultSet.getLong(2),
-                    resultSet.getLong(3), resultSet.getBoolean(4));
+        public TraceSnapshotPoint mapRow(ResultSet resultSet) throws SQLException {
+            return TraceSnapshotPoint.from(resultSet.getString(1), resultSet.getLong(2),
+                    resultSet.getLong(3), resultSet.getBoolean(4), resultSet.getBoolean(5));
         }
     }
 
     @ThreadSafe
-    private static class TraceSummaryRowMapper implements RowMapper<TraceSnapshot> {
+    private static class TraceSnapshotRowMapper implements RowMapper<TraceSnapshot> {
 
         public TraceSnapshot mapRow(ResultSet resultSet) throws SQLException {
             return createBuilder(resultSet).build();

@@ -37,8 +37,8 @@ import org.informantproject.core.util.Clock;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.trace.TraceSnapshotDao;
 import org.informantproject.local.trace.TraceSnapshotDao.StringComparator;
+import org.informantproject.local.trace.TraceSnapshotPoint;
 import org.informantproject.local.trace.TraceSnapshotService;
-import org.informantproject.local.trace.TraceSnapshotSummary;
 import org.junit.Test;
 
 import com.google.common.base.Function;
@@ -68,17 +68,17 @@ public class TracePointJsonServiceTest {
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
-        List<TraceSnapshotSummary> storedSummaries = Lists.newArrayList();
-        storedSummaries.add(mockStoredSummary("id1", 123, 500, false));
+        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        points.add(mockPoint("id1", 123, 500, false));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, storedSummaries);
+                pendingTraces, points);
         // when
         String responseJson = tracePointJsonService
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
         assertThat(response.getActiveTraces().size()).isEqualTo(1);
-        assertThat(response.getStoredTraces().size()).isEqualTo(0);
+        assertThat(response.getNormalTraces().size()).isEqualTo(0);
     }
 
     @Test
@@ -87,17 +87,17 @@ public class TracePointJsonServiceTest {
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
-        List<TraceSnapshotSummary> storedSummaries = Lists.newArrayList();
-        storedSummaries.add(mockStoredSummary("id1", 123, 500, true));
+        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        points.add(mockPoint("id1", 123, 500, true));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, storedSummaries);
+                pendingTraces, points);
         // when
         String responseJson = tracePointJsonService
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
         assertThat(response.getActiveTraces().size()).isEqualTo(0);
-        assertThat(response.getStoredTraces().size()).isEqualTo(1);
+        assertThat(response.getNormalTraces().size()).isEqualTo(1);
     }
 
     @Test
@@ -107,16 +107,16 @@ public class TracePointJsonServiceTest {
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
         pendingTraces.add(mockPendingTrace("id1", 500, true));
-        List<TraceSnapshotSummary> storedSummaries = Lists.newArrayList();
+        List<TraceSnapshotPoint> points = Lists.newArrayList();
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, storedSummaries);
+                pendingTraces, points);
         // when
         String responseJson = tracePointJsonService
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
         assertThat(response.getActiveTraces().size()).isEqualTo(0);
-        assertThat(response.getStoredTraces().size()).isEqualTo(1);
+        assertThat(response.getNormalTraces().size()).isEqualTo(1);
     }
 
     // this is relevant because completed pending traces don't have firm capturedAt
@@ -127,18 +127,18 @@ public class TracePointJsonServiceTest {
         List<Trace> activeTraces = Lists.newArrayList();
         List<Trace> pendingTraces = Lists.newArrayList();
         pendingTraces.add(mockPendingTrace("id1", 500, true));
-        List<TraceSnapshotSummary> storedSummaries = Lists.newArrayList();
-        storedSummaries.add(mockStoredSummary("id1", 10001, 500, true));
+        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        points.add(mockPoint("id1", 10001, 500, true));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, storedSummaries, 10000, DEFAULT_CURRENT_TICK);
+                pendingTraces, points, 10000, DEFAULT_CURRENT_TICK);
         // when
         String responseJson = tracePointJsonService
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
         assertThat(response.getActiveTraces().size()).isEqualTo(0);
-        assertThat(response.getStoredTraces().size()).isEqualTo(1);
-        assertThat(response.getStoredTraces().get(0).getCapturedAt()).isEqualTo(10001);
+        assertThat(response.getNormalTraces().size()).isEqualTo(1);
+        assertThat(response.getNormalTraces().get(0).getCapturedAt()).isEqualTo(10001);
     }
 
     @Test
@@ -152,21 +152,21 @@ public class TracePointJsonServiceTest {
         for (int i = 100; i < 200; i++) {
             pendingTraces.add(mockPendingTrace("id" + i, random.nextInt(1000), true));
         }
-        List<TraceSnapshotSummary> storedSummaries = Lists.newArrayList();
+        List<TraceSnapshotPoint> points = Lists.newArrayList();
         for (int i = 200; i < 300; i++) {
-            storedSummaries.add(mockStoredSummary("id" + i, 1, random.nextInt(1000), true));
+            points.add(mockPoint("id" + i, 1, random.nextInt(1000), true));
         }
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, storedSummaries);
+                pendingTraces, points);
         // when
         String responseJson = tracePointJsonService
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
         assertThat(response.getActiveTraces().size()).isEqualTo(100);
-        assertThat(response.getStoredTraces().size()).isEqualTo(200);
+        assertThat(response.getNormalTraces().size()).isEqualTo(200);
         assertThat(response.getActiveTraces()).isSorted();
-        assertThat(response.getStoredTraces()).isSorted();
+        assertThat(response.getNormalTraces()).isSorted();
     }
 
     @Test
@@ -182,37 +182,37 @@ public class TracePointJsonServiceTest {
             activeTraces.add(mockActiveTrace("id" + i, 500));
         }
         List<Trace> pendingTraces = Lists.newArrayList();
-        List<TraceSnapshotSummary> storedSummaries = Lists.newArrayList();
+        List<TraceSnapshotPoint> points = Lists.newArrayList();
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, storedSummaries);
+                pendingTraces, points);
         // when
         String responseJson = tracePointJsonService
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
         assertThat(response.getActiveTraces().size()).isEqualTo(100);
-        assertThat(response.getStoredTraces().size()).isEqualTo(0);
+        assertThat(response.getNormalTraces().size()).isEqualTo(0);
     }
 
     private static TracePointJsonService buildTracePointJsonService(List<Trace> activeTraces,
-            List<Trace> pendingTraces, List<TraceSnapshotSummary> storedSummaries) {
-        return buildTracePointJsonService(activeTraces, pendingTraces, storedSummaries,
+            List<Trace> pendingTraces, List<TraceSnapshotPoint> points) {
+
+        return buildTracePointJsonService(activeTraces, pendingTraces, points,
                 DEFAULT_CURRENT_TIME_MILLIS, DEFAULT_CURRENT_TICK);
     }
 
     private static TracePointJsonService buildTracePointJsonService(List<Trace> activeTraces,
-            List<Trace> pendingTraces, List<TraceSnapshotSummary> storedSummaries,
-            long currentTimeMillis, long currentTick) {
+            List<Trace> pendingTraces, List<TraceSnapshotPoint> points, long currentTimeMillis,
+            long currentTick) {
 
-        Ordering<TraceSnapshotSummary> durationDescOrdering = Ordering.natural().reverse()
-                .onResultOf(new Function<TraceSnapshotSummary, Double>() {
-                    public Double apply(@Nullable TraceSnapshotSummary trace) {
+        Ordering<TraceSnapshotPoint> durationDescOrdering = Ordering.natural().reverse()
+                .onResultOf(new Function<TraceSnapshotPoint, Double>() {
+                    public Double apply(@Nullable TraceSnapshotPoint trace) {
                         return trace.getDuration();
                     }
                 });
 
-        List<TraceSnapshotSummary> orderedStoredSummaries = durationDescOrdering
-                .sortedCopy(storedSummaries);
+        List<TraceSnapshotPoint> orderedPoints = durationDescOrdering.sortedCopy(points);
 
         TraceSnapshotDao traceSnapshotDao = mock(TraceSnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
@@ -221,9 +221,9 @@ public class TracePointJsonServiceTest {
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(traceSnapshotDao.readSummaries(anyLong(), anyLong(), anyLong(), anyLong(),
+        when(traceSnapshotDao.readPoints(anyLong(), anyLong(), anyLong(), anyLong(),
                 anyBoolean(), anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
-                anyInt())).thenReturn(orderedStoredSummaries);
+                anyInt())).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be persisted
         when(traceSnapshotService.shouldPersist(any(Trace.class))).thenReturn(true);
@@ -250,41 +250,53 @@ public class TracePointJsonServiceTest {
         return trace;
     }
 
-    private TraceSnapshotSummary mockStoredSummary(String id, long capturedAt, long durationMillis,
+    private TraceSnapshotPoint mockPoint(String id, long capturedAt, long durationMillis,
             boolean completed) {
-        return TraceSnapshotSummary.from(id, capturedAt,
-                TimeUnit.MILLISECONDS.toNanos(durationMillis), completed);
+        return TraceSnapshotPoint.from(id, capturedAt,
+                TimeUnit.MILLISECONDS.toNanos(durationMillis), completed, false);
     }
 
     private static class TracePointResponse {
+        private final List<TracePoint> normalTraces;
+        private final List<TracePoint> errorTraces;
         private final List<TracePoint> activeTraces;
-        private final List<TracePoint> storedTraces;
         private static TracePointResponse from(String responseJson) {
             JsonObject points = new Gson().fromJson(responseJson, JsonElement.class)
                     .getAsJsonObject();
+            JsonArray normalPointsJson = points.get("normalPoints").getAsJsonArray();
+            List<TracePoint> normalTraces = Lists.newArrayList();
+            for (int i = 0; i < normalPointsJson.size(); i++) {
+                JsonArray normalPointJson = normalPointsJson.get(i).getAsJsonArray();
+                normalTraces.add(TracePoint.from(normalPointJson));
+            }
+            JsonArray errorPointsJson = points.get("errorPoints").getAsJsonArray();
+            List<TracePoint> errorTraces = Lists.newArrayList();
+            for (int i = 0; i < errorPointsJson.size(); i++) {
+                JsonArray errorPointJson = errorPointsJson.get(i).getAsJsonArray();
+                errorTraces.add(TracePoint.from(errorPointJson));
+            }
             JsonArray activePointsJson = points.get("activePoints").getAsJsonArray();
             List<TracePoint> activeTraces = Lists.newArrayList();
             for (int i = 0; i < activePointsJson.size(); i++) {
                 JsonArray activePointJson = activePointsJson.get(i).getAsJsonArray();
                 activeTraces.add(TracePoint.from(activePointJson));
             }
-            JsonArray storedPointsJson = points.get("storedPoints").getAsJsonArray();
-            List<TracePoint> storedTraces = Lists.newArrayList();
-            for (int i = 0; i < storedPointsJson.size(); i++) {
-                JsonArray storedPointJson = storedPointsJson.get(i).getAsJsonArray();
-                storedTraces.add(TracePoint.from(storedPointJson));
-            }
-            return new TracePointResponse(activeTraces, storedTraces);
+            return new TracePointResponse(normalTraces, errorTraces, activeTraces);
         }
-        private TracePointResponse(List<TracePoint> activeTraces, List<TracePoint> storedTraces) {
+        private TracePointResponse(List<TracePoint> normalTraces, List<TracePoint> errorTraces,
+                List<TracePoint> activeTraces) {
+            this.normalTraces = normalTraces;
+            this.errorTraces = errorTraces;
             this.activeTraces = activeTraces;
-            this.storedTraces = storedTraces;
+        }
+        private List<TracePoint> getNormalTraces() {
+            return normalTraces;
+        }
+        public List<TracePoint> getErrorTraces() {
+            return errorTraces;
         }
         private List<TracePoint> getActiveTraces() {
             return activeTraces;
-        }
-        private List<TracePoint> getStoredTraces() {
-            return storedTraces;
         }
     }
 

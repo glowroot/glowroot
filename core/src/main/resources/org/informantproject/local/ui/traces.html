@@ -58,7 +58,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
     configureAjaxError()
-    var plot, storedPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
+    var plot, normalPoints, errorPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
     var options = {
       legend: { show: false },
       series: {
@@ -69,7 +69,7 @@
       yaxis: { ticks: 10, zoomRange : false },
       zoom: { interactive: true, amount : 1.5 },
     }
-    function plotResponseData(storedPoints, activePoints, from, to) {
+    function plotResponseData(from, to) {
       var fromAsDate = new Date(from)
       fromAsDate.setHours(0,0,0,0)
       var zoomRangeFrom = fromAsDate.getTime()
@@ -79,9 +79,10 @@
       zoomRangeFrom -= new Date(zoomRangeFrom).getTimezoneOffset() * 60 * 1000
       zoomRangeTo -= new Date(zoomRangeTo).getTimezoneOffset() * 60 * 1000
       overrideOptions = {
+        colors: ["#edc240", "#cb4b4b", "#afd8f8"],
         xaxis: { min : from, max : to, zoomRange : [ zoomRangeFrom, zoomRangeTo ] }
       }
-      plot = $.plot($('#placeholder'), [storedPoints, activePoints],
+      plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints],
           $.extend(true, {}, options, overrideOptions))
       $(window).resize(function(e){
         $.plot(placeholder, plot.getData(), plot.getOptions())
@@ -272,7 +273,8 @@
         } else {
           hideSpinner('#refreshButtonSpinner')
         }
-        storedPoints = response.storedPoints
+        normalPoints = response.normalPoints
+        errorPoints = response.errorPoints
         activePoints = response.activePoints
         if (response.limitExceeded) {
           $('#limit').text(limit)
@@ -284,13 +286,16 @@
         currentItem = null
         $('#detailTabContent').html('')
         // shift for timezone
-        for (var i = 0; i < storedPoints.length; i++) {
-          storedPoints[i][0] -= new Date(storedPoints[i][0]).getTimezoneOffset() * 60 * 1000
+        for (var i = 0; i < normalPoints.length; i++) {
+          normalPoints[i][0] -= new Date(normalPoints[i][0]).getTimezoneOffset() * 60 * 1000
+        }
+        for (var i = 0; i < errorPoints.length; i++) {
+          errorPoints[i][0] -= new Date(errorPoints[i][0]).getTimezoneOffset() * 60 * 1000
         }
         for (var i = 0; i < activePoints.length; i++) {
           activePoints[i][0] -= new Date(activePoints[i][0]).getTimezoneOffset() * 60 * 1000
         }
-        plotResponseData(storedPoints, activePoints, from, to)
+        plotResponseData(from, to)
       })
     }
     function showTraceDetailTooltip(item) {
@@ -298,7 +303,9 @@
       var y = item.pageY
       var id
       if (item.seriesIndex == 0) {
-        id = storedPoints[item.dataIndex][2]
+        id = normalPoints[item.dataIndex][2]
+      } else if (item.seriesIndex == 1) {
+        id = errorPoints[item.dataIndex][2]
       } else {
         id = activePoints[item.dataIndex][2]
       }
