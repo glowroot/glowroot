@@ -27,10 +27,10 @@ var traceSummaryTemplateText = ''
 + '{{/if}}'
 + '<div class="second-line-indent">'
 + '  {{description}}'
-+ '  {{#if showExport}}'
++ '  {{#ifShowExport}}'
 + '    <span style="width: 1em; display: inline-block"></span>'
 + '    <a href="trace/export/{{id}}">export</a>'
-+ '  {{/if}}'
++ '  {{/ifShowExport}}'
 + '</div>'
 + 'start: {{date start}}<br>'
 + 'duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
@@ -217,8 +217,12 @@ Handlebars.registerHelper('short', function(description) {
       + " <span style='color: #b12930; font-weight: bold'>...</span> " + description.slice(-80)
   }
 })
-Handlebars.registerHelper('showExport', function() {
-  return typeof exportPage == 'undefined'
+Handlebars.registerHelper('ifShowExport', function(options) {
+  if (typeof exportPage == 'undefined') {
+    return options.fn(this)
+  } else {
+    return options.inverse(this)
+  }
 })
 var summaryTrace
 var detailTrace

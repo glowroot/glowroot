@@ -21,7 +21,7 @@
 <title>Informant | Trace explorer</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
 <link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap.min.css" type="text/css" />
-<link rel="stylesheet" href="libs/bootstrap-datepicker/0.1-nightly-20120909-1/css/datepicker.css"
+<link rel="stylesheet" href="libs/bootstrap-datepicker/0.1-nightly-20120928-1/css/datepicker.css"
     type="text/css" />
 <link rel="stylesheet" href="libs/qtip/2.0.0-nightly-20120910/jquery.qtip.min.css"
     type="text/css" />
@@ -36,10 +36,10 @@
 <script type="text/javascript" src="libs/jquery/1.8.1/jquery.min.js"></script>
 <script type="text/javascript" src="libs/bootstrap/2.1.1/js/bootstrap.min.js"></script>
 <script type="text/javascript"
-    src="libs/bootstrap-datepicker/0.1-nightly-20120909-1/js/bootstrap-datepicker.js">
+    src="libs/bootstrap-datepicker/0.1-nightly-20120928-1/js/bootstrap-datepicker.js">
 </script>
 <script type="text/javascript" src="libs/moment/1.7.0/moment.min.js"></script>
-<script type="text/javascript" src="libs/handlebars/1.0.0.beta.6/handlebars.js"></script>
+<script type="text/javascript" src="libs/handlebars/1.0.rc.1/handlebars.js"></script>
 <!--[if lte IE 8]>
 <script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/excanvas.min.js"></script>
 <![endif]-->
@@ -395,7 +395,7 @@
     // localized format 'moment.longDateFormat.L' both here and when parsing date
     // see https://github.com/eternicode/bootstrap-datepicker/issues/24
     $('#dateFilter').val(moment(today).format('MM/DD/YYYY'))
-    $('#dateFilter').datepicker({format: 'mm/dd/yyyy', autoclose: true})
+    $('#dateFilter').datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true})
     $('#durationComparator').change(function() {
       if ($('#durationComparator').val() == 'greater') {
         $('#durationLowDiv').show()
