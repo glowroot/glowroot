@@ -157,6 +157,10 @@ public final class MainEntryPoint {
         }
     }
 
+    static void startUsingSystemProperties() {
+        start(getInformantProperties());
+    }
+
     private static WeavingClassFileTransformer newWeavingClassFileTransformer() {
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
