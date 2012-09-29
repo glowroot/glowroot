@@ -51,10 +51,11 @@ body {
 }
 .header-logo {
   font-family: 'SpecialElite-Regular';
-  font-size: 34px;
+  font-size: 38px;
   border-right: 3px solid #555555;
   padding-top: 6px;
   padding-right: 10px;
+  vertical-align: 1px;
 }
 .header-page-name {
   color: #444444;
@@ -64,6 +65,7 @@ body {
   float: right;
   color: #333333;
   font-size: 20px;
+  padding-top: 5px;
 }
 .button-success-message {
   display: none;
