@@ -111,3 +111,13 @@ a, a:hover {
   padding-left: 20px;
   text-indent: -20px;
 }
+.sp {
+  display: inline-block;
+}
+.spexpandable {
+  cursor: pointer;
+}
+.sp:hover {
+  background-color:lightgray;
+  border-radius: 3px;
+}

@@ -67,8 +67,8 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver spans}}'
 + '    <div>spans <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <a href="#" onclick="toggleSpan(); return false">spans</a> ({{spans.length}})<br>'
-+ '    <div id="sp"></div>'
++ '    <a href="#" onclick="toggleSpans(); return false">spans</a> ({{spans.length}})<br>'
++ '    <div id="sps"></div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
 + '{{#if coarseMergedStackTree}}'
@@ -117,19 +117,18 @@ var spansTemplateText = ''
 + '    </div>'
 + '    <div style="margin-left: 4em">'
 + '      {{#ifLongDescription message.text}}'
-+ '        <span class="sp{{index}}">'
-+ '          <a href="#" onclick="$(\'.sp{{index}}\').toggle(); return false"'
-+ '              style="color: #333">'
-+ '            {{#short message.text}}{{/short}}'
-+ '          </a>'
-+ '        </span>'
-+ '        <span class="sp{{index}}" style="display: none">'
-+ '          <a href="#" onclick="$(\'.sp{{index}}\').toggle(); return false">'
-+ '            {{message.text}}'
-+ '          </a>'
-+ '        </span>'
++ '        <div class="sp spexpandable">'
++ '          {{#first80 message.text}}{{/first80}}'
++ '          <span class="spmiddle">...</span>'
++ '          <span class="spmiddle spmiddlex" style="display: none">'
++ '            {{#middle message.text}}{{/middle}}'
++ '          </span>'
++ '          {{#last80 message.text}}{{/last80}}'
++ '        </div>'
 + '      {{^}}'
-+ '        {{message.text}}'
++ '        <div class="sp">'
++ '          {{message.text}}'
++ '        </div>'
 + '      {{/ifLongDescription}}'
 + '      <br>'
 + '      {{#if message.detail}}'
@@ -209,13 +208,19 @@ Handlebars.registerHelper('ifRolledOver', function(value, options) {
 Handlebars.registerHelper('margin', function(nestingLevel) {
   return 5 + nestingLevel
 })
-Handlebars.registerHelper('short', function(description) {
-  if (description.length <= 160) {
-    return description
+Handlebars.registerHelper('first80', function(description) {
+  return description.slice(0, 80)
+})
+Handlebars.registerHelper('last80', function(description) {
+  if (description.length <= 80) {
+    return ""
   } else {
-    return description.slice(0, 80)
-      + " <span style='color: #b12930; font-weight: bold'>...</span> " + description.slice(-80)
+    var n = Math.min(description.length - 80, 80)
+    return description.slice(-n)
   }
+})
+Handlebars.registerHelper('middle', function(description) {
+  return description.slice(80, -80);
 })
 Handlebars.registerHelper('ifShowExport', function(options) {
   if (typeof exportPage == 'undefined') {
@@ -234,24 +239,61 @@ $(document).ready(function() {
   traceDetailTemplate = Handlebars.compile(traceDetailTemplateText)
   spansTemplate = Handlebars.compile(spansTemplateText)
 })
-function toggleSpan() {
-  if ($('#sp').html() && $('#sp').is(':visible')) {
-    $('#sp').hide()
+function toggleSpans() {
+  if ($('#sps').html() && $('#sps').is(':visible')) {
+    $('#sps').hide()
   } else {
-    $('#sp').show()
-    if (! $('#sp').html()) {
+    $('#sps').show()
+    if (! $('#sps').html()) {
       renderNext(detailTrace.spans, 0)
     }
   }
 }
+// sort of ok for clickSpanTimer to be global since it is temporary (cleared after 250 milliseconds)
+var clickSpanTimer
+// sort of ok for pageX and pageY to be global since they are just temporary bridge between
+// mousedown event and subsequent click event
+var mousedownSpanPageX, mousedownSpanPageY
+function mousedownSpan(div, e) {
+  mousedownSpanPageX = e.mousedownSpanPageX
+  mousedownSpanPageY = e.mousedownSpanPageY
+}
+function clickSpan(div, e) {
+  if (Math.abs(e.pageX - mousedownSpanPageX) > 5 || Math.abs(e.pageY - mousedownSpanPageY) > 5) {
+    // not a simple single click, probably highlighting text
+    return
+  }
+  if (clickSpanTimer) {
+    // double click, probably highlighting text
+    clearTimeout(clickSpanTimer)
+    clickSpanTimer = undefined
+    return
+  }
+  if ($(div).find('.spmiddlex').is(':visible')) {
+    // delay on hiding in order to not contract on double click text highlighting 
+    clickSpanTimer = setTimeout(function() {
+      $(div).find('.spmiddle').toggle()
+      clickSpanTimer = undefined
+    }, 250)
+  } else {
+    // no delay on expanding because it makes it feel sluggish
+    // (at the expense of double click text highlighting also expanding the span)
+    $(div).find('.spmiddle').toggle()
+    // but still create clickSpanTimer to prevent double click from expanding and then contracting
+    clickSpanTimer = setTimeout(function() { clickSpanTimer = undefined }, 500)
+    return
+  }
+}
 function renderNext(spans, start) {
   // large numbers of spans (e.g. 20,000) render much faster when grouped into sub-divs
-  var html = '<div>'
+  var html = '<div id="block' + start + '">'
   for (var i = start; i < Math.min(start + 100, spans.length); i++) {
     html += spansTemplate(spans[i])
   }
   html += '</div>'
-  $('#sp').append(html)
+  $('#sps').append(html)
+  $('#block' + start + ' .spexpandable').mousedown(function(e) {mousedownSpan($(this), e)})
+  $('#block' + start + ' .spexpandable').click(function(e) {clickSpan($(this), e)})
   if (start + 100 < spans.length) {
     setTimeout(function() { renderNext(spans, start + 100) }, 10)
   }
