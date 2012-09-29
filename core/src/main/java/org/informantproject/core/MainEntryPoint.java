@@ -46,6 +46,7 @@ import org.informantproject.core.weaving.WeavingMetric;
 import org.informantproject.local.ui.HttpServer;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -107,17 +108,25 @@ public final class MainEntryPoint {
             // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
             // have been used to specify '-javaagent:informant.jar', in which case Informant tries
             // to start up, but it finds the h2 database is locked (by the tomcat jvm).
-            // this can sometimes be avoided by using CATALINA_OPTS instead of JAVA_OPTS to specify
+            // this can be avoided by using CATALINA_OPTS instead of JAVA_OPTS to specify
             // -javaagent:informant.jar, since CATALINA_OPTS is not used by the 'catalina.sh stop'.
             // however, when running tomcat from inside eclipse, the tomcat server adapter uses the
             // same 'VM arguments' for both starting and stopping tomcat, so this code path seems
-            // inevitable at least in this case, and probably others
-            logger.error("disabling Informant, embedded database '" + dataDir.getAbsolutePath()
-                    + "' is locked by another process.");
+            // inevitable at least in this case
+            if (!isTomcatStop()) {
+                // no need for logging in the special (but common) case described above
+                logger.error("disabling Informant, embedded database '" + dataDir.getAbsolutePath()
+                        + "' is locked by another process.");
+            }
             weavingClassFileTransformer.disable();
             return;
         }
         start(properties);
+    }
+
+    private static boolean isTomcatStop() {
+        return Objects.equal(System.getProperty("sun.java.command"),
+                "org.apache.catalina.startup.Bootstrap stop");
     }
 
     // called via reflection from org.informantproject.api.PluginServices
