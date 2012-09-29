@@ -79,6 +79,17 @@ public class BasicTest {
         assertThat(span3.getOffset()).isGreaterThan(0);
     }
 
+    @Test
+    public void shouldExportTrace() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
+        // when
+        Trace trace = container.getInformant().getLastTrace();
+        container.getInformant().get("/trace/export/" + trace.getId());
+        // then should not bomb
+    }
+
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {
         return ImmutableMap.of(k1, v1, k2, v2);
     }

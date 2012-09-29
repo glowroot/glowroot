@@ -304,11 +304,30 @@ public class Informant {
     }
 
     private static String validateAndReturnBody(Response response) throws IOException {
+        if (wasUncompressed(response)) {
+            throw new IllegalStateException("HTTP response was not compressed");
+        }
         if (response.getStatusCode() == HttpResponseStatus.OK.getCode()) {
             return response.getResponseBody();
         } else {
             throw new IllegalStateException("Unexpected HTTP status code returned: "
                     + response.getStatusCode() + " (" + response.getStatusText() + ")");
         }
+    }
+
+    // it's a bit hard to determine whether the response was compressed since AsyncHttpClient (well,
+    // really, under the covers, Netty) automatically uncompresses the response and replaces the
+    // Content-Encoding header value with "identity"
+    //
+    // this method relies on the fact that the Netty server doesn't specify "identity" for
+    // uncompressed responses (it just leaves off the Content-Encoding header altogether)
+    private static boolean wasUncompressed(Response response) throws AssertionError {
+        String contentLength = response.getHeader("Content-Length");
+        if ("0".equals(contentLength)) {
+            // zero-length responses are never compressed
+            return false;
+        }
+        String contentEncoding = response.getHeader("Content-Encoding");
+        return !"identity".equals(contentEncoding);
     }
 }

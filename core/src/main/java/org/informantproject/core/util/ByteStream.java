@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.stream.ChunkedInput;
 
 import com.google.common.base.Charsets;
@@ -134,21 +135,29 @@ public abstract class ByteStream {
     private static class ByteStreamChunkedInput implements ChunkedInput {
 
         private final ByteStream byteStream;
+        private boolean hasNotSentTerminatingChunk = true;
 
         private ByteStreamChunkedInput(ByteStream byteStream) {
             this.byteStream = byteStream;
         }
 
         public boolean hasNextChunk() {
-            return byteStream.hasNext();
+            return hasNotSentTerminatingChunk;
         }
 
         public Object nextChunk() throws IOException {
-            return ChannelBuffers.wrappedBuffer(byteStream.next());
+            if (byteStream.hasNext()) {
+                return new DefaultHttpChunk(ChannelBuffers.wrappedBuffer(byteStream.next()));
+            } else if (hasNotSentTerminatingChunk) {
+                hasNotSentTerminatingChunk = false;
+                return new DefaultHttpChunk(ChannelBuffers.EMPTY_BUFFER);
+            } else {
+                return null;
+            }
         }
 
         public boolean isEndOfInput() {
-            return !byteStream.hasNext();
+            return !hasNextChunk();
         }
 
         public void close() {}

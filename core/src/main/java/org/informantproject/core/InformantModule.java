@@ -135,6 +135,7 @@ class InformantModule extends AbstractModule {
         ScheduledExecutorService scheduledExecutor = DaemonExecutors
                 .newSingleThreadScheduledExecutor("Informant-AsyncHttpClient-Reaper");
         AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
+                .setCompressionEnabled(true)
                 .setMaxRequestRetry(0)
                 .setExecutorService(executorService)
                 .setScheduledExecutorService(scheduledExecutor);

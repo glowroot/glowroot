@@ -124,6 +124,7 @@ public class InformantContainer {
         ExecutorService executorService = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
+                .setCompressionEnabled(true)
                 .setMaxRequestRetry(0)
                 .setExecutorService(executorService)
                 .setScheduledExecutorService(scheduledExecutor);
