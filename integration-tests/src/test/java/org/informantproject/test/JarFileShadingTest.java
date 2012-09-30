@@ -25,6 +25,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.informantproject.testkit.internal.InformantCoreJar;
+import org.junit.Assume;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -37,7 +38,14 @@ public class JarFileShadingTest {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File informantCoreJarFile = InformantCoreJar.getFile();
+        File informantCoreJarFile = InformantCoreJar.getFileOptional();
+        if (informantCoreJarFile == null) {
+            // if not running maven build (e.g. running in IDE), then just silently skip this test
+            Assume.assumeNotNull(System.getProperty("surefire.test.class.path"));
+            // got past assumption, must be running maven build, fail the test instead of skipping
+            throw new IllegalStateException(
+                    "Running inside maven and can't find informant-core.jar");
+        }
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("org.informantproject\\..*");
         acceptableEntries.add("org/");

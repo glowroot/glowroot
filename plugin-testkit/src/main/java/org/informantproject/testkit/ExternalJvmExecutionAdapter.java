@@ -55,7 +55,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         String classpath = System.getProperty("java.class.path");
         String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
                 + "java";
-        String javaagentArg = "-javaagent:" + InformantCoreJar.getFile();
+        String javaagentArg = "-javaagent:" + InformantCoreJar.getFileRequired();
         socketCommander = new SocketCommander();
         List<String> command = Lists.newArrayList();
         command.add(path);

@@ -28,7 +28,17 @@ import org.informantproject.core.MainEntryPoint;
  */
 public final class InformantCoreJar {
 
-    public static File getFile() {
+    public static File getFileRequired() {
+        return getFile(false);
+    }
+
+    @Nullable
+    public static File getFileOptional() {
+        return getFile(true);
+    }
+
+    @Nullable
+    private static File getFile(boolean optional) {
         File informantCoreJarFile = getFileFromClasspath();
         if (informantCoreJarFile != null) {
             return informantCoreJarFile;
@@ -37,11 +47,14 @@ public final class InformantCoreJar {
         if (informantCoreJarFile != null) {
             return informantCoreJarFile;
         }
-        // could not find jar file, try to give intelligible error
-        if (System.getProperty("surefire.test.class.path") != null) {
+        if (optional) {
+            return null;
+        } else if (System.getProperty("surefire.test.class.path") != null) {
+            // try to give intelligible error message
             throw new IllegalStateException(
                     "Running inside maven and can't find informant-core.jar");
         } else {
+            // try to give intelligible error message
             throw new IllegalStateException("You are probably running this test outside of maven"
                     + " (e.g. you are running this test from inside of your IDE).  This test"
                     + " requires informant-core.jar to be available.  The easiest way to build"
