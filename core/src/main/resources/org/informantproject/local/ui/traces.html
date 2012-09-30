@@ -40,8 +40,8 @@
 </script>
 <script type="text/javascript" src="libs/moment/1.7.0/moment.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.rc.1/handlebars.js"></script>
-<!--[if lte IE 8]>
-<script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/excanvas.min.js"></script>
+<!--[if lt IE 9]>
+<script type="text/javascript" src="libs/flashcanvas/20110201/flashcanvas.js"></script>
 <![endif]-->
 <script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/jquery.flot.js"></script>
 <script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/jquery.flot.time.js"></script>
@@ -69,6 +69,17 @@
       yaxis: { ticks: 10, zoomRange : false },
       zoom: { interactive: true, amount : 1.5 },
     }
+    // need to track window dimensions to identify real window resizes in IE which sends window
+    // resize event when any element on the page is resized
+    var windowWidth = $(window).width()
+    var windowHeight = $(window).height()
+    $(window).resize(function(e){
+      // check plot in case this is a resize before initial plot is rendered
+      if (plot && ($(window).width() != windowWidth || $(window).height() != windowHeight)) {
+        windowWidth = $(window).width()
+        windowHeight = $(window).height()
+        $.plot(placeholder, plot.getData(), plot.getOptions())
+      }})
     function plotResponseData(from, to) {
       var fromAsDate = new Date(from)
       fromAsDate.setHours(0,0,0,0)
@@ -84,9 +95,6 @@
       }
       plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints],
           $.extend(true, {}, options, overrideOptions))
-      $(window).resize(function(e){
-        $.plot(placeholder, plot.getData(), plot.getOptions())
-        })
       updateTimeFilter()
     }
     function itemsEqual(plotItem1, plotItem2) {
