@@ -154,9 +154,9 @@ public class ConfigTest {
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setPersistenceThresholdMillis(config.getPersistenceThresholdMillis() + 1);
         updatedConfig.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
-        updatedConfig.setMaxEntries(config.getMaxEntries() + 1);
+        updatedConfig.setMaxSpans(config.getMaxSpans() + 1);
         updatedConfig.setRollingSizeMb(config.getRollingSizeMb() + 1);
-        updatedConfig.setWarnOnEntryOutsideTrace(!config.isWarnOnEntryOutsideTrace());
+        updatedConfig.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
         updatedConfig.setMetricPeriodMillis(config.getMetricPeriodMillis() + 1);
         return updatedConfig;
     }

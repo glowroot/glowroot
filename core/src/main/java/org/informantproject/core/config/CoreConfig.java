@@ -63,15 +63,15 @@ public class CoreConfig {
     // essentially disabled for now, this needs to be changed to a per-plugin property
     private final int spanStackTraceThresholdMillis;
 
-    // used to limit memory requirement, also used to help limit log file size,
-    // 0 means don't capture any traces, -1 means no limit
-    private final int maxEntries;
+    // used to limit memory requirement, also used to help limit trace capture size,
+    // 0 means don't capture any spans, -1 means no limit
+    private final int maxSpans;
 
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
     private final int rollingSizeMb;
 
-    private final boolean warnOnEntryOutsideTrace;
+    private final boolean warnOnSpanOutsideTrace;
 
     private final int metricPeriodMillis;
 
@@ -88,16 +88,16 @@ public class CoreConfig {
     }
 
     private CoreConfig(boolean enabled, int persistenceThresholdMillis, int stuckThresholdSeconds,
-            int spanStackTraceThresholdMillis, int maxEntries, int rollingSizeMb,
-            boolean warnOnEntryOutsideTrace, int metricPeriodMillis) {
+            int spanStackTraceThresholdMillis, int maxSpans, int rollingSizeMb,
+            boolean warnOnSpanOutsideTrace, int metricPeriodMillis) {
 
         this.enabled = enabled;
         this.persistenceThresholdMillis = persistenceThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
-        this.maxEntries = maxEntries;
+        this.maxSpans = maxSpans;
         this.rollingSizeMb = rollingSizeMb;
-        this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
+        this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
         this.metricPeriodMillis = metricPeriodMillis;
     }
 
@@ -121,16 +121,16 @@ public class CoreConfig {
         return spanStackTraceThresholdMillis;
     }
 
-    public int getMaxEntries() {
-        return maxEntries;
+    public int getMaxSpans() {
+        return maxSpans;
     }
 
     public int getRollingSizeMb() {
         return rollingSizeMb;
     }
 
-    public boolean isWarnOnEntryOutsideTrace() {
-        return warnOnEntryOutsideTrace;
+    public boolean isWarnOnSpanOutsideTrace() {
+        return warnOnSpanOutsideTrace;
     }
 
     public int getMetricPeriodMillis() {
@@ -144,9 +144,9 @@ public class CoreConfig {
                 .add("persistenceThresholdMillis", persistenceThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
-                .add("maxEntries", maxEntries)
+                .add("maxSpans", maxSpans)
                 .add("rollingSizeMb", rollingSizeMb)
-                .add("warnOnEntryOutsideTrace", warnOnEntryOutsideTrace)
+                .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("metricPeriodMillis", metricPeriodMillis)
                 .toString();
     }
@@ -157,9 +157,9 @@ public class CoreConfig {
         private int persistenceThresholdMillis = 3000;
         private int stuckThresholdSeconds = 180;
         private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
-        private int maxEntries = 5000;
+        private int maxSpans = 5000;
         private int rollingSizeMb = 1000;
-        private boolean warnOnEntryOutsideTrace = false;
+        private boolean warnOnSpanOutsideTrace = false;
         private int metricPeriodMillis = 15000;
 
         private Builder() {}
@@ -168,9 +168,9 @@ public class CoreConfig {
             persistenceThresholdMillis = base.persistenceThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
-            maxEntries = base.maxEntries;
+            maxSpans = base.maxSpans;
             rollingSizeMb = base.rollingSizeMb;
-            warnOnEntryOutsideTrace = base.warnOnEntryOutsideTrace;
+            warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
             metricPeriodMillis = base.metricPeriodMillis;
         }
         public Builder enabled(boolean enabled) {
@@ -189,16 +189,16 @@ public class CoreConfig {
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
-        public Builder maxEntries(int maxEntries) {
-            this.maxEntries = maxEntries;
+        public Builder maxSpans(int maxSpans) {
+            this.maxSpans = maxSpans;
             return this;
         }
         public Builder rollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
         }
-        public Builder warnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
-            this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
+        public Builder warnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
+            this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
         public Builder metricPeriodMillis(int metricPeriodMillis) {
@@ -207,8 +207,8 @@ public class CoreConfig {
         }
         public CoreConfig build() {
             return new CoreConfig(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
-                    spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
-                    warnOnEntryOutsideTrace, metricPeriodMillis);
+                    spanStackTraceThresholdMillis, maxSpans, rollingSizeMb,
+                    warnOnSpanOutsideTrace, metricPeriodMillis);
         }
     }
 }

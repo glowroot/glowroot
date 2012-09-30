@@ -68,9 +68,9 @@ public class Config {
         private int persistenceThresholdMillis;
         private int stuckThresholdSeconds;
         private int spanStackTraceThresholdMillis;
-        private int maxEntries;
+        private int maxSpans;
         private int rollingSizeMb;
-        private boolean warnOnEntryOutsideTrace;
+        private boolean warnOnSpanOutsideTrace;
         private int metricPeriodMillis;
 
         public boolean isEnabled() {
@@ -97,11 +97,11 @@ public class Config {
         public void setSpanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
             this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         }
-        public int getMaxEntries() {
-            return maxEntries;
+        public int getMaxSpans() {
+            return maxSpans;
         }
-        public void setMaxEntries(int maxEntries) {
-            this.maxEntries = maxEntries;
+        public void setMaxSpans(int maxSpans) {
+            this.maxSpans = maxSpans;
         }
         public int getRollingSizeMb() {
             return rollingSizeMb;
@@ -109,11 +109,11 @@ public class Config {
         public void setRollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
         }
-        public boolean isWarnOnEntryOutsideTrace() {
-            return warnOnEntryOutsideTrace;
+        public boolean isWarnOnSpanOutsideTrace() {
+            return warnOnSpanOutsideTrace;
         }
-        public void setWarnOnEntryOutsideTrace(boolean warnOnEntryOutsideTrace) {
-            this.warnOnEntryOutsideTrace = warnOnEntryOutsideTrace;
+        public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
+            this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
         }
         public int getMetricPeriodMillis() {
             return metricPeriodMillis;
@@ -124,8 +124,8 @@ public class Config {
         @Override
         public int hashCode() {
             return Objects.hashCode(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
-                    spanStackTraceThresholdMillis, maxEntries, rollingSizeMb,
-                    warnOnEntryOutsideTrace, metricPeriodMillis);
+                    spanStackTraceThresholdMillis, maxSpans, rollingSizeMb, warnOnSpanOutsideTrace,
+                    metricPeriodMillis);
         }
         @Override
         public boolean equals(@Nullable Object o) {
@@ -138,9 +138,9 @@ public class Config {
                     && Objects.equal(stuckThresholdSeconds, other.stuckThresholdSeconds)
                     && Objects.equal(spanStackTraceThresholdMillis,
                             other.spanStackTraceThresholdMillis)
-                    && Objects.equal(maxEntries, other.maxEntries)
+                    && Objects.equal(maxSpans, other.maxSpans)
                     && Objects.equal(rollingSizeMb, other.rollingSizeMb)
-                    && Objects.equal(warnOnEntryOutsideTrace, other.warnOnEntryOutsideTrace)
+                    && Objects.equal(warnOnSpanOutsideTrace, other.warnOnSpanOutsideTrace)
                     && Objects.equal(metricPeriodMillis, other.metricPeriodMillis);
         }
     }

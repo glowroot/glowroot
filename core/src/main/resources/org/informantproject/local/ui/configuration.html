@@ -165,8 +165,8 @@
       addIntegerValidator('#stuckThresholdSeconds')
       $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
       addIntegerValidator('#spanStackTraceThresholdMillis')
-      $('#maxEntries').val(coreConfig.maxEntries)
-      addIntegerValidator('#maxEntries')
+      $('#maxSpans').val(coreConfig.maxSpans)
+      addIntegerValidator('#maxSpans')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
       var coarseProfilingConfig = config.coarseProfilingConfig
@@ -240,11 +240,11 @@
     var persistenceThresholdMillis = $('#persistenceThresholdMillis').val()
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
     var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
-    var maxEntries = $('#maxEntries').val()
+    var maxSpans = $('#maxSpans').val()
     var rollingSizeMb = $('#rollingSizeMb').val()
     // handle validation
     if (!isInteger(persistenceThresholdMillis) || !isInteger(stuckThresholdSeconds)
-        || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxEntries)
+        || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxSpans)
         || !isInteger(rollingSizeMb)) {
       return
     }
@@ -253,7 +253,7 @@
       'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis),
       'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
       'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
-      'maxEntries': parseInteger(maxEntries),
+      'maxSpans': parseInteger(maxSpans),
       'rollingSizeMb': parseInteger(rollingSizeMb)
     }
     $.post('config/core', JSON.stringify(config), function() {
@@ -435,15 +435,15 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label" for="maxEntries">Max trace entries</label>
+        <label class="control-label" for="maxSpans">Max spans</label>
         <div class="controls">
-          <input type="text" id="maxEntries" style="width: 6em">
+          <input type="text" id="maxSpans" style="width: 6em">
           <div class="help-block">
-            Maximum number of trace entries collected for a given trace. This is useful for limiting
+            Maximum number of spans collected for a given trace. This is useful for limiting
             the memory requirement of very very long traces that capture potentially hundreds of
-            thousands of trace entries (e.g. large batch or background operations).
+            thousands of spans (e.g. large batch or background operations).
             Also, the trace explorer is not really optimized for viewing super large numbers of
-            trace entries.
+            spans.
           </div>
         </div>
       </div>
@@ -455,7 +455,7 @@
             <span class="add-on">MB</span>
           </div>
           <div class="help-block">
-            Trace detail data (trace entries, sampled profile) is persisted to disk as
+            Trace detail data (spans and profiling data) is persisted to disk as
             LZF-compressed json data in a rolling data file to efficiently cap the growth of this
             large data. (Trace summary data - capture time, duration, description, user ID,
             attributes, metrics - is persisted to an H2 data file by the embedded H2 database

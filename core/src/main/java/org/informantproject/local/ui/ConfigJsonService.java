@@ -201,17 +201,17 @@ class ConfigJsonService implements JsonService {
         if (spanStackTraceThresholdMillis != null) {
             builder.spanStackTraceThresholdMillis(spanStackTraceThresholdMillis.getAsInt());
         }
-        JsonElement maxEntries = jsonObject.get("maxEntries");
-        if (maxEntries != null) {
-            builder.maxEntries(maxEntries.getAsInt());
+        JsonElement maxSpans = jsonObject.get("maxSpans");
+        if (maxSpans != null) {
+            builder.maxSpans(maxSpans.getAsInt());
         }
         JsonElement rollingSizeMb = jsonObject.get("rollingSizeMb");
         if (rollingSizeMb != null) {
             builder.rollingSizeMb(rollingSizeMb.getAsInt());
         }
-        JsonElement warnOnEntryOutsideTrace = jsonObject.get("warnOnEntryOutsideTrace");
-        if (warnOnEntryOutsideTrace != null) {
-            builder.warnOnEntryOutsideTrace(warnOnEntryOutsideTrace.getAsBoolean());
+        JsonElement warnOnSpanOutsideTrace = jsonObject.get("warnOnSpanOutsideTrace");
+        if (warnOnSpanOutsideTrace != null) {
+            builder.warnOnSpanOutsideTrace(warnOnSpanOutsideTrace.getAsBoolean());
         }
         JsonElement metricPeriodMillis = jsonObject.get("metricPeriodMillis");
         if (metricPeriodMillis != null) {
