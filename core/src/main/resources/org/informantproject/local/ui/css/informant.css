@@ -121,3 +121,7 @@ a, a:hover {
   background-color:lightgray;
   border-radius: 3px;
 }
+body.modal-open {
+  /* !important is needed to trump 'overflow-y: scroll' in traces.html */
+  overflow-y: hidden; !important
+}
