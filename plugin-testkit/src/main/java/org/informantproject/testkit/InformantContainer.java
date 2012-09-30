@@ -61,8 +61,8 @@ public class InformantContainer {
         File dataDir = createTempDir("informant-test-datadir");
         // capture pre-existing threads before instantiating execution adapters
         ImmutableMap<String, String> properties = ImmutableMap.of(
-                "data.dir", dataDir.getAbsolutePath(),
                 "ui.port", Integer.toString(uiPort),
+                "internal.data.dir", dataDir.getAbsolutePath(),
                 "internal.h2.memdb", Boolean.toString(useMemDb));
         ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {
@@ -106,6 +106,10 @@ public class InformantContainer {
         } finally {
             Thread.currentThread().setName(previousThreadName);
         }
+    }
+
+    public File getDataDir() {
+        return dataDir;
     }
 
     public void close() throws Exception {

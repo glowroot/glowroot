@@ -25,6 +25,7 @@ import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Static;
 
+import com.google.common.base.Strings;
 import com.google.common.io.Files;
 
 /**
@@ -36,25 +37,26 @@ class DataDir {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDir.class);
 
-    private static final File DEFAULT_DATA_DIR;
+    private static final File BASE_DIR;
 
     static {
-        File defaultDataDir;
+        File baseDir;
         try {
             URL agentJarLocation = DataDir.class.getProtectionDomain().getCodeSource()
                     .getLocation();
             if (agentJarLocation == null) {
-                // probably running unit tests
-                defaultDataDir = new File(".");
+                // probably running unit tests, will log warning below in getDataDir() if
+                // internal.data.dir is not provided
+                baseDir = null;
             } else {
                 // by default use the same directory that the agent jar is in
-                defaultDataDir = new File(agentJarLocation.toURI()).getParentFile();
+                baseDir = new File(agentJarLocation.toURI()).getParentFile();
             }
         } catch (URISyntaxException e) {
             logger.error(e.getMessage(), e);
-            defaultDataDir = new File(".");
+            baseDir = new File(".");
         }
-        DEFAULT_DATA_DIR = defaultDataDir;
+        BASE_DIR = baseDir;
     }
 
     static File getDataDirWithNoWarning(Map<String, String> properties) {
@@ -65,24 +67,42 @@ class DataDir {
         return getDataDir(properties, false);
     }
 
-    private static File getDataDir(Map<String, String> properties, boolean disableWarning) {
-        String path = properties.get("data.dir");
-        if (path == null) {
-            return DEFAULT_DATA_DIR;
+    private static File getDataDir(Map<String, String> properties, boolean disableWarnings) {
+        String internalDataDir = properties.get("internal.data.dir");
+        if (internalDataDir != null) {
+            // used by unit tests
+            return new File(internalDataDir);
         }
-        File dataDir = new File(path);
-        if (!dataDir.isAbsolute()) {
-            dataDir = new File(DEFAULT_DATA_DIR, path);
+        File baseDir = BASE_DIR;
+        if (baseDir == null) {
+            if (!disableWarnings) {
+                logger.warn("could not determine location of informant.jar, using process current"
+                        + " directory as the base directory");
+            }
+            baseDir = new File(".");
         }
+        String id = properties.get("id");
+        if (Strings.isNullOrEmpty(id)) {
+            return baseDir;
+        }
+        if (!id.matches("[a-zA-Z0-9 -_]+")) {
+            if (!disableWarnings) {
+                logger.warn("invalid informant.id '{}', id must include only alphanumeric"
+                        + " characters, spaces, dashes underscores and forward slashes, proceeding"
+                        + " instead with empty id", id);
+            }
+            return baseDir;
+        }
+        File dataDir = new File(baseDir, id);
         try {
             Files.createParentDirs(dataDir);
             return dataDir;
         } catch (IOException e) {
-            if (!disableWarning) {
-                logger.warn("unable to create data.dir '{}', proceeding with default value '{}'",
-                        dataDir.getAbsolutePath(), DEFAULT_DATA_DIR.getAbsolutePath());
+            if (!disableWarnings) {
+                logger.warn("unable to create directory '{}', writing to base dir instead '{}'",
+                        dataDir.getPath(), baseDir.getPath());
             }
-            return DEFAULT_DATA_DIR;
+            return baseDir;
         }
     }
 }

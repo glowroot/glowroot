@@ -41,7 +41,6 @@ public class Config {
     private FineProfilingConfig fineProfilingConfig;
     private UserTracingConfig userTracingConfig;
     private Map<String, PluginConfig> pluginConfigs;
-    private String dataDir;
 
     public CoreConfig getCoreConfig() {
         return coreConfig;
@@ -61,10 +60,6 @@ public class Config {
 
     public Map<String, PluginConfig> getPluginConfigs() {
         return pluginConfigs;
-    }
-
-    public String getDataDir() {
-        return dataDir;
     }
 
     public static class CoreConfig {

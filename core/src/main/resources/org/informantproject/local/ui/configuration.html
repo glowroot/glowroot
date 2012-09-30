@@ -169,9 +169,6 @@
       addIntegerValidator('#maxEntries')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
-      $('#offscreenMeasure').text(config.dataDir)
-      $('#dataDir').text(config.dataDir)
-      $('#dataDir').css("width", ($('#offscreenMeasure').width() + 50) + "px")
       var coarseProfilingConfig = config.coarseProfilingConfig
       setUpOnOffButton('ProfilingCoarse', coarseProfilingConfig.enabled,
           'config/profiling/coarse')
@@ -466,16 +463,6 @@
           </div>
         </div>
       </div>
-      <div class="control-group">
-        <label class="control-label" for="dataDir">Data directory</label>
-        <div class="controls">
-          <span class="uneditable-input" id="dataDir"></span>
-          <div class="help-block">
-            The data directory must be set on the command line, e.g.
-            -Dinformant.data.dir=&lt;folder&gt;
-          </div>
-        </div>
-      </div>
       <div class="form-actions">
         <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
         <div class="button-spinner" id="saveCoreButtonSpinner"></div>
@@ -712,6 +699,5 @@
     </fieldset>
   </form>
   <div id="plugins"></div>
-  <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0px"></span>
 </body>
 </html>

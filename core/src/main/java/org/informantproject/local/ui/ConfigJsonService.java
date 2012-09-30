@@ -15,7 +15,6 @@
  */
 package org.informantproject.local.ui;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -29,7 +28,6 @@ import org.informantproject.core.config.PluginConfig;
 import org.informantproject.core.config.PluginDescriptor;
 import org.informantproject.core.config.Plugins;
 import org.informantproject.core.config.UserTracingConfig;
-import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.RollingFile;
 
 import com.google.common.collect.Iterables;
@@ -43,7 +41,6 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 
 /**
  * Json service to read config data.
@@ -58,18 +55,12 @@ class ConfigJsonService implements JsonService {
 
     private final ConfigService configService;
     private final RollingFile rollingFile;
-    private final DataSource dataSource;
-    private final File dataDir;
     private final Gson gson = new Gson();
 
     @Inject
-    ConfigJsonService(ConfigService configService, RollingFile rollingFile, DataSource dataSource,
-            @Named("data.dir") File dataDir) {
-
+    ConfigJsonService(ConfigService configService, RollingFile rollingFile) {
         this.configService = configService;
         this.rollingFile = rollingFile;
-        this.dataSource = dataSource;
-        this.dataDir = dataDir;
     }
 
     @JsonServiceMethod
@@ -132,8 +123,7 @@ class ConfigJsonService implements JsonService {
                 + ",\"fineProfilingConfig\":" + configService.getFineProfilingConfig().toJson()
                 + ",\"userTracingConfig\":" + configService.getUserTracingConfig().toJson()
                 + ",\"pluginConfigs\":" + getPluginConfigsJson()
-                + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
-                + ",\"dataDir\":" + gson.toJson(dataDir.getAbsolutePath()) + "}";
+                + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors) + "}";
     }
 
     @JsonServiceMethod
