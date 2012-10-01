@@ -390,13 +390,21 @@
             var detailHtml = traceDetailTemplate(detailTrace)
             hideTooltip()
             $('#detailTabContent').append(detailHtml)
-            $('#showDetailOuter').css('font-style', 'italic')
-            $('#showDetailOuter').html('see detail tab below')
           })
           return false
         })
       })
     }
+    function toggleMoreFilters() {
+      if ($('#moreFilters').is(':visible')) {
+        $('#moreFiltersLink').html('more filters')
+        $('#moreFilters').hide()
+      } else {
+        $('#moreFiltersLink').html('less filters')
+        $('#moreFilters').show()
+      }
+    }
+    $('#moreFiltersLink').click(toggleMoreFilters)
     var today = new Date()
     today.setHours(0,0,0,0)
     // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
@@ -454,11 +462,11 @@
     </div>
     <div style="width: 100%; text-align: center; font-style: italic">
       use mouse scroll wheel to zoom in and out
-      (or double click to zoom in and use this link to <a href="#" id="zoomOut">zoom out</a>)
+      (or double click to zoom in and <a href="#" id="zoomOut">click here to zoom out</a>)
     </div>
     <div style="text-align:center">
     <div class="alert alert-error" id="limitExceeded"
-        style="display: none; margin: 0 auto; padding: 8px 35px; font-weight: bold">
+        style="display: none; margin: 4px auto 0px auto; padding: 8px 35px; font-weight: bold">
       Specified limit exceeded, only displaying slowest (<span id="limit"></span>) traces
     </div>
     </div>
@@ -506,27 +514,6 @@
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label" for="backgroundFilter">Background traces</label>
-            <div class="controls">
-              <select class="input-xlarge0" id="backgroundFilter">
-                <option value="" selected="selected"></option>
-                <option value="false">Exclude background traces</option>
-                <option value="true">Include only background traces</option>
-              </select>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label" for="userIdFilter">User ID</label>
-            <div class="controls">
-              <select class="input-medium0" id="userIdComparator">
-                <option value="begins">Begins with</option>
-                <option value="equals">Equals</option>
-                <option value="contains">Contains</option>
-              </select>
-              <input type="text" class="input-small refresh-data-on-enter-key" id="userIdFilter">
-            </div>
-          </div>
-          <div class="control-group">
             <div class="controls">
               <label class="checkbox">
                 <input type="checkbox" class="input-small" id="errorOnlyFilter" value="true">
@@ -544,14 +531,37 @@
               </label>
             </div>
           </div>
-          <div class="control-group">
-            <label class="control-label" for="limitFilter">Limit</label>
-            <div class="controls">
-              <select class="input-medium0" id="limitFilter">
-                <option value="100">100</option>
-                <option value="1000" selected="selected">1,000</option>
-                <option value="10000">10,000</option>
-              </select>
+          <div id="moreFilters" style="display: none">
+            <div class="control-group">
+              <label class="control-label" for="backgroundFilter">Background traces</label>
+              <div class="controls">
+                <select class="input-xlarge0" id="backgroundFilter">
+                  <option value="" selected="selected"></option>
+                  <option value="false">Exclude background traces</option>
+                  <option value="true">Include only background traces</option>
+                </select>
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="userIdFilter">User ID</label>
+              <div class="controls">
+                <select class="input-medium0" id="userIdComparator">
+                  <option value="begins">Begins with</option>
+                  <option value="equals">Equals</option>
+                  <option value="contains">Contains</option>
+                </select>
+                <input type="text" class="input-small refresh-data-on-enter-key" id="userIdFilter">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="limitFilter">Limit</label>
+              <div class="controls">
+                <select class="input-medium0" id="limitFilter">
+                  <option value="100">100</option>
+                  <option value="1000" selected="selected">1,000</option>
+                  <option value="10000">10,000</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="control-group">
@@ -561,6 +571,13 @@
               <span class="button-success-message" id="refreshButtonCancelByZoom"
                   style="color: red">
                 Refresh canceled by zoom action
+              </span>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="controls">
+              <span class="lightbtn" id="moreFiltersLink">
+                more filters
               </span>
             </div>
           </div>

@@ -67,7 +67,7 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver spans}}'
 + '    <div>spans <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <a href="#" onclick="toggleSpans(); return false">spans</a> ({{spans.length}})<br>'
++ '    <span class="lightbtn" onclick="toggleSpans()">spans</span> ({{spans.length}})<br>'
 + '    <div id="sps"></div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -75,14 +75,14 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver coarseMergedStackTree}}'
 + '    <div>coarse-grained profile <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <a href="#" onclick="toggleCoarseMergedStackTree(); return false">'
-+ '        coarse-grained profile</a> ({{coarseMergedStackTree.sampleCount}})<br>'
++ '    <span class="lightbtn" onclick="toggleCoarseMergedStackTree()">'
++ '        coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})<br>'
 + '    <div id="mstCoarseOuter" style="display: none; white-space: nowrap">'
 + '      <select class="input-large" id="mstCoarseFilter" onchange="this.blur()"'
 + '          style="margin-left: 1em; margin-bottom: 0em"></select><br>'
 + '      <div id="mstCoarseUninterestingOuter" style="display: none">'
-+ '        <a id="mstCoarseUninterestingLink" href="#" style="margin-left: 1em"'
-+ '            onclick="toggleUninteresting(\'Coarse\'); return false">expand common base</a>'
++ '        <span class="lightbtn" id="mstCoarseUninterestingLink" style="margin-left: 1em"'
++ '            onclick="toggleUninteresting(\'Coarse\')">expand common base</span>'
 + '        <div id="mstCoarseUninteresting" style="display: none"></div>'
 + '      </div>'
 + '      <div id="mstCoarseInteresting"></div>'
@@ -93,14 +93,14 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver fineMergedStackTree}}'
 + '    <div>fine-grained profile <i>rolled over</i><div>'
 + '  {{^}}'
-+ '    <a href="#" onclick="toggleFineMergedStackTree(); return false">'
-+ '        fine-grained profile</a> ({{fineMergedStackTree.sampleCount}})<br>'
++ '    <span class="lightbtn" onclick="toggleFineMergedStackTree()">'
++ '        fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})<br>'
 + '    <div id="mstFineOuter" style="display: none; white-space: nowrap">'
 + '      <select class="input-large" id="mstFineFilter" onchange="this.blur()"'
 + '          style="margin-left: 1em; margin-bottom: 0em"></select><br>'
 + '      <div id="mstFineUninterestingOuter" style="display: none">'
-+ '        <a id="mstFineUninterestingLink" href="#" style="margin-left: 1em"'
-+ '            onclick="toggleUninteresting(\'Fine\'); return false">expand common base</a>'
++ '        <span class="lightbtn" id="mstFineUninterestingLink" style="margin-left: 1em"'
++ '            onclick="toggleUninteresting(\'Fine\')">expand common base</span>'
 + '        <div id="mstFineUninteresting" style="display: none"></div>'
 + '      </div>'
 + '      <div id="mstFineInteresting"></div>'
@@ -118,12 +118,11 @@ var spansTemplateText = ''
 + '    <div style="margin-left: 4em">'
 + '      {{#ifLongDescription message.text}}'
 + '        <div class="sp spexpandable">'
-+ '          {{#first80 message.text}}{{/first80}}'
-+ '          <span class="spmiddle">...</span>'
-+ '          <span class="spmiddle spmiddlex" style="display: none">'
-+ '            {{#middle message.text}}{{/middle}}'
-+ '          </span>'
-+ '          {{#last80 message.text}}{{/last80}}'
+// lack of spacing between first/middle/last text is important in these lines
++ '          {{#first80 message.text}}{{/first80}}<span class="spmiddle">'
++ '              ... </span><span class="spmiddle spmiddlex"'
++ '              style="display: none">{{#middle message.text}}'
++ '              {{/middle}}</span>{{#last80 message.text}}{{/last80}}'
 + '        </div>'
 + '      {{^}}'
 + '        <div class="sp">'
@@ -132,10 +131,10 @@ var spansTemplateText = ''
 + '      {{/ifLongDescription}}'
 + '      <br>'
 + '      {{#if message.detail}}'
-+ '        <a style="margin-left: 1em" href="#"'
-+ '            onclick="$(\'#cm{{index}}\').toggle(); return false">'
++ '        <span class="lightbtn" style="margin-left: 1em" href="#"'
++ '            onclick="$(\'#cm{{index}}\').toggle()">'
 + '          detail'
-+ '        </a>'
++ '        </span>'
 + '        <br>'
 + '        <div id="cm{{index}}" style="display: none">'
 + '          <div style="margin-left: 1em">'
@@ -153,17 +152,16 @@ var spansTemplateText = ''
 + '        {{/if}}'
 + '        {{#if error.exceptionBlockId}}'
 + '          <div style="margin-left: 1em">'
-+ '            <a href="#" onclick="viewException(\'{{error.exceptionBlockId}}\'); return false">'
++ '            <span class="lightbtn" onclick="viewException(\'{{error.exceptionBlockId}}\')">'
 + '              exception'
-+ '            </a>'
++ '            </span>'
 + '          </div>'
 + '        {{/if}}'
 + '      {{/if}}'
 + '      {{#if stackTraceBlockId}}'
-+ '        <a href="#" onclick="viewStackTrace(\'{{stackTraceBlockId}}\'); return false">'
++ '        <div class="lightbtn" onclick="viewStackTrace(\'{{stackTraceBlockId}}\')">'
 + '          span stack trace'
-+ '        </a>'
-+ '        <br>'
++ '        </div>'
 + '      {{/if}}'
 + '    </div>'
 + '  </div>'
@@ -214,13 +212,19 @@ Handlebars.registerHelper('first80', function(description) {
 Handlebars.registerHelper('last80', function(description) {
   if (description.length <= 80) {
     return ""
+  } else if (description.length <= 160) {
+    return description.slice(-(description.length - 80))
   } else {
-    var n = Math.min(description.length - 80, 80)
-    return description.slice(-n)
+    // leave room for ' ... '
+    return description.slice(-75)
   }
 })
 Handlebars.registerHelper('middle', function(description) {
-  return description.slice(80, -80);
+  if (description.length <= 160) {
+    return ""
+  } else {
+    return description.slice(80, -75)
+  }
 })
 Handlebars.registerHelper('ifShowExport', function(options) {
   if (typeof exportPage == 'undefined') {
@@ -254,9 +258,9 @@ var clickSpanTimer
 // sort of ok for pageX and pageY to be global since they are just temporary bridge between
 // mousedown event and subsequent click event
 var mousedownSpanPageX, mousedownSpanPageY
-function mousedownSpan(div, e) {
-  mousedownSpanPageX = e.mousedownSpanPageX
-  mousedownSpanPageY = e.mousedownSpanPageY
+function mousedownSpan(e) {
+  mousedownSpanPageX = e.pageX
+  mousedownSpanPageY = e.pageY
 }
 function clickSpan(div, e) {
   if (Math.abs(e.pageX - mousedownSpanPageX) > 5 || Math.abs(e.pageY - mousedownSpanPageY) > 5) {
@@ -292,7 +296,7 @@ function renderNext(spans, start) {
   }
   html += '</div>'
   $('#sps').append(html)
-  $('#block' + start + ' .spexpandable').mousedown(function(e) {mousedownSpan($(this), e)})
+  $('#block' + start + ' .spexpandable').mousedown(function(e) {mousedownSpan(e)})
   $('#block' + start + ' .spexpandable').click(function(e) {clickSpan($(this), e)})
   if (start + 100 < spans.length) {
     setTimeout(function() { renderNext(spans, start + 100) }, 10)
