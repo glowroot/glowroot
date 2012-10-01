@@ -22,12 +22,11 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -39,11 +38,12 @@ import org.informantproject.api.Message;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
-import org.informantproject.core.stack.MergedStackTree;
-import org.informantproject.core.stack.MergedStackTreeNode;
+import org.informantproject.core.trace.MergedStackTree;
+import org.informantproject.core.trace.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceMetric;
+import org.informantproject.core.trace.MergedStackTree.StackTraceElementPlus;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.FileBlock;
@@ -363,24 +363,10 @@ public class TraceSnapshotService {
             throws IOException {
 
         jw.beginArray();
-        String realDescription = null;
-        for (StackTraceElement stackTraceElement : stackTrace) {
-            if (stackTraceElement.getMethodName().contains("$informant$")) {
-                if (realDescription == null) {
-                    realDescription = stackTraceElement.toString().replaceFirst(
-                            "\\$informant\\$[^(]+\\(", "(");
-                } else {
-                    // this is an extra wrapping around the same method, e.g. for multiple metrics
-                    // around the same method
-                }
-            } else {
-                if (realDescription == null) {
-                    jw.value(stackTraceElement.toString());
-                } else {
-                    jw.value(realDescription);
-                    realDescription = null;
-                }
-            }
+        List<StackTraceElementPlus> elements = MergedStackTree
+                .stripSyntheticMetricMethods(stackTrace);
+        for (StackTraceElementPlus element : elements) {
+            jw.value(element.getStackTraceElement().toString());
         }
         jw.endArray();
     }
@@ -522,9 +508,6 @@ public class TraceSnapshotService {
 
         private static final int TARGET_CHUNK_SIZE = 8192;
 
-        private static final Pattern metricMarkerMethodPattern = Pattern
-                .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
-
         private final List<Object> toVisit;
         private final ByteArrayOutputStream baos;
         private final JsonWriter jw;
@@ -565,23 +548,26 @@ public class TraceSnapshotService {
                     jw.name("stackTraceElement").value("<multiple root nodes>");
                 } else {
                     jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
-                    String newMetricName = getMetricName(currNode.getStackTraceElement());
-                    if (newMetricName != null && !newMetricName.equals(top(metricNameStack))) {
-                        // filter out successive duplicates which are common from weaving groups of
-                        // overloaded methods
-                        metricNameStack.add(newMetricName);
-                        toVisit.add(JsonWriterOp.POP_METRIC_NAME);
+                    Collection<String> currMetricNames = currNode.getMetricNames();
+                    for (String currMetricName : currMetricNames) {
+                        if (metricNameStack.isEmpty() || !currMetricName.equals(
+                                metricNameStack.get(metricNameStack.size() - 1))) {
+                            // filter out successive duplicates which are common from weaving groups
+                            // of overloaded methods
+                            metricNameStack.add(currMetricName);
+                            toVisit.add(JsonWriterOp.POP_METRIC_NAME);
+                        }
                     }
-                }
-                jw.name("sampleCount").value(currNode.getSampleCount());
-                if (currNode.isLeaf()) {
-                    jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
-                    jw.name("metricNames");
-                    jw.beginArray();
-                    for (String metricName : metricNameStack) {
-                        jw.value(metricName);
+                    jw.name("sampleCount").value(currNode.getSampleCount());
+                    if (currNode.isLeaf()) {
+                        jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
+                        jw.name("metricNames");
+                        jw.beginArray();
+                        for (String metricName : metricNameStack) {
+                            jw.value(metricName);
+                        }
+                        jw.endArray();
                     }
-                    jw.endArray();
                 }
                 List<MergedStackTreeNode> childNodes = Lists.newArrayList(currNode.getChildNodes());
                 if (!childNodes.isEmpty()) {
@@ -604,21 +590,6 @@ public class TraceSnapshotService {
                 return null;
             } else {
                 return stack.get(stack.size() - 1);
-            }
-        }
-
-        @Nullable
-        private static String getMetricName(StackTraceElement stackTraceElement) {
-            return getMetricNameFromMethodName(stackTraceElement);
-        }
-
-        @Nullable
-        private static String getMetricNameFromMethodName(StackTraceElement stackTraceElement) {
-            Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
-            if (matcher.matches()) {
-                return matcher.group(1).replace("$", " ");
-            } else {
-                return null;
             }
         }
 

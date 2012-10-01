@@ -23,7 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.Thread.State;
 
-import org.informantproject.core.stack.MergedStackTree;
+import org.informantproject.core.trace.MergedStackTree;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.util.ByteStream;
 import org.junit.Test;

@@ -66,6 +66,8 @@ public class SpanStackTraceTest {
         String stackTraceBlockId = trace.getSpans().get(1).getStackTraceBlockId();
         List<String> stackTrace = container.getInformant().getStackTrace(stackTraceBlockId);
         assertThat(stackTrace).isNotEmpty();
+        assertThat(stackTrace.get(0)).startsWith(
+                Pause.class.getName() + ".pause(" + Pause.class.getSimpleName() + ".java:");
         for (String element : stackTrace) {
             assertThat(element).doesNotContain("$informant$");
             // assert that element contains line number (or is a native method

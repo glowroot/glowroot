@@ -418,8 +418,6 @@ function toggleMergedStackTree(rootNode, granularity) {
       var interestingRootNode = rootNode
       var uninterestingHtml = ''
       while (true) {
-        uninterestingHtml += '<span style="display: inline-block; width: 4em; margin-left: 1em">'
-            + '100.0%</span>' + interestingRootNode.stackTraceElement + '<br>'
         if (! interestingRootNode.childNodes || interestingRootNode.childNodes.length != 1) {
           break
         }
@@ -427,6 +425,8 @@ function toggleMergedStackTree(rootNode, granularity) {
         if (childNode.leafThreadState) {
           break
         }
+        uninterestingHtml += '<span style="display: inline-block; width: 4em; margin-left: 1em">'
+          + '100.0%</span>' + interestingRootNode.stackTraceElement + '<br>'
         interestingRootNode = childNode
         i++
       }

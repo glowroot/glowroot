@@ -21,7 +21,6 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.stack.MergedStackTree;
 
 import com.google.common.base.Ticker;
 

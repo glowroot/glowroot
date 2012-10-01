@@ -369,8 +369,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             long endTick = ticker.read();
             if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
                     .getSpanStackTraceThresholdMillis())) {
-                // TODO remove last few stack trace elements?
-                span.setStackTrace(Thread.currentThread().getStackTrace());
+                span.setStackTrace(captureSpanStackTrace());
             }
             currentTrace.popSpan(span, endTick, errorMessage);
             if (currentTrace.isCompleted()) {
@@ -387,6 +386,19 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 traceSink.onCompletedTrace(currentTrace);
                 traceRegistry.removeTrace(currentTrace);
             }
+        }
+        private StackTraceElement[] captureSpanStackTrace() {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            // need to strip back 5 stack calls:
+            // 1 - java.lang.Thread.getStackTrace()
+            // 2 - org.informantproject.core.PluginServicesImpl$SpanImpl.captureSpanStackTrace()
+            // 3 - org.informantproject.core.PluginServicesImpl$SpanImpl.endInternal()
+            // 4 - org.informantproject.core.PluginServicesImpl$SpanImpl.end()/endWithError()
+            // 5 - the @Pointcut @OnReturn/@OnThrow/@OnAfter method
+            // (possibly more if the @Pointcut method doesn't call end()/endWithError() directly)
+            StackTraceElement[] spanStackTrace = new StackTraceElement[stackTrace.length - 5];
+            System.arraycopy(stackTrace, 5, spanStackTrace, 0, spanStackTrace.length);
+            return spanStackTrace;
         }
         private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {
             if (scheduledFuture == null) {

@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.stack;
+package org.informantproject.core.trace;
 
 import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
@@ -42,6 +45,9 @@ import com.google.common.collect.Queues;
 // after which the existing stack traces are merged as well as future stack traces
 @ThreadSafe
 public class MergedStackTree {
+
+    private static final Pattern metricMarkerMethodPattern = Pattern
+            .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
     private final Collection<MergedStackTreeNode> rootNodes = Queues.newConcurrentLinkedQueue();
 
@@ -71,25 +77,36 @@ public class MergedStackTree {
 
     public void addStackTrace(ThreadInfo threadInfo) {
         synchronized (lock) {
-            addToStackTree(threadInfo.getStackTrace(), threadInfo.getThreadState());
+            // TODO put into list, then merge every 100, or whenever merge is requested
+            StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+            addToStackTree(stackTrace, threadInfo.getThreadState());
         }
     }
 
-    // public for unit tests (otherwise could be private)
+    @VisibleForTesting
     public void addToStackTree(StackTraceElement[] stackTrace, State threadState) {
+        addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
+    }
+
+    private void addToStackTree(List<StackTraceElementPlus> stackTrace, State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
-        for (nextIndex = stackTrace.length - 1; nextIndex >= 0; nextIndex--) {
+        for (nextIndex = stackTrace.size() - 1; nextIndex >= 0; nextIndex--) {
+            StackTraceElementPlus element = stackTrace.get(nextIndex);
             // check all child nodes
             boolean matchFound = false;
             for (MergedStackTreeNode childNode : nextChildNodes) {
-                if (matches(stackTrace[nextIndex], childNode, nextIndex == 0,
+                if (matches(element.getStackTraceElement(), childNode, nextIndex == 0,
                         threadState)) {
                     // match found, update lastMatchedNode and continue
                     childNode.incrementSampleCount();
+                    List<String> metricNames = element.getMetricNames();
+                    if (metricNames != null) {
+                        childNode.addAllAbsentMetricNames(metricNames);
+                    }
                     lastMatchedNode = childNode;
                     nextChildNodes = lastMatchedNode.getChildNodes();
                     matchFound = true;
@@ -102,7 +119,9 @@ public class MergedStackTree {
         }
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
-            MergedStackTreeNode nextNode = MergedStackTreeNode.create(stackTrace[i]);
+            StackTraceElementPlus element = stackTrace.get(i);
+            MergedStackTreeNode nextNode = MergedStackTreeNode.create(
+                    element.getStackTraceElement(), element.getMetricNames());
             if (i == 0) {
                 // leaf node
                 nextNode.setLeafThreadState(threadState);
@@ -117,6 +136,52 @@ public class MergedStackTree {
         }
     }
 
+    // recreate the stack trace as it would have been without the synthetic $metric$ methods
+    public static List<StackTraceElementPlus> stripSyntheticMetricMethods(
+            StackTraceElement[] stackTrace) {
+
+        List<StackTraceElementPlus> stackTracePlus = Lists
+                .newArrayListWithCapacity(stackTrace.length);
+        for (int i = 0; i < stackTrace.length; i++) {
+            StackTraceElement element = stackTrace[i];
+            String metricName = getMetricName(element);
+            if (metricName != null) {
+                String originalMethodName = stackTrace[i].getMethodName();
+                List<String> metricNames = Lists.newArrayList(metricName);
+                // skip over successive $metric$ methods up to and including the "original" method
+                while (++i < stackTrace.length) {
+                    metricName = getMetricName(stackTrace[i]);
+                    if (metricName == null) {
+                        // loop should always terminate here since synthetic $metric$ methods should
+                        // never be the last element (the last element is the first element in the
+                        // call stack)
+                        originalMethodName = stackTrace[i].getMethodName();
+                        break;
+                    }
+                    metricNames.add(metricName);
+                }
+                // "original" in the sense that this is what it would have been without the
+                // synthetic $metric$ methods
+                StackTraceElement originalElement = new StackTraceElement(element.getClassName(),
+                        originalMethodName, element.getFileName(), element.getLineNumber());
+                stackTracePlus.add(new StackTraceElementPlus(originalElement, metricNames));
+            } else {
+                stackTracePlus.add(new StackTraceElementPlus(element, null));
+            }
+        }
+        return stackTracePlus;
+    }
+
+    @Nullable
+    private static String getMetricName(StackTraceElement stackTraceElement) {
+        Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
+        if (matcher.matches()) {
+            return matcher.group(1).replace("$", " ");
+        } else {
+            return null;
+        }
+    }
+
     private static boolean matches(StackTraceElement stackTraceElement,
             MergedStackTreeNode childNode, boolean leaf, State threadState) {
 
@@ -128,6 +193,24 @@ public class MergedStackTree {
             return stackTraceElement.equals(childNode.getStackTraceElement());
         } else {
             return false;
+        }
+    }
+
+    public static class StackTraceElementPlus {
+        private final StackTraceElement stackTraceElement;
+        @Nullable
+        private final List<String> metricNames;
+        private StackTraceElementPlus(StackTraceElement stackTraceElement,
+                @Nullable List<String> metricNames) {
+            this.stackTraceElement = stackTraceElement;
+            this.metricNames = metricNames;
+        }
+        public StackTraceElement getStackTraceElement() {
+            return stackTraceElement;
+        }
+        @Nullable
+        public List<String> getMetricNames() {
+            return metricNames;
         }
     }
 }

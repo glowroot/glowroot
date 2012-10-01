@@ -31,6 +31,7 @@ import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.UserTracingConfig;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
+import org.informantproject.testkit.Trace.MergedStackTreeNode;
 import org.informantproject.testkit.TraceMarker;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -76,6 +77,7 @@ public class ProfilingTest {
         // coarse profiler should have captured about 5 stack traces
         assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isGreaterThan(0);
         assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isLessThan(10);
+        assertThatTreeDoesNotContainSyntheticMetricMethods(trace.getCoarseMergedStackTree());
         assertThat(trace.getFineMergedStackTree()).isNull();
     }
 
@@ -180,6 +182,20 @@ public class ProfilingTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNull();
+    }
+
+    private static void assertThatTreeDoesNotContainSyntheticMetricMethods(
+            MergedStackTreeNode mergedStackTree) {
+
+        if (mergedStackTree.getStackTraceElement().contains("$informant$metric$")) {
+            throw new AssertionError("Not expecting synthetic metric methods but found: "
+                    + mergedStackTree.getStackTraceElement());
+        }
+        if (mergedStackTree.getChildNodes() != null) {
+            for (MergedStackTreeNode child : mergedStackTree.getChildNodes()) {
+                assertThatTreeDoesNotContainSyntheticMetricMethods(child);
+            }
+        }
     }
 
     public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,

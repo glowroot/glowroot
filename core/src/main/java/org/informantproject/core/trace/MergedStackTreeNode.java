@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.informantproject.core.stack;
+package org.informantproject.core.trace;
 
 import java.lang.Thread.State;
 import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.google.common.collect.Queues;
+import com.google.common.collect.Lists;
 
 /**
  * Element of {@link MergedStackTree}.
@@ -34,7 +35,9 @@ public class MergedStackTreeNode {
 
     @Nullable
     private final StackTraceElement stackTraceElement;
-    private final Collection<MergedStackTreeNode> childNodes = Queues.newConcurrentLinkedQueue();
+    private final Collection<MergedStackTreeNode> childNodes = Lists.newCopyOnWriteArrayList();
+    // using List over Set in order to preserve ordering
+    private final CopyOnWriteArrayList<String> metricNames;
 
     // these must be volatile since they are updated by one thread (the stack trace sampling
     // thread) and can be read by another thread (e.g. the executing thread, the stuck trace
@@ -54,20 +57,32 @@ public class MergedStackTreeNode {
     // this is for creating a single synthetic root node above other root nodes when there are
     // multiple root nodes
     static MergedStackTreeNode createSyntheticRoot(int sampleCount) {
-        return new MergedStackTreeNode(null, sampleCount);
+        return new MergedStackTreeNode(null, null, sampleCount);
     }
 
-    static MergedStackTreeNode create(StackTraceElement stackTraceElement) {
-        return new MergedStackTreeNode(stackTraceElement, 1);
+    static MergedStackTreeNode create(StackTraceElement stackTraceElement,
+            @Nullable Collection<String> metricNames) {
+        return new MergedStackTreeNode(stackTraceElement, metricNames, 1);
     }
 
-    private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement, int sampleCount) {
+    private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement,
+            @Nullable Collection<String> metricNames, int sampleCount) {
+
         this.stackTraceElement = stackTraceElement;
+        if (metricNames == null) {
+            this.metricNames = Lists.newCopyOnWriteArrayList();
+        } else {
+            this.metricNames = Lists.newCopyOnWriteArrayList(metricNames);
+        }
         this.sampleCount = sampleCount;
     }
 
     void addChildNode(MergedStackTreeNode methodTreeElement) {
         childNodes.add(methodTreeElement);
+    }
+
+    void addAllAbsentMetricNames(Collection<String> metricNames) {
+        this.metricNames.addAllAbsent(metricNames);
     }
 
     void setLeafThreadState(State leafThreadState) {
@@ -84,8 +99,12 @@ public class MergedStackTreeNode {
         return stackTraceElement == null;
     }
 
-    public Iterable<MergedStackTreeNode> getChildNodes() {
+    public Collection<MergedStackTreeNode> getChildNodes() {
         return childNodes;
+    }
+
+    public Collection<String> getMetricNames() {
+        return metricNames;
     }
 
     // only returns null for synthetic root
