@@ -136,10 +136,14 @@ body.modal-open {
   background-color:#DDD;
   border-radius: 4px;
 }
-/* slightly darken bootstrap defaults from #EEE/#DDD to match .lightbtn */
+/* slightly darken bootstrap tabs to match .lightbtn */
 .nav-tabs > li > a:hover {
   border-color: #DDD #DDD #CCC;
 }
 .nav > li > a:hover {
   background-color: #DDD;
+}
+/* reduce opacity of bootstrap modal background */
+.modal-backdrop, .modal-backdrop.fade.in {
+  opacity: 0.4;
 }

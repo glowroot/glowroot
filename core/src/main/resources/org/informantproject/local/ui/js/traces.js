@@ -531,4 +531,20 @@ function displayModal(title, html, clippyText) {
     clippy_path: 'libs/clippy-jquery/0.1-nightly-20120701/clippy.swf'
   })
   $('#modal').modal('show')
+  $('#modalBody').css({
+    'max-width': function () {
+        return $(window).width() * .8;
+    },
+    'max-height': function () {
+      return $(window).height() * .8 - $('#modalHeader').height();
+    }
+  })
+  $('#modal').css({
+    'margin-left': function () {
+        return -($(this).width() / 2);
+    },
+    'margin-top': function () {
+      return -($(this).height() / 2);
+    }
+  })
 }
