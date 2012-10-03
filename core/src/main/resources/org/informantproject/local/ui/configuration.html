@@ -76,7 +76,7 @@
           <div class="control-group">
             <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
             <div class="controls">
-              <input type="text" id="{{../../id}}_{{name}}" style="width: 6em">
+              <input type="text" id="{{../../id}}_{{name}}" style="width: 5em">
               {{#if description}}
                 <div class="help-block">
                   {{description}}
@@ -167,6 +167,8 @@
       addIntegerValidator('#spanStackTraceThresholdMillis')
       $('#maxSpans').val(coreConfig.maxSpans)
       addIntegerValidator('#maxSpans')
+      $('#keepTraceSnapshotDays').val(coreConfig.keepTraceSnapshotHours / 24)
+      addIntegerValidator('#keepTraceSnapshotDays')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
       var coarseProfilingConfig = config.coarseProfilingConfig
@@ -241,11 +243,12 @@
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
     var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
     var maxSpans = $('#maxSpans').val()
+    var keepTraceSnapshotDays = $('#keepTraceSnapshotDays').val()
     var rollingSizeMb = $('#rollingSizeMb').val()
     // handle validation
     if (!isInteger(persistenceThresholdMillis) || !isInteger(stuckThresholdSeconds)
         || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxSpans)
-        || !isInteger(rollingSizeMb)) {
+         || !isInteger(keepTraceSnapshotDays) || !isInteger(rollingSizeMb)) {
       return
     }
     postingUpdateCore = true
@@ -254,6 +257,7 @@
       'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
       'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
       'maxSpans': parseInteger(maxSpans),
+      'keepTraceSnapshotHours': parseInteger(keepTraceSnapshotDays) * 24,
       'rollingSizeMb': parseInteger(rollingSizeMb)
     }
     $.post('config/core', JSON.stringify(config), function() {
@@ -399,7 +403,7 @@
         <label class="control-label" for="persistenceThresholdMillis">Persistence threshold</label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="persistenceThresholdMillis" style="width: 6em">
+            <input type="text" id="persistenceThresholdMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
             <span class="help-inline">Invalid input</span>
           </div>
@@ -413,7 +417,7 @@
         <label class="control-label" for="stuckThresholdSeconds">Stuck threshold</label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="stuckThresholdSeconds" style="width: 6em">
+            <input type="text" id="stuckThresholdSeconds" style="width: 5em">
             <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
@@ -429,7 +433,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="spanStackTraceThresholdMillis" style="width: 6em">
+            <input type="text" id="spanStackTraceThresholdMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
           </div>
         </div>
@@ -437,7 +441,7 @@
       <div class="control-group">
         <label class="control-label" for="maxSpans">Max spans</label>
         <div class="controls">
-          <input type="text" id="maxSpans" style="width: 6em">
+          <input type="text" id="maxSpans" style="width: 5em">
           <div class="help-block">
             Maximum number of spans collected for a given trace. This is useful for limiting
             the memory requirement of very very long traces that capture potentially hundreds of
@@ -448,10 +452,23 @@
         </div>
       </div>
       <div class="control-group">
+        <label class="control-label" for="keepTraceSnapshotDays">
+          Keep trace snapshot for days
+        </label>
+        <div class="controls">
+          <div class="input-append">
+            <input type="text" id="keepTraceSnapshotDays" style="width: 5em">
+            <span class="add-on">days</span>
+          </div>
+          <div class="help-block">
+          </div>
+        </div>
+      </div>
+      <div class="control-group">
         <label class="control-label" for="rollingSizeMb">Rolling database size</label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="rollingSizeMb" style="width: 6em">
+            <input type="text" id="rollingSizeMb" style="width: 5em">
             <span class="add-on">MB</span>
           </div>
           <div class="help-block">
@@ -493,7 +510,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="coarseInitialDelayMillis" style="width: 6em">
+            <input type="text" id="coarseInitialDelayMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
@@ -512,7 +529,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="coarseIntervalMillis" style="width: 6em">
+            <input type="text" id="coarseIntervalMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
@@ -527,7 +544,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="coarseTotalSeconds" style="width: 6em">
+            <input type="text" id="coarseTotalSeconds" style="width: 5em">
             <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
@@ -567,7 +584,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="fineTracePercentage" style="width: 6em">
+            <input type="text" id="fineTracePercentage" style="width: 5em">
             <span class="add-on">%</span>
           </div>
           <div class="help-block">
@@ -581,7 +598,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="fineIntervalMillis" style="width: 6em">
+            <input type="text" id="fineIntervalMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
@@ -596,7 +613,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="fineTotalSeconds" style="width: 6em">
+            <input type="text" id="fineTotalSeconds" style="width: 5em">
             <span class="add-on">seconds</span>
           </div>
           <div class="help-block">
@@ -616,7 +633,7 @@
             </label>
           </div>
           <div class="input-append">
-            <input type="text" id="finePersistenceThresholdMillis" style="width: 6em">
+            <input type="text" id="finePersistenceThresholdMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">
@@ -656,7 +673,7 @@
           User ID
         </label>
         <div class="controls">
-          <input type="text" id="userUserId" style="width: 6em">
+          <input type="text" id="userUserId" style="width: 5em">
           <div class="help-block">
             Traces for the given user will use the persistence threshold and profiling configuration
             below.
@@ -669,7 +686,7 @@
         </label>
         <div class="controls">
           <div class="input-append">
-            <input type="text" id="userPersistenceThresholdMillis" style="width: 6em">
+            <input type="text" id="userPersistenceThresholdMillis" style="width: 5em">
             <span class="add-on">milliseconds</span>
           </div>
           <div class="help-block">

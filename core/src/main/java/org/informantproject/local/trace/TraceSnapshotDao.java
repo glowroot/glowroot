@@ -253,15 +253,14 @@ public class TraceSnapshotDao {
         return snapshots.get(0);
     }
 
-    public int deleteSnapshots(long capturedFrom, long capturedTo) {
-        logger.debug("deleteSnapshots(): capturedFrom={}, capturedTo={}", capturedFrom,
-                capturedTo);
+    public int deleteSnapshotsBefore(long capturedAt) {
+        logger.debug("deleteSnapshotsBefore(): capturedAt={}", capturedAt);
         if (!valid) {
             return 0;
         }
         try {
-            return dataSource.update("delete from trace_snapshot where captured_at >= ? and"
-                    + " captured_at <= ?", capturedFrom, capturedTo);
+            return dataSource.update("delete from trace_snapshot where captured_at <= ?",
+                    capturedAt);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;

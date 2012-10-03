@@ -129,7 +129,7 @@ public class TraceSnapshotDaoTest {
         // given
         snapshotDao.storeSnapshot(new TraceSnapshotTestData().createSnapshot());
         // when
-        snapshotDao.deleteSnapshots(0, 0);
+        snapshotDao.deleteSnapshotsBefore(0);
         // then
         assertThat(snapshotDao.count()).isEqualTo(0);
     }

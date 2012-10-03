@@ -146,7 +146,7 @@ class MiscJsonService implements JsonService {
         if (keepMillis == 0) {
             traceSnapshotDao.deleteAllSnapshots();
         } else {
-            traceSnapshotDao.deleteSnapshots(0, clock.currentTimeMillis() - keepMillis);
+            traceSnapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis() - keepMillis);
         }
         if (compact) {
             try {

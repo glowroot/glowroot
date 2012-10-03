@@ -205,6 +205,10 @@ class ConfigJsonService implements JsonService {
         if (maxSpans != null) {
             builder.maxSpans(maxSpans.getAsInt());
         }
+        JsonElement keepTraceSnapshotHours = jsonObject.get("keepTraceSnapshotHours");
+        if (keepTraceSnapshotHours != null) {
+            builder.keepTraceSnapshotHours(keepTraceSnapshotHours.getAsInt());
+        }
         JsonElement rollingSizeMb = jsonObject.get("rollingSizeMb");
         if (rollingSizeMb != null) {
             builder.rollingSizeMb(rollingSizeMb.getAsInt());

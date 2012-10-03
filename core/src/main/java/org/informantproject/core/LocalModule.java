@@ -23,6 +23,7 @@ import org.informantproject.core.log.LogMessageSink;
 import org.informantproject.core.trace.TraceSink;
 import org.informantproject.local.log.LogMessageSinkLocal;
 import org.informantproject.local.trace.TraceSinkLocal;
+import org.informantproject.local.trace.TraceSnapshotReaper;
 import org.informantproject.local.ui.HttpServer;
 
 import com.google.common.collect.ImmutableMap;
@@ -79,10 +80,12 @@ class LocalModule extends AbstractModule {
     static void start(Injector injector) {
         logger.debug("start()");
         injector.getInstance(HttpServer.class);
+        injector.getInstance(TraceSnapshotReaper.class);
     }
 
     static void close(Injector injector) {
         logger.debug("close()");
         injector.getInstance(HttpServer.class).close();
+        injector.getInstance(TraceSnapshotReaper.class).close();
     }
 }

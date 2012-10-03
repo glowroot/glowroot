@@ -67,6 +67,8 @@ public class CoreConfig {
     // 0 means don't capture any spans, -1 means no limit
     private final int maxSpans;
 
+    private final int keepTraceSnapshotHours;
+
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
     private final int rollingSizeMb;
@@ -88,14 +90,15 @@ public class CoreConfig {
     }
 
     private CoreConfig(boolean enabled, int persistenceThresholdMillis, int stuckThresholdSeconds,
-            int spanStackTraceThresholdMillis, int maxSpans, int rollingSizeMb,
-            boolean warnOnSpanOutsideTrace, int metricPeriodMillis) {
+            int spanStackTraceThresholdMillis, int maxSpans, int keepTraceSnapshotHours,
+            int rollingSizeMb, boolean warnOnSpanOutsideTrace, int metricPeriodMillis) {
 
         this.enabled = enabled;
         this.persistenceThresholdMillis = persistenceThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.maxSpans = maxSpans;
+        this.keepTraceSnapshotHours = keepTraceSnapshotHours;
         this.rollingSizeMb = rollingSizeMb;
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
         this.metricPeriodMillis = metricPeriodMillis;
@@ -125,6 +128,10 @@ public class CoreConfig {
         return maxSpans;
     }
 
+    public int getKeepTraceSnapshotHours() {
+        return keepTraceSnapshotHours;
+    }
+
     public int getRollingSizeMb() {
         return rollingSizeMb;
     }
@@ -145,6 +152,7 @@ public class CoreConfig {
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxSpans", maxSpans)
+                .add("keepTraceSnapshotHours", keepTraceSnapshotHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("metricPeriodMillis", metricPeriodMillis)
@@ -158,6 +166,7 @@ public class CoreConfig {
         private int stuckThresholdSeconds = 180;
         private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
         private int maxSpans = 5000;
+        private int keepTraceSnapshotHours = 24 * 7;
         private int rollingSizeMb = 1000;
         private boolean warnOnSpanOutsideTrace = false;
         private int metricPeriodMillis = 15000;
@@ -169,6 +178,7 @@ public class CoreConfig {
             stuckThresholdSeconds = base.stuckThresholdSeconds;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
             maxSpans = base.maxSpans;
+            keepTraceSnapshotHours = base.keepTraceSnapshotHours;
             rollingSizeMb = base.rollingSizeMb;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
             metricPeriodMillis = base.metricPeriodMillis;
@@ -193,6 +203,10 @@ public class CoreConfig {
             this.maxSpans = maxSpans;
             return this;
         }
+        public Builder keepTraceSnapshotHours(int keepTraceSnapshotHours) {
+            this.keepTraceSnapshotHours = keepTraceSnapshotHours;
+            return this;
+        }
         public Builder rollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
@@ -207,7 +221,7 @@ public class CoreConfig {
         }
         public CoreConfig build() {
             return new CoreConfig(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
-                    spanStackTraceThresholdMillis, maxSpans, rollingSizeMb,
+                    spanStackTraceThresholdMillis, maxSpans, keepTraceSnapshotHours, rollingSizeMb,
                     warnOnSpanOutsideTrace, metricPeriodMillis);
         }
     }
