@@ -63,8 +63,7 @@ public class SpanStackTraceTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithSpanStackTrace.class);
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        String stackTraceBlockId = trace.getSpans().get(1).getStackTraceBlockId();
-        List<String> stackTrace = container.getInformant().getStackTrace(stackTraceBlockId);
+        List<String> stackTrace = trace.getSpans().get(1).getStackTrace();
         assertThat(stackTrace).isNotEmpty();
         assertThat(stackTrace.get(0)).startsWith(
                 Pause.class.getName() + ".pause(" + Pause.class.getSimpleName() + ".java:");

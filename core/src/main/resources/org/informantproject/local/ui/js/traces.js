@@ -40,7 +40,7 @@ var traceSummaryTemplateText = ''
 + '{{#if userId}}<div class="second-line-indent">user ID: {{userId}}</div>{{/if}}'
 + '{{#if error}}<div class="second-line-indent"><b>error: {{error.text}}</b></div>{{/if}}'
 + 'breakdown (in milliseconds):<br>'
-+ '<table class="metrics-table" style="margin-left: 1em; border-spacing:0">'
++ '<table class="metrics-table indent1" style="border-spacing:0">'
 + '  <thead>'
 + '    <tr>'
 + '      <td></td>'
@@ -67,25 +67,30 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver spans}}'
 + '    <div>spans <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <span class="lightbtn" onclick="toggleSpans()">spans</span> ({{spans.length}})<br>'
++ '    <span class="lightbtn pad3" onclick="toggleSpans()">'
++ '      <span class="red">spans</span> ({{spans.length}})'
++ '    </span><br>'
 + '    <div id="sps"></div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
+// todo combine merged stack tree into template to consolidate code between coarse and fine mst
 + '{{#if coarseMergedStackTree}}'
 + '  {{#ifRolledOver coarseMergedStackTree}}'
 + '    <div>coarse-grained profile <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <span class="lightbtn" onclick="toggleCoarseMergedStackTree()">'
-+ '        coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})<br>'
-+ '    <div id="mstCoarseOuter" style="display: none; white-space: nowrap">'
-+ '      <select class="input-large" id="mstCoarseFilter" onchange="this.blur()"'
-+ '          style="margin-left: 1em; margin-bottom: 0em"></select><br>'
-+ '      <div id="mstCoarseUninterestingOuter" style="display: none">'
-+ '        <span class="lightbtn" id="mstCoarseUninterestingLink" style="margin-left: 1em"'
-+ '            onclick="toggleUninteresting(\'Coarse\')">expand common base</span>'
-+ '        <div id="mstCoarseUninteresting" style="display: none"></div>'
-+ '      </div>'
-+ '      <div id="mstCoarseInteresting"></div>'
++ '    <span class="lightbtn pad3" onclick="toggleCoarseMergedStackTree()">'
++ '      <span class="red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})'
++ '    </span><br>'
++ '    <div class="nowrap indent1 hide" id="mstCoarseOuter">'
++ '        <select class="mst-filter input-large" onchange="this.blur()"'
++ '            style="margin: 4px"></select><br>'
+// margin-bottom is needed to trump .expandable class' margin-bottom: 4px since no buffer is needed
+// when this is expanded since nothing can be expanded directly below it
++ '      <span class="mst-common expandable pad3 hide" style="margin-bottom: 0">'
++ '        <div class="unexpanded-content red">common base</div>'
++ '        <div class="expanded-content hide"></div>'
++ '      </span><br>'
++ '      <div class="mst-interesting pad3"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -93,75 +98,76 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver fineMergedStackTree}}'
 + '    <div>fine-grained profile <i>rolled over</i><div>'
 + '  {{^}}'
-+ '    <span class="lightbtn" onclick="toggleFineMergedStackTree()">'
-+ '        fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})<br>'
-+ '    <div id="mstFineOuter" style="display: none; white-space: nowrap">'
-+ '      <select class="input-large" id="mstFineFilter" onchange="this.blur()"'
-+ '          style="margin-left: 1em; margin-bottom: 0em"></select><br>'
-+ '      <div id="mstFineUninterestingOuter" style="display: none">'
-+ '        <span class="lightbtn" id="mstFineUninterestingLink" style="margin-left: 1em"'
-+ '            onclick="toggleUninteresting(\'Fine\')">expand common base</span>'
-+ '        <div id="mstFineUninteresting" style="display: none"></div>'
-+ '      </div>'
-+ '      <div id="mstFineInteresting"></div>'
++ '    <span class="lightbtn pad3" onclick="toggleFineMergedStackTree()">'
++ '      <span class="red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})'
++ '    </span><br>'
++ '    <div class="nowrap indent1 hide" id="mstFineOuter">'
++ '        <select class="mst-filter input-large" onchange="this.blur()"'
++ '            style="margin: 4px"></select><br>'
+// margin-bottom is needed to trump .expandable class' margin-bottom: 4px since no buffer is needed
+// when this is expanded since nothing can be expanded directly below it
++ '      <span class="mst-common expandable pad3 hide" style="margin-bottom: 0">'
++ '        <div class="unexpanded-content red">common base</div>'
++ '        <div class="expanded-content hide"></div>'
++ '      </span><br>'
++ '      <div class="mst-interesting pad3"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
 var spansTemplateText = ''
-+ '<div style="float: left; margin-left: 1em; width: 3em; text-align: right">'
++ '<div class="indent1" style="float: left; width: 3em; text-align: right">'
 + '    +{{nanosToMillis offset}}'
 + '  </div>'
 + '  <div style="margin-left: {{margin nestingLevel}}em">'
 + '    <div style="width: 2em; float: left; text-align: right">'
 + '      {{nanosToMillis duration}}{{#if active}}..{{/if}}'
 + '    </div>'
-+ '    <div style="margin-left: 4em">'
++ '    <div style="margin-left: 3em">'
 + '      {{#ifLongDescription message.text}}'
-+ '        <div class="sp spexpandable">'
++ '        <span class="expandable indent1">'
 // lack of spacing between first/middle/last text is important in these lines
-+ '          {{#first80 message.text}}{{/first80}}<span class="spmiddle">'
-+ '              ... </span><span class="spmiddle spmiddlex"'
-+ '              style="display: none">{{#middle message.text}}'
-+ '              {{/middle}}</span>{{#last80 message.text}}{{/last80}}'
-+ '        </div>'
++ '          {{first80 message.text}}<span class="unexpanded-content"> ... </span><span'
++ '             class="expanded-content hide">{{middle message.text}}</span>{{last80 message.text}}'
++ '        </span><br>'
 + '      {{^}}'
-+ '        <div class="sp">'
++ '        <div class="indent1">'
 + '          {{message.text}}'
 + '        </div>'
 + '      {{/ifLongDescription}}'
-+ '      <br>'
 + '      {{#if message.detail}}'
-+ '        <span class="lightbtn" style="margin-left: 1em" href="#"'
-+ '            onclick="$(\'#cm{{index}}\').toggle()">'
-+ '          detail'
-+ '        </span>'
-+ '        <br>'
-+ '        <div id="cm{{index}}" style="display: none">'
-+ '          <div style="margin-left: 1em">'
-+ '            {{#messageDetailHtml message.detail}}{{/messageDetailHtml}}'
++ '        <span class="expandable indent2 pad3">'
++ '          <div class="unexpanded-content red">detail</div>'
++ '          <div class="expanded-content hide">'
++ '            {{{messageDetailHtml message.detail}}}'
 + '          </div>'
-+ '        </div>'
++ '        </span><br>'
 + '      {{/if}}'
 + '      {{#if error}}'
-+ '        <b>{{error.text}}</b>'
-+ '        <br>'
-+ '        {{#if error.detail}}'
-+ '          <div style="margin-left: 1em">'
-+ '            {{#messageDetailHtml error.detail}}{{/messageDetailHtml}}'
-+ '          </div>'
-+ '        {{/if}}'
-+ '        {{#if error.exceptionBlockId}}'
-+ '          <div style="margin-left: 1em">'
-+ '            <span class="lightbtn" onclick="viewException(\'{{error.exceptionBlockId}}\')">'
-+ '              exception'
-+ '            </span>'
-+ '          </div>'
-+ '        {{/if}}'
-+ '      {{/if}}'
-+ '      {{#if stackTraceBlockId}}'
-+ '        <div class="lightbtn" onclick="viewStackTrace(\'{{stackTraceBlockId}}\')">'
-+ '          span stack trace'
++ '        <div class="indent2">'
++ '          <b><span class="indent1">{{error.text}}</span></b>'
++ '          <br>'
++ '          {{#if error.detail}}'
++ '            <div class="indent1">'
++ '              {{{messageDetailHtml error.detail}}}'
++ '            </div>'
++ '          {{/if}}'
++ '          {{#if error.exception}}'
++ '            <span class="expandable indent1 pad3">'
++ '              <div class="unexpanded-content red">exception</div>'
++ '              <div class="expanded-content hide nowrap">'
++ '                {{{exceptionHtml error.exception}}}'
++ '              </div>'
++ '            </span><br>'
++ '          {{/if}}'
 + '        </div>'
++ '      {{/if}}'
++ '      {{#if stackTrace}}'
++ '        <span class="expandable indent2 pad3">'
++ '          <div class="unexpanded-content red">span stack trace</div>'
++ '          <div class="expanded-content hide nowrap">'
++ '            {{{stackTraceHtml stackTrace}}}'
++ '          </div>'
++ '        </span><br>'
 + '      {{/if}}'
 + '    </div>'
 + '  </div>'
@@ -178,7 +184,7 @@ Handlebars.registerHelper('messageDetailHtml', function(detail) {
       ret += propName + ':'
       if (typeof propVal == 'object') {
         ret += '<br>'
-        ret += '<div style="margin-left: 1em">'
+        ret += '<div class="indent1">'
         ret += messageDetailHtml(propVal)
         ret += '</div>'
       } else {
@@ -233,15 +239,46 @@ Handlebars.registerHelper('ifShowExport', function(options) {
     return options.inverse(this)
   }
 })
-var summaryTrace
-var detailTrace
-var traceSummaryTemplate
-var traceDetailTemplate
-var spansTemplate
+Handlebars.registerHelper('exceptionHtml', function(exception) {
+  var html = '<b>'
+  while (exception) {
+    html += exception.display + '</b><br>'
+    for (var i = 0; i < exception.stackTrace.length; i++) {
+      html += '<span style="width: 4em; display: inline-block"></span>at '
+        + exception.stackTrace[i] + '<br>'
+    }
+    if (exception.framesInCommon) {
+      html += '... ' + exception.framesInCommon + ' more<br>'
+    }
+    exception = exception.cause
+    if (exception) {
+      html += "<b>Caused by: "
+    }
+  }
+  return html
+})
+Handlebars.registerHelper('stackTraceHtml', function(stackTrace) {
+  var html = ''
+  for (var i = 0; i < stackTrace.length; i++) {
+    html += stackTrace[i] + '<br>'
+  }
+  return html
+})
+var summaryTrace, detailTrace
+var traceSummaryTemplate, traceDetailTemplate, spansTemplate
+var smartToggleTimer
+var mousedownSpanPageX, mousedownSpanPageY
 $(document).ready(function() {
   traceSummaryTemplate = Handlebars.compile(traceSummaryTemplateText)
   traceDetailTemplate = Handlebars.compile(traceDetailTemplateText)
   spansTemplate = Handlebars.compile(spansTemplateText)
+  $(document).mousedown(function(e) {
+    mousedownSpanPageX = e.pageX
+    mousedownSpanPageY = e.pageY
+  })
+  $(document).on('click', '.expandable', function(e) {
+    smartToggle($(this).find('.unexpanded-content'), $(this).find('.expanded-content'), $(this), e)
+  })
 })
 function toggleSpans() {
   if ($('#sps').html() && $('#sps').is(':visible')) {
@@ -253,41 +290,6 @@ function toggleSpans() {
     }
   }
 }
-// sort of ok for clickSpanTimer to be global since it is temporary (cleared after 250 milliseconds)
-var clickSpanTimer
-// sort of ok for pageX and pageY to be global since they are just temporary bridge between
-// mousedown event and subsequent click event
-var mousedownSpanPageX, mousedownSpanPageY
-function mousedownSpan(e) {
-  mousedownSpanPageX = e.pageX
-  mousedownSpanPageY = e.pageY
-}
-function clickSpan(div, e) {
-  if (Math.abs(e.pageX - mousedownSpanPageX) > 5 || Math.abs(e.pageY - mousedownSpanPageY) > 5) {
-    // not a simple single click, probably highlighting text
-    return
-  }
-  if (clickSpanTimer) {
-    // double click, probably highlighting text
-    clearTimeout(clickSpanTimer)
-    clickSpanTimer = undefined
-    return
-  }
-  if ($(div).find('.spmiddlex').is(':visible')) {
-    // delay on hiding in order to not contract on double click text highlighting 
-    clickSpanTimer = setTimeout(function() {
-      $(div).find('.spmiddle').toggle()
-      clickSpanTimer = undefined
-    }, 250)
-  } else {
-    // no delay on expanding because it makes it feel sluggish
-    // (at the expense of double click text highlighting also expanding the span)
-    $(div).find('.spmiddle').toggle()
-    // but still create clickSpanTimer to prevent double click from expanding and then contracting
-    clickSpanTimer = setTimeout(function() { clickSpanTimer = undefined }, 500)
-    return
-  }
-}
 function renderNext(spans, start) {
   // large numbers of spans (e.g. 20,000) render much faster when grouped into sub-divs
   var html = '<div id="block' + start + '">'
@@ -296,28 +298,46 @@ function renderNext(spans, start) {
   }
   html += '</div>'
   $('#sps').append(html)
-  $('#block' + start + ' .spexpandable').mousedown(function(e) {mousedownSpan(e)})
-  $('#block' + start + ' .spexpandable').click(function(e) {clickSpan($(this), e)})
   if (start + 100 < spans.length) {
     setTimeout(function() { renderNext(spans, start + 100) }, 10)
   }
 }
-function toggleUninteresting(granularity) {
-  if ($('#mst' + granularity + 'Uninteresting').is(':visible')) {
-    $('#mst' + granularity + 'UninterestingLink').html('expand common base')
-    $('#mst' + granularity + 'Uninteresting').hide()
+function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e) {
+  if (Math.abs(e.pageX - mousedownSpanPageX) > 5 || Math.abs(e.pageY - mousedownSpanPageY) > 5) {
+    // not a simple single click, probably highlighting text
+    return
+  }
+  if (smartToggleTimer) {
+    // double click, probably highlighting text
+    clearTimeout(smartToggleTimer)
+    smartToggleTimer = undefined
+    return
+  }
+  if ($(unexpandedSelector).is(':visible')) {
+    // no delay on expanding because it makes it feel sluggish
+    // (at the expense of double click text highlighting also expanding the span)
+    $(unexpandedSelector).hide()
+    $(expandedSelector).show()
+    $(outerSelector).addClass('expanded')
+    // but still create smartToggleTimer to prevent double click from expanding and then contracting
+    smartToggleTimer = setTimeout(function() { smartToggleTimer = undefined }, 500)
   } else {
-    $('#mst' + granularity + 'UninterestingLink').html('shrink common base')
-    $('#mst' + granularity + 'Uninteresting').show()
+    // slight delay on hiding in order to not contract on double click text highlighting
+    smartToggleTimer = setTimeout(function() {
+      $(expandedSelector).hide()
+      $(unexpandedSelector).show()
+      $(outerSelector).removeClass('expanded')
+      smartToggleTimer = undefined
+    }, 250)
   }
 }
 function toggleCoarseMergedStackTree() {
-  toggleMergedStackTree(detailTrace.coarseMergedStackTree, 'Coarse')
+  toggleMergedStackTree(detailTrace.coarseMergedStackTree, $('#mstCoarseOuter'))
 }
 function toggleFineMergedStackTree() {
-  toggleMergedStackTree(detailTrace.fineMergedStackTree, 'Fine')
+  toggleMergedStackTree(detailTrace.fineMergedStackTree, $('#mstFineOuter'))
 }
-function toggleMergedStackTree(rootNode, granularity) {
+function toggleMergedStackTree(rootNode, selector) {
   function curr(node, level, metricName) {
     var rootNodeSampleCount
     var nodeSampleCount
@@ -334,14 +354,14 @@ function toggleMergedStackTree(rootNode, granularity) {
     if (nodeSampleCount < rootNodeSampleCount) {
       level++
     }
-    var ret = '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3) + 1)
+    var ret = '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3))
         + 'em">'
     var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100
     ret += samplePercentage.toFixed(1)
     ret += '%</span>'
     ret += node.stackTraceElement + '<br>'
     if (node.leafThreadState) {
-      ret += '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3) + 1)
+      ret += '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3))
           + 'em">'
       ret += samplePercentage.toFixed(1)
       ret += '%</span> '
@@ -364,10 +384,10 @@ function toggleMergedStackTree(rootNode, granularity) {
     }
     return ret
   }
-  if ($('#mst' + granularity + 'Outer').is(':visible')) {
-    $('#mst' + granularity + 'Outer').hide()
+  if ($(selector).is(':visible')) {
+    $(selector).hide()
   } else {
-    if (! $('#mst' + granularity).html()) {
+    if (! $(selector).find('.mst-interesting').html()) {
       // first time only, process merged stack tree and populate dropdown
       processMergedStackTree(rootNode)
       // build tree
@@ -413,9 +433,9 @@ function toggleMergedStackTree(rootNode, granularity) {
       // remove the root '' since all nodes are already under the single root span metric
       orderedNodes.splice(0, 1)
       // build filter dropdown
-      $('#mst' + granularity + 'Filter').html('')
+      $(selector).find('.mst-filter').html('')
       $.each(orderedNodes, function(i, node) {
-        $('#mst' + granularity + 'Filter').append($('<option />').val(node.name)
+        $(selector).find('.mst-filter').append($('<option />').val(node.name)
             .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'))
       })
       var i = 0
@@ -429,25 +449,25 @@ function toggleMergedStackTree(rootNode, granularity) {
         if (childNode.leafThreadState) {
           break
         }
-        uninterestingHtml += '<span style="display: inline-block; width: 4em; margin-left: 1em">'
-          + '100.0%</span>' + interestingRootNode.stackTraceElement + '<br>'
+        uninterestingHtml += '<span style="display: inline-block; width: 4em">100.0%</span>'
+            + interestingRootNode.stackTraceElement + '<br>'
         interestingRootNode = childNode
         i++
       }
-      $('#mst' + granularity + 'Filter').change(function() {
+      $(selector).find('.mst-filter').change(function() {
         // update merged stack tree based on filter
         var interestingHtml = curr(interestingRootNode, 0, $(this).val())
-        $('#mst' + granularity + 'UninterestingOuter').show()
-        $('#mst' + granularity + 'Uninteresting').html(uninterestingHtml)
-        $('#mst' + granularity + 'Interesting').html(interestingHtml)
+        $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
+        $(selector).find('.mst-common').show()
+        $(selector).find('.mst-interesting').html(interestingHtml)
       })
       // build initial merged stack tree
       var interestingHtml = curr(interestingRootNode, 0)
-      $('#mst' + granularity + 'UninterestingOuter').show()
-      $('#mst' + granularity + 'Uninteresting').html(uninterestingHtml)
-      $('#mst' + granularity + 'Interesting').html(interestingHtml)
+      $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
+      $(selector).find('.mst-common').show()
+      $(selector).find('.mst-interesting').html(interestingHtml)
     }
-    $('#mst' + granularity + 'Outer').show()
+    $(selector).show()
   }
 }
 // TODO move inside toggleMergedStackTree enclosure
@@ -482,69 +502,4 @@ function processMergedStackTree(rootNode) {
     return mergedCounts
   }
   calculateMetricNameCounts(rootNode)
-}
-var newline = navigator.platform.indexOf('Win') == -1 ? "\n" : "\r\n"
-function viewStackTrace(stackTraceBlockId) {
-  $.getJSON('block/' + stackTraceBlockId, function(stackTrace) {
-    var html = ''
-    var clippyText = ''
-    for (var i = 0; i < stackTrace.length; i++) {
-      html += stackTrace[i] + '<br>'
-      clippyText += stackTrace[i] + newline
-    }
-    displayModal('Stack Trace', html, clippyText)
-  })
-}
-function viewException(exceptionBlockId) {
-  $.getJSON('block/' + exceptionBlockId, function(exception) {
-    var html = '<b>'
-    var clippyText = ''
-    while (exception) {
-      html += exception.display + '</b><br>'
-      clippyText += exception.display + newline
-      for (var i = 0; i < exception.stackTrace.length; i++) {
-        html += '<span style="width: 4em; display: inline-block"></span>at '
-          + exception.stackTrace[i] + '<br>'
-        clippyText += '    at ' + exception.stackTrace[i] + newline
-      }
-      if (exception.framesInCommon) {
-        html += '... ' + exception.framesInCommon + ' more<br>'
-        clippyText += '... ' + exception.framesInCommon + ' more' + newline
-      }
-      exception = exception.cause
-      if (exception) {
-        html += "<b>Caused by: "
-        clippyText += "Caused by: "
-      }
-    }
-    displayModal('Exception', html, clippyText)
-  })
-}
-function displayModal(title, html, clippyText) {
-  $('#modalTitle').text(title)
-  $('#modalBody').html(html)
-  // clippy swf must be re-initialized each time with the (updated) text, but it cannot be
-  // re-initialized on the same element so a disposable inner element is created each time
-  $('#modalClippy').html('<span id="modalClippyDisposable"></span>')
-  $('#modalClippyDisposable').data('text', clippyText)
-  $('#modalClippyDisposable').clippy({
-    clippy_path: 'libs/clippy-jquery/0.1-nightly-20120701/clippy.swf'
-  })
-  $('#modal').modal('show')
-  $('#modalBody').css({
-    'max-width': function () {
-        return $(window).width() * .8;
-    },
-    'max-height': function () {
-      return $(window).height() * .8 - $('#modalHeader').height();
-    }
-  })
-  $('#modal').css({
-    'margin-left': function () {
-        return -($(this).width() / 2);
-    },
-    'margin-top': function () {
-      return -($(this).height() / 2);
-    }
-  })
 }

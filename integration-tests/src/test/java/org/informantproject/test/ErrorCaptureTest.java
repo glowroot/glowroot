@@ -83,8 +83,7 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        String exceptionBlockId = trace.getSpans().get(1).getError().getExceptionBlockId();
-        CapturedException exception = container.getInformant().getException(exceptionBlockId);
+        CapturedException exception = trace.getSpans().get(1).getError().getException();
         assertThat(exception.getStackTrace().get(0)).startsWith(
                 ShouldCaptureErrorWithSpanStackTrace.class.getName() + ".traceMarker(");
     }
@@ -101,8 +100,7 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        String exceptionBlockId = trace.getSpans().get(1).getError().getExceptionBlockId();
-        CapturedException exception = container.getInformant().getException(exceptionBlockId);
+        CapturedException exception = trace.getSpans().get(1).getError().getException();
         assertThat(exception.getDisplay()).isEqualTo(
                 "java.lang.Exception: java.lang.IllegalArgumentException: caused 3");
         assertThat(exception.getStackTrace().get(0)).startsWith(

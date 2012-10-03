@@ -147,7 +147,12 @@ public abstract class ByteStream {
 
         public Object nextChunk() throws IOException {
             if (byteStream.hasNext()) {
-                return new DefaultHttpChunk(ChannelBuffers.wrappedBuffer(byteStream.next()));
+                byte[] next = byteStream.next();
+                if (next.length == 0) {
+                    return nextChunk();
+                } else {
+                    return new DefaultHttpChunk(ChannelBuffers.wrappedBuffer(next));
+                }
             } else if (hasNotSentTerminatingChunk) {
                 hasNotSentTerminatingChunk = false;
                 return new DefaultHttpChunk(ChannelBuffers.EMPTY_BUFFER);

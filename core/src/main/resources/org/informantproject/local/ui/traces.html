@@ -51,8 +51,6 @@
 </script>
 <script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
 <script type="text/javascript" src="libs/qtip/2.0.0-nightly-20120910/jquery.qtip.min.js"></script>
-<script type="text/javascript" src="libs/clippy-jquery/0.1-nightly-20120701/jquery.clippy.min.js">
-</script>
 <script type="text/javascript" src="js/traces.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/javascript">
@@ -448,9 +446,8 @@
 <body>
   <h1 class="header">
     <a class="header-logo" href=".">
-      <!-- lack of spaces on this line is important -->
-      Informant</a><span class="header-page-name">Trace explorer
-      </span>
+        <!-- lack of spaces on this line is important -->
+        Informant</a><span class="header-page-name">Trace explorer</span>
     <span class="header-see-also">see also: <a href="configuration.html">configuration</a></span>
   </h1>
   <br>
@@ -576,7 +573,7 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <span class="lightbtn" id="moreFiltersLink">
+              <span class="lightbtn red" id="moreFiltersLink">
                 more filters
               </span>
             </div>
@@ -588,13 +585,6 @@
       <div class="button-spinner" id="detailTabSpinner" style="margin: 20px 30px"></div>
       <div id="detailTabContent"></div>
     </div>
-  </div>
-  <div class="modal hide" id="modal" tabindex="-1" style="overflow: hidden; width: auto">
-    <div class="modal-header" id="modalHeader">
-      <button class="close" data-dismiss="modal">&times;</button>
-      <h3><span id="modalTitle"></span> <span id="modalClippy"></span></h3>
-    </div>
-    <div class="modal-body" id="modalBody" style="white-space: nowrap"></div>
   </div>
 </body>
 </html>

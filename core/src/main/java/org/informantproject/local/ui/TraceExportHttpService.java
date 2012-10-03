@@ -81,7 +81,7 @@ class TraceExportHttpService implements HttpService {
         String filename = "trace-" + id;
         String templateContent = getResourceContent("org/informantproject/local/ui"
                 + "/trace-export.html");
-        Pattern pattern = Pattern.compile("\\{\\{#include ([^}]+)\\}\\}");
+        Pattern pattern = Pattern.compile("\\{\\{include ([^}]+)\\}\\}");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<ByteStream> byteStreams = Lists.newArrayList();
@@ -145,7 +145,8 @@ class TraceExportHttpService implements HttpService {
 
         @Override
         public byte[] next() throws IOException {
-            zipOut.write(byteStream.next());
+            byte[] next = byteStream.next();
+            zipOut.write(next);
             zipOut.flush();
             if (!byteStream.hasNext()) {
                 // need to close zip output stream in the final chunk

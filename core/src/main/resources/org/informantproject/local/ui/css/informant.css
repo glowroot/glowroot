@@ -57,6 +57,10 @@ body {
   padding-right: 10px;
   vertical-align: 1px;
 }
+.header-logo-export {
+  font-family: 'Special Elite';
+  color: #b12930;
+}
 .header-page-name {
   color: #444444;
   padding-left: 10px;
@@ -111,30 +115,46 @@ a, a:hover {
   padding-left: 20px;
   text-indent: -20px;
 }
-.sp {
-  display: inline-block;
-  padding: 0 4px;
-}
-.spexpandable {
-  cursor: pointer;
-}
-.spexpandable:hover {
-  background-color:#EEE;
-  border-radius: 4px;
-}
-body.modal-open {
-  /* !important is needed to trump 'overflow-y: scroll' in traces.html */
-  overflow-y: hidden; !important
-}
 .lightbtn {
   display: inline-block;
-  color: #b12930;
   cursor: pointer;
   padding: 0 4px;
+  border-radius: 4px;
 }
 .lightbtn:hover {
   background-color:#DDD;
+}
+.expandable {
+  display: inline-block;
+  cursor: pointer;
   border-radius: 4px;
+}
+.expandable:hover {
+  background-color:#DDD;
+}
+.expanded {
+  background-color:#EEE;
+  /* margin for white space between successive expanded elements, at the bottom so that
+     expanding doesn't create jitter/shift down of expanding section */
+  margin-bottom: 4px;
+}
+.expanded:hover {
+  background-color:#DDD;
+}
+.red {
+  color: #b12930;
+}
+.indent1 {
+  margin-left: 1em;
+}
+.indent2 {
+  margin-left: 2em;
+}
+.pad3 {
+  padding: 2px 1em;
+}
+.nowrap {
+  white-space: nowrap;
 }
 /* slightly darken bootstrap tabs to match .lightbtn */
 .nav-tabs > li > a:hover {
@@ -142,8 +162,4 @@ body.modal-open {
 }
 .nav > li > a:hover {
   background-color: #DDD;
-}
-/* reduce opacity of bootstrap modal background */
-.modal-backdrop, .modal-backdrop.fade.in {
-  opacity: 0.4;
 }

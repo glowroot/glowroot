@@ -39,21 +39,18 @@ import org.informantproject.api.MessageSupplier;
 import org.informantproject.core.config.ConfigService;
 import org.informantproject.core.config.CoreConfig;
 import org.informantproject.core.trace.MergedStackTree;
+import org.informantproject.core.trace.MergedStackTree.StackTraceElementPlus;
 import org.informantproject.core.trace.MergedStackTreeNode;
 import org.informantproject.core.trace.Span;
 import org.informantproject.core.trace.Trace;
 import org.informantproject.core.trace.TraceMetric;
-import org.informantproject.core.trace.MergedStackTree.StackTraceElementPlus;
 import org.informantproject.core.trace.TraceMetric.Snapshot;
 import org.informantproject.core.util.ByteStream;
-import org.informantproject.core.util.FileBlock;
-import org.informantproject.core.util.RollingFile;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
@@ -72,12 +69,10 @@ public class TraceSnapshotService {
 
     private static final Gson gson = new Gson();
 
-    private final RollingFile rollingFile;
     private final ConfigService configService;
 
     @Inject
-    TraceSnapshotService(RollingFile rollingFile, ConfigService configService) {
-        this.rollingFile = rollingFile;
+    TraceSnapshotService(ConfigService configService) {
         this.configService = configService;
     }
 
@@ -129,11 +124,8 @@ public class TraceSnapshotService {
         builder.userId(trace.getUserId());
         builder.metrics(getMetricsJson(trace));
         if (includeDetail) {
-            Map<CapturedException, String> exceptionBlockIds = Maps.newIdentityHashMap();
-            Map<StackTraceElement[], String> stackTraceBlockIds = Maps.newIdentityHashMap();
-            writeSubDetail(trace.getSpans(), captureTick, exceptionBlockIds, stackTraceBlockIds);
             SpansByteStream spansByteStream = new SpansByteStream(trace.getSpans().iterator(),
-                    captureTick, exceptionBlockIds, stackTraceBlockIds);
+                    captureTick);
             builder.spans(spansByteStream);
             builder.coarseMergedStackTree(TraceSnapshotService.getMergedStackTree(trace
                     .getCoarseMergedStackTree()));
@@ -141,33 +133,6 @@ public class TraceSnapshotService {
                     .getFineMergedStackTree()));
         }
         return builder.build();
-    }
-
-    private void writeSubDetail(Iterable<Span> spans, long captureTick,
-            Map<CapturedException, String> exceptionBlockIds,
-            Map<StackTraceElement[], String> stackTraceBlockIds) throws IOException {
-
-        for (Span span : spans) {
-            if (span.getStartTick() > captureTick) {
-                // this span started after the capture tick
-                return;
-            }
-            ErrorMessage errorMessage = span.getErrorMessage();
-            if (errorMessage != null) {
-                CapturedException exception = errorMessage.getException();
-                if (exception != null) {
-                    FileBlock exceptionBlock = rollingFile.write(ByteStream
-                            .of(getExceptionJson(exception)));
-                    exceptionBlockIds.put(exception, exceptionBlock.getId());
-                }
-            }
-            StackTraceElement[] stackTrace = span.getStackTrace();
-            if (stackTrace != null) {
-                FileBlock stackTraceBlock = rollingFile.write(ByteStream
-                        .of(getStackTraceJson(stackTrace)));
-                stackTraceBlockIds.put(stackTrace, stackTraceBlock.getId());
-            }
-        }
     }
 
     public boolean shouldPersist(Trace trace) {
@@ -377,20 +342,13 @@ public class TraceSnapshotService {
 
         private final Iterator<Span> spans;
         private final long captureTick;
-        private final Map<CapturedException, String> exceptionBlockIds;
-        private final Map<StackTraceElement[], String> stackTraceBlockIds;
         private final ByteArrayOutputStream baos;
         private final Writer raw;
         private final JsonWriter jw;
 
-        private SpansByteStream(Iterator<Span> spans, long captureTick,
-                Map<CapturedException, String> exceptionBlockIds,
-                Map<StackTraceElement[], String> stackTraceBlockIds) throws IOException {
-
+        private SpansByteStream(Iterator<Span> spans, long captureTick) throws IOException {
             this.spans = spans;
             this.captureTick = captureTick;
-            this.exceptionBlockIds = exceptionBlockIds;
-            this.stackTraceBlockIds = stackTraceBlockIds;
             baos = new ByteArrayOutputStream(2 * TARGET_CHUNK_SIZE);
             raw = new OutputStreamWriter(baos, Charsets.UTF_8);
             jw = new JsonWriter(raw);
@@ -476,29 +434,17 @@ public class TraceSnapshotService {
                     jw.name("detail");
                     new MessageDetailSerializer(jw).write(detail);
                 }
-                // lazy loading exceptions to improve trace snapshot ui responsiveness
                 CapturedException exception = errorMessage.getException();
                 if (exception != null) {
-                    // it's possible (and ok) that this is a live trace and span exception was
-                    // just created and missing from exceptionBlockIds
-                    String exceptionBlockId = exceptionBlockIds.get(exception);
-                    if (exceptionBlockId != null) {
-                        jw.name("exceptionBlockId");
-                        jw.value(exceptionBlockId);
-                    }
+                    jw.name("exception");
+                    writeException(exception, jw);
                 }
                 jw.endObject();
             }
-            // lazy loading stack traces to improve trace snapshot ui responsiveness
             StackTraceElement[] stackTrace = span.getStackTrace();
             if (stackTrace != null) {
-                // it's possible (and ok) that this is a live trace and span stack trace was just
-                // created and missing from stackTraceBlockIds
-                String stackTraceBlockId = stackTraceBlockIds.get(stackTrace);
-                if (stackTraceBlockId != null) {
-                    jw.name("stackTraceBlockId");
-                    jw.value(stackTraceBlockId);
-                }
+                jw.name("stackTrace");
+                writeStackTrace(stackTrace, jw);
             }
             jw.endObject();
         }

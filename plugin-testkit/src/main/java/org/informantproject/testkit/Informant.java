@@ -16,6 +16,7 @@
 package org.informantproject.testkit;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -71,6 +72,13 @@ public class Informant {
                 + path);
         Response response = request.execute().get();
         return validateAndReturnBody(response);
+    }
+
+    public InputStream getAsStream(String path) throws Exception {
+        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
+                + path);
+        Response response = request.execute().get();
+        return validateAndReturnBodyAsStream(response);
     }
 
     private String post(String path, String data) throws Exception {
@@ -305,6 +313,18 @@ public class Informant {
         }
         if (response.getStatusCode() == HttpResponseStatus.OK.getCode()) {
             return response.getResponseBody();
+        } else {
+            throw new IllegalStateException("Unexpected HTTP status code returned: "
+                    + response.getStatusCode() + " (" + response.getStatusText() + ")");
+        }
+    }
+
+    private static InputStream validateAndReturnBodyAsStream(Response response) throws IOException {
+        if (wasUncompressed(response)) {
+            throw new IllegalStateException("HTTP response was not compressed");
+        }
+        if (response.getStatusCode() == HttpResponseStatus.OK.getCode()) {
+            return response.getResponseBodyAsStream();
         } else {
             throw new IllegalStateException("Unexpected HTTP status code returned: "
                     + response.getStatusCode() + " (" + response.getStatusText() + ")");
