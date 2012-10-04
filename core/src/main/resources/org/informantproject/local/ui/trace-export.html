@@ -39,7 +39,6 @@
   {{include org/informantproject/local/ui/js/traces.js}}
 </script>
 <script type="text/javascript">
-  var exportPage = true // this prevents export button from showing on traces
   detailTrace = {{include detailTrace}}
   $(document).ready(function() {
     var html = traceSummaryTemplate(detailTrace)

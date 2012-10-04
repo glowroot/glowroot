@@ -29,14 +29,11 @@
 <script type="text/javascript" src="js/informant.js"></script>
 </head>
 <script type="text/x-handlebars-template" id="logTemplate">
-<pre>
-{{#each .}}
-<b>{{#formatTimestamp timestamp}}{{/formatTimestamp}}</b> {{level}} {{text}}{{#if exception}}
+{{#each .}}<b>{{formatTimestamp timestamp}}</b> {{level}} {{text}}{{#if exception}}
 {{exception.display}}
 {{#each exception.stackTrace}}        {{.}}
 {{/each}}{{^}}
 {{/if}}{{/each}}
-</pre>
 </script>
 <script type="text/javascript">
   Handlebars.registerHelper('formatTimestamp', function(timestamp, options) {
@@ -59,6 +56,8 @@
       <a href="configuration.html">configuration</a>
     </span>
   </h1>
-  <div id="log"></div>
+  <br>
+  <br>
+  <div class="flat-pre" id="log"></div>
 </body>
 </html>

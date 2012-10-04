@@ -36,7 +36,7 @@ body {
 }
 .index-logo {
   font-family: 'SpecialElite-Regular';
-  font-size: 40px;
+  font-size: 48px;
   color: #b12930;
 }
 .index-item {
@@ -45,6 +45,11 @@ body {
 .index-item > a, .index-item > a:hover {
   color: #444444;
 }
+.index-item > a {
+  color: #444444;
+  padding: 8px 24px;
+  border-radius: 12px;
+}
 .header {
   font-weight: normal;
   margin-bottom: 24px;
@@ -52,10 +57,10 @@ body {
 .header-logo {
   font-family: 'SpecialElite-Regular';
   font-size: 38px;
-  border-right: 3px solid #555555;
-  padding-top: 6px;
-  padding-right: 10px;
+  padding: 8px 12px 1px 12px;
   vertical-align: 1px;
+  border-radius: 8px;
+  background-color: #EEE;
 }
 .header-logo-export {
   font-family: 'Special Elite';
@@ -63,7 +68,7 @@ body {
 }
 .header-page-name {
   color: #444444;
-  padding-left: 10px;
+  padding-left: 14px;
 }
 .header-see-also {
   float: right;
@@ -88,16 +93,20 @@ body {
   padding-right: 16px;
   text-align: right;
 }
-a, a:hover {
+a {
+  text-decoration: none;
   color: #b12930;
+  /* extra vertical padding only applies if line-height accommodates it */
+  padding: 4px 4px;
+  /* this is for links inside of other text, so negative margin so that padding doesn't create gap
+     before or after the link */
+  margin: 0 -4px;
+  border-radius: 4px;
 }
-.btn-on.active {
-  color: green;
-  font-weight: bold;
-}
-.btn-off.active {
-  color: red;
-  font-weight: bold;
+a:hover {
+  text-decoration: none;
+  color: #b12930;
+  background-color:#DDD;
 }
 .input-medium0 {
   width:135px;
@@ -105,11 +114,13 @@ a, a:hover {
 .input-xlarge0 {
   width:270px;
 }
-/* override properties on qtip tooltip from query.qtip.min.css */
-.ui-tooltip, .qtip {
+.qtip-override {
   max-width: 500px;
   font-size: 12px;
   line-height: 14px;
+}
+.qtip-override .ui-tooltip-content {
+  padding: 1em 0.5em 0.75em 0.5em;
 }
 .second-line-indent {
   padding-left: 20px;
@@ -150,7 +161,7 @@ a, a:hover {
 .indent2 {
   margin-left: 2em;
 }
-.pad3 {
+.pad1 {
   padding: 2px 1em;
 }
 .nowrap {
@@ -162,4 +173,49 @@ a, a:hover {
 }
 .nav > li > a:hover {
   background-color: #DDD;
+}
+.configuration-header {
+  cursor: pointer;
+  padding: 8px 1em;
+  border-radius: 6px;
+  background-color: #EEE;
+  vertical-align: middle;
+  font-size: 19px;
+  max-width: 800px;
+}
+.configuration-header:hover {
+  background-color:#DDD;
+}
+.configuration-status {
+  float: right;
+}
+.configuration-form {
+  background-color: #EEE;
+  border-radius: 8px;
+  max-width: 800px;
+}
+.configuration-form-properties {
+  padding: 16px 16px 0 16px;
+}
+.configuration-form-save {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+/* slightly modified version of bootstrap's pre */
+.flat-pre {
+  padding: 0 3px 2px;
+  font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  color: #333333;
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 20px;
+  word-break: break-all;
+  word-wrap: break-word;
+  white-space: pre;
+  white-space: pre-wrap;
+  background-color: #eee;
+  border-radius: 8px;
 }

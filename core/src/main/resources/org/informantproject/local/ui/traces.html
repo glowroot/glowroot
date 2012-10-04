@@ -345,16 +345,20 @@
         }
         summaryTrace = response
         var html = traceSummaryTemplate(summaryTrace)
-        var showDetailHtml = '<br><div id="showDetailOuter" style="color: #b12930">'
-            + '<a id="showDetail" href="#">show detail</a></div>'
+        var showDetailHtml = '<div style="margin-top: 0.5em">'
+            + '<div class="lightbtn red pad1" id="showDetail"'
+            + ' style="padding-top: 4px; padding-bottom: 4px">show detail</div></div>'
         $('#placeholder').qtip({
           content: {
-            text: html + showDetailHtml
+            text: '<div class="indent1">' + html + '</div>' + showDetailHtml
           },
           position: {
             my: 'bottom center',
             target: [ x , y + 5 ],
             viewport: $('#tooltipBoundary')
+          },
+          style: {
+            classes: 'qtip-override'
           },
           hide: {
             event: 'unfocus'
@@ -381,9 +385,10 @@
             }
             loadDetailId = undefined
             detailTrace = response
+            detailTrace.showExport = true
             var html = traceSummaryTemplate(detailTrace)
             hideSpinner('#detailTabSpinner')
-            $('#detailTabContent').html(html)
+            $('#detailTabContent').html('<div class="indent1">' + html + '</div>')
             $('#detailTabContent').append('<br>')
             var detailHtml = traceDetailTemplate(detailTrace)
             hideTooltip()
@@ -563,18 +568,18 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <button type="button" class="btn" id="refreshButton">Refresh</button>
-              <div class="button-spinner" id="refreshButtonSpinner"></div>
-              <span class="button-success-message" id="refreshButtonCancelByZoom"
-                  style="color: red">
-                Refresh canceled by zoom action
+              <span class="lightbtn pad1 red" id="moreFiltersLink" style="margin-left: -1em">
+                more filters
               </span>
             </div>
           </div>
           <div class="control-group">
             <div class="controls">
-              <span class="lightbtn red" id="moreFiltersLink">
-                more filters
+              <button type="button" class="btn" id="refreshButton">Refresh</button>
+              <div class="button-spinner" id="refreshButtonSpinner"></div>
+              <span class="button-success-message" id="refreshButtonCancelByZoom"
+                  style="color: red">
+                Refresh canceled by zoom action
               </span>
             </div>
           </div>
