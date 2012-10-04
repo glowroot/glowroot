@@ -78,7 +78,7 @@ public class HttpServer extends HttpServerBase {
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
-            MiscJsonService miscJsonService, PluginJsonService pluginJsonService) {
+            MiscJsonService miscJsonService) {
 
         super(port);
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
@@ -88,8 +88,6 @@ public class HttpServer extends HttpServerBase {
                 "org/informantproject/local/ui/traces.html");
         uriMappings.put(Pattern.compile("^/configuration.html$"),
                 "org/informantproject/local/ui/configuration.html");
-        uriMappings.put(Pattern.compile("^/plugins.html$"),
-                "org/informantproject/local/ui/plugins.html");
         uriMappings.put(Pattern.compile("^/misc.html$"), "org/informantproject/local/ui/misc.html");
         uriMappings.put(Pattern.compile("^/threaddump.html$"),
                 "org/informantproject/local/ui/threaddump.html");
@@ -145,12 +143,6 @@ public class HttpServer extends HttpServerBase {
                 + "/([^/]+)/disable"), configJsonService, "disablePlugin"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)$"), configJsonService, "storePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/plugin/packaged$"),
-                pluginJsonService, "getPackagedPlugins"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/plugin/installed$"),
-                pluginJsonService, "getInstalledPlugins"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/plugin/installable$"),
-                pluginJsonService, "getInstallablePlugins"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/cleardata$"),
                 miscJsonService, "clearData"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc"

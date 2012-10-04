@@ -26,7 +26,6 @@ import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.weaving.Advice;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -119,21 +118,6 @@ public class PluginDescriptor {
     @Nullable
     PropertyDescriptor getPropertyDescriptor(String propertyName) {
         return propertyDescriptorsByName.get(propertyName);
-    }
-
-    // equality is defined only in terms of groupId and artifactId
-    @Override
-    public boolean equals(@Nullable Object o) {
-        if (!(o instanceof PluginDescriptor)) {
-            return false;
-        }
-        PluginDescriptor other = (PluginDescriptor) o;
-        return groupId.equals(other.groupId) && artifactId.equals(other.artifactId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(groupId, artifactId);
     }
 
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
