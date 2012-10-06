@@ -194,7 +194,7 @@ public class Informant {
     }
 
     public List<LogMessage> getLog() throws Exception {
-        return gson.fromJson(get("/misc/log"), new TypeToken<List<LogMessage>>() {}.getType());
+        return gson.fromJson(get("/admin/log"), new TypeToken<List<LogMessage>>() {}.getType());
     }
 
     private Trace getLastTrace(boolean summary) throws Exception {
@@ -267,11 +267,11 @@ public class Informant {
     }
 
     public void deleteAllTraces() throws Exception {
-        get("/misc/cleardata?keepMillis=0&compact=true");
+        get("/admin/truncate");
     }
 
     public int getNumPendingTraceWrites() throws Exception {
-        String numTraces = get("/misc/numPendingTraceWrites");
+        String numTraces = get("/admin/numPendingTraceWrites");
         return Integer.parseInt(numTraces);
     }
 

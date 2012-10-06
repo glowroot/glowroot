@@ -16,26 +16,18 @@
 package org.informantproject.local.ui;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
-import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.local.log.LogMessage;
 import org.informantproject.local.log.LogMessageDao;
 import org.informantproject.local.trace.TraceSinkLocal;
 import org.informantproject.local.trace.TraceSnapshotDao;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -47,25 +39,40 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class MiscJsonService implements JsonService {
+class AdminJsonService implements JsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MiscJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
     private final LogMessageDao logMessageDao;
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceSinkLocal traceSinkLocal;
     private final DataSource dataSource;
-    private final Clock clock;
 
     @Inject
-    MiscJsonService(LogMessageDao logMessageDao, TraceSnapshotDao traceSnapshotDao,
-            TraceSinkLocal traceSinkLocal, DataSource dataSource, Clock clock) {
+    AdminJsonService(LogMessageDao logMessageDao, TraceSnapshotDao traceSnapshotDao,
+            TraceSinkLocal traceSinkLocal, DataSource dataSource) {
 
         this.logMessageDao = logMessageDao;
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceSinkLocal = traceSinkLocal;
         this.dataSource = dataSource;
-        this.clock = clock;
+    }
+
+    @JsonServiceMethod
+    void compact() {
+        logger.debug("compact()");
+        try {
+            dataSource.compact();
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    @JsonServiceMethod
+    void truncate() {
+        logger.debug("truncate()");
+        traceSnapshotDao.deleteAllSnapshots();
+        compact();
     }
 
     @JsonServiceMethod
@@ -97,64 +104,6 @@ class MiscJsonService implements JsonService {
             return null;
         }
         return sb.toString();
-    }
-
-    @JsonServiceMethod
-    String getThreadDump() throws IOException {
-        logger.debug("getThreadDump()");
-        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        List<ThreadInfo> threadInfos = Lists.newArrayList();
-        long[] threadIds = threadBean.getAllThreadIds();
-        // sort thread ids for consistent results across F5 refresh
-        Arrays.sort(threadIds);
-        for (long threadId : threadIds) {
-            ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
-            if (threadInfo != null) {
-                threadInfos.add(threadInfo);
-            }
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        jw.beginArray();
-        for (ThreadInfo threadInfo : threadInfos) {
-            jw.beginObject();
-            jw.name("name");
-            jw.value(threadInfo.getThreadName());
-            jw.name("state");
-            jw.value(threadInfo.getThreadState().name());
-            jw.name("lockName");
-            jw.value(threadInfo.getLockName());
-            jw.name("stackTrace");
-            jw.beginArray();
-            for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-                jw.value(stackTraceElement.toString());
-            }
-            jw.endArray();
-            jw.endObject();
-        }
-        jw.endArray();
-        jw.close();
-        return sb.toString();
-    }
-
-    @JsonServiceMethod
-    void clearData(String message) {
-        logger.debug("handleCleardata(): message={}", message);
-        JsonObject request = new JsonParser().parse(message).getAsJsonObject();
-        long keepMillis = request.get("keepMillis").getAsLong();
-        boolean compact = request.get("compact").getAsBoolean();
-        if (keepMillis == 0) {
-            traceSnapshotDao.deleteAllSnapshots();
-        } else {
-            traceSnapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis() - keepMillis);
-        }
-        if (compact) {
-            try {
-                dataSource.compact();
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
     }
 
     @JsonServiceMethod

@@ -16,6 +16,7 @@
 package org.informantproject.local.ui;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.MOVED_PERMANENTLY;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -40,6 +41,7 @@ import org.informantproject.core.util.HttpServerBase;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -78,21 +80,19 @@ public class HttpServer extends HttpServerBase {
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
-            MiscJsonService miscJsonService) {
+            ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
 
         super(port);
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
-        uriMappings.put(Pattern.compile("^/$"), "org/informantproject/local/ui/index.html");
         uriMappings.put(Pattern.compile("^/traces.html$"),
                 "org/informantproject/local/ui/traces.html");
         uriMappings.put(Pattern.compile("^/configuration.html$"),
                 "org/informantproject/local/ui/configuration.html");
-        uriMappings.put(Pattern.compile("^/misc.html$"), "org/informantproject/local/ui/misc.html");
         uriMappings.put(Pattern.compile("^/threaddump.html$"),
                 "org/informantproject/local/ui/threaddump.html");
-        uriMappings.put(Pattern.compile("^/log.html$"),
-                "org/informantproject/local/ui/log.html");
+        uriMappings.put(Pattern.compile("^/admin.html$"),
+                "org/informantproject/local/ui/admin.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "org/informantproject/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "org/informantproject/local/ui/css/$1");
@@ -143,16 +143,18 @@ public class HttpServer extends HttpServerBase {
                 + "/([^/]+)/disable"), configJsonService, "disablePlugin"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)$"), configJsonService, "storePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/cleardata$"),
-                miscJsonService, "clearData"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc"
-                + "/numPendingTraceWrites$"), miscJsonService, "getNumPendingTraceWrites"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/dbFile$"),
-                miscJsonService, "getDbFilePath"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/threaddump$"),
-                miscJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/misc/log"),
-                miscJsonService, "getLog"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/threaddump$"),
+                threadDumpJsonService, "getThreadDump"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/compact$"),
+                adminJsonService, "compact"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/truncate$"),
+                adminJsonService, "truncate"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin"
+                + "/numPendingTraceWrites$"), adminJsonService, "getNumPendingTraceWrites"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/dbFile$"),
+                adminJsonService, "getDbFilePath"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/log"),
+                adminJsonService, "getLog"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
 
@@ -163,6 +165,11 @@ public class HttpServer extends HttpServerBase {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
         logger.debug("handleRequest(): path={}", path);
+        if (path.equals("/")) {
+            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, MOVED_PERMANENTLY);
+            response.setHeader(HttpHeaders.Names.LOCATION, "traces.html");
+            return response;
+        }
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
@@ -191,7 +198,7 @@ public class HttpServer extends HttpServerBase {
         logger.warn("unexpected uri '{}'", request.getUri());
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
-
+    
     private static HttpResponse handleStaticRequest(String path) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {

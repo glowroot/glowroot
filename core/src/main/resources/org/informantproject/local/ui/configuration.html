@@ -27,13 +27,14 @@
 <script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
-<div class="configuration-header" onclick="$('#form_' + escapeForSelector('{{id}}')).toggle()">
-  {{name}} <span class="configuration-status" id="{{id}}_status">ON</span>
+<div class="section-header" onclick="$('#form_' + escapeForSelector('{{id}}')).toggle()">
+  <button class="section-toggle">{{name}}</button>
+  <span class="configuration-status" id="{{id}}_status">ON</span>
 </div>
 <br>
-<form class="configuration-form form-horizontal hide" id="form_{{id}}" style="margin-left: 40px">
+<form class="section-body form-horizontal hide" id="form_{{id}}">
   <fieldset>
-    <div class="configuration-form-properties">
+    <div class="section-body-padding">
       <div class="control-group">
         <label class="control-label" for="{{id}}_enabled">Enabled</label>
         <div class="controls">
@@ -82,11 +83,9 @@
         {{/ifDouble}}
       {{/each}}
     </div>
-    <div class="form-actions configuration-form-save">
-      <button type="button" class="btn" onclick="updatePluginConfig('{{id}}')">
-        Save changes
-      </button>
-      <div class="button-success-message" id="{{id}}_saveComplete">Saved</div>
+    <div class="form-actions section-body-save">
+      <button type="button" class="btn" onclick="updatePluginConfig('{{id}}')">Save changes</button>
+      <span class="button-success-message" id="{{id}}_saveComplete">Saved</span>
     </div>
   </fieldset>
 </form>
@@ -370,19 +369,30 @@
 </script>
 </head>
 <body>
-  <h1 class="header">
-    <a class="header-logo" href=".">Informant</a><span class="header-page-name">Configuration</span>
-    <span class="header-see-also">see also: <a href="traces.html">trace explorer</a></span>
-  </h1>
-  <br>
-  <br>
-  <div class="configuration-header" onclick="$('#coreForm').toggle()">
-    General <span class="configuration-status" id="coreStatus">ON</span> 
+  <div class="header">
+    <a class="header-logo" href=".">
+        <!-- lack of spaces on this line is important -->
+        Informant</a><span class="header-page-name">Configuration</span>
+    <div class="header-see-also dropdown pull-right">
+      <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
+      <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
+      <ul class="dropdown-menu" role="menu" style="margin: 0">
+        <li><a tabindex="-1" href="traces.html">trace explorer</a></li>
+        <li><a tabindex="-1" href="threaddump.html">full thread dump</a></li>
+        <li><a tabindex="-1" href="admin.html">administration</a></li>
+      </ul>
+    </div>
   </div>
   <br>
-  <form class="configuration-form form-horizontal hide" id="coreForm" style="margin-left: 40px">
+  <br>
+  <div class="section-header" onclick="$('#coreForm').toggle()">
+    <button class="section-toggle">General</button>
+    <span class="configuration-status" id="coreStatus">ON</span>
+  </div>
+  <br>
+  <form class="section-body form-horizontal hide" id="coreForm">
     <fieldset>
-      <div class="configuration-form-properties">
+      <div class="section-body-padding">
         <div class="control-group">
           <label class="control-label" for="coreEnabled">Enabled</label>
           <div class="controls">
@@ -473,20 +483,23 @@
           </div>
         </div>
       </div>
-      <div class="form-actions configuration-form-save">
+      <div class="form-actions section-body-save">
         <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
-        <div class="button-spinner" id="saveCoreButtonSpinner"></div>
-        <div class="button-success-message" id="coreSaveComplete">Saved</div>
+        <!-- spinner because updating core config can take a while if resizing rolling file
+             or changing trace snapshot expiration -->
+        <span class="button-spinner" id="saveCoreButtonSpinner"></span>
+        <span class="button-success-message" id="coreSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>
-  <div class="configuration-header" onclick="$('#coarseForm').toggle()">
-    Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus">ON</span>
+  <div class="section-header" onclick="$('#coarseForm').toggle()">
+    <button class="section-toggle">Coarse-Grained Profiling</button>
+    <span class="configuration-status" id="coarseStatus">ON</span>
   </div>
   <br>
-  <form class="configuration-form form-horizontal hide" id="coarseForm" style="margin-left: 40px">
+  <form class="section-body form-horizontal hide" id="coarseForm">
     <fieldset>
-      <div class="configuration-form-properties">
+      <div class="section-body-padding">
         <div class="control-group">
           <label class="control-label" for="coarseEnabled">Enabled</label>
           <div class="controls">
@@ -543,21 +556,20 @@
           </div>
         </div>
       </div>
-      <div class="form-actions configuration-form-save">
-        <button type="button" class="btn" onclick="updateCoarseConfig()">
-          Save changes
-        </button>
-        <div class="button-success-message" id="coarseSaveComplete">Saved</div>
+      <div class="form-actions section-body-save">
+        <button type="button" class="btn" onclick="updateCoarseConfig()">Save changes</button>
+        <span class="button-success-message" id="coarseSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>
-  <div class="configuration-header" onclick="$('#fineForm').toggle()">
-    Fine-Grained Profiling <span class="configuration-status" id="fineStatus">ON</span>
+  <div class="section-header" onclick="$('#fineForm').toggle()">
+    <button class="section-toggle">Fine-Grained Profiling</button>
+    <span class="configuration-status" id="fineStatus">ON</span>
   </div>
   <br>
-  <form class="configuration-form form-horizontal hide" id="fineForm" style="margin-left: 40px">
+  <form class="section-body form-horizontal hide" id="fineForm">
     <fieldset>
-      <div class="configuration-form-properties">
+      <div class="section-body-padding">
         <div class="control-group">
           <label class="control-label" for="fineEnabled">Enabled</label>
           <div class="controls">
@@ -630,21 +642,20 @@
           </div>
         </div>
       </div>
-      <div class="form-actions configuration-form-save">
-        <button type="button" class="btn" onclick="updateFineConfig()">
-          Save changes
-        </button>
-        <div class="button-success-message" id="fineSaveComplete">Saved</div>
+      <div class="form-actions section-body-save">
+        <button type="button" class="btn" onclick="updateFineConfig()">Save changes</button>
+        <span class="button-success-message" id="fineSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>
-  <div class="configuration-header" onclick="$('#userForm').toggle()">
-    User Tracing <span class="configuration-status" id="userStatus">ON</span>
+  <div class="section-header" onclick="$('#userForm').toggle()">
+    <button class="section-toggle">User Tracing</button>
+    <span class="configuration-status" id="userStatus">ON</span>
   </div>
   <br>
-  <form class="configuration-form form-horizontal hide" id="userForm" style="margin-left: 40px">
+  <form class="section-body form-horizontal hide" id="userForm">
     <fieldset>
-      <div class="configuration-form-properties">
+      <div class="section-body-padding">
         <div class="control-group">
           <label class="control-label" for="userEnabled">Enabled</label>
           <div class="controls">
@@ -691,11 +702,9 @@
           </div>
         </div>
       </div>
-      <div class="form-actions configuration-form-save">
-        <button type="button" class="btn" onclick="updateUserConfig()">
-          Save changes
-        </button>
-        <div class="button-success-message" id="userSaveComplete">Saved</div>
+      <div class="form-actions section-body-save">
+        <button type="button" class="btn" onclick="updateUserConfig()">Save changes</button>
+        <span class="button-success-message" id="userSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>

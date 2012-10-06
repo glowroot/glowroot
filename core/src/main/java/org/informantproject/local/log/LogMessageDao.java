@@ -82,7 +82,7 @@ public class LogMessageDao {
         }
         try {
             return dataSource.query("select timestamp, level, text, exception from log_message"
-                    + " order by timestamp desc", new Object[0], new LogMessageRowMapper());
+                    + " order by timestamp", new Object[0], new LogMessageRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();

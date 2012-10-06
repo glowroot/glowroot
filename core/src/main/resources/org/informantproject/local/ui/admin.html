@@ -1,0 +1,142 @@
+<!doctype html>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Informant | Administration</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="css/informant.css" type="text/css" />
+<script type="text/javascript" src="libs/jquery/1.8.1/jquery.min.js"></script>
+<!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
+<script type="text/javascript" src="libs/bootstrap/2.1.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
+<script type="text/javascript" src="libs/moment/1.7.0/moment.min.js"></script>
+<script type="text/javascript" src="libs/handlebars/1.0.rc.1/handlebars.js"></script>
+<script type="text/javascript" src="js/informant.js"></script>
+<!-- spacing is important in this template since it is embedded inside of a 'pre-' styled div -->
+<script type="text/x-handlebars-template" id="logTemplate"
+>{{#each .}}<b>{{formatTimestamp timestamp}}</b> {{level}} {{text}}{{#if exception}}
+{{exception.display}}
+{{#each exception.stackTrace}}        {{.}}
+{{/each}}{{^}}
+{{/if}}{{/each}}</script>
+<script type="text/javascript">
+  Handlebars.registerHelper('formatTimestamp', function(timestamp, options) {
+    return moment(timestamp).format('MM/DD/YYYY HH:mm:ss.SSS')
+  })
+  $(document).ready(function() {
+    configureAjaxError()
+    var logTemplate = Handlebars.compile($('#logTemplate').html())
+    var postingCompact = false
+    var postingTruncate = false
+    function refreshLog(scroll) {
+      $.getJSON('admin/log', function(logMessages) {
+        var html = logTemplate(logMessages)
+        $('#log').html(html)
+        $('#logSectionBody').show()
+        if (scroll) {
+          $(window).scrollTop(document.body.scrollHeight)
+        }
+      })
+    }
+    $('#dataFileSectionHeader').click(function() { $('#dataFileSectionBody').toggle() })
+    $('#logSectionHeader').click(function() {
+      if ($('#logSectionBody').is(':visible')) {
+        $('#logSectionBody').hide()
+      } else {
+        // refresh log every time the section is re-opened
+        refreshLog(false)
+      }
+    })
+    $('#logRefreshButton').click(function() {
+      refreshLog(true)
+      showAndFadeSuccessMessage('#logRefreshSuccessMessage')
+    })
+    $('#compactButton').click(function() {
+      // handle crazy user clicking on the button
+      if (postingCompact) return
+      postingCompact = true
+      $.post('admin/compact', function() {
+        postingCompact = false
+        hideSpinner('#compactSpinner')
+        showAndFadeSuccessMessage('#compactSuccessMessage')
+      })
+      // in case button is clicked again before success message is hidden
+      $('#compactSuccessMessage').hide()
+      showSpinner('#compactSpinner')
+    })
+    $('#truncateButton').click(function() {
+      // handle crazy user clicking on the button
+      if (postingTruncate) return
+      postingTruncate = true
+      $.post('admin/truncate', function() {
+        postingTruncate = false
+        hideSpinner('#truncateSpinner')
+        showAndFadeSuccessMessage('#truncateSuccessMessage')
+      })
+      // in case button is clicked again before success message is hidden
+      $('#truncateSuccessMessage').hide()
+      showSpinner('#truncateSpinner')
+    })
+  })
+</script>
+</head>
+<body>
+  <div class="header">
+    <a class="header-logo" href=".">
+        <!-- lack of spaces on this line is important -->
+        Informant</a><span class="header-page-name">Administration</span>
+    <div class="header-see-also dropdown pull-right">
+      <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
+      <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
+      <ul class="dropdown-menu" role="menu" style="margin: 0">
+        <li><a tabindex="-1" href="traces.html">trace explorer</a></li>
+        <li><a tabindex="-1" href="configuration.html">configuration</a></li>
+        <li><a tabindex="-1" href="threaddump.html">full thread dump</a></li>
+      </ul>
+    </div>
+  </div>
+  <br>
+  <br>
+  <div class="section-header" id="dataFileSectionHeader">
+    <button class="section-toggle">Manage H2 Data File</button>
+  </div>
+  <br>
+  <div class="section-body section-body-padding hide" id="dataFileSectionBody">
+    <button type="button" class="btn" id="compactButton">Compact</button>
+    <span class="button-spinner" id="compactSpinner"></span>
+    <span class="button-success-message" id="compactSuccessMessage">Compacted</span>    
+    <br>
+    <br>
+    <button type="button" class="btn" id="truncateButton">Truncate</button>
+    <span class="button-spinner" id="truncateSpinner"></span>
+    <span class="button-success-message" id="truncateSuccessMessage">Truncated</span>    
+  </div>
+  <div class="section-header" id="logSectionHeader">
+    <button class="section-toggle">Informant Log</button>
+  </div>
+  <br>
+  <div class="section-body section-body-padding hide" id="logSectionBody">
+    <div class="flat-pre" id="log"></div>
+    <div style="margin: 0 0 10px 10px">
+      <button type="button" class="btn" id="logRefreshButton">Refresh</button>
+      <span class="button-success-message" id="logRefreshSuccessMessage">Refreshed</span>
+    </div>    
+  </div>
+</body>
+</html>

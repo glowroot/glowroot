@@ -25,60 +25,79 @@ body {
   font-weight: normal;
   font-style: normal;
 }
-.index-body {
-  text-align: center;
-  vertical-align: middle;
-  margin-top: 50px;
-}
-.index-body > h1 {
-  font-weight: normal;
-  padding: 10px;
-}
-.index-logo {
-  font-family: 'SpecialElite-Regular';
-  font-size: 48px;
-  color: #b12930;
-}
-.index-item {
-  font-size: 36px;
-}
-.index-item > a, .index-item > a:hover {
-  color: #444444;
-}
-.index-item > a {
-  color: #444444;
-  padding: 8px 24px;
-  border-radius: 12px;
-}
 .header {
   font-weight: normal;
-  margin-bottom: 24px;
+  font-size: 36px;
+  line-height: 40px;
+  margin: 10px 0 24px 0;
+  text-rendering: optimizelegibility;
 }
 .header-logo {
   font-family: 'SpecialElite-Regular';
   font-size: 38px;
-  padding: 8px 12px 1px 12px;
+  padding: 8px 20px 1px 20px;
   vertical-align: 1px;
   border-radius: 8px;
-  background-color: #EEE;
+  background-color: #eee;
 }
 .header-logo-export {
   font-family: 'Special Elite';
   color: #b12930;
 }
 .header-page-name {
-  color: #444444;
+  color: #444;
   padding-left: 14px;
 }
 .header-see-also {
-  float: right;
-  color: #333333;
+  color: #333;
   font-size: 20px;
-  padding-top: 5px;
+}
+.header-see-also .dropdown-toggle {
+  border-radius: 6px;
+  padding: 3px 28px 6px 28px;
+  cursor: pointer;
+}
+.header-see-also .dropdown-menu {
+  text-align: right;
+  padding: 3px 6px;
+}
+.header-see-also li {
+  padding: 2px 0;
+}
+.header-see-also:hover .dropdown-menu {
+  display: block;
+}
+.header-see-also .dropdown-toggle {
+  background-color: #eee;
+}
+.dropdown-menu li > a:hover, .dropdown-menu li > a:focus  {
+  /* override bootstrap styling */
+  color: #333 !important;
+  background-color: #eee !important;
+  background-image: none !important;
+  border-radius: 6px;
+}
+.dropdown-menu a {
+  /* override bootstrap styling */
+  padding: 7px 24px;
+}
+.dropdown-menu {
+  background-color: #ddd !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 .button-success-message {
   display: none;
   color: green;
+  font-size: 16px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.button-error-message {
+  display: none;
+  color: red;
   font-size: 16px;
   margin-left: 10px;
   vertical-align: middle;
@@ -96,17 +115,19 @@ body {
 a {
   text-decoration: none;
   color: #b12930;
+}
+a:hover {
+  text-decoration: none;
+  color: #b12930;
+  background-color:#ddd;
+}
+.inline-anchor {
   /* extra vertical padding only applies if line-height accommodates it */
   padding: 4px 4px;
   /* this is for links inside of other text, so negative margin so that padding doesn't create gap
      before or after the link */
   margin: 0 -4px;
   border-radius: 4px;
-}
-a:hover {
-  text-decoration: none;
-  color: #b12930;
-  background-color:#DDD;
 }
 .input-medium0 {
   width:135px;
@@ -117,7 +138,7 @@ a:hover {
 .qtip-override {
   max-width: 500px;
   font-size: 12px;
-  line-height: 14px;
+  line-height: 16px;
 }
 .qtip-override .ui-tooltip-content {
   padding: 1em 0.5em 0.75em 0.5em;
@@ -131,9 +152,13 @@ a:hover {
   cursor: pointer;
   padding: 0 4px;
   border-radius: 4px;
+  /* remove border and background-color so this class can be applied to <button> */
+  border: none;
+  background-color: transparent;
+  text-align: left;
 }
-.lightbtn:hover {
-  background-color:#DDD;
+.lightbtn:hover, .lightbtn:focus {
+  background-color:#ddd;
 }
 .expandable {
   display: inline-block;
@@ -141,16 +166,16 @@ a:hover {
   border-radius: 4px;
 }
 .expandable:hover {
-  background-color:#DDD;
+  background-color:#ddd;
 }
 .expanded {
-  background-color:#EEE;
+  background-color:#eee;
   /* margin for white space between successive expanded elements, at the bottom so that
      expanding doesn't create jitter/shift down of expanding section */
   margin-bottom: 4px;
 }
 .expanded:hover {
-  background-color:#DDD;
+  background-color:#ddd;
 }
 .red {
   color: #b12930;
@@ -164,49 +189,57 @@ a:hover {
 .pad1 {
   padding: 2px 1em;
 }
+.rounded4 {
+  border-radius: 4px;
+}
 .nowrap {
   white-space: nowrap;
 }
-/* slightly darken bootstrap tabs to match .lightbtn */
 .nav-tabs > li > a:hover {
-  border-color: #DDD #DDD #CCC;
+  /* slightly darken bootstrap tabs to match .lightbtn */
+  border-color: #ddd #ddd #ccc;
 }
 .nav > li > a:hover {
-  background-color: #DDD;
+  background-color: #ddd;
 }
-.configuration-header {
+.section-header {
   cursor: pointer;
   padding: 8px 1em;
   border-radius: 6px;
-  background-color: #EEE;
+  background-color: #eee;
   vertical-align: middle;
   font-size: 19px;
-  max-width: 800px;
 }
-.configuration-header:hover {
-  background-color:#DDD;
+.section-toggle {
+  font-size: 19px;
+  border:none;
+  background:transparent;
+  cursor: pointer;
+}
+.section-header:hover {
+  background-color:#ddd;
 }
 .configuration-status {
   float: right;
 }
-.configuration-form {
-  background-color: #EEE;
+.section-body {
+  /* sometimes need no padding since save footer needs to extend to both right and left edge */
+  background-color: #eee;
   border-radius: 8px;
-  max-width: 800px;
+  margin: 0 0 20px 40px;
 }
-.configuration-form-properties {
-  padding: 16px 16px 0 16px;
+.section-body-padding {
+  padding: 16px 16px 16px 16px;
 }
-.configuration-form-save {
+.section-body-save {
+  margin-top: 0;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
 }
-/* slightly modified version of bootstrap's pre */
 .flat-pre {
-  padding: 0 3px 2px;
+  /* slightly modified version of bootstrap's pre */
   font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
-  font-size: 12px;
-  color: #333333;
+  color: #333;
   display: block;
   padding: 9.5px;
   margin: 0 0 10px;
@@ -218,4 +251,7 @@ a:hover {
   white-space: pre-wrap;
   background-color: #eee;
   border-radius: 8px;
+}
+.flat-pre.hide {
+  display: none;
 }

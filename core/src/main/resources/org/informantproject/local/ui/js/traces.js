@@ -30,7 +30,7 @@ var traceSummaryTemplateText = ''
 + '  {{#if showExport}}'
 // unfortunately vertical padding isn't applied to inline elements, so "button" is a little small
 // but it seems worth keeping this inline and it is a less used "button" anyways
-+ '    <a class="indent1 pad1" href="trace/export/{{id}}">export</a>'
++ '    <a class="indent1 pad1 rounded4" href="trace/export/{{id}}">export</a>'
 + '  {{/if}}'
 + '</div>'
 + 'start: {{date start}}<br>'
@@ -68,9 +68,9 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver spans}}'
 + '    <div>spans <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <span class="lightbtn pad1" onclick="toggleSpans()">'
++ '    <button class="lightbtn pad1" onclick="toggleSpans()">'
 + '      <span class="red">spans</span> ({{spans.length}})'
-+ '    </span><br>'
++ '    </button><br>'
 + '    <div id="sps"></div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -79,18 +79,18 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver coarseMergedStackTree}}'
 + '    <div>coarse-grained profile <i>rolled over</i></div>'
 + '  {{^}}'
-+ '    <span class="lightbtn pad1" onclick="toggleCoarseMergedStackTree()">'
++ '    <button class="lightbtn pad1" onclick="toggleCoarseMergedStackTree()">'
 + '      <span class="red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})'
-+ '    </span><br>'
++ '    </button><br>'
 + '    <div class="nowrap indent1 hide" id="mstCoarseOuter">'
 + '        <select class="mst-filter input-large" onchange="this.blur()"'
 + '            style="margin: 4px"></select><br>'
 // margin-bottom is needed to trump .expandable class' margin-bottom: 4px since no buffer is needed
 // when this is expanded since nothing can be expanded directly below it
-+ '      <span class="mst-common expandable pad1 hide" style="margin-bottom: 0">'
++ '      <button class="lightbtn mst-common expandable pad1 hide" style="margin-bottom: 0">'
 + '        <div class="unexpanded-content red">common base</div>'
 + '        <div class="expanded-content hide"></div>'
-+ '      </span><br>'
++ '      </button><br>'
 + '      <div class="mst-interesting indent1"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
@@ -99,18 +99,18 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver fineMergedStackTree}}'
 + '    <div>fine-grained profile <i>rolled over</i><div>'
 + '  {{^}}'
-+ '    <span class="lightbtn pad1" onclick="toggleFineMergedStackTree()">'
++ '    <button class="lightbtn pad1" onclick="toggleFineMergedStackTree()">'
 + '      <span class="red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})'
-+ '    </span><br>'
++ '    </button><br>'
 + '    <div class="nowrap indent1 hide" id="mstFineOuter">'
 + '        <select class="mst-filter input-large" onchange="this.blur()"'
 + '            style="margin: 4px"></select><br>'
 // margin-bottom is needed to trump .expandable class' margin-bottom: 4px since no buffer is needed
 // when this is expanded since nothing can be expanded directly below it
-+ '      <span class="mst-common expandable pad1 hide" style="margin-bottom: 0">'
++ '      <button class="lightbtn mst-common expandable pad1 hide" style="margin-bottom: 0">'
 + '        <div class="unexpanded-content red">common base</div>'
 + '        <div class="expanded-content hide"></div>'
-+ '      </span><br>'
++ '      </button><br>'
 + '      <div class="mst-interesting indent1"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
@@ -136,12 +136,12 @@ var spansTemplateText = ''
 + '        </div>'
 + '      {{/ifLongDescription}}'
 + '      {{#if message.detail}}'
-+ '        <span class="expandable indent2 pad1">'
++ '        <button class="lightbtn expandable indent2 pad1">'
 + '          <div class="unexpanded-content red">detail</div>'
 + '          <div class="expanded-content hide">'
 + '            {{{messageDetailHtml message.detail}}}'
 + '          </div>'
-+ '        </span><br>'
++ '        </button><br>'
 + '      {{/if}}'
 + '      {{#if error}}'
 + '        <div class="indent2">'
@@ -153,22 +153,22 @@ var spansTemplateText = ''
 + '            </div>'
 + '          {{/if}}'
 + '          {{#if error.exception}}'
-+ '            <span class="expandable indent1 pad1">'
++ '            <button class="lightbtn expandable indent1 pad1">'
 + '              <div class="unexpanded-content red">exception</div>'
 + '              <div class="expanded-content hide nowrap">'
 + '                {{{exceptionHtml error.exception}}}'
 + '              </div>'
-+ '            </span><br>'
++ '            </button><br>'
 + '          {{/if}}'
 + '        </div>'
 + '      {{/if}}'
 + '      {{#if stackTrace}}'
-+ '        <span class="expandable indent2 pad1">'
++ '        <button class="lightbtn expandable indent2 pad1">'
 + '          <div class="unexpanded-content red">span stack trace</div>'
 + '          <div class="expanded-content hide nowrap">'
 + '            {{{stackTraceHtml stackTrace}}}'
 + '          </div>'
-+ '        </span><br>'
++ '        </button><br>'
 + '      {{/if}}'
 + '    </div>'
 + '  </div>'
@@ -270,6 +270,13 @@ $(document).ready(function() {
     mousedownSpanPageX = e.pageX
     mousedownSpanPageY = e.pageY
   })
+  $(document).on('keydown', '.expandable', function(e) {
+    if (e.keyCode == 13) {
+      // don't pass event to bypass mouse checking
+      basicToggle($(this).find('.unexpanded-content'), $(this).find('.expanded-content'), $(this))
+      e.preventDefault()
+    }
+  })
   $(document).on('click', '.expandable', function(e) {
     smartToggle($(this).find('.unexpanded-content'), $(this).find('.expanded-content'), $(this), e)
   })
@@ -294,6 +301,17 @@ function renderNext(spans, start) {
   $('#sps').append(html)
   if (start + 100 < spans.length) {
     setTimeout(function() { renderNext(spans, start + 100) }, 10)
+  }
+}
+function basicToggle(unexpandedSelector, expandedSelector, outerSelector) {
+  if ($(unexpandedSelector).is(':visible')) {
+    $(unexpandedSelector).hide()
+    $(expandedSelector).show()
+    $(outerSelector).addClass('expanded')
+  } else {
+    $(expandedSelector).hide()
+    $(unexpandedSelector).show()
+    $(outerSelector).removeClass('expanded')
   }
 }
 function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e) {

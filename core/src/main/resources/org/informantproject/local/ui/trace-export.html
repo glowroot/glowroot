@@ -44,16 +44,18 @@
     var html = traceSummaryTemplate(detailTrace)
     var detailHtml = traceDetailTemplate(detailTrace)
     $('#detailTrace').html(html)
+    $('#detailTrace').append('<br>')
     $('#detailTrace').append(detailHtml)
   })
 </script>
 </head>
 <body>
-  <h1 class="header">
+  <div class="header">
     <span class="header-logo header-logo-export">
         <!-- lack of spaces on this line is important -->
         Informant</span><span class="header-page-name">Trace export</span>
-  </h1>
+  </div>
+  <br>
   <div id="detailTrace"></div>
 </body>
 </html>

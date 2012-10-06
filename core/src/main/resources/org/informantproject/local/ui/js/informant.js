@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 function showAndFadeSuccessMessage(selector) {
+  showAndFadeMessage(selector, 0)
+}
+function showAndFadeErrorMessage(selector) {
+  showAndFadeMessage(selector, 1000)
+}
+function showAndFadeMessage(selector, delay) {
   $(selector).each(function() {
     // handle crazy user clicking on the button
     if ($(this).data('timeout')) {
@@ -22,7 +28,7 @@ function showAndFadeSuccessMessage(selector) {
     $(this).stop().animate({opacity:'100'})
     $(this).css('display','inline-block')
     var outerThis = this
-    $(this).data('timeout', setTimeout(function() { $(outerThis).fadeOut(1000) }, 1000))
+    $(this).data('timeout', setTimeout(function() { $(outerThis).fadeOut(1000) }, delay))
   })
 }
 function showSpinner(selector, opts) {
