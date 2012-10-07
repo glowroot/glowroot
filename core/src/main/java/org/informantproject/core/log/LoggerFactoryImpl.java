@@ -117,34 +117,34 @@ public final class LoggerFactoryImpl {
         public void warn(String msg) {
             logger.warn(msg);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.WARN, msg, null);
+                logMessageSink.onLogMessage(Level.WARN, logger.getName(), msg, null);
             }
         }
         public void warn(String format, @Nullable Object arg) {
             logger.warn(format, arg);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.WARN,
+                logMessageSink.onLogMessage(Level.WARN, logger.getName(),
                         MessageFormatter.format(format, arg).getMessage(), null);
             }
         }
         public void warn(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.warn(format, arg1, arg2);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.WARN,
+                logMessageSink.onLogMessage(Level.WARN, logger.getName(),
                         MessageFormatter.format(format, arg1, arg2).getMessage(), null);
             }
         }
         public void warn(String format, Object... arguments) {
             logger.warn(format, arguments);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.WARN,
+                logMessageSink.onLogMessage(Level.WARN, logger.getName(),
                         MessageFormatter.arrayFormat(format, arguments).getMessage(), null);
             }
         }
         public void warn(String msg, Throwable t) {
             logger.warn(msg, t);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.WARN, msg, t);
+                logMessageSink.onLogMessage(Level.WARN, logger.getName(), msg, t);
             }
         }
         public boolean isErrorEnabled() {
@@ -153,34 +153,34 @@ public final class LoggerFactoryImpl {
         public void error(String msg) {
             logger.error(msg);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.ERROR, msg, null);
+                logMessageSink.onLogMessage(Level.ERROR, logger.getName(), msg, null);
             }
         }
         public void error(String format, @Nullable Object arg) {
             logger.error(format, arg);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.ERROR,
+                logMessageSink.onLogMessage(Level.ERROR, logger.getName(),
                         MessageFormatter.format(format, arg).getMessage(), null);
             }
         }
         public void error(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.error(format, arg1, arg2);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.ERROR,
+                logMessageSink.onLogMessage(Level.ERROR, logger.getName(),
                         MessageFormatter.format(format, arg1, arg2).getMessage(), null);
             }
         }
         public void error(String format, Object... arguments) {
             logger.error(format, arguments);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.ERROR,
+                logMessageSink.onLogMessage(Level.ERROR, logger.getName(),
                         MessageFormatter.arrayFormat(format, arguments).getMessage(), null);
             }
         }
         public void error(String msg, Throwable t) {
             logger.error(msg, t);
             if (logMessageSink != null) {
-                logMessageSink.onLogMessage(Level.ERROR, msg, t);
+                logMessageSink.onLogMessage(Level.ERROR, logger.getName(), msg, t);
             }
         }
     }

@@ -193,7 +193,7 @@ public class Informant {
         return getLastTrace(true);
     }
 
-    public List<LogMessage> getLog() throws Exception {
+    public List<LogMessage> getLogMessages() throws Exception {
         return gson.fromJson(get("/admin/log"), new TypeToken<List<LogMessage>>() {}.getType());
     }
 

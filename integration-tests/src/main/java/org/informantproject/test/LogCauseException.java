@@ -19,8 +19,8 @@ package org.informantproject.test;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class LogCausedError {
+class LogCauseException {
 
-    // this method corresponds to LogCausedErrorAspect
+    // this method corresponds to LogCauseExceptionAspect
     void log(@SuppressWarnings("unused") String message) {}
 }

@@ -62,6 +62,9 @@ public final class UiTestingMain {
                 org.informantproject.api.LoggerFactory.getLogger(GenerateTraces.class);
         public void executeApp() throws InterruptedException {
             int count = 0;
+            Exception causeException1 = new IllegalStateException("Cause 1");
+            Exception causeException2 = new RuntimeException("Cause 2", causeException1);
+            Exception causeException3 = new IllegalArgumentException("Cause 3", causeException2);
             while (true) {
                 // one very short trace that will have an empty merged stack tree
                 new NestableCall(1, 10, 100).execute();
@@ -75,7 +78,7 @@ public final class UiTestingMain {
                         logger.warn("everything is actually ok");
                     } else {
                         logger.warn("everything is actually ok", new IllegalStateException(
-                                "just testing"));
+                                "just testing", causeException3));
                     }
                 }
                 Thread.sleep(10000);

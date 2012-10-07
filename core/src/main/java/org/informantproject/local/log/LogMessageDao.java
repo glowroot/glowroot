@@ -52,6 +52,7 @@ public class LogMessageDao {
     private static final ImmutableList<Column> columns = ImmutableList.of(
             new Column("timestamp", Types.BIGINT),
             new Column("level", Types.VARCHAR),
+            new Column("logger_name", Types.VARCHAR),
             new Column("text", Types.VARCHAR),
             new Column("exception", Types.VARCHAR)); // json data
 
@@ -81,8 +82,8 @@ public class LogMessageDao {
             return ImmutableList.of();
         }
         try {
-            return dataSource.query("select timestamp, level, text, exception from log_message"
-                    + " order by timestamp", new Object[0], new LogMessageRowMapper());
+            return dataSource.query("select timestamp, level, logger_name, text, exception from"
+                    + " log_message order by timestamp", new Object[0], new LogMessageRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -94,10 +95,10 @@ public class LogMessageDao {
             return;
         }
         try {
-            dataSource.update("insert into log_message (timestamp, level, text, exception) values"
-                    + " (?, ?, ?, ?)", new Object[] { logMessage.getTimestamp(),
-                    logMessage.getLevel().name(), logMessage.getText(),
-                    logMessage.getException() });
+            dataSource.update("insert into log_message (timestamp, level, logger_name, text,"
+                    + " exception) values (?, ?, ?, ?, ?)", new Object[] {
+                    logMessage.getTimestamp(), logMessage.getLevel().name(),
+                    logMessage.getLoggerName(), logMessage.getText(), logMessage.getException() });
             synchronized (counterLock) {
                 if (counter++ % TABLE_LIMIT_APPLIED_EVERY == 0) {
                     // good that it checks on the first store of each jvm cycle, otherwise could get
@@ -147,7 +148,9 @@ public class LogMessageDao {
         public LogMessage mapRow(ResultSet resultSet) throws SQLException {
             long timestamp = resultSet.getLong(1);
             String levelText = resultSet.getString(2);
-            String text = resultSet.getString(3);
+            String loggerName = resultSet.getString(3);
+            String text = resultSet.getString(4);
+            String exception = resultSet.getString(5);
             Level level;
             try {
                 level = Level.valueOf(levelText);
@@ -157,7 +160,7 @@ public class LogMessageDao {
                 text += " [marked as error because unexpected level '" + levelText
                         + "' found in h2 database]";
             }
-            return LogMessage.from(timestamp, level, text, resultSet.getString(4));
+            return LogMessage.from(timestamp, level, loggerName, text, exception);
         }
     }
 }

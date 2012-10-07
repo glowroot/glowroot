@@ -25,5 +25,5 @@ import javax.annotation.Nullable;
  */
 public interface LogMessageSink {
 
-    void onLogMessage(Level level, String message, @Nullable Throwable t);
+    void onLogMessage(Level level, String loggerName, String message, @Nullable Throwable t);
 }

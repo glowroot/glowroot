@@ -29,23 +29,27 @@ public class LogMessage {
 
     private final long timestamp;
     private final Level level;
+    private final String loggerName;
     private final String text;
     @Nullable
     private final String exception; // json data
 
-    public static LogMessage from(long timestamp, Level level, String text) {
-        return from(timestamp, level, text, null);
+    public static LogMessage from(long timestamp, Level level, String loggerName, String text) {
+        return from(timestamp, level, loggerName, text, null);
     }
 
-    public static LogMessage from(long timestamp, Level level, String text,
+    public static LogMessage from(long timestamp, Level level, String loggerName, String text,
             @Nullable String exception) {
 
-        return new LogMessage(timestamp, level, text, exception);
+        return new LogMessage(timestamp, level, loggerName, text, exception);
     }
 
-    private LogMessage(long timestamp, Level level, String text, @Nullable String exception) {
+    private LogMessage(long timestamp, Level level, String loggerName, String text,
+            @Nullable String exception) {
+
         this.timestamp = timestamp;
         this.level = level;
+        this.loggerName = loggerName;
         this.text = text;
         this.exception = exception;
     }
@@ -56,6 +60,10 @@ public class LogMessage {
 
     public Level getLevel() {
         return level;
+    }
+
+    public String getLoggerName() {
+        return loggerName;
     }
 
     public String getText() {

@@ -32,22 +32,23 @@ import org.informantproject.api.weaving.Pointcut;
  * @since 0.5
  */
 @Aspect
-public class LogCausedErrorAspect {
+public class LogCauseExceptionAspect {
 
     private static final PluginServices pluginServices = PluginServices
             .get("org.informantproject:informant-integration-tests");
 
-    private static final Exception causedException1 = new IllegalStateException("caused 1");
-    private static final Exception causedException2 = new RuntimeException("caused 2",
-            causedException1);
-    private static final Exception causedException3 = new IllegalArgumentException("caused 3",
-            causedException2);
+    private static final Exception causeException1 = new IllegalStateException("Cause 1");
+    private static final Exception causeException2 = new RuntimeException("Cause 2",
+            causeException1);
+    private static final Exception causeException3 = new IllegalArgumentException("Cause 3",
+            causeException2);
 
-    @Pointcut(typeName = "org.informantproject.test.LogCausedError", methodName = "log",
+    @Pointcut(typeName = "org.informantproject.test.LogCauseException", methodName = "log",
             methodArgs = { "java.lang.String" }, metricName = "log error")
-    public static class LogCausedErrorAdvice {
+    public static class LogCauseExceptionAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LogCausedErrorAdvice.class);
+        private static final Metric metric = pluginServices
+                .getMetric(LogCauseExceptionAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -63,7 +64,7 @@ public class LogCausedErrorAspect {
 
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.endWithError(ErrorMessage.from(new Exception(causedException3)));
+            span.endWithError(ErrorMessage.from(new Exception(causeException3)));
         }
     }
 }

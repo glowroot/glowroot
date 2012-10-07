@@ -17,6 +17,10 @@ package org.informantproject.testkit;
 
 import javax.annotation.Nullable;
 
+import org.informantproject.testkit.Trace.CapturedException;
+
+import com.google.common.base.Objects;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -25,50 +29,40 @@ public class LogMessage {
 
     private long timestamp;
     private Level level;
+    private String loggerName;
     private String text;
     @Nullable
-    private String stackTraceHeader;
-    @Nullable
-    private String stackTrace;
+    private CapturedException exception;
 
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
     }
 
     public Level getLevel() {
         return level;
     }
 
-    public void setLevel(Level level) {
-        this.level = level;
+    public String getLoggerName() {
+        return loggerName;
     }
 
     public String getText() {
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public CapturedException getException() {
+        return exception;
     }
 
-    public String getStackTraceHeader() {
-        return stackTraceHeader;
-    }
-
-    public void setStackTraceHeader(String stackTraceHeader) {
-        this.stackTraceHeader = stackTraceHeader;
-    }
-
-    public String getStackTrace() {
-        return stackTrace;
-    }
-
-    public void setStackTrace(String stackTrace) {
-        this.stackTrace = stackTrace;
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("timestamp", timestamp)
+                .add("level", level)
+                .add("loggerName", loggerName)
+                .add("text", text)
+                .add("exception", exception)
+                .toString();
     }
 
     public enum Level {

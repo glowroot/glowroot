@@ -19,8 +19,8 @@ import static org.fest.assertions.api.Assertions.assertThat;
 
 import java.util.Set;
 
-import org.informantproject.test.plugin.LogCausedErrorAspect;
-import org.informantproject.test.plugin.LogCausedErrorAspect.LogCausedErrorAdvice;
+import org.informantproject.test.plugin.LogCauseExceptionAspect;
+import org.informantproject.test.plugin.LogCauseExceptionAspect.LogCauseExceptionAdvice;
 import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.Trace;
@@ -102,31 +102,31 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
         CapturedException exception = trace.getSpans().get(1).getError().getException();
         assertThat(exception.getDisplay()).isEqualTo(
-                "java.lang.Exception: java.lang.IllegalArgumentException: caused 3");
+                "java.lang.Exception: java.lang.IllegalArgumentException: Cause 3");
         assertThat(exception.getStackTrace().get(0)).startsWith(
-                LogCausedErrorAdvice.class.getName() + ".onAfter(");
+                LogCauseExceptionAdvice.class.getName() + ".onAfter(");
         assertThat(exception.getFramesInCommonWithCaused()).isZero();
         CapturedException cause = exception.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: caused 3");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCausedErrorAspect.class.getName() + ".<clinit>(");
+                LogCauseExceptionAspect.class.getName() + ".<clinit>(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
-        Set<Integer> causedExceptionLineNumbers = Sets.newHashSet();
-        causedExceptionLineNumbers.add(getFirstLineNumber(cause));
+        Set<Integer> causeExceptionLineNumbers = Sets.newHashSet();
+        causeExceptionLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.RuntimeException: caused 2");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.RuntimeException: Cause 2");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCausedErrorAspect.class.getName() + ".<clinit>(");
+                LogCauseExceptionAspect.class.getName() + ".<clinit>(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
-        causedExceptionLineNumbers.add(getFirstLineNumber(cause));
+        causeExceptionLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: caused 1");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 1");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCausedErrorAspect.class.getName() + ".<clinit>(");
+                LogCauseExceptionAspect.class.getName() + ".<clinit>(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
-        causedExceptionLineNumbers.add(getFirstLineNumber(cause));
+        causeExceptionLineNumbers.add(getFirstLineNumber(cause));
         // make sure they are all different line numbers
-        assertThat(causedExceptionLineNumbers).hasSize(3);
+        assertThat(causeExceptionLineNumbers).hasSize(3);
     }
 
     private static int getFirstLineNumber(CapturedException cause) {
@@ -163,7 +163,7 @@ public class ErrorCaptureTest {
             traceMarker();
         }
         public void traceMarker() throws Exception {
-            new LogCausedError().log("abc");
+            new LogCauseException().log("abc");
         }
     }
 }

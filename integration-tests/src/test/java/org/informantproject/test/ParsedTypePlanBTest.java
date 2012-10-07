@@ -59,7 +59,7 @@ public class ParsedTypePlanBTest {
         // when
         container.executeAppUnderTest(ShouldNotLogWarningInParsedTypeCachePlanB.class);
         // then
-        List<LogMessage> logMessages = container.getInformant().getLog();
+        List<LogMessage> logMessages = container.getInformant().getLogMessages();
         assertThat(logMessages).isEmpty();
     }
 
@@ -71,7 +71,7 @@ public class ParsedTypePlanBTest {
         // when
         container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
         // then
-        List<LogMessage> logMessages = container.getInformant().getLog();
+        List<LogMessage> logMessages = container.getInformant().getLogMessages();
         assertThat(logMessages).hasSize(1);
     }
 

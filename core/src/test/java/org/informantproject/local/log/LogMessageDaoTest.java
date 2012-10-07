@@ -64,7 +64,8 @@ public class LogMessageDaoTest {
     @Test
     public void shouldReadLogMessage() {
         // given
-        logMessageDao.storeLogMessage(LogMessage.from(123456, Level.WARN, "a warning msg"));
+        logMessageDao.storeLogMessage(LogMessage.from(123456, Level.WARN,
+                LogMessageDaoTest.class.getName(), "a warning msg"));
         // when
         List<LogMessage> logMessages = logMessageDao.readLogMessages();
         // then
@@ -78,7 +79,8 @@ public class LogMessageDaoTest {
     public void shouldAllow1000LogMessages() {
         // given
         for (int i = 0; i < 1000; i++) {
-            logMessageDao.storeLogMessage(LogMessage.from(i, Level.WARN, "a warning msg"));
+            logMessageDao.storeLogMessage(LogMessage.from(i, Level.WARN,
+                    LogMessageDaoTest.class.getName(), "a warning msg"));
         }
         // when
         // then
@@ -91,12 +93,14 @@ public class LogMessageDaoTest {
     public void shouldNeverAllow1100LogMessages() {
         // given
         for (int i = 0; i < 1000; i++) {
-            logMessageDao.storeLogMessage(LogMessage.from(i, Level.WARN, "a warning msg"));
+            logMessageDao.storeLogMessage(LogMessage.from(i, Level.WARN,
+                    LogMessageDaoTest.class.getName(), "a warning msg"));
         }
         // when
         // then
         for (int i = 0; i < 1000; i++) {
-            logMessageDao.storeLogMessage(LogMessage.from(1000 + i, Level.WARN, "a warning msg"));
+            logMessageDao.storeLogMessage(LogMessage.from(1000 + i, Level.WARN,
+                    LogMessageDaoTest.class.getName(), "a warning msg"));
             assertThat(logMessageDao.count()).isLessThan(1100L);
         }
     }

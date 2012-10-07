@@ -28,6 +28,7 @@ import javax.annotation.concurrent.Immutable;
 public class CapturedException {
 
     private final String display;
+    // for inner cause exceptions, stackTrace only includes frames not in common with caused
     private final StackTraceElement[] stackTrace;
     // this is for printing '... 18 more' at end of cause instead of entire stack trace
     private final int framesInCommonWithCaused;
@@ -42,8 +43,8 @@ public class CapturedException {
             @Nullable StackTraceElement[] causedStackTrace) {
 
         int framesInCommon = 0;
+        StackTraceElement[] stackTrace = t.getStackTrace();
         if (causedStackTrace != null) {
-            StackTraceElement[] stackTrace = t.getStackTrace();
             while (framesInCommon < stackTrace.length && framesInCommon < causedStackTrace.length) {
                 StackTraceElement element = stackTrace[stackTrace.length - 1 - framesInCommon];
                 StackTraceElement causedElement = causedStackTrace[causedStackTrace.length - 1
@@ -53,17 +54,25 @@ public class CapturedException {
                 }
                 framesInCommon++;
             }
+            if (framesInCommon > 0) {
+                // strip off common frames
+                StackTraceElement[] stackTraceWithoutCommon =
+                        new StackTraceElement[stackTrace.length - framesInCommon];
+                System.arraycopy(stackTrace, 0, stackTraceWithoutCommon, 0,
+                        stackTraceWithoutCommon.length);
+                stackTrace = stackTraceWithoutCommon;
+            }
         }
         Throwable cause = t.getCause();
         if (cause == null) {
-            return new CapturedException(t.toString(), t.getStackTrace(), null, framesInCommon);
+            return new CapturedException(t.toString(), stackTrace, null, framesInCommon);
         } else {
-            StackTraceElement[] stackTrace = t.getStackTrace();
-            return new CapturedException(t.toString(), stackTrace, from(cause, stackTrace),
+            // pass t's original stack trace to construct the nested cause
+            // (not stackTraces, which now has common frames removed)
+            return new CapturedException(t.toString(), stackTrace, from(cause, t.getStackTrace()),
                     framesInCommon);
         }
     }
-
     private CapturedException(String display, StackTraceElement[] stackTrace,
             CapturedException cause, int framesInCommon) {
 

@@ -75,7 +75,9 @@ public class LogMessageSinkLocal implements LogMessageSink {
         lastWarningTick = ticker.read() - TimeUnit.SECONDS.toNanos(60);
     }
 
-    public void onLogMessage(Level level, String message, @Nullable Throwable t) {
+    public void onLogMessage(Level level, String loggerName, String message,
+            @Nullable Throwable t) {
+
         if (inStoreLogMessage.get()) {
             // some type of logging occurred inside LogMessageDao.storeLogMessage() which has the
             // potential for going infinite loop, so better to just return, message has already been
@@ -85,7 +87,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
         if (pendingCount.incrementAndGet() > PENDING_LIMIT) {
             logPendingLimitWarning();
         }
-        logMessageAsync(level, message, t);
+        logMessageAsync(level, loggerName, message, t);
     }
 
     // synchronized to prevent two threads from logging the warning at the same time (one should
@@ -104,7 +106,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
                 // logger.warn(), will short-circuit not execute anything
                 logger.warn(message);
                 // but it is still good to get this warning in the persisted log
-                logMessageAsync(Level.WARN, message, null);
+                logMessageAsync(Level.WARN, LogMessageSinkLocal.class.getName(), message, null);
             } finally {
                 inStoreLogMessage.set(false);
             }
@@ -114,7 +116,10 @@ public class LogMessageSinkLocal implements LogMessageSink {
             countSinceLastWarning++;
         }
     }
-    private void logMessageAsync(final Level level, final String message, final Throwable t) {
+
+    private void logMessageAsync(final Level level, final String loggerName, final String message,
+            final Throwable t) {
+
         executorService.execute(new Runnable() {
             public void run() {
                 inStoreLogMessage.set(true);
@@ -129,7 +134,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
                         }
                     }
                     logMessageDao.storeLogMessage(LogMessage.from(clock.currentTimeMillis(), level,
-                            message, exceptionJson));
+                            loggerName, message, exceptionJson));
                 } finally {
                     inStoreLogMessage.set(false);
                     pendingCount.decrementAndGet();

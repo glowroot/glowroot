@@ -89,6 +89,8 @@ class AdminJsonService implements JsonService {
                 jw.value(logMessage.getTimestamp());
                 jw.name("level");
                 jw.value(logMessage.getLevel().name());
+                jw.name("loggerName");
+                jw.value(logMessage.getLoggerName());
                 jw.name("text");
                 jw.value(logMessage.getText());
                 jw.flush();
