@@ -88,6 +88,17 @@ body {
   box-shadow: none !important;
   border: none !important;
 }
+input:focus {
+  /* override bootstrap-datepicker styling with slightly darker blue focus border */
+  border-color: rgba(66, 134, 189, 0.8) !important;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(66, 134, 189, 0.6) !important;
+}
+.control-group.error input:focus {
+  /* need to force border on error to bootstrap default (without this, default red is overridden by
+     darker blue color in above selector) */
+  border-color: #953B39 !important;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 6px #D59392 !important;
+}
 .datepicker td.today {
   /* override bootstrap-datepicker styling */
   background-color: #ccc !important;
