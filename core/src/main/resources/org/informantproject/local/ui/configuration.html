@@ -117,7 +117,7 @@
   function read() {
     $.getJSON('config/read', function(config) {
       var coreConfig = config.coreConfig
-      setStatus('#coreStatus', coreConfig.enabled)
+      setStatus('#coreStatus', coreConfig.enabled, true)
       $('#coreEnabled').attr('checked', coreConfig.enabled)
       $('#persistenceThresholdMillis').val(coreConfig.persistenceThresholdMillis)
       addIntegerValidator('#persistenceThresholdMillis')
@@ -229,7 +229,7 @@
       postingUpdateCore = false
       hideSpinner('#saveCoreButtonSpinner')
       showAndFadeSuccessMessage('#coreSaveComplete')
-      setStatus('#coreStatus', config.enabled)
+      setStatus('#coreStatus', config.enabled, true)
     })
     // in case button is clicked again before success message is hidden
     $('#saveCoreComplete').hide()
@@ -334,11 +334,30 @@
           setStatus('#' + escapeForSelector(pluginId) + '_status', config.enabled)
         })
   }
-  function setStatus(selector, value) {
+  function setStatus(selector, value, core) {
     if (value) {
-      $(selector).html('<span style="color: green">ON</span>')
+      $(selector).removeClass('configuration-status-off')
+      $(selector).addClass('configuration-status-on')
+      $(selector).text('ON')
     } else {
-      $(selector).html('<span style="color: red">OFF</span>')
+      $(selector).removeClass('configuration-status-on')
+      $(selector).addClass('configuration-status-off')
+      $(selector).text('OFF')
+    }
+    if (!core && !$('#coreEnabled').is(':checked')) {
+      // this needs to be set the first time through, at least for the plugin nodes which didn't
+      // exist when setStatus was called for core the first time
+      $(selector).css('color', '#bbb')
+    }
+    if (core) {
+      // update other status'
+      if (value) {
+        $('.configuration-status').css('color', '')
+      } else {
+        $('.configuration-status').css('color', '#bbb')
+        // except for core
+        $(selector).css('color', '')
+      }
     }
   }
   function pluginForId(pluginId) {

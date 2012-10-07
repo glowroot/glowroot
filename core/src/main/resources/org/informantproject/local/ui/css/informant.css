@@ -197,7 +197,8 @@ a:hover {
   cursor: pointer;
   padding: 0 4px;
   border-radius: 4px;
-  /* remove border and background-color so this class can be applied to <button> */
+  /* remove border, background-color and other default browser button styling
+     so this class can be applied to <button> */
   border: none;
   background-color: transparent;
   text-align: left;
@@ -250,23 +251,36 @@ a:hover {
 }
 .section-header {
   cursor: pointer;
-  padding: 8px 1em;
+  padding: 12px 1em;
   border-radius: 6px;
   background-color: #eee;
   vertical-align: middle;
   font-size: 19px;
+  line-height: normal;
 }
 .section-toggle {
+  /* overriding bootstrap button defaults */
   font-size: 19px;
-  border:none;
-  background:transparent;
-  cursor: pointer;
+  line-height: normal;
+/* remove border, background-color and other default browser button styling
+     so this class can be applied to <button> */
+  border: none;
+  background-color: transparent;
+  text-align: left;
+  vertical-align: bottom;
+  padding: 0px;
 }
 .section-header:hover {
   background-color:#ddd;
 }
 .configuration-status {
-  float: right;
+  margin-left: 40px;
+}
+.configuration-status-on {
+  color: green;
+}
+.configuration-status-off {
+  color: red;
 }
 .section-body {
   /* sometimes need no padding since save footer needs to extend to both right and left edge */
