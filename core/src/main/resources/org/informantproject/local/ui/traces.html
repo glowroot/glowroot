@@ -57,6 +57,7 @@
   $(document).ready(function() {
     configureAjaxError()
     var plot, normalPoints, errorPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
+    var plotselecting
     var options = {
       legend: { show: false },
       series: {
@@ -66,6 +67,8 @@
       xaxis: { mode: 'time' },
       yaxis: { ticks: 10, zoomRange : false },
       zoom: { interactive: true, amount : 1.5 },
+      colors: ['#edc240', '#cb4b4b', '#afd8f8'],
+      selection: { mode: 'xy' }
     }
     // need to track window dimensions to identify real window resizes in IE which sends window
     // resize event when any element on the page is resized
@@ -76,7 +79,7 @@
       if (plot && ($(window).width() != windowWidth || $(window).height() != windowHeight)) {
         windowWidth = $(window).width()
         windowHeight = $(window).height()
-        $.plot(placeholder, plot.getData(), plot.getOptions())
+        plot = $.plot($('#placeholder'), plot.getData(), plot.getOptions())
       }})
     function plotResponseData(from, to) {
       var fromAsDate = new Date(from)
@@ -87,12 +90,13 @@
       to -= new Date(to).getTimezoneOffset() * 60 * 1000
       zoomRangeFrom -= new Date(zoomRangeFrom).getTimezoneOffset() * 60 * 1000
       zoomRangeTo -= new Date(zoomRangeTo).getTimezoneOffset() * 60 * 1000
-      overrideOptions = {
-        colors: ["#edc240", "#cb4b4b", "#afd8f8"],
-        xaxis: { min : from, max : to, zoomRange : [ zoomRangeFrom, zoomRangeTo ] }
-      }
-      plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints],
-          $.extend(true, {}, options, overrideOptions))
+      options.xaxis.min = from
+      options.xaxis.max = to
+      options.xaxis.zoomRange = [ zoomRangeFrom, zoomRangeTo ]
+      // reset yaxis min/max so it will be auto calculated to fit data points
+      options.yaxis.min = undefined
+      options.yaxis.max = undefined
+      plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
       updateTimeFilter()
     }
     function itemsEqual(plotItem1, plotItem2) {
@@ -129,7 +133,7 @@
         hideTooltip()
       }
     })
-    $('#placeholder').click(function() {
+    $('#placeholder').mousedown(function() {
       hideTooltip()
     })
     $(document).keyup(function(e) {
@@ -138,6 +142,9 @@
       }
     })
     $('#placeholder').bind('plothover', function (event, pos, item) {
+      if (plotselecting) {
+        return
+      }
       if (item && itemsEqual(item, currentItem) && !tooltipShowing) {
         // this happens after a zoom when the data point is still highlighted but the tooltip has
         // been hidden, and then the user hovers back over the same highlighted data point
@@ -168,6 +175,59 @@
         prospectiveItem = null
       }
     })
+    var cancelingPlotSelection
+    $(document).keyup(function(e) {
+      if (e.keyCode == 27 && plotselecting) { // esc key
+        plot.clearSelection()
+        cancelingPlotSelection = true
+      }
+    })
+    $(document).mousedown(function(e) {
+      // need to reset this variable at some point, now seems good
+      cancelingPlotSelection = false
+    })
+    $('#placeholder').bind('plotselecting', function (event, ranges) {
+      if (ranges) {
+        // plotselecting events are triggered with null ranges parameter when '!selectionIsSane()'
+        // (see jquery.flot.selection.js)
+        plotselecting = true
+      }
+    })
+    $('#placeholder').bind('plotunselected', function (event, ranges) {
+      plotselecting = false
+    })
+    $('#placeholder').bind('plotselected', function (event, ranges) {
+      if (cancelingPlotSelection) {
+        // unfortunately, plotselected is still called after plot.clearSelection() in the keyup
+        // event handler for the esc key
+        plot.clearSelection()
+        return
+      }
+      // cancel any refresh in action
+      if (refreshQueryString) {
+        refreshQueryString = undefined
+        hideSpinner('#refreshButtonSpinner')
+        showAndFadeErrorMessage('#refreshButtonCancelByZoom')
+      }
+      options.xaxis.min = ranges.xaxis.from
+      options.xaxis.max = ranges.xaxis.to
+      // round min/max to the nearest millisecond in outward direction so that they encompass the
+      // requested selection
+      options.yaxis.min = Math.floor(ranges.yaxis.from * 1000) / 1000
+      options.yaxis.max = Math.ceil(ranges.yaxis.to * 1000) / 1000
+      plot = $.plot($('#placeholder'), plot.getData(), options)
+      plotselecting = false
+      updateTimeFilter()
+      updateDurationFilter()
+      if (currentItem) {
+        // highlight gets out of sync on zoom
+        plot.unhighlight()
+        plot.highlight(currentItem.seriesIndex, currentItem.dataIndex)
+        // leave the highlight, but cancel the tooltip since it is out of sync also, the user can
+        // get tooltip again by hovering over the highlighted data point
+        hideTooltip()
+      }
+    })
     function updateTimeFilter() {
       var from = Math.floor(plot.getAxes().xaxis.min)
       var to = Math.ceil(plot.getAxes().xaxis.max)
@@ -179,6 +239,11 @@
       // see http://momentjs.com/docs/#/customization/long-date-formats
       $('#timeFilter').html(moment(from).format('h:mm:ss A') + ' &nbsp; to &nbsp; '
           + moment(to).format('h:mm:ss A (Z)'))
+    }
+    function updateDurationFilter() {
+      $('#durationLow').val(plot.getAxes().yaxis.min)
+      $('#durationHigh').val(plot.getAxes().yaxis.max)
+      $('#durationComparator').val('between').change()
     }
     function refresh() {
       // TODO use localized date format, see more detailed comment at datepicker construction since
@@ -407,6 +472,7 @@
         $('#moreFiltersButton').html('less filters')
         $('#moreFilters').show()
       }
+      // without preventDefault, click triggers form submission
       e.preventDefault()
     })
     var today = new Date()
@@ -433,18 +499,15 @@
         $('#durationHighDiv').show()
       }
     })
-    $('#refreshButton').click(function() {
-      refresh()
-    })
+    $('#refreshButton').click(refresh)
     $(".refresh-data-on-enter-key").keypress(function(event) {
       if (event.which == 13) {
         refresh()
+        // without preventDefault, enter triggers 'more filters' button
+        event.preventDefault()
       }
     })
-    $('#zoomOut').click(function() {
-      plot.zoomOut()
-      return false
-    })
+    $('#zoomOut').click(function() { plot.zoomOut() })
     getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000, 1000, '', true)
   })
 </script>
@@ -473,7 +536,8 @@
     </div>
     <div style="width: 100%; text-align: center; font-style: italic; margin: 4px 0">
       use mouse scroll wheel to zoom in and out
-      (or double click to zoom in and <a href="#" id="zoomOut">click here to zoom out</a>)
+      (or double click to zoom in and<button class="lightbtn red" id="zoomOut"
+          style="font-style: italic">click here to zoom out</button>)
     </div>
     <!-- min-height to take up a little space even when no error message -->
     <div style="text-align:center; min-height: 20px">
@@ -514,12 +578,12 @@
                 <option value="between">Between</option>
               </select>
               <div class="input-append" id="durationLowDiv">
-                <input type="text" class="input-small refresh-data-on-enter-key" id="durationLow">
+                <input type="text" class="input-mini refresh-data-on-enter-key" id="durationLow">
                 <span class="add-on">seconds</span>
               </div>
               <div class="input-append" id="durationAndDiv" style="display: none">and</div>
               <div class="input-append" id="durationHighDiv" style="display: none">
-                <input type="text" class="input-small refresh-data-on-enter-key" id="durationHigh">
+                <input type="text" class="input-mini refresh-data-on-enter-key" id="durationHigh">
                 <span class="add-on">seconds</span>
               </div>
             </div>
@@ -561,7 +625,7 @@
                   <option value="equals">Equals</option>
                   <option value="contains">Contains</option>
                 </select>
-                <input type="text" class="input-small refresh-data-on-enter-key" id="userIdFilter">
+                <input type="text" class="input-medium refresh-data-on-enter-key" id="userIdFilter">
               </div>
             </div>
             <div class="control-group">

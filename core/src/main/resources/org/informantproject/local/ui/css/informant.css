@@ -156,6 +156,7 @@ a:hover {
   border: none;
   background-color: transparent;
   text-align: left;
+  vertical-align: bottom;
 }
 .lightbtn:hover, .lightbtn:focus {
   background-color:#ddd;
