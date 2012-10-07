@@ -26,7 +26,6 @@ import org.informantproject.testkit.AppUnderTest;
 import org.informantproject.testkit.InformantContainer;
 import org.informantproject.testkit.LogMessage;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,8 +52,13 @@ public class ParsedTypePlanBTest {
 
     @Test
     public void shouldNotLogWarningInParsedTypeCachePlanB() throws Exception {
-        // this test is only relevant under javaagent
-        Assume.assumeTrue(Boolean.valueOf(System.getProperty("externalJvmAppContainer")));
+        if (!Boolean.valueOf(System.getProperty("externalJvmAppContainer"))) {
+            // this test is only relevant under javaagent
+            // (tests are run under javaagent during mvn integration-test but not during mvn test)
+            // not using org.junit.Assume which reports the test as ignored, since ignored tests
+            // seem like something that needs to be revisited and 'un-ignored'
+            return;
+        }
         // given
         // when
         container.executeAppUnderTest(ShouldNotLogWarningInParsedTypeCachePlanB.class);
@@ -65,8 +69,13 @@ public class ParsedTypePlanBTest {
 
     @Test
     public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
-        // this test is only relevant under javaagent
-        Assume.assumeTrue(Boolean.valueOf(System.getProperty("externalJvmAppContainer")));
+        if (!Boolean.valueOf(System.getProperty("externalJvmAppContainer"))) {
+            // this test is only relevant under javaagent
+            // (tests are run under javaagent during mvn integration-test but not during mvn test)
+            // not using org.junit.Assume which reports the test as ignored, since ignored tests
+            // seem like something that needs to be revisited and 'un-ignored'
+            return;
+        }
         // given
         // when
         container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
