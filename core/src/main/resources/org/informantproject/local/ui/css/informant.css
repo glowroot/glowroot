@@ -230,7 +230,11 @@ a:hover {
   margin: 0 0 20px 40px;
 }
 .section-body-padding {
-  padding: 16px 16px 16px 16px;
+  padding: 24px;
+}
+.form-horizontal .section-body-padding {
+  /* the bottom of the form already has extra padding from margin-bottom on control-group */
+  padding-bottom: 16px;
 }
 .section-body-save {
   margin-top: 0;

@@ -117,6 +117,17 @@ public class LogMessageDao {
         }
     }
 
+    public void deleteAllLogMessages() {
+        if (!valid) {
+            return;
+        }
+        try {
+            dataSource.execute("truncate table log_message");
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
     @VisibleForTesting
     long count() {
         if (!valid) {

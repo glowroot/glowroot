@@ -59,8 +59,8 @@ class AdminJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    void compact() {
-        logger.debug("compact()");
+    void compactData() {
+        logger.debug("compactData()");
         try {
             dataSource.compact();
         } catch (SQLException e) {
@@ -69,10 +69,10 @@ class AdminJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    void truncate() {
-        logger.debug("truncate()");
+    void truncateData() {
+        logger.debug("truncateData()");
         traceSnapshotDao.deleteAllSnapshots();
-        compact();
+        compactData();
     }
 
     @JsonServiceMethod
@@ -104,6 +104,12 @@ class AdminJsonService implements JsonService {
             return null;
         }
         return sb.toString();
+    }
+
+    @JsonServiceMethod
+    void truncateLog() {
+        logger.debug("truncateLog()");
+        logMessageDao.deleteAllLogMessages();
     }
 
     @JsonServiceMethod

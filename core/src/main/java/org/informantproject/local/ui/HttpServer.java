@@ -145,16 +145,16 @@ public class HttpServer extends HttpServerBase {
                 + "/([^/]+)$"), configJsonService, "storePluginConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/threaddump$"),
                 threadDumpJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/compact$"),
-                adminJsonService, "compact"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/truncate$"),
-                adminJsonService, "truncate"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/data/compact$"),
+                adminJsonService, "compactData"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/data/truncate$"),
+                adminJsonService, "truncateData"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin"
                 + "/numPendingTraceWrites$"), adminJsonService, "getNumPendingTraceWrites"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/dbFile$"),
-                adminJsonService, "getDbFilePath"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/log"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/log$"),
                 adminJsonService, "getLog"));
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/log/truncate$"),
+                adminJsonService, "truncateLog"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
 

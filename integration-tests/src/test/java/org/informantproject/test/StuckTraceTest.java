@@ -54,7 +54,7 @@ public class StuckTraceTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().deleteAllTraces();
+        container.getInformant().deleteAllTraceSnapshots();
     }
 
     @Test

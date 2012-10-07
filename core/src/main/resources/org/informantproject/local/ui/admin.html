@@ -46,9 +46,20 @@
     var postingTruncate = false
     function refreshLog(scroll) {
       $.getJSON('admin/log', function(logMessages) {
-        var html = logTemplate(logMessages)
-        $('#log').html(html)
+        if (logMessages.length) {
+          var html = logTemplate(logMessages)
+          $('#log').html(html)
+          $('#log').show()
+        } else {
+          // 'pre' styled #log takes up space even when empty, so need to hide
+          $('#log').hide()
+        }
         $('#logSectionBody').show()
+        if (logMessages.length) {
+          $('#logTruncateSection').show()
+        } else {
+          $('#logTruncateSection').hide()
+        }
         if (scroll) {
           $(window).scrollTop(document.body.scrollHeight)
         }
@@ -67,11 +78,20 @@
       refreshLog(true)
       showAndFadeSuccessMessage('#logRefreshSuccessMessage')
     })
+    $('#logTruncateButton').click(function() {
+      $.getJSON('admin/log/truncate', function() {
+        $('#log').html("")
+        // 'pre' styled #log takes up space even when empty, so need to hide
+        $('#log').hide()
+        $('#logTruncateSection').hide()
+      })
+      showAndFadeSuccessMessage('#logTruncateSuccessMessage')
+    })
     $('#compactButton').click(function() {
       // handle crazy user clicking on the button
       if (postingCompact) return
       postingCompact = true
-      $.post('admin/compact', function() {
+      $.post('admin/data/compact', function() {
         postingCompact = false
         hideSpinner('#compactSpinner')
         showAndFadeSuccessMessage('#compactSuccessMessage')
@@ -84,7 +104,7 @@
       // handle crazy user clicking on the button
       if (postingTruncate) return
       postingTruncate = true
-      $.post('admin/truncate', function() {
+      $.post('admin/data/truncate', function() {
         postingTruncate = false
         hideSpinner('#truncateSpinner')
         showAndFadeSuccessMessage('#truncateSuccessMessage')
@@ -118,25 +138,31 @@
   </div>
   <br>
   <div class="section-body section-body-padding hide" id="dataFileSectionBody">
-    <button type="button" class="btn" id="compactButton">Compact</button>
-    <span class="button-spinner" id="compactSpinner"></span>
-    <span class="button-success-message" id="compactSuccessMessage">Compacted</span>    
-    <br>
-    <br>
-    <button type="button" class="btn" id="truncateButton">Truncate</button>
-    <span class="button-spinner" id="truncateSpinner"></span>
-    <span class="button-success-message" id="truncateSuccessMessage">Truncated</span>    
+    <div style="margin: 10px 10px 30px 10px">
+      <button type="button" class="btn" id="compactButton">Compact</button>
+      <span class="button-spinner" id="compactSpinner"></span>
+      <span class="button-success-message" id="compactSuccessMessage">Compacted</span>
+    </div>
+    <div style="margin: 10px">
+      <button type="button" class="btn" id="truncateButton">Truncate</button>
+      <span class="button-spinner" id="truncateSpinner"></span>
+      <span class="button-success-message" id="truncateSuccessMessage">Truncated</span>
+    </div>
   </div>
   <div class="section-header" id="logSectionHeader">
     <button class="section-toggle">Informant Log</button>
   </div>
   <br>
   <div class="section-body section-body-padding hide" id="logSectionBody">
+    <div id="logTruncateSection" style="margin: 10px">
+      <button type="button" class="btn" id="logTruncateButton">Truncate</button>
+      <span class="button-success-message" id="logTruncateSuccessMessage">Truncated</span>
+    </div>
     <div class="flat-pre" id="log"></div>
-    <div style="margin: 0 0 10px 10px">
+    <div style="margin: 10px">
       <button type="button" class="btn" id="logRefreshButton">Refresh</button>
       <span class="button-success-message" id="logRefreshSuccessMessage">Refreshed</span>
-    </div>    
+    </div>
   </div>
 </body>
 </html>

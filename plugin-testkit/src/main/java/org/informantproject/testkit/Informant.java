@@ -197,6 +197,10 @@ public class Informant {
         return gson.fromJson(get("/admin/log"), new TypeToken<List<LogMessage>>() {}.getType());
     }
 
+    public void deleteAllLogMessages() throws Exception {
+        post("/admin/log/truncate", "");
+    }
+
     private Trace getLastTrace(boolean summary) throws Exception {
         String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
@@ -266,8 +270,8 @@ public class Informant {
         return gson.fromJson(exceptionJson, CapturedException.class);
     }
 
-    public void deleteAllTraces() throws Exception {
-        get("/admin/truncate");
+    public void deleteAllTraceSnapshots() throws Exception {
+        post("/admin/data/truncate", "");
     }
 
     public int getNumPendingTraceWrites() throws Exception {

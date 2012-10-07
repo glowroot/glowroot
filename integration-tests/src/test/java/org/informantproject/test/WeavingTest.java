@@ -46,7 +46,7 @@ public class WeavingTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().deleteAllTraces();
+        container.getInformant().deleteAllTraceSnapshots();
     }
 
     @Test
