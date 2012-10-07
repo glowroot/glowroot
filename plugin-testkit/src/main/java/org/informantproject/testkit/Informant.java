@@ -28,9 +28,12 @@ import org.informantproject.testkit.Config.FineProfilingConfig;
 import org.informantproject.testkit.Config.PluginConfig;
 import org.informantproject.testkit.Config.PluginConfigJsonDeserializer;
 import org.informantproject.testkit.Config.UserTracingConfig;
+import org.informantproject.testkit.LogMessage.Level;
 import org.informantproject.testkit.Trace.CapturedException;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -270,8 +273,20 @@ public class Informant {
         return gson.fromJson(exceptionJson, CapturedException.class);
     }
 
-    public void deleteAllTraceSnapshots() throws Exception {
+    public void cleanUpAfterEachTest() throws Exception {
         post("/admin/data/truncate", "");
+        List<LogMessage> warningMessages = Lists.newArrayList();
+        for (LogMessage message : getLogMessages()) {
+            if (message.getLevel() == Level.WARN || message.getLevel() == Level.ERROR) {
+                warningMessages.add(message);
+            }
+        }
+        if (!warningMessages.isEmpty()) {
+            // clear warnings for next test before throwing assertion error
+            post("/admin/log/truncate", "");
+            throw new AssertionError("There were warnings and/or errors: "
+                    + Joiner.on(", ").join(warningMessages));
+        }
     }
 
     public int getNumPendingTraceWrites() throws Exception {

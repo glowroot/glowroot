@@ -72,7 +72,7 @@ public class ServletPluginTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().deleteAllTraceSnapshots();
+        container.getInformant().cleanUpAfterEachTest();
     }
 
     @Test

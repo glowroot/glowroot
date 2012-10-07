@@ -47,7 +47,7 @@ public class DataSourceCompactTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().deleteAllTraceSnapshots();
+        container.getInformant().cleanUpAfterEachTest();
     }
 
     @Test
@@ -58,7 +58,7 @@ public class DataSourceCompactTest {
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);
         long preCompactionDbSize = dbFile.length();
-        container.getInformant().deleteAllTraceSnapshots();
+        container.getInformant().cleanUpAfterEachTest();
         // then
         assertThat(dbFile.length()).isLessThan(preCompactionDbSize);
     }

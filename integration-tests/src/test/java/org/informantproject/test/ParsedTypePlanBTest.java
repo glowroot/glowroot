@@ -73,6 +73,8 @@ public class ParsedTypePlanBTest {
         // then
         List<LogMessage> logMessages = container.getInformant().getLogMessages();
         assertThat(logMessages).hasSize(1);
+        assertThat(logMessages.get(0).getText()).contains(Y.class.getName());
+        container.getInformant().deleteAllLogMessages();
     }
 
     public static class ShouldNotLogWarningInParsedTypeCachePlanB implements AppUnderTest {
