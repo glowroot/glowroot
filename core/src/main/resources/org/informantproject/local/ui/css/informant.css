@@ -88,6 +88,40 @@ body {
   box-shadow: none !important;
   border: none !important;
 }
+.datepicker td.today {
+  /* override bootstrap-datepicker styling */
+  background-color: #ccc !important;
+  background-image: none !important;
+}
+.datepicker td.today:hover {
+  /* override bootstrap-datepicker styling */
+  /* placed after '.datepicker td.today' to override that style when today is hovered */
+  background-color: #eee !important;
+  background-image: none !important;
+}
+.datepicker td.active, .datepicker td.active:hover {
+  /* override bootstrap-datepicker styling */
+  /* placed after '.datepicker td.today' to override that style when today is active */
+  background-color: transparent !important;
+  background-image: none !important;
+  color: inherit !important;
+  text-shadow: none;
+  font-weight: bold;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #b12930;
+  border-radius: 4px !important;
+  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
+  border-collapse: separate !important;
+}
+.datepicker td.active:hover {
+  /* placed after '.datepicker td.active:hover' to override that style when active is hovered */
+  background-color: #eee !important;
+}
+.datepicker table {
+  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
+  border-collapse: separate !important;
+}
 .button-success-message {
   display: none;
   color: green;
