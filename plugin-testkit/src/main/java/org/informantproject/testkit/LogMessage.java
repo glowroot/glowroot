@@ -55,6 +55,24 @@ public class LogMessage {
     }
 
     @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj instanceof LogMessage) {
+            LogMessage that = (LogMessage) obj;
+            return Objects.equal(timestamp, that.timestamp)
+                    && Objects.equal(level, that.level)
+                    && Objects.equal(loggerName, that.loggerName)
+                    && Objects.equal(text, that.text)
+                    && Objects.equal(exception, that.exception);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(timestamp, level, loggerName, text, exception);
+    }
+
+    @Override
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("timestamp", timestamp)

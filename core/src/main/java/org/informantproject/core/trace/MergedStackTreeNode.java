@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
 /**
@@ -124,5 +125,16 @@ public class MergedStackTreeNode {
     @Nullable
     public State getLeafThreadState() {
         return leafThreadState;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("stackTraceElement", stackTraceElement)
+                .add("childNodes", childNodes)
+                .add("metricNames", metricNames)
+                .add("sampleCount", sampleCount)
+                .add("leafThreadState", leafThreadState)
+                .toString();
     }
 }

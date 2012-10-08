@@ -21,6 +21,8 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.informantproject.api.ErrorMessage;
 import org.informantproject.api.MessageSupplier;
 
+import com.google.common.base.Objects;
+
 /**
  * The "span" terminology is borrowed from <a
  * href="http://research.google.com/pubs/pub36356.html">Dapper</a>.
@@ -123,5 +125,21 @@ public class Span {
 
     public void setStackTrace(@Nullable StackTraceElement[] stackTrace) {
         this.stackTrace = stackTrace;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("message", messageSupplier.get())
+                .add("errorMessage", errorMessage)
+                .add("traceStartTick", traceStartTick)
+                .add("startTick", startTick)
+                .add("endTick", endTick)
+                .add("index", index)
+                .add("parentIndex", parentIndex)
+                .add("nestingLevel", nestingLevel)
+                .add("traceMetric", traceMetric)
+                .add("stackTrace", stackTrace)
+                .toString();
     }
 }

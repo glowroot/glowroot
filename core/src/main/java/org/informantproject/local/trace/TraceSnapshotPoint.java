@@ -17,6 +17,8 @@ package org.informantproject.local.trace;
 
 import javax.annotation.concurrent.Immutable;
 
+import com.google.common.base.Objects;
+
 /**
  * Structure used in the response to "/trace/points".
  * 
@@ -65,5 +67,16 @@ public class TraceSnapshotPoint {
 
     public boolean isError() {
         return error;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("id", id)
+                .add("capturedAt", capturedAt)
+                .add("duration", duration)
+                .add("completed", completed)
+                .add("error", error)
+                .toString();
     }
 }

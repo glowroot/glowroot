@@ -34,6 +34,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -314,6 +315,23 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                         adviceFlowType.getDescriptor());
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        // not including fields that are just direct copies from Weaver
+        return Objects.toStringHelper(this)
+                .add("adviceFlowType", adviceFlowType)
+                .add("codeSource", codeSource)
+                .add("adviceMatchers", adviceMatchers)
+                .add("matchedMixins", matchedMixins)
+                .add("type", type)
+                .add("adviceFlowThreadLocalNums", adviceFlowThreadLocalNums)
+                .add("writtenAdviceFlowThreadLocals", writtenAdviceFlowThreadLocals)
+                .add("innerMethodCounter", innerMethodCounter)
+                .add("nothingAtAllToWeave", nothingAtAllToWeave)
+                .add("parsedType", parsedType.build())
+                .toString();
     }
 
     private class InitMixins extends AdviceAdapter {

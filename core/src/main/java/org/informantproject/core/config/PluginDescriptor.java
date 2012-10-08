@@ -26,6 +26,7 @@ import org.informantproject.api.weaving.Mixin;
 import org.informantproject.api.weaving.Pointcut;
 import org.informantproject.core.weaving.Advice;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -120,6 +121,19 @@ public class PluginDescriptor {
         return propertyDescriptorsByName.get(propertyName);
     }
 
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("name", name)
+                .add("groupId", groupId)
+                .add("artifactId", artifactId)
+                .add("version", version)
+                .add("propertyDescriptors", propertyDescriptors)
+                .add("mixins", mixins)
+                .add("advisors", advisors)
+                .toString();
+    }
+
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
         List<Advice> advisors = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
@@ -192,6 +206,16 @@ public class PluginDescriptor {
                         + " schema validation");
                 return String.class;
             }
+        }
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("prompt", prompt)
+                    .add("name", name)
+                    .add("type", type)
+                    .add("default", defaultValue)
+                    .add("hidden", hidden)
+                    .toString();
         }
     }
 }

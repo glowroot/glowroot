@@ -27,7 +27,6 @@ import org.informantproject.api.weaving.MethodModifier;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -200,7 +199,8 @@ class AdviceMatcher {
         return Objects.toStringHelper(this)
                 .add("advice", advice)
                 .add("targetTypeMatch", targetTypeMatch)
-                .add("preMatchedSuperTypes", Joiner.on(", ").join(preMatchedSuperTypeNames))
+                // shallow display of parsed types
+                .add("preMatchedSuperTypes", preMatchedSuperTypeNames)
                 .toString();
     }
 }

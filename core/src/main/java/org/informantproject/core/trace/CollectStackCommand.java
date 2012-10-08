@@ -22,6 +22,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 
 /**
@@ -82,5 +83,15 @@ class CollectStackCommand implements Runnable {
             // log and terminate successfully
             logger.error(t.getMessage(), t);
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("trace", trace)
+                .add("endTick", endTick)
+                .add("fine", fine)
+                .add("tracePreviouslyCompleted", tracePreviouslyCompleted)
+                .toString();
     }
 }

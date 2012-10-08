@@ -20,6 +20,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
+import com.google.common.base.Objects;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -35,6 +37,15 @@ public abstract class ErrorMessage {
     public abstract CapturedException getException();
 
     protected ErrorMessage() {}
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("text", getText())
+                .add("detail", getDetail())
+                .add("exception", getException())
+                .toString();
+    }
 
     public static ErrorMessage from(Throwable t) {
         return new ErrorMessageImpl(getRootCause(t).toString(), null, CapturedException.from(t));

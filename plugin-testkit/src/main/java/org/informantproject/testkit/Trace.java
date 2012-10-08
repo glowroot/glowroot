@@ -164,6 +164,10 @@ public class Trace {
         return fineMergedStackTree;
     }
 
+    void setSummary(boolean summary) {
+        this.summary = summary;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -183,10 +187,6 @@ public class Trace {
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)
                 .toString();
-    }
-
-    void setSummary(boolean summary) {
-        this.summary = summary;
     }
 
     public static class TraceError {

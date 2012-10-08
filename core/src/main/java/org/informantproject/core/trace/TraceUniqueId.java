@@ -64,4 +64,9 @@ class TraceUniqueId {
             return Strings.padStart(s, 12, '0');
         }
     }
+
+    @Override
+    public String toString() {
+        return get();
+    }
 }

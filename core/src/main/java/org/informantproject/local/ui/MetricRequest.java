@@ -17,6 +17,7 @@ package org.informantproject.local.ui;
 
 import java.util.List;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -53,5 +54,14 @@ class MetricRequest {
 
     public void setEnd(long end) {
         this.end = end;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("metricIds", metricIds)
+                .add("start", start)
+                .add("end", end)
+                .toString();
     }
 }

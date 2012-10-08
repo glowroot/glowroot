@@ -20,6 +20,7 @@ import javax.annotation.concurrent.Immutable;
 import org.informantproject.api.Timer;
 import org.informantproject.core.util.PartiallyThreadSafe;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 
 /**
@@ -134,6 +135,20 @@ public class TraceMetric implements Timer {
         }
         count++;
         total += time;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("name", name)
+                .add("total", total)
+                .add("min", min)
+                .add("max", max)
+                .add("count", count)
+                .add("startTick", startTick)
+                .add("selfNestingLevel", selfNestingLevel)
+                .add("firstStart", firstStart)
+                .toString();
     }
 
     @Immutable

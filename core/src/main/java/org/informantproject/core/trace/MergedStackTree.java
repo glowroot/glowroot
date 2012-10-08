@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
@@ -134,6 +135,13 @@ public class MergedStackTree {
             }
             lastMatchedNode = nextNode;
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("rootNodes", rootNodes)
+                .toString();
     }
 
     // recreate the stack trace as it would have been without the synthetic $metric$ methods

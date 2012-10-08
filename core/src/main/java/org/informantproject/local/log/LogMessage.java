@@ -20,6 +20,8 @@ import javax.annotation.concurrent.Immutable;
 
 import org.informantproject.core.log.Level;
 
+import com.google.common.base.Objects;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -73,5 +75,16 @@ public class LogMessage {
     @Nullable
     public String getException() {
         return exception;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("timestamp", timestamp)
+                .add("level", level)
+                .add("loggerName", loggerName)
+                .add("text", text)
+                .add("exception", exception)
+                .toString();
     }
 }

@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.NotThreadSafe;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -89,6 +90,17 @@ class ParsedType {
             }
         }
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("missing", missing)
+                .add("name", name)
+                .add("superName", superName)
+                .add("interfaceNames", interfaceNames)
+                .add("methods", methods)
+                .toString();
     }
 
     static Builder builder(String name, @Nullable String superName,

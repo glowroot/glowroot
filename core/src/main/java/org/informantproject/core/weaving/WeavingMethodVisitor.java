@@ -37,6 +37,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -454,5 +455,23 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 logger.error("unexpected parameter type {} at index {}", parameterType, i);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("access", access)
+                .add("name", name)
+                .add("owner", owner)
+                .add("advisors", advisors)
+                .add("adviceFlowThreadLocalNums", adviceFlowThreadLocalNums)
+                .add("argumentTypes", argumentTypes)
+                .add("topFlowLocals", topFlowLocals)
+                .add("enabledLocals", enabledLocals)
+                .add("travelerLocals", travelerLocals)
+                .add("needsTryCatch", needsTryCatch)
+                .add("catchStartLabel", catchStartLabel)
+                .add("outerStartLabel", outerStartLabel)
+                .toString();
     }
 }

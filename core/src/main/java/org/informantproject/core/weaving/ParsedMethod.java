@@ -63,19 +63,34 @@ class ParsedMethod {
         return modifiers;
     }
 
+    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // identify a method within a given class
     @Override
-    public boolean equals(@Nullable Object o) {
-        if (!(o instanceof ParsedMethod)) {
-            return false;
+    public boolean equals(@Nullable Object obj) {
+        if (obj == this) {
+            return true;
         }
-        ParsedMethod other = (ParsedMethod) o;
-        return Objects.equal(other.name, name)
-                && Arrays.equals(other.argTypes, argTypes);
+        if (obj instanceof ParsedMethod) {
+            ParsedMethod that = (ParsedMethod) obj;
+            return Objects.equal(name, that.name) && Arrays.equals(argTypes, that.argTypes);
+        }
+        return false;
     }
 
+    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // identify a method within a given class
     @Override
     public int hashCode() {
         return Objects.hashCode(name, argTypes);
     }
-}
 
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("name", name)
+                .add("argTypes", argTypes)
+                .add("returnType", returnType)
+                .add("modifiers", modifiers)
+                .toString();
+    }
+}

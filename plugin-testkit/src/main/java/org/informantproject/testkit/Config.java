@@ -62,6 +62,36 @@ public class Config {
         return pluginConfigs;
     }
 
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj instanceof Config) {
+            Config that = (Config) obj;
+            return Objects.equal(coreConfig, that.coreConfig)
+                    && Objects.equal(coarseProfilingConfig, that.coarseProfilingConfig)
+                    && Objects.equal(fineProfilingConfig, that.fineProfilingConfig)
+                    && Objects.equal(userTracingConfig, that.userTracingConfig)
+                    && Objects.equal(pluginConfigs, that.pluginConfigs);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(coreConfig, coarseProfilingConfig, fineProfilingConfig,
+                userTracingConfig, pluginConfigs);
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("coreConfig", coreConfig)
+                .add("coarseProfilingConfig", coarseProfilingConfig)
+                .add("fineProfilingConfig", fineProfilingConfig)
+                .add("userTracingConfig", userTracingConfig)
+                .add("pluginConfigs", pluginConfigs)
+                .toString();
+    }
+
     public static class CoreConfig {
 
         private boolean enabled;
@@ -122,26 +152,40 @@ public class Config {
             this.metricPeriodMillis = metricPeriodMillis;
         }
         @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof CoreConfig) {
+                CoreConfig that = (CoreConfig) obj;
+                return Objects.equal(enabled, that.enabled)
+                        && Objects.equal(persistenceThresholdMillis,
+                                that.persistenceThresholdMillis)
+                        && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
+                        && Objects.equal(spanStackTraceThresholdMillis,
+                                that.spanStackTraceThresholdMillis)
+                        && Objects.equal(maxSpans, that.maxSpans)
+                        && Objects.equal(rollingSizeMb, that.rollingSizeMb)
+                        && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace)
+                        && Objects.equal(metricPeriodMillis, that.metricPeriodMillis);
+            }
+            return false;
+        }
+        @Override
         public int hashCode() {
             return Objects.hashCode(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
                     spanStackTraceThresholdMillis, maxSpans, rollingSizeMb, warnOnSpanOutsideTrace,
                     metricPeriodMillis);
         }
         @Override
-        public boolean equals(@Nullable Object o) {
-            if (!(o instanceof CoreConfig)) {
-                return false;
-            }
-            CoreConfig other = (CoreConfig) o;
-            return Objects.equal(enabled, other.enabled)
-                    && Objects.equal(persistenceThresholdMillis, other.persistenceThresholdMillis)
-                    && Objects.equal(stuckThresholdSeconds, other.stuckThresholdSeconds)
-                    && Objects.equal(spanStackTraceThresholdMillis,
-                            other.spanStackTraceThresholdMillis)
-                    && Objects.equal(maxSpans, other.maxSpans)
-                    && Objects.equal(rollingSizeMb, other.rollingSizeMb)
-                    && Objects.equal(warnOnSpanOutsideTrace, other.warnOnSpanOutsideTrace)
-                    && Objects.equal(metricPeriodMillis, other.metricPeriodMillis);
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("enabled", enabled)
+                    .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                    .add("stuckThresholdSeconds", stuckThresholdSeconds)
+                    .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
+                    .add("maxSpans", maxSpans)
+                    .add("rollingSizeMb", rollingSizeMb)
+                    .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
+                    .add("metricPeriodMillis", metricPeriodMillis)
+                    .toString();
         }
     }
 
@@ -177,19 +221,28 @@ public class Config {
             this.totalSeconds = totalSeconds;
         }
         @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof CoarseProfilingConfig) {
+                CoarseProfilingConfig that = (CoarseProfilingConfig) obj;
+                return Objects.equal(enabled, that.enabled)
+                        && Objects.equal(initialDelayMillis, that.initialDelayMillis)
+                        && Objects.equal(intervalMillis, that.intervalMillis)
+                        && Objects.equal(totalSeconds, that.totalSeconds);
+            }
+            return false;
+        }
+        @Override
         public int hashCode() {
             return Objects.hashCode(enabled, initialDelayMillis, intervalMillis, totalSeconds);
         }
         @Override
-        public boolean equals(@Nullable Object o) {
-            if (!(o instanceof CoarseProfilingConfig)) {
-                return false;
-            }
-            CoarseProfilingConfig other = (CoarseProfilingConfig) o;
-            return Objects.equal(enabled, other.enabled)
-                    && Objects.equal(initialDelayMillis, other.initialDelayMillis)
-                    && Objects.equal(intervalMillis, other.intervalMillis)
-                    && Objects.equal(totalSeconds, other.totalSeconds);
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("enabled", enabled)
+                    .add("initialDelayMillis", initialDelayMillis)
+                    .add("intervalMillis", intervalMillis)
+                    .add("totalSeconds", totalSeconds)
+                    .toString();
         }
     }
 
@@ -232,21 +285,32 @@ public class Config {
             this.persistenceThresholdMillis = persistenceThresholdMillis;
         }
         @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof FineProfilingConfig) {
+                FineProfilingConfig that = (FineProfilingConfig) obj;
+                return Objects.equal(enabled, that.enabled)
+                        && Objects.equal(tracePercentage, that.tracePercentage)
+                        && Objects.equal(intervalMillis, that.intervalMillis)
+                        && Objects.equal(totalSeconds, that.totalSeconds)
+                        && Objects.equal(persistenceThresholdMillis,
+                                that.persistenceThresholdMillis);
+            }
+            return false;
+        }
+        @Override
         public int hashCode() {
             return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds,
                     persistenceThresholdMillis);
         }
         @Override
-        public boolean equals(@Nullable Object o) {
-            if (!(o instanceof FineProfilingConfig)) {
-                return false;
-            }
-            FineProfilingConfig other = (FineProfilingConfig) o;
-            return Objects.equal(enabled, other.enabled)
-                    && Objects.equal(tracePercentage, other.tracePercentage)
-                    && Objects.equal(intervalMillis, other.intervalMillis)
-                    && Objects.equal(totalSeconds, other.totalSeconds)
-                    && Objects.equal(persistenceThresholdMillis, other.persistenceThresholdMillis);
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("enabled", enabled)
+                    .add("tracePercentage", tracePercentage)
+                    .add("intervalMillis", intervalMillis)
+                    .add("totalSeconds", totalSeconds)
+                    .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                    .toString();
         }
     }
 
@@ -282,19 +346,29 @@ public class Config {
             this.fineProfiling = fineProfiling;
         }
         @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof UserTracingConfig) {
+                UserTracingConfig that = (UserTracingConfig) obj;
+                return Objects.equal(enabled, that.enabled)
+                        && Objects.equal(userId, that.userId)
+                        && Objects.equal(persistenceThresholdMillis,
+                                that.persistenceThresholdMillis)
+                        && Objects.equal(fineProfiling, that.fineProfiling);
+            }
+            return false;
+        }
+        @Override
         public int hashCode() {
             return Objects.hashCode(enabled, userId, persistenceThresholdMillis, fineProfiling);
         }
         @Override
-        public boolean equals(@Nullable Object o) {
-            if (!(o instanceof UserTracingConfig)) {
-                return false;
-            }
-            UserTracingConfig other = (UserTracingConfig) o;
-            return Objects.equal(enabled, other.enabled)
-                    && Objects.equal(userId, other.userId)
-                    && Objects.equal(persistenceThresholdMillis, other.persistenceThresholdMillis)
-                    && Objects.equal(fineProfiling, other.fineProfiling);
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("enabled", enabled)
+                    .add("userId", userId)
+                    .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                    .add("fineProfiling", fineProfiling)
+                    .toString();
         }
     }
 
@@ -324,17 +398,24 @@ public class Config {
             properties.put(name, value);
         }
         @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof PluginConfig) {
+                PluginConfig that = (PluginConfig) obj;
+                return Objects.equal(enabled, that.enabled)
+                        && Objects.equal(properties, that.properties);
+            }
+            return false;
+        }
+        @Override
         public int hashCode() {
             return Objects.hashCode(enabled, properties);
         }
         @Override
-        public boolean equals(@Nullable Object o) {
-            if (!(o instanceof PluginConfig)) {
-                return false;
-            }
-            PluginConfig other = (PluginConfig) o;
-            return Objects.equal(enabled, other.enabled)
-                    && Objects.equal(properties, other.properties);
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("enabled", enabled)
+                    .add("properties", properties)
+                    .toString();
         }
     }
 

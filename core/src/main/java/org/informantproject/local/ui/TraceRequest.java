@@ -17,6 +17,8 @@ package org.informantproject.local.ui;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Objects;
+
 /**
  * Structure used to deserialize json post data sent to "/trace/durations" and "/trace/details".
  * 
@@ -131,5 +133,22 @@ class TraceRequest {
 
     public void setLimit(int limit) {
         this.limit = limit;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("from", from)
+                .add("to", to)
+                .add("low", low)
+                .add("high", high)
+                .add("background", background)
+                .add("errorOnly", errorOnly)
+                .add("fineOnly", fineOnly)
+                .add("userIdComparator", userIdComparator)
+                .add("userId", userId)
+                .add("extraIds", extraIds)
+                .add("limit", limit)
+                .toString();
     }
 }

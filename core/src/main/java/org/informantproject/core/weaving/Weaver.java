@@ -32,6 +32,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.CheckClassAdapter;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -109,6 +110,16 @@ class Weaver implements Opcodes {
         } finally {
             timer.end();
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("mixins", mixins)
+                .add("advisors", advisors)
+                .add("loader", loader)
+                .add("parsedTypeCache", parsedTypeCache)
+                .toString();
     }
 
     private static void verifyBytecode(byte[] bytes, String className, boolean woven) {

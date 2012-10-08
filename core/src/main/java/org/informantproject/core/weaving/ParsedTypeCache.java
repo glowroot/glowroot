@@ -33,6 +33,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -235,6 +236,14 @@ class ParsedTypeCache {
         } else {
             return parsedTypes.getUnchecked(loader);
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("parsedTypes", parsedTypes)
+                .add("bootLoaderParsedTypes", bootLoaderParsedTypes)
+                .toString();
     }
 
     private static String internalName(String typeName) {

@@ -17,6 +17,7 @@ package org.informantproject.core.config;
 
 import javax.annotation.concurrent.Immutable;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -78,6 +79,16 @@ public class CoarseProfilingConfig {
 
     public int getTotalSeconds() {
         return totalSeconds;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("enabled", enabled)
+                .add("initialDelayMillis", initialDelayMillis)
+                .add("intervalMillis", intervalMillis)
+                .add("totalSeconds", totalSeconds)
+                .toString();
     }
 
     public static class Builder {

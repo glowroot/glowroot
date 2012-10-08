@@ -36,6 +36,7 @@ import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.PartiallyThreadSafe;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -83,6 +84,9 @@ public class Trace {
     private final List<TraceMetric> traceMetrics = Collections
             .synchronizedList(new ArrayList<TraceMetric>());
 
+    // the MetricImpls are tracked since they contain thread locals that need to be cleared at the
+    // end of the trace
+    //
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricImpl> metrics = Lists.newArrayList();
 
@@ -363,5 +367,24 @@ public class Trace {
             metrics.add(metric);
         }
         return traceMetric;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("id", id)
+                .add("startDate", startDate)
+                .add("stuck", stuck)
+                .add("background", background)
+                .add("attributes", attributes)
+                .add("userId", userId)
+                .add("traceMetrics", traceMetrics)
+                .add("rootSpan", rootSpan)
+                .add("coarseMergedStackTree", coarseMergedStackTree)
+                .add("fineMergedStackTree", fineMergedStackTree)
+                .add("coarseProfilingScheduledFuture", coarseProfilingScheduledFuture)
+                .add("fineProfilingScheduledFuture", fineProfilingScheduledFuture)
+                .add("stuckScheduledFuture", stuckScheduledFuture)
+                .toString();
     }
 }

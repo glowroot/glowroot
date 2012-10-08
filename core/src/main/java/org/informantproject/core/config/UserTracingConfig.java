@@ -18,6 +18,7 @@ package org.informantproject.core.config;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -83,6 +84,16 @@ public class UserTracingConfig {
 
     public boolean isFineProfiling() {
         return fineProfiling;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("enabled", enabled)
+                .add("userId", userId)
+                .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                .add("fineProfiling", fineProfiling)
+                .toString();
     }
 
     public static class Builder {

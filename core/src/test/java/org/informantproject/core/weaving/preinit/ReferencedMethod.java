@@ -15,6 +15,8 @@
  */
 package org.informantproject.core.weaving.preinit;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Objects;
 
 /**
@@ -63,17 +65,21 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof ReferencedMethod)) {
-            return false;
+    public boolean equals(@Nullable Object obj) {
+        if (obj == this) {
+            return true;
         }
-        ReferencedMethod other = (ReferencedMethod) obj;
-        return Objects.equal(owner, other.owner) && Objects.equal(name, other.name)
-                && Objects.equal(desc, other.desc);
+        if (obj instanceof ReferencedMethod) {
+            ReferencedMethod that = (ReferencedMethod) obj;
+            return Objects.equal(owner, that.owner) && Objects.equal(name, that.name)
+                    && Objects.equal(desc, that.desc);
+        }
+        return false;
     }
 
     @Override
     public int hashCode() {
+        // cached since it is used so heavily
         return hashCode;
     }
 

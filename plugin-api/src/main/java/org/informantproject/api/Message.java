@@ -19,6 +19,8 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Objects;
+
 /**
  * The detail map can contain {@link String}, {@link Double}, {@link Boolean} and null value types.
  * It can also contain nested maps (which have the same restrictions on value types, including
@@ -43,6 +45,14 @@ public abstract class Message {
     public abstract Map<String, ?> getDetail();
 
     protected Message() {}
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("text", getText())
+                .add("detail", getDetail())
+                .toString();
+    }
 
     public static Message from(String message) {
         return new TemplateMessage(message, null, null);

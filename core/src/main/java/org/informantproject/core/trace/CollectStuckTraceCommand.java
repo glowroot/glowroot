@@ -20,6 +20,8 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 
+import com.google.common.base.Objects;
+
 /**
  * Designed to be scheduled and run as soon as the trace exceeds a given threshold.
  * 
@@ -62,5 +64,13 @@ class CollectStuckTraceCommand implements Runnable {
             return;
         }
         traceSink.onStuckTrace(trace);
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("trace", trace)
+                .add("tracePreviouslyCompleted", tracePreviouslyCompleted)
+                .toString();
     }
 }

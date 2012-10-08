@@ -26,6 +26,7 @@ import org.informantproject.api.LoggerFactory;
 import org.informantproject.api.MessageSupplier;
 import org.informantproject.core.util.PartiallyThreadSafe;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
@@ -160,5 +161,17 @@ class RootSpan {
                         .get().getText());
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("spanStack", spanStack)
+                .add("startTick", startTick)
+                .add("endTick", endTick)
+                .add("rootSpan", rootSpan)
+                .add("spans", spans)
+                .add("size", size)
+                .toString();
     }
 }

@@ -198,6 +198,27 @@ public class Advice {
         return onAfterParameterKinds;
     }
 
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("pointcut", pointcut)
+                .add("adviceType", adviceType)
+                .add("pointcutTypePattern", pointcutTypePattern)
+                .add("pointcutMethodPattern", pointcutMethodPattern)
+                .add("isEnabledAdvice", isEnabledAdvice)
+                .add("onBeforeAdvice", onBeforeAdvice)
+                .add("onReturnAdvice", onReturnAdvice)
+                .add("onThrowAdvice", onThrowAdvice)
+                .add("onAfterAdvice", onAfterAdvice)
+                .add("travelerType", travelerType)
+                .add("isEnabledParameterKinds", isEnabledParameterKinds)
+                .add("onBeforeParameterKinds", onBeforeParameterKinds)
+                .add("onReturnParameterKinds", onReturnParameterKinds)
+                .add("onThrowParameterKinds", onThrowParameterKinds)
+                .add("onAfterParameterKinds", onAfterParameterKinds)
+                .toString();
+    }
+
     enum ParameterKind {
         TARGET, METHOD_ARG, PRIMITIVE_METHOD_ARG, METHOD_NAME, RETURN, THROWABLE, TRAVELER;
     }
@@ -384,25 +405,5 @@ public class Advice {
             }
             return parameterKinds;
         }
-    }
-
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("pointcut", pointcut)
-                .add("adviceType", adviceType)
-                .add("pointcutMethodPattern", pointcutMethodPattern)
-                .add("isEnabledAdvice", isEnabledAdvice)
-                .add("onBeforeAdvice", onBeforeAdvice)
-                .add("onReturnAdvice", onReturnAdvice)
-                .add("onThrowAdvice", onThrowAdvice)
-                .add("onAfterAdvice", onAfterAdvice)
-                .add("travelerType", travelerType)
-                .add("isEnabledParameterKinds", isEnabledParameterKinds)
-                .add("onBeforeParameterKinds", onBeforeParameterKinds)
-                .add("onReturnParameterKinds", onReturnParameterKinds)
-                .add("onThrowParameterKinds", onThrowParameterKinds)
-                .add("onAfterParameterKinds", onAfterParameterKinds)
-                .toString();
     }
 }
