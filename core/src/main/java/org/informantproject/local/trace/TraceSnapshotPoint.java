@@ -15,10 +15,7 @@
  */
 package org.informantproject.local.trace;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-
-import com.google.common.base.Objects;
 
 /**
  * Structure used in the response to "/trace/points".
@@ -68,23 +65,5 @@ public class TraceSnapshotPoint {
 
     public boolean isError() {
         return error;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object o) {
-        if (!(o instanceof TraceSnapshotPoint)) {
-            return false;
-        }
-        TraceSnapshotPoint other = (TraceSnapshotPoint) o;
-        return Objects.equal(id, other.id)
-                && Objects.equal(capturedAt, other.capturedAt)
-                && Objects.equal(duration, other.duration)
-                && Objects.equal(error, other.error)
-                && Objects.equal(completed, other.completed);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id, capturedAt, duration, completed, error);
     }
 }
