@@ -25,6 +25,13 @@ body {
   font-weight: normal;
   font-style: normal;
 }
+.pin-vertical-scrollbar {
+  /* always display vertical scrollbar so content doesn't shift horizontally when the vertical
+     scrollbar shows up because the page dynamically expanded greater than a single screen, or
+     contracted down to a single screen, e.g. when showing or hiding content */
+  overflow: -moz-scrollbars-vertical;
+  overflow-y: scroll;
+}
 .header {
   font-weight: normal;
   font-size: 36px;
@@ -45,7 +52,7 @@ body {
   color: #b12930;
 }
 .header-page-name {
-  color: #444;
+  color: #555;
   padding-left: 14px;
 }
 .header-see-also {

@@ -26,13 +26,6 @@
 <link rel="stylesheet" href="libs/qtip/2.0.0-nightly-20120910/jquery.qtip.min.css"
     type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
-<style type="text/css">
-  /* always display vertical scrollbar so content doesn't resize when showing long trace detail */
-  body {
-    overflow: -moz-scrollbars-vertical;
-    overflow-y: scroll;
-  }
-</style>
 <script type="text/javascript" src="libs/jquery/1.8.1/jquery.min.js"></script>
 <script type="text/javascript" src="libs/bootstrap/2.1.1/js/bootstrap.min.js"></script>
 <script type="text/javascript"
@@ -512,7 +505,7 @@
   })
 </script>
 </head>
-<body>
+<body class="pin-vertical-scrollbar">
   <div class="header">
     <a class="header-logo" href=".">
         <!-- lack of spaces on this line is important -->
