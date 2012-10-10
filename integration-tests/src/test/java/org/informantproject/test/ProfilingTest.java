@@ -49,6 +49,14 @@ public class ProfilingTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = InformantContainer.create();
+        // capture one trace to warm up the system, otherwise sometimes there are delays in class
+        // loading and the profiler captures too many or too few samples
+        container.getInformant().setPersistenceThresholdMillis(0);
+        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        profilingConfig.setInitialDelayMillis(100);
+        profilingConfig.setIntervalMillis(10);
+        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
+        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
     }
 
     @AfterClass
@@ -74,9 +82,28 @@ public class ProfilingTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNotNull();
-        // coarse profiler should have captured about 5 stack traces
-        assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isGreaterThan(0);
-        assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isLessThan(10);
+        // coarse profiler should have captured exactly 5 stack traces
+        assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isEqualTo(5);
+        assertThatTreeDoesNotContainSyntheticMetricMethods(trace.getCoarseMergedStackTree());
+        assertThat(trace.getFineMergedStackTree()).isNull();
+    }
+
+    @Test
+    public void shouldReadCoarseProfilingTreeWhenTotalSecondsIsZero() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        profilingConfig.setInitialDelayMillis(100);
+        profilingConfig.setIntervalMillis(10);
+        profilingConfig.setTotalSeconds(0);
+        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
+        // then
+        Trace trace = container.getInformant().getLastTrace();
+        assertThat(trace.getCoarseMergedStackTree()).isNotNull();
+        // coarse profiler should have captured exactly 1 stack trace
+        assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isEqualTo(1);
         assertThatTreeDoesNotContainSyntheticMetricMethods(trace.getCoarseMergedStackTree());
         assertThat(trace.getFineMergedStackTree()).isNull();
     }
@@ -89,6 +116,7 @@ public class ProfilingTest {
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
         coarseProfilingConfig.setIntervalMillis(10);
+        coarseProfilingConfig.setTotalSeconds(300);
         container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
         FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
@@ -204,7 +232,7 @@ public class ProfilingTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            Thread.sleep(150);
+            Thread.sleep(145);
         }
     }
 
@@ -212,6 +240,7 @@ public class ProfilingTest {
             TraceMarker {
         private static final PluginServices pluginServices = PluginServices
                 .get("org.informantproject:informant-integration-tests");
+
         public void executeApp() throws InterruptedException {
             traceMarker();
         }

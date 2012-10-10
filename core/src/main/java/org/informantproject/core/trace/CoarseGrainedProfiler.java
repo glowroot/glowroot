@@ -40,7 +40,7 @@ import com.google.inject.Singleton;
 public class CoarseGrainedProfiler implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CoarseGrainedProfiler.class);
-    private static final int CHECK_INTERVAL_MILLIS = 100;
+    private static final int CHECK_INTERVAL_MILLIS = 50;
 
     private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
             .newSingleThreadScheduledExecutor("Informant-CoarseGrainedProfiler");
@@ -51,10 +51,10 @@ public class CoarseGrainedProfiler implements Runnable {
 
     @Inject
     CoarseGrainedProfiler(TraceRegistry traceRegistry, ConfigService configService, Ticker ticker) {
-
         this.traceRegistry = traceRegistry;
         this.configService = configService;
         this.ticker = ticker;
+
         // the main repeating Runnable (this) only runs every CHECK_INTERVAL_MILLIS at which time it
         // checks to see if there are any traces that may need stack traces scheduled before the
         // main repeating Runnable runs again (in another CHECK_INTERVAL_MILLIS).
@@ -95,7 +95,6 @@ public class CoarseGrainedProfiler implements Runnable {
         if (!config.isEnabled()) {
             return;
         }
-        // TODO implement totalMillis
         long stackTraceThresholdTime = currentTick - TimeUnit.MILLISECONDS.toNanos(
                 config.getInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
         for (Trace trace : traceRegistry.getTraces()) {
@@ -109,24 +108,39 @@ public class CoarseGrainedProfiler implements Runnable {
                 break;
             }
             if (trace.getCoarseProfilingScheduledFuture() == null) {
-                scheduleProfiling(currentTick, config, trace);
+                scheduleProfiling(trace, currentTick, config);
             }
         }
     }
 
     // schedule stack traces to be taken every X seconds
-    private void scheduleProfiling(long currentTick, CoarseProfilingConfig config, Trace trace) {
-        long traceDurationMillis = TimeUnit.NANOSECONDS
-                .toMillis(currentTick - trace.getStartTick());
-        long initialDelayRemainingMillis = Math.max(0, config.getInitialDelayMillis()
-                - traceDurationMillis);
-        // extra half interval at the end to make sure the final stack trace is grabbed if it aligns
-        // on total (e.g. 100ms interval, 1 second total should result in exactly 10 stack traces)
-        long endTick = trace.getStartTick() + TimeUnit.SECONDS.toNanos(config.getTotalSeconds())
-                + TimeUnit.MILLISECONDS.toNanos(config.getIntervalMillis()) / 2;
+    private void scheduleProfiling(Trace trace, long currentTick, CoarseProfilingConfig config) {
+        long endTick = getEndTickForCommand(trace.getStartTick(), config);
         CollectStackCommand command = new CollectStackCommand(trace, endTick, false, ticker);
+        long initialDelayRemainingMillis = getInitialDelayForCommand(trace.getStartTick(),
+                currentTick, config);
         ScheduledFuture<?> scheduledFuture = scheduledExecutor.scheduleAtFixedRate(command,
                 initialDelayRemainingMillis, config.getIntervalMillis(), TimeUnit.MILLISECONDS);
         trace.setCoarseProfilingScheduledFuture(scheduledFuture);
+    }
+
+    private static long getEndTickForCommand(long startTick, CoarseProfilingConfig config) {
+        // need to take max in case total is smaller than interval
+        long durationMillis = Math.max(TimeUnit.SECONDS.toMillis(config.getTotalSeconds())
+                - config.getIntervalMillis() / 2, config.getIntervalMillis() / 2);
+        // extra half interval is to make sure the final stack trace is grabbed if it aligns on
+        // total (e.g. 1s initial delay, 1s interval, 10 second total should result in exactly 10
+        // stack traces)
+        return startTick + TimeUnit.MILLISECONDS.toNanos(config.getInitialDelayMillis())
+                + TimeUnit.MILLISECONDS.toNanos(durationMillis);
+    }
+
+    private static long getInitialDelayForCommand(long startTick, long currentTick,
+            CoarseProfilingConfig config) {
+
+        long traceDurationMillis = TimeUnit.NANOSECONDS.toMillis(currentTick - startTick);
+        long initialDelayRemainingMillis = Math.max(0, config.getInitialDelayMillis()
+                - traceDurationMillis);
+        return initialDelayRemainingMillis;
     }
 }
