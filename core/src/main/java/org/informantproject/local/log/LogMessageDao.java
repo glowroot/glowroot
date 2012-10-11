@@ -27,8 +27,8 @@ import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.log.Level;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.DataSource.Column;
 import org.informantproject.core.util.DataSource.RowMapper;
+import org.informantproject.core.util.Schemas.Column;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;

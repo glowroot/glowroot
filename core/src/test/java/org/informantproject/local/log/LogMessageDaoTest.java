@@ -17,13 +17,11 @@ package org.informantproject.local.log;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
-import org.fest.util.Files;
 import org.informantproject.core.log.Level;
 import org.informantproject.core.util.DataSource;
 import org.informantproject.core.util.Threads;
@@ -38,15 +36,13 @@ import org.junit.Test;
 public class LogMessageDaoTest {
 
     private Collection<Thread> preExistingThreads;
-    private File dbFile;
     private DataSource dataSource;
     private LogMessageDao logMessageDao;
 
     @Before
     public void before() throws SQLException, IOException {
         preExistingThreads = Threads.currentThreads();
-        dbFile = File.createTempFile("informant-test-", ".h2.db");
-        dataSource = new DataSource(dbFile, true);
+        dataSource = new DataSource();
         if (dataSource.tableExists("log_message")) {
             dataSource.execute("drop table log_message");
         }
@@ -57,7 +53,6 @@ public class LogMessageDaoTest {
     public void after() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
         dataSource.close();
-        Files.delete(dbFile);
         Threads.postShutdownCheck(preExistingThreads);
     }
 

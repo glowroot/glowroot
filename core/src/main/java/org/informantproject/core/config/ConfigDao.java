@@ -23,8 +23,8 @@ import javax.annotation.Nullable;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.DataSource.Column;
-import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
+import org.informantproject.core.util.Schemas.Column;
+import org.informantproject.core.util.Schemas.PrimaryKeyColumn;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;

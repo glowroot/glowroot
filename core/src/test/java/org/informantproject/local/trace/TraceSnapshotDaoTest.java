@@ -38,7 +38,6 @@ import org.junit.Test;
 public class TraceSnapshotDaoTest {
 
     private Collection<Thread> preExistingThreads;
-    private File dbFile;
     private DataSource dataSource;
     private File rollingDbFile;
     private RollingFile rollingFile;
@@ -47,8 +46,7 @@ public class TraceSnapshotDaoTest {
     @Before
     public void before() throws SQLException, IOException {
         preExistingThreads = Threads.currentThreads();
-        dbFile = File.createTempFile("informant-test-", ".h2.db");
-        dataSource = new DataSource(dbFile, true);
+        dataSource = new DataSource();
         if (dataSource.tableExists("trace_snapshot")) {
             dataSource.execute("drop table trace_snapshot");
         }
@@ -61,7 +59,6 @@ public class TraceSnapshotDaoTest {
     public void after() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
         dataSource.close();
-        dbFile.delete();
         rollingFile.close();
         rollingDbFile.delete();
         Threads.postShutdownCheck(preExistingThreads);

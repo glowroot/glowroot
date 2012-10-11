@@ -29,14 +29,14 @@ import org.informantproject.api.LoggerFactory;
 import org.informantproject.core.util.ByteStream;
 import org.informantproject.core.util.Clock;
 import org.informantproject.core.util.DataSource;
-import org.informantproject.core.util.DataSource.Column;
-import org.informantproject.core.util.DataSource.Index;
-import org.informantproject.core.util.DataSource.PrimaryKeyColumn;
 import org.informantproject.core.util.DataSource.RowMapper;
 import org.informantproject.core.util.FileBlock;
 import org.informantproject.core.util.FileBlock.InvalidBlockIdFormatException;
 import org.informantproject.core.util.OnlyUsedByTests;
 import org.informantproject.core.util.RollingFile;
+import org.informantproject.core.util.Schemas.Column;
+import org.informantproject.core.util.Schemas.Index;
+import org.informantproject.core.util.Schemas.PrimaryKeyColumn;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -91,7 +91,8 @@ public class TraceSnapshotDao {
         this.clock = clock;
         boolean errorOnInit = false;
         try {
-            dataSource.syncTable("trace_snapshot", columns, indexes);
+            dataSource.syncTable("trace_snapshot", columns);
+            dataSource.syncIndexes("trace_snapshot", indexes);
         } catch (SQLException e) {
             errorOnInit = true;
             logger.error(e.getMessage(), e);
@@ -165,6 +166,8 @@ public class TraceSnapshotDao {
             return ImmutableList.of();
         }
         try {
+            // all of these columns should be in the same index so h2 can return result set directly
+            // from the index without having to reference the table for each row
             String sql = "select id, captured_at, duration, completed, error from trace_snapshot"
                     + " where captured_at >= ? and captured_at <= ?";
             List<Object> args = Lists.newArrayList();

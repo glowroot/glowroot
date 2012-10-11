@@ -21,10 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -35,14 +32,14 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.h2.jdbc.JdbcConnection;
 import org.informantproject.api.Logger;
 import org.informantproject.api.LoggerFactory;
+import org.informantproject.core.util.Schemas.Column;
+import org.informantproject.core.util.Schemas.Index;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 /**
  * DataSource is a cross between javax.sql.DataSource and spring's JdbcTemplate. Ideally would have
@@ -56,16 +53,7 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
-    private static final Map<Integer, String> sqlTypeNames = Maps.newHashMap();
-
-    static {
-        sqlTypeNames.put(Types.VARCHAR, "varchar");
-        sqlTypeNames.put(Types.BIGINT, "bigint");
-        sqlTypeNames.put(Types.BOOLEAN, "boolean");
-        sqlTypeNames.put(Types.CLOB, "clob");
-        sqlTypeNames.put(Types.DOUBLE, "double");
-    }
-
+    @Nullable
     private final File dbFile;
     private final boolean memDb;
     @GuardedBy("lock")
@@ -80,13 +68,25 @@ public class DataSource {
                 }
             });
 
-    public DataSource(File dbFile, boolean memDb) {
+    // creates an in-memory database
+    public DataSource() {
+        this.dbFile = null;
+        this.memDb = true;
+        try {
+            connection = createConnection();
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public DataSource(File dbFile) {
         if (dbFile.getPath().endsWith(".h2.db")) {
             this.dbFile = dbFile;
         } else {
             this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
         }
-        this.memDb = memDb;
+        this.memDb = false;
         try {
             connection = createConnection();
         } catch (SQLException e) {
@@ -229,164 +229,21 @@ public class DataSource {
     }
 
     public void syncTable(String tableName, ImmutableList<Column> columns) throws SQLException {
-        syncTable(tableName, columns, ImmutableList.<Index> of());
-    }
-
-    public void syncTable(String tableName, ImmutableList<Column> columns,
-            ImmutableList<Index> indexes) throws SQLException {
-
-        if (!tableExists(tableName)) {
-            createTable(tableName, columns);
-            if (!indexes.isEmpty()) {
-                createIndexes(tableName, indexes);
-            }
-        } else if (tableNeedsUpgrade(tableName, columns)) {
-            logger.warn("upgrading " + tableName + " table schema, which unfortunately at this"
-                    + " point just means dropping and re-create the table (losing existing data)");
-            execute("drop table " + tableName);
-            createTable(tableName, columns);
-            if (!indexes.isEmpty()) {
-                createIndexes(tableName, indexes);
-            }
+        synchronized (lock) {
+            Schemas.syncTable(tableName, columns, connection);
         }
     }
 
-    // TODO move schema management methods to another class
+    public void syncIndexes(String tableName, ImmutableList<Index> indexes) throws SQLException {
+        synchronized (lock) {
+            Schemas.syncIndexes(tableName, indexes, connection);
+        }
+    }
+
+    @OnlyUsedByTests
     public boolean tableExists(String tableName) throws SQLException {
-        logger.debug("tableExists(): tableName={}", tableName);
         synchronized (lock) {
-            ResultSet resultSet = connection.getMetaData().getTables(null, null,
-                    tableName.toUpperCase(Locale.ENGLISH), null);
-            try {
-                return resultSet.next();
-            } finally {
-                resultSet.close();
-            }
-        }
-    }
-
-    public void createTable(String tableName, List<Column> columns) throws SQLException {
-        StringBuilder sql = new StringBuilder();
-        sql.append("create table " + tableName + " (");
-        for (int i = 0; i < columns.size(); i++) {
-            if (i > 0) {
-                sql.append(", ");
-            }
-            String sqlTypeName = sqlTypeNames.get(columns.get(i).getType());
-            if (sqlTypeName == null) {
-                throw new IllegalStateException("Unrecoverable error, unexpected sql type '"
-                        + columns.get(i).getType());
-            }
-            sql.append(columns.get(i).getName());
-            sql.append(" ");
-            sql.append(sqlTypeName);
-            if (columns.get(i) instanceof PrimaryKeyColumn) {
-                sql.append(" primary key");
-            }
-        }
-        sql.append(")");
-        execute(sql.toString());
-        if (tableNeedsUpgrade(tableName, columns)) {
-            logger.error("the logic in createTable() needs fixing", new Throwable());
-        }
-    }
-
-    public void createIndexes(String tableName, List<Index> indexes) throws SQLException {
-        for (Index index : indexes) {
-            createIndex(tableName, index);
-        }
-        if (indexesNeedsUpgrade(tableName, indexes)) {
-            logger.error("the logic in createIndexes() needs fixing", new Throwable());
-        }
-    }
-
-    private void createIndex(String tableName, Index index) throws SQLException {
-        StringBuilder sql = new StringBuilder();
-        sql.append("create index " + index.getName() + " on " + tableName + " (");
-        for (int i = 0; i < index.getColumns().size(); i++) {
-            if (i > 0) {
-                sql.append(", ");
-            }
-            sql.append(index.getColumns().get(i));
-        }
-        sql.append(")");
-        execute(sql.toString());
-    }
-
-    public boolean tableNeedsUpgrade(String tableName, List<Column> columns) throws SQLException {
-        if (primaryKeyNeedsUpgrade(tableName, Iterables.filter(columns, PrimaryKeyColumn.class))) {
-            return true;
-        }
-        synchronized (lock) {
-            ResultSet resultSet = connection.getMetaData().getColumns(null, null,
-                    tableName.toUpperCase(Locale.ENGLISH), null);
-            try {
-                for (Column column : columns) {
-                    if (!resultSet.next()
-                            || !column.getName().equalsIgnoreCase(
-                                    resultSet.getString("COLUMN_NAME"))
-                            || column.getType() != resultSet.getInt("DATA_TYPE")) {
-                        return true;
-                    }
-                }
-                // don't check resultSet.next(), ok to have extra columns
-                // (e.g. for some kind of temporary debugging purpose)
-                return false;
-            } finally {
-                resultSet.close();
-            }
-        }
-    }
-
-    // must pass in indexes ordered by index name
-    private boolean indexesNeedsUpgrade(String tableName, List<Index> indexes) throws SQLException {
-        synchronized (lock) {
-            ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
-                    tableName.toUpperCase(Locale.ENGLISH), false, false);
-            try {
-                for (Index index : indexes) {
-                    for (String column : index.getColumns()) {
-                        if (!resultSet.next()) {
-                            return true;
-                        }
-                        // hack-ish to skip over primary key constraints which seem to be always
-                        // prefixed in H2 by PRIMARY_KEY_
-                        while (resultSet.getString("INDEX_NAME").startsWith("PRIMARY_KEY_")) {
-                            resultSet.next();
-                        }
-                        if (!index.name.equalsIgnoreCase(resultSet.getString("INDEX_NAME"))
-                                || !column.equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))) {
-                            return true;
-                        }
-                    }
-                }
-                // don't check resultSet.next(), ok to have extra indexes (alphabetically at the
-                // end, e.g. for some kind of temporary performance tuning)
-                return false;
-            } finally {
-                resultSet.close();
-            }
-        }
-    }
-
-    private boolean primaryKeyNeedsUpgrade(String tableName,
-            Iterable<PrimaryKeyColumn> primaryKeyColumns) throws SQLException {
-
-        synchronized (lock) {
-            ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
-                    tableName.toUpperCase(Locale.ENGLISH));
-            try {
-                for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
-                    if (!resultSet.next() || !primaryKeyColumn.getName()
-                            .equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))) {
-                        return true;
-                    }
-                }
-                // not ok to have extra columns on primary key
-                return resultSet.next();
-            } finally {
-                resultSet.close();
-            }
+            return Schemas.tableExists(tableName, connection);
         }
     }
 
@@ -411,17 +268,17 @@ public class DataSource {
     }
 
     private Connection createConnection() throws SQLException {
-        String dbPath = dbFile.getPath();
-        dbPath = dbPath.replaceFirst(".h2.db$", "");
-        Properties props = new Properties();
-        props.setProperty("user", "sa");
-        props.setProperty("password", "");
         // do not use java.sql.DriverManager or org.h2.Driver because these register the driver
         // globally with the JVM
         if (memDb) {
-            return new JdbcConnection("jdbc:h2:mem:" + dbPath + ";compress_lob=lzf", props);
+            return new JdbcConnection("jdbc:h2:mem:", new Properties());
         } else {
-            return new JdbcConnection("jdbc:h2:" + dbPath + ";compress_lob=lzf", props);
+            String dbPath = dbFile.getPath();
+            dbPath = dbPath.replaceFirst(".h2.db$", "");
+            Properties props = new Properties();
+            props.setProperty("user", "sa");
+            props.setProperty("password", "");
+            return new JdbcConnection("jdbc:h2:file:" + dbPath + ";compress_lob=lzf", props);
         }
     }
 
@@ -436,41 +293,5 @@ public class DataSource {
     public interface BatchPreparedStatementSetter {
         int getBatchSize();
         void setValues(PreparedStatement preparedStatement, int i) throws SQLException;
-    }
-
-    public static class Column {
-        private final String name;
-        private final int type;
-        public Column(String name, int type) {
-            this.name = name;
-            this.type = type;
-        }
-        public String getName() {
-            return name;
-        }
-        public int getType() {
-            return type;
-        }
-    }
-
-    public static class PrimaryKeyColumn extends Column {
-        public PrimaryKeyColumn(String name, int type) {
-            super(name, type);
-        }
-    }
-
-    public static class Index {
-        private final String name;
-        private final ImmutableList<String> columns;
-        public Index(String name, String... columns) {
-            this.name = name;
-            this.columns = ImmutableList.copyOf(columns);
-        }
-        public String getName() {
-            return name;
-        }
-        public ImmutableList<String> getColumns() {
-            return columns;
-        }
     }
 }

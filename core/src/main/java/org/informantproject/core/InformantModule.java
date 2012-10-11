@@ -103,7 +103,11 @@ class InformantModule extends AbstractModule {
     DataSource providesDataSource(@Named("data.dir") File dataDir) {
         // mem db is for internal use (by plugin-testkit)
         String h2MemDb = properties.get("internal.h2.memdb");
-        return new DataSource(new File(dataDir, "informant.h2.db"), Boolean.parseBoolean(h2MemDb));
+        if (Boolean.parseBoolean(h2MemDb)) {
+            return new DataSource();
+        } else {
+            return new DataSource(new File(dataDir, "informant.h2.db"));
+        }
     }
 
     @Provides

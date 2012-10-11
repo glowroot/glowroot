@@ -39,8 +39,7 @@ public final class TraceSnapshotDaoPerformanceMain {
 
     public static void main(String... args) throws IOException {
         TraceSnapshotTestData snapshotTestData = new TraceSnapshotTestData();
-        File dbFile = File.createTempFile("informant-test-", ".h2.db");
-        DataSource dataSource = new DataSource(dbFile, true);
+        DataSource dataSource = new DataSource();
         RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
         TraceSnapshotDao snapshotDao = new TraceSnapshotDao(dataSource, rollingFile,
                 Clock.systemClock());
