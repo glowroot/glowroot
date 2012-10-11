@@ -75,8 +75,10 @@ public class TraceSnapshotDao {
             new Column("coarse_merged_stack_tree", Types.VARCHAR), // rolling file block id
             new Column("fine_merged_stack_tree", Types.VARCHAR)); // rolling file block id
 
+    // this index includes all of the columns needed for the trace points query so h2 can return
+    // result set directly from the index without having to reference the table for each row
     private static final ImmutableList<Index> indexes = ImmutableList.of(new Index(
-            "trace_snapshot_idx", "captured_at", "duration"));
+            "trace_snapshot_idx", "captured_at", "duration", "id", "completed", "error"));
 
     private final DataSource dataSource;
     private final RollingFile rollingFile;
