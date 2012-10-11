@@ -21,12 +21,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>org.informantproject.plugins</groupId>
       <artifactId>servlet-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>org.informantproject.plugins</groupId>
       <artifactId>jdbc-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>

@@ -9,6 +9,7 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
+  <groupId>org.informantproject.plugins</groupId>
   <artifactId>servlet-plugin</artifactId>
 
   <name>Informant Servlet Plugin</name>

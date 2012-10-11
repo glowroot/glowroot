@@ -9,6 +9,7 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
+  <groupId>org.informantproject.plugins</groupId>
   <artifactId>jdbc-plugin</artifactId>
 
   <name>Informant Jdbc Plugin</name>
