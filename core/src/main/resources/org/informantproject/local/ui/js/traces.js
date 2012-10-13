@@ -183,7 +183,8 @@ Handlebars.registerHelper('messageDetailHtml', function(detail) {
     var ret = ''
     $.each(detail, function(propName, propVal) {
       ret += propName + ':'
-      if (typeof propVal == 'object') {
+      // need to check not null since typeof null == 'object'
+      if (propVal != null && typeof propVal == 'object') {
         ret += '<br>'
         ret += '<div class="indent1">'
         ret += messageDetailHtml(propVal)
