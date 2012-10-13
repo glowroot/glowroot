@@ -284,21 +284,27 @@
       if (durationHigh) {
         queryString += '&high=' + durationHigh
       }
-      var background = $('#backgroundFilter').val()
-      if (background) {
-        queryString += '&background=' + background
-      }
       if ($('#errorOnlyFilter').is(':checked')) {
         queryString += '&errorOnly=true'
       }
       if ($('#fineOnlyFilter').is(':checked')) {
         queryString += '&fineOnly=true'
       }
+      var descriptionComparator = $('#descriptionComparator').val()
+      var description = $('#descriptionFilter').val()
+      if (description) {
+        queryString += '&descriptionComparator=' + descriptionComparator
+        queryString += '&description=' + description
+      }
       var userIdComparator = $('#userIdComparator').val()
       var userId = $('#userIdFilter').val()
       if (userId) {
         queryString += '&userIdComparator=' + userIdComparator
         queryString += '&userId=' + userId
+      }
+      var background = $('#backgroundFilter').val()
+      if (background) {
+        queryString += '&background=' + background
       }
       return queryString
     }
@@ -606,13 +612,16 @@
           </div>
           <div id="moreFilters" style="display: none">
             <div class="control-group">
-              <label class="control-label" for="backgroundFilter">Background traces</label>
+              <label class="control-label" for="descriptionFilter">Description</label>
               <div class="controls">
-                <select class="input-xlarge0" id="backgroundFilter">
-                  <option value="" selected="selected"></option>
-                  <option value="false">Exclude background traces</option>
-                  <option value="true">Include only background traces</option>
+                <select class="input-medium0" id="descriptionComparator">
+                  <option value="begins">Begins with</option>
+                  <option value="equals">Equals</option>
+                  <option value="ends">Ends with</option>
+                  <option value="contains">Contains</option>
                 </select>
+                <input type="text" class="input-medium refresh-data-on-enter-key"
+                    id="descriptionFilter">
               </div>
             </div>
             <div class="control-group">
@@ -621,9 +630,20 @@
                 <select class="input-medium0" id="userIdComparator">
                   <option value="begins">Begins with</option>
                   <option value="equals">Equals</option>
+                  <option value="ends">Ends with</option>
                   <option value="contains">Contains</option>
                 </select>
                 <input type="text" class="input-medium refresh-data-on-enter-key" id="userIdFilter">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="backgroundFilter">Background</label>
+              <div class="controls">
+                <select class="input-xlarge0" id="backgroundFilter">
+                  <option value="" selected="selected"></option>
+                  <option value="false">Exclude background traces</option>
+                  <option value="true">Include only background traces</option>
+                </select>
               </div>
             </div>
             <div class="control-group">

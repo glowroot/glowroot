@@ -385,7 +385,10 @@ public class TraceSnapshotDao {
 
     public static enum StringComparator {
 
-        BEGINS("like", "%s%%"), EQUALS("=", "%s"), CONTAINS("like", "%%%s%%");
+        BEGINS("like", "%s%%"),
+        EQUALS("=", "%s"),
+        ENDS("like", "%%%s"),
+        CONTAINS("like", "%%%s%%");
 
         private final String comparator;
         private final String parameterFormat;

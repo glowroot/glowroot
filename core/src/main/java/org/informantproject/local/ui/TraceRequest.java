@@ -31,16 +31,18 @@ class TraceRequest {
     private long to;
     private double low; // milliseconds, with nanosecond precision
     private double high; // milliseconds, with nanosecond precision
-    @Nullable
-    private Boolean background;
     private boolean errorOnly;
     private boolean fineOnly;
+    @Nullable
+    private String descriptionComparator;
+    @Nullable
+    private String description;
     @Nullable
     private String userIdComparator;
     @Nullable
     private String userId;
     @Nullable
-    private String extraIds;
+    private Boolean background;
     private int limit;
 
     public long getFrom() {
@@ -101,6 +103,24 @@ class TraceRequest {
     }
 
     @Nullable
+    public String getDescriptionComparator() {
+        return descriptionComparator;
+    }
+
+    public void setDescriptionComparator(@Nullable String descriptionComparator) {
+        this.descriptionComparator = descriptionComparator;
+    }
+
+    @Nullable
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(@Nullable String description) {
+        this.description = description;
+    }
+
+    @Nullable
     public String getUserIdComparator() {
         return userIdComparator;
     }
@@ -116,15 +136,6 @@ class TraceRequest {
 
     public void setUserId(@Nullable String userId) {
         this.userId = userId;
-    }
-
-    @Nullable
-    public String getExtraIds() {
-        return extraIds;
-    }
-
-    public void setExtraIds(@Nullable String extraIds) {
-        this.extraIds = extraIds;
     }
 
     public int getLimit() {
@@ -147,7 +158,6 @@ class TraceRequest {
                 .add("fineOnly", fineOnly)
                 .add("userIdComparator", userIdComparator)
                 .add("userId", userId)
-                .add("extraIds", extraIds)
                 .add("limit", limit)
                 .toString();
     }
