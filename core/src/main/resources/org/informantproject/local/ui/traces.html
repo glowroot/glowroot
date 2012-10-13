@@ -468,6 +468,7 @@
       // without preventDefault, click triggers form submission
       e.preventDefault()
     })
+    var now = new Date()
     var today = new Date()
     today.setHours(0,0,0,0)
     // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
@@ -501,7 +502,11 @@
       }
     })
     $('#zoomOut').click(function() { plot.zoomOut() })
-    getTracePoints(today.getTime(), today.getTime() + 24 * 60 * 60 * 1000, 1000, '', true)
+    // get the last 2 hours, but nothing prior to today (e.g. if 'now' is 1am)
+    var from = Math.max(today.getTime(), now.getTime() - 2 * 60 * 60 * 1000)
+    // now + 15 minutes, this is primarily to set the right-hand border for the chart
+    var to = now.getTime() + 15 * 60 * 1000
+    getTracePoints(from, to, 500, '', true)
   })
 </script>
 </head>
@@ -624,10 +629,13 @@
             <div class="control-group">
               <label class="control-label" for="limitFilter">Limit</label>
               <div class="controls">
-                <select class="input-medium0" id="limitFilter">
+                <select class="input-small" id="limitFilter">
                   <option value="100">100</option>
-                  <option value="1000" selected="selected">1,000</option>
-                  <option value="10000">10,000</option>
+                  <option value="200">200</option>
+                  <option value="500" selected="selected">500</option>
+                  <option value="1000">1,000</option>
+                  <option value="2000">2,000</option>
+                  <option value="5000">5,000</option>
                 </select>
               </div>
             </div>
