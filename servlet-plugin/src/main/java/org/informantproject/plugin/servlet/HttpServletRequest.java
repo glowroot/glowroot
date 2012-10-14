@@ -57,7 +57,8 @@ class HttpServletRequest {
 
     @Nullable
     HttpSession getSession(boolean create) {
-        Object realSession = getSessionOneArgMethod.invoke(realRequest, create);
+        Object realSession = getSessionOneArgMethod.invokeWithDefaultOnError(realRequest, create,
+                null);
         if (realSession == null) {
             return null;
         } else {
@@ -67,16 +68,19 @@ class HttpServletRequest {
 
     @Nullable
     String getMethod() {
-        return (String) getMethodMethod.invoke(realRequest);
+        return getMethodMethod.invokeWithDefaultOnError(realRequest,
+                "<error calling HttpServletRequest.getMethod()>");
     }
 
     @Nullable
     String getRequestURI() {
-        return (String) getRequestURIMethod.invoke(realRequest);
+        return getRequestURIMethod.invokeWithDefaultOnError(realRequest,
+                "<error calling HttpServletRequest.getRequestURI()>");
     }
 
     Map<?, ?> getParameterMap() {
-        Map<?, ?> parameterMap = (Map<?, ?>) getParameterMapMethod.invoke(realRequest);
+        Map<?, ?> parameterMap = getParameterMapMethod.invokeWithDefaultOnError(
+                realRequest, ImmutableMap.of());
         if (parameterMap == null) {
             return ImmutableMap.of();
         } else {
@@ -86,6 +90,7 @@ class HttpServletRequest {
 
     @Nullable
     String getAttribute(String name) {
-        return (String) getAttributeMethod.invoke(realRequest, name);
+        return getAttributeMethod.invokeWithDefaultOnError(realRequest, name,
+                "<error calling ServletRequest.getAttribute()>");
     }
 }

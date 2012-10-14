@@ -54,7 +54,7 @@ class HttpSession {
     }
 
     String getId() {
-        String id = (String) getIdMethod.invoke(realSession);
+        String id = getIdMethod.invokeWithDefaultOnError(realSession, "");
         if (id == null) {
             return "";
         } else {
@@ -63,12 +63,12 @@ class HttpSession {
     }
 
     boolean isNew() {
-        return (Boolean) isNewMethod.invoke(realSession);
+        return isNewMethod.invokeWithDefaultOnError(realSession, false);
     }
 
     Enumeration<?> getAttributeNames() {
         Enumeration<?> attributeNames = (Enumeration<?>) getAttributeNamesMethod
-                .invoke(realSession);
+                .invokeWithDefaultOnError(realSession, null);
         if (attributeNames == null) {
             return Collections.enumeration(ImmutableSet.of());
         } else {
@@ -78,6 +78,7 @@ class HttpSession {
 
     @Nullable
     Object getAttribute(String name) {
-        return getAttributeMethod.invoke(realSession, name);
+        return getAttributeMethod.invokeWithDefaultOnError(realSession, name,
+                "<error calling HttpSession.getAttribute()>");
     }
 }

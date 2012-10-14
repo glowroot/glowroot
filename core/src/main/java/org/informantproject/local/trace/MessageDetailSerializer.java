@@ -92,9 +92,9 @@ class MessageDetailSerializer {
             //
             // informant plugins are compiled directly against shaded guava, so when they pass a
             // detail map with a value of type Optional, it is the shaded Optional class
-            boolean present = (Boolean) isPresentMethod.invoke(value);
+            boolean present = isPresentMethod.invokeWithDefaultOnError(value, false);
             if (present) {
-                write(getMethod.invoke(value));
+                write(getMethod.invokeWithDefaultOnError(value, "<error calling Optional.get()>"));
             } else {
                 jw.nullValue();
             }

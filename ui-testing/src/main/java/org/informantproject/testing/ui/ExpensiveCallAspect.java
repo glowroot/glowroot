@@ -285,7 +285,8 @@ public class ExpensiveCallAspect {
     }
 
     private static MessageSupplier getMessageSupplier(Object expensive) {
-        return MessageSupplier.from((String) getDescription.invoke(expensive));
+        return MessageSupplier.from(getDescription.invokeWithDefaultOnError(expensive,
+                "<error calling ExpensiveCall.getDescription()>"));
     }
 
     private static MessageSupplier getMessageSupplierWithDetail(final Object expensive) {
@@ -296,7 +297,8 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.withDetail((String) getDescription.invoke(expensive), detail);
+                return Message.withDetail(getDescription.invokeWithDefaultOnError(expensive,
+                        "<error calling ExpensiveCall.getDescription()>"), detail);
             }
         };
     }
