@@ -140,9 +140,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
     public void visitMaxs(int maxStack, int maxLocals) {
         if (needsTryCatch) {
             Label catchEndLabel = newLabel();
+            Label catchHandlerLabel2 = newLabel();
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
-                    "java/lang/Throwable");
+                    "org/informantproject/core/weaving/WeavingMethodVisitor$MarkerException");
             visitLabel(catchEndLabel);
+            invokeVirtual(MarkerException.TYPE, MarkerException.GET_CAUSE_METHOD);
+            throwException();
+            visitTryCatchBlock(catchStartLabel, catchEndLabel, catchHandlerLabel2,
+                    "java/lang/Throwable");
+            visitLabel(catchHandlerLabel2);
             visitOnThrowAdvice();
             visitOnAfterAdvice();
             resetAdviceFlowIfNecessary();
@@ -162,25 +168,51 @@ class WeavingMethodVisitor extends AdviceAdapter {
             defineAndEvaluateEnabledLocalVar(advice);
             defineTravelerLocalVar(advice);
         }
+        // all advice should be executed outside of the try/catch, otherwise a programming error in
+        // the advice will trigger @OnThrow which is confusing at best
+        for (Advice advice : advisors) {
+            invokeOnBefore(advice, travelerLocals.get(advice));
+        }
         if (needsTryCatch) {
             catchStartLabel = newLabel();
             visitLabel(catchStartLabel);
-        }
-        for (Advice advice : advisors) {
-            invokeOnBefore(advice, travelerLocals.get(advice));
         }
     }
 
     @Override
     protected void onMethodExit(int opcode) {
+        // instructions to catch throws will be written (if necessary) in visitMaxs
         if (opcode != ATHROW) {
-            // instructions to catch throws will be written (if necessary) in visitMaxs
-            visitOnReturnAdvice(opcode);
-            visitOnAfterAdvice();
-            resetAdviceFlowIfNecessary();
+            if (needsTryCatch) {
+                // if an exception occurs inside @OnReturn or @OnAfter advice, it will be caught by
+                // the overall try/catch and it will trigger @OnThrow and @OnAfter
+                // to prevent this, any exception that occurs inside @OnReturn or @OnAfter is caught
+                // and wrapped in a marker exception, and then unwrapped and re-thrown inside
+                // the overall try/catch block
+                Label catchStartLabel = newLabel();
+                Label continueLabel = newLabel();
+                Label catchEndLabel = newLabel();
+
+                visitLabel(catchStartLabel);
+                visitOnReturnAdvice(opcode);
+                visitOnAfterAdvice();
+                resetAdviceFlowIfNecessary();
+                goTo(continueLabel);
+
+                visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
+                        "java/lang/Throwable");
+                visitLabel(catchEndLabel);
+                invokeStatic(MarkerException.TYPE, MarkerException.STATIC_FACTORY_METHOD);
+                throwException();
+
+                visitLabel(continueLabel);
+            } else {
+                visitOnReturnAdvice(opcode);
+                visitOnAfterAdvice();
+                resetAdviceFlowIfNecessary();
+            }
         }
     }
-
     private void defineAndEvaluateEnabledLocalVar(Advice advice) {
         Integer enabledLocal = null;
         if (!advice.getPointcut().captureNested()) {
@@ -473,5 +505,35 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 .add("catchStartLabel", catchStartLabel)
                 .add("outerStartLabel", outerStartLabel)
                 .toString();
+    }
+
+    // this is used to wrap exceptions that occur inside of @OnReturn and @OnAfter when the
+    // exception would otherwise be caught by the overall try/catch triggering @OnThrow and @OnAfter
+    //
+    // needs to be public since it is accessed from bytecode injected into other packages
+    @SuppressWarnings("serial")
+    public static class MarkerException extends RuntimeException {
+        private static final Type TYPE = Type.getType(MarkerException.class);
+        private static final Method STATIC_FACTORY_METHOD;
+        private static final Method GET_CAUSE_METHOD;
+        static {
+            try {
+                STATIC_FACTORY_METHOD = Method.getMethod(MarkerException.class.getDeclaredMethod(
+                        "from", Throwable.class));
+                GET_CAUSE_METHOD = Method.getMethod(Throwable.class.getMethod("getCause"));
+            } catch (SecurityException e) {
+                throw new IllegalStateException("Unrecoverable error", e);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("Unrecoverable error", e);
+            }
+        }
+        // static methods are easier to call via bytecode than constructors
+        // needs to be public since it is accessed from bytecode injected into other packages
+        public static MarkerException from(Throwable cause) {
+            return new MarkerException(cause);
+        }
+        private MarkerException(Throwable cause) {
+            super(cause);
+        }
     }
 }

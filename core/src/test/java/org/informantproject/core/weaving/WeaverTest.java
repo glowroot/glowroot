@@ -42,6 +42,7 @@ import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice2;
 import org.informantproject.core.weaving.SomeAspect.MethodArgsDotDotAdvice3;
 import org.informantproject.core.weaving.SomeAspect.MethodReturnStringAdvice;
 import org.informantproject.core.weaving.SomeAspect.MethodReturnVoidAdvice;
+import org.informantproject.core.weaving.SomeAspect.MoreVeryBadAdvice;
 import org.informantproject.core.weaving.SomeAspect.MultipleMethodsAdvice;
 import org.informantproject.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
 import org.informantproject.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
@@ -53,6 +54,7 @@ import org.informantproject.core.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.informantproject.core.weaving.SomeAspect.StaticAdvice;
 import org.informantproject.core.weaving.SomeAspect.StaticInjectTargetClassAdvice;
 import org.informantproject.core.weaving.SomeAspect.TypeNamePatternAdvice;
+import org.informantproject.core.weaving.SomeAspect.VeryBadAdvice;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -670,6 +672,42 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then should not bomb
+    }
+
+    @Test
+    public void shouldNotCallOnThrowForOnBeforeException() throws Exception {
+        // given
+        VeryBadAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, VeryBadAdvice.class);
+        // when
+        try {
+            test.executeWithArgs("one", 2);
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("Sorry");
+            assertThat(VeryBadAdvice.onBeforeCount.get()).isEqualTo(1);
+            assertThat(VeryBadAdvice.onThrowCount.get()).isEqualTo(0);
+            assertThat(VeryBadAdvice.onAfterCount.get()).isEqualTo(0);
+            return;
+        }
+        throw new AssertionError("Expecting IllegalStateException");
+    }
+
+    @Test
+    public void shouldNotCallOnThrowForOnReturnException() throws Exception {
+        // given
+        MoreVeryBadAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice.class);
+        // when
+        try {
+            test.executeWithArgs("one", 2);
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("Sorry");
+            assertThat(MoreVeryBadAdvice.onReturnCount.get()).isEqualTo(1);
+            assertThat(MoreVeryBadAdvice.onThrowCount.get()).isEqualTo(0);
+            assertThat(MoreVeryBadAdvice.onAfterCount.get()).isEqualTo(0);
+            return;
+        }
+        throw new AssertionError("Expecting IllegalStateException");
     }
 
     @Test

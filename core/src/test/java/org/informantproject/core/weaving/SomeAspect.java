@@ -537,6 +537,63 @@ public class SomeAspect {
         public static void onAfter(@SuppressWarnings("unused") @InjectTraveler Object traveler) {}
     }
 
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "executeWithArgs",
+            methodArgs = { "java.lang.String", "int" })
+    public static class VeryBadAdvice {
+        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @OnBefore
+        public static Object onBefore() {
+            onBeforeCount.increment();
+            throw new IllegalStateException("Sorry");
+        }
+        @OnThrow
+        public static void onThrow() {
+            // should not get called
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            // should not get called
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            onBeforeCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+    }
+
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "executeWithArgs",
+            methodArgs = { "java.lang.String", "int" })
+    public static class MoreVeryBadAdvice {
+        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @OnReturn
+        public static void onReturn() {
+            // TODO also test with non-void return
+            onReturnCount.increment();
+            throw new IllegalStateException("Sorry");
+        }
+        @OnThrow
+        public static void onThrow() {
+            // should not get called
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            // should not get called
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+    }
+
     @Pointcut(typeName = "org.informantproject.core.weaving.Misc3", methodName = "identity",
             methodArgs = { "org.informantproject.core.weaving.BasicMisc" })
     public static class CircularClassDependencyAdvice {

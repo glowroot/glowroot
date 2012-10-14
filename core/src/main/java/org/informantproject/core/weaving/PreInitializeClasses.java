@@ -328,6 +328,7 @@ class PreInitializeClasses {
         types.add("org.informantproject.core.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.informantproject.core.weaving.WeavingClassVisitor$InitThreadLocals");
         types.add("org.informantproject.core.weaving.WeavingMethodVisitor");
+        types.add("org.informantproject.core.weaving.WeavingMethodVisitor$MarkerException");
         types.add("org.informantproject.core.weaving.WeavingMetric");
         final String qos = "org.informantproject.shaded.qos";
         types.add(qos + ".logback.classic.BasicConfigurator");
