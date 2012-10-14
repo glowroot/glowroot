@@ -130,8 +130,8 @@ class AdviceMatcher {
                 // have run out of argument types to match
                 return false;
             }
-            // only supporting /.*/ regex at this point
-            if (!pointcutMethodArgs[i].equals("/.*/")
+            // only supporting * at this point
+            if (!pointcutMethodArgs[i].equals("*")
                     && !pointcutMethodArgs[i].equals(argTypes[i].getClassName())) {
                 return false;
             }

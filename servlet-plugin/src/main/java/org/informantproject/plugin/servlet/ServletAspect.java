@@ -134,7 +134,7 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(typeName = "javax.servlet.http.HttpServlet", methodName = "/do.*/", methodArgs = {
+    @Pointcut(typeName = "javax.servlet.http.HttpServlet", methodName = "do*", methodArgs = {
             "javax.servlet.http.HttpServletRequest", "javax.servlet.http.HttpServletResponse" },
             metricName = "http request")
     public static class HttpServletAdvice extends ServletAdvice {
@@ -185,7 +185,7 @@ public class ServletAspect {
     private static final ThreadLocal<Boolean> inRequestGetParameterPointcut =
             new BooleanThreadLocal();
 
-    @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "/getParameter.*/",
+    @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodArgs = { ".." })
     public static class GetParameterAdvice {
         @IsEnabled

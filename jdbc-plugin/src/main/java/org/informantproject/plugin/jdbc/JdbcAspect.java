@@ -85,7 +85,7 @@ public class JdbcAspect {
     // ===================== Statement Preparation =====================
 
     // capture the sql used to create the PreparedStatement
-    @Pointcut(typeName = "java.sql.Connection", methodName = "/prepare.*/",
+    @Pointcut(typeName = "java.sql.Connection", methodName = "prepare*",
             methodArgs = { "java.lang.String", ".." }, captureNested = false)
     public static class PrepareStatementTrackingAdvice {
         @OnReturn
@@ -97,7 +97,7 @@ public class JdbcAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.Connection", methodName = "/prepare.*/",
+    @Pointcut(typeName = "java.sql.Connection", methodName = "prepare*",
             methodArgs = { "java.lang.String", ".." }, captureNested = false,
             metricName = "jdbc prepare")
     public static class PrepareStatementTimingAdvice {
@@ -125,7 +125,7 @@ public class JdbcAspect {
     // parameters bound via setNull(..)
     // see special case below to handle setNull()
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
-            methodArgs = { "int", "/.*/", ".." }, captureNested = false)
+            methodArgs = { "int", "*", ".." }, captureNested = false)
     public static class PreparedStatementSetXAdvice {
         @OnReturn
         public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
@@ -192,7 +192,7 @@ public class JdbcAspect {
 
     // =================== Statement Execution ===================
 
-    @Pointcut(typeName = "java.sql.Statement", methodName = "/execute.*/",
+    @Pointcut(typeName = "java.sql.Statement", methodName = "execute*",
             methodArgs = { "java.lang.String", ".." }, captureNested = false,
             metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
@@ -241,7 +241,7 @@ public class JdbcAspect {
 
     // executeBatch is not included since it is handled separately (below)
     @Pointcut(typeName = "java.sql.PreparedStatement",
-            methodName = "/execute|executeQuery|executeUpdate/", captureNested = false,
+            methodName = "execute|executeQuery|executeUpdate", captureNested = false,
             metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final Metric metric = pluginServices
@@ -425,7 +425,7 @@ public class JdbcAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "/get.*/", methodArgs = { "int", ".." },
+    @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*", methodArgs = { "int", ".." },
             captureNested = false, metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
@@ -456,7 +456,7 @@ public class JdbcAspect {
         }
     }
 
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "/get.*/",
+    @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*",
             methodArgs = { "java.lang.String", ".." }, captureNested = false,
             metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice2 {
@@ -534,7 +534,7 @@ public class JdbcAspect {
 
     // ================== Metadata ==================
 
-    @Pointcut(typeName = "java.sql.DatabaseMetaData", methodName = "/.*/", methodArgs = { ".." },
+    @Pointcut(typeName = "java.sql.DatabaseMetaData", methodName = "*", methodArgs = { ".." },
             captureNested = false, metricName = "jdbc metadata")
     public static class DatabaseMetaDataAdvice {
         private static final Metric metric = pluginServices.getMetric(DatabaseMetaDataAdvice.class);

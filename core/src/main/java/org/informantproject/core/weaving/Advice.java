@@ -40,7 +40,9 @@ import org.informantproject.api.weaving.Pointcut;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -261,9 +263,30 @@ public class Advice {
 
         private Pattern buildPattern(String maybePattern) {
             if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
+                // full regex power
                 return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));
+            }
+            // limited regex, | and *, should be used whenever possible over full regex since
+            // . and $ are common in class names
+            if (maybePattern.contains("|")) {
+                String[] parts = maybePattern.split("\\|");
+                for (int i = 0; i < parts.length; i++) {
+                    parts[i] = buildPatternPart(parts[i]);
+                }
+                return Pattern.compile(Joiner.on('|').join(parts));
+            }
+            if (maybePattern.contains("*")) {
+                return Pattern.compile(buildPatternPart(maybePattern));
+            }
+            return null;
+        }
+
+        private String buildPatternPart(String part) {
+            if (part.contains("*")) {
+                // convert * into .* and quote the rest of the text using \Q...\E
+                return "\\Q" + Joiner.on("\\E.*\\Q").join(Splitter.on('*').split(part)) + "\\E";
             } else {
-                return null;
+                return "\\Q" + part + "\\E";
             }
         }
 

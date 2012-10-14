@@ -40,7 +40,7 @@ import org.informantproject.api.weaving.Pointcut;
 @Aspect
 public class SomeAspect {
 
-    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "/execute[12]/")
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1|execute2")
     public static class BasicAdvice {
         public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
@@ -434,11 +434,11 @@ public class SomeAspect {
             captureNested = false)
     public static class NotNestingAdvice extends BasicAdvice {}
 
-    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "/execute.*/",
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute*",
             methodArgs = { ".." }, metricName = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
-    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "/execute.*/",
+    @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute*",
             methodArgs = { ".." }, captureNested = false)
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
@@ -450,8 +450,7 @@ public class SomeAspect {
             methodModifiers = MethodModifier.STATIC)
     public static class NonMatchingStaticAdvice extends BasicAdvice {}
 
-    @Pointcut(typeName = "/org\\.informantproject\\.core\\.weaving\\.Mis[a-z]/",
-            methodName = "execute1")
+    @Pointcut(typeName = "org.informantproject.core.weaving.Mis*", methodName = "execute1")
     public static class TypeNamePatternAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.informantproject.core.weaving.Misc", methodName = "execute1",
@@ -488,7 +487,7 @@ public class SomeAspect {
     public static class PrimitiveAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "org.informantproject.core.weaving.PrimitiveMisc",
-            methodName = "executePrimitive", methodArgs = { "int", "double", "/.*/", ".." })
+            methodName = "executePrimitive", methodArgs = { "int", "double", "*", ".." })
     public static class PrimitiveWithWildcardAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
@@ -508,7 +507,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "org.informantproject.core.weaving.PrimitiveMisc",
-            methodName = "executePrimitive", methodArgs = { "int", "double", "/.*/", ".." })
+            methodName = "executePrimitive", methodArgs = { "int", "double", "*", ".." })
     public static class PrimitiveWithAutoboxAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         @IsEnabled
