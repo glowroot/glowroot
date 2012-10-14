@@ -70,12 +70,14 @@ class ParsedTypeCache {
     // it's important that the weak keys point directly to the class loaders themselves (as opposed
     // to through another instance, e.g. Optional<ClassLoader>) so that the keys won't be cleared
     // while their associated class loaders are still being used
+    //
+    // note, not using nested loading cache since the nested loading cache maintains a strong
+    // reference to the class loader
     private final LoadingCache<ClassLoader, ConcurrentMap<String, ParsedType>> parsedTypes =
             CacheBuilder.newBuilder().weakKeys()
                     .build(new CacheLoader<ClassLoader, ConcurrentMap<String, ParsedType>>() {
                         @Override
-                        public ConcurrentMap<String, ParsedType> load(ClassLoader loader)
-                                throws Exception {
+                        public ConcurrentMap<String, ParsedType> load(ClassLoader loader) {
                             // intentionally avoiding Maps.newConcurrentMap() since it uses many
                             // additional classes that must then be pre-initialized since this
                             // is called from inside ClassFileTransformer.transform()

@@ -16,6 +16,7 @@
 package org.informantproject.plugin.servlet;
 
 import java.util.Enumeration;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -77,6 +78,7 @@ public class ServletAspect {
             metricName = "http request")
     public static class ServletAdvice {
         private static final Metric metric = pluginServices.getMetric(ServletAdvice.class);
+
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
@@ -88,7 +90,8 @@ public class ServletAspect {
             // request parameter map is collected in afterReturningRequestGetParameterPointcut()
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
-            // passing "false" so it won't create a session if the request doesn't already have one
+            // passing "false" so it won't create a session if the request doesn't already have
+            // one
             HttpSession session = request.getSession(false);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(request.getMethod(),
@@ -305,6 +308,7 @@ public class ServletAspect {
     public static class ContextInitializedAdvice {
         private static final Metric metric = pluginServices
                 .getMetric(ContextInitializedAdvice.class);
+
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled()
@@ -330,6 +334,7 @@ public class ServletAspect {
             methodArgs = { "javax.servlet.ServletConfig" }, metricName = "servlet startup")
     public static class ServletInitAdvice {
         private static final Metric metric = pluginServices.getMetric(ServletInitAdvice.class);
+
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled()
@@ -354,6 +359,7 @@ public class ServletAspect {
             methodArgs = { "javax.servlet.FilterConfig" }, metricName = "servlet startup")
     public static class FilterInitAdvice {
         private static final Metric metric = pluginServices.getMetric(FilterInitAdvice.class);
+
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled()
@@ -431,8 +437,20 @@ public class ServletAspect {
                         messageSupplier.putSessionAttributeChangedValue(path, value.toString());
                     }
                 } else if (path.startsWith(name + ".")) {
-                    if (value == null) {
-                        // no need to navigate path since it will always be Optional.absent()
+                    if (path.endsWith(".*")) {
+                        path = path.substring(0, path.length() - 2);
+                        Object val = getSessionAttribute(session, path);
+                        if (val == null) {
+                            messageSupplier.putSessionAttributeChangedValue(path, null);
+                        } else {
+                            for (Entry<String, String> entry : Beans.propertiesAsText(val)
+                                    .entrySet()) {
+                                messageSupplier.putSessionAttributeChangedValue(
+                                        path + "." + entry.getKey(), entry.getValue());
+                            }
+                        }
+                    } else if (value == null) {
+                        // no need to navigate path since it will always be null
                         messageSupplier.putSessionAttributeChangedValue(path, null);
                     } else {
                         String val = getSessionAttributeTextValue(session, path);
@@ -488,9 +506,20 @@ public class ServletAspect {
             ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
             // dump only http session attributes in list
             for (String attributePath : sessionAttributePaths) {
-                String value = getSessionAttributeTextValue(session, attributePath);
-                if (value != null) {
-                    sessionAttributeMap.put(attributePath, value);
+                if (attributePath.endsWith(".*")) {
+                    attributePath = attributePath.substring(0, attributePath.length() - 2);
+                    Object value = getSessionAttribute(session, attributePath);
+                    if (value != null) {
+                        for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
+                            sessionAttributeMap.put(attributePath + "." + entry.getKey(),
+                                    entry.getValue());
+                        }
+                    }
+                } else {
+                    String value = getSessionAttributeTextValue(session, attributePath);
+                    if (value != null) {
+                        sessionAttributeMap.put(attributePath, value);
+                    }
                 }
             }
             return sessionAttributeMap.build();
@@ -499,23 +528,21 @@ public class ServletAspect {
 
     @Nullable
     private static String getSessionAttributeTextValue(HttpSession session, String attributePath) {
+        Object value = getSessionAttribute(session, attributePath);
+        return (value == null) ? null : value.toString();
+    }
+
+    @Nullable
+    private static Object getSessionAttribute(HttpSession session,
+            String attributePath) {
+
         if (attributePath.indexOf('.') == -1) {
             // fast path
-            Object value = session.getAttribute(attributePath);
-            if (value == null) {
-                return null;
-            } else {
-                return value.toString();
-            }
+            return session.getAttribute(attributePath);
         } else {
             String[] path = attributePath.split("\\.");
             Object curr = session.getAttribute(path[0]);
-            Object value = Beans.value(curr, path, 1);
-            if (value == null) {
-                return null;
-            } else {
-                return value.toString();
-            }
+            return Beans.value(curr, path, 1);
         }
     }
 
