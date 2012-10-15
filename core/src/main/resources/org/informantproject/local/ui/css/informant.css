@@ -202,14 +202,8 @@ a:hover {
 .lightbtn {
   display: inline-block;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 2px 4px;
   border-radius: 4px;
-  /* remove border, background-color and other default browser button styling
-     so this class can be applied to <button> */
-  border: none;
-  background-color: transparent;
-  text-align: left;
-  vertical-align: bottom;
 }
 .lightbtn:hover, .lightbtn:focus {
   background-color:#ddd;
@@ -241,10 +235,13 @@ a:hover {
   margin-left: 2em;
 }
 .pad1 {
-  padding: 2px 1em;
+  padding-left: 1em;
+  padding-right: 1em;
 }
 .rounded4 {
   border-radius: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 .nowrap {
   white-space: nowrap;

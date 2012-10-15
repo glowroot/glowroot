@@ -411,8 +411,8 @@
         summaryTrace = response
         var html = traceSummaryTemplate(summaryTrace)
         var showDetailHtml = '<div style="margin-top: 0.5em">'
-            + '<button class="lightbtn red pad1 qtip-override" id="showDetail"'
-            + ' style="padding-top: 4px; padding-bottom: 4px">show detail</button></div>'
+            + '<span tabindex="0" class="lightbtn red pad1 qtip-override" id="showDetail"'
+            + ' style="padding-top: 4px; padding-bottom: 4px">show detail</span></div>'
         $('#placeholder').qtip({
           content: {
             text: '<div class="indent1">' + html + '</div>' + showDetailHtml
@@ -540,8 +540,8 @@
     </div>
     <div style="width: 100%; text-align: center; font-style: italic; margin: 4px 0">
       use mouse scroll wheel to zoom in and out
-      (or double click to zoom in and<button class="lightbtn red" id="zoomOut"
-          style="font-style: italic">click here to zoom out</button>)
+      (or double click to zoom in and<span tabindex="0" class="lightbtn red" id="zoomOut"
+          style="font-style: italic">click here to zoom out</span>)
     </div>
     <!-- min-height to take up a little space even when no error message -->
     <div style="text-align:center; min-height: 20px">
@@ -662,14 +662,15 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <button class="lightbtn pad1 red" id="moreFiltersButton" style="margin-left: -1em">
+              <span tabindex="0" class="lightbtn pad1 red" id="moreFiltersButton"
+                  style="margin-left: -1em">
                 more filters
-              </button>
+              </span>
             </div>
           </div>
           <div class="control-group">
             <div class="controls">
-              <button type="button" class="btn" id="refreshButton">Refresh</button>
+              <span tabindex="0" type="button" class="btn" id="refreshButton">Refresh</span>
               <span class="button-spinner" id="refreshButtonSpinner"></span>
               <span class="button-error-message" id="refreshButtonCancelByZoom">
                 Refresh canceled by zoom action
@@ -682,7 +683,9 @@
     </div>
     <div class="tab-pane fade" id="detailTab">
       <div class="button-spinner" id="detailTabSpinner" style="margin: 20px 30px"></div>
-      <div id="detailTabContent"></div>
+      <!-- the 1px padding is to give space for the focus highlight around the 'spans',
+           'coarse-grained profile' and 'fine-grained profile' toggles -->
+      <div id="detailTabContent" style="padding: 1px"></div>
     </div>
   </div>
   <br>
