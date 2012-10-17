@@ -43,9 +43,9 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://github.com/informantproject/informant.git</connection>
-    <developerConnection>scm:git:git@github.com:informantproject/informant.git</developerConnection>
-    <url>https://github.com/informantproject/informant</url>
+    <connection>scm:git:https://github.com/informant/informant.git</connection>
+    <developerConnection>scm:git:git@github.com:informant/informant.git</developerConnection>
+    <url>https://github.com/informant/informant</url>
   </scm>
 
   <build>
