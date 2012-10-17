@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.informantproject</groupId>
+    <groupId>io.informant</groupId>
     <artifactId>informant-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
@@ -16,7 +16,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>io.informant</groupId>
       <artifactId>informant-plugin-api</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -50,12 +50,12 @@
       <version>3.5.7.Final</version>
     </dependency>
     <dependency>
-      <groupId>org.informantproject.shaded</groupId>
+      <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-slf4j-api</artifactId>
       <version>1.7.1-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>io.informant</groupId>
       <artifactId>informant-shaded-slf4j-impl</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -80,7 +80,7 @@
       <version>0.9.6</version>
     </dependency>
     <dependency>
-      <groupId>org.informantproject.shaded</groupId>
+      <groupId>io.informant.shaded</groupId>
       <artifactId>partially-shaded-async-http-client</artifactId>
       <version>1.7.6-SNAPSHOT</version>
     </dependency>
@@ -202,11 +202,11 @@
           <relocations>
             <relocation>
               <pattern>org.objectweb.asm</pattern>
-              <shadedPattern>org.informantproject.shaded.objectweb.asm</shadedPattern>
+              <shadedPattern>io.informant.shaded.objectweb.asm</shadedPattern>
             </relocation>
             <relocation>
               <pattern>org.h2</pattern>
-              <shadedPattern>org.informantproject.shaded.h2</shadedPattern>
+              <shadedPattern>io.informant.shaded.h2</shadedPattern>
             </relocation>
             <relocation>
               <!-- shade thread names as well to make it easy to identify informant threads -->
@@ -222,50 +222,50 @@
             </relocation>
             <relocation>
               <pattern>com.ning.compress</pattern>
-              <shadedPattern>org.informantproject.shaded.ning.compress</shadedPattern>
+              <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.ning.http</pattern>
-              <shadedPattern>org.informantproject.shaded.ning.http</shadedPattern>
+              <shadedPattern>io.informant.shaded.ning.http</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.google.common</pattern>
-              <shadedPattern>org.informantproject.shaded.google.common</shadedPattern>
+              <shadedPattern>io.informant.shaded.google.common</shadedPattern>
             </relocation>
             <relocation>
               <pattern>javax.annotation</pattern>
-              <shadedPattern>org.informantproject.shaded.javax.annotation</shadedPattern>
+              <shadedPattern>io.informant.shaded.javax.annotation</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.google.gson</pattern>
-              <shadedPattern>org.informantproject.shaded.google.gson</shadedPattern>
+              <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
             </relocation>
             <relocation>
               <pattern>org.jboss.netty</pattern>
-              <shadedPattern>org.informantproject.shaded.jboss.netty</shadedPattern>
+              <shadedPattern>io.informant.shaded.jboss.netty</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.google.inject</pattern>
-              <shadedPattern>org.informantproject.shaded.google.inject</shadedPattern>
+              <shadedPattern>io.informant.shaded.google.inject</shadedPattern>
             </relocation>
             <relocation>
               <pattern>javax.inject</pattern>
-              <shadedPattern>org.informantproject.shaded.javax.inject</shadedPattern>
+              <shadedPattern>io.informant.shaded.javax.inject</shadedPattern>
             </relocation>
             <relocation>
               <pattern>org.aopalliance</pattern>
-              <shadedPattern>org.informantproject.shaded.aopalliance</shadedPattern>
+              <shadedPattern>io.informant.shaded.aopalliance</shadedPattern>
             </relocation>
             <relocation>
               <pattern>org.fest</pattern>
-              <shadedPattern>org.informantproject.shaded.fest</shadedPattern>
+              <shadedPattern>io.informant.shaded.fest</shadedPattern>
             </relocation>
           </relocations>
           <transformers>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-              <mainClass>org.informantproject.core.Viewer</mainClass>
+              <mainClass>io.informant.core.Viewer</mainClass>
               <manifestEntries>
-                <Premain-Class>org.informantproject.core.MainEntryPoint</Premain-Class>
+                <Premain-Class>io.informant.core.MainEntryPoint</Premain-Class>
                 <Can-Redefine-Classes>true</Can-Redefine-Classes>
               </manifestEntries>
             </transformer>
@@ -295,32 +295,30 @@
             <option>-dontoptimize</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
-            <option>-keep class org.informantproject.core.MainEntryPoint { *; }</option>
-            <option>-keep class org.informantproject.core.InformantModule { *; }</option>
+            <option>-keep class io.informant.core.MainEntryPoint { *; }</option>
+            <option>-keep class io.informant.core.InformantModule { *; }</option>
             <option>
-              -keepclassmembers class * { @org.informantproject.shaded.google.inject.Inject *;
+              -keepclassmembers class * { @io.informant.shaded.google.inject.Inject *;
               }
             </option>
-            <option>-keep class org.informantproject.local.**JsonService { *; }</option>
-            <option>-keep class org.informantproject.api.** { *; }</option>
-            <option>-keep class org.informantproject.core.** { *; }</option>
+            <option>-keep class io.informant.local.**JsonService { *; }</option>
+            <option>-keep class io.informant.api.** { *; }</option>
+            <option>-keep class io.informant.core.** { *; }</option>
             <!-- test classes use DaemonExecutors -->
-            <option>-keep class org.informantproject.core.util.DaemonExecutors { *; }</option>
-            <option>-keep class org.informantproject.core.util.Files { *; }</option>
-            <option>-keep class org.informantproject.core.util.Threads { *; }</option>
-            <option>
-              -keep class org.informantproject.core.weaving.IsolatedWeavingClassLoader { *; }
-            </option>
+            <option>-keep class io.informant.core.util.DaemonExecutors { *; }</option>
+            <option>-keep class io.informant.core.util.Files { *; }</option>
+            <option>-keep class io.informant.core.util.Threads { *; }</option>
+            <option>-keep class io.informant.core.weaving.IsolatedWeavingClassLoader { *; }</option>
             <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
-            <option>-keep class org.informantproject.shaded.google.common.** { *; }</option>
+            <option>-keep class io.informant.shaded.google.common.** { *; }</option>
             <!-- keep all logback appenders -->
             <option>
-              -keep class * extends org.informantproject.shaded.qos.logback.core.Appender { *;
+              -keep class * extends io.informant.shaded.qos.logback.core.Appender { *;
               }
             </option>
             <option>
               -keep class
-              org.informantproject.shaded.ning.http.client.providers.netty.NettyAsyncHttpProvider
+              io.informant.shaded.ning.http.client.providers.netty.NettyAsyncHttpProvider
               {
               *; }
             </option>
@@ -390,7 +388,7 @@
             <configuration>
               <thirdPartyFilename>META-INF/THIRD-PARTY.txt</thirdPartyFilename>
               <useMissingFile>true</useMissingFile>
-              <excludedGroups>org.informantproject</excludedGroups>
+              <excludedGroups>io.informant</excludedGroups>
               <excludedScopes>test,provided</excludedScopes>
               <licenseMerges>
                 <licenseMerge>

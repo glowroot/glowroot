@@ -14,11 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<plugin xmlns="http://www.informantproject.org/plugin/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.informantproject.org/plugin/1.0 http://www.informantproject.org/xsd/plugin-1.0.xsd">
+<plugin xmlns="http://informant.io/plugin/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://informant.io/plugin/1.0 http://informant.io/xsd/plugin-1.0.xsd">
 
     <name>Integration Tests Plugin</name>
-    <groupId>org.informantproject</groupId>
+    <groupId>io.informant</groupId>
     <artifactId>informant-integration-tests</artifactId>
     <version>0.5-SNAPSHOT</version>
     <properties>

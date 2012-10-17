@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<plugin xmlns="http://informant.io/plugin/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://informant.io/plugin/1.0 http://informant.io/xsd/plugin-1.0.xsd">
+
+    <name>Ui Testing Plugin</name>
+    <groupId>io.informant</groupId>
+    <artifactId>informant-ui-testing</artifactId>
+    <version>0.5-SNAPSHOT</version>
+    <properties>
+      <property>
+        <prompt>Do something</prompt>
+        <name>oneName</name>
+        <type>boolean</type>
+        <default>true</default>
+        <description>Do you want to do something?</description>
+      </property>
+      <property>
+        <prompt>Whatever you want</prompt>
+        <name>anotherName</name>
+        <type>string</type>
+        <default>coding</default>
+        <description>More help text here and more and more and more.</description>
+      </property>
+      <property>
+        <prompt>For however long you want</prompt>
+        <name>thirdName</name>
+        <type>double</type>
+        <description>I'm quickly out of ideas.</description>
+      </property>
+    </properties>
+    <aspects>
+      <aspect>io.informant.testing.ui.NestableCallAspect</aspect>
+      <aspect>io.informant.testing.ui.ExpensiveCallAspect</aspect>
+    </aspects>
+</plugin>

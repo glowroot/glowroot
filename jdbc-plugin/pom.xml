@@ -4,12 +4,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.informantproject</groupId>
+    <groupId>io.informant</groupId>
     <artifactId>informant-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.informantproject.plugins</groupId>
+  <groupId>io.informant.plugins</groupId>
   <artifactId>jdbc-plugin</artifactId>
 
   <name>Informant Jdbc Plugin</name>
@@ -17,7 +17,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>io.informant</groupId>
       <artifactId>informant-plugin-api</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
@@ -25,7 +25,7 @@
     <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
         already provided in the informant jar -->
-      <groupId>org.informantproject.shaded</groupId>
+      <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
       <version>13.0-SNAPSHOT</version>
       <scope>provided</scope>
@@ -49,7 +49,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>io.informant</groupId>
       <artifactId>informant-plugin-testkit</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

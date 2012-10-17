@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.informantproject</groupId>
+    <groupId>io.informant</groupId>
     <artifactId>informant-parent</artifactId>
     <version>0.5-SNAPSHOT</version>
   </parent>
@@ -16,7 +16,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.informantproject</groupId>
+      <groupId>io.informant</groupId>
       <artifactId>informant-plugin-testkit</artifactId>
       <version>${project.version}</version>
     </dependency>

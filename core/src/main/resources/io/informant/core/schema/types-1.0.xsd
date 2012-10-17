@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://informant.io/plugin/1.0"
+  elementFormDefault="qualified" targetNamespace="http://informant.io/plugin/1.0">
+  <xs:complexType name="Plugin">
+    <xs:all>
+      <xs:element name="name" type="xs:string" />
+      <xs:element name="groupId" type="GroupOrArtifactId" />
+      <xs:element name="artifactId" type="GroupOrArtifactId" />
+      <xs:element name="version" type="xs:string" />
+      <xs:element name="properties" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="property" minOccurs="0" maxOccurs="unbounded" type="Property" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="aspects">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="aspect" maxOccurs="unbounded" type="xs:string" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="Property">
+    <xs:all>
+      <xs:element name="prompt" type="xs:string" />
+      <xs:element name="name" type="PropertyName" />
+      <xs:element name="type" type="PropertyType" />
+      <xs:element name="default" type="xs:string" minOccurs="0" />
+      <xs:element name="hidden" type="xs:boolean" minOccurs="0" default="false" />
+      <xs:element name="description" type="xs:string" minOccurs="0" />
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="Aspect">
+    <xs:all>
+      <xs:element name="prompt" type="xs:string" />
+      <xs:element name="name" type="PropertyName" />
+      <xs:element name="type" type="PropertyType" />
+      <xs:element name="default" type="xs:string" minOccurs="0" />
+      <xs:element name="hidden" type="xs:boolean" minOccurs="0" default="false" />
+      <xs:element name="description" type="xs:string" minOccurs="0" />
+    </xs:all>
+  </xs:complexType>
+  <xs:simpleType name="GroupOrArtifactId">
+    <xs:restriction base="xs:string">
+      <!-- the regex is written a bit strangely because the jdk 5 schema validator complains about
+           the - in the valid regex [a-z0-9.-] -->
+      <xs:pattern value="[a-z]([a-z0-9.]|-)*" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PropertyName">
+    <xs:restriction base="xs:string">
+      <!-- the regex is written a bit strangely because the jdk 5 schema validator complains about
+           the - in the valid regex [A-Za-z0-9._:-] -->
+      <xs:pattern value="[A-Za-z]([A-Za-z0-9._:]|-)*" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PropertyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="string" />
+      <xs:enumeration value="boolean" />
+      <xs:enumeration value="double" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

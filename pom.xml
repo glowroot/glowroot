@@ -9,14 +9,14 @@
     <version>7</version>
   </parent>
 
-  <groupId>org.informantproject</groupId>
+  <groupId>io.informant</groupId>
   <artifactId>informant-parent</artifactId>
   <version>0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Informant Parent Project</name>
   <description>Informant Parent Project</description>
-  <url>http://www.informantproject.org</url>
+  <url>http://informant.github.com</url>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
