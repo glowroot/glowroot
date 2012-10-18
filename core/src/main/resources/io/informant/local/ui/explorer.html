@@ -328,7 +328,7 @@
       if (!initialLoad) {
         refreshQueryString = queryString
       }
-      $.getJSON('trace/points?' + queryString, function(response) {
+      $.getJSON('explorer/points?' + queryString, function(response) {
         if (initialLoad && refreshQueryString) {
           // a refresh query has been posted since this initial load
           return
@@ -401,7 +401,7 @@
       // small delay so that if there is an immediate response the spinner doesn't blink
       setTimeout(displaySpinner, 100)
       var currentItemForJson = currentItem
-      $.getJSON('trace/summary/' + id, function(response) {
+      $.getJSON('explorer/summary/' + id, function(response) {
         spinner.stop()
         spinner = null
         if (!itemsEqual(currentItem, currentItemForJson)) {
@@ -443,7 +443,7 @@
           loadDetailId = id
           $('#detailTabContent').html('')
           $('a[href="#detailTab"]').tab('show')
-          $.getJSON('trace/detail/' + id, function(response) {
+          $.getJSON('explorer/detail/' + id, function(response) {
             if (loadDetailId != id) {
               // a different id has been posted since this one
               return
@@ -518,16 +518,16 @@
 </head>
 <body class="pin-vertical-scrollbar">
   <div class="header">
-    <a class="header-logo" href=".">
+    <span class="header-logo">
         <!-- lack of spaces on this line is important -->
-        Informant</a><span class="header-page-name">Trace explorer</span>
+        Informant</span><span class="header-page-name">Explorer</span>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0">
-        <li><a tabindex="-1" href="configuration.html">configuration</a></li>
-        <li><a tabindex="-1" href="threaddump.html">full thread dump</a></li>
+        <li><a tabindex="-1" href="config.html">configuration</a></li>
         <li><a tabindex="-1" href="admin.html">administration</a></li>
+        <li><a tabindex="-1" href="threads.html">thread dump</a></li>
       </ul>
     </div>
   </div>

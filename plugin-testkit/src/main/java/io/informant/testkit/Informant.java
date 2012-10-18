@@ -206,7 +206,7 @@ public class Informant {
     }
 
     private Trace getLastTrace(boolean summary) throws Exception {
-        String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
+        String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
         JsonObject response = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject();
         JsonArray normalPoints = response.get("normalPoints").getAsJsonArray();
@@ -220,12 +220,12 @@ public class Informant {
             JsonArray point = getMaxPointByCapturedAt(points);
             String traceId = point.get(2).getAsString();
             if (summary) {
-                String traceJson = get("/trace/summary/" + traceId);
+                String traceJson = get("/explorer/summary/" + traceId);
                 Trace trace = gson.fromJson(traceJson, Trace.class);
                 trace.setSummary(true);
                 return trace;
             } else {
-                String traceJson = get("/trace/detail/" + traceId);
+                String traceJson = get("/explorer/detail/" + traceId);
                 return gson.fromJson(traceJson, Trace.class);
             }
         }
@@ -304,7 +304,7 @@ public class Informant {
     }
 
     private Trace getActiveTrace() throws Exception {
-        String pointsJson = get("/trace/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
+        String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
                 .get("activePoints").getAsJsonArray();
@@ -315,7 +315,7 @@ public class Informant {
         } else {
             JsonArray values = points.get(0).getAsJsonArray();
             String traceId = values.get(2).getAsString();
-            String traceDetailJson = get("/trace/summary/" + traceId);
+            String traceDetailJson = get("/explorer/summary/" + traceId);
             return gson.fromJson(traceDetailJson, Trace.class);
         }
     }

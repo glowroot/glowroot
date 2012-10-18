@@ -20,7 +20,7 @@ import javax.annotation.concurrent.Immutable;
 import com.google.common.base.Objects;
 
 /**
- * Structure used in the response to "/trace/points".
+ * Structure used in the response to "/explorer/points".
  * 
  * @author Trask Stalnaker
  * @since 0.5

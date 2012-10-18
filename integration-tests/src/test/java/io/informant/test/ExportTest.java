@@ -59,7 +59,7 @@ public class ExportTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // when
         Trace trace = container.getInformant().getLastTrace();
-        InputStream in = container.getInformant().getAsStream("/trace/export/" + trace.getId());
+        InputStream in = container.getInformant().getAsStream("/explorer/export/" + trace.getId());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
         zipIn.getNextEntry();

@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 import com.google.common.base.Objects;
 
 /**
- * Structure used to deserialize json post data sent to "/trace/durations" and "/trace/details".
+ * Structure used to deserialize json post data sent to "/explorer/points".
  * 
  * @author Trask Stalnaker
  * @since 0.5

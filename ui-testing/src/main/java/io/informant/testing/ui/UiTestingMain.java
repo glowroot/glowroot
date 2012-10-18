@@ -54,7 +54,7 @@ public final class UiTestingMain {
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setTotalSeconds(1);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
-        logger.info("view trace ui at localhost:" + UI_PORT + "/traces.html");
+        logger.info("view ui at http://localhost:" + UI_PORT);
         container.executeAppUnderTest(GenerateTraces.class);
     }
 

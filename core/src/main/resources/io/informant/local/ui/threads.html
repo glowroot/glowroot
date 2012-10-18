@@ -53,7 +53,7 @@
   $(document).ready(function() {
     configureAjaxError()
     function refresh(scroll) {
-      $.getJSON('threaddump', function(threads) {
+      $.getJSON('threads/dump', function(threads) {
         var html = threadDumpTemplate(threads)
         $('#threadDump').html(html)
         if (scroll) {
@@ -74,15 +74,15 @@
 </script>
 <body>
   <div class="header">
-    <a class="header-logo" href=".">
+    <span class="header-logo">
         <!-- lack of spaces on this line is important -->
-        Informant</a><span class="header-page-name">Thread dump</span>
+        Informant</span><span class="header-page-name">Thread dump</span>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0">
-        <li><a tabindex="-1" href="traces.html">trace explorer</a></li>
-        <li><a tabindex="-1" href="configuration.html">configuration</a></li>
+        <li><a tabindex="-1" href="explorer.html">explorer</a></li>
+        <li><a tabindex="-1" href="config.html">configuration</a></li>
         <li><a tabindex="-1" href="admin.html">administration</a></li>
       </ul>
     </div>

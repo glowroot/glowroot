@@ -85,11 +85,9 @@ public class HttpServer extends HttpServerBase {
         super(port);
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
-        uriMappings.put(Pattern.compile("^/traces.html$"), "io/informant/local/ui/traces.html");
-        uriMappings.put(Pattern.compile("^/configuration.html$"),
-                "io/informant/local/ui/configuration.html");
-        uriMappings.put(Pattern.compile("^/threaddump.html$"),
-                "io/informant/local/ui/threaddump.html");
+        uriMappings.put(Pattern.compile("^/explorer.html$"), "io/informant/local/ui/explorer.html");
+        uriMappings.put(Pattern.compile("^/config.html$"), "io/informant/local/ui/config.html");
+        uriMappings.put(Pattern.compile("^/threads.html$"), "io/informant/local/ui/threads.html");
         uriMappings.put(Pattern.compile("^/admin.html$"), "io/informant/local/ui/admin.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "io/informant/local/ui/img/$1");
@@ -97,17 +95,17 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/js/(.*)$"), "io/informant/local/ui/js/$1");
         uriMappings.put(Pattern.compile("^/libs/(.*)$"), "io/informant/local/ui/libs/$1");
         // services
-        uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/trace/detail/.*$"), traceDetailHttpService);
+        uriMappings.put(Pattern.compile("^/explorer/export/.*$"), traceExportHttpService);
+        uriMappings.put(Pattern.compile("^/explorer/detail/.*$"), traceDetailHttpService);
         this.uriMappings = uriMappings.build();
 
         // the parentheses define the part of the match that is used to construct the args for
-        // calling the method in json service, e.g. /trace/detail/abc123 below calls the method
-        // getDetail("abc123") in TraceJsonService
+        // calling the method in json service, e.g. /explorer/summary/abc123 below calls the method
+        // getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/trace/points$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/explorer/points$"),
                 tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/trace/summary/(.*)$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/explorer/summary/(.*)$"),
                 traceSummaryJsonService, "getSummary"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/read$"),
                 configJsonService, "getConfig"));
@@ -141,7 +139,7 @@ public class HttpServer extends HttpServerBase {
                 + "/([^/]+)/disable"), configJsonService, "disablePlugin"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)$"), configJsonService, "storePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/threaddump$"),
+        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/threads/dump$"),
                 threadDumpJsonService, "getThreadDump"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/data/compact$"),
                 adminJsonService, "compactData"));
@@ -165,7 +163,7 @@ public class HttpServer extends HttpServerBase {
         logger.debug("handleRequest(): path={}", path);
         if (path.equals("/")) {
             DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, MOVED_PERMANENTLY);
-            response.setHeader(HttpHeaders.Names.LOCATION, "traces.html");
+            response.setHeader(HttpHeaders.Names.LOCATION, "explorer.html");
             return response;
         }
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {

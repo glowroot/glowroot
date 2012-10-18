@@ -30,7 +30,7 @@ var traceSummaryTemplateText = ''
 + '  {{#if showExport}}'
 // unfortunately vertical padding isn't applied to inline elements, so "button" is a little small
 // but it seems worth keeping this inline and it is a less used "button" anyways
-+ '    <a class="indent1 pad1 rounded4" href="trace/export/{{id}}">export</a>'
++ '    <a class="indent1 pad1 rounded4" href="explorer/export/{{id}}">export</a>'
 + '  {{/if}}'
 + '</div>'
 + 'start: {{date start}}<br>'

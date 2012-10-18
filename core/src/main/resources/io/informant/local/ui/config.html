@@ -389,16 +389,16 @@
 </head>
 <body class="pin-vertical-scrollbar">
   <div class="header">
-    <a class="header-logo" href=".">
+    <span class="header-logo">
         <!-- lack of spaces on this line is important -->
-        Informant</a><span class="header-page-name">Configuration</span>
+        Informant</span><span class="header-page-name">Configuration</span>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0">
-        <li><a tabindex="-1" href="traces.html">trace explorer</a></li>
-        <li><a tabindex="-1" href="threaddump.html">full thread dump</a></li>
+        <li><a tabindex="-1" href="explorer.html">explorer</a></li>
         <li><a tabindex="-1" href="admin.html">administration</a></li>
+        <li><a tabindex="-1" href="threads.html">thread dump</a></li>
       </ul>
     </div>
   </div>
@@ -429,7 +429,7 @@
               <span class="help-inline">Invalid input</span>
             </div>
             <span class="help-block">
-              Any trace that exceeds this amount of time will be viewable in the trace explorer
+              Any trace that exceeds this amount of time will be viewable in the explorer
               immediately as an active trace and will be persisted to disk at its completion.
             </span>
           </div>
@@ -467,8 +467,7 @@
               Maximum number of spans collected for a given trace. This is useful for limiting
               the memory requirement of very very long traces that capture potentially hundreds of
               thousands of spans (e.g. large batch or background operations).
-              Also, the trace explorer is not really optimized for viewing super large numbers of
-              spans.
+              Also, the explorer is not really optimized for viewing super large numbers of spans.
             </div>
           </div>
         </div>
@@ -704,7 +703,7 @@
             </div>
             <div class="help-block">
               Any trace for the given user that exceeds this amount of time will be viewable in the
-              trace explorer immediately as an active trace and will be persisted to disk at its
+              explorer immediately as an active trace and will be persisted to disk at its
               completion.
             </div>
           </div>

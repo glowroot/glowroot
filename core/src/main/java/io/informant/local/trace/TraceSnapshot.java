@@ -23,7 +23,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import com.google.common.base.Objects;
 
 /**
- * Structure used as part of the response to "/trace/details".
+ * Structure used as part of the response to "/explorer/detail".
  * 
  * @author Trask Stalnaker
  * @since 0.5
