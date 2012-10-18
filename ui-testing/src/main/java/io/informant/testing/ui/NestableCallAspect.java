@@ -115,13 +115,26 @@ public class NestableCallAspect {
         return new MessageSupplier() {
             @Override
             public Message get() {
-                Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
-                        "attr3", ImmutableMap.of("attr31",
+                Map<String, ?> detail = ImmutableMap.of("attr1", getLongDetailValue(false),
+                        "attr2", "value2", "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
-                                "attr32", "value32", "attr33", "value33"));
+                                "attr32", getLongDetailValue(true),
+                                "attr33", getLongDetailValue(false)));
                 return Message.withDetail("Nestable with a very long description to test wrapping"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz", detail);
             }
         };
+    }
+
+    private static String getLongDetailValue(boolean spaces) {
+        int length = new Random().nextInt(200);
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(i % 10);
+            if (spaces && i % 10 == 0) {
+                sb.append(' ');
+            }
+        }
+        return sb.toString();
     }
 }

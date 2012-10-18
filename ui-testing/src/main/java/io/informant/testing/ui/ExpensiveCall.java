@@ -153,15 +153,18 @@ public class ExpensiveCall {
     }
 
     public String getDescription() {
+        return getDescription(random.nextInt(5) > 0);
+    }
+
+    private String getDescription(boolean spaces) {
         int descriptionLength = random.nextInt(maxDescriptionLength);
         StringBuilder sb = new StringBuilder(descriptionLength);
         for (int i = 0; i < descriptionLength; i++) {
-            if (random.nextInt(6) == 0) {
+            // random lowercase character
+            sb.append((char) ('a' + random.nextInt(26)));
+            if (spaces && random.nextInt(6) == 0) {
                 // on average, one of six characters will be a space
                 sb.append(' ');
-            } else {
-                // the rest will be random lowercase characters
-                sb.append((char) ('a' + random.nextInt(26)));
             }
         }
         return sb.toString();
