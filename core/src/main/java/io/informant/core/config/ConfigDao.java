@@ -53,7 +53,6 @@ class ConfigDao {
 
     private final DataSource dataSource;
     private final boolean valid;
-    private final Object writeLock = new Object();
 
     @Inject
     ConfigDao(DataSource dataSource) {
@@ -67,10 +66,6 @@ class ConfigDao {
             localValid = false;
         }
         valid = localValid;
-    }
-
-    Object getWriteLock() {
-        return writeLock;
     }
 
     @Nullable

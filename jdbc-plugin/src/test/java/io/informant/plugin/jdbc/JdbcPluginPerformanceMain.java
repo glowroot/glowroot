@@ -16,6 +16,8 @@
 package io.informant.plugin.jdbc;
 
 import io.informant.testkit.AppUnderTest;
+import io.informant.testkit.Config.CoreConfig;
+import io.informant.testkit.Config.PluginConfig;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.Metric;
@@ -89,7 +91,9 @@ public class JdbcPluginPerformanceMain {
     private static void testWithInformantCoreDisabled() throws Exception {
         System.out.print("with informant disabled:   ");
         InformantContainer container = setUpContainer();
-        container.getInformant().disableCore();
+        CoreConfig config = container.getInformant().getCoreConfig();
+        config.setEnabled(false);
+        container.getInformant().updateCoreConfig(config);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         container.close();
     }
@@ -98,7 +102,9 @@ public class JdbcPluginPerformanceMain {
     private static void testWithInformantJdbcPluginDisabled() throws Exception {
         System.out.print("with jdbc plugin disabled: ");
         InformantContainer container = setUpContainer();
-        container.getInformant().disablePlugin(PLUGIN_ID);
+        PluginConfig config = container.getInformant().getPluginConfig(PLUGIN_ID);
+        config.setEnabled(false);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, config);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         container.close();
     }

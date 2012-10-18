@@ -54,42 +54,6 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldDisableCoreConfigBeforeAnyUpdates() throws Exception {
-        // when
-        container.getInformant().disableCore();
-        // then
-        CoreConfig updatedConfig = container.getInformant().getCoreConfig();
-        assertThat(updatedConfig.isEnabled()).isFalse();
-    }
-
-    @Test
-    public void shouldDisableCoarseProfilingConfigBeforeAnyUpdates() throws Exception {
-        // when
-        container.getInformant().disableCoarseProfiling();
-        // then
-        CoarseProfilingConfig updatedConfig = container.getInformant().getCoarseProfilingConfig();
-        assertThat(updatedConfig.isEnabled()).isFalse();
-    }
-
-    @Test
-    public void shouldDisableFineProfilingConfigBeforeAnyUpdates() throws Exception {
-        // when
-        container.getInformant().disableFineProfiling();
-        // then
-        FineProfilingConfig updatedConfig = container.getInformant().getFineProfilingConfig();
-        assertThat(updatedConfig.isEnabled()).isFalse();
-    }
-
-    @Test
-    public void shouldDisableUserTracingConfigBeforeAnyUpdates() throws Exception {
-        // when
-        container.getInformant().disableUserTracing();
-        // then
-        UserTracingConfig updatedConfig = container.getInformant().getUserTracingConfig();
-        assertThat(updatedConfig.isEnabled()).isFalse();
-    }
-
-    @Test
     public void shouldUpdateCoreConfig() throws Exception {
         // given
         CoreConfig config = container.getInformant().getCoreConfig();

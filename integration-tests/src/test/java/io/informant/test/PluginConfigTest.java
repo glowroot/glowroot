@@ -56,15 +56,6 @@ public class PluginConfigTest {
     }
 
     @Test
-    public void shouldDisablePluginConfigBeforeAnyUpdates() throws Exception {
-        // when
-        container.getInformant().disablePlugin(PLUGIN_ID);
-        // then
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        assertThat(pluginConfig.isEnabled()).isFalse();
-    }
-
-    @Test
     public void shouldUpdateAndReadBackPluginConfig() throws Exception {
         // given
         String randomText = "Level " + random.nextLong();

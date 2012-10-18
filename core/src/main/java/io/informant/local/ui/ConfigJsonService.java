@@ -64,56 +64,6 @@ class ConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    void enableCore() {
-        configService.setCoreEnabled(true);
-    }
-
-    @JsonServiceMethod
-    void disableCore() {
-        configService.setCoreEnabled(false);
-    }
-
-    @JsonServiceMethod
-    void enableCoarseProfiling() {
-        configService.setCoarseProfilingEnabled(true);
-    }
-
-    @JsonServiceMethod
-    void disableCoarseProfiling() {
-        configService.setCoarseProfilingEnabled(false);
-    }
-
-    @JsonServiceMethod
-    void enableFineProfiling() {
-        configService.setFineProfilingEnabled(true);
-    }
-
-    @JsonServiceMethod
-    void disableFineProfiling() {
-        configService.setFineProfilingEnabled(false);
-    }
-
-    @JsonServiceMethod
-    void enableUserTracing() {
-        configService.setUserTracingEnabled(true);
-    }
-
-    @JsonServiceMethod
-    void disableUserTracing() {
-        configService.setUserTracingEnabled(false);
-    }
-
-    @JsonServiceMethod
-    void enablePlugin(String pluginId) {
-        configService.setPluginEnabled(pluginId, true);
-    }
-
-    @JsonServiceMethod
-    void disablePlugin(String pluginId) {
-        configService.setPluginEnabled(pluginId, false);
-    }
-
-    @JsonServiceMethod
     String getConfig() {
         logger.debug("getConfig()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(

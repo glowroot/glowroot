@@ -97,14 +97,6 @@ public class Informant {
         return getConfig().getCoreConfig();
     }
 
-    public void disableCore() throws Exception {
-        post("/config/core/disable", "");
-    }
-
-    public void enableCore() throws Exception {
-        post("/config/core/enable", "");
-    }
-
     public void updateCoreConfig(CoreConfig config) throws Exception {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
@@ -114,14 +106,6 @@ public class Informant {
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
         return getConfig().getCoarseProfilingConfig();
-    }
-
-    public void disableCoarseProfiling() throws Exception {
-        post("/config/profiling/coarse/disable", "");
-    }
-
-    public void enableCoarseProfiling() throws Exception {
-        post("/config/profiling/coarse/enable", "");
     }
 
     public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
@@ -136,14 +120,6 @@ public class Informant {
         return getConfig().getFineProfilingConfig();
     }
 
-    public void disableFineProfiling() throws Exception {
-        post("/config/profiling/fine/disable", "");
-    }
-
-    public void enableFineProfiling() throws Exception {
-        post("/config/profiling/fine/enable", "");
-    }
-
     public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
@@ -155,14 +131,6 @@ public class Informant {
         return getConfig().getUserTracingConfig();
     }
 
-    public void enableUserTracing() throws Exception {
-        post("/config/tracing/user/enable", "");
-    }
-
-    public void disableUserTracing() throws Exception {
-        post("/config/tracing/user/disable", "");
-    }
-
     public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
@@ -172,14 +140,6 @@ public class Informant {
 
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
         return getConfig().getPluginConfigs().get(pluginId);
-    }
-
-    public void disablePlugin(String pluginId) throws Exception {
-        post("/config/plugin/" + pluginId + "/disable", "");
-    }
-
-    public void enablePlugin(String pluginId) throws Exception {
-        post("/config/plugin/" + pluginId + "/enable", "");
     }
 
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {

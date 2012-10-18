@@ -111,32 +111,12 @@ public class HttpServer extends HttpServerBase {
                 configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"),
                 configJsonService, "storeCoreConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core/enable"),
-                configJsonService, "enableCore"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core/disable"),
-                configJsonService, "disableCore"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling"
                 + "/coarse"), configJsonService, "storeCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/coarse"
-                + "/enable"), configJsonService, "enableCoarseProfiling"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/coarse"
-                + "/disable"), configJsonService, "disableCoarseProfiling"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/fine"),
                 configJsonService, "storeFineProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/fine"
-                + "/enable"), configJsonService, "enableFineProfiling"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/fine"
-                + "/disable"), configJsonService, "disableFineProfiling"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"),
                 configJsonService, "storeUserTracingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"
-                + "/enable"), configJsonService, "enableUserTracing"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"
-                + "/disable"), configJsonService, "disableUserTracing"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
-                + "/([^/]+)/enable"), configJsonService, "enablePlugin"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
-                + "/([^/]+)/disable"), configJsonService, "disablePlugin"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
                 + "/([^/]+)$"), configJsonService, "storePluginConfig"));
         jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/threads/dump$"),

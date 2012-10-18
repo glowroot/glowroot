@@ -141,40 +141,11 @@ public class ConfigService {
         configListeners.add(listener);
     }
 
-    public void setCoreEnabled(boolean enabled) {
-        synchronized (configDao.getWriteLock()) {
-            CoreConfig config = configDao.readCoreConfig();
-            if (config == null) {
-                config = CoreConfig.getDefaultInstance();
-            }
-            CoreConfig updatedConfig = CoreConfig.builder(config).enabled(enabled).build();
-            configDao.storeCoreConfig(updatedConfig);
-            // re-read from dao just to fail quickly in case of an issue
-            this.coreConfig = configDao.readCoreConfig();
-        }
-        notifyConfigListeners();
-    }
-
     // TODO pass around config version to avoid possible clobbering
     public void storeCoreConfig(CoreConfig config) {
         configDao.storeCoreConfig(config);
         // re-read from dao just to fail quickly in case of an issue
         this.coreConfig = configDao.readCoreConfig();
-        notifyConfigListeners();
-    }
-
-    public void setCoarseProfilingEnabled(boolean enabled) {
-        synchronized (configDao.getWriteLock()) {
-            CoarseProfilingConfig config = configDao.readCoarseProfilingConfig();
-            if (config == null) {
-                config = CoarseProfilingConfig.getDefaultInstance();
-            }
-            CoarseProfilingConfig updatedConfig = CoarseProfilingConfig.builder(config)
-                    .enabled(enabled).build();
-            configDao.storeCoarseProfilingConfig(updatedConfig);
-            // re-read from dao just to fail quickly in case of an issue
-            this.coarseProfilingConfig = configDao.readCoarseProfilingConfig();
-        }
         notifyConfigListeners();
     }
 
@@ -186,21 +157,6 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void setFineProfilingEnabled(boolean enabled) {
-        synchronized (configDao.getWriteLock()) {
-            FineProfilingConfig config = configDao.readFineProfilingConfig();
-            if (config == null) {
-                config = FineProfilingConfig.getDefaultInstance();
-            }
-            FineProfilingConfig updatedConfig = FineProfilingConfig.builder(config)
-                    .enabled(enabled).build();
-            configDao.storeFineProfilingConfig(updatedConfig);
-            // re-read from dao just to fail quickly in case of an issue
-            this.fineProfilingConfig = configDao.readFineProfilingConfig();
-        }
-        notifyConfigListeners();
-    }
-
     // TODO pass around config version to avoid possible clobbering
     public void storeFineProfilingConfig(FineProfilingConfig config) {
         configDao.storeFineProfilingConfig(config);
@@ -209,41 +165,11 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void setUserTracingEnabled(boolean enabled) {
-        synchronized (configDao.getWriteLock()) {
-            UserTracingConfig config = configDao.readUserTracingConfig();
-            if (config == null) {
-                config = UserTracingConfig.getDefaultInstance();
-            }
-            UserTracingConfig updatedConfig = UserTracingConfig.builder(config)
-                    .enabled(enabled).build();
-            configDao.storeUserTracingConfig(updatedConfig);
-            // re-read from dao just to fail quickly in case of an issue
-            this.userTracingConfig = configDao.readUserTracingConfig();
-        }
-        notifyConfigListeners();
-    }
-
     // TODO pass around config version to avoid possible clobbering
     public void storeUserTracingConfig(UserTracingConfig config) {
         configDao.storeUserTracingConfig(config);
         // re-read from dao just to fail quickly in case of an issue
         this.userTracingConfig = configDao.readUserTracingConfig();
-        notifyConfigListeners();
-    }
-
-    public void setPluginEnabled(String pluginId, boolean enabled) {
-        synchronized (configDao.getWriteLock()) {
-            PluginConfig config = configDao.readPluginConfig(pluginId);
-            if (config == null) {
-                config = PluginConfig.builder(pluginId).build();
-            }
-            PluginConfig updatedConfig = PluginConfig.builder(pluginId, config)
-                    .enabled(enabled).build();
-            configDao.storePluginConfig(pluginId, updatedConfig);
-            // re-read from dao just to fail quickly in case of an issue
-            pluginConfigs.put(pluginId, configDao.readPluginConfig(pluginId));
-        }
         notifyConfigListeners();
     }
 
