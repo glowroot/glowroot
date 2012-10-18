@@ -30,7 +30,7 @@
 <script type="text/javascript" src="js/informant.js"></script>
 <!-- spacing is important in this template since it is embedded inside of a 'pre-' styled div -->
 <script type="text/x-handlebars-template" id="logTemplate"
->{{#each .}}<b>{{formatTimestamp timestamp}}</b> {{level}} {{loggerName}} - {{text}}
+>{{#each .}}<strong>{{formatTimestamp timestamp}}</strong> {{level}} {{loggerName}} - {{text}}
 {{#if exception}}{{exception.display}}
 {{#each exception.stackTrace}}        {{.}}
 {{/each}}{{#if exception.cause}}{{>exceptionCause exception.cause}}{{/if}}{{/if}}{{/each}}</script>

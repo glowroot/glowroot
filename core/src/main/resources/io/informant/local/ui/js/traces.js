@@ -15,15 +15,15 @@
  */
 var traceSummaryTemplateText = ''
 + '{{#if error}}'
-+ '  <b>ERROR</b><br>'
++ '  <strong>ERROR</strong><br>'
 + '{{/if}}'
 + '{{#if active}}'
-+ '  <b>ACTIVE {{#if stuck}}/ STUCK{{/if}}</b><br>'
++ '  <strong>ACTIVE {{#if stuck}}/ STUCK{{/if}}</strong><br>'
 + '{{^}}'
-+ '  {{#if stuck}}<b>{{#if completed}}UN{{/if}}STUCK</b><br>{{/if}}'
++ '  {{#if stuck}}<strong>{{#if completed}}UN{{/if}}STUCK</strong><br>{{/if}}'
 + '{{/if}}'
 + '{{#if background}}'
-+ '  <b>background</b><br>'
++ '  <strong>background</strong><br>'
 + '{{/if}}'
 + '<div class="second-line-indent">'
 + '  {{description}}'
@@ -39,7 +39,7 @@ var traceSummaryTemplateText = ''
 + '  <div class="second-line-indent">{{name}}: {{value}}</div>'
 + '{{/each}}'
 + '{{#if userId}}<div class="second-line-indent">user ID: {{userId}}</div>{{/if}}'
-+ '{{#if error}}<div class="second-line-indent"><b>error: {{error.text}}</b></div>{{/if}}'
++ '{{#if error}}<div class="second-line-indent"><strong>error: {{error.text}}</strong></div>{{/if}}'
 + 'breakdown (in milliseconds):<br>'
 + '<table class="metrics-table indent1" style="border-spacing:0">'
 + '  <thead>'
@@ -66,7 +66,7 @@ var traceSummaryTemplateText = ''
 var traceDetailTemplateText = ''
 + '{{#if spans}}'
 + '  {{#ifRolledOver spans}}'
-+ '    <div>spans <i>rolled over</i></div>'
++ '    <div>spans <em>rolled over</em></div>'
 + '  {{^}}'
 + '    <span tabindex="0" class="lightbtn pad1 clickable" onclick="toggleSpans()">'
 + '      <span class="red">spans</span> ({{spans.length}})'
@@ -77,7 +77,7 @@ var traceDetailTemplateText = ''
 // todo combine merged stack tree into template to consolidate code between coarse and fine mst
 + '{{#if coarseMergedStackTree}}'
 + '  {{#ifRolledOver coarseMergedStackTree}}'
-+ '    <div>coarse-grained profile <i>rolled over</i></div>'
++ '    <div>coarse-grained profile <em>rolled over</em></div>'
 + '  {{^}}'
 + '    <span tabindex="0" class="lightbtn pad1 clickable" onclick="toggleCoarseMergedStackTree()">'
 + '      <span class="red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})'
@@ -98,7 +98,7 @@ var traceDetailTemplateText = ''
 + '{{/if}}'
 + '{{#if fineMergedStackTree}}'
 + '  {{#ifRolledOver fineMergedStackTree}}'
-+ '    <div>fine-grained profile <i>rolled over</i><div>'
++ '    <div>fine-grained profile <em>rolled over</em><div>'
 + '  {{^}}'
 + '    <span tabindex="0" class="lightbtn pad1 clickable" onclick="toggleFineMergedStackTree()">'
 + '      <span class="red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})'
@@ -147,7 +147,7 @@ var spansTemplateText = ''
 + '      {{/if}}'
 + '      {{#if error}}'
 + '        <div class="indent2">'
-+ '          <b><span class="indent1">{{error.text}}</span></b>'
++ '          <strong><span class="indent1">{{error.text}}</span></strong>'
 + '          <br>'
 + '          {{#if error.detail}}'
 + '            <div class="indent1">'
@@ -237,9 +237,9 @@ Handlebars.registerHelper('middle', function(description) {
   }
 })
 Handlebars.registerHelper('exceptionHtml', function(exception) {
-  var html = '<b>'
+  var html = '<strong>'
   while (exception) {
-    html += exception.display + '</b><br>'
+    html += exception.display + '</strong><br>'
     for (var i = 0; i < exception.stackTrace.length; i++) {
       html += '<span style="width: 4em; display: inline-block"></span>at '
         + exception.stackTrace[i] + '<br>'
@@ -249,7 +249,7 @@ Handlebars.registerHelper('exceptionHtml', function(exception) {
     }
     exception = exception.cause
     if (exception) {
-      html += "<b>Caused by: "
+      html += "<strong>Caused by: "
     }
   }
   return html
