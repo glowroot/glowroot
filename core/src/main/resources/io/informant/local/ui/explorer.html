@@ -348,9 +348,9 @@
         activePoints = response.activePoints
         if (response.limitExceeded) {
           $('#limit').text(limit)
-          $('#limitExceeded').css('display', 'inline-block')
+          $('#limitExceeded').removeClass('hide')
         } else {
-          $('#limitExceeded').hide()
+          $('#limitExceeded').addClass('hide')
         }
         hideTooltip()
         currentItem = null
@@ -382,7 +382,7 @@
       var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 })
       function displaySpinner() {
         if (spinner) {
-          var html = '<div id="tooltipSpinner" style="display: inline-block; width: 35px;'
+          var html = '<div class="inlineblock" id="tooltipSpinner" style="width: 35px;'
             + ' height: 31px"></div>'
           $('#placeholder').qtip({
             content: {
@@ -462,13 +462,12 @@
         })
       })
     }
-    $('#moreFiltersButton').click(function(e) {
-      if ($('#moreFilters').is(':visible')) {
-        $('#moreFiltersButton').html('more filters')
-        $('#moreFilters').hide()
+    $('#toggleExtraFiltersButton').click(function(e) {
+      $('#extraFilters').toggleClass('hide')
+      if ($('#extraFilters').hasClass('hide')) {
+        $('#toggleExtraFiltersButton').html('more filters')
       } else {
-        $('#moreFiltersButton').html('less filters')
-        $('#moreFilters').show()
+        $('#toggleExtraFiltersButton').html('less filters')
       }
       // without preventDefault, click triggers form submission
       e.preventDefault()
@@ -483,19 +482,19 @@
     $('#dateFilter').datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true})
     $('#durationComparator').change(function() {
       if ($('#durationComparator').val() == 'greater') {
-        $('#durationLowDiv').show()
-        $('#durationAndDiv').hide()
-        $('#durationHighDiv').hide()
+        $('#durationLowDiv').removeClass('hide')
+        $('#durationAndDiv').addClass('hide')
+        $('#durationHighDiv').addClass('hide')
         $('#durationHigh').val('')
       } else if ($('#durationComparator').val() == 'less') {
-        $('#durationLowDiv').hide()
+        $('#durationLowDiv').addClass('hide')
         $('#durationLow').val('')
-        $('#durationAndDiv').hide()
-        $('#durationHighDiv').show()
+        $('#durationAndDiv').addClass('hide')
+        $('#durationHighDiv').removeClass('hide')
       } else if ($('#durationComparator').val() == 'between') {
-        $('#durationLowDiv').show()
-        $('#durationAndDiv').show()
-        $('#durationHighDiv').show()
+        $('#durationLowDiv').removeClass('hide')
+        $('#durationAndDiv').removeClass('hide')
+        $('#durationHighDiv').removeClass('hide')
       }
     })
     $('#refreshButton').click(refresh)
@@ -531,10 +530,10 @@
     </div>
   </div>
   <br>
-  <div id="tooltipBoundary" style="display: none; width: 100%; height: 10000px"></div>
+  <div class="hide" id="tooltipBoundary" style="width: 100%; height: 10000px"></div>
   <div>
     <div id="placeholder" style="height: 300px">
-      <div class="button-spinner" id="initialLoadSpinner"
+      <div class="button-spinner hide" id="initialLoadSpinner"
           style="width: 100%; height: 100%; margin: 0px auto"></div>
     </div>
     <div style="width: 100%; text-align: center; font-style: italic; margin: 4px 0">
@@ -544,8 +543,8 @@
     </div>
     <!-- min-height to take up a little space even when no error message -->
     <div style="text-align:center; min-height: 20px">
-      <div class="alert alert-error" id="limitExceeded"
-          style="display: none; margin: 6px auto 0px auto; padding: 8px 35px">
+      <div class="alert alert-error inlineblock hide" id="limitExceeded"
+          style="margin: 6px auto 0px auto; padding: 8px 35px">
         <strong>
           Specified limit exceeded, only displaying the slowest <span id="limit"></span> traces
         </strong>
@@ -586,8 +585,8 @@
                 <input type="text" class="input-mini refresh-data-on-enter-key" id="durationLow">
                 <span class="add-on">seconds</span>
               </div>
-              <div class="input-append" id="durationAndDiv" style="display: none">and</div>
-              <div class="input-append" id="durationHighDiv" style="display: none">
+              <div class="input-append hide" id="durationAndDiv">and</div>
+              <div class="input-append hide" id="durationHighDiv">
                 <input type="text" class="input-mini refresh-data-on-enter-key" id="durationHigh">
                 <span class="add-on">seconds</span>
               </div>
@@ -611,7 +610,7 @@
               </label>
             </div>
           </div>
-          <div id="moreFilters" style="display: none">
+          <div class="hide" id="extraFilters">
             <div class="control-group">
               <label class="control-label" for="descriptionFilter">Description</label>
               <div class="controls">
@@ -663,7 +662,7 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <span tabindex="0" class="lightbtn pad1 red" id="moreFiltersButton"
+              <span tabindex="0" class="lightbtn pad1 red" id="toggleExtraFiltersButton"
                   style="margin-left: -1em">
                 more filters
               </span>
@@ -672,18 +671,18 @@
           <div class="control-group">
             <div class="controls">
               <span tabindex="0" class="btn" id="refreshButton">Refresh</span>
-              <span class="button-spinner" id="refreshButtonSpinner"></span>
-              <span class="button-error-message" id="refreshButtonCancelByZoom">
+              <span class="button-spinner hide" id="refreshButtonSpinner"></span>
+              <span class="button-error-message hide" id="refreshButtonCancelByZoom">
                 Refresh canceled by zoom action
               </span>
-              <span class="button-success-message" id="refreshSuccessMessage">Refreshed</span>
+              <span class="button-success-message hide" id="refreshSuccessMessage">Refreshed</span>
             </div>
           </div>
         </fieldset>
       </form>
     </div>
     <div class="tab-pane fade" id="detailTab">
-      <div class="button-spinner" id="detailTabSpinner" style="margin: 20px 30px"></div>
+      <div class="button-spinner hide" id="detailTabSpinner" style="margin: 20px 30px"></div>
       <!-- the 1px padding is to give space for the focus highlight around the 'spans',
            'coarse-grained profile' and 'fine-grained profile' toggles -->
       <div id="detailTabContent" style="padding: 1px"></div>

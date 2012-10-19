@@ -53,16 +53,16 @@
         if (logMessages.length) {
           var html = logTemplate(logMessages)
           $('#log').html(html)
-          $('#log').show()
+          $('#log').removeClass('hide')
         } else {
           // 'pre' styled #log takes up space even when empty, so need to hide
-          $('#log').hide()
+          $('#log').addClass('hide')
         }
-        $('#logSectionBody').show()
+        $('#logSectionBody').removeClass('hide')
         if (logMessages.length) {
-          $('#logTruncateSection').show()
+          $('#logTruncateSection').removeClass('hide')
         } else {
-          $('#logTruncateSection').hide()
+          $('#logTruncateSection').addClass('hide')
         }
         if (fromRefreshButton) {
           // scroll to bottom of page
@@ -71,10 +71,10 @@
         }
       })
     }
-    $('#dataFileSectionHeader').click(function() { $('#dataFileSectionBody').toggle() })
+    $('#dataFileSectionHeader').click(function() { $('#dataFileSectionBody').toggleClass('hide') })
     $('#logSectionHeader').click(function() {
       if ($('#logSectionBody').is(':visible')) {
-        $('#logSectionBody').hide()
+        $('#logSectionBody').addClass('hide')
       } else {
         // refresh log every time the section is re-opened
         refreshLog(false)
@@ -87,8 +87,8 @@
       $.getJSON('admin/log/truncate', function() {
         $('#log').html("")
         // 'pre' styled #log takes up space even when empty, so need to hide
-        $('#log').hide()
-        $('#logTruncateSection').hide()
+        $('#log').addClass('hide')
+        $('#logTruncateSection').addClass('hide')
         showAndFadeSuccessMessage('#logTruncateSuccessMessage')
       })
     })
@@ -102,7 +102,7 @@
         showAndFadeSuccessMessage('#compactSuccessMessage')
       })
       // in case button is clicked again before success message is hidden
-      $('#compactSuccessMessage').hide()
+      $('#compactSuccessMessage').addClass('hide')
       showSpinner('#compactSpinner')
     })
     $('#truncateButton').click(function() {
@@ -115,7 +115,7 @@
         showAndFadeSuccessMessage('#truncateSuccessMessage')
       })
       // in case button is clicked again before success message is hidden
-      $('#truncateSuccessMessage').hide()
+      $('#truncateSuccessMessage').addClass('hide')
       showSpinner('#truncateSpinner')
     })
   })
@@ -145,13 +145,13 @@
   <div class="section-body section-body-padding hide" id="dataFileSectionBody">
     <div style="margin: 10px 10px 30px 10px">
       <button type="button" class="btn" id="compactButton">Compact</button>
-      <span class="button-spinner" id="compactSpinner"></span>
-      <span class="button-success-message" id="compactSuccessMessage">Compacted</span>
+      <span class="button-spinner hide" id="compactSpinner"></span>
+      <span class="button-success-message hide" id="compactSuccessMessage">Compacted</span>
     </div>
     <div style="margin: 10px">
       <button type="button" class="btn" id="truncateButton">Truncate</button>
-      <span class="button-spinner" id="truncateSpinner"></span>
-      <span class="button-success-message" id="truncateSuccessMessage">Truncated</span>
+      <span class="button-spinner hide" id="truncateSpinner"></span>
+      <span class="button-success-message hide" id="truncateSuccessMessage">Truncated</span>
     </div>
   </div>
   <div class="section-header" id="logSectionHeader">
@@ -164,11 +164,13 @@
       <button type="button" class="btn" id="logRefreshButton">Refresh</button>
       <!-- fixed width of 300px so that truncate button below doesn't shift to the right
            when the refresh success message is displayed -->
-      <span style="display: inline-block; width: 300px">
-        <span class="button-success-message" id="logRefreshSuccessMessage">Refreshed</span>
+      <span class="inlineblock" style="width: 300px">
+        <span class="button-success-message hide" id="logRefreshSuccessMessage">Refreshed</span>
         <!-- truncated message must be outside of logTruncateSection since that will be hidden
              immediately after truncating -->
-        <span class="button-success-message" id="logTruncateSuccessMessage">Truncated</span>
+        <span class="button-success-message hide" id="logTruncateSuccessMessage">
+          Truncated
+        </span>
       </span>
       <span id="logTruncateSection">
         <button type="button" class="btn" id="logTruncateButton">Truncate</button>

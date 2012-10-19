@@ -139,8 +139,9 @@ var spansTemplateText = ''
 + '          <span tabindex="0" class="expandable clickable overflow">'
 + '            <span class="inlineblock pad1">'
                  // lack of spacing between first/middle/last text is important in these lines
-+ '              {{first80 message.text}}<span class="unexpanded-content"> ... </span><span'
-+ '                 class="expanded-content hide">{{middle message.text}}</span>{{last80 message.text}}'
++ '              {{first80 message.text}}<span class="unexpanded-content"> ... </span'
++ '                 ><span class="expanded-content hide">{{middle message.text}}</span'
++ '                 >{{last80 message.text}}'
 + '            </span>'
 + '          </span>'
 + '        </div>'
@@ -153,7 +154,7 @@ var spansTemplateText = ''
 + '        <div class="indent2">'
 + '          <span tabindex="0" class="expandable clickable overflow">'
 + '            <span class="unexpanded-content red pad1">detail</span>'
-+ '            <span class="expanded-content inlineblock pad1" style="display: none">'
++ '            <span class="expanded-content inlineblock pad1 hide">'
 + '              {{{messageDetailHtml message.detail}}}'
 + '            </span>'
 + '          </span>'
@@ -172,7 +173,7 @@ var spansTemplateText = ''
 + '            <div class="indent1">'
 + '              <span tabindex="0" class="expandable clickable overflow">'
 + '                <span class="unexpanded-content red pad1">exception</span>'
-+ '                <span class="expanded-content nowrap pad1 hide">'
++ '                <span class="expanded-content inlineblock nowrap pad1 hide">'
 + '                  {{{exceptionHtml error.exception}}}'
 + '                </span>'
 + '              </span>'
@@ -184,7 +185,7 @@ var spansTemplateText = ''
 + '        <div class="indent2">'
 + '          <span tabindex="0" class="expandable clickable overflow">'
 + '            <span class="unexpanded-content red pad1">span stack trace</span>'
-+ '            <span class="expanded-content inlineblock nowrap pad1" style="display: none">'
++ '            <span class="expanded-content inlineblock nowrap pad1 hide">'
 + '              {{{stackTraceHtml stackTrace}}}'
 + '            </span>'
 + '          </span>'
@@ -261,7 +262,7 @@ Handlebars.registerHelper('exceptionHtml', function(exception) {
   while (exception) {
     html += exception.display + '</strong><br>'
     for (var i = 0; i < exception.stackTrace.length; i++) {
-      html += '<span style="width: 4em; display: inline-block"></span>at '
+      html += '<span class="inlineblock" style="width: 4em"></span>at '
         + exception.stackTrace[i] + '<br>'
     }
     if (exception.framesInCommon) {
@@ -307,13 +308,12 @@ $(document).ready(function() {
   })
 })
 function toggleSpans() {
-  if ($('#sps').html() && $('#sps').is(':visible')) {
-    $('#sps').hide()
+  if (! $('#sps').html()) {
+    // first time opening
+    $('#sps').removeClass('hide')
+    renderNext(detailTrace.spans, 0)
   } else {
-    $('#sps').show()
-    if (! $('#sps').html()) {
-      renderNext(detailTrace.spans, 0)
-    }
+    $('#sps').toggleClass('hide')
   }
 }
 function renderNext(spans, start) {
@@ -329,15 +329,9 @@ function renderNext(spans, start) {
   }
 }
 function basicToggle(unexpandedSelector, expandedSelector, outerSelector) {
-  if ($(unexpandedSelector).is(':visible')) {
-    $(unexpandedSelector).hide()
-    $(expandedSelector).show()
-    $(outerSelector).addClass('expanded')
-  } else {
-    $(expandedSelector).hide()
-    $(unexpandedSelector).show()
-    $(outerSelector).removeClass('expanded')
-  }
+  $(unexpandedSelector).toggleClass('hide')
+  $(expandedSelector).toggleClass('hide')
+  $(outerSelector).toggleClass('expanded')
 }
 function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, keyboard) {
   if (keyboard) {
@@ -354,22 +348,22 @@ function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, key
     smartToggleTimer = undefined
     return
   }
-  if ($(unexpandedSelector).is(':visible')) {
-    // no delay on expanding because it makes it feel sluggish
-    // (at the expense of double click text highlighting also expanding the span)
-    $(unexpandedSelector).hide()
-    $(expandedSelector).show()
-    $(outerSelector).addClass('expanded')
-    // but still create smartToggleTimer to prevent double click from expanding and then contracting
-    smartToggleTimer = setTimeout(function() { smartToggleTimer = undefined }, 500)
-  } else {
+  if ($(unexpandedSelector).hasClass('hide')) {
     // slight delay on hiding in order to not contract on double click text highlighting
     smartToggleTimer = setTimeout(function() {
-      $(expandedSelector).hide()
-      $(unexpandedSelector).show()
+      $(unexpandedSelector).removeClass('hide')
+      $(expandedSelector).addClass('hide')
       $(outerSelector).removeClass('expanded')
       smartToggleTimer = undefined
     }, 250)
+  } else {
+    // no delay on expanding because it makes it feel sluggish
+    // (at the expense of double click text highlighting also expanding the span)
+    $(unexpandedSelector).addClass('hide')
+    $(expandedSelector).removeClass('hide')
+    $(outerSelector).addClass('expanded')
+    // but still create smartToggleTimer to prevent double click from expanding and then contracting
+    smartToggleTimer = setTimeout(function() { smartToggleTimer = undefined }, 500)
   }
 }
 function toggleCoarseMergedStackTree() {
@@ -395,15 +389,13 @@ function toggleMergedStackTree(rootNode, selector) {
     if (nodeSampleCount < rootNodeSampleCount) {
       level++
     }
-    var ret = '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3))
-        + 'em">'
+    var ret = '<span class="inlineblock" style="width: 4em; margin-left: ' + ((level / 3)) + 'em">'
     var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100
     ret += samplePercentage.toFixed(1)
     ret += '%</span>'
     ret += node.stackTraceElement + '<br>'
     if (node.leafThreadState) {
-      ret += '<span style="display: inline-block; width: 4em; margin-left: ' + ((level / 3))
-          + 'em">'
+      ret += '<span class="inlineblock" style="width: 4em; margin-left: ' + ((level / 3)) + 'em">'
       ret += samplePercentage.toFixed(1)
       ret += '%</span> '
       ret += node.leafThreadState
@@ -425,8 +417,8 @@ function toggleMergedStackTree(rootNode, selector) {
     }
     return ret
   }
-  if ($(selector).is(':visible')) {
-    $(selector).hide()
+  if (!$(selector).hasClass('hide')) {
+    $(selector).addClass('hide')
   } else {
     if (! $(selector).find('.mst-interesting').html()) {
       // first time only, process merged stack tree and populate dropdown
@@ -490,7 +482,7 @@ function toggleMergedStackTree(rootNode, selector) {
         if (childNode.leafThreadState) {
           break
         }
-        uninterestingHtml += '<span style="display: inline-block; width: 4em">100.0%</span>'
+        uninterestingHtml += '<span class="inlineblock" style="width: 4em">100.0%</span>'
             + interestingRootNode.stackTraceElement + '<br>'
         interestingRootNode = childNode
         i++
@@ -499,16 +491,16 @@ function toggleMergedStackTree(rootNode, selector) {
         // update merged stack tree based on filter
         var interestingHtml = curr(interestingRootNode, 0, $(this).val())
         $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
-        $(selector).find('.mst-common').show()
+        $(selector).find('.mst-common').removeClass('hide')
         $(selector).find('.mst-interesting').html(interestingHtml)
       })
       // build initial merged stack tree
       var interestingHtml = curr(interestingRootNode, 0)
       $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
-      $(selector).find('.mst-common').show()
+      $(selector).find('.mst-common').removeClass('hide')
       $(selector).find('.mst-interesting').html(interestingHtml)
     }
-    $(selector).show()
+    $(selector).removeClass('hide')
   }
 }
 // TODO move inside toggleMergedStackTree enclosure

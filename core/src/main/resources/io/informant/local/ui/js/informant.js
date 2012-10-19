@@ -26,9 +26,16 @@ function showAndFadeMessage(selector, delay) {
       clearTimeout($(this).data('timeout'))
     }
     $(this).stop().animate({opacity:'100'})
-    $(this).css('display','inline-block')
+    $(this).removeClass('hide')
     var outerThis = this
-    $(this).data('timeout', setTimeout(function() { $(outerThis).fadeOut(1000) }, delay))
+    $(this).data('timeout', setTimeout(function() { fadeOut(outerThis, 1000) }, delay))
+  })
+}
+function fadeOut(selector, duration) {
+  // fade out and then override jquery behavior and use hide class instead of display: none
+  $(selector).fadeOut(duration, function() {
+    $(selector).addClass('hide')
+    $(selector).css('display', '')
   })
 }
 function showSpinner(selector, opts) {
@@ -42,7 +49,7 @@ function showSpinner(selector, opts) {
     function displaySpinner() {
       // data.spinner may have been cleared already by hideSpinner() before setTimeout triggered
       if (data.spinner) {
-        $(outerThis).css('display','inline-block')
+        $(outerThis).removeClass('hide')
         data.spinner.spin(outerThis)
       }
     }
@@ -57,7 +64,7 @@ function hideSpinner(selector) {
       data.spinner.stop()
       delete data.spinner
     }
-    $(this).hide()
+    $(this).addClass('hide')
   })
 }
 function configureAjaxError() {

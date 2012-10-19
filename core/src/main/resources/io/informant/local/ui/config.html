@@ -27,7 +27,7 @@
 <script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
-<div class="section-header" onclick="$('#form_' + escapeForSelector('{{id}}')).toggle()">
+<div class="section-header" onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
   <button class="section-toggle">{{name}}</button>
   <span class="configuration-status" id="{{id}}_status">ON</span>
 </div>
@@ -85,7 +85,7 @@
     </div>
     <div class="form-actions section-body-save">
       <button type="button" class="btn" onclick="updatePluginConfig('{{id}}')">Save changes</button>
-      <span class="button-success-message" id="{{id}}_saveComplete">Saved</span>
+      <span class="button-success-message hide" id="{{id}}_saveComplete">Saved</span>
     </div>
   </fieldset>
 </form>
@@ -232,7 +232,7 @@
       setStatus('#coreStatus', config.enabled, true)
     })
     // in case button is clicked again before success message is hidden
-    $('#saveCoreComplete').hide()
+    $('#saveCoreComplete').addClass('hide')
     showSpinner('#saveCoreButtonSpinner')
   }
   function updateCoarseConfig() {
@@ -404,7 +404,7 @@
   </div>
   <br>
   <br>
-  <div class="section-header" onclick="$('#coreForm').toggle()">
+  <div class="section-header" onclick="$('#coreForm').toggleClass('hide')">
     <button class="section-toggle">General</button>
     <span class="configuration-status" id="coreStatus">ON</span>
   </div>
@@ -448,7 +448,7 @@
             </div>
           </div>
         </div>
-        <div class="control-group" style="display: none">
+        <div class="control-group hide">
           <label class="control-label" for="spanStackTraceThresholdMillis">
             Span stack trace threshold
           </label>
@@ -505,12 +505,12 @@
         <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
         <!-- spinner because updating core config can take a while if resizing rolling file
              or changing trace snapshot expiration -->
-        <span class="button-spinner" id="saveCoreButtonSpinner"></span>
-        <span class="button-success-message" id="coreSaveComplete">Saved</span>
+        <span class="button-spinner hide" id="saveCoreButtonSpinner"></span>
+        <span class="button-success-message hide" id="coreSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>
-  <div class="section-header" onclick="$('#coarseForm').toggle()">
+  <div class="section-header" onclick="$('#coarseForm').toggleClass('hide')">
     <button class="section-toggle">Coarse-Grained Profiling</button>
     <span class="configuration-status" id="coarseStatus">ON</span>
   </div>
@@ -576,11 +576,11 @@
       </div>
       <div class="form-actions section-body-save">
         <button type="button" class="btn" onclick="updateCoarseConfig()">Save changes</button>
-        <span class="button-success-message" id="coarseSaveComplete">Saved</span>
+        <span class="button-success-message hide" id="coarseSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>
-  <div class="section-header" onclick="$('#fineForm').toggle()">
+  <div class="section-header" onclick="$('#fineForm').toggleClass('hide')">
     <button class="section-toggle">Fine-Grained Profiling</button>
     <span class="configuration-status" id="fineStatus">ON</span>
   </div>
@@ -662,11 +662,11 @@
       </div>
       <div class="form-actions section-body-save">
         <button type="button" class="btn" onclick="updateFineConfig()">Save changes</button>
-        <span class="button-success-message" id="fineSaveComplete">Saved</span>
+        <span class="button-success-message hide" id="fineSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>
-  <div class="section-header" onclick="$('#userForm').toggle()">
+  <div class="section-header" onclick="$('#userForm').toggleClass('hide')">
     <button class="section-toggle">User Tracing</button>
     <span class="configuration-status" id="userStatus">ON</span>
   </div>
@@ -722,7 +722,7 @@
       </div>
       <div class="form-actions section-body-save">
         <button type="button" class="btn" onclick="updateUserConfig()">Save changes</button>
-        <span class="button-success-message" id="userSaveComplete">Saved</span>
+        <span class="button-success-message hide" id="userSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>

@@ -142,21 +142,21 @@ input:focus {
   border-collapse: separate !important;
 }
 .button-success-message {
-  display: none;
+  display: inline-block;
   color: green;
   font-size: 16px;
   margin-left: 10px;
   vertical-align: middle;
 }
 .button-error-message {
-  display: none;
+  display: inline-block;
   color: red;
   font-size: 16px;
   margin-left: 10px;
   vertical-align: middle;
 }
 .button-spinner {
-  display: none;
+  display: inline-block;
   margin-left: 30px;
   vertical-align: middle;
 }
@@ -327,9 +327,9 @@ a:hover {
   background-color: #eee;
   border-radius: 8px;
 }
-.flat-pre.hide {
-  display: none;
-}
 .inlineblock {
   display: inline-block;
+}
+.hide {
+  display: none !important;
 }
