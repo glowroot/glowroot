@@ -26,7 +26,6 @@
 <script type="text/javascript" src="libs/bootstrap/2.1.1/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.rc.1/handlebars.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
-</head>
 <script type="text/x-handlebars-template" id="threadDumpTemplate">{{#each .}}"{{name}}"
    java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}
@@ -72,6 +71,7 @@
     refresh(false)
   })
 </script>
+</head>
 <body>
   <div class="header">
     <span class="header-logo">
@@ -81,9 +81,9 @@
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0">
-        <li><a tabindex="-1" href="explorer.html">explorer</a></li>
-        <li><a tabindex="-1" href="config.html">configuration</a></li>
-        <li><a tabindex="-1" href="admin.html">administration</a></li>
+        <li role="menuitem"><a tabindex="-1" href="explorer.html">explorer</a></li>
+        <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
+        <li role="menuitem"><a tabindex="-1" href="admin.html">administration</a></li>
       </ul>
     </div>
   </div>
