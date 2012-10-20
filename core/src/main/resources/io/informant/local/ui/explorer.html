@@ -556,7 +556,8 @@
     <li class="active"><a href="#filterTab" data-toggle="tab">Filter</a></li>
     <li><a href="#detailTab" data-toggle="tab">Detail</a></li>
   </ul>
-  <div class="tab-content" id="tabContent" style="padding-top: 10px">
+  <!-- overflow: visible so that stack traces can extend to the right -->
+  <div class="tab-content" id="tabContent" style="padding-top: 10px; overflow: visible">
     <div class="tab-pane fade in active" id="filterTab">
       <form class="form-horizontal">
         <fieldset>

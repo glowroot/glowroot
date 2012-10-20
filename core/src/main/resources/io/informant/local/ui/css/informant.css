@@ -229,8 +229,12 @@ a:hover {
   background-color:#ddd;
 }
 .overflow {
+  /*
   overflow: auto;
   max-width: 100%;
+  */
+  /*  the 1px margin is to give space for the focus highlight */
+  margin-right: 1px;
 }
 .red {
   color: #b12930;
