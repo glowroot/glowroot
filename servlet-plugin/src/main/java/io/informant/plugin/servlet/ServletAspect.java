@@ -186,7 +186,7 @@ public class ServletAspect {
             new BooleanThreadLocal();
 
     @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "getParameter*",
-            methodArgs = { ".." })
+            methodArgs = { ".." }, captureNested = false)
     public static class GetParameterAdvice {
         @IsEnabled
         public static boolean isEnabled() {

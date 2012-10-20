@@ -37,7 +37,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 class TestServlet extends HttpServlet implements AppUnderTest {
 
     public void executeApp() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/testservlet");
+        MockHttpServletRequest request = new MockCatalinaHttpServletRequest("GET", "/testservlet");
         MockHttpServletResponse response = new MockHttpServletResponse();
         before(request, response);
         service(request, response);

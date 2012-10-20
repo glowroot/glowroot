@@ -117,8 +117,18 @@ public class ServletPluginTest {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         // when
-        container.executeAppUnderTest(GetParameters.class);
+        container.executeAppUnderTest(GetParameter.class);
         // then don't fall into an infinite loop! (yes, at one time it did)
+        container.getInformant().getLastTraceSummary();
+    }
+
+    @Test
+    public void testRequestParameterMap() throws Exception {
+        // given
+        container.getInformant().setPersistenceThresholdMillis(0);
+        // when
+        container.executeAppUnderTest(GetParameterMap.class);
+        // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
         container.getInformant().getLastTraceSummary();
     }
 
@@ -262,10 +272,26 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class GetParameters extends TestServlet {
+    public static class GetParameter extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setParameter("xy", "abc");
+        }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getParameter("xy");
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetParameterMap extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setParameter("xy", "abc");
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getParameterMap();
         }
     }
 
