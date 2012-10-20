@@ -112,7 +112,7 @@ var traceDetailTemplateText = ''
            // standard expanded-content bottom margin is not needed since nothing can be expanded
            // directly below
            // using span so background will stretch beyond page border if needed
-+ '        <span tabindex="-1" class="expanded-content inlineblock hide" style="margin-bottom: 0">'
++ '        <span tabindex="-1" class="expanded-content hide" style="margin-bottom: 0">'
 + '        </span>'
 + '      </div>'
 + '      <div class="mst-interesting indent1"></div>'
@@ -144,8 +144,8 @@ var spansTemplateText = ''
 + '      {{/ifLongDescription}}'
 + '      {{#if message.detail}}'
 + '        <div class="indent2">'
-+ '          <span tabindex="0" class="unexpanded-content red pad1">detail</span>'
-+ '          <div tabindex="-1" class="expanded-content pad1 hide">'
++ '          <span tabindex="0" class="unexpanded-content red">detail</span>'
++ '          <div tabindex="-1" class="expanded-content hide">'
 + '            {{{messageDetailHtml message.detail}}}'
 + '          </div>'
 + '        </div>'
@@ -161,9 +161,9 @@ var spansTemplateText = ''
 + '          {{/if}}'
 + '          {{#if error.exception}}'
 + '            <div class="indent1">'
-+ '              <span tabindex="0" class="unexpanded-content red pad1">exception</span>'
++ '              <span tabindex="0" class="unexpanded-content red">exception</span>'
                  // using span so background will stretch beyond page border if needed
-+ '              <span tabindex="-1" class="expanded-content inlineblock nowrap pad1 hide">'
++ '              <span tabindex="-1" class="expanded-content nowrap hide">'
 + '                {{{exceptionHtml error.exception}}}'
 + '              </span>'
 + '            </div>'
@@ -172,9 +172,9 @@ var spansTemplateText = ''
 + '      {{/if}}'
 + '      {{#if stackTrace}}'
 + '        <div class="indent2">'
-+ '          <span tabindex="0" class="unexpanded-content red pad1">span stack trace</span>'
++ '          <span tabindex="0" class="unexpanded-content red">span stack trace</span>'
              // using span so background will stretch beyond page border if needed
-+ '          <span tabindex="-1" class="expanded-content inlineblock nowrap pad1 hide">'
++ '          <span tabindex="-1" class="expanded-content nowrap hide">'
 + '            {{{stackTraceHtml stackTrace}}}'
 + '          </span>'
 + '        </div>'
@@ -282,13 +282,8 @@ $(document).ready(function() {
     mousedownSpanPageX = e.pageX
     mousedownSpanPageY = e.pageY
   })
-  $(document).on('click', '.unexpanded-content', function(e, keyboard) {
-    var parent = $(this).parent()
-    smartToggle($(this), parent.find('.expanded-content'), parent, e, keyboard)
-  })
-  $(document).on('click', '.expanded-content', function(e, keyboard) {
-    var parent = $(this).parent()
-    smartToggle(parent.find('.unexpanded-content'), $(this), parent, e, keyboard)
+  $(document).on('click', '.unexpanded-content, .expanded-content', function(e, keyboard) {
+    smartToggle($(this).parent(), e, keyboard)
   })
 })
 function toggleSpans() {
@@ -312,22 +307,24 @@ function renderNext(spans, start) {
     setTimeout(function() { renderNext(spans, start + 100) }, 10)
   }
 }
-function basicToggle(unexpandedSelector, expandedSelector, outerSelector) {
-  $(unexpandedSelector).toggleClass('hide')
-  $(expandedSelector).toggleClass('hide')
-  if ($(unexpandedSelector).hasClass('hide')) {
-    $(unexpandedSelector).attr('tabindex', -1)
-    $(expandedSelector).attr('tabindex', 0)
-    $(expandedSelector).focus()
+function basicToggle(parent) {
+  var expanded = parent.find('.expanded-content')
+  var unexpanded = parent.find('.unexpanded-content')
+  unexpanded.toggleClass('hide')
+  expanded.toggleClass('hide')
+  if (unexpanded.hasClass('hide')) {
+    unexpanded.attr('tabindex', -1)
+    expanded.attr('tabindex', 0)
+    expanded.focus()
   } else {
-    $(expandedSelector).attr('tabindex', -1)
-    $(unexpandedSelector).attr('tabindex', 0)
-    $(unexpandedSelector).focus()
+    expanded.attr('tabindex', -1)
+    unexpanded.attr('tabindex', 0)
+    unexpanded.focus()
   }
 }
-function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, keyboard) {
+function smartToggle(parent, e, keyboard) {
   if (keyboard) {
-    basicToggle(unexpandedSelector, expandedSelector, outerSelector)
+    basicToggle(parent)
     return
   }
   if (Math.abs(e.pageX - mousedownSpanPageX) > 5 || Math.abs(e.pageY - mousedownSpanPageY) > 5) {
@@ -340,24 +337,24 @@ function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, key
     smartToggleTimer = undefined
     return
   }
-  if ($(unexpandedSelector).hasClass('hide')) {
+  var expanded = parent.find('.expanded-content')
+  var unexpanded = parent.find('.unexpanded-content')
+  if (unexpanded.hasClass('hide')) {
     // slight delay on hiding in order to not contract on double click text highlighting
     smartToggleTimer = setTimeout(function() {
-      $(unexpandedSelector).removeClass('hide')
-      $(expandedSelector).addClass('hide')
-      $(unexpandedSelector).attr('tabindex', 0)
-      $(expandedSelector).attr('tabindex', -1)
-      $(unexpandedSelector).focus()
+      unexpanded.removeClass('hide')
+      expanded.addClass('hide')
+      unexpanded.attr('tabindex', 0)
+      expanded.attr('tabindex', -1)
       smartToggleTimer = undefined
     }, 250)
   } else {
     // no delay on expanding because it makes it feel sluggish
     // (at the expense of double click text highlighting also expanding the span)
-    $(unexpandedSelector).addClass('hide')
-    $(expandedSelector).removeClass('hide')
-    $(unexpandedSelector).attr('tabindex', -1)
-    $(expandedSelector).attr('tabindex', 0)
-    $(expandedSelector).focus()
+    unexpanded.addClass('hide')
+    expanded.removeClass('hide')
+    unexpanded.attr('tabindex', -1)
+    expanded.attr('tabindex', 0)
     // but still create smartToggleTimer to prevent double click from expanding and then contracting
     smartToggleTimer = setTimeout(function() { smartToggleTimer = undefined }, 500)
   }
