@@ -216,40 +216,38 @@ a:focus {
 .lightbtn:focus {
   background-color:#ddd;
 }
-.expandable {
-  display: inline-block;
+.unexpanded-content,
+.expanded-content {
   cursor: pointer;
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding: 2px 1em 2px 1em;
   border-radius: 4px;
 }
-.expandable:hover,
-.expandable:focus {
+.unexpanded-content:hover,
+.unexpanded-content:focus,
+.expanded-content:hover,
+.expanded-content:focus {
   background-color:#ddd;
 }
-.expanded {
+.unexpanded-content {
+  /* these are spans, giving them inline-block increases the vertical padding
+     making them look more substantial as 'buttons' */
+  display: inline-block;
+}
+.expanded-content {
   background-color:#eee;
   /* margin for white space between successive expanded elements, at the bottom so that
      expanding doesn't create jitter/shift down of expanding section */
   margin-bottom: 4px;
 }
-.expanded:hover,
-.expanded:focus {
-  background-color:#ddd;
+.unexpanded-padding {
+  /* some elements need the same padding as expanding elements */
+  padding: 2px 1em 2px 1em;
 }
 div:focus,
 span:focus,
 a:focus {
   /* these elements change their background color to indicate focus */
   outline: 0;
-}
-.overflow {
-  /*
-  overflow: auto;
-  max-width: 100%;
-  */
-  /*  the 1px margin is to give space for the focus highlight */
-  margin-right: 1px;
 }
 .red {
   color: #b12930;
@@ -271,6 +269,13 @@ a:focus {
 }
 .nowrap {
   white-space: nowrap;
+}
+.breakword {
+  word-wrap: break-word;
+}
+.textindent1 {
+  text-indent: -1em;
+  margin-left: 1em;
 }
 .nav-tabs > li > a:hover {
   /* slightly darken bootstrap tabs to match .lightbtn */

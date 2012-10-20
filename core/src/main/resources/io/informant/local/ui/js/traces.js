@@ -68,7 +68,7 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver spans}}'
 + '    <div>spans <em>rolled over</em></div>'
 + '  {{^}}'
-+ '    <span tabindex="0" class="lightbtn clickable pad1" onclick="toggleSpans()">'
++ '    <span tabindex="0" class="lightbtn pad1" onclick="toggleSpans()">'
 + '      <span class="red">spans</span> ({{spans.length}})'
 + '    </span><br>'
 + '    <div id="sps"></div>'
@@ -79,24 +79,21 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver coarseMergedStackTree}}'
 + '    <div>coarse-grained profile <em>rolled over</em></div>'
 + '  {{^}}'
-+ '    <span tabindex="0" class="lightbtn clickable pad1" onclick="toggleCoarseMergedStackTree()">'
++ '    <span tabindex="0" class="lightbtn pad1" onclick="toggleCoarseMergedStackTree()">'
 + '      <span class="red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})'
 + '    </span><br>'
 + '    <div class="nowrap indent1 hide" id="mstCoarseOuter">'
-+ '      <select class="mst-filter input-large" onchange="this.blur()"'
-             // taking 2px off of bottom because of extra 2px added to expandable element below
-+ '          style="margin: 4px 4px 2px 4px"></select><br>'
-+ '      <div class="overflow">'
-+ '        <span tabindex="0" class="expandable mst-common clickable pad1 hide"'
-                // the bottom margin is needed to trump .expandable class' margin-bottom: 4px since
-                // no buffer is needed when this is expanded since nothing can be expanded directly
-                // below
-+ '             style="margin-bottom: 0">'
-+ '          <span class="unexpanded-content red">common base</span>'
-+ '          <span class="expanded-content hide"></span>'
++ '      <select class="mst-filter input-large" onchange="this.blur()" style="margin: 4px">'
++ '      </select><br>'
++ '      <div class="mst-common hide">'
++ '        <span tabindex="0" class="unexpanded-content red">common base</span>'
+           // standard expanded-content bottom margin is not needed since nothing can be expanded
+           // directly below
+           // using span so background will stretch beyond page border if needed
++ '        <span tabindex="-1" class="expanded-content inlineblock hide" style="margin-bottom: 0">'
 + '        </span>'
-+ '        <div class="mst-interesting indent1"></div>'
 + '      </div>'
++ '      <div class="mst-interesting indent1"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -104,24 +101,21 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver fineMergedStackTree}}'
 + '    <div>fine-grained profile <em>rolled over</em><div>'
 + '  {{^}}'
-+ '    <span tabindex="0" class="lightbtn clickable pad1" onclick="toggleFineMergedStackTree()">'
++ '    <span tabindex="0" class="lightbtn pad1" onclick="toggleFineMergedStackTree()">'
 + '      <span class="red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})'
 + '    </span><br>'
 + '    <div class="nowrap indent1 hide" id="mstFineOuter">'
-+ '      <select class="mst-filter input-large" onchange="this.blur()"'
-             // taking 2px off of bottom because of extra 2px added to expandable element below
-+ '          style="margin: 4px 4px 2px 4px"></select><br>'
-+ '      <div class="overflow">'
-+ '        <span tabindex="0" class="expandable mst-common clickable pad1 hide"'
-                // the bottom margin is needed to trump .expandable class' margin-bottom: 4px since
-                // no buffer is needed when this is expanded since nothing can be expanded directly
-                // below
-+ '             style="margin-bottom: 0">'
-+ '          <span class="unexpanded-content red">common base</span>'
-+ '          <span class="expanded-content hide"></span>'
-+ '        </span><br>'
-+ '        <div class="mst-interesting indent1"></div>'
++ '      <select class="mst-filter input-large" onchange="this.blur()" style="margin: 4px">'
++ '      </select><br>'
++ '      <div class="mst-common hide">'
++ '        <span tabindex="0" class="unexpanded-content red">common base</span>'
+           // standard expanded-content bottom margin is not needed since nothing can be expanded
+           // directly below
+           // using span so background will stretch beyond page border if needed
++ '        <span tabindex="-1" class="expanded-content inlineblock hide" style="margin-bottom: 0">'
++ '        </span>'
 + '      </div>'
++ '      <div class="mst-interesting indent1"></div>'
 + '    </div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
@@ -136,28 +130,24 @@ var spansTemplateText = ''
 + '    <div style="margin-left: 3em">'
 + '      {{#ifLongDescription message.text}}'
 + '        <div>'
-+ '          <span tabindex="0" class="expandable clickable overflow">'
-+ '            <span class="inlineblock pad1">'
-                 // lack of spacing between first/middle/last text is important in these lines
-+ '              {{first80 message.text}}<span class="unexpanded-content"> ... </span'
-+ '                 ><span class="expanded-content hide">{{middle message.text}}</span'
-+ '                 >{{last80 message.text}}'
-+ '            </span>'
++ '          <span tabindex="0" class="unexpanded-content">'
++ '            {{first80 message.text}} ... {{last80 message.text}}'
 + '          </span>'
++ '          <div tabindex="-1" class="expanded-content breakword hide">'
++ '            {{message.text}}'
++ '          </div>'
 + '        </div>'
 + '      {{^}}'
-+ '        <div class="indent1">'
++ '        <div class="unexpanded-padding">'
 + '          {{message.text}}'
 + '        </div>'
 + '      {{/ifLongDescription}}'
 + '      {{#if message.detail}}'
 + '        <div class="indent2">'
-+ '          <span tabindex="0" class="expandable clickable overflow">'
-+ '            <span class="unexpanded-content red pad1">detail</span>'
-+ '            <span class="expanded-content inlineblock pad1 hide">'
-+ '              {{{messageDetailHtml message.detail}}}'
-+ '            </span>'
-+ '          </span>'
++ '          <span tabindex="0" class="unexpanded-content red pad1">detail</span>'
++ '          <div tabindex="-1" class="expanded-content pad1 hide">'
++ '            {{{messageDetailHtml message.detail}}}'
++ '          </div>'
 + '        </div>'
 + '      {{/if}}'
 + '      {{#if error}}'
@@ -171,11 +161,10 @@ var spansTemplateText = ''
 + '          {{/if}}'
 + '          {{#if error.exception}}'
 + '            <div class="indent1">'
-+ '              <span tabindex="0" class="expandable clickable overflow">'
-+ '                <span class="unexpanded-content red pad1">exception</span>'
-+ '                <span class="expanded-content inlineblock nowrap pad1 hide">'
-+ '                  {{{exceptionHtml error.exception}}}'
-+ '                </span>'
++ '              <span tabindex="0" class="unexpanded-content red pad1">exception</span>'
+                 // using span so background will stretch beyond page border if needed
++ '              <span tabindex="-1" class="expanded-content inlineblock nowrap pad1 hide">'
++ '                {{{exceptionHtml error.exception}}}'
 + '              </span>'
 + '            </div>'
 + '          {{/if}}'
@@ -183,11 +172,10 @@ var spansTemplateText = ''
 + '      {{/if}}'
 + '      {{#if stackTrace}}'
 + '        <div class="indent2">'
-+ '          <span tabindex="0" class="expandable clickable overflow">'
-+ '            <span class="unexpanded-content red pad1">span stack trace</span>'
-+ '            <span class="expanded-content inlineblock nowrap pad1 hide">'
-+ '              {{{stackTraceHtml stackTrace}}}'
-+ '            </span>'
++ '          <span tabindex="0" class="unexpanded-content red pad1">span stack trace</span>'
+             // using span so background will stretch beyond page border if needed
++ '          <span tabindex="-1" class="expanded-content inlineblock nowrap pad1 hide">'
++ '            {{{stackTraceHtml stackTrace}}}'
 + '          </span>'
 + '        </div>'
 + '      {{/if}}'
@@ -207,13 +195,13 @@ Handlebars.registerHelper('messageDetailHtml', function(detail) {
       if (propVal != null && typeof propVal == 'object') {
         ret += propName + ':'
         ret += '<br>'
-        ret += '<span class="indent1 inlineblock">'
+        ret += '<div class="indent1">'
         ret += messageDetailHtml(propVal)
-        ret += '</span><br>'
+        ret += '</div>'
       } else {
-        ret += '<span class="inlineblock" style="text-indent: -1em; margin-left: 1em">'
+        ret += '<div class="breakword textindent1">'
         ret += propName + ': ' + propVal
-        ret += '</span><br>'
+        ret += '</div>'
       }
     })
     return ret
@@ -294,9 +282,13 @@ $(document).ready(function() {
     mousedownSpanPageX = e.pageX
     mousedownSpanPageY = e.pageY
   })
-  $(document).on('click', '.expandable', function(e, keyboard) {
-    smartToggle($(this).find('.unexpanded-content'), $(this).find('.expanded-content'), $(this), e,
-        keyboard)
+  $(document).on('click', '.unexpanded-content', function(e, keyboard) {
+    var parent = $(this).parent()
+    smartToggle($(this), parent.find('.expanded-content'), parent, e, keyboard)
+  })
+  $(document).on('click', '.expanded-content', function(e, keyboard) {
+    var parent = $(this).parent()
+    smartToggle(parent.find('.unexpanded-content'), $(this), parent, e, keyboard)
   })
 })
 function toggleSpans() {
@@ -323,7 +315,15 @@ function renderNext(spans, start) {
 function basicToggle(unexpandedSelector, expandedSelector, outerSelector) {
   $(unexpandedSelector).toggleClass('hide')
   $(expandedSelector).toggleClass('hide')
-  $(outerSelector).toggleClass('expanded')
+  if ($(unexpandedSelector).hasClass('hide')) {
+    $(unexpandedSelector).attr('tabindex', -1)
+    $(expandedSelector).attr('tabindex', 0)
+    $(expandedSelector).focus()
+  } else {
+    $(expandedSelector).attr('tabindex', -1)
+    $(unexpandedSelector).attr('tabindex', 0)
+    $(unexpandedSelector).focus()
+  }
 }
 function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, keyboard) {
   if (keyboard) {
@@ -345,7 +345,9 @@ function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, key
     smartToggleTimer = setTimeout(function() {
       $(unexpandedSelector).removeClass('hide')
       $(expandedSelector).addClass('hide')
-      $(outerSelector).removeClass('expanded')
+      $(unexpandedSelector).attr('tabindex', 0)
+      $(expandedSelector).attr('tabindex', -1)
+      $(unexpandedSelector).focus()
       smartToggleTimer = undefined
     }, 250)
   } else {
@@ -353,7 +355,9 @@ function smartToggle(unexpandedSelector, expandedSelector, outerSelector, e, key
     // (at the expense of double click text highlighting also expanding the span)
     $(unexpandedSelector).addClass('hide')
     $(expandedSelector).removeClass('hide')
-    $(outerSelector).addClass('expanded')
+    $(unexpandedSelector).attr('tabindex', -1)
+    $(expandedSelector).attr('tabindex', 0)
+    $(expandedSelector).focus()
     // but still create smartToggleTimer to prevent double click from expanding and then contracting
     smartToggleTimer = setTimeout(function() { smartToggleTimer = undefined }, 500)
   }
