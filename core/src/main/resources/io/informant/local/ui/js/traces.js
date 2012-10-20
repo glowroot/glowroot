@@ -90,8 +90,8 @@ var traceDetailTemplateText = ''
 + '        <span tabindex="0" class="expandable mst-common clickable pad1 hide"'
                 // the bottom margin is needed to trump .expandable class' margin-bottom: 4px since
                 // no buffer is needed when this is expanded since nothing can be expanded directly
-                // below, the 1px padding is to give space for the focus highlight
-+ '             style="margin: 2px 1px 0 1px">'
+                // below
++ '             style="margin-bottom: 0">'
 + '          <span class="unexpanded-content red">common base</span>'
 + '          <span class="expanded-content hide"></span>'
 + '        </span>'
@@ -115,8 +115,8 @@ var traceDetailTemplateText = ''
 + '        <span tabindex="0" class="expandable mst-common clickable pad1 hide"'
                 // the bottom margin is needed to trump .expandable class' margin-bottom: 4px since
                 // no buffer is needed when this is expanded since nothing can be expanded directly
-                // below, the 1px padding is to give space for the focus highlight
-+ '             style="margin: 2px 1px 0 1px">'
+                // below
++ '             style="margin-bottom: 0">'
 + '          <span class="unexpanded-content red">common base</span>'
 + '          <span class="expanded-content hide"></span>'
 + '        </span><br>'
@@ -293,14 +293,6 @@ $(document).ready(function() {
   $(document).mousedown(function(e) {
     mousedownSpanPageX = e.pageX
     mousedownSpanPageY = e.pageY
-  })
-  $(document).on('keydown', '.clickable', function(e) {
-    if (e.keyCode == 13) {
-      // enter key, for clicking when focus is on .clickable
-      // pass extra arg to click handler in case click handler wants to treat keyboard clicks
-      // differently from mouse clicks
-      $(this).trigger('click', true)
-    }
   })
   $(document).on('click', '.expandable', function(e, keyboard) {
     smartToggle($(this).find('.unexpanded-content'), $(this).find('.expanded-content'), $(this), e,

@@ -441,7 +441,7 @@
           }
           loadDetailId = id
           $('#detailTabContent').html('')
-          $('a[href="#detailTab"]').tab('show')
+          $('a[href="#detailTabDiv"]').tab('show')
           $.getJSON('explorer/detail/' + id, function(response) {
             if (loadDetailId != id) {
               // a different id has been posted since this one
@@ -462,6 +462,10 @@
         })
       })
     }
+    $('a[data-toggle="tab"]').on('shown', function (e) {
+      e.target.tabIndex = -1
+      e.relatedTarget.tabIndex = 0
+    })
     $('#toggleExtraFiltersButton').click(function(e) {
       $('#extraFilters').toggleClass('hide')
       if ($('#extraFilters').hasClass('hide')) {
@@ -553,12 +557,14 @@
   </div>
   <br>
   <ul class="nav nav-tabs" id="tab">
-    <li class="active"><a href="#filterTab" data-toggle="tab">Filter</a></li>
-    <li><a href="#detailTab" data-toggle="tab">Detail</a></li>
+    <li class="active">
+      <a tabindex="-1" href="#filterTabDiv" data-toggle="tab">Filter</a>
+    </li>
+    <li><a href="#detailTabDiv" data-toggle="tab">Detail</a></li>
   </ul>
   <!-- overflow: visible so that stack traces can extend to the right -->
   <div class="tab-content" id="tabContent" style="padding-top: 10px; overflow: visible">
-    <div class="tab-pane fade in active" id="filterTab">
+    <div class="tab-pane fade in active" id="filterTabDiv">
       <form class="form-horizontal">
         <fieldset>
           <div class="control-group">
@@ -663,7 +669,7 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <span tabindex="0" class="lightbtn pad1 red" id="toggleExtraFiltersButton"
+              <span tabindex="0" class="lightbtn clickable pad1 red" id="toggleExtraFiltersButton"
                   style="margin-left: -1em">
                 more filters
               </span>
@@ -671,7 +677,7 @@
           </div>
           <div class="control-group">
             <div class="controls">
-              <span tabindex="0" class="btn" id="refreshButton">Refresh</span>
+              <span tabindex="0" class="btn clickable" id="refreshButton">Refresh</span>
               <span class="button-spinner hide" id="refreshButtonSpinner"></span>
               <span class="button-error-message hide" id="refreshButtonCancelByZoom">
                 Refresh canceled by zoom action
@@ -682,11 +688,9 @@
         </fieldset>
       </form>
     </div>
-    <div class="tab-pane fade" id="detailTab">
+    <div class="tab-pane fade" id="detailTabDiv">
       <div class="button-spinner hide" id="detailTabSpinner" style="margin: 20px 30px"></div>
-      <!-- the 1px padding is to give space for the focus highlight around the 'spans',
-           'coarse-grained profile' and 'fine-grained profile' toggles -->
-      <div id="detailTabContent" style="padding: 1px"></div>
+      <div id="detailTabContent"></div>
     </div>
   </div>
   <br>

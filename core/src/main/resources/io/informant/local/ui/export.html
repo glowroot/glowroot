@@ -38,6 +38,9 @@
   {{include io/informant/local/ui/js/traces.js}}
 </script>
 <script type="text/javascript">
+  {{include io/informant/local/ui/js/informant.js}}
+</script>
+<script type="text/javascript">
   detailTrace = {{include detailTrace}}
   $(document).ready(function() {
     var html = traceSummaryTemplate(detailTrace)

@@ -13,6 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+$(document).ready(function() {
+  $(document).on('keydown', '.clickable', function(e) {
+    if (e.keyCode == 13) {
+      // enter key, for clicking when focus is on .clickable
+      // pass extra arg to click handler in case click handler wants to treat keyboard clicks
+      // differently from mouse clicks
+      $(this).trigger('click', true)
+    }
+  })
+  // bootstrap-dropdown already closes the menu on esc key, this is just adding handling for tab key
+  // to close menu also, e.g. user is looking at menu and then tabs away
+  $('.header-see-also [data-toggle=dropdown], .header-see-also [role=menu]')
+      .on('keydown touchstart', function(e) {
+    if (e.keyCode == 9) { // tab key
+      $('.header-see-also').removeClass('open')
+    }
+  })
+})
 function showAndFadeSuccessMessage(selector) {
   showAndFadeMessage(selector, 0)
 }

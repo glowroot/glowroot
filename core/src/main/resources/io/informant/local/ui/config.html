@@ -27,9 +27,9 @@
 <script type="text/javascript" src="libs/spin/1.2.6/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
-<div class="section-header" onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
-  <button class="section-toggle">{{name}}</button>
-  <span class="configuration-status" id="{{id}}_status">ON</span>
+<div tabindex="0" class="section-header clickable"
+    onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
+  {{name}} <span class="configuration-status" id="{{id}}_status">ON</span>
 </div>
 <br>
 <form class="section-body form-horizontal hide" id="form_{{id}}">
@@ -404,9 +404,8 @@
   </div>
   <br>
   <br>
-  <div class="section-header" onclick="$('#coreForm').toggleClass('hide')">
-    <button class="section-toggle">General</button>
-    <span class="configuration-status" id="coreStatus">ON</span>
+  <div tabindex="0" class="section-header clickable" onclick="$('#coreForm').toggleClass('hide')">
+    General <span class="configuration-status" id="coreStatus">ON</span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="coreForm">
@@ -510,9 +509,8 @@
       </div>
     </fieldset>
   </form>
-  <div class="section-header" onclick="$('#coarseForm').toggleClass('hide')">
-    <button class="section-toggle">Coarse-Grained Profiling</button>
-    <span class="configuration-status" id="coarseStatus">ON</span>
+  <div tabindex="0" class="section-header clickable" onclick="$('#coarseForm').toggleClass('hide')">
+    Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus">ON</span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="coarseForm">
@@ -580,9 +578,8 @@
       </div>
     </fieldset>
   </form>
-  <div class="section-header" onclick="$('#fineForm').toggleClass('hide')">
-    <button class="section-toggle">Fine-Grained Profiling</button>
-    <span class="configuration-status" id="fineStatus">ON</span>
+  <div tabindex="0" class="section-header clickable" onclick="$('#fineForm').toggleClass('hide')">
+    Fine-Grained Profiling <span class="configuration-status" id="fineStatus">ON</span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="fineForm">
@@ -666,9 +663,8 @@
       </div>
     </fieldset>
   </form>
-  <div class="section-header" onclick="$('#userForm').toggleClass('hide')">
-    <button class="section-toggle">User Tracing</button>
-    <span class="configuration-status" id="userStatus">ON</span>
+  <div tabindex="0" class="section-header clickable" onclick="$('#userForm').toggleClass('hide')">
+    User Tracing <span class="configuration-status" id="userStatus">ON</span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="userForm">
