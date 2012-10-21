@@ -106,7 +106,6 @@
     function hideTooltip() {
       hideSpinner('#tooltipSpinner')
       $('#placeholder').qtip('hide')
-      tooltipShowing = false
     }
     $('#placeholder').bind('plotzoom', function (event, plot) {
       // cancel any refresh in action
@@ -426,6 +425,11 @@
           },
           hide: {
             event: 'unfocus'
+          },
+          events: {
+            hide: function() {
+              tooltipShowing = false
+            }
           },
           show: {
             event: false
