@@ -128,10 +128,12 @@ var spansTemplateText = ''
 + '      {{nanosToMillis duration}}{{#if active}}..{{/if}}'
 + '    </div>'
 + '    <div style="margin-left: 3em">'
-+ '      {{#ifLongDescription message.text}}'
++ '      {{#ifLongMessage message.text}}'
 + '        <div>'
 + '          <span tabindex="0" class="unexpanded-content">'
-+ '            {{first80 message.text}} ... {{last80 message.text}}'
++ '            {{firstPart message.text}}'
++ '            <span class="red"><strong>...</strong></span>'
++ '            {{lastPart message.text}}'
 + '          </span>'
 + '          <div tabindex="-1" class="expanded-content breakword hide">'
 + '            {{message.text}}'
@@ -141,7 +143,7 @@ var spansTemplateText = ''
 + '        <div class="unexpanded-padding">'
 + '          {{message.text}}'
 + '        </div>'
-+ '      {{/ifLongDescription}}'
++ '      {{/ifLongMessage}}'
 + '      {{#if message.detail}}'
 + '        <div class="indent2">'
 + '          <span tabindex="0" class="unexpanded-content red">detail</span>'
@@ -208,8 +210,8 @@ Handlebars.registerHelper('messageDetailHtml', function(detail) {
   }
   return messageDetailHtml(detail)
 })
-Handlebars.registerHelper('ifLongDescription', function(description, options) {
-  if (description.length > 160) {
+Handlebars.registerHelper('ifLongMessage', function(message, options) {
+  if (message.length > spanLineLength) {
     return options.fn(this)
   } else {
     return options.inverse(this)
@@ -225,25 +227,13 @@ Handlebars.registerHelper('ifRolledOver', function(value, options) {
 Handlebars.registerHelper('margin', function(nestingLevel) {
   return 5 + nestingLevel
 })
-Handlebars.registerHelper('first80', function(description) {
-  return description.slice(0, 80)
+Handlebars.registerHelper('firstPart', function(message) {
+  // -3 to leave room in the middle for ' ... '
+  return message.slice(0, spanLineLength/2 - 3)
 })
-Handlebars.registerHelper('last80', function(description) {
-  if (description.length <= 80) {
-    return ""
-  } else if (description.length <= 160) {
-    return description.slice(-(description.length - 80))
-  } else {
-    // leave room for ' ... '
-    return description.slice(-75)
-  }
-})
-Handlebars.registerHelper('middle', function(description) {
-  if (description.length <= 160) {
-    return ""
-  } else {
-    return description.slice(80, -75)
-  }
+Handlebars.registerHelper('lastPart', function(message) {
+  // -3 to leave room in the middle for ' ... '
+  return message.slice(-(spanLineLength/2 - 3))
 })
 Handlebars.registerHelper('exceptionHtml', function(exception) {
   var html = '<strong>'
@@ -270,6 +260,7 @@ Handlebars.registerHelper('stackTraceHtml', function(stackTrace) {
   }
   return html
 })
+var spanLineLength
 var summaryTrace, detailTrace
 var traceSummaryTemplate, traceDetailTemplate, spansTemplate
 var smartToggleTimer
@@ -285,6 +276,13 @@ $(document).ready(function() {
   $(document).on('click', '.unexpanded-content, .expanded-content', function(e, keyboard) {
     smartToggle($(this).parent(), e, keyboard)
   })
+  // using an average character (width-wise) 'o'
+  $('body').prepend('<span class="offscreen" id="bodyFontCharWidth">o</span>')
+  var charWidth = $('#bodyFontCharWidth').width()
+  // -100 for the left margin of the span lines
+  spanLineLength = ($('body').width() - 100) / charWidth
+  // min value of 80, otherwise not enough context provided by the elipsed line
+  spanLineLength = Math.max(spanLineLength, 80)
 })
 function toggleSpans() {
   if (! $('#sps').html()) {
