@@ -416,9 +416,9 @@
             text: '<div class="indent1">' + html + '</div>' + showDetailHtml
           },
           position: {
-            my: 'bottom center',
+            my: 'left center',
             target: [ x , y + 5 ],
-            viewport: $('#tooltipBoundary')
+            viewport: $(window)
           },
           style: {
             classes: 'qtip-override'
@@ -538,7 +538,6 @@
     </div>
   </div>
   <br>
-  <div class="hide" id="tooltipBoundary" style="width: 100%; height: 10000px"></div>
   <div>
     <div id="placeholder" style="height: 300px">
       <div class="button-spinner hide" id="initialLoadSpinner"
