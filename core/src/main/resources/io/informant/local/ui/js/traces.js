@@ -388,9 +388,10 @@ function toggleMergedStackTree(rootNode, selector) {
     ret += '%</span>'
     ret += node.stackTraceElement + '<br>'
     if (node.leafThreadState) {
-      ret += '<span class="inlineblock" style="width: 4em; margin-left: ' + ((level / 3)) + 'em">'
-      ret += samplePercentage.toFixed(1)
-      ret += '%</span> '
+      // each indent is 1/3em, so adding extra .333em to indent thread state
+      ret += '<span class="inlineblock" style="width: 4.333em; margin-left: ' + ((level / 3))
+                 + 'em">'
+      ret += '</span>'
       ret += node.leafThreadState
       ret += '<br>'
     }
