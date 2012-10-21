@@ -217,14 +217,14 @@ public class ServletPluginTest {
         // given
         container.getInformant().setPersistenceThresholdMillis(0);
         // when
-        container.executeAppUnderTest(Send404Error.class);
+        container.executeAppUnderTest(Send500Error.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
         assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
-                "sendError, HTTP status code 404");
+                "sendError, HTTP status code 500");
     }
 
     @SuppressWarnings("serial")
@@ -328,11 +328,11 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class Send404Error extends TestServlet {
+    public static class Send500Error extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 throws IOException {
-            response.sendError(404);
+            response.sendError(500);
         }
     }
 

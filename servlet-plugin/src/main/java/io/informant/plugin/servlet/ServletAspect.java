@@ -389,7 +389,8 @@ public class ServletAspect {
     public static class SendErrorAdvice {
         @OnAfter
         public static void onAfter(Integer statusCode) {
-            if (topLevel.get() != null) {
+            // only capture 5xx server errors
+            if (statusCode >= 500 && topLevel.get() != null) {
                 sendError.set(ErrorMessage.from("sendError, HTTP status code " + statusCode,
                         new PointcutStackTrace(SendErrorAdvice.class)));
             }
