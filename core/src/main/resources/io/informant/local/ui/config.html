@@ -29,7 +29,7 @@
 <script type="text/x-handlebars-template" id="pluginTemplate">
 <div tabindex="0" class="section-header clickable"
     onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
-  {{name}} <span class="configuration-status" id="{{id}}_status">ON</span>
+  {{name}} <span class="configuration-status" id="{{id}}_status"></span>
 </div>
 <br>
 <form class="section-body form-horizontal hide" id="form_{{id}}">
@@ -115,7 +115,9 @@
   var pluginTemplate = Handlebars.compile($('#pluginTemplate').html())
   var plugins
   function read() {
+    showSpinner('#initialLoadSpinner')
     $.getJSON('config/read', function(config) {
+      hideSpinner('#initialLoadSpinner')
       var coreConfig = config.coreConfig
       setStatus('#coreStatus', coreConfig.enabled, true)
       $('#coreEnabled').attr('checked', coreConfig.enabled)
@@ -405,7 +407,7 @@
   <br>
   <br>
   <div tabindex="0" class="section-header clickable" onclick="$('#coreForm').toggleClass('hide')">
-    General <span class="configuration-status" id="coreStatus">ON</span>
+    General <span class="configuration-status" id="coreStatus"></span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="coreForm">
@@ -510,7 +512,7 @@
     </fieldset>
   </form>
   <div tabindex="0" class="section-header clickable" onclick="$('#coarseForm').toggleClass('hide')">
-    Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus">ON</span>
+    Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus"></span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="coarseForm">
@@ -579,7 +581,7 @@
     </fieldset>
   </form>
   <div tabindex="0" class="section-header clickable" onclick="$('#fineForm').toggleClass('hide')">
-    Fine-Grained Profiling <span class="configuration-status" id="fineStatus">ON</span>
+    Fine-Grained Profiling <span class="configuration-status" id="fineStatus"></span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="fineForm">
@@ -664,7 +666,7 @@
     </fieldset>
   </form>
   <div tabindex="0" class="section-header clickable" onclick="$('#userForm').toggleClass('hide')">
-    User Tracing <span class="configuration-status" id="userStatus">ON</span>
+    User Tracing <span class="configuration-status" id="userStatus"></span>
   </div>
   <br>
   <form class="section-body form-horizontal hide" id="userForm">
@@ -722,6 +724,7 @@
       </div>
     </fieldset>
   </form>
+  <span class="button-spinner hide" id="initialLoadSpinner" style="padding-top: 40px"></span>
   <div id="plugins"></div>
 </body>
 </html>
