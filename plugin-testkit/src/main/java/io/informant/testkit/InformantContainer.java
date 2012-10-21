@@ -117,6 +117,10 @@ public class InformantContainer {
         deleteRecursively(dataDir);
     }
 
+    public void killExternalJvm() throws Exception {
+        ((ExternalJvmExecutionAdapter) executionAdapter).kill();
+    }
+
     public void closeWithoutDeletingDataDir() throws Exception {
         // asyncHttpClient is not part of the "app under test", so shut it down
         // first before checking for non-daemon threads

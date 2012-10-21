@@ -30,7 +30,6 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.List;
 
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -42,6 +41,7 @@ class SocketCommandProcessor implements Runnable {
     public static final String EXCEPTION_RESPONSE = "EXCEPTION";
     public static final String SHUTDOWN_COMMAND = "SHUTDOWN";
     public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
+    public static final String KILL_COMMAND = "KILL";
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -76,6 +76,8 @@ class SocketCommandProcessor implements Runnable {
             if (command instanceof String) {
                 if (command.equals(GET_PORT_COMMAND)) {
                     respond(MainEntryPoint.getPort(), commandNum);
+                } else if (command.equals(KILL_COMMAND)) {
+                    System.exit(0);
                 } else if (command.equals(SHUTDOWN_COMMAND)) {
                     if (preExistingThreads == null) {
                         // EXECUTE_APP was never run

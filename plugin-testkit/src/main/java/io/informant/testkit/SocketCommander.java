@@ -73,18 +73,7 @@ class SocketCommander {
     }
 
     Object sendCommand(Object command) throws IOException, InterruptedException {
-        if (socket == null) {
-            synchronized (lock) {
-                if (socket == null) {
-                    // give external jvm a little time to connect
-                    lock.wait(5000);
-                }
-            }
-            if (socket == null) {
-                throw new IllegalStateException(
-                        "External JVM has not established socket connection yet");
-            }
-        }
+        ensureInit();
         int commandNum = commandCounter.getAndIncrement();
         ResponseHolder responseHolder = new ResponseHolder();
         responseHolders.put(commandNum, responseHolder);
@@ -107,6 +96,30 @@ class SocketCommander {
             throw new IllegalStateException("Exception occurred inside external JVM");
         }
         return response;
+    }
+
+    void sendKillCommand() throws IOException, InterruptedException {
+        ensureInit();
+        CommandWrapper commandWrapper = new CommandWrapper(commandCounter.getAndIncrement(),
+                SocketCommandProcessor.KILL_COMMAND);
+        synchronized (lock) {
+            objectOut.writeObject(commandWrapper);
+        }
+    }
+
+    private void ensureInit() throws InterruptedException {
+        if (socket == null) {
+            synchronized (lock) {
+                if (socket == null) {
+                    // give external jvm a little time to connect
+                    lock.wait(5000);
+                }
+            }
+            if (socket == null) {
+                throw new IllegalStateException(
+                        "External JVM has not established socket connection yet");
+            }
+        }
     }
 
     void close() throws IOException {

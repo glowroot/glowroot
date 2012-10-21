@@ -103,6 +103,13 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         consolePipeExecutorService.shutdownNow();
     }
 
+    public void kill() throws IOException, InterruptedException {
+        socketCommander.sendKillCommand();
+        socketCommander.close();
+        process.waitFor();
+        consolePipeExecutorService.shutdownNow();
+    }
+
     public static void main(String[] args) {
         try {
             int port = Integer.parseInt(args[0]);
