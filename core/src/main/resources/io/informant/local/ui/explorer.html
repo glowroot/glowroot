@@ -48,8 +48,8 @@
 <script type="text/javascript">
   $(document).ready(function() {
     configureAjaxError()
-    var plot, normalPoints, errorPoints, activePoints, currentItem, prospectiveItem, tooltipShowing
-    var plotselecting
+    var plot, normalPoints, errorPoints, activePoints, highlightedItem, summaryItem
+    var plotSelecting
     var options = {
       legend: { show: false },
       series: {
@@ -115,10 +115,10 @@
         showAndFadeErrorMessage('#refreshButtonCancelByZoom')
       }
       updateTimeFilter()
-      if (currentItem) {
+      if (highlightedItem) {
         // highlight gets out of sync on zoom
         plot.unhighlight()
-        plot.highlight(currentItem.seriesIndex, currentItem.dataIndex)
+        plot.highlight(highlightedItem.seriesIndex, highlightedItem.dataIndex)
         // leave the highlight, but cancel the tooltip since it is out of sync also, the user can
         // get tooltip again by hovering over the highlighted data point
         hideTooltip()
@@ -128,47 +128,35 @@
       hideTooltip()
     })
     $(document).keyup(function(e) {
-      if (e.keyCode == 27 && currentItem) { // esc key
-        hideTooltip()
+      if (e.keyCode == 27) { // esc key
+        if (summaryItem) {
+          // the tooltips (spinny and summary) have hide events that set summaryItem = null
+          // so summaryItem must be checked before calling hideTooltip()
+          hideTooltip()
+        } else {
+          // hitting esc when no item
+          highlightedItem = null
+          plot.unhighlight()
+        }
       }
     })
     $('#placeholder').bind('plothover', function (event, pos, item) {
-      if (plotselecting) {
-        return
+      if (plotSelecting) {
+        plot.unhighlight(item.series, item.datapoint)
       }
-      if (item && itemsEqual(item, currentItem) && !tooltipShowing) {
-        // this happens after a zoom when the data point is still highlighted but the tooltip has
-        // been hidden, and then the user hovers back over the same highlighted data point
-        // in this case just show the tooltip immediately
-        tooltipShowing = true
+    })
+    $('#placeholder').bind('plotclick', function (event, pos, item) {
+      if (item) {
+        highlightedItem = item
+        plot.unhighlight()
+        // TODO highlight with bolder or larger outline
+        plot.highlight(item.series, item.datapoint)
         showTraceDetailTooltip(item)
-      } else if (item && !itemsEqual(item, currentItem)) {
-        if (itemsEqual(item, prospectiveItem)) {
-          // another handler is already waiting and will display the tooltip after the timeout below
-          return
-        }
-        prospectiveItem = item
-        // hover must last at least 100 milliseconds to prevent accidental hovers and unnecessary
-        // server requests
-        setTimeout(function() {
-          if (!itemsEqual(item, prospectiveItem)) {
-            // user moved on before 100 milliseconds, cancel the tooltip
-            return
-          }
-          currentItem = item
-          plot.unhighlight()
-          $('#placeholder').qtip('hide')
-          plot.highlight(item.series, item.datapoint)
-          tooltipShowing = true
-          showTraceDetailTooltip(item)
-        }, 100)
-      } else {
-        prospectiveItem = null
       }
     })
     var cancelingPlotSelection
     $(document).keyup(function(e) {
-      if (e.keyCode == 27 && plotselecting) { // esc key
+      if (e.keyCode == 27 && plotSelecting) { // esc key
         plot.clearSelection()
         cancelingPlotSelection = true
       }
@@ -181,11 +169,11 @@
       if (ranges) {
         // plotselecting events are triggered with null ranges parameter when '!selectionIsSane()'
         // (see jquery.flot.selection.js)
-        plotselecting = true
+        plotSelecting = true
       }
     })
     $('#placeholder').bind('plotunselected', function (event, ranges) {
-      plotselecting = false
+      plotSelecting = false
     })
     $('#placeholder').bind('plotselected', function (event, ranges) {
       if (cancelingPlotSelection) {
@@ -207,13 +195,13 @@
       options.yaxis.min = Math.floor(ranges.yaxis.from * 1000) / 1000
       options.yaxis.max = Math.ceil(ranges.yaxis.to * 1000) / 1000
       plot = $.plot($('#placeholder'), plot.getData(), options)
-      plotselecting = false
+      plotSelecting = false
       updateTimeFilter()
       updateDurationFilter()
-      if (currentItem) {
+      if (highlightedItem) {
         // highlight gets out of sync on zoom
         plot.unhighlight()
-        plot.highlight(currentItem.seriesIndex, currentItem.dataIndex)
+        plot.highlight(highlightedItem.seriesIndex, highlightedItem.dataIndex)
         // leave the highlight, but cancel the tooltip since it is out of sync also, the user can
         // get tooltip again by hovering over the highlighted data point
         hideTooltip()
@@ -352,7 +340,7 @@
           $('#limitExceeded').addClass('hide')
         }
         hideTooltip()
-        currentItem = null
+        highlightedItem = null
         $('#detailTabContent').html('')
         // shift for timezone
         for (var i = 0; i < normalPoints.length; i++) {
@@ -388,8 +376,20 @@
               text: html
             },
             position: {
+              my: 'left center',
               target: [ x , y + 5 ],
               viewport: $('#placeholder')
+            },
+            hide: {
+              event: 'unfocus'
+            },
+            show: {
+              event: false
+            },
+            events: {
+              hide: function() {
+                summaryItem = null
+              }
             }
           })
           $('#placeholder').qtip('show')
@@ -398,12 +398,17 @@
       }
       // small delay so that if there is an immediate response the spinner doesn't blink
       setTimeout(displaySpinner, 100)
-      var currentItemForJson = currentItem
+      summaryItem = item
+      var localSummaryItem = summaryItem
       $.getJSON('explorer/summary/' + id, function(response) {
         spinner.stop()
         spinner = null
-        if (!itemsEqual(currentItem, currentItemForJson)) {
-          // too slow, the user has moved on to another point already
+        // intentionally not using itemEquals() here to avoid edge case where user clicks on item
+        // then zooms and clicks on the same item. if the first request comes back after the second
+        // click, then itemEquals() will be true and it will pop up the correct summary, but at the
+        // incorrect location
+        if (localSummaryItem != summaryItem) {
+          // too slow, the user has moved on to another summary already
           return
         }
         summaryTrace = response
@@ -426,13 +431,13 @@
           hide: {
             event: 'unfocus'
           },
-          events: {
-            hide: function() {
-              tooltipShowing = false
-            }
-          },
           show: {
             event: false
+          },
+          events: {
+            hide: function() {
+              summaryItem = null
+            }
           }
         })
         $('#placeholder').qtip('show')
