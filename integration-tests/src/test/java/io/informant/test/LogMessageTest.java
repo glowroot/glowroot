@@ -31,6 +31,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -61,7 +63,13 @@ public class LogMessageTest {
         // when
         container.executeAppUnderTest(GenerateLogMessage.class);
         // then
-        List<LogMessage> messages = container.getInformant().getLogMessages();
+        long startAt = System.currentTimeMillis();
+        List<LogMessage> messages = ImmutableList.of();
+        // log messages are stored asynchronously, so may need to wait a little
+        while (messages.isEmpty() && System.currentTimeMillis() - startAt < 5000) {
+            messages = container.getInformant().getLogMessages();
+            Thread.sleep(10);
+        }
         assertThat(messages).hasSize(1);
         assertThat(messages.get(0).getLevel()).isEqualTo(Level.WARN);
         assertThat(messages.get(0).getLoggerName()).isEqualTo(GenerateLogMessage.class.getName());

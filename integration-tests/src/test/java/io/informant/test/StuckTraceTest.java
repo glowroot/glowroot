@@ -45,6 +45,9 @@ public class StuckTraceTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = InformantContainer.create();
+        // capture one trace to warm up the system since this test involves some timing
+        container.getInformant().setPersistenceThresholdMillis(0);
+        container.executeAppUnderTest(WarmupTrace.class);
     }
 
     @AfterClass
@@ -74,12 +77,14 @@ public class StuckTraceTest {
             }
         });
         // then
-        // stuck trace collector polls and marks stuck traces every 100 milliseconds
-        // so may need to wait a little
+        // test harness needs to kick off test and stuck trace collector polls and marks stuck
+        // traces every 100 milliseconds, so may need to wait a little
+        long startAt = System.currentTimeMillis();
         Trace trace = null;
-        for (int i = 0; i < 100; i++) {
-            trace = container.getInformant().getActiveTrace(5000);
-            if (trace.isStuck()) {
+        while (true) {
+            trace = container.getInformant().getActiveTrace(0);
+            if ((trace != null && trace.isStuck())
+                    || System.currentTimeMillis() - startAt >= 2000) {
                 break;
             }
             Thread.sleep(10);
@@ -103,8 +108,17 @@ public class StuckTraceTest {
         }
         public void traceMarker() throws InterruptedException {
             // stuck trace collector polls for stuck traces every 100 milliseconds,
-            // and this test polls for active stuck traces every 25 milliseconds
-            Thread.sleep(150);
+            // and this test polls for active stuck traces every 10 milliseconds
+            Thread.sleep(500);
+        }
+    }
+
+    public static class WarmupTrace implements AppUnderTest, TraceMarker {
+        public void executeApp() throws InterruptedException {
+            traceMarker();
+        }
+        public void traceMarker() throws InterruptedException {
+            Thread.sleep(1);
         }
     }
 }

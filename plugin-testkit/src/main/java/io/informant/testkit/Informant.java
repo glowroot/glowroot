@@ -209,12 +209,12 @@ public class Informant {
     // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
     public Trace getActiveTrace(int timeout) throws Exception {
-        long startTick = System.currentTimeMillis();
+        long startAt = System.currentTimeMillis();
         Trace trace = null;
         // try at least once (e.g. in case timeout == 0)
         while (true) {
             trace = getActiveTrace();
-            if (trace != null || System.currentTimeMillis() - startTick >= timeout) {
+            if (trace != null || System.currentTimeMillis() - startAt >= timeout) {
                 break;
             }
             Thread.sleep(20);

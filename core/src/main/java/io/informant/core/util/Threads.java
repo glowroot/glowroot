@@ -104,7 +104,10 @@ public final class Threads {
                 && !(thread.getName().startsWith("Informant-") || thread.getName().startsWith(
                         "InformantTest-"))
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
-                && !thread.getName().startsWith("H2 Log Writer ")) {
+                && !thread.getName().startsWith("H2 Log Writer ")
+                && !thread.getName().equals("Generate Seed")) {
+            // the last one (Generate Seed) is an H2 thread (see org.h2.util.MathUtils) that is
+            // usually completed by now (but was not on at least one occasion)
             return true;
         }
         return false;
