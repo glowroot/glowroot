@@ -121,8 +121,8 @@
       var coreConfig = config.coreConfig
       setStatus('#coreStatus', coreConfig.enabled, true)
       $('#coreEnabled').attr('checked', coreConfig.enabled)
-      $('#persistenceThresholdMillis').val(coreConfig.persistenceThresholdMillis)
-      addIntegerValidator('#persistenceThresholdMillis')
+      $('#storeThresholdMillis').val(coreConfig.storeThresholdMillis)
+      addIntegerValidator('#storeThresholdMillis')
       $('#stuckThresholdSeconds').val(coreConfig.stuckThresholdSeconds)
       addIntegerValidator('#stuckThresholdSeconds')
       $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
@@ -151,19 +151,19 @@
       addIntegerValidator('#fineIntervalMillis')
       $('#fineTotalSeconds').val(fineConfig.totalSeconds)
       addIntegerValidator('#fineTotalSeconds')
-      if (fineConfig.persistenceThresholdMillis == -1) {
-        $('#finePersistenceThresholdMillis').attr('readonly','readonly')
+      if (fineConfig.storeThresholdMillis == -1) {
+        $('#fineStoreThresholdMillis').attr('readonly','readonly')
       } else {
-        $('#finePersistenceThresholdOverride').attr('checked', true)
-        $('#finePersistenceThresholdMillis').val(fineConfig.persistenceThresholdMillis)
+        $('#fineStoreThresholdOverride').attr('checked', true)
+        $('#fineStoreThresholdMillis').val(fineConfig.storeThresholdMillis)
       }
-      addIntegerOrEmptyValidator('#finePersistenceThresholdMillis')
+      addIntegerOrEmptyValidator('#fineStoreThresholdMillis')
       var userConfig = config.userTracingConfig
       setStatus('#userStatus', userConfig.enabled)
       $('#userEnabled').attr('checked', userConfig.enabled)
       $('#userUserId').val(userConfig.userId)
-      $('#userPersistenceThresholdMillis').val(userConfig.persistenceThresholdMillis)
-      addIntegerValidator('#userPersistenceThresholdMillis')
+      $('#userStoreThresholdMillis').val(userConfig.storeThresholdMillis)
+      addIntegerValidator('#userStoreThresholdMillis')
       $('#userFineProfiling').attr('checked', userConfig.fineProfiling)
       plugins = config.pluginDescriptors
       for (var i = 0; i < plugins.length; i++) {
@@ -205,14 +205,14 @@
     // rolling database
     if (postingUpdateCore) return
     var enabled = $('#coreEnabled').is(':checked')
-    var persistenceThresholdMillis = $('#persistenceThresholdMillis').val()
+    var storeThresholdMillis = $('#storeThresholdMillis').val()
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
     var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
     var maxSpans = $('#maxSpans').val()
     var keepTraceSnapshotDays = $('#keepTraceSnapshotDays').val()
     var rollingSizeMb = $('#rollingSizeMb').val()
     // handle validation
-    if (!isInteger(persistenceThresholdMillis) || !isInteger(stuckThresholdSeconds)
+    if (!isInteger(storeThresholdMillis) || !isInteger(stuckThresholdSeconds)
         || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxSpans)
          || !isInteger(keepTraceSnapshotDays) || !isInteger(rollingSizeMb)) {
       return
@@ -220,7 +220,7 @@
     postingUpdateCore = true
     var config = {
       'enabled': enabled,
-      'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis),
+      'storeThresholdMillis': parseInteger(storeThresholdMillis),
       'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
       'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
       'maxSpans': parseInteger(maxSpans),
@@ -262,21 +262,21 @@
     var tracePercentage = $('#fineTracePercentage').val()
     var intervalMillis = $('#fineIntervalMillis').val()
     var totalSeconds = $('#fineTotalSeconds').val()
-    var persistenceThresholdMillis = $('#finePersistenceThresholdMillis').val()
+    var storeThresholdMillis = $('#fineStoreThresholdMillis').val()
     // handle validation
     if (!isPercentage(tracePercentage) || !isInteger(intervalMillis) || !isInteger(totalSeconds)
-        || (persistenceThresholdMillis != '' && !isInteger(persistenceThresholdMillis))) {
+        || (storeThresholdMillis != '' && !isInteger(storeThresholdMillis))) {
       return
     }
-    if (persistenceThresholdMillis == '') {
-      persistenceThresholdMillis = '-1'
+    if (storeThresholdMillis == '') {
+      storeThresholdMillis = '-1'
     }
     var config = {
       'enabled': enabled,
       'tracePercentage': parsePercentage(tracePercentage),
       'intervalMillis': parseInteger(intervalMillis),
       'totalSeconds': parseInteger(totalSeconds),
-      'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis)
+      'storeThresholdMillis': parseInteger(storeThresholdMillis)
     }
     $.post('config/profiling/fine', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#fineSaveComplete')
@@ -285,15 +285,15 @@
   }
   function updateUserConfig() {
     var enabled = $('#userEnabled').is(':checked')
-    var persistenceThresholdMillis = $('#userPersistenceThresholdMillis').val()
+    var storeThresholdMillis = $('#userStoreThresholdMillis').val()
     // handle validation
-    if (!isInteger(persistenceThresholdMillis)) {
+    if (!isInteger(storeThresholdMillis)) {
       return
     }
     var config = {
       'enabled': enabled,
       'userId': $('#userUserId').val(),
-      'persistenceThresholdMillis': parseInteger(persistenceThresholdMillis),
+      'storeThresholdMillis': parseInteger(storeThresholdMillis),
       'fineProfiling': $('#userFineProfiling').is(':checked')
     }
     $.post('config/tracing/user', JSON.stringify(config), function() {
@@ -376,13 +376,13 @@
   }
   $(document).ready(function() {
     configureAjaxError()
-    $('#finePersistenceThresholdOverride').change(function() {
-      if ($('#finePersistenceThresholdOverride').is(':checked')) {
-        $('#finePersistenceThresholdMillis').removeAttr('readonly')
+    $('#fineStoreThresholdOverride').change(function() {
+      if ($('#fineStoreThresholdOverride').is(':checked')) {
+        $('#fineStoreThresholdMillis').removeAttr('readonly')
       } else {
-        $('#finePersistenceThresholdMillis').val('')
-        $('#finePersistenceThresholdMillis').closest('.control-group').removeClass('error')
-        $('#finePersistenceThresholdMillis').attr('readonly','readonly')
+        $('#fineStoreThresholdMillis').val('')
+        $('#fineStoreThresholdMillis').closest('.control-group').removeClass('error')
+        $('#fineStoreThresholdMillis').attr('readonly','readonly')
       }
     })
     read()
@@ -420,18 +420,18 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="persistenceThresholdMillis">
-            Persistence threshold
+          <label class="control-label" for="storeThresholdMillis">
+            Store threshold
           </label>
           <div class="controls">
             <div class="input-append">
-              <input type="text" id="persistenceThresholdMillis" style="width: 5em">
+              <input type="text" id="storeThresholdMillis" style="width: 5em">
               <span class="add-on">milliseconds</span>
               <span class="help-inline">Invalid input</span>
             </div>
             <span class="help-block">
               Any trace that exceeds this amount of time will be viewable in the explorer
-              immediately as an active trace and will be persisted to disk at its completion.
+              immediately as an active trace and will be stored to disk at its completion.
             </span>
           </div>
         </div>
@@ -443,7 +443,7 @@
               <span class="add-on">seconds</span>
             </div>
             <div class="help-block">
-              Any trace that exceeds this amount of time will be persisted to disk immediately
+              Any trace that exceeds this amount of time will be stored to disk immediately
               (prior to its completion). This is to guard against threads which get stuck forever
               (or at least long enough and do enough harm to the jvm that it has to be restarted).
             </div>
@@ -493,10 +493,10 @@
               <span class="add-on">MB</span>
             </div>
             <div class="help-block">
-              Trace detail data (spans and profiling data) is persisted to disk as
+              Trace detail data (spans and profiling data) is stored to disk as
               LZF-compressed json data in a rolling data file to efficiently cap the growth of this
               large data. (Trace summary data - capture time, duration, description, user ID,
-              attributes, metrics - is persisted to an H2 data file by the embedded H2 database
+              attributes, metrics - is stored to an H2 data file by the embedded H2 database
               engine.)
             </div>
           </div>
@@ -637,23 +637,23 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="finePersistenceThresholdMillis">
-            Persistence threshold
+          <label class="control-label" for="fineStoreThresholdMillis">
+            Store threshold
           </label>
           <div class="controls">
             <div style="padding-top: 5px; padding-bottom: 5px">
               <label class="checkbox">
-                <input type="checkbox" id="finePersistenceThresholdOverride" value="true">
-                Override general persistence threshold
+                <input type="checkbox" id="fineStoreThresholdOverride" value="true">
+                Override general store threshold
               </label>
             </div>
             <div class="input-append">
-              <input type="text" id="finePersistenceThresholdMillis" style="width: 5em">
+              <input type="text" id="fineStoreThresholdMillis" style="width: 5em">
               <span class="add-on">milliseconds</span>
             </div>
             <div class="help-block">
               After going through the trouble of collecting fine-grained profiling info, it may be
-              worthwhile to persist the given trace even if it doesn't hit the general persistence
+              worth while to store the given trace even if it doesn't hit the general store
               threshold.
             </div>
           </div>
@@ -685,23 +685,23 @@
           <div class="controls">
             <input type="text" id="userUserId" style="width: 5em">
             <div class="help-block">
-              Traces for the given user will use the persistence threshold and profiling
-              configuration below.
+              Traces for the given user will use the store threshold and profiling configuration
+              below.
             </div>
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="userPersistenceThresholdMillis">
-            Persistence threshold
+          <label class="control-label" for="userStoreThresholdMillis">
+            Store threshold
           </label>
           <div class="controls">
             <div class="input-append">
-              <input type="text" id="userPersistenceThresholdMillis" style="width: 5em">
+              <input type="text" id="userStoreThresholdMillis" style="width: 5em">
               <span class="add-on">milliseconds</span>
             </div>
             <div class="help-block">
               Any trace for the given user that exceeds this amount of time will be viewable in the
-              explorer immediately as an active trace and will be persisted to disk at its
+              explorer immediately as an active trace and will be stored to disk at its
               completion.
             </div>
           </div>

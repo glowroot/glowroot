@@ -76,7 +76,7 @@ public class ServletPluginTest {
     @Test
     public void testServlet() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
@@ -89,7 +89,7 @@ public class ServletPluginTest {
     @Test
     public void testFilter() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
@@ -102,7 +102,7 @@ public class ServletPluginTest {
     @Test
     public void testCombination() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
@@ -115,7 +115,7 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameters() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then don't fall into an infinite loop! (yes, at one time it did)
@@ -125,7 +125,7 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameterMap() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(GetParameterMap.class);
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
@@ -135,7 +135,7 @@ public class ServletPluginTest {
     @Test
     public void testSessionInvalidate() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then
@@ -153,7 +153,7 @@ public class ServletPluginTest {
     @Test
     public void testServletContextInitialized() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureStartup", true);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -169,7 +169,7 @@ public class ServletPluginTest {
     @Test
     public void testServletInit() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureStartup", true);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -185,7 +185,7 @@ public class ServletPluginTest {
     @Test
     public void testFilterInit() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureStartup", true);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -201,7 +201,7 @@ public class ServletPluginTest {
     @Test
     public void testThrowsException() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(10000);
+        container.getInformant().setStoreThresholdMillis(10000);
         // when
         container.executeAppUnderTest(ThrowsException.class);
         // then
@@ -215,7 +215,7 @@ public class ServletPluginTest {
     @Test
     public void testSend404Error() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(Send500Error.class);
         // then

@@ -33,7 +33,7 @@ import com.google.gson.JsonSyntaxException;
 public class CoreConfig {
 
     public static final int SPAN_LIMIT_DISABLED = -1;
-    public static final int PERSISTENCE_THRESHOLD_DISABLED = -1;
+    public static final int STORE_THRESHOLD_DISABLED = -1;
 
     private static final Gson gson = new Gson();
 
@@ -51,7 +51,7 @@ public class CoreConfig {
     // TODO convert from millis to seconds, support 0.1, etc
     // 0 means log all traces, -1 means log no traces
     // (though stuck threshold can still be used in this case)
-    private final int persistenceThresholdMillis;
+    private final int storeThresholdMillis;
 
     // minimum is imposed because of StuckTraceCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stuck messages are gathered, should be minimum 100 milliseconds
@@ -89,12 +89,12 @@ public class CoreConfig {
         return new Builder(base);
     }
 
-    private CoreConfig(boolean enabled, int persistenceThresholdMillis, int stuckThresholdSeconds,
+    private CoreConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
             int spanStackTraceThresholdMillis, int maxSpans, int keepTraceSnapshotHours,
             int rollingSizeMb, boolean warnOnSpanOutsideTrace, int metricPeriodMillis) {
 
         this.enabled = enabled;
-        this.persistenceThresholdMillis = persistenceThresholdMillis;
+        this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.maxSpans = maxSpans;
@@ -112,8 +112,8 @@ public class CoreConfig {
         return enabled;
     }
 
-    public int getPersistenceThresholdMillis() {
-        return persistenceThresholdMillis;
+    public int getStoreThresholdMillis() {
+        return storeThresholdMillis;
     }
 
     public int getStuckThresholdSeconds() {
@@ -148,7 +148,7 @@ public class CoreConfig {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("enabed", enabled)
-                .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxSpans", maxSpans)
@@ -162,7 +162,7 @@ public class CoreConfig {
     public static class Builder {
 
         private boolean enabled = true;
-        private int persistenceThresholdMillis = 3000;
+        private int storeThresholdMillis = 3000;
         private int stuckThresholdSeconds = 180;
         private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
         private int maxSpans = 5000;
@@ -174,7 +174,7 @@ public class CoreConfig {
         private Builder() {}
         private Builder(CoreConfig base) {
             enabled = base.enabled;
-            persistenceThresholdMillis = base.persistenceThresholdMillis;
+            storeThresholdMillis = base.storeThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
             maxSpans = base.maxSpans;
@@ -187,8 +187,8 @@ public class CoreConfig {
             this.enabled = enabled;
             return this;
         }
-        public Builder persistenceThresholdMillis(int persistenceThresholdMillis) {
-            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        public Builder storeThresholdMillis(int storeThresholdMillis) {
+            this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
         public Builder stuckThresholdSeconds(int stuckThresholdSeconds) {
@@ -220,7 +220,7 @@ public class CoreConfig {
             return this;
         }
         public CoreConfig build() {
-            return new CoreConfig(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
+            return new CoreConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
                     spanStackTraceThresholdMillis, maxSpans, keepTraceSnapshotHours, rollingSizeMb,
                     warnOnSpanOutsideTrace, metricPeriodMillis);
         }

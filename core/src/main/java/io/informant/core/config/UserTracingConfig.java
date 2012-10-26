@@ -38,10 +38,10 @@ public class UserTracingConfig {
     @Nullable
     private final String userId;
 
-    // persistence threshold of -1 means use core config persistence threshold
+    // store threshold of -1 means use core config store threshold
     // for session traces, the real threshold is the minimum of this and the core
     // threshold
-    private final int persistenceThresholdMillis;
+    private final int storeThresholdMillis;
     private final boolean fineProfiling;
 
     static UserTracingConfig getDefaultInstance() {
@@ -56,12 +56,12 @@ public class UserTracingConfig {
         return new Builder(base);
     }
 
-    private UserTracingConfig(boolean enabled, @Nullable String userId,
-            int persistenceThresholdMillis, boolean fineProfiling) {
+    private UserTracingConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
+            boolean fineProfiling) {
 
         this.enabled = enabled;
         this.userId = userId;
-        this.persistenceThresholdMillis = persistenceThresholdMillis;
+        this.storeThresholdMillis = storeThresholdMillis;
         this.fineProfiling = fineProfiling;
     }
 
@@ -78,8 +78,8 @@ public class UserTracingConfig {
         return userId;
     }
 
-    public int getPersistenceThresholdMillis() {
-        return persistenceThresholdMillis;
+    public int getStoreThresholdMillis() {
+        return storeThresholdMillis;
     }
 
     public boolean isFineProfiling() {
@@ -91,7 +91,7 @@ public class UserTracingConfig {
         return Objects.toStringHelper(this)
                 .add("enabled", enabled)
                 .add("userId", userId)
-                .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
                 .toString();
     }
@@ -101,14 +101,14 @@ public class UserTracingConfig {
         private boolean enabled = true;
         @Nullable
         private String userId;
-        private int persistenceThresholdMillis = 0;
+        private int storeThresholdMillis = 0;
         private boolean fineProfiling = true;
 
         private Builder() {}
         private Builder(UserTracingConfig base) {
             enabled = base.enabled;
             userId = base.userId;
-            persistenceThresholdMillis = base.persistenceThresholdMillis;
+            storeThresholdMillis = base.storeThresholdMillis;
             fineProfiling = base.fineProfiling;
         }
         public Builder enabled(boolean enabled) {
@@ -119,8 +119,8 @@ public class UserTracingConfig {
             this.userId = userId;
             return this;
         }
-        public Builder persistenceThresholdMillis(int persistenceThresholdMillis) {
-            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        public Builder storeThresholdMillis(int storeThresholdMillis) {
+            this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
         public Builder fineProfiling(boolean fineProfiling) {
@@ -128,7 +128,7 @@ public class UserTracingConfig {
             return this;
         }
         public UserTracingConfig build() {
-            return new UserTracingConfig(enabled, userId, persistenceThresholdMillis,
+            return new UserTracingConfig(enabled, userId, storeThresholdMillis,
                     fineProfiling);
         }
     }

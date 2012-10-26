@@ -69,7 +69,7 @@ public class JdbcPluginTest {
     @Test
     public void testStatement() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -85,7 +85,7 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatement() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
@@ -102,7 +102,7 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
@@ -119,7 +119,7 @@ public class JdbcPluginTest {
     @Test
     public void testCommit() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
@@ -143,7 +143,7 @@ public class JdbcPluginTest {
     @Test
     public void testResultSetValueMetric() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureResultSetGet", true);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -164,7 +164,7 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricDisabledSpan() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant.plugins:jdbc-plugin");
         pluginConfig.setProperty("spanForDatabaseMetaData", false);
@@ -183,7 +183,7 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricEnabledSpan() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant.plugins:jdbc-plugin");
         pluginConfig.setProperty("spanForDatabaseMetaData", true);
@@ -204,7 +204,7 @@ public class JdbcPluginTest {
     @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then

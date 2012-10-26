@@ -43,7 +43,7 @@ public class DataSourceShutdownTest {
         }
         // given
         InformantContainer container = InformantContainer.create(0, false);
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ForceShutdownWhileStoringTraces.class);
         container.killExternalJvm();

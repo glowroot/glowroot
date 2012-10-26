@@ -25,7 +25,7 @@ import com.google.common.base.Strings;
 /**
  * The unique identifier for a trace. The string representation of the unique identifier is lazily
  * constructed since it is not needed in the majority of the cases (it is only needed for traces
- * which are either persisted and/or viewed in-flight).
+ * which are either stored and/or viewed in-flight).
  * 
  * @author Trask Stalnaker
  * @since 0.5

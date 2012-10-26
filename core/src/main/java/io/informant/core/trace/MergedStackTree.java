@@ -41,7 +41,7 @@ import com.google.common.collect.Queues;
  * @since 0.5
  */
 // TODO it would be more efficient to store stack traces unmerged up until some point
-// (e.g. to optimize for trace captures which are never persisted)
+// (e.g. to optimize for trace captures which are never stored)
 // in this case, it should be configurable how many stack traces to store unmerged
 // after which the existing stack traces are merged as well as future stack traces
 @ThreadSafe

@@ -56,7 +56,7 @@ public class SpanStackTraceTest {
     public void shouldReadSpanStackTrace() throws Exception {
         // given
         CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
+        coreConfig.setStoreThresholdMillis(0);
         coreConfig.setSpanStackTraceThresholdMillis(100);
         container.getInformant().updateCoreConfig(coreConfig);
         // when

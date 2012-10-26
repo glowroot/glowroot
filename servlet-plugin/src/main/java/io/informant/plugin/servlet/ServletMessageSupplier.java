@@ -54,14 +54,14 @@ class ServletMessageSupplier extends MessageSupplier {
     // but it appears that tomcat (at least, maybe others) clears out those
     // objects after the response is complete so that it can reuse the
     // request object for future requests
-    // since the data is persisted in a separate thread to avoid slowing up the user's
+    // since the data is stored in a separate thread to avoid slowing up the user's
     // request, the request object could have been cleared before the request data
-    // is persisted, so instead the request parts that are needed must be cached
+    // is stored, so instead the request parts that are needed must be cached
     //
     // another problem with storing the request object here is that it may not be thread safe
     //
     // the http session object also cannot be stored here because it may be marked
-    // expired when the session attributes are persisted, so instead
+    // expired when the session attributes are stored, so instead
     // (references to) the session attributes must be stored here
 
     @Nullable
@@ -103,6 +103,7 @@ class ServletMessageSupplier extends MessageSupplier {
         }
     }
 
+    @Override
     public Message get() {
         ImmutableMap.Builder<String, Object> detail = ImmutableMap.builder();
         addRequestParameterDetail(detail);

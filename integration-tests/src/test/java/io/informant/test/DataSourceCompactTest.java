@@ -53,7 +53,7 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         File dbFile = new File(container.getDataDir(), "informant.h2.db");
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);

@@ -51,7 +51,7 @@ public class ProfilingTest {
         container = InformantContainer.create();
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
@@ -72,7 +72,7 @@ public class ProfilingTest {
     @Test
     public void shouldReadCoarseProfilingTree() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
@@ -91,7 +91,7 @@ public class ProfilingTest {
     @Test
     public void shouldReadCoarseProfilingTreeWhenTotalSecondsIsZero() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
@@ -111,7 +111,7 @@ public class ProfilingTest {
     @Test
     public void shouldReadFineProfilingTree() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(10000);
+        container.getInformant().setStoreThresholdMillis(10000);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
@@ -121,7 +121,7 @@ public class ProfilingTest {
         FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setPersistenceThresholdMillis(0);
+        fineProfilingConfig.setStoreThresholdMillis(0);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
@@ -137,7 +137,7 @@ public class ProfilingTest {
     @Test
     public void shouldReadFineUserProfilingTree() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(10000);
+        container.getInformant().setStoreThresholdMillis(10000);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
@@ -146,11 +146,11 @@ public class ProfilingTest {
         FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(0);
         fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setPersistenceThresholdMillis(10000);
+        fineProfilingConfig.setStoreThresholdMillis(10000);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
         UserTracingConfig userTracingConfig = container.getInformant().getUserTracingConfig();
         userTracingConfig.setUserId("able");
-        userTracingConfig.setPersistenceThresholdMillis(0);
+        userTracingConfig.setStoreThresholdMillis(0);
         userTracingConfig.setFineProfiling(true);
         container.getInformant().updateUserTracingConfig(userTracingConfig);
         // when
@@ -164,15 +164,15 @@ public class ProfilingTest {
         assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(20);
     }
 
-    // set fine persistence threshold to 0, and see if trace shows up in active list right away
+    // set fine store threshold to 0, and see if trace shows up in active list right away
     @Test
     public void shouldReadActiveFineProfilingTree() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(10000);
+        container.getInformant().setStoreThresholdMillis(10000);
         FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
-        fineProfilingConfig.setPersistenceThresholdMillis(0);
+        fineProfilingConfig.setStoreThresholdMillis(0);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -194,7 +194,7 @@ public class ProfilingTest {
     @Test
     public void shouldNotReadProfilingTreeWhenDisabled() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setEnabled(false);

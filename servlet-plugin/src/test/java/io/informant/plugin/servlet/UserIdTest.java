@@ -56,7 +56,7 @@ public class UserIdTest {
     @Test
     public void testHasSessionUserIdAttribute() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "useridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -70,7 +70,7 @@ public class UserIdTest {
     @Test
     public void testSetSessionUserIdAttribute() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "useridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -84,7 +84,7 @@ public class UserIdTest {
     @Test
     public void testSetSessionUserIdAttributeNull() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "useridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -100,7 +100,7 @@ public class UserIdTest {
     @Test
     public void testHasNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "useridone.two");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -114,7 +114,7 @@ public class UserIdTest {
     @Test
     public void testSetNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "useridone.two");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -128,7 +128,7 @@ public class UserIdTest {
     @Test
     public void testHasMissingSessionUserIdAttribute() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "missinguseridattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -142,7 +142,7 @@ public class UserIdTest {
     @Test
     public void testHasMissingNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionUserIdAttribute", "useridone.missingtwo");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);

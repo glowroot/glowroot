@@ -59,7 +59,7 @@ public class LogMessageTest {
     @Test
     public void shouldReadLogMessage() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(GenerateLogMessage.class);
         // then

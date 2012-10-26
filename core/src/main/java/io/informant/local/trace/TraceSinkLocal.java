@@ -68,7 +68,7 @@ public class TraceSinkLocal implements TraceSink {
     }
 
     public void onCompletedTrace(final Trace trace) {
-        if (traceSnapshotService.shouldPersist(trace)) {
+        if (traceSnapshotService.shouldStore(trace)) {
             if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
                 logPendingLimitWarning();
             }

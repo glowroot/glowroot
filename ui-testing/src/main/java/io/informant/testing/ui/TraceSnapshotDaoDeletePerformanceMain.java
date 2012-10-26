@@ -38,7 +38,7 @@ public final class TraceSnapshotDaoDeletePerformanceMain {
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create();
         // set thresholds low so there will be lots of data to view
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);

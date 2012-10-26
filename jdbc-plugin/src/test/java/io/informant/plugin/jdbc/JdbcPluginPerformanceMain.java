@@ -111,7 +111,7 @@ public class JdbcPluginPerformanceMain {
 
     private static InformantContainer setUpContainer() throws Exception {
         InformantContainer container = InformantContainer.create();
-        container.getInformant().setPersistenceThresholdMillis(60000);
+        container.getInformant().setStoreThresholdMillis(60000);
         return container;
     }
 

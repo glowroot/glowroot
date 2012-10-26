@@ -46,7 +46,7 @@ public class StuckTraceTest {
     public static void setUp() throws Exception {
         container = InformantContainer.create();
         // capture one trace to warm up the system since this test involves some timing
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         container.executeAppUnderTest(WarmupTrace.class);
     }
 
@@ -64,7 +64,7 @@ public class StuckTraceTest {
     public void shouldReadActiveStuckTrace() throws Exception {
         // given
         CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(0);
+        coreConfig.setStoreThresholdMillis(0);
         coreConfig.setStuckThresholdSeconds(0);
         container.getInformant().updateCoreConfig(coreConfig);
         // when

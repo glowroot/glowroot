@@ -59,7 +59,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttribute() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "testattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -76,7 +76,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -93,7 +93,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", null);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -109,7 +109,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttribute() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "testattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -126,7 +126,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -143,7 +143,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", null);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -159,7 +159,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeNull() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -176,7 +176,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.two");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -193,7 +193,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.two");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -210,7 +210,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "missingtestattr");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -226,7 +226,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.missingtwo");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -242,7 +242,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -261,7 +261,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -280,7 +280,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "missingtestattr.*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -296,7 +296,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath2() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("sessionAttributes", "one.missingtwo.*");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);

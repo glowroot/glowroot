@@ -116,7 +116,7 @@ public class ConfigTest {
     private static CoreConfig updateAllFields(CoreConfig config) {
         CoreConfig updatedConfig = new CoreConfig();
         updatedConfig.setEnabled(!config.isEnabled());
-        updatedConfig.setPersistenceThresholdMillis(config.getPersistenceThresholdMillis() + 1);
+        updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         updatedConfig.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
         updatedConfig.setMaxSpans(config.getMaxSpans() + 1);
         updatedConfig.setRollingSizeMb(config.getRollingSizeMb() + 1);
@@ -147,7 +147,7 @@ public class ConfigTest {
         UserTracingConfig updatedConfig = new UserTracingConfig();
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setUserId(config.getUserId() + "x");
-        updatedConfig.setPersistenceThresholdMillis(config.getPersistenceThresholdMillis() + 1);
+        updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         updatedConfig.setFineProfiling(!config.isFineProfiling());
         return updatedConfig;
     }

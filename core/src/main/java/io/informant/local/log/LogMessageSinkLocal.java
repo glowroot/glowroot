@@ -105,7 +105,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
                 // inStoreLogMessage is true, so that onLogMessage() which is called from
                 // logger.warn(), will short-circuit not execute anything
                 logger.warn(message);
-                // but it is still good to get this warning in the persisted log
+                // but it is still good to get this warning in the log_message table
                 logMessageAsync(Level.WARN, LogMessageSinkLocal.class.getName(), message, null);
             } finally {
                 inStoreLogMessage.set(false);

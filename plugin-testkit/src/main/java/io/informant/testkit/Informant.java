@@ -65,9 +65,9 @@ public class Informant {
         this.asyncHttpClient = asyncHttpClient;
     }
 
-    public void setPersistenceThresholdMillis(int persistenceThresholdMillis) throws Exception {
+    public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
         CoreConfig coreConfig = getCoreConfig();
-        coreConfig.setPersistenceThresholdMillis(persistenceThresholdMillis);
+        coreConfig.setStoreThresholdMillis(storeThresholdMillis);
         updateCoreConfig(coreConfig);
     }
 

@@ -59,7 +59,7 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadTraceMetricData() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
         // then
@@ -71,7 +71,7 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadTraceMetricDataWithRootAndSameNested() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
         // then
@@ -84,7 +84,7 @@ public class TraceMetricDataTest {
     @Test
     public void shouldReadActiveTraceMetricData() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {

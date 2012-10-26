@@ -135,37 +135,36 @@ public class TraceSnapshotService {
         return builder.build();
     }
 
-    public boolean shouldPersist(Trace trace) {
+    public boolean shouldStore(Trace trace) {
         if (trace.isStuck() || trace.isError()) {
             return true;
         }
         long duration = trace.getDuration();
-        // check if should persist for user tracing
+        // check if should store for user tracing
         String userId = trace.getUserId();
         if (userId != null
                 && userId.equals(configService.getUserTracingConfig().getUserId())
                 && duration >= TimeUnit.MILLISECONDS.toNanos(configService.getUserTracingConfig()
-                        .getPersistenceThresholdMillis())) {
+                        .getStoreThresholdMillis())) {
             return true;
         }
-        // check if should persist for fine profiling
+        // check if should store for fine profiling
         if (trace.isFine()) {
-            int finePersistenceThresholdMillis = configService.getFineProfilingConfig()
-                    .getPersistenceThresholdMillis();
-            if (finePersistenceThresholdMillis != CoreConfig.PERSISTENCE_THRESHOLD_DISABLED) {
+            int fineStoreThresholdMillis = configService.getFineProfilingConfig()
+                    .getStoreThresholdMillis();
+            if (fineStoreThresholdMillis != CoreConfig.STORE_THRESHOLD_DISABLED) {
                 return trace.getDuration() >= TimeUnit.MILLISECONDS
-                        .toNanos(finePersistenceThresholdMillis);
+                        .toNanos(fineStoreThresholdMillis);
             }
         }
-        // fall back to core persistence threshold
-        return persistBasedOnCorePersistenceThreshold(trace);
+        // fall back to core store threshold
+        return shouldStoreBasedOnCoreStoreThreshold(trace);
     }
 
-    private boolean persistBasedOnCorePersistenceThreshold(Trace trace) {
-        int persistenceThresholdMillis = configService.getCoreConfig()
-                .getPersistenceThresholdMillis();
-        return persistenceThresholdMillis != CoreConfig.PERSISTENCE_THRESHOLD_DISABLED
-                && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(persistenceThresholdMillis);
+    private boolean shouldStoreBasedOnCoreStoreThreshold(Trace trace) {
+        int storeThresholdMillis = configService.getCoreConfig().getStoreThresholdMillis();
+        return storeThresholdMillis != CoreConfig.STORE_THRESHOLD_DISABLED
+                && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(storeThresholdMillis);
     }
 
     public static ByteStream toByteStream(TraceSnapshot snapshot, boolean active)

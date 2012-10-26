@@ -97,7 +97,7 @@ public class PluginConfigTest {
     @Test
     public void shouldReadAlternateDescription() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant:informant-integration-tests");
         pluginConfig.setEnabled(true);
@@ -115,7 +115,7 @@ public class PluginConfigTest {
     @Test
     public void shouldReadStarredDescription() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant:informant-integration-tests");
         pluginConfig.setEnabled(true);

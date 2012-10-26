@@ -173,7 +173,7 @@ class TracePointJsonService implements JsonService {
         private void getMatchingActiveTraces() {
             activeTraces = Lists.newArrayList();
             for (Trace trace : traceRegistry.getTraces()) {
-                if (traceSnapshotService.shouldPersist(trace)
+                if (traceSnapshotService.shouldStore(trace)
                         && matchesDuration(trace)
                         && matchesBackground(trace)
                         && matchesErrorOnly(trace)

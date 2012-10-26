@@ -35,8 +35,8 @@ public class Trace {
     private long from;
     private long to;
     private long duration;
-    // active is slightly different from !completed because a trace is persisted at the stuck
-    // threshold and the jvm may terminate before that trace completes, in which case the trace is
+    // active is slightly different from !completed because a trace is stored at the stuck threshold
+    // and the jvm may terminate before that trace completes, in which case the trace is
     // neither active nor completed
     private boolean active;
     private boolean stuck;

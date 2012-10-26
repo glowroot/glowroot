@@ -55,7 +55,7 @@ public class ExportTest {
     @Test
     public void shouldExportTrace() throws Exception {
         // given
-        container.getInformant().setPersistenceThresholdMillis(0);
+        container.getInformant().setStoreThresholdMillis(0);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // when
         Trace trace = container.getInformant().getLastTrace();

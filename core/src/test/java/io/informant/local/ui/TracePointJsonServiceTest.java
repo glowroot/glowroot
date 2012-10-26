@@ -225,8 +225,8 @@ public class TracePointJsonServiceTest {
                 anyBoolean(), anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
                 anyInt())).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
-        // for now, assume all active traces will be persisted
-        when(traceSnapshotService.shouldPersist(any(Trace.class))).thenReturn(true);
+        // for now, assume all active traces will be stored
+        when(traceSnapshotService.shouldStore(any(Trace.class))).thenReturn(true);
         when(traceSinkLocal.getPendingCompleteTraces()).thenReturn(pendingTraces);
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);

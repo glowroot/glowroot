@@ -139,9 +139,9 @@ class ConfigJsonService implements JsonService {
         if (enabled != null) {
             builder.enabled(enabled.getAsBoolean());
         }
-        JsonElement persistenceThresholdMillis = jsonObject.get("persistenceThresholdMillis");
-        if (persistenceThresholdMillis != null) {
-            builder.persistenceThresholdMillis(persistenceThresholdMillis.getAsInt());
+        JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
+        if (storeThresholdMillis != null) {
+            builder.storeThresholdMillis(storeThresholdMillis.getAsInt());
         }
         JsonElement stuckThresholdSeconds = jsonObject.get("stuckThresholdSeconds");
         if (stuckThresholdSeconds != null) {
@@ -211,9 +211,9 @@ class ConfigJsonService implements JsonService {
         if (totalSeconds != null) {
             builder.totalSeconds(totalSeconds.getAsInt());
         }
-        JsonElement persistenceThresholdMillis = jsonObject.get("persistenceThresholdMillis");
-        if (persistenceThresholdMillis != null) {
-            builder.persistenceThresholdMillis(persistenceThresholdMillis.getAsInt());
+        JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
+        if (storeThresholdMillis != null) {
+            builder.storeThresholdMillis(storeThresholdMillis.getAsInt());
         }
     }
 
@@ -230,9 +230,9 @@ class ConfigJsonService implements JsonService {
                 builder.userId(userId.getAsString());
             }
         }
-        JsonElement persistenceThresholdMillis = jsonObject.get("persistenceThresholdMillis");
-        if (persistenceThresholdMillis != null) {
-            builder.persistenceThresholdMillis(persistenceThresholdMillis.getAsInt());
+        JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
+        if (storeThresholdMillis != null) {
+            builder.storeThresholdMillis(storeThresholdMillis.getAsInt());
         }
         JsonElement fineProfiling = jsonObject.get("fineProfiling");
         if (fineProfiling != null) {

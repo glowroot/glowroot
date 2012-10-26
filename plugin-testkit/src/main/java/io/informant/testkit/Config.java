@@ -95,7 +95,7 @@ public class Config {
     public static class CoreConfig {
 
         private boolean enabled;
-        private int persistenceThresholdMillis;
+        private int storeThresholdMillis;
         private int stuckThresholdSeconds;
         private int spanStackTraceThresholdMillis;
         private int maxSpans;
@@ -109,11 +109,11 @@ public class Config {
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
-        public int getPersistenceThresholdMillis() {
-            return persistenceThresholdMillis;
+        public int getStoreThresholdMillis() {
+            return storeThresholdMillis;
         }
-        public void setPersistenceThresholdMillis(int persistenceThresholdMillis) {
-            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        public void setStoreThresholdMillis(int storeThresholdMillis) {
+            this.storeThresholdMillis = storeThresholdMillis;
         }
         public int getStuckThresholdSeconds() {
             return stuckThresholdSeconds;
@@ -156,8 +156,8 @@ public class Config {
             if (obj instanceof CoreConfig) {
                 CoreConfig that = (CoreConfig) obj;
                 return Objects.equal(enabled, that.enabled)
-                        && Objects.equal(persistenceThresholdMillis,
-                                that.persistenceThresholdMillis)
+                        && Objects.equal(storeThresholdMillis,
+                                that.storeThresholdMillis)
                         && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
                         && Objects.equal(spanStackTraceThresholdMillis,
                                 that.spanStackTraceThresholdMillis)
@@ -170,7 +170,7 @@ public class Config {
         }
         @Override
         public int hashCode() {
-            return Objects.hashCode(enabled, persistenceThresholdMillis, stuckThresholdSeconds,
+            return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
                     spanStackTraceThresholdMillis, maxSpans, rollingSizeMb, warnOnSpanOutsideTrace,
                     metricPeriodMillis);
         }
@@ -178,7 +178,7 @@ public class Config {
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("enabled", enabled)
-                    .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                    .add("storeThresholdMillis", storeThresholdMillis)
                     .add("stuckThresholdSeconds", stuckThresholdSeconds)
                     .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                     .add("maxSpans", maxSpans)
@@ -252,7 +252,7 @@ public class Config {
         private double tracePercentage;
         private int intervalMillis;
         private int totalSeconds;
-        private int persistenceThresholdMillis;
+        private int storeThresholdMillis;
 
         public boolean isEnabled() {
             return enabled;
@@ -278,11 +278,11 @@ public class Config {
         public void setTotalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
         }
-        public int getPersistenceThresholdMillis() {
-            return persistenceThresholdMillis;
+        public int getStoreThresholdMillis() {
+            return storeThresholdMillis;
         }
-        public void setPersistenceThresholdMillis(int persistenceThresholdMillis) {
-            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        public void setStoreThresholdMillis(int storeThresholdMillis) {
+            this.storeThresholdMillis = storeThresholdMillis;
         }
         @Override
         public boolean equals(@Nullable Object obj) {
@@ -292,15 +292,14 @@ public class Config {
                         && Objects.equal(tracePercentage, that.tracePercentage)
                         && Objects.equal(intervalMillis, that.intervalMillis)
                         && Objects.equal(totalSeconds, that.totalSeconds)
-                        && Objects.equal(persistenceThresholdMillis,
-                                that.persistenceThresholdMillis);
+                        && Objects.equal(storeThresholdMillis, that.storeThresholdMillis);
             }
             return false;
         }
         @Override
         public int hashCode() {
             return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds,
-                    persistenceThresholdMillis);
+                    storeThresholdMillis);
         }
         @Override
         public String toString() {
@@ -309,7 +308,7 @@ public class Config {
                     .add("tracePercentage", tracePercentage)
                     .add("intervalMillis", intervalMillis)
                     .add("totalSeconds", totalSeconds)
-                    .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                    .add("storeThresholdMillis", storeThresholdMillis)
                     .toString();
         }
     }
@@ -318,7 +317,7 @@ public class Config {
 
         private boolean enabled;
         private String userId;
-        private int persistenceThresholdMillis;
+        private int storeThresholdMillis;
         private boolean fineProfiling;
 
         public boolean isEnabled() {
@@ -333,11 +332,11 @@ public class Config {
         public void setUserId(String userId) {
             this.userId = userId;
         }
-        public int getPersistenceThresholdMillis() {
-            return persistenceThresholdMillis;
+        public int getStoreThresholdMillis() {
+            return storeThresholdMillis;
         }
-        public void setPersistenceThresholdMillis(int persistenceThresholdMillis) {
-            this.persistenceThresholdMillis = persistenceThresholdMillis;
+        public void setStoreThresholdMillis(int storeThresholdMillis) {
+            this.storeThresholdMillis = storeThresholdMillis;
         }
         public boolean isFineProfiling() {
             return fineProfiling;
@@ -351,22 +350,22 @@ public class Config {
                 UserTracingConfig that = (UserTracingConfig) obj;
                 return Objects.equal(enabled, that.enabled)
                         && Objects.equal(userId, that.userId)
-                        && Objects.equal(persistenceThresholdMillis,
-                                that.persistenceThresholdMillis)
+                        && Objects.equal(storeThresholdMillis,
+                                that.storeThresholdMillis)
                         && Objects.equal(fineProfiling, that.fineProfiling);
             }
             return false;
         }
         @Override
         public int hashCode() {
-            return Objects.hashCode(enabled, userId, persistenceThresholdMillis, fineProfiling);
+            return Objects.hashCode(enabled, userId, storeThresholdMillis, fineProfiling);
         }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("enabled", enabled)
                     .add("userId", userId)
-                    .add("persistenceThresholdMillis", persistenceThresholdMillis)
+                    .add("storeThresholdMillis", storeThresholdMillis)
                     .add("fineProfiling", fineProfiling)
                     .toString();
         }
