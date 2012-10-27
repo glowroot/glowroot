@@ -85,8 +85,8 @@
       options.xaxis.min = from
       options.xaxis.max = to
       options.xaxis.zoomRange = [ zoomRangeFrom, zoomRangeTo ]
-      // reset yaxis min/max so it will be auto calculated to fit data points
-      options.yaxis.min = undefined
+      options.yaxis.min = 0
+      // reset yaxis max so it will be auto calculated to fit data points
       options.yaxis.max = undefined
       plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
       updateTimeFilter()
