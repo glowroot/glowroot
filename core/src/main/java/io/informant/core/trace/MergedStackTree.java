@@ -52,8 +52,7 @@ public class MergedStackTree {
 
     private final Collection<MergedStackTreeNode> rootNodes = Queues.newConcurrentLinkedQueue();
 
-    // marked transient for gson serialization
-    private final transient Object lock = new Object();
+    private final Object lock = new Object();
 
     @Nullable
     public MergedStackTreeNode getRootNode() {
