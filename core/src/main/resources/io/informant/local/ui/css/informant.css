@@ -247,6 +247,10 @@ span.expanded-content {
   /* some elements need the same padding as expanding elements */
   padding: 2px 1em 2px 1em;
 }
+.unexpanded-vertical-padding {
+  /* some elements need the same vertical padding as expanding elements */
+  padding: 2px 0 2px 0;
+}
 .offscreen {
   position: absolute;
   left: -999em;
