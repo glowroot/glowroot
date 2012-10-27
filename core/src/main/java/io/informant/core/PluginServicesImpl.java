@@ -181,18 +181,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("startTrace(): argument 'metric' must be non-null");
             return NopSpan.INSTANCE;
         }
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace == null) {
-            currentTrace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker,
-                    weavingMetric);
-            currentTrace.setBackground(background);
-            if (!maybeScheduleFineProfilingUsingUserId(currentTrace, userId)) {
-                maybeScheduleFineProfilingUsingPercentage(currentTrace);
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace == null) {
+            trace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker, weavingMetric);
+            trace.setBackground(background);
+            if (!maybeScheduleFineProfilingUsingUserId(trace, userId)) {
+                maybeScheduleFineProfilingUsingPercentage(trace);
             }
-            traceRegistry.addTrace(currentTrace);
-            return new SpanImpl(currentTrace.getRootSpan(), currentTrace);
+            traceRegistry.addTrace(trace);
+            return new SpanImpl(trace.getRootSpan(), trace);
         } else {
-            return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
+            return startSpan(trace, (MetricImpl) metric, messageSupplier);
         }
     }
 
@@ -206,11 +205,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("startSpan(): argument 'metric' must be non-null");
             return NopSpan.INSTANCE;
         }
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace == null) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace == null) {
             return NopSpan.INSTANCE;
         } else {
-            return startSpan(currentTrace, (MetricImpl) metric, messageSupplier);
+            return startSpan(trace, (MetricImpl) metric, messageSupplier);
         }
     }
 
@@ -220,12 +219,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("startTimer(): argument 'metric' must be non-null");
             return NopTimer.INSTANCE;
         }
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace == null) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace == null) {
             // TODO return global collector?
             return NopTimer.INSTANCE;
         } else {
-            return currentTrace.startTraceMetric((MetricImpl) metric);
+            return trace.startTraceMetric((MetricImpl) metric);
         }
     }
 
@@ -235,13 +234,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("addSpan(): argument 'messageSupplier' must be non-null");
             return;
         }
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace != null) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
             int maxSpans = coreConfig.getMaxSpans();
-            if (maxSpans == CoreConfig.SPAN_LIMIT_DISABLED
-                    || currentTrace.getSpanCount() < maxSpans) {
+            if (maxSpans == CoreConfig.SPAN_LIMIT_DISABLED || trace.getSpanCount() < maxSpans) {
                 // the trace limit has not been exceeded
-                currentTrace.addSpan(messageSupplier, null);
+                trace.addSpan(messageSupplier, null);
             }
         }
     }
@@ -253,9 +251,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return;
         }
         // don't use span limit when adding errors
-        Trace currentTrace = traceRegistry.getCurrentTrace();
-        if (currentTrace != null) {
-            currentTrace.addSpan(null, errorMessage);
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.addSpan(null, errorMessage);
         }
     }
 
@@ -302,49 +300,46 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         pluginConfig = configService.getPluginConfig(pluginId);
     }
 
-    private boolean maybeScheduleFineProfilingUsingUserId(Trace currentTrace,
-            @Nullable String userId) {
+    private boolean maybeScheduleFineProfilingUsingUserId(Trace trace, @Nullable String userId) {
         if (userId == null) {
             return false;
         }
         UserTracingConfig userTracingConfig = configService.getUserTracingConfig();
         if (userTracingConfig.isEnabled() && userTracingConfig.isFineProfiling()
                 && userId.equals(userTracingConfig.getUserId())) {
-            fineGrainedProfiler.scheduleProfiling(currentTrace);
+            fineGrainedProfiler.scheduleProfiling(trace);
             return true;
         } else {
             return false;
         }
     }
 
-    private void maybeScheduleFineProfilingUsingPercentage(Trace currentTrace) {
+    private void maybeScheduleFineProfilingUsingPercentage(Trace trace) {
         FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
         if (fineProfilingConfig.isEnabled()
                 && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
-            fineGrainedProfiler.scheduleProfiling(currentTrace);
+            fineGrainedProfiler.scheduleProfiling(trace);
         }
     }
 
     // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR
-    private Span startSpan(Trace currentTrace, MetricImpl metric,
-            MessageSupplier messageSupplier) {
-
+    private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
         int maxSpans = coreConfig.getMaxSpans();
-        if (maxSpans != CoreConfig.SPAN_LIMIT_DISABLED && currentTrace.getSpanCount() >= maxSpans) {
+        if (maxSpans != CoreConfig.SPAN_LIMIT_DISABLED && trace.getSpanCount() >= maxSpans) {
             // the trace limit has been exceeded
-            return new TimerWrappedInSpan(currentTrace, metric, messageSupplier);
+            return new TimerWrappedInSpan(trace, metric, messageSupplier);
         } else {
-            return new SpanImpl(currentTrace.pushSpan(metric, messageSupplier), currentTrace);
+            return new SpanImpl(trace.pushSpan(metric, messageSupplier), trace);
         }
     }
 
     @NotThreadSafe
     private class SpanImpl implements Span {
         private final io.informant.core.trace.Span span;
-        private final Trace currentTrace;
-        private SpanImpl(io.informant.core.trace.Span span, Trace currentTrace) {
+        private final Trace trace;
+        private SpanImpl(io.informant.core.trace.Span span, Trace trace) {
             this.span = span;
-            this.currentTrace = currentTrace;
+            this.trace = trace;
         }
         public void end() {
             endInternal(null);
@@ -371,20 +366,20 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     .getSpanStackTraceThresholdMillis())) {
                 span.setStackTrace(captureSpanStackTrace());
             }
-            currentTrace.popSpan(span, endTick, errorMessage);
-            if (currentTrace.isCompleted()) {
+            trace.popSpan(span, endTick, errorMessage);
+            if (trace.isCompleted()) {
                 // the root span has been popped off
                 // since the metrics are bound to the thread, they need to be recorded and reset
                 // while still in the trace thread, before the thread is reused for another trace
-                currentTrace.clearThreadLocalMetrics();
-                cancelScheduledFuture(currentTrace.getCoarseProfilingScheduledFuture());
-                cancelScheduledFuture(currentTrace.getStuckScheduledFuture());
-                cancelScheduledFuture(currentTrace.getFineProfilingScheduledFuture());
+                trace.clearThreadLocalMetrics();
+                cancelScheduledFuture(trace.getCoarseProfilingScheduledFuture());
+                cancelScheduledFuture(trace.getStuckScheduledFuture());
+                cancelScheduledFuture(trace.getFineProfilingScheduledFuture());
                 // send to trace sink before removing from trace registry so that trace sink
                 // can cover the gap (via TraceSink.getPendingTraces()) between removing the trace
                 // from the registry and storing it
-                traceSink.onCompletedTrace(currentTrace);
-                traceRegistry.removeTrace(currentTrace);
+                traceSink.onCompletedTrace(trace);
+                traceRegistry.removeTrace(trace);
             }
         }
         private StackTraceElement[] captureSpanStackTrace() {
@@ -422,14 +417,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private static class TimerWrappedInSpan implements Span {
-        private final Trace currentTrace;
+        private final Trace trace;
         private final MessageSupplier messageSupplier;
         private final Timer timer;
-        public TimerWrappedInSpan(Trace currentTrace, MetricImpl metric,
-                MessageSupplier messageSupplier) {
-            this.currentTrace = currentTrace;
+        public TimerWrappedInSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
+            this.trace = trace;
             this.messageSupplier = messageSupplier;
-            timer = currentTrace.startTraceMetric(metric);
+            timer = trace.startTraceMetric(metric);
         }
         public void end() {
             timer.end();
@@ -444,7 +438,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             timer.end();
             // span won't necessarily be nested properly, and won't have any timing data, but at
             // least the error will get captured
-            currentTrace.addSpan(messageSupplier, errorMessage);
+            trace.addSpan(messageSupplier, errorMessage);
         }
         public void updateMessage(MessageUpdater updater) {
             if (updater == null) {

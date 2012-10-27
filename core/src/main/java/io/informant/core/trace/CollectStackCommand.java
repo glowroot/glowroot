@@ -45,7 +45,6 @@ class CollectStackCommand implements Runnable {
     private final long endTick;
     private final boolean fine;
     private final Ticker ticker;
-    private volatile boolean tracePreviouslyCompleted;
 
     CollectStackCommand(Trace trace, long endTick, boolean fine, Ticker ticker) {
         this.trace = trace;
@@ -60,17 +59,12 @@ class CollectStackCommand implements Runnable {
             throw new TerminateScheduledActionException();
         }
         if (trace.isCompleted()) {
-            if (tracePreviouslyCompleted) {
-                logger.warn("trace '{}' already completed", trace.getRootSpan()
-                        .getMessageSupplier().get().getText());
-                throw new IllegalStateException("Trace already completed, just throwing to"
-                        + " terminate subsequent scheduled executions");
-            } else {
-                // there is a small window between trace completion and cancellation of this command
-                // so give it one extra chance to be completed normally
-                tracePreviouslyCompleted = true;
-                return;
-            }
+            // there is a small window between trace completion and cancellation of this command,
+            // plus, should a stop-the-world gc occur in this small window, even two command
+            // executions can fire one right after the other in the small window (assuming the first
+            // didn't throw an exception which it does now), since this command is scheduled using
+            // ScheduledExecutorService.scheduleAtFixedRate()
+            throw new TerminateScheduledActionException();
         }
         try {
             trace.captureStackTrace(fine);
@@ -91,7 +85,6 @@ class CollectStackCommand implements Runnable {
                 .add("trace", trace)
                 .add("endTick", endTick)
                 .add("fine", fine)
-                .add("tracePreviouslyCompleted", tracePreviouslyCompleted)
                 .toString();
     }
 }
