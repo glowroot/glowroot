@@ -378,12 +378,6 @@
                   <goal>add-third-party</goal>
                 </goals>
               </execution>
-              <execution>
-                <id>download-licenses</id>
-                <goals>
-                  <goal>download-licenses</goal>
-                </goals>
-              </execution>
             </executions>
             <configuration>
               <thirdPartyFilename>META-INF/THIRD-PARTY.txt</thirdPartyFilename>

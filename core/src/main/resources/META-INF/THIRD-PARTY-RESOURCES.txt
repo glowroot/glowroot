@@ -1,0 +1,11 @@
+
+(The Apache Software License, Version 2.0) Bootstrap (http://twitter.github.com/bootstrap/)
+(The Apache Software License, Version 2.0) bootstrap-datepicker (https://github.com/eternicode/bootstrap-datepicker)
+(MIT) flashcanvas (http://code.google.com/p/flashcanvas/)
+(MIT) Flot (http://www.flotcharts.org/)
+(MIT) handlebars (http://handlebarsjs.com/)
+(MIT) jQuery (http://jquery.com/)
+(MIT) Moment.js (http://momentjs.com/)
+(MIT) qTip2 (http://craigsworks.com/projects/qtip2/)
+(The Apache Software License, Version 2.0) Special Elite (http://www.google.com/webfonts/specimen/Special+Elite)
+(MIT) spin.js (http://fgnass.github.com/spin.js/)
