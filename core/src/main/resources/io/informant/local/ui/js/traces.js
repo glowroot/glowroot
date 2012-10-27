@@ -68,7 +68,7 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver spans}}'
 + '    <div>spans <em>rolled over</em></div>'
 + '  {{^}}'
-+ '    <span tabindex="0" class="lightbtn pad1" onclick="toggleSpans()">'
++ '    <span class="lightbtn pad1" onclick="toggleSpans()">'
 + '      <span class="red">spans</span> ({{spans.length}})'
 + '    </span><br>'
 + '    <div id="sps"></div>'
@@ -79,18 +79,18 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver coarseMergedStackTree}}'
 + '    <div>coarse-grained profile <em>rolled over</em></div>'
 + '  {{^}}'
-+ '    <span tabindex="0" class="lightbtn pad1" onclick="toggleCoarseMergedStackTree()">'
++ '    <span class="lightbtn pad1" onclick="toggleCoarseMergedStackTree()">'
 + '      <span class="red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})'
 + '    </span><br>'
 + '    <div class="nowrap indent1 hide" id="mstCoarseOuter">'
 + '      <select class="mst-filter input-large" onchange="this.blur()" style="margin: 4px">'
 + '      </select><br>'
 + '      <div class="mst-common hide">'
-+ '        <span tabindex="0" class="unexpanded-content red">common base</span>'
++ '        <span class="unexpanded-content red">common base</span>'
            // standard expanded-content bottom margin is not needed since nothing can be expanded
            // directly below
            // using span so background will stretch beyond page border if needed
-+ '        <span tabindex="-1" class="expanded-content inlineblock hide" style="margin-bottom: 0">'
++ '        <span class="expanded-content inlineblock hide" style="margin-bottom: 0">'
 + '        </span>'
 + '      </div>'
 + '      <div class="mst-interesting indent1"></div>'
@@ -101,18 +101,18 @@ var traceDetailTemplateText = ''
 + '  {{#ifRolledOver fineMergedStackTree}}'
 + '    <div>fine-grained profile <em>rolled over</em><div>'
 + '  {{^}}'
-+ '    <span tabindex="0" class="lightbtn pad1" onclick="toggleFineMergedStackTree()">'
++ '    <span class="lightbtn pad1" onclick="toggleFineMergedStackTree()">'
 + '      <span class="red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})'
 + '    </span><br>'
 + '    <div class="nowrap indent1 hide" id="mstFineOuter">'
 + '      <select class="mst-filter input-large" onchange="this.blur()" style="margin: 4px">'
 + '      </select><br>'
 + '      <div class="mst-common hide">'
-+ '        <span tabindex="0" class="unexpanded-content red">common base</span>'
++ '        <span class="unexpanded-content red">common base</span>'
            // standard expanded-content bottom margin is not needed since nothing can be expanded
            // directly below
            // using span so background will stretch beyond page border if needed
-+ '        <span tabindex="-1" class="expanded-content hide" style="margin-bottom: 0">'
++ '        <span class="expanded-content hide" style="margin-bottom: 0">'
 + '        </span>'
 + '      </div>'
 + '      <div class="mst-interesting indent1"></div>'
@@ -130,12 +130,12 @@ var spansTemplateText = ''
 + '    <div style="margin-left: 3em">'
 + '      {{#ifLongMessage message.text}}'
 + '        <div>'
-+ '          <span tabindex="0" class="unexpanded-content">'
++ '          <span class="unexpanded-content">'
 + '            {{firstPart message.text}}'
 + '            <span class="red"><strong>...</strong></span>'
 + '            {{lastPart message.text}}'
 + '          </span>'
-+ '          <div tabindex="-1" class="expanded-content breakword hide">'
++ '          <div class="expanded-content breakword hide">'
 + '            {{message.text}}'
 + '          </div>'
 + '        </div>'
@@ -146,8 +146,8 @@ var spansTemplateText = ''
 + '      {{/ifLongMessage}}'
 + '      {{#if message.detail}}'
 + '        <div class="indent2">'
-+ '          <span tabindex="0" class="unexpanded-content red">detail</span>'
-+ '          <div tabindex="-1" class="expanded-content hide">'
++ '          <span class="unexpanded-content red">detail</span>'
++ '          <div class="expanded-content hide">'
 + '            {{{messageDetailHtml message.detail}}}'
 + '          </div>'
 + '        </div>'
@@ -163,9 +163,9 @@ var spansTemplateText = ''
 + '          {{/if}}'
 + '          {{#if error.exception}}'
 + '            <div class="indent1">'
-+ '              <span tabindex="0" class="unexpanded-content red">exception</span>'
++ '              <span class="unexpanded-content red">exception</span>'
                  // using span so background will stretch beyond page border if needed
-+ '              <span tabindex="-1" class="expanded-content nowrap hide">'
++ '              <span class="expanded-content nowrap hide">'
 + '                {{{exceptionHtml error.exception}}}'
 + '              </span>'
 + '            </div>'
@@ -174,9 +174,9 @@ var spansTemplateText = ''
 + '      {{/if}}'
 + '      {{#if stackTrace}}'
 + '        <div class="indent2">'
-+ '          <span tabindex="0" class="unexpanded-content red">span stack trace</span>'
++ '          <span class="unexpanded-content red">span stack trace</span>'
              // using span so background will stretch beyond page border if needed
-+ '          <span tabindex="-1" class="expanded-content nowrap hide">'
++ '          <span class="expanded-content nowrap hide">'
 + '            {{{stackTraceHtml stackTrace}}}'
 + '          </span>'
 + '        </div>'
@@ -311,12 +311,8 @@ function basicToggle(parent) {
   unexpanded.toggleClass('hide')
   expanded.toggleClass('hide')
   if (unexpanded.hasClass('hide')) {
-    unexpanded.attr('tabindex', -1)
-    expanded.attr('tabindex', 0)
     expanded.focus()
   } else {
-    expanded.attr('tabindex', -1)
-    unexpanded.attr('tabindex', 0)
     unexpanded.focus()
   }
 }
@@ -342,8 +338,6 @@ function smartToggle(parent, e, keyboard) {
     smartToggleTimer = setTimeout(function() {
       unexpanded.removeClass('hide')
       expanded.addClass('hide')
-      unexpanded.attr('tabindex', 0)
-      expanded.attr('tabindex', -1)
       smartToggleTimer = undefined
     }, 250)
   } else {
@@ -351,8 +345,6 @@ function smartToggle(parent, e, keyboard) {
     // (at the expense of double click text highlighting also expanding the span)
     unexpanded.addClass('hide')
     expanded.removeClass('hide')
-    unexpanded.attr('tabindex', -1)
-    expanded.attr('tabindex', 0)
     // but still create smartToggleTimer to prevent double click from expanding and then contracting
     smartToggleTimer = setTimeout(function() { smartToggleTimer = undefined }, 500)
   }
