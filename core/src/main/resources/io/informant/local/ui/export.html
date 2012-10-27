@@ -43,11 +43,21 @@
 <script type="text/javascript">
   detailTrace = {{include detailTrace}}
   $(document).ready(function() {
-    var html = traceSummaryTemplate(detailTrace)
-    var detailHtml = traceDetailTemplate(detailTrace)
-    $('#detailTrace').html(html)
-    $('#detailTrace').append('<br>')
-    $('#detailTrace').append(detailHtml)
+    function renderBody() {
+      // spanLineLength is sometimes initialized after a slight pause due to an issue in chrome
+      // where body width is initially 0 (see initSpanLineLength function for more detail)
+      // body rendering must wait for spanLineLength to be initialized
+      if (spanLineLength) {
+        var html = traceSummaryTemplate(detailTrace)
+        var detailHtml = traceDetailTemplate(detailTrace)
+        $('#detailTrace').html(html)
+        $('#detailTrace').append('<br>')
+        $('#detailTrace').append(detailHtml)
+      } else {
+        setTimeout(renderBody, 1)
+      }
+    }
+    renderBody()
   })
 </script>
 </head>
