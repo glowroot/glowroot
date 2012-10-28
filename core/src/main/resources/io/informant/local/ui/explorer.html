@@ -48,7 +48,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
     configureAjaxError()
-    var plot, normalPoints, errorPoints, activePoints, highlightedItem, summaryItem
+    var plot, normalPoints, errorPoints, activePoints, highlightedItem, summaryItem, limitHit
     var plotSelecting
     var options = {
       legend: { show: false },
@@ -71,7 +71,7 @@
       if (plot && ($(window).width() != windowWidth || $(window).height() != windowHeight)) {
         windowWidth = $(window).width()
         windowHeight = $(window).height()
-        plot = $.plot($('#placeholder'), plot.getData(), plot.getOptions())
+        plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
       }})
     function plotResponseData(from, to) {
       var fromAsDate = new Date(from)
@@ -107,7 +107,7 @@
       hideSpinner('#tooltipSpinner')
       $('#placeholder').qtip('hide')
     }
-    $('#placeholder').bind('plotzoom', function (event, plot) {
+    $('#placeholder').bind('plotzoom', function(event, plot) {
       // cancel any refresh in action
       if (refreshQueryString) {
         refreshQueryString = undefined
@@ -140,12 +140,12 @@
         }
       }
     })
-    $('#placeholder').bind('plothover', function (event, pos, item) {
-      if (plotSelecting) {
+    $('#placeholder').bind('plothover', function(event, pos, item) {
+      if (plotSelecting && item) {
         plot.unhighlight(item.series, item.datapoint)
       }
     })
-    $('#placeholder').bind('plotclick', function (event, pos, item) {
+    $('#placeholder').bind('plotclick', function(event, pos, item) {
       if (item) {
         highlightedItem = item
         plot.unhighlight()
@@ -165,37 +165,48 @@
       // need to reset this variable at some point, now seems good
       cancelingPlotSelection = false
     })
-    $('#placeholder').bind('plotselecting', function (event, ranges) {
+    $('#placeholder').bind('plotselecting', function(event, ranges) {
       if (ranges) {
         // plotselecting events are triggered with null ranges parameter when '!selectionIsSane()'
         // (see jquery.flot.selection.js)
         plotSelecting = true
       }
     })
-    $('#placeholder').bind('plotunselected', function (event, ranges) {
+    $('#placeholder').bind('plotunselected', function(event, ranges) {
       plotSelecting = false
     })
-    $('#placeholder').bind('plotselected', function (event, ranges) {
+    $('#placeholder').bind('plotselected', function(event, ranges) {
       if (cancelingPlotSelection) {
         // unfortunately, plotselected is still called after plot.clearSelection() in the keyup
         // event handler for the esc key
         plot.clearSelection()
         return
       }
+      plotSelecting = false
       // cancel any refresh in action
       if (refreshQueryString) {
         refreshQueryString = undefined
         hideSpinner('#refreshButtonSpinner')
         showAndFadeErrorMessage('#refreshButtonCancelByZoom')
       }
-      options.xaxis.min = ranges.xaxis.from
-      options.xaxis.max = ranges.xaxis.to
+      var from = ranges.xaxis.from
+      var to = ranges.xaxis.to
       // round min/max to the nearest millisecond in outward direction so that they encompass the
       // requested selection
-      options.yaxis.min = Math.floor(ranges.yaxis.from * 1000) / 1000
-      options.yaxis.max = Math.ceil(ranges.yaxis.to * 1000) / 1000
-      plot = $.plot($('#placeholder'), plot.getData(), options)
-      plotSelecting = false
+      var low = Math.floor(ranges.yaxis.from * 1000) / 1000
+      var high = Math.ceil(ranges.yaxis.to * 1000) / 1000
+      zoomIn(from, to, low, high)
+    })
+    function zoomIn(from, to, low, high) {
+      normalPoints = filterPoints(normalPoints, from, to, low, high)
+      errorPoints = filterPoints(errorPoints, from, to, low, high)
+      activePoints = filterPoints(activePoints, from, to, low, high)
+      options.xaxis.min = from
+      options.xaxis.max = to
+      options.yaxis.min = 0
+      // reset yaxis max so it will be auto calculated to fit data points
+      options.yaxis.max = undefined
+      plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
       updateTimeFilter()
       updateDurationFilter()
       if (highlightedItem) {
@@ -206,7 +217,17 @@
         // get tooltip again by hovering over the highlighted data point
         hideTooltip()
       }
-    })
+    }
+    function filterPoints(points, from, to, low, high) {
+      var filteredPoints = []
+      for (var i = 0; i < points.length; i++) {
+        var point = points[i]
+        if (point[0] >= from && point[0] <= to && point[1] >= low && point[1] <= high) {
+          filteredPoints.push(point)
+        }
+      }
+      return filteredPoints
+    }
     function updateTimeFilter() {
       var from = Math.floor(plot.getAxes().xaxis.min)
       var to = Math.ceil(plot.getAxes().xaxis.max)
@@ -471,7 +492,7 @@
         })
       })
     }
-    $('a[data-toggle="tab"]').on('shown', function (e) {
+    $('a[data-toggle="tab"]').on('shown', function(e) {
       $(e.target).attr('tabindex', -1)
       $(e.relatedTarget).attr('tabindex', 0)
     })
