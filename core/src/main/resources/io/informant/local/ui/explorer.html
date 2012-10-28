@@ -48,8 +48,10 @@
 <script type="text/javascript">
   $(document).ready(function() {
     configureAjaxError()
-    var plot, normalPoints, errorPoints, activePoints, highlightedItem, summaryItem, limitHit
+    var plot, normalPoints, errorPoints, activePoints, highlightedItemId, summaryItem, limitExceeded
     var plotSelecting
+    // previousFrom and previousTo are needed for tracking whether scroll wheel zoom is in or out
+    var previousFrom, previousTo
     var options = {
       legend: { show: false },
       series: {
@@ -74,6 +76,8 @@
         plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
       }})
     function plotResponseData(from, to) {
+      // update time filter before translating range to timezone-less flot values
+      updateTimeFilter(from, to)
       var fromAsDate = new Date(from)
       fromAsDate.setHours(0,0,0,0)
       var zoomRangeFrom = fromAsDate.getTime()
@@ -88,8 +92,15 @@
       options.yaxis.min = 0
       // reset yaxis max so it will be auto calculated to fit data points
       options.yaxis.max = undefined
+      hideTooltip()
+      if (plot) {
+        plot.unhighlight()
+      }
       plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
-      updateTimeFilter()
+      if (highlightedItemId) {
+        // re-highlight if possible
+        highlightPoint(highlightedItemId)
+      }
     }
     function itemsEqual(plotItem1, plotItem2) {
       if (!plotItem1 && !plotItem2) {
@@ -108,20 +119,32 @@
       $('#placeholder').qtip('hide')
     }
     $('#placeholder').bind('plotzoom', function(event, plot) {
-      // cancel any refresh in action
-      if (refreshQueryString) {
-        refreshQueryString = undefined
-        hideSpinner('#refreshButtonSpinner')
-        showAndFadeErrorMessage('#refreshButtonCancelByZoom')
+      var from = Math.floor(plot.getAxes().xaxis.min)
+      var to = Math.ceil(plot.getAxes().xaxis.max)
+      // convert points out of timezone-less flot values
+      from += new Date(from).getTimezoneOffset() * 60 * 1000
+      to += new Date(to).getTimezoneOffset() * 60 * 1000
+      var zoomingOut = from < previousFrom || to > previousTo
+      if (zoomingOut) {
+        // scroll zooming out, reset duration limits
+        $('#durationLow').val('')
+        $('#durationHigh').val('')
+        $('#durationComparator').val('greater').change()
       }
-      updateTimeFilter()
-      if (highlightedItem) {
-        // highlight gets out of sync on zoom
-        plot.unhighlight()
-        plot.highlight(highlightedItem.seriesIndex, highlightedItem.dataIndex)
-        // leave the highlight, but cancel the tooltip since it is out of sync also, the user can
-        // get tooltip again by hovering over the highlighted data point
-        hideTooltip()
+      if (limitExceeded || zoomingOut) {
+        // set delay=50 to handle rapid zooming
+        getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), false, 50)
+      } else {
+        // no need to hit server
+        // cancel any refresh in action
+        if (refreshQueryString) {
+          refreshQueryString = undefined
+          hideSpinner('#chartSpinner')
+        }
+        normalPoints = filterPoints(normalPoints, from, to, 0, Number.MAX_VALUE)
+        errorPoints = filterPoints(errorPoints, from, to, 0, Number.MAX_VALUE)
+        activePoints = filterPoints(activePoints, from, to, 0, Number.MAX_VALUE)
+        plotResponseData(from, to)
       }
     })
     $('#placeholder').mousedown(function() {
@@ -129,25 +152,28 @@
     })
     $(document).keyup(function(e) {
       if (e.keyCode == 27) { // esc key
-        if (summaryItem) {
+        if (plotSelecting) {
+          plot.clearSelection()
+          cancelingPlotSelection = true
+        } else if (summaryItem) {
           // the tooltips (spinny and summary) have hide events that set summaryItem = null
           // so summaryItem must be checked before calling hideTooltip()
           hideTooltip()
         } else {
           // hitting esc when no item
-          highlightedItem = null
+          highlightedItemId = undefined
           plot.unhighlight()
         }
       }
     })
     $('#placeholder').bind('plothover', function(event, pos, item) {
-      if (plotSelecting && item) {
+      if (plotSelecting && item && itemId(item) != highlightedItemId) {
         plot.unhighlight(item.series, item.datapoint)
       }
     })
     $('#placeholder').bind('plotclick', function(event, pos, item) {
       if (item) {
-        highlightedItem = item
+        highlightedItemId = itemId(item)
         plot.unhighlight()
         // TODO highlight with bolder or larger outline
         plot.highlight(item.series, item.datapoint)
@@ -155,12 +181,6 @@
       }
     })
     var cancelingPlotSelection
-    $(document).keyup(function(e) {
-      if (e.keyCode == 27 && plotSelecting) { // esc key
-        plot.clearSelection()
-        cancelingPlotSelection = true
-      }
-    })
     $(document).mousedown(function(e) {
       // need to reset this variable at some point, now seems good
       cancelingPlotSelection = false
@@ -183,43 +203,43 @@
         return
       }
       plotSelecting = false
-      // cancel any refresh in action
-      if (refreshQueryString) {
-        refreshQueryString = undefined
-        hideSpinner('#refreshButtonSpinner')
-        showAndFadeErrorMessage('#refreshButtonCancelByZoom')
-      }
-      var from = ranges.xaxis.from
-      var to = ranges.xaxis.to
+      var from = Math.floor(ranges.xaxis.from)
+      var to = Math.ceil(ranges.xaxis.to)
+      from += new Date(from).getTimezoneOffset() * 60 * 1000
+      to += new Date(to).getTimezoneOffset() * 60 * 1000
       // round min/max to the nearest millisecond in outward direction so that they encompass the
       // requested selection
       var low = Math.floor(ranges.yaxis.from * 1000) / 1000
       var high = Math.ceil(ranges.yaxis.to * 1000) / 1000
-      zoomIn(from, to, low, high)
-    })
-    function zoomIn(from, to, low, high) {
-      normalPoints = filterPoints(normalPoints, from, to, low, high)
-      errorPoints = filterPoints(errorPoints, from, to, low, high)
-      activePoints = filterPoints(activePoints, from, to, low, high)
-      options.xaxis.min = from
-      options.xaxis.max = to
-      options.yaxis.min = 0
-      // reset yaxis max so it will be auto calculated to fit data points
-      options.yaxis.max = undefined
-      plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
-      updateTimeFilter()
-      updateDurationFilter()
-      if (highlightedItem) {
-        // highlight gets out of sync on zoom
-        plot.unhighlight()
-        plot.highlight(highlightedItem.seriesIndex, highlightedItem.dataIndex)
-        // leave the highlight, but cancel the tooltip since it is out of sync also, the user can
-        // get tooltip again by hovering over the highlighted data point
-        hideTooltip()
+      if (low == 0) {
+        $('#durationLow').val('')
+        $('#durationHigh').val(high)
+        $('#durationComparator').val('less').change()
+      } else {
+        $('#durationLow').val(low)
+        $('#durationHigh').val(high)
+        $('#durationComparator').val('between').change()
       }
-    }
+      if (limitExceeded) {
+        getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), false)
+      } else {
+        // no need to hit server
+        // cancel any refresh in action
+        if (refreshQueryString) {
+          refreshQueryString = undefined
+          hideSpinner('#chartSpinner')
+        }
+        normalPoints = filterPoints(normalPoints, from, to, low, high)
+        errorPoints = filterPoints(errorPoints, from, to, low, high)
+        activePoints = filterPoints(activePoints, from, to, low, high)
+        plotResponseData(from, to)
+      }
+    })
     function filterPoints(points, from, to, low, high) {
       var filteredPoints = []
+      // points are in timezone-less flot values
+      from -= new Date(from).getTimezoneOffset() * 60 * 1000
+      to -= new Date(to).getTimezoneOffset() * 60 * 1000
       for (var i = 0; i < points.length; i++) {
         var point = points[i]
         if (point[0] >= from && point[0] <= to && point[1] >= low && point[1] <= high) {
@@ -228,22 +248,14 @@
       }
       return filteredPoints
     }
-    function updateTimeFilter() {
-      var from = Math.floor(plot.getAxes().xaxis.min)
-      var to = Math.ceil(plot.getAxes().xaxis.max)
-      // shift timezone
-      from += new Date(from).getTimezoneOffset() * 60 * 1000
-      to += new Date(to).getTimezoneOffset() * 60 * 1000
+    function updateTimeFilter(from, to) {
       // TODO use localized time format
       // currently momentjs provides only 'LT' for localized time but this does not include seconds
       // see http://momentjs.com/docs/#/customization/long-date-formats
       $('#timeFilter').html(moment(from).format('h:mm:ss A') + ' &nbsp; to &nbsp; '
           + moment(to).format('h:mm:ss A (Z)'))
-    }
-    function updateDurationFilter() {
-      $('#durationLow').val(plot.getAxes().yaxis.min)
-      $('#durationHigh').val(plot.getAxes().yaxis.max)
-      $('#durationComparator').val('between').change()
+      previousFrom = from
+      previousTo = to
     }
     function refresh() {
       // TODO use localized date format, see more detailed comment at datepicker construction since
@@ -277,9 +289,7 @@
         from = date.valueOf()
         to = date.valueOf() + 24 * 60 * 60 * 1000
       }
-      var limit = $('#limitFilter').val()
-      var queryString = buildQueryString()
-      getTracePoints(from, to, limit, queryString, false)
+      getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), true)
     }
     function buildQueryString() {
       var queryString = ''
@@ -317,43 +327,39 @@
     }
     var refreshQueryString
     var loadDetailId
-    function getTracePoints(from, to, limit, queryString, initialLoad) {
-      queryString = 'from=' + from + '&to=' + to + '&limit=' + limit + queryString
+    function getTracePoints(from, to, limit, queryString, refreshButton, delay) {
+      var fullQueryString = 'from=' + from + '&to=' + to + '&limit=' + limit + queryString
       // handle crazy user clicking on the button
-      if (!initialLoad && queryString == refreshQueryString) return
-      if (initialLoad) {
-        showSpinner('#initialLoadSpinner')
-      } else {
-        // hide initialLoadSpinner just in case the refresh button was hit during (a very long)
-        // initial load
-        hideSpinner('#initialLoadSpinner')
-        if (!refreshQueryString) {
-          // if refreshQueryString is defined, that means spinner is already showing
-          showSpinner('#refreshButtonSpinner')
-        }
+      if (refreshButton && fullQueryString == refreshQueryString) return
+      if (!refreshQueryString) {
+        // if refreshQueryString is defined, that means spinner is already showing
+        showSpinner('#chartSpinner')
       }
-      if (!initialLoad) {
-        refreshQueryString = queryString
+      refreshQueryString = fullQueryString
+      if (delay) {
+        setTimeout(function() {
+          if (refreshQueryString == fullQueryString) {
+            // still the current query
+            getTracePoints(from, to, limit, queryString, refreshButton, false)
+          }
+        }, delay)
+        return
       }
-      $.getJSON('explorer/points?' + queryString, function(response) {
-        if (initialLoad && refreshQueryString) {
-          // a refresh query has been posted since this initial load
-          return
-        } else if (!initialLoad && refreshQueryString != queryString) {
+      $.getJSON('explorer/points?' + fullQueryString, function(response) {
+        if (refreshQueryString != fullQueryString) {
           // a different query string has been posted since this one
-          // or the refresh was 'canceled' by a zoom action
+          // (or the refresh was 'canceled' by a zoom-in action that doesn't require data loading)
           return
         }
         refreshQueryString = undefined
-        if (initialLoad) {
-          hideSpinner('#initialLoadSpinner')
-        } else {
-          hideSpinner('#refreshButtonSpinner')
+        hideSpinner('#chartSpinner')
+        if (refreshButton) {
           showAndFadeSuccessMessage('#refreshSuccessMessage')
         }
         normalPoints = response.normalPoints
         errorPoints = response.errorPoints
         activePoints = response.activePoints
+        limitExceeded = response.limitExceeded
         if (response.limitExceeded) {
           $('#limit').text(limit)
           $('#limitExceeded').removeClass('hide')
@@ -361,7 +367,6 @@
           $('#limitExceeded').addClass('hide')
         }
         hideTooltip()
-        highlightedItem = null
         $('#detailTabContent').html('')
         // shift for timezone
         for (var i = 0; i < normalPoints.length; i++) {
@@ -376,17 +381,39 @@
         plotResponseData(from, to)
       })
     }
+    function itemId(item) {
+      if (item.seriesIndex == 0) {
+        return normalPoints[item.dataIndex][2]
+      } else if (item.seriesIndex == 1) {
+        return errorPoints[item.dataIndex][2]
+      } else {
+        return activePoints[item.dataIndex][2]
+      }
+    }
+    function highlightPoint(id) {
+      for (var i = 0; i < normalPoints.length; i++) {
+        if (normalPoints[i][2] == id) {
+          plot.highlight(0, i)
+          return
+        }
+      }
+      for (var i = 0; i < errorPoints.length; i++) {
+        if (errorPoints[i][2] == id) {
+          plot.highlight(1, i)
+          return
+        }
+      }
+      for (var i = 0; i < activePoints.length; i++) {
+        if (activePoints[i][2] == id) {
+          plot.highlight(2, i)
+          return
+        }
+      }
+    }
     function showTraceDetailTooltip(item) {
       var x = item.pageX
       var y = item.pageY
-      var id
-      if (item.seriesIndex == 0) {
-        id = normalPoints[item.dataIndex][2]
-      } else if (item.seriesIndex == 1) {
-        id = errorPoints[item.dataIndex][2]
-      } else {
-        id = activePoints[item.dataIndex][2]
-      }
+      var id = itemId(item)
       var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 })
       function displaySpinner() {
         if (spinner) {
@@ -544,7 +571,7 @@
     var from = Math.max(today.getTime(), now.getTime() - 2 * 60 * 60 * 1000)
     // now + 15 minutes, this is primarily to set the right-hand border for the chart
     var to = now.getTime() + 15 * 60 * 1000
-    getTracePoints(from, to, 500, '', true)
+    getTracePoints(from, to, 500, '', false)
   })
 </script>
 </head>
@@ -565,9 +592,12 @@
   </div>
   <br>
   <div>
-    <div id="placeholder" style="height: 300px">
-      <div class="button-spinner hide" id="initialLoadSpinner"
-          style="width: 100%; height: 100%; margin: 0px auto"></div>
+    <div style="position: relative; height: 300px">
+      <div id="placeholder" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%">
+      </div>
+      <span class="button-spinner hide" id="chartSpinner"
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none">
+      </span>
     </div>
     <div style="width: 100%; text-align: center; font-style: italic; margin: 4px 0">
       use mouse scroll wheel to zoom in and out
@@ -707,10 +737,6 @@
           <div class="control-group">
             <div class="controls">
               <span tabindex="0" class="btn clickable" id="refreshButton">Refresh</span>
-              <span class="button-spinner hide" id="refreshButtonSpinner"></span>
-              <span class="button-error-message hide" id="refreshButtonCancelByZoom">
-                Refresh canceled by zoom action
-              </span>
               <span class="button-success-message hide" id="refreshSuccessMessage">Refreshed</span>
             </div>
           </div>
