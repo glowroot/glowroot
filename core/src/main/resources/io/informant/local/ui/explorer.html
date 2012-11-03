@@ -69,15 +69,18 @@
       colors: ['#edc240', '#cb4b4b', '#afd8f8'],
       selection: { mode: 'xy' }
     }
-    // need to track window dimensions to identify real window resizes in IE which sends window
+    // need to track dimensions to identify real window resizes in IE which sends window
     // resize event when any element on the page is resized
-    var windowWidth = $(window).width()
-    var windowHeight = $(window).height()
+    // also, now with responsive design, body width doesn't change on every window resize event
+    // so body dimensions are tracked instead of window dimensions since that is what determines
+    // plot dimensions
+    var bodyWidth = $('body').width()
+    var bodyHeight = $('body').height()
     $(window).resize(function(e){
       // check plot in case this is a resize before initial plot is rendered
-      if (plot && ($(window).width() != windowWidth || $(window).height() != windowHeight)) {
-        windowWidth = $(window).width()
-        windowHeight = $(window).height()
+      if (plot && ($('body').width() != bodyWidth || $('body').height() != bodyHeight)) {
+        bodyWidth = $('body').width()
+        bodyHeight = $('body').height()
         plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
       }})
     function plotResponseData(from, to) {
