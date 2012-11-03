@@ -679,22 +679,36 @@
         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none">
     </span>
   </div>
-  <div style="width: 100%; text-align: center; font-style: italic; margin: 4px 0">
-    use mouse scroll wheel to zoom in and out
-    (or double click to zoom in and<span tabindex="0" class="lightbtn red" id="zoomOut"
-        style="font-style: italic">click here to zoom out</span>)
-  </div>
   <br>
-  <div style="float: right">
-    <div class="alert alert-error limit-exceeded inlineblock hide" id="limitExceeded">
-      <strong>
-        Specified limit exceeded,<br>
-        only displaying the slowest<br>
-        <span id="limit"></span> matching traces
-      </strong>
+  <div style="float: right; margin-top: 20px">
+    <div class="hide" id="limitExceeded">
+      <div class="alert alert-error limit-exceeded">
+        <strong>
+          Specified limit exceeded,<br>
+          only displaying the slowest<br>
+          <span id="limit"></span> matching traces
+        </strong>
+      </div>
+    </div>
+    <div class="explorer-guide">
+      <div style="margin-top: 10px"><strong>Chart navigation</strong></div>
+      <ul>
+        <li>click a data point to see<br>its summary</li>
+        <li>use the mouse scroll wheel<br>to zoom in and out</li>
+        <li>drag over a region to zoom in</li>
+        <li>double click to zoom in</li>
+        <li>
+          <span tabindex="0" class="lightbtn red" id="zoomOut"
+              style="margin: -2px 0 0 -4px">
+            click here to zoom out
+          </span>
+          <br>
+          (if no scroll wheel)
+        </li>
+      </ul>
     </div>
   </div>
-  <form class="form-horizontal" style="max-width: 800px; margin: 20px auto 0 auto">
+  <form class="form-horizontal" style="float: left; max-width: 800px; margin: 20px auto 0 auto">
     <fieldset>
       <div class="control-group">
         <label class="control-label" for="dateFilter">Date</label>
@@ -812,7 +826,6 @@
       </div>
     </fieldset>
   </form>
-  <br>
   <div class="modal hide" id="modal">
     <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px">
       &times;

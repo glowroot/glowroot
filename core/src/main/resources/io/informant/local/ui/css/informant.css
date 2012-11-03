@@ -56,7 +56,6 @@ body {
   padding-left: 14px;
 }
 .header-see-also {
-  color: #333;
   font-size: 20px;
 }
 .header-see-also .dropdown-toggle {
@@ -388,8 +387,13 @@ a:focus {
   display: none !important;
 }
 .limit-exceeded {
-  padding: 4px 35px;
+  padding: 10px 35px;
   color: #B94A48;
   background-color: #F2DEDE;
   border-color: #EED3D7;
+}
+.explorer-guide {
+  padding: 4px 35px;
+  background-color: #eee;
+  border-radius: 6px;
 }
