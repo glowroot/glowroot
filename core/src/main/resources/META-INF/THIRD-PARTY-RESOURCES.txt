@@ -5,6 +5,7 @@
 (MIT) Flot (http://www.flotcharts.org/)
 (MIT) handlebars (http://handlebarsjs.com/)
 (MIT) jQuery (http://jquery.com/)
+(MIT) jquery-color (https://github.com/jquery/jquery-color)
 (MIT) Moment.js (http://momentjs.com/)
 (MIT) qTip2 (http://craigsworks.com/projects/qtip2/)
 (The Apache Software License, Version 2.0) Special Elite (http://www.google.com/webfonts/specimen/Special+Elite)

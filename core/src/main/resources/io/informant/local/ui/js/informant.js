@@ -100,6 +100,11 @@ function configureAjaxError() {
   + '</div>'
   $(document.body).append(modalDiv)
   $(document).ajaxError(function(e, jqxhr, settings, exception) {
+    if (jqxhr.abort) {
+      // intentional abort (currently happens in firefox if open trace detail modal, detail takes
+      // long to load, hit escape key to close trace detail modal before detail request completes)
+      return
+    }
     if (jqxhr.status == 0) {
       $('#ajaxError').html('Can\'t connect to server')
       $('#ajaxErrorModal').modal('show')

@@ -20,6 +20,8 @@
 <title>Informant | Thread dump</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
 <link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap-responsive.min.css"
+    type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="libs/jquery/1.8.2/jquery.min.js"></script>
 <!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
@@ -72,7 +74,7 @@
   })
 </script>
 </head>
-<body>
+<body class="container">
   <div class="header">
     <span class="header-logo">
         <!-- lack of spaces on this line is important -->
@@ -88,13 +90,20 @@
     </div>
   </div>
   <br>
-  <br>
-  <div class="section-body section-body-padding" style="margin-left: 0">
-    <button type="button" class="btn" id="refreshButton1" style="margin: 10px">Refresh</button>
-    <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
-    <div class="flat-pre" id="threadDump"></div>
-    <button type="button" class="btn" id="refreshButton2" style="margin: 10px">Refresh</button>
-    <span class="button-success-message hide" id="refresh2SuccessMessage">Refreshed</span>
-  </div>
+  <!-- margin-right: 20px since the log can be very wide, introducing horizontal scroller and
+       this ensures there is still a bit of padding to the right,
+       min-width: 100% so the section is at least flush-right with the container -->
+  <span class="section-body inlineblock"
+      style="margin-left: 0; margin-right: 20px; min-width: 100%">
+    <span class="section-body-padding inlineblock">
+      <button type="button" class="btn" id="refreshButton1" style="margin: 10px">Refresh</button>
+      <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
+      <br>
+      <span class="flat-pre" id="threadDump"></span>
+      <br>
+      <button type="button" class="btn" id="refreshButton2" style="margin: 10px">Refresh</button>
+      <span class="button-success-message hide" id="refresh2SuccessMessage">Refreshed</span>
+    </span>
+  </span>
 </body>
 </html>

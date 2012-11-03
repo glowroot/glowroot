@@ -29,7 +29,6 @@ body {
   /* always display vertical scrollbar so content doesn't shift horizontally when the vertical
      scrollbar shows up because the page dynamically expanded greater than a single screen, or
      contracted down to a single screen, e.g. when showing or hiding content */
-  overflow: -moz-scrollbars-vertical;
   overflow-y: scroll;
 }
 .header {
@@ -198,9 +197,36 @@ a:focus {
   max-width: 500px;
   font-size: 12px;
   line-height: 16px;
+  background-color: #eee;
 }
 .qtip-override .ui-tooltip-content {
   padding: 1em 0.5em 0.75em 0.5em;
+}
+.qtip-border-color-0 {
+  border-color: #edc240;
+}
+.qtip-border-color-1 {
+  border-color: #cb4b4b;
+}
+.qtip-border-color-2 {
+  border-color: #afd8f8;
+}
+.modal {
+  overflow-y: scroll;
+  -webkit-border-radius: 6px 0 0 6px !important;
+  -moz-border-radius: 6px 0 0 6px !important;
+  border-radius: 6px 0 0 6px !important;
+}
+.modal-content {
+  /* any change to this must also be made in the calculation of contentHeight and contentWidth
+     in displayModal() function in explorer.html */
+  padding: 20px 0 20px 20px;
+}
+.modal .close {
+  opacity: .5;
+}
+.modal .close:hover {
+  opacity: .8;
 }
 .second-line-indent {
   padding-left: 20px;
@@ -221,6 +247,9 @@ a:focus {
   cursor: pointer;
   padding: 2px 1em 2px 1em;
   border-radius: 4px;
+  /* margin-right is used (instead of padding-right on the container) so that stack traces which
+     require horizontal scrolling still have padding to their right */
+  margin-right: 20px;
 }
 .unexpanded-content:hover,
 .unexpanded-content:focus,
@@ -338,17 +367,17 @@ a:focus {
 }
 .flat-pre {
   /* slightly modified version of bootstrap's pre */
+  /* intentionally not breaking long single-words for stack trace formatting, though this requires
+     that the container has overflow: visible */
+  display: inline-block;
   font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
   color: #333;
-  display: block;
   padding: 9.5px;
   margin: 0 0 10px;
   font-size: 13px;
   line-height: 20px;
   word-break: break-all;
-  word-wrap: break-word;
   white-space: pre;
-  white-space: pre-wrap;
   background-color: #eee;
   border-radius: 8px;
 }
@@ -357,4 +386,10 @@ a:focus {
 }
 .hide {
   display: none !important;
+}
+.limit-exceeded {
+  padding: 4px 35px;
+  color: #B94A48;
+  background-color: #F2DEDE;
+  border-color: #EED3D7;
 }

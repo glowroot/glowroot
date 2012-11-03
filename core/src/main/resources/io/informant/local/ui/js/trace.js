@@ -282,27 +282,20 @@ $(document).ready(function() {
   $(document).on('click', '.unexpanded-content, .expanded-content', function(e, keyboard) {
     smartToggle($(this).parent(), e, keyboard)
   })
-  function initSpanLineLength() {
-    // sometimes body width is initially 0 in chrome when loading local export file
-    // (it seems a similar issue was also noticed in colorbox project, see
-    // https://github.com/jackmoore/colorbox/commit/194777cad02dc66545a7d110693bee7ed3b2feca)
-    if ($('body').width() > 0) {
-      // using an average character (width-wise) 'o'
-      $('body').prepend('<span class="offscreen" id="bodyFontCharWidth">o</span>')
-      var charWidth = $('#bodyFontCharWidth').width()
-      // -100 for the left margin of the span lines
-      spanLineLength = ($('body').width() - 100) / charWidth
-      // min value of 80, otherwise not enough context provided by the elipsed line
-      spanLineLength = Math.max(spanLineLength, 80)
-    } else {
-      setTimeout(initSpanLineLength, 1)
-    }
-  }
-  initSpanLineLength()
 })
+function initSpanLineLength() {
+  // using an average character (width-wise) 'o'
+  $('body').prepend('<span class="offscreen" id="bodyFontCharWidth">o</span>')
+  var charWidth = $('#bodyFontCharWidth').width()
+  // -100 for the left margin of the span lines
+  spanLineLength = ($('#sps').width() - 100) / charWidth
+  // min value of 80, otherwise not enough context provided by the elipsed line
+  spanLineLength = Math.max(spanLineLength, 80)
+}
 function toggleSpans() {
   if (! $('#sps').html()) {
     // first time opening
+    initSpanLineLength()
     $('#sps').removeClass('hide')
     renderNext(detailTrace.spans, 0)
   } else {

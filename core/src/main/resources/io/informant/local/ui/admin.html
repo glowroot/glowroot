@@ -20,6 +20,8 @@
 <title>Informant | Administration</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
 <link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap-responsive.min.css"
+    type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
 <script type="text/javascript" src="libs/jquery/1.8.2/jquery.min.js"></script>
 <!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
@@ -121,7 +123,7 @@
   })
 </script>
 </head>
-<body>
+<body class="container">
   <div class="header">
     <span class="header-logo">
         <!-- lack of spaces on this line is important -->
@@ -136,7 +138,6 @@
       </ul>
     </div>
   </div>
-  <br>
   <br>
   <div tabindex="0" class="section-header clickable" id="dataFileSectionHeader">
     Manage H2 Data File
@@ -158,24 +159,33 @@
     Informant Log
   </div>
   <br>
-  <div class="section-body section-body-padding hide" id="logSectionBody">
-    <div class="flat-pre" id="log"></div>
-    <div style="margin: 10px">
-      <button type="button" class="btn" id="logRefreshButton">Refresh</button>
-      <!-- fixed width of 300px so that truncate button below doesn't shift to the right
-           when the refresh success message is displayed -->
-      <span class="inlineblock" style="width: 300px">
-        <span class="button-success-message hide" id="logRefreshSuccessMessage">Refreshed</span>
-        <!-- truncated message must be outside of logTruncateSection since that will be hidden
-             immediately after truncating -->
-        <span class="button-success-message hide" id="logTruncateSuccessMessage">
-          Truncated
+  <div style="margin-left: 40px">
+    <!-- margin-right: 20px since the log can be very wide, introducing horizontal scroller and
+         this ensures there is still a bit of padding to the right,
+         min-width: 100% so the section is at least flush-right with the container -->
+    <span class="section-body inlineblock hide" id="logSectionBody"
+        style="margin-left: 0; margin-right: 20px; min-width: 100%">
+      <span class="section-body-padding inlineblock">
+        <span class="flat-pre" id="log"></span>
+        <br>
+        <span class="inlineblock" style="margin: 10px">
+          <button type="button" class="btn" id="logRefreshButton">Refresh</button>
+          <!-- fixed width of 300px so that truncate button below doesn't shift to the right
+               when the refresh success message is displayed -->
+          <span class="inlineblock" style="width: 300px">
+            <span class="button-success-message hide" id="logRefreshSuccessMessage">Refreshed</span>
+            <!-- truncated message must be outside of logTruncateSection since that will be hidden
+                 immediately after truncating -->
+            <span class="button-success-message hide" id="logTruncateSuccessMessage">
+              Truncated
+            </span>
+          </span>
+          <span id="logTruncateSection">
+            <button type="button" class="btn" id="logTruncateButton">Truncate</button>
+          </span>
         </span>
       </span>
-      <span id="logTruncateSection">
-        <button type="button" class="btn" id="logTruncateButton">Truncate</button>
-      </span>
-    </div>
+    </span>
   </div>
 </body>
 </html>
