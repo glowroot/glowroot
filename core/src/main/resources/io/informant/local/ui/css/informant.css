@@ -87,6 +87,9 @@ body {
   background-image: none !important;
   border-radius: 6px;
 }
+.dropdown-menu li > a:active {
+  background-color: #f6f6f6 !important;
+}
 .dropdown-menu a {
   /* override bootstrap styling */
   padding: 7px 24px;
@@ -178,6 +181,9 @@ a:focus {
   color: #b12930;
   background-color:#ddd;
 }
+a:active {
+  background-color:#ccc;
+}
 .inline-anchor {
   /* extra vertical padding only applies if line-height accommodates it */
   padding: 4px 4px;
@@ -237,9 +243,29 @@ a:focus {
   padding: 2px 4px;
   border-radius: 4px;
 }
+.realbtn {
+  /* upside to real button: mouse click does not focus on button, can use :active to provide
+                            feedback on clicking already focused button 
+     downside to real button: button text is not selectable */ 
+  display: inline-block;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  /* remove border, background-color and other default browser button styling
+     so this class can be applied to <button> */
+  border: none;
+  background-color: transparent;
+  text-align: left;
+  vertical-align: bottom;
+}
 .lightbtn:hover,
-.lightbtn:focus {
+.lightbtn:focus,
+.realbtn:hover,
+.realbtn:focus {
   background-color:#ddd;
+}
+.realbtn:active {
+  background-color:#ccc;
 }
 .unexpanded-content,
 .expanded-content {
@@ -325,6 +351,8 @@ a:focus {
   background-color: #ddd;
 }
 .section-header {
+  display: block;
+  width: 100%;
   cursor: pointer;
   padding: 12px 1em;
   border-radius: 6px;

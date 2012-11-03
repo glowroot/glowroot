@@ -29,10 +29,10 @@
 <script type="text/javascript" src="libs/spin/1.2.7/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
-<div tabindex="0" class="section-header clickable"
+<button class="section-header realbtn"
     onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
   {{name}} <span class="configuration-status" id="{{id}}_status"></span>
-</div>
+</button>
 <br>
 <form class="section-body form-horizontal hide" id="form_{{id}}">
   <fieldset>
@@ -407,9 +407,9 @@
     </div>
   </div>
   <br>
-  <div tabindex="0" class="section-header clickable" onclick="$('#coreForm').toggleClass('hide')">
+  <button class="section-header realbtn" onclick="$('#coreForm').toggleClass('hide')">
     General <span class="configuration-status" id="coreStatus"></span>
-  </div>
+  </button>
   <br>
   <form class="section-body form-horizontal hide" id="coreForm">
     <fieldset>
@@ -512,9 +512,9 @@
       </div>
     </fieldset>
   </form>
-  <div tabindex="0" class="section-header clickable" onclick="$('#coarseForm').toggleClass('hide')">
+  <button class="section-header realbtn" onclick="$('#coarseForm').toggleClass('hide')">
     Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus"></span>
-  </div>
+  </button>
   <br>
   <form class="section-body form-horizontal hide" id="coarseForm">
     <fieldset>
@@ -581,9 +581,9 @@
       </div>
     </fieldset>
   </form>
-  <div tabindex="0" class="section-header clickable" onclick="$('#fineForm').toggleClass('hide')">
+  <button class="section-header realbtn" onclick="$('#fineForm').toggleClass('hide')">
     Fine-Grained Profiling <span class="configuration-status" id="fineStatus"></span>
-  </div>
+  </button>
   <br>
   <form class="section-body form-horizontal hide" id="fineForm">
     <fieldset>
@@ -666,9 +666,9 @@
       </div>
     </fieldset>
   </form>
-  <div tabindex="0" class="section-header clickable" onclick="$('#userForm').toggleClass('hide')">
+  <button class="section-header realbtn" onclick="$('#userForm').toggleClass('hide')">
     User Tracing <span class="configuration-status" id="userStatus"></span>
-  </div>
+  </button>
   <br>
   <form class="section-body form-horizontal hide" id="userForm">
     <fieldset>

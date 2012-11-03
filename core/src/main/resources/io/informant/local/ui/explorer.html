@@ -469,8 +469,9 @@
         summaryTrace = response
         var html = traceSummaryTemplate(summaryTrace)
         var showDetailHtml = '<div style="margin-top: 0.5em">'
-            + '<span tabindex="0" class="lightbtn red pad1" id="showDetail"'
-            + ' style="padding-top: 4px; padding-bottom: 4px">show detail</span></div>'
+            + '<button class="realbtn red pad1" id="showDetail"'
+            + ' style="font-size: 12px">'
+            + 'show detail</button></div>'
         $('#placeholder').qtip({
           content: {
             text: '<div class="indent1">' + html + '</div>' + showDetailHtml
@@ -698,10 +699,9 @@
         <li>drag over a region to zoom in</li>
         <li>double click to zoom in</li>
         <li>
-          <span tabindex="0" class="lightbtn red" id="zoomOut"
-              style="margin: -2px 0 0 -4px">
+          <button class="realbtn red" id="zoomOut" style="margin-left: -4px; padding: 0 4px">
             click here to zoom out
-          </span>
+          </button>
           <br>
           (if no scroll wheel)
         </li>
@@ -812,10 +812,9 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <span tabindex="0" class="lightbtn clickable pad1 red" id="toggleExtraFiltersButton"
-              style="margin-left: -1em">
+          <button class="realbtn pad1 red" id="toggleExtraFiltersButton" style="margin-left: -1em">
             more filters
-          </span>
+          </button>
         </div>
       </div>
       <div class="control-group">
