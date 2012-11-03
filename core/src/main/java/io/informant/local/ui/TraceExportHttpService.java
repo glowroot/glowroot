@@ -104,6 +104,7 @@ class TraceExportHttpService implements HttpService {
             response.setHeader(Names.CONNECTION, "close");
         }
         response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".zip");
+        HttpServer.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
         ExportByteStream exportByteStream = new ExportByteStream(ByteStream.of(byteStreams),

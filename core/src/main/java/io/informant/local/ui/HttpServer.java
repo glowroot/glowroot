@@ -175,6 +175,15 @@ public class HttpServer extends HttpServerBase {
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
+    static void preventCaching(HttpResponse response) {
+        // prevent caching of dynamic json data, using 'definitive' minimum set of headers from
+        // http://stackoverflow.com/questions/49547/
+        // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
+        response.setHeader(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+        response.setHeader(Names.PRAGMA, "no-cache");
+        response.setHeader(Names.EXPIRES, new Date(0));
+    }
+
     private static HttpResponse handleStaticRequest(String path) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
@@ -271,12 +280,7 @@ public class HttpServer extends HttpServerBase {
                     .getName());
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
-        // prevent caching of dynamic json data, using 'definitive' minimum set of headers from
-        // http://stackoverflow.com/questions/49547/
-        // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
-        response.setHeader(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-        response.setHeader(Names.PRAGMA, "no-cache");
-        response.setHeader(Names.EXPIRES, new Date(0));
+        preventCaching(response);
         return response;
     }
 
