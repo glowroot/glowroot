@@ -386,7 +386,11 @@ function toggleMergedStackTree(rootNode, selector) {
     var ret = '<span class="inlineblock" style="width: 4em; margin-left: ' + ((level / 3)) + 'em">'
     var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100
     ret += samplePercentage.toFixed(1)
-    ret += '%</span>'
+    // the space after the % is actually important when highlighting a block of stack trace elements
+    // in the ui and copy pasting into the eclipse java stack trace console, because the space gives
+    // separation between the percentage and the stack trace element and so eclipse is still able to
+    // understand the stack trace
+    ret += '% </span>'
     ret += node.stackTraceElement + '<br>'
     if (node.leafThreadState) {
       // each indent is 1/3em, so adding extra .333em to indent thread state
@@ -477,7 +481,11 @@ function toggleMergedStackTree(rootNode, selector) {
         if (childNode.leafThreadState) {
           break
         }
-        uninterestingHtml += '<span class="inlineblock" style="width: 4em">100.0%</span>'
+        // the space after the % is actually important when highlighting a block of stack trace
+        // elements in the ui and copy pasting into the eclipse java stack trace console, because
+        // the space gives separation between the percentage and the stack trace element and so
+        // eclipse is still able to understand the stack trace
+        uninterestingHtml += '<span class="inlineblock" style="width: 4em">100.0% </span>'
             + interestingRootNode.stackTraceElement + '<br>'
         interestingRootNode = childNode
         i++
