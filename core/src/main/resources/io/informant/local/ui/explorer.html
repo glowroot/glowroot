@@ -85,7 +85,7 @@
       if (plot && ($('body').width() != bodyWidth || $('body').height() != bodyHeight)) {
         bodyWidth = $('body').width()
         bodyHeight = $('body').height()
-        plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
+        plot = $.plot($('#chart'), [normalPoints, errorPoints, activePoints], options)
       }})
     function plotResponseData(from, to) {
       // update time filter before translating range to timezone-less flot values
@@ -108,7 +108,7 @@
       if (plot) {
         plot.unhighlight()
       }
-      plot = $.plot($('#placeholder'), [normalPoints, errorPoints, activePoints], options)
+      plot = $.plot($('#chart'), [normalPoints, errorPoints, activePoints], options)
       if (highlightedItemId) {
         // re-highlight if possible
         highlightPoint(highlightedItemId)
@@ -128,9 +128,9 @@
     }
     function hideTooltip() {
       hideSpinner('#tooltipSpinner')
-      $('#placeholder').qtip('hide')
+      $('#chart').qtip('hide')
     }
-    $('#placeholder').bind('plotzoom', function(event, plot) {
+    $('#chart').bind('plotzoom', function(event, plot) {
       var from = Math.floor(plot.getAxes().xaxis.min)
       var to = Math.ceil(plot.getAxes().xaxis.max)
       // convert points out of timezone-less flot values
@@ -159,7 +159,7 @@
         plotResponseData(from, to)
       }
     })
-    $('#placeholder').mousedown(function() {
+    $('#chart').mousedown(function() {
       hideTooltip()
     })
     $(document).keyup(function(e) {
@@ -180,12 +180,12 @@
         }
       }
     })
-    $('#placeholder').bind('plothover', function(event, pos, item) {
+    $('#chart').bind('plothover', function(event, pos, item) {
       if (plotSelecting && item && itemId(item) != highlightedItemId) {
         plot.unhighlight(item.series, item.datapoint)
       }
     })
-    $('#placeholder').bind('plotclick', function(event, pos, item) {
+    $('#chart').bind('plotclick', function(event, pos, item) {
       if (item) {
         highlightedItemId = itemId(item)
         plot.unhighlight()
@@ -199,17 +199,17 @@
       // need to reset this variable at some point, now seems good
       cancelingPlotSelection = false
     })
-    $('#placeholder').bind('plotselecting', function(event, ranges) {
+    $('#chart').bind('plotselecting', function(event, ranges) {
       if (ranges) {
         // plotselecting events are triggered with null ranges parameter when '!selectionIsSane()'
         // (see jquery.flot.selection.js)
         plotSelecting = true
       }
     })
-    $('#placeholder').bind('plotunselected', function(event, ranges) {
+    $('#chart').bind('plotunselected', function(event, ranges) {
       plotSelecting = false
     })
-    $('#placeholder').bind('plotselected', function(event, ranges) {
+    $('#chart').bind('plotselected', function(event, ranges) {
       if (cancelingPlotSelection) {
         // unfortunately, plotselected is still called after plot.clearSelection() in the keyup
         // event handler for the esc key
@@ -431,14 +431,14 @@
         if (spinner) {
           var html = '<div class="inlineblock" id="tooltipSpinner" style="width: 35px;'
             + ' height: 31px"></div>'
-          $('#placeholder').qtip({
+          $('#chart').qtip({
             content: {
               text: html
             },
             position: {
               my: 'left center',
               target: [ x , y + 5 ],
-              viewport: $('#placeholder')
+              viewport: $('#chart')
             },
             hide: {
               event: 'unfocus'
@@ -452,7 +452,7 @@
               }
             }
           })
-          $('#placeholder').qtip('show')
+          $('#chart').qtip('show')
           spinner.spin($('#tooltipSpinner').get(0))
         }
       }
@@ -479,7 +479,7 @@
             + '<button class="realbtn red pad1" id="showDetail"'
             + ' style="font-size: 12px">'
             + 'show detail</button></div>'
-        $('#placeholder').qtip({
+        $('#chart').qtip({
           content: {
             text: '<div class="indent1">' + html + '</div>' + showDetailHtml
           },
@@ -503,7 +503,7 @@
             }
           }
         })
-        $('#placeholder').qtip('show')
+        $('#chart').qtip('show')
         $('#showDetail').click(function() {
           // handle crazy user clicking on the 'show detail' link
           if (id == loadDetailId) return
@@ -518,7 +518,7 @@
             }
           var initialWidth = $('.ui-tooltip').width()
           var initialHeight = $('.ui-tooltip').height()
-          $('#placeholder').qtip('hide')
+          $('#chart').qtip('hide')
           displayModal(summaryHtml, initialFixedOffset, initialWidth, initialHeight)
           $.getJSON('explorer/detail/' + id, function(response) {
             if (loadDetailId != id) {
@@ -579,7 +579,7 @@
         //
         // and without hiding flot chart there is another problem in chrome, in smaller browser
         // windows it causes the vertical scrollbar to get offset a bit left and upwards
-        $('#placeholder').hide()
+        $('#chart').hide()
       })
       $('body').append('<div class="modal-backdrop" id="modalBackdrop"></div>')
       $('#modalBackdrop').css('background-color', '#ddd')
@@ -594,7 +594,7 @@
       // reset overflow so the background can scroll again
       $('body').css('overflow', '')
       // re-display flot chart
-      $('#placeholder').show()
+      $('#chart').show()
       // remove large dom content first since it makes animation jerky at best
       // (and need to remove it afterwards anyways to clean up the dom)
       $('#modalContent').empty()
@@ -684,16 +684,14 @@
   </div>
   <br>
   <div style="position: relative; height: 300px">
-    <div id="placeholder" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%">
-    </div>
-    <span class="button-spinner hide" id="chartSpinner"
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none">
+    <div class="explorer-chart" id="chart"></div>
+    <span class="explorer-chart button-spinner hide" id="chartSpinner" style="pointer-events: none">
     </span>
   </div>
   <br>
   <div style="float: right; margin-top: 20px">
     <div class="hide" id="limitExceeded">
-      <div class="alert alert-error limit-exceeded">
+      <div class="alert alert-error explorer-limit-exceeded">
         <strong>
           Specified limit exceeded,<br>
           only displaying the slowest<br>
