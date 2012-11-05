@@ -69,6 +69,10 @@
       colors: ['#edc240', '#cb4b4b', '#afd8f8'],
       selection: { mode: 'xy' }
     }
+    // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
+    // detail modal to close slowly when it has 5000 spans
+    // this extra cleanup code is not needed anyways since cleanup is performed explicitly
+    $.cleanData = $['cleanData_replacedByqTip']
     // need to track dimensions to identify real window resizes in IE which sends window
     // resize event when any element on the page is resized
     // also, now with responsive design, body width doesn't change on every window resize event
@@ -591,6 +595,9 @@
       $('body').css('overflow', '')
       // re-display flot chart
       $('#placeholder').show()
+      // remove large dom content first since it makes animation jerky at best
+      // (and need to remove it afterwards anyways to clean up the dom)
+      $('#modalContent').empty()
       $('#modal').animate({
         left: (modalVanishPoint[0] - $(window).scrollLeft()) + 'px',
         top: (modalVanishPoint[1] - $(window).scrollTop()) + 'px',

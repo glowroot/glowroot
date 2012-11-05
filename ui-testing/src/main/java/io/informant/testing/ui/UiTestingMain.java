@@ -70,7 +70,7 @@ public final class UiTestingMain {
                 // one very short trace that will have an empty merged stack tree
                 new NestableCall(1, 10, 100).execute();
                 new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
-                new NestableCall(new NestableCall(50, 50, 5000), 100, 50, 5000).execute();
+                new NestableCall(new NestableCall(5000, 50, 5000), 100, 50, 5000).execute();
                 new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
                 new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
                 new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
@@ -82,7 +82,7 @@ public final class UiTestingMain {
                                 "just testing", causeException3));
                     }
                 }
-                Thread.sleep(10000);
+                Thread.sleep(1000);
             }
         }
     }
