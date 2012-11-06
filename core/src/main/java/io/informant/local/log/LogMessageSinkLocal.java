@@ -120,31 +120,40 @@ public class LogMessageSinkLocal implements LogMessageSink {
     private void logMessageAsync(final Level level, final String loggerName, final String message,
             final Throwable t) {
 
-        executorService.execute(new Runnable() {
-            public void run() {
-                inStoreLogMessage.set(true);
-                try {
-                    String exceptionJson = null;
-                    if (t != null) {
-                        try {
-                            exceptionJson = TraceSnapshotService.getExceptionJson(CapturedException
-                                    .from(t));
-                        } catch (IOException e) {
-                            logger.error(e.getMessage(), e);
-                        }
-                    }
-                    logMessageDao.storeLogMessage(LogMessage.from(clock.currentTimeMillis(), level,
-                            loggerName, message, exceptionJson));
-                } finally {
-                    inStoreLogMessage.set(false);
-                    pendingCount.decrementAndGet();
-                }
+        synchronized (executorService) {
+            if (executorService.isShutdown()) {
+                logger.debug("logMessageAsync(): attempted to log message during shutdown: {}",
+                        message);
+                return;
             }
-        });
+            executorService.execute(new Runnable() {
+                public void run() {
+                    inStoreLogMessage.set(true);
+                    try {
+                        String exceptionJson = null;
+                        if (t != null) {
+                            try {
+                                exceptionJson = TraceSnapshotService
+                                        .getExceptionJson(CapturedException.from(t));
+                            } catch (IOException e) {
+                                logger.error(e.getMessage(), e);
+                            }
+                        }
+                        logMessageDao.storeLogMessage(LogMessage.from(clock.currentTimeMillis(),
+                                level, loggerName, message, exceptionJson));
+                    } finally {
+                        inStoreLogMessage.set(false);
+                        pendingCount.decrementAndGet();
+                    }
+                }
+            });
+        }
     }
 
     public void close() {
         logger.debug("close()");
-        executorService.shutdownNow();
+        synchronized (executorService) {
+            executorService.shutdownNow();
+        }
     }
 }
