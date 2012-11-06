@@ -136,6 +136,9 @@ public class ServletPluginTest {
     public void testSessionInvalidate() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setProperty("captureSessionId", true);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then

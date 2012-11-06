@@ -16,8 +16,8 @@
 package io.informant.plugin.servlet;
 
 import io.informant.api.PluginServices;
+import io.informant.api.PluginServices.ConfigListener;
 import io.informant.shaded.google.common.base.Function;
-import io.informant.shaded.google.common.base.Objects;
 import io.informant.shaded.google.common.base.Splitter;
 import io.informant.shaded.google.common.collect.ImmutableSet;
 import io.informant.shaded.google.common.collect.Iterables;
@@ -45,53 +45,75 @@ final class ServletPluginProperties {
     // TODO support partial wildcards, e.g. "context*"
     private static final String SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME = "sessionAttributes";
 
+    private static final String CAPTURE_SESSION_ID_PROPERTY_NAME = "captureSessionId";
+    private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
+
     private static final PluginServices pluginServices = PluginServices
             .get("io.informant.plugins:servlet-plugin");
 
-    // optimization
-    private static volatile ImmutableSet<String> cachedSessionAttributePaths = ImmutableSet.of();
-    private static volatile ImmutableSet<String> cachedSessionAttributeNames = ImmutableSet.of();
-    @Nullable
-    private static volatile String cachedSessionAttributesText;
+    private static volatile String sessionUserIdAttributePath;
+    private static volatile ImmutableSet<String> sessionAttributePaths = ImmutableSet.of();
+    private static volatile ImmutableSet<String> sessionAttributeNames = ImmutableSet.of();
+    private static volatile boolean captureSessionId;
+    private static volatile boolean captureStartup;
+
+    static {
+        pluginServices.registerConfigListener(new ConfigListener() {
+            public void onChange() {
+                updateCache();
+            }
+        });
+        updateCache();
+    }
 
     @Nullable
     static String sessionUserIdAttributePath() {
-        return pluginServices.getStringProperty(SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME);
+        return sessionUserIdAttributePath;
     }
 
     static Set<String> sessionAttributePaths() {
-        checkCache();
-        return cachedSessionAttributePaths;
+        return sessionAttributePaths;
     }
 
     // only the first-level attribute names (e.g. "one", "abc") as opposed to full paths (e.g.
     // "one.two", "abc.def") returned by getSessionAttributePaths()
     static Set<String> sessionAttributeNames() {
-        checkCache();
-        return cachedSessionAttributeNames;
+        return sessionAttributeNames;
     }
 
-    private static void checkCache() {
+    static boolean captureSessionId() {
+        return captureSessionId;
+    }
+
+    static boolean captureStartup() {
+        return captureStartup;
+    }
+
+    public static void setCaptureStartup(boolean captureStartup) {
+        ServletPluginProperties.captureStartup = captureStartup;
+    }
+
+    private static void updateCache() {
+        sessionUserIdAttributePath = pluginServices
+                .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME);
         String sessionAttributesText = pluginServices
                 .getStringProperty(SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
-        if (!Objects.equal(sessionAttributesText, cachedSessionAttributesText)) {
-            if (sessionAttributesText == null) {
-                // update cached first so that another thread cannot come into this method and get a
-                // positive match for text but then get the old cached attributes
-                cachedSessionAttributePaths = ImmutableSet.of();
-                cachedSessionAttributeNames = ImmutableSet.of();
-                cachedSessionAttributesText = null;
-            } else {
-                Iterable<String> paths = Splitter.on(',').trimResults().omitEmptyStrings()
-                        .split(sessionAttributesText);
-                // update cached first so that another thread cannot come into this method and get a
-                // positive match for text but then get the old cached attributes
-                cachedSessionAttributePaths = ImmutableSet.copyOf(paths);
-                cachedSessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(paths,
-                        substringBefore('.')));
-                cachedSessionAttributesText = sessionAttributesText;
-            }
+        if (sessionAttributesText == null) {
+            // update cached first so that another thread cannot come into this method and get a
+            // positive match for text but then get the old cached attributes
+            sessionAttributePaths = ImmutableSet.of();
+            sessionAttributeNames = ImmutableSet.of();
+        } else {
+            Iterable<String> paths = Splitter.on(',').trimResults().omitEmptyStrings()
+                    .split(sessionAttributesText);
+            // update cached first so that another thread cannot come into this method and get a
+            // positive match for text but then get the old cached attributes
+            sessionAttributePaths = ImmutableSet.copyOf(paths);
+            sessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(paths,
+                    substringBefore('.')));
         }
+        captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
+        captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
     }
 
     private static Function<String, String> substringBefore(final char separator) {

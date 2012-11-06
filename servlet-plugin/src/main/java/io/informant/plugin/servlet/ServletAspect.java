@@ -60,8 +60,6 @@ import javax.annotation.Nullable;
 @Aspect
 public class ServletAspect {
 
-    private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
-
     private static final PluginServices pluginServices = PluginServices
             .get("io.informant.plugins:servlet-plugin");
 
@@ -87,7 +85,7 @@ public class ServletAspect {
         @OnBefore
         public static Span onBefore(@InjectMethodArg Object realRequest) {
             HttpServletRequest request = HttpServletRequest.from(realRequest);
-            // request parameter map is collected in afterReturningRequestGetParameterPointcut()
+            // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
             // passing "false" so it won't create a session if the request doesn't already have
@@ -253,7 +251,7 @@ public class ServletAspect {
         @OnBefore
         public static void onBefore(@InjectTarget Object realSession) {
             HttpSession session = HttpSession.from(realSession);
-            ServletMessageSupplier messageSupplier = getRootServletMessageSupplier(session);
+            ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
             if (messageSupplier != null) {
                 messageSupplier.setSessionIdUpdatedValue("");
             }
@@ -276,7 +274,7 @@ public class ServletAspect {
             HttpSession session = HttpSession.from(realSession);
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
-            ServletMessageSupplier messageSupplier = getRootServletMessageSupplier(session);
+            ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
             if (messageSupplier != null) {
                 updateUserIdIfApplicable(name, value, session);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value, session);
@@ -311,8 +309,7 @@ public class ServletAspect {
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
+            return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
         @Nullable
@@ -337,8 +334,7 @@ public class ServletAspect {
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
+            return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object servlet) {
@@ -362,8 +358,7 @@ public class ServletAspect {
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
+            return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object filter) {
@@ -458,23 +453,25 @@ public class ServletAspect {
     }
 
     @Nullable
-    private static ServletMessageSupplier getRootServletMessageSupplier(HttpSession session) {
-        MessageSupplier rootMessageSupplier = pluginServices.getRootMessageSupplier();
-        if (!(rootMessageSupplier instanceof ServletMessageSupplier)) {
+    private static ServletMessageSupplier getServletMessageSupplier(HttpSession session) {
+        ServletMessageSupplier servletMessageSupplier = topLevel.get();
+        if (servletMessageSupplier == null) {
+            // this thread is not executing a servlet request, e.g. this could be a background
+            // thread that is updating http session attributes
             return null;
         }
-        ServletMessageSupplier rootServletMessageSupplier =
-                (ServletMessageSupplier) rootMessageSupplier;
         String sessionId;
-        if (rootServletMessageSupplier.getSessionIdUpdatedValue() != null) {
-            sessionId = rootServletMessageSupplier.getSessionIdUpdatedValue();
+        if (servletMessageSupplier.getSessionIdUpdatedValue() != null) {
+            sessionId = servletMessageSupplier.getSessionIdUpdatedValue();
         } else {
-            sessionId = rootServletMessageSupplier.getSessionIdInitialValue();
+            sessionId = servletMessageSupplier.getSessionIdInitialValue();
         }
         if (session.getId().equals(sessionId)) {
-            return rootServletMessageSupplier;
+            return servletMessageSupplier;
         } else {
-            // the target session for this pointcut is not the same as the MessageSupplier
+            // the target session for this pointcut is not the same as the thread's
+            // ServletMessageSupplier, e.g. this could be a request that is updating attributes on
+            // a different http session
             return null;
         }
     }

@@ -363,15 +363,24 @@ public class SessionAttributeTest {
     @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, String> getSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getSpans().get(0).getMessage().getDetail()
-                .get("session attributes");
+        Map<String, Object> detail = trace.getSpans().get(0).getMessage().getDetail();
+        if (detail == null) {
+            return null;
+        } else {
+            return (Map<String, String>) detail.get("session attributes");
+        }
     }
 
     @Nullable
     @SuppressWarnings("unchecked")
     private static Map<String, String> getUpdatedSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getSpans().get(0).getMessage().getDetail()
-                .get("session attributes (updated during this request)");
+        Map<String, Object> detail = trace.getSpans().get(0).getMessage().getDetail();
+        if (detail == null) {
+            return null;
+        } else {
+            return (Map<String, String>) detail
+                    .get("session attributes (updated during this request)");
+        }
     }
 
     @SuppressWarnings("serial")

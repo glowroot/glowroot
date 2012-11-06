@@ -182,12 +182,14 @@ class ServletMessageSupplier extends MessageSupplier {
     }
 
     private void addSessionAttributeDetail(ImmutableMap.Builder<String, Object> detail) {
-        if (sessionIdUpdatedValue != null) {
-            detail.put("session id (at beginning of this request)",
-                    Objects.firstNonNull(sessionIdInitialValue, ""));
-            detail.put("session id (updated during this request)", sessionIdUpdatedValue);
-        } else if (sessionIdInitialValue != null) {
-            detail.put("session id", sessionIdInitialValue);
+        if (ServletPluginProperties.captureSessionId()) {
+            if (sessionIdUpdatedValue != null) {
+                detail.put("session id (at beginning of this request)",
+                        Objects.firstNonNull(sessionIdInitialValue, ""));
+                detail.put("session id (updated during this request)", sessionIdUpdatedValue);
+            } else if (sessionIdInitialValue != null) {
+                detail.put("session id", sessionIdInitialValue);
+            }
         }
         if (sessionAttributeInitialValueMap != null && sessionAttributeUpdatedValueMap == null) {
             // session attributes were captured at the beginning of the request, and no session

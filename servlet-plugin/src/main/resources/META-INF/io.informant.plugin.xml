@@ -51,6 +51,16 @@
         </description>
       </property>
       <property>
+        <prompt>Capture session ID</prompt>
+        <name>captureSessionId</name>
+        <type>boolean</type>
+        <description>
+          Capture the http session ID in the servlet span's context map.
+          The captured session ID is viewable under the servlet span for any trace in the trace
+          explorer.
+        </description>
+      </property>
+      <property>
         <prompt>Capture startup</prompt>
         <name>captureStartup</name>
         <type>boolean</type>
