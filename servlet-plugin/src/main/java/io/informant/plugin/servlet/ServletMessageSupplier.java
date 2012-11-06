@@ -131,6 +131,12 @@ class ServletMessageSupplier extends MessageSupplier {
         ImmutableMap.Builder<String, String[]> map = ImmutableMap.builder();
         for (Entry<?, ?> entry : requestParameterMap.entrySet()) {
             String key = (String) entry.getKey();
+            if (key.toLowerCase().contains("password")) {
+                // TODO implement configuration options for white listing and/or black listing
+                // certain request parameters and sql bind variables
+                map.put(key, new String[] { "****" });
+                continue;
+            }
             String[] value = (String[]) entry.getValue();
             if (value == null) {
                 // just to be safe since ImmutableMap won't accept nulls
