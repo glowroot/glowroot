@@ -422,20 +422,15 @@ public class ServletAspect {
     private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
             String name, @Nullable Object value, HttpSession session) {
 
-        if (ServletPluginProperties.captureAllSessionAttributes()) {
-            if (value == null) {
-                messageSupplier.putSessionAttributeChangedValue(name, null);
-            } else {
-                messageSupplier.putSessionAttributeChangedValue(name, value.toString());
-            }
-        } else if (ServletPluginProperties.sessionAttributeNames().contains(name)) {
+        if (ServletPluginProperties.sessionAttributeNames().contains(name)
+                || ServletPluginProperties.sessionAttributeNames().contains("*")) {
             // update all session attributes (possibly nested) at or under the set attribute
             for (String path : ServletPluginProperties.sessionAttributePaths()) {
-                if (path.equals(name)) {
+                if (path.equals(name) || path.equals("*")) {
                     if (value == null) {
-                        messageSupplier.putSessionAttributeChangedValue(path, null);
+                        messageSupplier.putSessionAttributeChangedValue(name, null);
                     } else {
-                        messageSupplier.putSessionAttributeChangedValue(path, value.toString());
+                        messageSupplier.putSessionAttributeChangedValue(name, value.toString());
                     }
                 } else if (path.startsWith(name + ".")) {
                     if (path.endsWith(".*")) {
@@ -490,41 +485,36 @@ public class ServletAspect {
         if (sessionAttributePaths.isEmpty()) {
             return null;
         }
-        if (ServletPluginProperties.captureAllSessionAttributes()) {
-            // special single value of "*" means dump all http session attributes
-            ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
-            for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
-                String attributeName = (String) e.nextElement();
-                Object value = session.getAttribute(attributeName);
-                // value shouldn't be null, but its (remotely) possible that a concurrent request
-                // for the same session just removed the attribute
-                String valueString = value == null ? "" : value.toString();
-                // taking no chances on value.toString() possibly returning null
-                sessionAttributeMap.put(attributeName, Objects.firstNonNull(valueString, ""));
-            }
-            return sessionAttributeMap.build();
-        } else {
-            ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
-            // dump only http session attributes in list
-            for (String attributePath : sessionAttributePaths) {
-                if (attributePath.endsWith(".*")) {
-                    attributePath = attributePath.substring(0, attributePath.length() - 2);
-                    Object value = getSessionAttribute(session, attributePath);
-                    if (value != null) {
-                        for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
-                            sessionAttributeMap.put(attributePath + "." + entry.getKey(),
-                                    entry.getValue());
-                        }
-                    }
-                } else {
-                    String value = getSessionAttributeTextValue(session, attributePath);
-                    if (value != null) {
-                        sessionAttributeMap.put(attributePath, value);
+        ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
+        // dump only http session attributes in list
+        for (String attributePath : sessionAttributePaths) {
+            if (attributePath.equals("*")) {
+                for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
+                    String attributeName = (String) e.nextElement();
+                    Object value = session.getAttribute(attributeName);
+                    // value shouldn't be null, but its (remotely) possible that a concurrent
+                    // request for the same session just removed the attribute
+                    String valueString = value == null ? "" : value.toString();
+                    // taking no chances on value.toString() possibly returning null
+                    sessionAttributeMap.put(attributeName, Objects.firstNonNull(valueString, ""));
+                }
+            } else if (attributePath.endsWith(".*")) {
+                attributePath = attributePath.substring(0, attributePath.length() - 2);
+                Object value = getSessionAttribute(session, attributePath);
+                if (value != null) {
+                    for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
+                        sessionAttributeMap.put(attributePath + "." + entry.getKey(),
+                                entry.getValue());
                     }
                 }
+            } else {
+                String value = getSessionAttributeTextValue(session, attributePath);
+                if (value != null) {
+                    sessionAttributeMap.put(attributePath, value);
+                }
             }
-            return sessionAttributeMap.build();
         }
+        return sessionAttributeMap.build();
     }
 
     @Nullable

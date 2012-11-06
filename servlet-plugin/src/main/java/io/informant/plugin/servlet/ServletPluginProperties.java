@@ -51,7 +51,6 @@ final class ServletPluginProperties {
     // optimization
     private static volatile ImmutableSet<String> cachedSessionAttributePaths = ImmutableSet.of();
     private static volatile ImmutableSet<String> cachedSessionAttributeNames = ImmutableSet.of();
-    private static volatile boolean isCaptureAllSessionAttributes = false;
     @Nullable
     private static volatile String cachedSessionAttributesText;
 
@@ -72,11 +71,6 @@ final class ServletPluginProperties {
         return cachedSessionAttributeNames;
     }
 
-    static boolean captureAllSessionAttributes() {
-        checkCache();
-        return isCaptureAllSessionAttributes;
-    }
-
     private static void checkCache() {
         String sessionAttributesText = pluginServices
                 .getStringProperty(SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
@@ -86,17 +80,15 @@ final class ServletPluginProperties {
                 // positive match for text but then get the old cached attributes
                 cachedSessionAttributePaths = ImmutableSet.of();
                 cachedSessionAttributeNames = ImmutableSet.of();
-                isCaptureAllSessionAttributes = false;
                 cachedSessionAttributesText = null;
             } else {
-                Iterable<String> paths = Splitter.on(',').split(sessionAttributesText);
+                Iterable<String> paths = Splitter.on(',').trimResults().omitEmptyStrings()
+                        .split(sessionAttributesText);
                 // update cached first so that another thread cannot come into this method and get a
                 // positive match for text but then get the old cached attributes
                 cachedSessionAttributePaths = ImmutableSet.copyOf(paths);
                 cachedSessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(paths,
                         substringBefore('.')));
-                isCaptureAllSessionAttributes = cachedSessionAttributePaths.size() == 1
-                        && cachedSessionAttributePaths.iterator().next().equals("*");
                 cachedSessionAttributesText = sessionAttributesText;
             }
         }

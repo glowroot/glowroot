@@ -28,7 +28,7 @@
         <type>string</type>
         <description>
           Session attribute to capture as the user ID of the trace.
-          Traces can be filtered by user ID in the trace explorer.
+          Traces can be filtered by user ID in the explorer.
           Nested paths are supported, e.g. something.user.username.
           The attribute value is converted into a String if necessary via toString().
         </description>
@@ -40,11 +40,14 @@
         <description>
           Comma-separated list of http session attributes to capture in the servlet span's context
           map.
-          These captured attributes are viewable under the servlet span for any trace in the trace
+          These captured attributes are viewable under the servlet span for any trace in the
           explorer.
           Nested paths are supported, e.g. mainObject.nestedObject.displayName.
-          A special single value of '*' means capture all session attributes.
-          Attribute values are converted into Strings if necessary via toString().
+          '*' at the end of a path is supported, e.g. mainObject.nestedObject.*, meaning capture all
+          properties of mainObject.nestedObject (via reflection, looking at methods that begin with
+          "get[A-Z]" or "is[A-Z]").
+          '*' by itself means capture all session attributes.
+          Values are converted into Strings if necessary via toString().
         </description>
       </property>
       <property>
