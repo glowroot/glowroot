@@ -283,6 +283,15 @@ public class DataSource {
         }
     }
 
+    public ImmutableList<Column> getColumns(String tableName) throws SQLException {
+        synchronized (lock) {
+            if (jvmShutdownInProgress) {
+                return ImmutableList.of();
+            }
+            return Schemas.getColumns(tableName, connection);
+        }
+    }
+
     @OnlyUsedByTests
     public boolean tableExists(String tableName) throws SQLException {
         synchronized (lock) {

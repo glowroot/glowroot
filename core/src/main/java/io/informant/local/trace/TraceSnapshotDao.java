@@ -94,6 +94,7 @@ public class TraceSnapshotDao {
         this.clock = clock;
         boolean errorOnInit = false;
         try {
+            SchemaUpgrader.upgradeTraceSnapshotTable(dataSource);
             dataSource.syncTable("trace_snapshot", columns);
             dataSource.syncIndexes("trace_snapshot", indexes);
         } catch (SQLException e) {

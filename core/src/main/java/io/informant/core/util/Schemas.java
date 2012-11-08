@@ -58,7 +58,7 @@ public final class Schemas {
         sqlTypeNames.put(Types.DOUBLE, "double");
     }
 
-    public static void syncTable(String tableName, ImmutableList<Column> columns,
+    static void syncTable(String tableName, ImmutableList<Column> columns,
             Connection connection) throws SQLException {
 
         if (!tableExists(tableName, connection)) {
@@ -71,7 +71,7 @@ public final class Schemas {
         }
     }
 
-    public static void syncIndexes(String tableName, List<Index> indexes, Connection connection)
+    static void syncIndexes(String tableName, List<Index> indexes, Connection connection)
             throws SQLException {
 
         Set<Index> desiredIndexes = Sets.newHashSet(indexes);
@@ -89,7 +89,7 @@ public final class Schemas {
         }
     }
 
-    public static boolean tableExists(String tableName, Connection connection) throws SQLException {
+    static boolean tableExists(String tableName, Connection connection) throws SQLException {
         logger.debug("tableExists(): tableName={}", tableName);
         ResultSet resultSet = connection.getMetaData().getTables(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
@@ -98,6 +98,23 @@ public final class Schemas {
         } finally {
             resultSet.close();
         }
+    }
+
+    static ImmutableList<Column> getColumns(String tableName, Connection connection)
+            throws SQLException {
+        ImmutableList.Builder<Column> columns = ImmutableList.builder();
+        ResultSet resultSet = connection.getMetaData().getColumns(null, null,
+                tableName.toUpperCase(Locale.ENGLISH), null);
+        try {
+            while (resultSet.next()) {
+                String columnName = resultSet.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH);
+                int columnType = resultSet.getInt("DATA_TYPE");
+                columns.add(new Column(columnName, columnType));
+            }
+        } finally {
+            resultSet.close();
+        }
+        return columns.build();
     }
 
     private static void createTable(String tableName, List<Column> columns, Connection connection)
@@ -129,8 +146,7 @@ public final class Schemas {
     }
 
     private static boolean tableNeedsUpgrade(String tableName, List<Column> columns,
-            Connection connection)
-            throws SQLException {
+            Connection connection) throws SQLException {
 
         if (primaryKeyNeedsUpgrade(tableName, Iterables.filter(columns, PrimaryKeyColumn.class),
                 connection)) {
@@ -141,8 +157,7 @@ public final class Schemas {
         try {
             for (Column column : columns) {
                 if (!resultSet.next()
-                        || !column.getName().equalsIgnoreCase(
-                                resultSet.getString("COLUMN_NAME"))
+                        || !column.getName().equalsIgnoreCase(resultSet.getString("COLUMN_NAME"))
                         || column.getType() != resultSet.getInt("DATA_TYPE")) {
                     return true;
                 }

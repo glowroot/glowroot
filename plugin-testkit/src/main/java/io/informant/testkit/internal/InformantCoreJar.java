@@ -22,7 +22,6 @@ import java.io.FilenameFilter;
 
 import javax.annotation.Nullable;
 
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
