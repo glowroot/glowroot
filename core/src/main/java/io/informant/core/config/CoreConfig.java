@@ -32,8 +32,10 @@ import com.google.gson.JsonSyntaxException;
 @Immutable
 public class CoreConfig {
 
-    public static final int SPAN_LIMIT_DISABLED = -1;
+    // don't store anything, essentially store threshold is infinite
     public static final int STORE_THRESHOLD_DISABLED = -1;
+    // don't expire anything, essentially snapshot expiration is infinite
+    public static final int SNAPSHOT_EXPIRATION_DISABLED = -1;
 
     private static final Gson gson = new Gson();
 
@@ -67,15 +69,13 @@ public class CoreConfig {
     // 0 means don't capture any spans, -1 means no limit
     private final int maxSpans;
 
-    private final int keepTraceSnapshotHours;
+    private final int snapshotExpirationHours;
 
     // size of fixed-length rolling database for storing trace details (spans and merged stack
     // traces)
     private final int rollingSizeMb;
 
     private final boolean warnOnSpanOutsideTrace;
-
-    private final int metricPeriodMillis;
 
     static CoreConfig getDefaultInstance() {
         return new Builder().build();
@@ -90,18 +90,17 @@ public class CoreConfig {
     }
 
     private CoreConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
-            int spanStackTraceThresholdMillis, int maxSpans, int keepTraceSnapshotHours,
-            int rollingSizeMb, boolean warnOnSpanOutsideTrace, int metricPeriodMillis) {
+            int spanStackTraceThresholdMillis, int maxSpans, int snapshotExpirationHours,
+            int rollingSizeMb, boolean warnOnSpanOutsideTrace) {
 
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
         this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.maxSpans = maxSpans;
-        this.keepTraceSnapshotHours = keepTraceSnapshotHours;
+        this.snapshotExpirationHours = snapshotExpirationHours;
         this.rollingSizeMb = rollingSizeMb;
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-        this.metricPeriodMillis = metricPeriodMillis;
     }
 
     public String toJson() {
@@ -128,8 +127,8 @@ public class CoreConfig {
         return maxSpans;
     }
 
-    public int getKeepTraceSnapshotHours() {
-        return keepTraceSnapshotHours;
+    public int getSnapshotExpirationHours() {
+        return snapshotExpirationHours;
     }
 
     public int getRollingSizeMb() {
@@ -140,10 +139,6 @@ public class CoreConfig {
         return warnOnSpanOutsideTrace;
     }
 
-    public int getMetricPeriodMillis() {
-        return metricPeriodMillis;
-    }
-
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -152,10 +147,9 @@ public class CoreConfig {
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxSpans", maxSpans)
-                .add("keepTraceSnapshotHours", keepTraceSnapshotHours)
+                .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                .add("metricPeriodMillis", metricPeriodMillis)
                 .toString();
     }
 
@@ -166,10 +160,9 @@ public class CoreConfig {
         private int stuckThresholdSeconds = 180;
         private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
         private int maxSpans = 5000;
-        private int keepTraceSnapshotHours = 24 * 7;
+        private int snapshotExpirationHours = 24 * 7;
         private int rollingSizeMb = 1000;
         private boolean warnOnSpanOutsideTrace = false;
-        private int metricPeriodMillis = 15000;
 
         private Builder() {}
         private Builder(CoreConfig base) {
@@ -178,10 +171,9 @@ public class CoreConfig {
             stuckThresholdSeconds = base.stuckThresholdSeconds;
             spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
             maxSpans = base.maxSpans;
-            keepTraceSnapshotHours = base.keepTraceSnapshotHours;
+            snapshotExpirationHours = base.snapshotExpirationHours;
             rollingSizeMb = base.rollingSizeMb;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
-            metricPeriodMillis = base.metricPeriodMillis;
         }
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
@@ -203,8 +195,8 @@ public class CoreConfig {
             this.maxSpans = maxSpans;
             return this;
         }
-        public Builder keepTraceSnapshotHours(int keepTraceSnapshotHours) {
-            this.keepTraceSnapshotHours = keepTraceSnapshotHours;
+        public Builder snapshotExpirationHours(int snapshotExpirationHours) {
+            this.snapshotExpirationHours = snapshotExpirationHours;
             return this;
         }
         public Builder rollingSizeMb(int rollingSizeMb) {
@@ -215,14 +207,10 @@ public class CoreConfig {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
-        public Builder metricPeriodMillis(int metricPeriodMillis) {
-            this.metricPeriodMillis = metricPeriodMillis;
-            return this;
-        }
         public CoreConfig build() {
             return new CoreConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                    spanStackTraceThresholdMillis, maxSpans, keepTraceSnapshotHours, rollingSizeMb,
-                    warnOnSpanOutsideTrace, metricPeriodMillis);
+                    spanStackTraceThresholdMillis, maxSpans, snapshotExpirationHours,
+                    rollingSizeMb, warnOnSpanOutsideTrace);
         }
     }
 }

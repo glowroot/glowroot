@@ -99,9 +99,9 @@ public class Config {
         private int stuckThresholdSeconds;
         private int spanStackTraceThresholdMillis;
         private int maxSpans;
+        private int snapshotExpirationHours;
         private int rollingSizeMb;
         private boolean warnOnSpanOutsideTrace;
-        private int metricPeriodMillis;
 
         public boolean isEnabled() {
             return enabled;
@@ -133,6 +133,12 @@ public class Config {
         public void setMaxSpans(int maxSpans) {
             this.maxSpans = maxSpans;
         }
+        public int getSnapshotExpirationHours() {
+            return snapshotExpirationHours;
+        }
+        public void setSnapshotExpirationHours(int snapshotExpirationHours) {
+            this.snapshotExpirationHours = snapshotExpirationHours;
+        }
         public int getRollingSizeMb() {
             return rollingSizeMb;
         }
@@ -145,34 +151,27 @@ public class Config {
         public void setWarnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
         }
-        public int getMetricPeriodMillis() {
-            return metricPeriodMillis;
-        }
-        public void setMetricPeriodMillis(int metricPeriodMillis) {
-            this.metricPeriodMillis = metricPeriodMillis;
-        }
         @Override
         public boolean equals(@Nullable Object obj) {
             if (obj instanceof CoreConfig) {
                 CoreConfig that = (CoreConfig) obj;
                 return Objects.equal(enabled, that.enabled)
-                        && Objects.equal(storeThresholdMillis,
-                                that.storeThresholdMillis)
+                        && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                         && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
                         && Objects.equal(spanStackTraceThresholdMillis,
                                 that.spanStackTraceThresholdMillis)
                         && Objects.equal(maxSpans, that.maxSpans)
+                        && Objects.equal(snapshotExpirationHours, that.snapshotExpirationHours)
                         && Objects.equal(rollingSizeMb, that.rollingSizeMb)
-                        && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace)
-                        && Objects.equal(metricPeriodMillis, that.metricPeriodMillis);
+                        && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace);
             }
             return false;
         }
         @Override
         public int hashCode() {
             return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                    spanStackTraceThresholdMillis, maxSpans, rollingSizeMb, warnOnSpanOutsideTrace,
-                    metricPeriodMillis);
+                    spanStackTraceThresholdMillis, maxSpans, snapshotExpirationHours,
+                    rollingSizeMb, warnOnSpanOutsideTrace);
         }
         @Override
         public String toString() {
@@ -182,9 +181,9 @@ public class Config {
                     .add("stuckThresholdSeconds", stuckThresholdSeconds)
                     .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                     .add("maxSpans", maxSpans)
+                    .add("snapshotExpirationHours", snapshotExpirationHours)
                     .add("rollingSizeMb", rollingSizeMb)
                     .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                    .add("metricPeriodMillis", metricPeriodMillis)
                     .toString();
         }
     }

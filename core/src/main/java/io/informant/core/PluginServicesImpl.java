@@ -237,7 +237,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             int maxSpans = coreConfig.getMaxSpans();
-            if (maxSpans == CoreConfig.SPAN_LIMIT_DISABLED || trace.getSpanCount() < maxSpans) {
+            if (trace.getSpanCount() < maxSpans) {
                 // the trace limit has not been exceeded
                 trace.addSpan(messageSupplier, null);
             }
@@ -325,7 +325,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR
     private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
         int maxSpans = coreConfig.getMaxSpans();
-        if (maxSpans != CoreConfig.SPAN_LIMIT_DISABLED && trace.getSpanCount() >= maxSpans) {
+        if (trace.getSpanCount() >= maxSpans) {
             // the trace limit has been exceeded
             return new TimerWrappedInSpan(trace, metric, messageSupplier);
         } else {

@@ -119,9 +119,9 @@ public class ConfigTest {
         updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         updatedConfig.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
         updatedConfig.setMaxSpans(config.getMaxSpans() + 1);
+        updatedConfig.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
         updatedConfig.setRollingSizeMb(config.getRollingSizeMb() + 1);
         updatedConfig.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
-        updatedConfig.setMetricPeriodMillis(config.getMetricPeriodMillis() + 1);
         return updatedConfig;
     }
 

@@ -155,9 +155,9 @@ class ConfigJsonService implements JsonService {
         if (maxSpans != null) {
             builder.maxSpans(maxSpans.getAsInt());
         }
-        JsonElement keepTraceSnapshotHours = jsonObject.get("keepTraceSnapshotHours");
-        if (keepTraceSnapshotHours != null) {
-            builder.keepTraceSnapshotHours(keepTraceSnapshotHours.getAsInt());
+        JsonElement snapshotExpirationHours = jsonObject.get("snapshotExpirationHours");
+        if (snapshotExpirationHours != null) {
+            builder.snapshotExpirationHours(snapshotExpirationHours.getAsInt());
         }
         JsonElement rollingSizeMb = jsonObject.get("rollingSizeMb");
         if (rollingSizeMb != null) {
@@ -166,10 +166,6 @@ class ConfigJsonService implements JsonService {
         JsonElement warnOnSpanOutsideTrace = jsonObject.get("warnOnSpanOutsideTrace");
         if (warnOnSpanOutsideTrace != null) {
             builder.warnOnSpanOutsideTrace(warnOnSpanOutsideTrace.getAsBoolean());
-        }
-        JsonElement metricPeriodMillis = jsonObject.get("metricPeriodMillis");
-        if (metricPeriodMillis != null) {
-            builder.metricPeriodMillis(metricPeriodMillis.getAsInt());
         }
     }
 

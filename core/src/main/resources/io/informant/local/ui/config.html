@@ -131,8 +131,8 @@
       addIntegerValidator('#spanStackTraceThresholdMillis')
       $('#maxSpans').val(coreConfig.maxSpans)
       addIntegerValidator('#maxSpans')
-      $('#keepTraceSnapshotDays').val(coreConfig.keepTraceSnapshotHours / 24)
-      addIntegerValidator('#keepTraceSnapshotDays')
+      $('#snapshotExpirationDays').val(coreConfig.snapshotExpirationHours / 24)
+      addIntegerValidator('#snapshotExpirationDays')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
       var coarseConfig = config.coarseProfilingConfig
@@ -211,12 +211,12 @@
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
     var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
     var maxSpans = $('#maxSpans').val()
-    var keepTraceSnapshotDays = $('#keepTraceSnapshotDays').val()
+    var snapshotExpirationDays = $('#snapshotExpirationDays').val()
     var rollingSizeMb = $('#rollingSizeMb').val()
     // handle validation
     if (!isInteger(storeThresholdMillis) || !isInteger(stuckThresholdSeconds)
         || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxSpans)
-         || !isInteger(keepTraceSnapshotDays) || !isInteger(rollingSizeMb)) {
+         || !isInteger(snapshotExpirationDays) || !isInteger(rollingSizeMb)) {
       return
     }
     postingUpdateCore = true
@@ -226,7 +226,7 @@
       'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
       'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
       'maxSpans': parseInteger(maxSpans),
-      'keepTraceSnapshotHours': parseInteger(keepTraceSnapshotDays) * 24,
+      'snapshotExpirationHours': parseInteger(snapshotExpirationDays) * 24,
       'rollingSizeMb': parseInteger(rollingSizeMb)
     }
     $.post('config/core', JSON.stringify(config), function() {
@@ -474,12 +474,12 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="keepTraceSnapshotDays">
-            Keep trace snapshot for days
+          <label class="control-label" for="snapshotExpirationDays">
+            Keep trace snapshots for
           </label>
           <div class="controls">
             <div class="input-append">
-              <input type="text" id="keepTraceSnapshotDays" style="width: 5em">
+              <input type="text" id="snapshotExpirationDays" style="width: 5em">
               <span class="add-on">days</span>
             </div>
             <div class="help-block">
