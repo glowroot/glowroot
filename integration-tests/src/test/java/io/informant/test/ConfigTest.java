@@ -155,10 +155,10 @@ public class ConfigTest {
     private static PluginConfig updateAllFields(PluginConfig config) {
         PluginConfig updatedConfig = new PluginConfig();
         updatedConfig.setEnabled(!config.isEnabled());
-        boolean starredDescription = (Boolean) config.getProperty("starredDescription");
-        updatedConfig.setProperty("starredDescription", !starredDescription);
-        String alternateDescription = (String) config.getProperty("alternateDescription");
-        updatedConfig.setProperty("alternateDescription", alternateDescription + "x");
+        boolean starredHeadline = (Boolean) config.getProperty("starredHeadline");
+        updatedConfig.setProperty("starredHeadline", !starredHeadline);
+        String alternateHeadline = (String) config.getProperty("alternateHeadline");
+        updatedConfig.setProperty("alternateHeadline", alternateHeadline + "x");
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
         updatedConfig.setProperty("hasDefaultVal", hasDefaultVal + "x");
         return updatedConfig;

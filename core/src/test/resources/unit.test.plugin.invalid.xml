@@ -23,13 +23,13 @@
     <version>0.5-SNAPSHOT</version>
     <properties>
       <property>
-        <prompt>Starred description</prompt>
-        <name>starredDescription</name>
+        <prompt>Starred headline</prompt>
+        <name>starredHeadline</name>
         <type>boolean</type>
       </property>
       <property>
-        <prompt>Alternate description</prompt>
-        <name>alternateDescription</name>
+        <prompt>Alternate headline</prompt>
+        <name>alternateHeadline</name>
         <type>string</type>
       </property>
       <property>

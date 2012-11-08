@@ -99,8 +99,7 @@ public class TraceSnapshotService {
             builder.completed(false);
         }
         builder.background(trace.isBackground());
-        Message message = trace.getRootSpan().getMessageSupplier().get();
-        builder.description(message.getText());
+        builder.headline(trace.getRootSpan().getMessageSupplier().get().getText());
         ErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
         if (errorMessage != null) {
             builder.errorText(errorMessage.getText());
@@ -186,8 +185,8 @@ public class TraceSnapshotService {
         sb.append(snapshot.isCompleted());
         sb.append(",\"background\":");
         sb.append(snapshot.isBackground());
-        sb.append(",\"description\":");
-        sb.append(escapeJson(snapshot.getDescription()));
+        sb.append(",\"headline\":");
+        sb.append(escapeJson(snapshot.getHeadline()));
         if (snapshot.getAttributes() != null) {
             sb.append(",\"attributes\":");
             sb.append(snapshot.getAttributes());

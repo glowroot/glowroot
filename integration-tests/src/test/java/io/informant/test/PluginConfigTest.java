@@ -61,14 +61,14 @@ public class PluginConfigTest {
         String randomText = "Level " + random.nextLong();
         boolean randomBoolean = random.nextBoolean();
         PluginConfig randomPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        randomPluginConfig.setProperty("alternateDescription", randomText);
-        randomPluginConfig.setProperty("starredDescription", randomBoolean);
+        randomPluginConfig.setProperty("alternateHeadline", randomText);
+        randomPluginConfig.setProperty("starredHeadline", randomBoolean);
         container.getInformant().updatePluginConfig(PLUGIN_ID, randomPluginConfig);
         // when
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat(pluginConfig.getProperty("alternateDescription")).isEqualTo(randomText);
-        assertThat(pluginConfig.getProperty("starredDescription")).isEqualTo(randomBoolean);
+        assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo(randomText);
+        assertThat(pluginConfig.getProperty("starredHeadline")).isEqualTo(randomBoolean);
     }
 
     @Test
@@ -83,51 +83,51 @@ public class PluginConfigTest {
     public void shouldClearPluginProperty() throws Exception {
         // given
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateDescription", "a non-null value");
+        pluginConfig.setProperty("alternateHeadline", "a non-null value");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateDescription", null);
+        pluginConfig.setProperty("alternateHeadline", null);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // then
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        assertThat(pluginConfig.getProperty("alternateDescription")).isNull();
+        assertThat(pluginConfig.getProperty("alternateHeadline")).isNull();
     }
 
     @Test
-    public void shouldReadAlternateDescription() throws Exception {
+    public void shouldReadAlternateHeadline() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant:informant-integration-tests");
         pluginConfig.setEnabled(true);
-        pluginConfig.setProperty("alternateDescription", "Level 1");
-        pluginConfig.setProperty("starredDescription", false);
+        pluginConfig.setProperty("alternateHeadline", "Level 1");
+        pluginConfig.setProperty("starredHeadline", false);
         container.getInformant().updatePluginConfig("io.informant:informant-integration-tests",
                 pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getDescription()).isEqualTo("Level 1");
+        assertThat(trace.getHeadline()).isEqualTo("Level 1");
     }
 
     @Test
-    public void shouldReadStarredDescription() throws Exception {
+    public void shouldReadStarredHeadline() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant:informant-integration-tests");
         pluginConfig.setEnabled(true);
-        pluginConfig.setProperty("alternateDescription", null);
-        pluginConfig.setProperty("starredDescription", true);
+        pluginConfig.setProperty("alternateHeadline", null);
+        pluginConfig.setProperty("starredHeadline", true);
         container.getInformant().updatePluginConfig("io.informant:informant-integration-tests",
                 pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.getDescription()).isEqualTo("Level One*");
+        assertThat(trace.getHeadline()).isEqualTo("Level One*");
     }
 
     public static class SimpleApp implements AppUnderTest {

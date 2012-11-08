@@ -71,7 +71,7 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
-                false, false, null, null, 1);
+                false, false, null, null, null, null, 1);
         TraceSnapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
         assertThat(snapshot2.getStartAt()).isEqualTo(snapshot.getStartAt());
@@ -79,7 +79,7 @@ public class TraceSnapshotDaoTest {
         assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
         assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());
         assertThat(snapshot2.isCompleted()).isEqualTo(snapshot.isCompleted());
-        assertThat(snapshot2.getDescription()).isEqualTo("test description");
+        assertThat(snapshot2.getHeadline()).isEqualTo("test headline");
         assertThat(snapshot2.getUserId()).isEqualTo(snapshot.getUserId());
         // TODO verify metricData, trace and mergedStackTree
     }
@@ -91,7 +91,7 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
-                snapshot.getDuration(), false, false, false, null, null, 1);
+                snapshot.getDuration(), false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).hasSize(1);
     }
@@ -103,8 +103,7 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
-                snapshot.getDuration() + 2, false, false, false, null,
-                null, 1);
+                snapshot.getDuration() + 2, false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).isEmpty();
     }
@@ -116,7 +115,7 @@ public class TraceSnapshotDaoTest {
         snapshotDao.storeSnapshot(snapshot);
         // when
         List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
-                snapshot.getDuration() - 1, false, false, false, null, null, 1);
+                snapshot.getDuration() - 1, false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).isEmpty();
     }

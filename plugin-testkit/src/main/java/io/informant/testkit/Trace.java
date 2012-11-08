@@ -41,7 +41,7 @@ public class Trace {
     private boolean active;
     private boolean stuck;
     private boolean completed;
-    private String description;
+    private String headline;
     @Nullable
     private Map<String, String> attributes;
     @Nullable
@@ -87,8 +87,8 @@ public class Trace {
         return completed;
     }
 
-    public String getDescription() {
-        return description;
+    public String getHeadline() {
+        return headline;
     }
 
     @Nullable
@@ -178,7 +178,7 @@ public class Trace {
                 .add("active", active)
                 .add("stuck", stuck)
                 .add("completed", completed)
-                .add("description", description)
+                .add("headline", headline)
                 .add("attributes", attributes)
                 .add("userId", userId)
                 .add("error", error)

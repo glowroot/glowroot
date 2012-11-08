@@ -20,7 +20,6 @@ import io.informant.core.util.ByteStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -37,7 +36,7 @@ class TraceSnapshotTestData {
                 .duration(TimeUnit.MILLISECONDS.toNanos(10))
                 .completed(true)
                 .background(false)
-                .description("test description")
+                .headline("test headline")
                 .userId("j")
                 .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"parentIndex\":-1,\"level\":0,\"message\":{\"text\":\"Level One\","

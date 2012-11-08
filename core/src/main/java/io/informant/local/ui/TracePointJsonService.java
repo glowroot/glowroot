@@ -92,6 +92,8 @@ class TracePointJsonService implements JsonService {
         private long low;
         private long high;
         @Nullable
+        private StringComparator headlineComparator;
+        @Nullable
         private StringComparator userIdComparator;
         private List<Trace> activeTraces = ImmutableList.of();
         private long capturedAt;
@@ -114,6 +116,11 @@ class TracePointJsonService implements JsonService {
             low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
             high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                     * NANOSECONDS_PER_MILLISECOND);
+            String headlineText = request.getHeadlineComparator();
+            if (headlineText != null) {
+                headlineComparator = StringComparator.valueOf(headlineText
+                        .toUpperCase(Locale.ENGLISH));
+            }
             String comparatorText = request.getUserIdComparator();
             if (comparatorText != null) {
                 userIdComparator = StringComparator.valueOf(comparatorText
@@ -156,8 +163,8 @@ class TracePointJsonService implements JsonService {
             }
             List<TraceSnapshotPoint> points = traceSnapshotDao.readPoints(request.getFrom(),
                     request.getTo(), low, high, request.isBackground(), request.isErrorOnly(),
-                    request.isFineOnly(), userIdComparator, request.getUserId(),
-                    request.getLimit() + 1);
+                    request.isFineOnly(), headlineComparator, request.getHeadline(),
+                    userIdComparator, request.getUserId(), request.getLimit() + 1);
             if (!matchingPendingPoints.isEmpty()) {
                 // create single merged and limited list of points
                 List<TraceSnapshotPoint> combinedPoints = Lists.newArrayList(points);
@@ -175,10 +182,11 @@ class TracePointJsonService implements JsonService {
             for (Trace trace : traceRegistry.getTraces()) {
                 if (traceSnapshotService.shouldStore(trace)
                         && matchesDuration(trace)
-                        && matchesBackground(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesUserId(trace)) {
+                        && matchesHeadline(trace)
+                        && matchesUserId(trace)
+                        && matchesBackground(trace)) {
                     activeTraces.add(trace);
                 }
             }
@@ -201,10 +209,11 @@ class TracePointJsonService implements JsonService {
             List<TraceSnapshotPoint> points = Lists.newArrayList();
             for (Trace trace : traceSinkLocal.getPendingCompleteTraces()) {
                 if (matchesDuration(trace)
-                        && matchesBackground(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesUserId(trace)) {
+                        && matchesHeadline(trace)
+                        && matchesUserId(trace)
+                        && matchesBackground(trace)) {
                     points.add(TraceSnapshotPoint.from(trace.getId(), clock.currentTimeMillis(),
                             trace.getDuration(), true, trace.isError()));
                 }
@@ -217,16 +226,35 @@ class TracePointJsonService implements JsonService {
             return duration >= low && duration <= high;
         }
 
-        private boolean matchesBackground(Trace trace) {
-            return request.isBackground() == null || request.isBackground() == trace.isBackground();
-        }
-
         private boolean matchesErrorOnly(Trace trace) {
             return !request.isErrorOnly() || trace.isError();
         }
 
         private boolean matchesFineOnly(Trace trace) {
             return !request.isFineOnly() || trace.isFine();
+        }
+
+        private boolean matchesHeadline(Trace trace) {
+            if (headlineComparator == null || request.getHeadline() == null) {
+                return true;
+            }
+            String traceHeadline = trace.getRootSpan().getMessageSupplier().get().getText();
+            if (traceHeadline == null) {
+                return false;
+            }
+            switch (headlineComparator) {
+            case BEGINS:
+                return traceHeadline.toUpperCase(Locale.ENGLISH)
+                        .startsWith(request.getHeadline().toUpperCase(Locale.ENGLISH));
+            case CONTAINS:
+                return traceHeadline.toUpperCase(Locale.ENGLISH)
+                        .contains(request.getHeadline().toUpperCase(Locale.ENGLISH));
+            case EQUALS:
+                return traceHeadline.equalsIgnoreCase(request.getHeadline());
+            default:
+                logger.error("unexpected user id comparator '{}'", userIdComparator);
+                return false;
+            }
         }
 
         private boolean matchesUserId(Trace trace) {
@@ -239,15 +267,21 @@ class TracePointJsonService implements JsonService {
             }
             switch (userIdComparator) {
             case BEGINS:
-                return traceUserId.startsWith(request.getUserId());
+                return traceUserId.toUpperCase(Locale.ENGLISH)
+                        .startsWith(request.getUserId().toUpperCase(Locale.ENGLISH));
             case CONTAINS:
-                return traceUserId.contains(request.getUserId());
+                return traceUserId.toUpperCase(Locale.ENGLISH)
+                        .contains(request.getUserId().toUpperCase(Locale.ENGLISH));
             case EQUALS:
-                return traceUserId.equals(request.getUserId());
+                return traceUserId.equalsIgnoreCase(request.getUserId());
             default:
                 logger.error("unexpected user id comparator '{}'", userIdComparator);
                 return false;
             }
+        }
+
+        private boolean matchesBackground(Trace trace) {
+            return request.isBackground() == null || request.isBackground() == trace.isBackground();
         }
 
         private void mergeIntoCombinedPoints(TraceSnapshotPoint pendingPoint,

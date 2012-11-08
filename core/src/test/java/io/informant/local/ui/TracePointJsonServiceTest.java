@@ -223,7 +223,7 @@ public class TracePointJsonServiceTest {
 
         when(traceSnapshotDao.readPoints(anyLong(), anyLong(), anyLong(), anyLong(),
                 anyBoolean(), anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
-                anyInt())).thenReturn(orderedPoints);
+                any(StringComparator.class), anyString(), anyInt())).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
         when(traceSnapshotService.shouldStore(any(Trace.class))).thenReturn(true);

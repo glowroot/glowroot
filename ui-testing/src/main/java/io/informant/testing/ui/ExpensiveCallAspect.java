@@ -45,8 +45,8 @@ public class ExpensiveCallAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("io.informant:informant-ui-testing");
 
-    private static final UnresolvedMethod getDescription = UnresolvedMethod.from(
-            "io.informant.testing.ui.ExpensiveCall", "getDescription");
+    private static final UnresolvedMethod getHeadline = UnresolvedMethod.from(
+            "io.informant.testing.ui.ExpensiveCall", "getHeadline");
 
     private static final Random random = new Random();
     private static final Exception nestedCause = new IllegalArgumentException(
@@ -285,8 +285,8 @@ public class ExpensiveCallAspect {
     }
 
     private static MessageSupplier getMessageSupplier(Object expensive) {
-        return MessageSupplier.from(getDescription.invokeWithDefaultOnError(expensive,
-                "<error calling ExpensiveCall.getDescription()>"));
+        return MessageSupplier.from(getHeadline.invokeWithDefaultOnError(expensive,
+                "<error calling ExpensiveCall.getHeadline()>"));
     }
 
     private static MessageSupplier getMessageSupplierWithDetail(final Object expensive) {
@@ -297,8 +297,8 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.withDetail(getDescription.invokeWithDefaultOnError(expensive,
-                        "<error calling ExpensiveCall.getDescription()>"), detail);
+                return Message.withDetail(getHeadline.invokeWithDefaultOnError(expensive,
+                        "<error calling ExpensiveCall.getHeadline()>"), detail);
             }
         };
     }

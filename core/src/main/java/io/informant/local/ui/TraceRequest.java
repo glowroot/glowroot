@@ -34,9 +34,9 @@ class TraceRequest {
     private boolean errorOnly;
     private boolean fineOnly;
     @Nullable
-    private String descriptionComparator;
+    private String headlineComparator;
     @Nullable
-    private String description;
+    private String headline;
     @Nullable
     private String userIdComparator;
     @Nullable
@@ -77,15 +77,6 @@ class TraceRequest {
         this.high = high;
     }
 
-    @Nullable
-    public Boolean isBackground() {
-        return background;
-    }
-
-    public void setBackground(@Nullable Boolean background) {
-        this.background = background;
-    }
-
     public boolean isErrorOnly() {
         return errorOnly;
     }
@@ -103,21 +94,21 @@ class TraceRequest {
     }
 
     @Nullable
-    public String getDescriptionComparator() {
-        return descriptionComparator;
+    public String getHeadlineComparator() {
+        return headlineComparator;
     }
 
-    public void setDescriptionComparator(@Nullable String descriptionComparator) {
-        this.descriptionComparator = descriptionComparator;
+    public void setHeadlineComparator(@Nullable String headlineComparator) {
+        this.headlineComparator = headlineComparator;
     }
 
     @Nullable
-    public String getDescription() {
-        return description;
+    public String getHeadline() {
+        return headline;
     }
 
-    public void setDescription(@Nullable String description) {
-        this.description = description;
+    public void setHeadline(@Nullable String headline) {
+        this.headline = headline;
     }
 
     @Nullable
@@ -138,6 +129,15 @@ class TraceRequest {
         this.userId = userId;
     }
 
+    @Nullable
+    public Boolean isBackground() {
+        return background;
+    }
+
+    public void setBackground(@Nullable Boolean background) {
+        this.background = background;
+    }
+
     public int getLimit() {
         return limit;
     }
@@ -153,11 +153,13 @@ class TraceRequest {
                 .add("to", to)
                 .add("low", low)
                 .add("high", high)
-                .add("background", background)
                 .add("errorOnly", errorOnly)
                 .add("fineOnly", fineOnly)
+                .add("headlineComparator", headlineComparator)
+                .add("headline", headline)
                 .add("userIdComparator", userIdComparator)
                 .add("userId", userId)
+                .add("background", background)
                 .add("limit", limit)
                 .toString();
     }

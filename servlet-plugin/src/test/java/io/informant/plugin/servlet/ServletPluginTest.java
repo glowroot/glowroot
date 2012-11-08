@@ -144,7 +144,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getDescription()).isEqualTo("GET /testservlet");
+        assertThat(trace.getHeadline()).isEqualTo("GET /testservlet");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
                 .get("session id (at beginning of this request)")).isEqualTo("1234");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
@@ -165,7 +165,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getDescription()).isEqualTo(
+        assertThat(trace.getHeadline()).isEqualTo(
                 "servlet context initialized (" + TestServletContextListener.class.getName() + ")");
     }
 
@@ -181,7 +181,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getDescription()).isEqualTo(
+        assertThat(trace.getHeadline()).isEqualTo(
                 "servlet init (" + TestServletInit.class.getName() + ")");
     }
 
@@ -197,7 +197,7 @@ public class ServletPluginTest {
         // then
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
-        assertThat(trace.getDescription()).isEqualTo(
+        assertThat(trace.getHeadline()).isEqualTo(
                 "filter init (" + TestFilterInit.class.getName() + ")");
     }
 

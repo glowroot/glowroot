@@ -29,11 +29,11 @@ public class ExpensiveCall {
     private static final Random random = new Random();
 
     private final int maxTimeMillis;
-    private final int maxDescriptionLength;
+    private final int maxHeadlineLength;
 
-    ExpensiveCall(int maxTimeMillis, int maxDescriptionLength) {
+    ExpensiveCall(int maxTimeMillis, int maxHeadlineLength) {
         this.maxTimeMillis = maxTimeMillis;
-        this.maxDescriptionLength = maxDescriptionLength;
+        this.maxHeadlineLength = maxHeadlineLength;
     }
 
     void execute() {
@@ -152,14 +152,14 @@ public class ExpensiveCall {
         }
     }
 
-    public String getDescription() {
-        return getDescription(random.nextInt(5) > 0);
+    public String getHeadline() {
+        return getHeadline(random.nextInt(5) > 0);
     }
 
-    private String getDescription(boolean spaces) {
-        int descriptionLength = random.nextInt(maxDescriptionLength);
-        StringBuilder sb = new StringBuilder(descriptionLength);
-        for (int i = 0; i < descriptionLength; i++) {
+    private String getHeadline(boolean spaces) {
+        int headlineLength = random.nextInt(maxHeadlineLength);
+        StringBuilder sb = new StringBuilder(headlineLength);
+        for (int i = 0; i < headlineLength; i++) {
             // random lowercase character
             sb.append((char) ('a' + random.nextInt(26)));
             if (spaces && random.nextInt(6) == 0) {

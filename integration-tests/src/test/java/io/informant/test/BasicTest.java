@@ -61,7 +61,7 @@ public class BasicTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getDescription()).isEqualTo("Level One");
+        assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getSpans()).hasSize(3);
         Span span1 = trace.getSpans().get(0);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");

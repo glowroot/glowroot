@@ -29,26 +29,26 @@ class NestableCall {
     private final NestableCall child;
     private final int numExpensiveCalls;
     private final int maxTimeMillis;
-    private final int maxDescriptionLength;
+    private final int maxHeadlineLength;
 
     NestableCall() {
         this(0, 0, 0);
     }
 
-    NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxDescriptionLength) {
+    NestableCall(int numExpensiveCalls, int maxTimeMillis, int maxHeadlineLength) {
         this.child = null;
         this.numExpensiveCalls = numExpensiveCalls;
         this.maxTimeMillis = maxTimeMillis;
-        this.maxDescriptionLength = maxDescriptionLength;
+        this.maxHeadlineLength = maxHeadlineLength;
     }
 
     NestableCall(NestableCall child, int numExpensiveCalls, int maxTimeMillis,
-            int maxDescriptionLength) {
+            int maxHeadlineLength) {
 
         this.child = child;
         this.numExpensiveCalls = numExpensiveCalls;
         this.maxTimeMillis = maxTimeMillis;
-        this.maxDescriptionLength = maxDescriptionLength;
+        this.maxHeadlineLength = maxHeadlineLength;
     }
 
     void execute() throws InterruptedException {
@@ -59,41 +59,41 @@ class NestableCall {
         // single loop) so that stack trace captures across the different expensive calls will not
         // be identical
         for (int i = 0; i < numExpensiveCalls; i++) {
-            new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
             if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxDescriptionLength).execute();
+                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
                 i++;
             }
         }

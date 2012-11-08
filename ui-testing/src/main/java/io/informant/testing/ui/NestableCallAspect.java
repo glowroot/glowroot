@@ -120,7 +120,7 @@ public class NestableCallAspect {
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", getLongDetailValue(true),
                                 "attr33", getLongDetailValue(false)));
-                return Message.withDetail("Nestable with a very long description to test wrapping"
+                return Message.withDetail("Nestable with a very long headline to test wrapping"
                         + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz", detail);
             }
         };

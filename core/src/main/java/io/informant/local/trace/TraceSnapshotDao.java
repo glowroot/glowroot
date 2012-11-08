@@ -34,6 +34,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -64,7 +65,7 @@ public class TraceSnapshotDao {
             new Column("background", Types.BOOLEAN),
             new Column("error", Types.BOOLEAN),
             new Column("fine", Types.BOOLEAN), // for searching only
-            new Column("description", Types.VARCHAR),
+            new Column("headline", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
             new Column("user_id", Types.VARCHAR),
             new Column("error_text", Types.VARCHAR),
@@ -138,14 +139,14 @@ public class TraceSnapshotDao {
         }
         try {
             dataSource.update("merge into trace_snapshot (id, captured_at, start_at, duration,"
-                    + " stuck, completed, background, error, fine, description, attributes,"
+                    + " stuck, completed, background, error, fine, headline, attributes,"
                     + " user_id, error_text, error_detail, exception, metrics, spans,"
                     + " coarse_merged_stack_tree, fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
                     + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), capturedAt,
                     snapshot.getStartAt(), snapshot.getDuration(), snapshot.isStuck(),
                     snapshot.isCompleted(), snapshot.isBackground(),
                     snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
-                    snapshot.getDescription(), snapshot.getAttributes(), snapshot.getUserId(),
+                    snapshot.getHeadline(), snapshot.getAttributes(), snapshot.getUserId(),
                     snapshot.getErrorText(), snapshot.getErrorDetail(), snapshot.getException(),
                     snapshot.getMetrics(), spansBlockId, coarseMergedStackTreeBlockId,
                     fineMergedStackTreeBlockId);
@@ -156,14 +157,16 @@ public class TraceSnapshotDao {
 
     public List<TraceSnapshotPoint> readPoints(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable Boolean background,
-            boolean errorOnly, boolean fineOnly, @Nullable StringComparator userIdComparator,
+            boolean errorOnly, boolean fineOnly, @Nullable StringComparator headlineComparator,
+            @Nullable String headline, @Nullable StringComparator userIdComparator,
             @Nullable String userId, int limit) {
 
         logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
                 + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
-                + " userIdComparator={}, userId={}", new Object[] { capturedFrom, capturedTo,
-                durationLow, durationHigh, background, errorOnly, fineOnly, userIdComparator,
-                userId });
+                + " headlineComparator={}, headline={}, userIdComparator={}, userId={}",
+                new Object[] { capturedFrom, capturedTo, durationLow, durationHigh, background,
+                        errorOnly, fineOnly, headlineComparator, headline, userIdComparator,
+                        userId });
         if (!valid) {
             return ImmutableList.of();
         }
@@ -195,9 +198,13 @@ public class TraceSnapshotDao {
                 sql += " and fine = ?";
                 args.add(true);
             }
+            if (headlineComparator != null && headline != null) {
+                sql += " and upper(headline) " + headlineComparator.getComparator() + " ?";
+                args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
+            }
             if (userIdComparator != null && userId != null) {
-                sql += " and user_id " + userIdComparator.getComparator() + " ?";
-                args.add(userIdComparator.formatParameter(userId));
+                sql += " and upper(user_id) " + userIdComparator.getComparator() + " ?";
+                args.add(userIdComparator.formatParameter(userId.toUpperCase(Locale.ENGLISH)));
             }
             sql += " order by duration desc limit ?";
             args.add(limit);
@@ -217,7 +224,7 @@ public class TraceSnapshotDao {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
-                    + " completed, background, description, attributes, user_id, error_text,"
+                    + " completed, background, headline, attributes, user_id, error_text,"
                     + " error_detail, exception, metrics, spans, coarse_merged_stack_tree,"
                     + " fine_merged_stack_tree from trace_snapshot where id = ?",
                     new Object[] { id }, new TraceRowMapper());
@@ -243,7 +250,7 @@ public class TraceSnapshotDao {
         List<TraceSnapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
-                    + " background, description, attributes, user_id, error_text, error_detail,"
+                    + " background, headline, attributes, user_id, error_text, error_detail,"
                     + " exception, metrics from trace_snapshot where id = ?", new Object[] { id },
                     new TraceSnapshotRowMapper());
         } catch (SQLException e) {
@@ -305,7 +312,7 @@ public class TraceSnapshotDao {
                 .stuck(resultSet.getBoolean(4))
                 .completed(resultSet.getBoolean(5))
                 .background(resultSet.getBoolean(6))
-                .description(resultSet.getString(7))
+                .headline(resultSet.getString(7))
                 .attributes(resultSet.getString(8))
                 .userId(resultSet.getString(9))
                 .errorText(resultSet.getString(10))

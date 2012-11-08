@@ -61,16 +61,16 @@ public class LevelOneAspect {
             MessageSupplier messageSupplier = new MessageSupplier() {
                 @Override
                 public Message get() {
-                    String traceDescription = Objects.firstNonNull(
-                            pluginServices.getStringProperty("alternateDescription"), "Level One");
-                    if (pluginServices.getBooleanProperty("starredDescription")) {
-                        traceDescription += "*";
+                    String traceHeadline = Objects.firstNonNull(
+                            pluginServices.getStringProperty("alternateHeadline"), "Level One");
+                    if (pluginServices.getBooleanProperty("starredHeadline")) {
+                        traceHeadline += "*";
                     }
                     Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", arg2, "nested1",
                             ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2, "subnested1",
                                     ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return Message.withDetail(traceDescription, detail);
+                    return Message.withDetail(traceHeadline, detail);
                 }
             };
             Span span = pluginServices.startTrace(messageSupplier, metric);

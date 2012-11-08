@@ -26,7 +26,7 @@ var traceSummaryTemplateText = ''
 + '  <strong>background</strong><br>'
 + '{{/if}}'
 + '<div class="second-line-indent">'
-+ '  {{description}}'
++ '  {{headline}}'
 + '  {{#if showExport}}'
 // unfortunately vertical padding isn't applied to inline elements, so "button" is a little small
 // but it seems worth keeping this inline and it is a less used "button" anyways

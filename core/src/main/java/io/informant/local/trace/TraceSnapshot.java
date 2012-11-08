@@ -38,7 +38,7 @@ public class TraceSnapshot {
     private final boolean stuck;
     private final boolean completed;
     private final boolean background;
-    private final String description;
+    private final String headline;
     @Nullable
     private final String attributes; // json data
     @Nullable
@@ -61,7 +61,7 @@ public class TraceSnapshot {
     private final ByteStream fineMergedStackTree; // json data
 
     private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
-            boolean background, String description, @Nullable String attributes,
+            boolean background, String headline, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String exception, @Nullable String metrics, @Nullable ByteStream spans,
             @Nullable ByteStream coarseMergedStackTree, @Nullable ByteStream fineMergedStackTree) {
@@ -72,7 +72,7 @@ public class TraceSnapshot {
         this.stuck = stuck;
         this.completed = completed;
         this.background = background;
-        this.description = description;
+        this.headline = headline;
         this.attributes = attributes;
         this.userId = userId;
         this.errorText = errorText;
@@ -108,8 +108,8 @@ public class TraceSnapshot {
         return background;
     }
 
-    String getDescription() {
-        return description;
+    String getHeadline() {
+        return headline;
     }
 
     @Nullable
@@ -165,7 +165,8 @@ public class TraceSnapshot {
                 .add("duration", duration)
                 .add("stuck", stuck)
                 .add("completed", completed)
-                .add("description", description)
+                .add("background", background)
+                .add("headline", headline)
                 .add("attributes", attributes)
                 .add("userId", userId)
                 .add("errorText", errorText)
@@ -189,7 +190,7 @@ public class TraceSnapshot {
         private boolean completed;
         private boolean background;
         @Nullable
-        private String description;
+        private String headline;
         @Nullable
         private String attributes;
         @Nullable
@@ -241,8 +242,8 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder description(String description) {
-            this.description = description;
+        Builder headline(String headline) {
+            this.headline = headline;
             return this;
         }
 
@@ -293,7 +294,7 @@ public class TraceSnapshot {
 
         TraceSnapshot build() {
             return new TraceSnapshot(id, startAt, duration, stuck, completed, background,
-                    description, attributes, userId, errorText, errorDetail, exception,
+                    headline, attributes, userId, errorText, errorDetail, exception,
                     metrics, spans, coarseMergedStackTree, fineMergedStackTree);
         }
     }
