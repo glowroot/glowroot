@@ -46,7 +46,7 @@ class DataDir {
                     .getLocation();
             if (agentJarLocation == null) {
                 // probably running unit tests, will log warning below in getDataDir() if
-                // internal.data.dir is not provided
+                // informant.data.dir is not provided
                 baseDir = null;
             } else {
                 // by default use the same directory that the agent jar is in
@@ -68,10 +68,10 @@ class DataDir {
     }
 
     private static File getDataDir(Map<String, String> properties, boolean disableWarnings) {
-        String internalDataDir = properties.get("internal.data.dir");
-        if (internalDataDir != null) {
+        String dataDirOverride = properties.get("data.dir");
+        if (dataDirOverride != null) {
             // used by unit tests
-            return new File(internalDataDir);
+            return new File(dataDirOverride);
         }
         File baseDir = BASE_DIR;
         if (baseDir == null) {

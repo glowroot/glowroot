@@ -67,7 +67,7 @@ public class InformantContainer {
         // capture pre-existing threads before instantiating execution adapters
         ImmutableMap<String, String> properties = ImmutableMap.of(
                 "ui.port", Integer.toString(uiPort),
-                "internal.data.dir", dataDir.getAbsolutePath(),
+                "data.dir", dataDir.getAbsolutePath(),
                 "internal.h2.memdb", Boolean.toString(useMemDb));
         ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {

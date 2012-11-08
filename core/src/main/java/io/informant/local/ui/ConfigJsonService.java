@@ -27,6 +27,7 @@ import io.informant.core.config.Plugins;
 import io.informant.core.config.UserTracingConfig;
 import io.informant.core.util.RollingFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -41,6 +42,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 
 /**
  * Json service to read config data.
@@ -55,16 +57,21 @@ class ConfigJsonService implements JsonService {
 
     private final ConfigService configService;
     private final RollingFile rollingFile;
+    private final File dataDir;
+    private final int uiPort;
     private final Gson gson = new Gson();
 
     @Inject
-    ConfigJsonService(ConfigService configService, RollingFile rollingFile) {
+    ConfigJsonService(ConfigService configService, RollingFile rollingFile,
+            @Named("data.dir") File dataDir, @Named("ui.port") int uiPort) {
         this.configService = configService;
         this.rollingFile = rollingFile;
+        this.dataDir = dataDir;
+        this.uiPort = uiPort;
     }
 
     @JsonServiceMethod
-    String getConfig() {
+    String getConfig() throws IOException {
         logger.debug("getConfig()");
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
                 Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
@@ -73,7 +80,9 @@ class ConfigJsonService implements JsonService {
                 + ",\"fineProfilingConfig\":" + configService.getFineProfilingConfig().toJson()
                 + ",\"userTracingConfig\":" + configService.getUserTracingConfig().toJson()
                 + ",\"pluginConfigs\":" + getPluginConfigsJson()
-                + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors) + "}";
+                + ",\"pluginDescriptors\":" + gson.toJson(pluginDescriptors)
+                + ",\"dataDir\":" + gson.toJson(dataDir.getCanonicalPath())
+                + ",\"uiPort\":" + uiPort + "}";
     }
 
     @JsonServiceMethod

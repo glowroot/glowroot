@@ -135,6 +135,10 @@
       addIntegerValidator('#snapshotExpirationDays')
       $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
+      $('#offscreenMeasure').text(config.dataDir)
+      $('#dataDir').text(config.dataDir)
+      $('#dataDir').css("width", ($('#offscreenMeasure').width() + 50) + "px")
+      $('#uiPort').text(config.uiPort)
       var coarseConfig = config.coarseProfilingConfig
       setStatus('#coarseStatus', coarseConfig.enabled)
       $('#coarseEnabled').attr('checked', coarseConfig.enabled)
@@ -487,7 +491,7 @@
           </div>
         </div>
         <div class="control-group">
-          <label class="control-label" for="rollingSizeMb">Rolling database size</label>
+          <label class="control-label" for="rollingSizeMb">Rolling data file size</label>
           <div class="controls">
             <div class="input-append">
               <input type="text" id="rollingSizeMb" style="width: 5em">
@@ -499,6 +503,29 @@
               large data. (Trace summary data - capture time, duration, headline, user ID,
               attributes, metrics - is stored to an H2 data file by the embedded H2 database
               engine.)
+            </div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="dataDir">Data directory</label>
+          <div class="controls">
+            <span class="uneditable-input" id="dataDir"></span>
+            <div class="help-block">
+              The data directory where the H2 data file and the rolling database are stored.
+              The default value is the directory where the informant.jar resides.
+              This can only be changed on the command line, using
+              <span class="nowrap">-Dinformant.data.dir=&lt;folder&gt;</span>.
+            </div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="uiPort">UI Port</label>
+          <div class="controls">
+            <span class="uneditable-input" id="uiPort" style="width: 5em"></span>
+            <div class="help-block">
+              The port that the embedded web UI is served on. The default value is 4000.
+              This can only be changed on the command line, using
+              <span class="nowrap">-Dinformant.ui.port=&lt;port&gt;</span>.
             </div>
           </div>
         </div>
@@ -727,5 +754,6 @@
   </form>
   <span class="button-spinner hide" id="initialLoadSpinner" style="padding-top: 40px"></span>
   <div id="plugins"></div>
+  <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0px"></span>
 </body>
 </html>
