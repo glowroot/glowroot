@@ -15,8 +15,8 @@
  */
 package io.informant.local.ui;
 
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.MOVED_PERMANENTLY;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -142,7 +142,7 @@ public class HttpServer extends HttpServerBase {
         String path = decoder.getPath();
         logger.debug("handleRequest(): path={}", path);
         if (path.equals("/")) {
-            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, MOVED_PERMANENTLY);
+            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, FOUND);
             response.setHeader(HttpHeaders.Names.LOCATION, "explorer.html");
             return response;
         }
