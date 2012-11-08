@@ -18,7 +18,6 @@ package io.informant.plugin.servlet;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.shaded.google.common.base.Function;
-import io.informant.shaded.google.common.base.Splitter;
 import io.informant.shaded.google.common.collect.ImmutableSet;
 import io.informant.shaded.google.common.collect.Iterables;
 
@@ -104,12 +103,19 @@ final class ServletPluginProperties {
             sessionAttributePaths = ImmutableSet.of();
             sessionAttributeNames = ImmutableSet.of();
         } else {
-            Iterable<String> paths = Splitter.on(',').trimResults().omitEmptyStrings()
-                    .split(sessionAttributesText);
+            // can't use guava Splitter at the moment due to severe initialization performance of
+            // guava-jdk5's Splitter on JDK5
+            ImmutableSet.Builder<String> paths = ImmutableSet.builder();
+            for (String path : sessionAttributesText.split(",")) {
+                path = path.trim();
+                if (!path.equals("")) {
+                    paths.add(path);
+                }
+            }
             // update cached first so that another thread cannot come into this method and get a
             // positive match for text but then get the old cached attributes
-            sessionAttributePaths = ImmutableSet.copyOf(paths);
-            sessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(paths,
+            sessionAttributePaths = paths.build();
+            sessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(sessionAttributePaths,
                     substringBefore('.')));
         }
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
@@ -119,7 +125,12 @@ final class ServletPluginProperties {
     private static Function<String, String> substringBefore(final char separator) {
         return new Function<String, String>() {
             public String apply(String input) {
-                return Splitter.on(separator).split(input).iterator().next();
+                int index = input.indexOf(separator);
+                if (index == -1) {
+                    return input;
+                } else {
+                    return input.substring(0, index);
+                }
             }
         };
     }
