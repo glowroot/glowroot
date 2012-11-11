@@ -16,14 +16,18 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.internal.InformantCoreJar;
+import io.informant.core.MainEntryPoint;
+import io.informant.testkit.internal.ClassPath;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
+import javax.annotation.Nullable;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -38,13 +42,16 @@ public class JarFileShadingTest {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        File informantCoreJarFile = InformantCoreJar.getFileOptional();
+        File informantCoreJarFile = ClassPath.getInformantCoreJarFile();
         if (informantCoreJarFile == null) {
-            // if not running maven build (e.g. running in IDE), then just silently skip this test
-            Assume.assumeNotNull(System.getProperty("surefire.test.class.path"));
-            // got past assumption, must be running maven build, fail the test instead of skipping
-            throw new IllegalStateException(
-                    "Running inside maven and can't find informant-core.jar");
+            if (System.getProperty("surefire.test.class.path") != null) {
+                throw new IllegalStateException(
+                        "Running inside maven and can't find informant-core.jar on class path");
+            }
+            // try to cover the non-standard case when running outside of maven (e.g. inside an IDE)
+            informantCoreJarFile = getInformantCoreJarFileFromRelativePath();
+            // don't worry if informant core can't be found while running outside of maven
+            Assume.assumeNotNull(informantCoreJarFile);
         }
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("io.informant\\..*");
@@ -72,5 +79,27 @@ public class JarFileShadingTest {
             }
         }
         assertThat(unacceptableEntries).isEmpty();
+    }
+
+    // try to cover the non-standard case when running from inside an IDE
+    @Nullable
+    private static File getInformantCoreJarFileFromRelativePath() {
+        String classesDir = MainEntryPoint.class.getProtectionDomain().getCodeSource()
+                .getLocation().getFile();
+        // guessing this is target/classes
+        File targetDir = new File(classesDir).getParentFile();
+        File[] possibleMatches = targetDir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.matches("informant-core-[0-9.]+(-SNAPSHOT)?.jar");
+            }
+        });
+        if (possibleMatches == null || possibleMatches.length == 0) {
+            return null;
+        } else if (possibleMatches.length == 1) {
+            return possibleMatches[0];
+        } else {
+            throw new IllegalStateException("More than one possible match found for"
+                    + " informant-core.jar");
+        }
     }
 }

@@ -17,8 +17,9 @@ package io.informant.testkit;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.MainEntryPoint;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
-import io.informant.testkit.internal.InformantCoreJar;
+import io.informant.testkit.internal.ClassPath;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,20 +53,26 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
     private final SocketCommander socketCommander;
 
     ExternalJvmExecutionAdapter(Map<String, String> properties) throws IOException {
-        String classpath = System.getProperty("java.class.path");
-        String path = System.getProperty("java.home") + File.separator + "bin" + File.separator
-                + "java";
-        String javaagentArg = "-javaagent:" + InformantCoreJar.getFileRequired();
-        socketCommander = new SocketCommander();
         List<String> command = Lists.newArrayList();
-        command.add(path);
+        String javaExecutable = System.getProperty("java.home") + File.separator + "bin"
+                + File.separator + "java";
+        command.add(javaExecutable);
+        String classpath = System.getProperty("java.class.path");
         command.add("-cp");
         command.add(classpath);
-        command.add(javaagentArg);
+        File javaagentJarFile = ClassPath.getInformantCoreJarFile();
+        if (javaagentJarFile == null) {
+            javaagentJarFile = ClassPath.getDelegatingJavaagentJarFile();
+            command.add("-javaagent:" + javaagentJarFile);
+            command.add("-DdelegateJavaagent=" + MainEntryPoint.class.getName());
+        } else {
+            command.add("-javaagent:" + javaagentJarFile);
+        }
         for (Entry<String, String> agentProperty : properties.entrySet()) {
             command.add("-Dinformant." + agentProperty.getKey() + "=" + agentProperty.getValue());
         }
         command.add(ExternalJvmExecutionAdapter.class.getName());
+        socketCommander = new SocketCommander();
         command.add(Integer.toString(socketCommander.getLocalPort()));
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
