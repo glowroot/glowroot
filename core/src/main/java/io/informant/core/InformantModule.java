@@ -34,7 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -55,7 +54,6 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.ConnectionsPool;
 import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
@@ -162,25 +160,10 @@ class InformantModule extends AbstractModule {
     // TODO submit patch to netty to expose idleConnectionDetector as a configurable property
     // (or at least its thread's name)
     private void setIdleConnectionTimerThreadName(AsyncHttpClient asyncHttpClient) {
-        ConnectionsPool<?, ?> connectionsPool;
-        try {
-            connectionsPool = Reflection.field("connectionsPool").ofType(ConnectionsPool.class)
-                    .in(asyncHttpClient.getProvider()).get();
-        } catch (ReflectionError e) {
-            logger.warn(e.getMessage(), e);
-            return;
-        }
-        Timer timer;
-        try {
-            timer = Reflection.field("idleConnectionDetector").ofType(Timer.class)
-                    .in(connectionsPool).get();
-        } catch (ReflectionError e) {
-            logger.warn(e.getMessage(), e);
-            return;
-        }
         Thread thread;
         try {
-            thread = Reflection.field("thread").ofType(Thread.class).in(timer).get();
+            thread = Reflection.field("connectionsPool.idleConnectionDetector.thread")
+                    .ofType(Thread.class).in(asyncHttpClient.getProvider()).get();
         } catch (ReflectionError e) {
             logger.warn(e.getMessage(), e);
             return;
