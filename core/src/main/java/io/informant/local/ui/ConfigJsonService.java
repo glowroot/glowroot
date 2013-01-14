@@ -24,6 +24,7 @@ import io.informant.core.config.GeneralConfig;
 import io.informant.core.config.PluginConfig;
 import io.informant.core.config.PluginDescriptor;
 import io.informant.core.config.Plugins;
+import io.informant.core.config.PointcutConfig;
 import io.informant.core.config.UserConfig;
 import io.informant.core.util.RollingFile;
 
@@ -35,6 +36,7 @@ import java.util.List;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Inject;
@@ -79,6 +81,7 @@ class ConfigJsonService implements JsonService {
         configJson.add("userConfig", configService.getUserConfig().toJson());
         configJson.add("pluginDescriptors", gson.toJsonTree(pluginDescriptors));
         configJson.add("pluginConfigs", getPluginConfigsJson());
+        configJson.add("pointcutConfigs", getPoincutConfigsJson());
         configJson.addProperty("dataDir", dataDir.getCanonicalPath());
         configJson.addProperty("uiPort", uiPort);
         return configJson.toString();
@@ -146,6 +149,31 @@ class ConfigJsonService implements JsonService {
         configService.updatePluginConfig(builder.build());
     }
 
+    @JsonServiceMethod
+    String addPointcutConfig(String configJson) {
+        logger.debug("addPointcutConfig(): configJson={}", configJson);
+        PointcutConfig pointcut = gson.fromJson(configJson, PointcutConfig.Builder.class).build();
+        String uniqueHash = configService.insertPointcutConfig(pointcut);
+        return gson.toJson(uniqueHash);
+    }
+
+    @JsonServiceMethod
+    String updatePointcutConfig(String previousUniqueHash, String configJson) {
+        logger.debug("updatePointcutConfig(): previousUniqueHash={}, configJson={}",
+                previousUniqueHash, configJson);
+        PointcutConfig pointcutConfig = gson.fromJson(configJson, PointcutConfig.Builder.class)
+                .build();
+        String updatedUniqueHash = configService.updatePointcutConfig(previousUniqueHash,
+                pointcutConfig);
+        return gson.toJson(updatedUniqueHash);
+    }
+
+    @JsonServiceMethod
+    void removePointcutConfig(String uniqueHashJson) {
+        logger.debug("removePointcutConfig(): uniqueHashJson={}", uniqueHashJson);
+        configService.deletePointcutConfig(new JsonParser().parse(uniqueHashJson).getAsString());
+    }
+
     private JsonObject getPluginConfigsJson() {
         JsonObject jsonObject = new JsonObject();
         Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
@@ -157,5 +185,13 @@ class ConfigJsonService implements JsonService {
             jsonObject.add(pluginDescriptor.getId(), pluginConfig.toJson());
         }
         return jsonObject;
+    }
+
+    private JsonArray getPoincutConfigsJson() {
+        JsonArray jsonArray = new JsonArray();
+        for (PointcutConfig pointcutConfig : configService.readPointcutConfigs()) {
+            jsonArray.add(pointcutConfig.toJsonWithUniqueHash());
+        }
+        return jsonArray;
     }
 }

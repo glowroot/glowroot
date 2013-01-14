@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import javax.annotation.Nullable;
 import com.google.common.base.Objects;
 
 /**
- * The detail map can contain {@link String}, {@link Double}, {@link Boolean} and null value types.
- * It can also contain nested maps (which have the same restrictions on value types, including
- * additional levels of nested maps). The detail map cannot have null keys.
+ * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value
+ * types. It can also contain nested maps (which have the same restrictions on value types,
+ * including additional levels of nested maps). The detail map cannot have null keys.
  * 
- * As an extra bonus, detail map can also contain
- * io.informant.shaded.google.common.base.Optional values which is useful for Maps that do
- * not accept null values, e.g. io.informant.shaded.google.common.collect.ImmutableMap.
+ * As an extra bonus, detail map can also contain io.informant.shaded.google.common.base.Optional
+ * values which is useful for Maps that do not accept null values, e.g.
+ * io.informant.shaded.google.common.collect.ImmutableMap.
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to
  * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the
@@ -58,12 +58,10 @@ public abstract class Message {
         return new TemplateMessage(message, null, null);
     }
 
-    // the objects in args must be thread safe
-    public static Message from(String template, Object... args) {
+    public static Message from(String template, String... args) {
         return new TemplateMessage(template, args, null);
     }
 
-    // the objects in detail must be thread safe
     public static Message withDetail(String message, Map<String, ?> detail) {
         return new TemplateMessage(message, null, detail);
     }
@@ -74,11 +72,11 @@ public abstract class Message {
 
         private final String template;
         @Nullable
-        private final Object[] args;
+        private final String[] args;
         @Nullable
         private final Map<String, ?> detail;
 
-        private TemplateMessage(String template, @Nullable Object[] args,
+        private TemplateMessage(String template, @Nullable String[] args,
                 @Nullable Map<String, ?> detail) {
             this.template = template;
             this.args = args;
@@ -96,30 +94,15 @@ public abstract class Message {
             int curr = 0;
             int next;
             int argIndex = 0;
-            while ((next = template.indexOf("{{", curr)) != -1) {
+            while ((next = template.indexOf("{}", curr)) != -1) {
                 text.append(template.substring(curr, next));
-                curr = next;
-                next = template.indexOf("}}", curr);
-                if (next == -1) {
-                    logger.error("unclosed {{ in template: {}", template);
-                    text.append(" -- error, unclosed {{ --");
-                    break;
-                }
                 if (args == null || argIndex >= args.length) {
-                    logger.error("not enough args provided for template: {}", template);
-                    text.append(" -- error, not enough args --");
+                    text.append("-- not enough args provided for template --");
+                    logger.warn("not enough args provided for template: {}", template);
                     break;
                 }
-                String argText;
-                try {
-                    argText = String.valueOf(args[argIndex++]);
-                } catch (Throwable t) {
-                    argText = "an error occurred calling toString() on an instance of "
-                            + args[argIndex - 1].getClass().getName();
-                    logger.warn(argText + ", while rendering template: " + template, t);
-                }
-                text.append(argText);
-                curr = next + 2; // +2 to skip over "}}"
+                text.append(args[argIndex++]);
+                curr = next + 2; // +2 to skip over "{}"
             }
             text.append(template.substring(curr));
             return text.toString();

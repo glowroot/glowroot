@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,12 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -39,6 +45,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 
 /**
@@ -46,7 +56,7 @@ import com.google.common.io.Resources;
  * @since 0.5
  */
 @ThreadSafe
-class ParsedTypeCache {
+public class ParsedTypeCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ParsedTypeCache.class);
 
@@ -95,8 +105,65 @@ class ParsedTypeCache {
     private final ConcurrentMap<String, ParsedType> bootLoaderParsedTypes =
             new ConcurrentHashMap<String, ParsedType>();
 
+    private final TreeMap<String, String> typeNameUppers = Maps.newTreeMap();
+
+    // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
+    public List<String> getMatchingTypeNames(String partialTypeName, int limit) {
+        String partialTypeNameUpper = partialTypeName.toUpperCase(Locale.ENGLISH);
+        List<String> typeNames = Lists.newArrayList();
+        for (Entry<String, String> entry : typeNameUppers.entrySet()) {
+            String typeNameUpper = entry.getKey();
+            String typeName = entry.getValue();
+            if (typeNameUpper.contains(partialTypeNameUpper) && !typeNames.contains(typeName)) {
+                typeNames.add(typeName);
+                if (typeNames.size() == limit) {
+                    return typeNames;
+                }
+            }
+        }
+        return typeNames;
+    }
+
+    // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
+    public List<String> getMatchingMethodNames(String typeName, String partialMethodName,
+            int limit) {
+        String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
+        Set<String> methodNames = Sets.newTreeSet();
+        for (ParsedType parsedType : getMatchingParsedTypes(typeName)) {
+            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
+                String methodName = parsedMethod.getName();
+                if (methodName.toUpperCase(Locale.ENGLISH).contains(partialMethodNameUpper)) {
+                    methodNames.add(methodName);
+                }
+            }
+        }
+        List<String> sortedMethodNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
+                .immutableSortedCopy(methodNames);
+        if (methodNames.size() > limit) {
+            return sortedMethodNames.subList(0, limit);
+        } else {
+            return sortedMethodNames;
+        }
+    }
+
+    public List<ParsedMethod> getMatchingParsedMethods(String typeName, String methodName) {
+        List<ParsedType> parsedTypes = getMatchingParsedTypes(typeName);
+        List<ParsedMethod> methodMethods = Lists.newArrayList();
+        for (ParsedType parsedType : parsedTypes) {
+            for (ParsedMethod parsedMethod : parsedType.getMethods()) {
+                if (parsedMethod.getName().equals(methodName)) {
+                    methodMethods.add(parsedMethod);
+                }
+            }
+        }
+        return methodMethods;
+    }
+
     void add(ParsedType parsedType, @Nullable ClassLoader loader) {
-        getParsedTypes(loader).put(parsedType.getName(), parsedType);
+        ConcurrentMap<String, ParsedType> parsedTypes = getParsedTypes(loader);
+        String typeName = parsedType.getName();
+        parsedTypes.put(typeName, parsedType);
+        typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
     }
 
     // TODO is it worth removing duplicates from resulting type hierarchy list?
@@ -108,10 +175,25 @@ class ParsedTypeCache {
         return superTypes.build();
     }
 
+    private List<ParsedType> getMatchingParsedTypes(String typeName) {
+        List<ParsedType> parsedTypes = Lists.newArrayList();
+        ParsedType parsedType = bootLoaderParsedTypes.get(typeName);
+        if (parsedType != null) {
+            parsedTypes.add(parsedType);
+        }
+        for (Map<String, ParsedType> loaderParsedTypes : this.parsedTypes.asMap().values()) {
+            parsedType = loaderParsedTypes.get(typeName);
+            if (parsedType != null) {
+                parsedTypes.add(parsedType);
+            }
+        }
+        return parsedTypes;
+    }
+
     private void addSuperTypes(@Nullable String typeName,
             ImmutableList.Builder<ParsedType> superTypes, @Nullable ClassLoader loader) {
 
-        if (typeName == null || typeName.equals("java/lang/Object")) {
+        if (typeName == null || typeName.equals("java.lang.Object")) {
             return;
         }
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
@@ -119,7 +201,7 @@ class ParsedTypeCache {
         // ClassLoader.findLoadClass()
         Class<?> type;
         try {
-            type = (Class<?>) findLoadedClassMethod.invoke(loader, typeName.replace('/', '.'));
+            type = (Class<?>) findLoadedClassMethod.invoke(loader, typeName);
         } catch (SecurityException e) {
             logger.error(e.getMessage(), e);
             superTypes.add(ParsedType.fromMissing(typeName));
@@ -151,6 +233,7 @@ class ParsedTypeCache {
         if (parsedType == null) {
             parsedType = createParsedType(typeName, parsedTypeLoader);
             loaderParsedTypes.putIfAbsent(typeName, parsedType);
+            typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
             parsedType = loaderParsedTypes.get(typeName);
         }
         superTypes.add(parsedType);
@@ -162,7 +245,7 @@ class ParsedTypeCache {
 
     private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader) {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
-        String path = typeName + ".class";
+        String path = TypeNames.toInternal(typeName) + ".class";
         URL url;
         if (loader == null) {
             url = ClassLoader.getSystemClassLoader().getResource(path);
@@ -192,10 +275,9 @@ class ParsedTypeCache {
     private ParsedType createParsedTypePlanB(String typeName, @Nullable ClassLoader loader) {
         Class<?> type;
         try {
-            type = Class.forName(typeName.replace('/', '.'), false, loader);
+            type = Class.forName(typeName, false, loader);
         } catch (ClassNotFoundException e) {
-            logger.warn("could not find type '{}' in class loader '{}'",
-                    typeName.replace('/', '.'), loader);
+            logger.warn("could not find type '{}' in class loader '{}'", typeName, loader);
             return ParsedType.fromMissing(typeName);
         }
         ParsedType parsedType = getParsedTypes(type.getClassLoader()).get(typeName);
@@ -226,10 +308,10 @@ class ParsedTypeCache {
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
         for (Class<?> iface : type.getInterfaces()) {
-            interfaceNames.add(internalName(iface.getName()));
+            interfaceNames.add(iface.getName());
         }
-        return ParsedType.from(typeName, internalName(type.getSuperclass().getName()),
-                interfaceNames.build(), parsedMethods.build());
+        return ParsedType.from(typeName, type.getSuperclass().getName(), interfaceNames.build(),
+                parsedMethods.build());
     }
 
     private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
@@ -248,10 +330,6 @@ class ParsedTypeCache {
                 .toString();
     }
 
-    private static String internalName(String typeName) {
-        return typeName.replace('.', '/');
-    }
-
     private static class ParsedTypeClassVisitor extends ClassVisitor {
 
         @Nullable
@@ -259,7 +337,7 @@ class ParsedTypeCache {
         @Nullable
         private String superName;
         @Nullable
-        private ImmutableList<String> interfaceNames;
+        private String[] interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
         private ParsedTypeClassVisitor() {
@@ -276,7 +354,7 @@ class ParsedTypeCache {
             } else {
                 this.superName = superName;
             }
-            this.interfaceNames = ImmutableList.copyOf(interfaceNames);
+            this.interfaceNames = interfaceNames;
         }
 
         @Override
@@ -290,7 +368,8 @@ class ParsedTypeCache {
         }
 
         private ParsedType build() {
-            return ParsedType.from(name, superName, interfaceNames, methods.build());
+            return ParsedType.from(TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
+                    TypeNames.fromInternal(interfaceNames), methods.build());
         }
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 /**
@@ -32,9 +32,9 @@ class TypeCollector {
     @Nullable
     private String superType;
     @Nullable
-    private ImmutableSet<String> interfaceTypes;
+    private ImmutableList<String> interfaceTypes;
     @Nullable
-    private ImmutableSet<String> allSuperTypes;
+    private ImmutableList<String> allSuperTypes;
 
     // map key is the method "name:desc"
     private final Map<String, MethodCollector> methodCollectors = Maps.newHashMap();
@@ -44,11 +44,11 @@ class TypeCollector {
         return superType;
     }
 
-    ImmutableSet<String> getInterfaceTypes() {
+    ImmutableList<String> getInterfaceTypes() {
         return interfaceTypes;
     }
 
-    ImmutableSet<String> getAllSuperTypes() {
+    ImmutableList<String> getAllSuperTypes() {
         return allSuperTypes;
     }
 
@@ -65,11 +65,11 @@ class TypeCollector {
         this.superType = superType;
     }
 
-    void setInterfaceTypes(String[] interfaceTypes) {
-        this.interfaceTypes = ImmutableSet.copyOf(interfaceTypes);
+    void setInterfaceTypes(ImmutableList<String> interfaceTypes) {
+        this.interfaceTypes = interfaceTypes;
     }
 
-    void setAllSuperTypes(ImmutableSet<String> allSuperTypes) {
+    void setAllSuperTypes(ImmutableList<String> allSuperTypes) {
         this.allSuperTypes = allSuperTypes;
     }
 

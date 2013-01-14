@@ -55,12 +55,14 @@ class Config {
     private static final String FINE_PROFILING = "fine-profiling";
     private static final String USER = "user";
     private static final String PLUGINS = "plugins";
+    private static final String POINTCUTS = "pointcuts";
 
     private final GeneralConfig generalConfig;
     private final CoarseProfilingConfig coarseProfilingConfig;
     private final FineProfilingConfig fineProfilingConfig;
     private final UserConfig userConfig;
     private final ImmutableList<PluginConfig> pluginConfigs;
+    private final ImmutableList<PointcutConfig> pointcutConfigs;
 
     static Config fromFile(File configFile) {
         JsonObject rootJsonObject;
@@ -102,9 +104,15 @@ class Config {
                     pluginDescriptor);
             pluginConfigs.add(pluginConfig);
         }
+        ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
+        JsonArray pointcutsJsonArray = asJsonArray(rootJsonObject.get(POINTCUTS));
+        for (Iterator<JsonElement> i = pointcutsJsonArray.iterator(); i.hasNext();) {
+            PointcutConfig pointcutConfig = PointcutConfig.fromJson(i.next().getAsJsonObject());
+            pointcutConfigs.add(pointcutConfig);
+        }
 
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig, userConfig,
-                pluginConfigs.build());
+                pluginConfigs.build(), pointcutConfigs.build());
     }
 
     static Builder builder(Config base) {
@@ -113,12 +121,14 @@ class Config {
 
     private Config(GeneralConfig generalConfig, CoarseProfilingConfig coarseProfilingConfig,
             FineProfilingConfig fineProfilingConfig, UserConfig userConfig,
-            ImmutableList<PluginConfig> pluginConfigs) {
+            ImmutableList<PluginConfig> pluginConfigs,
+            ImmutableList<PointcutConfig> pointcutConfigs) {
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
         this.userConfig = userConfig;
         this.pluginConfigs = pluginConfigs;
+        this.pointcutConfigs = pointcutConfigs;
     }
 
     GeneralConfig getGeneralConfig() {
@@ -141,6 +151,10 @@ class Config {
         return pluginConfigs;
     }
 
+    ImmutableList<PointcutConfig> getPointcutConfigs() {
+        return pointcutConfigs;
+    }
+
     void writeToFileIfNeeded(File configFile) {
         JsonObject rootJsonObject = new JsonObject();
         rootJsonObject.add(GENERAL, generalConfig.toJson());
@@ -152,7 +166,12 @@ class Config {
         for (PluginConfig pluginConfig : pluginConfigs) {
             pluginsJsonArray.add(pluginConfig.toJson());
         }
+        JsonArray pointcutsJsonArray = new JsonArray();
+        for (PointcutConfig pointcutConfig : pointcutConfigs) {
+            pointcutsJsonArray.add(pointcutConfig.toJson());
+        }
         rootJsonObject.add(PLUGINS, pluginsJsonArray);
+        rootJsonObject.add(POINTCUTS, pointcutsJsonArray);
 
         String configJson = gson.toJson(rootJsonObject);
         boolean contentEqual = false;
@@ -207,6 +226,7 @@ class Config {
         private FineProfilingConfig fineProfilingConfig;
         private UserConfig userConfig;
         private ImmutableList<PluginConfig> pluginConfigs;
+        private ImmutableList<PointcutConfig> pointcutConfigs;
 
         private Builder(Config base) {
             generalConfig = base.generalConfig;
@@ -214,6 +234,7 @@ class Config {
             fineProfilingConfig = base.fineProfilingConfig;
             userConfig = base.userConfig;
             pluginConfigs = base.pluginConfigs;
+            pointcutConfigs = base.pointcutConfigs;
         }
         Builder generalConfig(GeneralConfig generalConfig) {
             this.generalConfig = generalConfig;
@@ -235,9 +256,13 @@ class Config {
             this.pluginConfigs = pluginConfigs;
             return this;
         }
+        Builder pointcutConfigs(ImmutableList<PointcutConfig> pointcutConfigs) {
+            this.pointcutConfigs = pointcutConfigs;
+            return this;
+        }
         Config build() {
             return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                    userConfig, pluginConfigs);
+                    userConfig, pluginConfigs, pointcutConfigs);
         }
     }
 }

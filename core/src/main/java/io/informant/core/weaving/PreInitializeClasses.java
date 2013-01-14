@@ -322,6 +322,7 @@ class PreInitializeClasses {
         types.add("io.informant.core.weaving.ParsedTypeCache$1");
         types.add("io.informant.core.weaving.ParsedTypeCache$ParsedTypeClassVisitor");
         types.add("io.informant.core.weaving.PreInitializeClasses");
+        types.add("io.informant.core.weaving.TypeNames");
         types.add("io.informant.core.weaving.Weaver");
         types.add("io.informant.core.weaving.WeavingClassFileTransformer");
         types.add("io.informant.core.weaving.WeavingClassFileTransformer$1");

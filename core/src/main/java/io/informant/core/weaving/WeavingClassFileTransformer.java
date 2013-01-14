@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private final ImmutableList<Advice> advisors;
     private final WeavingMetric metric;
 
-    private final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
+    private final ParsedTypeCache parsedTypeCache;
 
     // it is important to only have a single weaver per class loader because storing state of each
     // previously parsed class in order to re-construct class hierarchy in case one or more .class
@@ -73,10 +73,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // io.informant.core.weaving.preinit.GlobalCollector, and hard-coded results in
     // io.informant.core.weaving.PreInitializeClasses)
     public WeavingClassFileTransformer(Mixin[] mixins, Advice[] advisors,
-            WeavingMetricImpl metric) {
+            ParsedTypeCache parsedTypeCache, WeavingMetricImpl metric) {
 
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
+        this.parsedTypeCache = parsedTypeCache;
         this.metric = metric;
         bootLoaderWeaver = new Weaver(this.mixins, this.advisors, null, parsedTypeCache, metric);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class

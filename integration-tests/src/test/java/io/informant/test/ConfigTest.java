@@ -21,12 +21,20 @@ import io.informant.testkit.FineProfilingConfig;
 import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.PluginConfig;
+import io.informant.testkit.PointcutConfig;
+import io.informant.testkit.PointcutConfig.CaptureItem;
+import io.informant.testkit.PointcutConfig.MethodModifier;
 import io.informant.testkit.UserConfig;
+
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -113,6 +121,44 @@ public class ConfigTest {
         assertThat(updatedConfig).isEqualTo(config);
     }
 
+    @Test
+    public void shouldInsertPointcutConfig() throws Exception {
+        // given
+        PointcutConfig config = createPointcutConfig();
+        // when
+        container.getInformant().addPointcutConfig(config);
+        // then
+        List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
+        assertThat(pointcuts).hasSize(1);
+        assertThat(pointcuts.get(0)).isEqualsToByComparingFields(config);
+    }
+
+    @Test
+    public void shouldUpdatePointcutConfig() throws Exception {
+        // given
+        PointcutConfig config = createPointcutConfig();
+        String uniqueHash = container.getInformant().addPointcutConfig(config);
+        // when
+        config = updateAllFieldsExceptId(config);
+        container.getInformant().updatePointcutConfig(uniqueHash, config);
+        // then
+        List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
+        assertThat(pointcuts).hasSize(1);
+        assertThat(pointcuts.get(0)).isEqualsToByComparingFields(config);
+    }
+
+    @Test
+    public void shouldDeletePointcutConfig() throws Exception {
+        // given
+        PointcutConfig pointcut = createPointcutConfig();
+        String uniqueHash = container.getInformant().addPointcutConfig(pointcut);
+        // when
+        container.getInformant().removePointcutConfig(uniqueHash);
+        // then
+        List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
+        assertThat(pointcuts).isEmpty();
+    }
+
     private static GeneralConfig updateAllFields(GeneralConfig config) {
         GeneralConfig updatedConfig = new GeneralConfig();
         updatedConfig.setEnabled(!config.isEnabled());
@@ -162,5 +208,46 @@ public class ConfigTest {
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
         updatedConfig.setProperty("hasDefaultVal", hasDefaultVal + "x");
         return updatedConfig;
+    }
+
+    private static PointcutConfig createPointcutConfig() {
+        PointcutConfig pointcut = new PointcutConfig();
+        pointcut.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
+        pointcut.setTypeName("java.util.Collections");
+        pointcut.setMethodName("yak");
+        pointcut.setMethodArgTypeNames(Lists.newArrayList("java.lang.String", "java.util.List"));
+        pointcut.setMethodReturnTypeName("void");
+        pointcut.setMethodModifiers(Lists
+                .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
+        pointcut.setMetricName("yako");
+        pointcut.setSpanTemplate("yak(): {{0}}, {{1}} => {{?}}");
+        return pointcut;
+    }
+
+    private static PointcutConfig updateAllFieldsExceptId(PointcutConfig pointcut) {
+        PointcutConfig updatedPointcut = new PointcutConfig();
+        if (pointcut.getCaptureItems().contains(CaptureItem.TRACE)) {
+            updatedPointcut.setCaptureItems(ImmutableList.of(CaptureItem.METRIC, CaptureItem.SPAN));
+        } else {
+            updatedPointcut.setCaptureItems(ImmutableList.of(CaptureItem.TRACE));
+        }
+        updatedPointcut.setTypeName(pointcut.getTypeName() + "a");
+        updatedPointcut.setMethodName(pointcut.getMethodName() + "b");
+        if (pointcut.getMethodArgTypeNames().size() == 0) {
+            updatedPointcut.setMethodArgTypeNames(ImmutableList.of("java.lang.String"));
+        } else {
+            updatedPointcut.setMethodArgTypeNames(ImmutableList.of(pointcut
+                    .getMethodArgTypeNames().get(0) + "c"));
+        }
+        updatedPointcut.setMethodReturnTypeName(pointcut.getMethodReturnTypeName() + "d");
+        if (pointcut.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
+            updatedPointcut.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
+        } else {
+            updatedPointcut.setMethodModifiers(ImmutableList.of(MethodModifier.PUBLIC,
+                    MethodModifier.STATIC));
+        }
+        updatedPointcut.setMetricName(pointcut.getMetricName() + "e");
+        updatedPointcut.setSpanTemplate(pointcut.getSpanTemplate() + "f");
+        return updatedPointcut;
     }
 }

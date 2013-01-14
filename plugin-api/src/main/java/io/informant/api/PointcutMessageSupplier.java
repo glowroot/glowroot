@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,25 @@ import com.google.common.collect.ObjectArrays;
 public class PointcutMessageSupplier extends MessageSupplier {
 
     private final String template;
-    private final Object[] args;
+    private final String[] args;
     private volatile boolean hasReturnValue;
     @Nullable
     private volatile Object returnValue;
 
-    public static PointcutMessageSupplier create(String template, Object... args) {
+    public static PointcutMessageSupplier create(String template, String... args) {
         return new PointcutMessageSupplier(template, args);
     }
 
-    private PointcutMessageSupplier(String template, Object[] args) {
+    public static PointcutMessageSupplier create(String template, Object... args) {
+        // it is safer to convert args to strings immediately in case the object's string can change
+        String[] convertedArgs = new String[args.length];
+        for (int i = 0; i < args.length; i++) {
+            convertedArgs[i] = String.valueOf(args[i]);
+        }
+        return new PointcutMessageSupplier(template, convertedArgs);
+    }
+
+    private PointcutMessageSupplier(String template, String[] args) {
         this.template = template;
         this.args = args;
     }
@@ -50,8 +59,8 @@ public class PointcutMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         if (hasReturnValue) {
-            Object[] messageArgs = ObjectArrays.concat(args, String.valueOf(returnValue));
-            return Message.from(template + " => {{returnValue}}", messageArgs);
+            String[] messageArgs = ObjectArrays.concat(args, String.valueOf(returnValue));
+            return Message.from(template + " => {}", messageArgs);
         } else {
             return Message.from(template, args);
         }

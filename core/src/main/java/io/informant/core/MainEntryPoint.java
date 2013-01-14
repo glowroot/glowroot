@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.core.util.OnlyUsedByTests;
 import io.informant.core.util.Static;
 import io.informant.core.weaving.Advice;
+import io.informant.core.weaving.ParsedTypeCache;
 import io.informant.core.weaving.WeavingClassFileTransformer;
 import io.informant.core.weaving.WeavingMetric;
 import io.informant.local.ui.HttpServer;
@@ -71,6 +72,7 @@ public final class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
+    private static final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
     private static final WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
             Ticker.systemTicker());
 
@@ -152,7 +154,8 @@ public final class MainEntryPoint {
             if (injector != null) {
                 throw new IllegalStateException("Informant is already started");
             }
-            injector = Guice.createInjector(new InformantModule(properties, weavingMetric));
+            injector = Guice.createInjector(new InformantModule(properties, parsedTypeCache,
+                    weavingMetric));
             InformantModule.start(injector);
         }
         LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
@@ -183,7 +186,7 @@ public final class MainEntryPoint {
             advisors.addAll(plugin.getAdvisors());
         }
         return new WeavingClassFileTransformer(Iterables.toArray(mixins, Mixin.class),
-                Iterables.toArray(advisors, Advice.class), weavingMetric);
+                Iterables.toArray(advisors, Advice.class), parsedTypeCache, weavingMetric);
     }
 
     private static ImmutableMap<String, String> getInformantProperties() {

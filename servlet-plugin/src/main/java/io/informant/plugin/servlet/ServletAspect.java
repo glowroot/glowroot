@@ -315,7 +315,7 @@ public class ServletAspect {
         @Nullable
         public static Span onBefore(@InjectTarget Object listener) {
             return pluginServices.startTrace(MessageSupplier.from("servlet context initialized"
-                    + " ({{listener}})", listener.getClass().getName()), metric);
+                    + " ({})", listener.getClass().getName()), metric);
         }
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
@@ -338,7 +338,7 @@ public class ServletAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object servlet) {
-            return pluginServices.startTrace(MessageSupplier.from("servlet init ({{filter}})",
+            return pluginServices.startTrace(MessageSupplier.from("servlet init ({})",
                     servlet.getClass().getName()), metric);
         }
         @OnThrow
@@ -362,7 +362,7 @@ public class ServletAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object filter) {
-            return pluginServices.startTrace(MessageSupplier.from("filter init ({{filter}})",
+            return pluginServices.startTrace(MessageSupplier.from("filter init ({})",
                     filter.getClass().getName()), metric);
         }
         @OnThrow

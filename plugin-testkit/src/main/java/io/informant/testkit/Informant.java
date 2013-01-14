@@ -34,6 +34,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
@@ -142,6 +143,24 @@ public class Informant {
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
         post("/config/plugin/" + pluginId, config.toJson());
+    }
+
+    public List<PointcutConfig> getPointcutConfigs() throws Exception {
+        return getConfig().getPointcutConfigs();
+    }
+
+    public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
+        String response = post("/config/pointcut/+", gson.toJson(pointcutConfig));
+        return new JsonParser().parse(response).getAsString();
+    }
+
+    public void updatePointcutConfig(String uniqueHash, PointcutConfig pointcutConfig)
+            throws Exception {
+        post("/config/pointcut/" + uniqueHash, gson.toJson(pointcutConfig));
+    }
+
+    public void removePointcutConfig(String uniqueHash) throws Exception {
+        post("/config/pointcut/-", gson.toJson(uniqueHash));
     }
 
     public Trace getLastTrace() throws Exception {

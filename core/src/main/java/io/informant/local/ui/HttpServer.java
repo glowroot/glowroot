@@ -80,6 +80,7 @@ public class HttpServer extends HttpServerBase {
             TraceSummaryJsonService traceSummaryJsonService,
             TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
+            PointcutConfigJsonService pointcutConfigJsonService,
             ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
 
         super(port);
@@ -119,6 +120,18 @@ public class HttpServer extends HttpServerBase {
                 configJsonService, "updateUserConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/\\+$",
+                configJsonService, "addPointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/([0-9a-f]+)$",
+                configJsonService, "updatePointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/-$",
+                configJsonService, "removePointcutConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/pointcut/matching-type-names",
+                pointcutConfigJsonService, "getMatchingTypeNames"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/pointcut/matching-method-names",
+                pointcutConfigJsonService, "getMatchingMethodNames"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/pointcut/matching-methods",
+                pointcutConfigJsonService, "getMatchingMethods"));
         jsonServiceMappings.add(new JsonServiceMapping("^/threads/dump$",
                 threadDumpJsonService, "getThreadDump"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/compact$",

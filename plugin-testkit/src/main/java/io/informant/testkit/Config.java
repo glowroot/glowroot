@@ -15,6 +15,7 @@
  */
 package io.informant.testkit;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -32,6 +33,7 @@ public class Config {
     private FineProfilingConfig fineProfilingConfig;
     private UserConfig userConfig;
     private Map<String, PluginConfig> pluginConfigs;
+    private List<PointcutConfig> pointcutConfigs;
 
     public GeneralConfig getGeneralConfig() {
         return generalConfig;
@@ -53,6 +55,10 @@ public class Config {
         return pluginConfigs;
     }
 
+    public List<PointcutConfig> getPointcutConfigs() {
+        return pointcutConfigs;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof Config) {
@@ -61,7 +67,8 @@ public class Config {
                     && Objects.equal(coarseProfilingConfig, that.coarseProfilingConfig)
                     && Objects.equal(fineProfilingConfig, that.fineProfilingConfig)
                     && Objects.equal(userConfig, that.userConfig)
-                    && Objects.equal(pluginConfigs, that.pluginConfigs);
+                    && Objects.equal(pluginConfigs, that.pluginConfigs)
+                    && Objects.equal(pointcutConfigs, that.pointcutConfigs);
 
         }
         return false;
@@ -70,7 +77,7 @@ public class Config {
     @Override
     public int hashCode() {
         return Objects.hashCode(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userConfig, pluginConfigs);
+                userConfig, pluginConfigs, pointcutConfigs);
     }
 
     @Override
@@ -81,6 +88,7 @@ public class Config {
                 .add("fineProfilingConfig", fineProfilingConfig)
                 .add("userConfig", userConfig)
                 .add("pluginConfigs", pluginConfigs)
+                .add("pointcutConfigs", pointcutConfigs)
                 .toString();
     }
 }

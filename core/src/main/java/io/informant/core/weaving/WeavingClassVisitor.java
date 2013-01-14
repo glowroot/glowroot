@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.objectweb.asm.commons.Method;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -93,7 +92,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                     + " interfaceNames={}", new Object[] { access, name, signature, superName,
                     Joiner.on(", ").join(interfaceNames) });
         }
-        parsedType = ParsedType.builder(name, superName, ImmutableList.copyOf(interfaceNames));
+        parsedType = ParsedType.builder(TypeNames.fromInternal(name),
+                TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames));
         if ((access & ACC_INTERFACE) != 0) {
             // interfaces never get woven
             nothingAtAllToWeave = true;
@@ -101,16 +101,18 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         }
         type = Type.getObjectType(name);
         List<ParsedType> superTypes = Lists.newArrayList();
-        superTypes.addAll(parsedTypeCache.getTypeHierarchy(superName, loader));
+        superTypes.addAll(parsedTypeCache.getTypeHierarchy(TypeNames.fromInternal(superName),
+                loader));
         for (String interfaceName : interfaceNames) {
-            superTypes.addAll(parsedTypeCache.getTypeHierarchy(interfaceName, loader));
+            superTypes.addAll(parsedTypeCache.getTypeHierarchy(
+                    TypeNames.fromInternal(interfaceName), loader));
         }
         for (Iterator<ParsedType> i = superTypes.iterator(); i.hasNext();) {
             ParsedType superType = i.next();
             if (superType.isMissing()) {
                 i.remove();
                 logger.warn("type not found '{}' while recursing super types of '{}'{}",
-                        new Object[] { superType.getClassName(), type.getClassName(),
+                        new Object[] { superType.getName(), type.getClassName(),
                                 codeSource == null ? "" : "(" + codeSource.getLocation() + ")" });
             }
         }

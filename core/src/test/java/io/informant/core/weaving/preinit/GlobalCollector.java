@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 import org.objectweb.asm.ClassReader;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -103,9 +103,9 @@ public class GlobalCollector {
 
     public void processOverrides() throws IOException {
         while (true) {
-            for (String type : typeCollectors.keySet()) {
-                addOverrideReferencedMethods(type);
-                addOverrideBootstrapMethods(type);
+            for (String typeName : typeCollectors.keySet()) {
+                addOverrideReferencedMethods(typeName);
+                addOverrideBootstrapMethods(typeName);
             }
             if (overrides.isEmpty()) {
                 return;
@@ -118,13 +118,13 @@ public class GlobalCollector {
     }
 
     public List<String> usedTypes() {
-        List<String> types = Lists.newArrayList();
-        for (String type : Sets.newTreeSet(typeCollectors.keySet())) {
-            if (!Types.inBootstrapClassLoader(type) && Types.exists(type)) {
-                types.add(type.replace('/', '.'));
+        List<String> typeNames = Lists.newArrayList();
+        for (String typeName : Sets.newTreeSet(typeCollectors.keySet())) {
+            if (!Types.inBootstrapClassLoader(typeName) && Types.exists(typeName)) {
+                typeNames.add(typeName.replace('/', '.'));
             }
         }
-        return types;
+        return typeNames;
     }
 
     private void processMethod(MethodCollector methodCollector) throws IOException {
@@ -141,20 +141,20 @@ public class GlobalCollector {
         }
     }
 
-    private Optional<TypeCollector> addType(String type) throws IOException {
-        Optional<TypeCollector> optional = typeCollectors.get(type);
+    private Optional<TypeCollector> addType(String typeName) throws IOException {
+        Optional<TypeCollector> optional = typeCollectors.get(typeName);
         if (optional != null) {
             return optional;
         }
-        ImmutableSet.Builder<String> allSuperTypes = ImmutableSet.builder();
-        TypeCollector typeCollector = createTypeCollector(type);
+        ImmutableList.Builder<String> allSuperTypes = ImmutableList.builder();
+        TypeCollector typeCollector = createTypeCollector(typeName);
         if (typeCollector == null) {
             optional = Optional.absent();
-            typeCollectors.put(type, optional);
+            typeCollectors.put(typeName, optional);
             return optional;
         }
         // don't return or recurse without typeCollector being fully built
-        typeCollectors.put(type, Optional.of(typeCollector));
+        typeCollectors.put(typeName, Optional.of(typeCollector));
         if (typeCollector.getSuperType() != null) {
             // it's a major problem if super type is not present, ok to call Optional.get()
             TypeCollector superTypeCollector = addType(typeCollector.getSuperType()).get();
@@ -174,32 +174,32 @@ public class GlobalCollector {
         }
         typeCollector.setAllSuperTypes(allSuperTypes.build());
         // add static initializer (if it exists)
-        processMethod(ReferencedMethod.from(type, "<clinit>", "()V"));
+        processMethod(ReferencedMethod.from(typeName, "<clinit>", "()V"));
         // always add default constructor (if it exists)
-        processMethod(ReferencedMethod.from(type, "<init>", "()V"));
+        processMethod(ReferencedMethod.from(typeName, "<init>", "()V"));
         return Optional.of(typeCollector);
     }
 
     @Nullable
-    private TypeCollector createTypeCollector(String type) {
-        if (ClassLoader.getSystemResource(type + ".class") == null) {
-            logger.debug("could not find class: {}", type);
+    private TypeCollector createTypeCollector(String typeName) {
+        if (ClassLoader.getSystemResource(typeName + ".class") == null) {
+            logger.debug("could not find class: {}", typeName);
             return null;
         }
         TypeCollector typeCollector = new TypeCollector();
         try {
-            ClassReader cr = new ClassReader(type);
+            ClassReader cr = new ClassReader(typeName);
             MyRemappingClassAdapter visitor = new MyRemappingClassAdapter(typeCollector);
             cr.accept(visitor, 0);
             return typeCollector;
         } catch (IOException e) {
-            logger.error("error parsing class: {}", type);
+            logger.error("error parsing class: {}", typeName);
             return null;
         }
     }
 
-    private void addOverrideReferencedMethods(String type) {
-        Optional<TypeCollector> optional = typeCollectors.get(type);
+    private void addOverrideReferencedMethods(String typeName) {
+        Optional<TypeCollector> optional = typeCollectors.get(typeName);
         if (!optional.isPresent()) {
             return;
         }
@@ -211,7 +211,7 @@ public class GlobalCollector {
             }
             for (String superType : typeCollector.getAllSuperTypes()) {
                 if (referencedMethods.contains(ReferencedMethod.from(superType, methodId))) {
-                    addOverrideMethod(type, methodId);
+                    addOverrideMethod(typeName, methodId);
                     // break inner loop
                     break;
                 }
@@ -219,11 +219,11 @@ public class GlobalCollector {
         }
     }
 
-    private void addOverrideBootstrapMethods(String type) {
-        if (Types.inBootstrapClassLoader(type)) {
+    private void addOverrideBootstrapMethods(String typeName) {
+        if (Types.inBootstrapClassLoader(typeName)) {
             return;
         }
-        Optional<TypeCollector> optional = typeCollectors.get(type);
+        Optional<TypeCollector> optional = typeCollectors.get(typeName);
         if (!optional.isPresent()) {
             return;
         }
@@ -238,15 +238,15 @@ public class GlobalCollector {
                 if (Types.inBootstrapClassLoader(superType)) {
                     TypeCollector superTypeCollector = typeCollectors.get(superType).get();
                     if (superTypeCollector.getMethodCollector(methodId) != null) {
-                        addOverrideMethod(type, methodId);
+                        addOverrideMethod(typeName, methodId);
                     }
                 }
             }
         }
     }
 
-    private void addOverrideMethod(String type, String methodId) {
-        ReferencedMethod referencedMethod = ReferencedMethod.from(type, methodId);
+    private void addOverrideMethod(String typeName, String methodId) {
+        ReferencedMethod referencedMethod = ReferencedMethod.from(typeName, methodId);
         if (!referencedMethods.contains(referencedMethod)) {
             overrides.add(referencedMethod);
         }

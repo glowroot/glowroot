@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Defines pointcuts to capture data on {@link Statement}, {@link PreparedStatement},
@@ -501,9 +500,8 @@ public class JdbcAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Connection connection) {
-            return pluginServices.startSpan(
-                    MessageSupplier.from("jdbc commit [connection: {{hashCode}}]",
-                            Integer.toHexString(connection.hashCode())), metric);
+            return pluginServices.startSpan(MessageSupplier.from("jdbc commit [connection: {}]",
+                    Integer.toHexString(connection.hashCode())), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
@@ -571,8 +569,8 @@ public class JdbcAspect {
             if (pluginServices.isEnabled()) {
                 if (spanEnabled) {
                     return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
-                            + " DatabaseMetaData.{{methodName}}() [connection: {{hashCode}}]",
-                            methodName, getConnectionHashCode(databaseMetaData)), metric);
+                            + " DatabaseMetaData.{}() [connection: {}]", methodName,
+                            getConnectionHashCode(databaseMetaData)), metric);
                 } else {
                     return pluginServices.startTimer(metric);
                 }

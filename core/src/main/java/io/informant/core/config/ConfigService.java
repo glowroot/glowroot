@@ -176,6 +176,70 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
+    public List<PointcutConfig> readPointcutConfigs() {
+        return config.getPointcutConfigs();
+    }
+
+    public String insertPointcutConfig(PointcutConfig pointcutConfig) {
+        synchronized (writeLock) {
+            List<PointcutConfig> pointcutConfigs = Lists.newArrayList(config.getPointcutConfigs());
+            pointcutConfigs.add(pointcutConfig);
+            Config updatedConfig = Config.builder(config)
+                    .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
+        return pointcutConfig.getUniqueHash();
+    }
+
+    public String updatePointcutConfig(String previousUniqueHash, PointcutConfig pointcutConfig) {
+        synchronized (writeLock) {
+            List<PointcutConfig> pointcutConfigs = Lists.newArrayList(config.getPointcutConfigs());
+            boolean found = false;
+            for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
+                if (previousUniqueHash.equals(i.next().getUniqueHash())) {
+                    i.set(pointcutConfig);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                logger.warn("pointcut config unique hash '{}' not found", previousUniqueHash);
+                return previousUniqueHash;
+            }
+            Config updatedConfig = Config.builder(config)
+                    .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
+        return pointcutConfig.getUniqueHash();
+    }
+
+    public void deletePointcutConfig(String uniqueHash) {
+        synchronized (writeLock) {
+            List<PointcutConfig> pointcutConfigs = Lists.newArrayList(config.getPointcutConfigs());
+            boolean found = false;
+            for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
+                if (uniqueHash.equals(i.next().getUniqueHash())) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                logger.warn("pointcut config unique hash '{}' not found", uniqueHash);
+                return;
+            }
+            Config updatedConfig = Config.builder(config)
+                    .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
+    }
+
     // the updated config is not passed to the listeners to avoid the race condition of multiple
     // config updates being sent out of order, instead listeners must call get*Config() which will
     // never return the updates out of order (at worst it may return the most recent update twice

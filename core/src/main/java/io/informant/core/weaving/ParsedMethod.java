@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import com.google.common.base.Objects;
  * @since 0.5
  */
 @Immutable
-class ParsedMethod {
+public class ParsedMethod {
 
     private final String name;
     private final Type[] argTypes;
@@ -47,19 +47,19 @@ class ParsedMethod {
         this.modifiers = modifiers;
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
-    Type[] getArgTypes() {
+    public Type[] getArgTypes() {
         return argTypes;
     }
 
-    Type getReturnType() {
+    public Type getReturnType() {
         return returnType;
     }
 
-    int getModifiers() {
+    public int getModifiers() {
         return modifiers;
     }
 

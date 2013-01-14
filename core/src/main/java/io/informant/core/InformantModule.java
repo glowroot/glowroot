@@ -27,6 +27,7 @@ import io.informant.core.util.Clock;
 import io.informant.core.util.DaemonExecutors;
 import io.informant.core.util.DataSource;
 import io.informant.core.util.RollingFile;
+import io.informant.core.weaving.ParsedTypeCache;
 import io.informant.local.log.LogMessageSinkLocal;
 import io.informant.local.trace.TraceSinkLocal;
 
@@ -72,10 +73,13 @@ class InformantModule extends AbstractModule {
 
     private final ImmutableMap<String, String> properties;
     private final WeavingMetricImpl weavingMetric;
+    private final ParsedTypeCache parsedTypeCache;
 
-    InformantModule(Map<String, String> properties, WeavingMetricImpl weavingMetric) {
+    InformantModule(Map<String, String> properties, ParsedTypeCache parsedTypeCache,
+            WeavingMetricImpl weavingMetric) {
         this.properties = ImmutableMap.copyOf(properties);
         this.weavingMetric = weavingMetric;
+        this.parsedTypeCache = parsedTypeCache;
     }
 
     @Override
@@ -95,6 +99,12 @@ class InformantModule extends AbstractModule {
     @Singleton
     WeavingMetricImpl providesWeavingMetricImpl() {
         return weavingMetric;
+    }
+
+    @Provides
+    @Singleton
+    ParsedTypeCache providesParsedTypeCache() {
+        return parsedTypeCache;
     }
 
     @Provides

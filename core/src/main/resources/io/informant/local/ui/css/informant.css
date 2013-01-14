@@ -361,8 +361,22 @@ a:focus {
   font-size: 19px;
   line-height: normal;
 }
+.new-pointcut-header {
+  display: block;
+  margin-left: 40px;
+  padding: 12px 1em;
+  border-radius: 6px;
+  background-color: #eee;
+  vertical-align: middle;
+  font-size: 19px;
+  line-height: normal;
+}
 .section-header:hover,
 .section-header:focus {
+  background-color: #ddd;
+}
+.pointcut-header:hover,
+.pointcut-header:focus {
   background-color: #ddd;
 }
 .configuration-status {
@@ -450,3 +464,50 @@ a:focus {
   background-color: #eee;
   border-radius: 6px;
 }
+.adhoc-pointcut-heading {
+  margin-left: 20px;
+  margin-bottom: 20px;
+  /*font-weight: bold;*/
+  font-size: 16px;
+}
+.adhoc-pointcut-group {
+  margin-bottom: 10px;
+  clear: both;
+}
+.adhoc-pointcut-label {
+  font-weight: bold;
+  width: 240px;
+  float: left;
+  text-align: right;
+}
+.adhoc-pointcut-value {
+  margin-left: 260px;
+}
+.adhoc-pointcut-actions {
+  margin-left: 260px;
+  margin-top: 20px;
+}
+.adhoc-pointcut-actions button {
+  /* small padding between edit and delete buttons */
+  margin-right: 5px;
+}
+/*
+.readonly-form-group {
+  margin-bottom: 10px;
+  clear: both;
+}
+.readonly-form-label {
+  width: 200px;
+  float: left;
+  text-align: right;
+}
+.readonly-form-controls {
+  margin-left: 220px;
+}
+.readonly-form-actions {
+  margin-left: 220px;
+}
+.readonly-form-horizontal .form-actions {
+  padding-left: 240px;
+}
+*/

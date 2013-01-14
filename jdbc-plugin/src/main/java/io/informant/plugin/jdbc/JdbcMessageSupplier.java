@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.informant.plugin.jdbc;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.shaded.google.common.collect.ImmutableList;
-import io.informant.shaded.google.common.collect.Lists;
 
 import java.util.List;
 
@@ -107,6 +106,7 @@ class JdbcMessageSupplier extends MessageSupplier {
         this.connectionHashCode = connectionHashCode;
     }
 
+    @Override
     public Message get() {
         StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");
@@ -119,9 +119,10 @@ class JdbcMessageSupplier extends MessageSupplier {
             sb.append(Integer.toString(batchedParameters.size()));
             sb.append(" x ");
         }
-        List<Object> args = Lists.newArrayListWithCapacity(2);
-        sb.append("{{sql}}");
-        args.add(sql);
+        int numArgs = (numRows == NEXT_HAS_NOT_BEEN_CALLED) ? 1 : 2;
+        String[] args = new String[numArgs];
+        sb.append("{}");
+        args[0] = sql;
         if (isUsingParameters() && !parameters.isEmpty()) {
             appendParameters(sb, parameters);
         } else if (isUsingBatchedParameters()) {
@@ -139,7 +140,7 @@ class JdbcMessageSupplier extends MessageSupplier {
             sb.append(Integer.toHexString(connectionHashCode));
         }
         sb.append("]");
-        return Message.from(sb.toString(), args.toArray());
+        return Message.from(sb.toString(), args);
     }
 
     // TODO put row num and bind parameters in detail map?
@@ -173,14 +174,14 @@ class JdbcMessageSupplier extends MessageSupplier {
         }
     }
 
-    private void appendRowCount(StringBuilder sb, List<Object> args) {
-        sb.append(" => {{numRows}}");
+    private void appendRowCount(StringBuilder sb, String[] args) {
+        sb.append(" => {}");
         if (numRows == 1) {
             sb.append(" row");
         } else {
             sb.append(" rows");
         }
-        args.add(numRows);
+        args[1] = Integer.toString(numRows);
     }
 
     private static void appendParameters(StringBuilder sb, List<Object> parameters) {
