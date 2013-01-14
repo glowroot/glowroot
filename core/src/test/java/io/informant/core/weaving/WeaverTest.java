@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import io.informant.core.weaving.SomeAspect.CircularClassDependencyAdvice;
 import io.informant.core.weaving.SomeAspect.ClassTargetedMixin;
 import io.informant.core.weaving.SomeAspect.HasString;
 import io.informant.core.weaving.SomeAspect.InjectMethodArgAdvice;
+import io.informant.core.weaving.SomeAspect.InjectMethodArgArrayAdvice;
 import io.informant.core.weaving.SomeAspect.InjectMethodNameAdvice;
 import io.informant.core.weaving.SomeAspect.InjectReturnAdvice;
 import io.informant.core.weaving.SomeAspect.InjectTargetAdvice;
@@ -205,6 +206,44 @@ public class WeaverTest {
         assertThat(InjectMethodArgAdvice.onReturnParams.get()).isNull();
         assertThat(InjectMethodArgAdvice.onThrowParams.get()).isEqualTo(parameters);
         assertThat(InjectMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
+    }
+
+    // ===================== @InjectMethodArgArray =====================
+
+    @Test
+    public void shouldInjectMethodArgArray() throws Exception {
+        // given
+        InjectMethodArgArrayAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectMethodArgArrayAdvice.class);
+        // when
+        test.executeWithArgs("one", 2);
+        // then
+        Object[] parameters = new Object[] { "one", 2 };
+        assertThat(InjectMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(InjectMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(InjectMethodArgArrayAdvice.onReturnParams.get()).isEqualTo(parameters);
+        assertThat(InjectMethodArgArrayAdvice.onThrowParams.get()).isNull();
+        assertThat(InjectMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
+    }
+
+    @Test
+    public void shouldInjectMethodArgArrayOnThrow() throws Exception {
+        // given
+        InjectMethodArgArrayAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class,
+                InjectMethodArgArrayAdvice.class);
+        // when
+        try {
+            test.executeWithArgs("one", 2);
+        } catch (Throwable t) {
+        }
+        // then
+        Object[] parameters = new Object[] { "one", 2 };
+        assertThat(InjectMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(InjectMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(InjectMethodArgArrayAdvice.onReturnParams.get()).isNull();
+        assertThat(InjectMethodArgArrayAdvice.onThrowParams.get()).isEqualTo(parameters);
+        assertThat(InjectMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
     // ===================== @InjectTraveler =====================

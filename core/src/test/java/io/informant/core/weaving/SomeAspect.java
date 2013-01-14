@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.informant.core.weaving;
 
 import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectMethodArg;
+import io.informant.api.weaving.InjectMethodArgArray;
 import io.informant.api.weaving.InjectMethodName;
 import io.informant.api.weaving.InjectReturn;
 import io.informant.api.weaving.InjectTarget;
@@ -256,6 +257,44 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter(@InjectMethodArg String one, @InjectMethodArg int two) {
             onAfterParams.set(new Object[] { one, two });
+        }
+        public static void resetThreadLocals() {
+            isEnabledParams.remove();
+            onBeforeParams.remove();
+            onReturnParams.remove();
+            onThrowParams.remove();
+            onAfterParams.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "executeWithArgs",
+            methodArgs = { "java.lang.String", "int" })
+    public static class InjectMethodArgArrayAdvice {
+        public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
+        public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
+        public static ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
+        public static ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
+        public static ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
+        @IsEnabled
+        public static boolean isEnabled(@InjectMethodArgArray Object[] args) {
+            isEnabledParams.set(args);
+            return true;
+        }
+        @OnBefore
+        public static void onBefore(@InjectMethodArgArray Object[] args) {
+            onBeforeParams.set(args);
+        }
+        @OnReturn
+        public static void onReturn(@InjectMethodArgArray Object[] args) {
+            onReturnParams.set(args);
+        }
+        @OnThrow
+        public static void onThrow(@InjectMethodArgArray Object[] args) {
+            onThrowParams.set(args);
+        }
+        @OnAfter
+        public static void onAfter(@InjectMethodArgArray Object[] args) {
+            onAfterParams.set(args);
         }
         public static void resetThreadLocals() {
             isEnabledParams.remove();

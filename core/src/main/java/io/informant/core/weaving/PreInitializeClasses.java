@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableList;
  * 
  * -- http://mail.openjdk.java.net/pipermail/hotspot-dev/2012-March/005464.html
  * 
- * In particular (at least prior to parallel class loading in JDK 7) intializing other classes
+ * In particular (at least prior to parallel class loading in JDK 7) initializing other classes
  * inside of a ClassFileTransformer.transform() method occasionally leads to deadlocks. To avoid
  * initializing other classes inside of the transform() method, all classes referenced from
  * InformantClassFileTransformer are pre-initialized (and all classes referenced from those classes,
@@ -287,6 +287,7 @@ class PreInitializeClasses {
         types.add("io.informant.api.Metric");
         types.add("io.informant.api.Timer");
         types.add("io.informant.api.weaving.InjectMethodArg");
+        types.add("io.informant.api.weaving.InjectMethodArgArray");
         types.add("io.informant.api.weaving.InjectMethodName");
         types.add("io.informant.api.weaving.InjectReturn");
         types.add("io.informant.api.weaving.InjectTarget");

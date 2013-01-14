@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.informant.core.weaving;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.weaving.InjectMethodArg;
+import io.informant.api.weaving.InjectMethodArgArray;
 import io.informant.api.weaving.InjectMethodName;
 import io.informant.api.weaving.InjectReturn;
 import io.informant.api.weaving.InjectTarget;
@@ -58,23 +59,27 @@ public class Advice {
     private static final Logger logger = LoggerFactory.getLogger(Advice.class);
 
     private static final Collection<ParameterKind> isEnabledValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME);
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
+            ParameterKind.METHOD_NAME);
     private static final Collection<ParameterKind> onBeforeValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME);
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
+            ParameterKind.METHOD_NAME);
     private static final Collection<ParameterKind> onReturnValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME,
-            ParameterKind.RETURN, ParameterKind.TRAVELER);
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
+            ParameterKind.METHOD_NAME, ParameterKind.RETURN, ParameterKind.TRAVELER);
     private static final Collection<ParameterKind> onThrowValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME,
-            ParameterKind.THROWABLE, ParameterKind.TRAVELER);
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
+            ParameterKind.METHOD_NAME, ParameterKind.THROWABLE, ParameterKind.TRAVELER);
     private static final Collection<ParameterKind> onAfterValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_NAME,
+            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
+            ParameterKind.METHOD_NAME,
             ParameterKind.TRAVELER);
 
     private static final Map<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
                     .put(InjectTarget.class, ParameterKind.TARGET)
                     .put(InjectMethodArg.class, ParameterKind.METHOD_ARG)
+                    .put(InjectMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
                     .put(InjectMethodName.class, ParameterKind.METHOD_NAME)
                     .put(InjectReturn.class, ParameterKind.RETURN)
                     .put(InjectThrowable.class, ParameterKind.THROWABLE)
@@ -224,7 +229,8 @@ public class Advice {
     }
 
     enum ParameterKind {
-        TARGET, METHOD_ARG, PRIMITIVE_METHOD_ARG, METHOD_NAME, RETURN, THROWABLE, TRAVELER;
+        TARGET, METHOD_ARG, METHOD_ARG_ARRAY, PRIMITIVE_METHOD_ARG, METHOD_NAME, RETURN, THROWABLE,
+        TRAVELER;
     }
 
     private static class Builder {
@@ -263,6 +269,7 @@ public class Advice {
             initFromClass(adviceClass);
         }
 
+        @Nullable
         private Pattern buildPattern(String maybePattern) {
             if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
                 // full regex power

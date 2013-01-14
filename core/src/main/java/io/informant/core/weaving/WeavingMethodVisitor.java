@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.informant.core.weaving;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.weaving.InjectMethodArg;
+import io.informant.api.weaving.InjectTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -464,6 +465,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                             + InjectMethodArg.class.getSimpleName() + " arguments than the number"
                             + " of args in the target method", new Throwable());
                 }
+            } else if (parameterType == ParameterKind.METHOD_ARG_ARRAY) {
+                loadArgArray();
             } else if (parameterType == ParameterKind.PRIMITIVE_METHOD_ARG) {
                 // no autobox
                 loadArg(argIndex++);
@@ -477,8 +480,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
             } else if (parameterType == ParameterKind.TRAVELER) {
                 if (travelerLocal == null) {
                     logger.error("the @" + annotationType.getSimpleName() + " method in "
-                            + adviceType.getClassName()
-                            + " requested @InjectTraveler but @OnBefore returns void");
+                            + adviceType.getClassName() + " requested @"
+                            + InjectTraveler.class.getSimpleName() + " but @"
+                            + OnBefore.class.getSimpleName() + " returns void");
                     // try to pass null (TODO handle primitive types also)
                     visitInsn(ACONST_NULL);
                 } else {
