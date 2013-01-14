@@ -186,6 +186,8 @@ public final class Plugins {
             defaultValue = getDefaultValue(type, defaultValueText);
         } else if (type.equals("boolean")) {
             defaultValue = false;
+        } else if (type.equals("string")) {
+            defaultValue = "";
         } else {
             defaultValue = null;
         }

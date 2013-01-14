@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ public abstract class PluginServices {
 
     public abstract boolean isEnabled();
 
-    @Nullable
     public abstract String getStringProperty(String propertyName);
 
     public abstract boolean getBooleanProperty(String propertyName);
@@ -149,9 +148,8 @@ public abstract class PluginServices {
             return false;
         }
         @Override
-        @Nullable
         public String getStringProperty(String propertyName) {
-            return null;
+            return "";
         }
         @Override
         public boolean getBooleanProperty(String propertyName) {

@@ -129,7 +129,7 @@ public class SessionAttributeTest {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionAttributes", null);
+        pluginConfig.setProperty("sessionAttributes", "");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
@@ -196,7 +196,7 @@ public class SessionAttributeTest {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("sessionAttributes", null);
+        pluginConfig.setProperty("sessionAttributes", "");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);

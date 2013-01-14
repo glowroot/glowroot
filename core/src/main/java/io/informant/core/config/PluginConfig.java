@@ -89,13 +89,13 @@ public class PluginConfig {
         }
         Object value = optional.orNull();
         if (value == null) {
-            return null;
+            return "";
         } else if (value instanceof String) {
             return (String) value;
         } else {
             logger.error("expecting string value type, but found value type '"
                     + value.getClass() + "' for property name '" + name + "'");
-            return null;
+            return "";
         }
     }
 
@@ -276,6 +276,12 @@ public class PluginConfig {
                     logger.warn("boolean property types do not accept null values");
                 }
                 properties.put(name, Optional.of(false));
+            } else if (value == null && property.getJavaClass() == String.class) {
+                if (!ignoreWarnings) {
+                    logger.warn("string property types do not accept null values"
+                            + " (use empty string instead)");
+                }
+                properties.put(name, Optional.of(""));
             } else {
                 properties.put(name, Optional.fromNullable(value));
             }

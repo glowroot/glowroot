@@ -83,12 +83,12 @@ public class PluginConfigTest {
     public void shouldSetNullPropertyValueAsEmptyString() throws Exception {
         // given
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", null);
+        pluginConfig.setProperty("alternateHeadline", "");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         PluginConfig updatedPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat(updatedPluginConfig.getProperty("alternateHeadline")).isEqualTo(null);
+        assertThat(updatedPluginConfig.getProperty("alternateHeadline")).isEqualTo("");
         assertThat(updatedPluginConfig.hasProperty("alternateHeadline")).isTrue();
     }
 
@@ -100,11 +100,11 @@ public class PluginConfigTest {
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", null);
+        pluginConfig.setProperty("alternateHeadline", "");
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // then
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo(null);
+        assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo("");
     }
 
     @Test
@@ -132,7 +132,7 @@ public class PluginConfigTest {
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant:informant-integration-tests");
         pluginConfig.setEnabled(true);
-        pluginConfig.setProperty("alternateHeadline", null);
+        pluginConfig.setProperty("alternateHeadline", "");
         pluginConfig.setProperty("starredHeadline", true);
         container.getInformant().updatePluginConfig("io.informant:informant-integration-tests",
                 pluginConfig);

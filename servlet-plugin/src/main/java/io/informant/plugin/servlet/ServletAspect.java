@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class ServletAspect {
             if (session != null) {
                 String sessionUserIdAttributePath = ServletPluginProperties
                         .sessionUserIdAttributePath();
-                if (sessionUserIdAttributePath != null) {
+                if (!sessionUserIdAttributePath.equals("")) {
                     // capture user id now, don't use a lazy supplier
                     String userId = getSessionAttributeTextValue(session,
                             sessionUserIdAttributePath);
@@ -400,7 +400,7 @@ public class ServletAspect {
             return;
         }
         String sessionUserIdAttributePath = ServletPluginProperties.sessionUserIdAttributePath();
-        if (sessionUserIdAttributePath != null) {
+        if (!sessionUserIdAttributePath.equals("")) {
             // capture user id now, don't use a lazy supplier
             if (sessionUserIdAttributePath.equals(name)) {
                 pluginServices.setUserId(value.toString());

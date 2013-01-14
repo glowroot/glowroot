@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import io.informant.shaded.google.common.collect.Iterables;
 
 import java.util.Set;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -65,7 +64,6 @@ final class ServletPluginProperties {
         updateCache();
     }
 
-    @Nullable
     static String sessionUserIdAttributePath() {
         return sessionUserIdAttributePath;
     }
@@ -97,27 +95,20 @@ final class ServletPluginProperties {
                 .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME);
         String sessionAttributesText = pluginServices
                 .getStringProperty(SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
-        if (sessionAttributesText == null) {
-            // update cached first so that another thread cannot come into this method and get a
-            // positive match for text but then get the old cached attributes
-            sessionAttributePaths = ImmutableSet.of();
-            sessionAttributeNames = ImmutableSet.of();
-        } else {
-            // can't use guava Splitter at the moment due to severe initialization performance of
-            // guava-jdk5's Splitter on JDK5
-            ImmutableSet.Builder<String> paths = ImmutableSet.builder();
-            for (String path : sessionAttributesText.split(",")) {
-                path = path.trim();
-                if (!path.equals("")) {
-                    paths.add(path);
-                }
+        // can't use guava Splitter at the moment due to severe initialization performance of
+        // guava-jdk5's Splitter on JDK5
+        ImmutableSet.Builder<String> paths = ImmutableSet.builder();
+        for (String path : sessionAttributesText.split(",")) {
+            path = path.trim();
+            if (!path.equals("")) {
+                paths.add(path);
             }
-            // update cached first so that another thread cannot come into this method and get a
-            // positive match for text but then get the old cached attributes
-            sessionAttributePaths = paths.build();
-            sessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(sessionAttributePaths,
-                    substringBefore('.')));
         }
+        // update cached first so that another thread cannot come into this method and get a
+        // positive match for text but then get the old cached attributes
+        sessionAttributePaths = paths.build();
+        sessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(sessionAttributePaths,
+                substringBefore('.')));
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
     }
