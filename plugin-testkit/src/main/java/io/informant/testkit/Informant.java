@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,6 @@
  */
 package io.informant.testkit;
 
-import io.informant.testkit.Config.CoarseProfilingConfig;
-import io.informant.testkit.Config.CoreConfig;
-import io.informant.testkit.Config.FineProfilingConfig;
-import io.informant.testkit.Config.PluginConfig;
-import io.informant.testkit.Config.PluginConfigJsonDeserializer;
-import io.informant.testkit.Config.UserTracingConfig;
 import io.informant.testkit.LogMessage.Level;
 import io.informant.testkit.Trace.CapturedException;
 
@@ -54,9 +48,10 @@ import com.ning.http.client.Response;
 @ThreadSafe
 public class Informant {
 
+    private static final Gson gson = new Gson();
+
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
-    private final Gson gson = new Gson();
 
     private long baselineTime;
 
@@ -66,9 +61,9 @@ public class Informant {
     }
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
-        CoreConfig coreConfig = getCoreConfig();
-        coreConfig.setStoreThresholdMillis(storeThresholdMillis);
-        updateCoreConfig(coreConfig);
+        GeneralConfig generalConfig = getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(storeThresholdMillis);
+        updateGeneralConfig(generalConfig);
     }
 
     public String get(String path) throws Exception {
@@ -93,11 +88,11 @@ public class Informant {
         return validateAndReturnBody(response);
     }
 
-    public CoreConfig getCoreConfig() throws Exception {
-        return getConfig().getCoreConfig();
+    public GeneralConfig getGeneralConfig() throws Exception {
+        return getConfig().getGeneralConfig();
     }
 
-    public void updateCoreConfig(CoreConfig config) throws Exception {
+    public void updateGeneralConfig(GeneralConfig config) throws Exception {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
@@ -112,7 +107,7 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/profiling/coarse", new GsonBuilder().serializeNulls().create()
+        post("/config/coarse-profiling", new GsonBuilder().serializeNulls().create()
                 .toJson(config));
     }
 
@@ -124,18 +119,18 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/profiling/fine", new GsonBuilder().serializeNulls().create().toJson(config));
+        post("/config/fine-profiling", new GsonBuilder().serializeNulls().create().toJson(config));
     }
 
-    public UserTracingConfig getUserTracingConfig() throws Exception {
-        return getConfig().getUserTracingConfig();
+    public UserConfig getUserConfig() throws Exception {
+        return getConfig().getUserConfig();
     }
 
-    public void updateUserTracingConfig(UserTracingConfig config) throws Exception {
+    public void updateUserConfig(UserConfig config) throws Exception {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/tracing/user", new GsonBuilder().serializeNulls().create().toJson(config));
+        post("/config/user", new GsonBuilder().serializeNulls().create().toJson(config));
     }
 
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
@@ -191,6 +186,7 @@ public class Informant {
         }
     }
 
+    @Nullable
     private JsonArray getMaxPointByCapturedAt(JsonArray points) {
         long maxCapturedAt = 0;
         JsonArray maxPoint = null;
@@ -248,10 +244,11 @@ public class Informant {
             throw new AssertionError("There were warnings and/or errors: "
                     + Joiner.on(", ").join(warningMessages));
         }
+        post("/admin/config/truncate", "");
     }
 
     public int getNumPendingTraceWrites() throws Exception {
-        String numTraces = get("/admin/numPendingTraceWrites");
+        String numTraces = get("/admin/num-pending-trace-writes");
         return Integer.parseInt(numTraces);
     }
 
@@ -263,6 +260,7 @@ public class Informant {
         this.baselineTime = System.currentTimeMillis();
     }
 
+    @Nullable
     private Trace getActiveTrace() throws Exception {
         String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
@@ -282,8 +280,6 @@ public class Informant {
 
     private Config getConfig() throws Exception {
         String json = get("/config/read");
-        Gson gson = new GsonBuilder().registerTypeAdapter(PluginConfig.class,
-                new PluginConfigJsonDeserializer()).create();
         return gson.fromJson(json, Config.class);
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ class InformantModule extends AbstractModule {
     @Provides
     @Singleton
     RollingFile providesRollingFile(ConfigService configService, @Named("data.dir") File dataDir) {
-        int rollingSizeMb = configService.getCoreConfig().getRollingSizeMb();
+        int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
         try {
             // 1gb
             return new RollingFile(new File(dataDir, "informant.rolling.db"),

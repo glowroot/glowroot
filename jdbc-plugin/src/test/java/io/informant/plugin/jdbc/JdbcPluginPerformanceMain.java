@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 package io.informant.plugin.jdbc;
 
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Config.CoreConfig;
-import io.informant.testkit.Config.PluginConfig;
+import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
+import io.informant.testkit.PluginConfig;
 import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.Metric;
 import io.informant.testkit.TraceMarker;
@@ -91,9 +91,9 @@ public class JdbcPluginPerformanceMain {
     private static void testWithInformantCoreDisabled() throws Exception {
         System.out.print("with informant disabled:   ");
         InformantContainer container = setUpContainer();
-        CoreConfig config = container.getInformant().getCoreConfig();
+        GeneralConfig config = container.getInformant().getGeneralConfig();
         config.setEnabled(false);
-        container.getInformant().updateCoreConfig(config);
+        container.getInformant().updateGeneralConfig(config);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         container.close();
     }

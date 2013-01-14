@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Config.CoreConfig;
+import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.Span;
@@ -40,6 +40,9 @@ public class UpgradeTest {
     public void shouldReadTraces() throws Exception {
         // given
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
+        Files.copy(Resources.newInputStreamSupplier(Resources
+                .getResource("for-upgrade-test/config.json")),
+                new File(dataDir, "config.json"));
         Files.copy(Resources.newInputStreamSupplier(Resources
                 .getResource("for-upgrade-test/informant.h2.db")),
                 new File(dataDir, "informant.h2.db"));
@@ -66,12 +69,14 @@ public class UpgradeTest {
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(0, false);
         container.getInformant().setStoreThresholdMillis(0);
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
+        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
         // disable trace snapshot expiration so the test data won't expire
-        coreConfig.setSnapshotExpirationHours(-1);
-        container.getInformant().updateCoreConfig(coreConfig);
+        generalConfig.setSnapshotExpirationHours(-1);
+        container.getInformant().updateGeneralConfig(generalConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         container.closeWithoutDeletingDataDir();
+        Files.copy(new File(container.getDataDir(), "config.json"),
+                new File("src/test/resources/for-upgrade-test/config.json"));
         Files.copy(new File(container.getDataDir(), "informant.h2.db"),
                 new File("src/test/resources/for-upgrade-test/informant.h2.db"));
         Files.copy(new File(container.getDataDir(), "informant.rolling.db"),

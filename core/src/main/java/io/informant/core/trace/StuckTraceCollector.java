@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.informant.core.trace;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.config.ConfigService;
-import io.informant.core.config.CoreConfig;
+import io.informant.core.config.GeneralConfig;
 import io.informant.core.util.DaemonExecutors;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -88,8 +88,8 @@ public class StuckTraceCollector implements Runnable {
     // look for traces that will exceed the stuck threshold within the next polling interval and
     // schedule stuck trace command to run at the appropriate time(s)
     private void runInternal() {
-        CoreConfig config = configService.getCoreConfig();
-        if (config.getStuckThresholdSeconds() != CoreConfig.STORE_THRESHOLD_DISABLED) {
+        GeneralConfig config = configService.getGeneralConfig();
+        if (config.getStuckThresholdSeconds() != GeneralConfig.STORE_THRESHOLD_DISABLED) {
             // stuck threshold is not disabled
             long stuckThresholdTick = ticker.read()
                     - TimeUnit.SECONDS.toNanos(config.getStuckThresholdSeconds())

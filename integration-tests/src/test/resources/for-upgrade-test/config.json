@@ -1,0 +1,50 @@
+{
+  "general": {
+    "enabled": true,
+    "storeThresholdMillis": 0,
+    "stuckThresholdSeconds": 180,
+    "spanStackTraceThresholdMillis": 2147483647,
+    "maxSpans": 5000,
+    "snapshotExpirationHours": -1,
+    "rollingSizeMb": 1000,
+    "warnOnSpanOutsideTrace": false
+  },
+  "coarse-profiling": {
+    "enabled": true,
+    "initialDelayMillis": 1000,
+    "intervalMillis": 500,
+    "totalSeconds": 300
+  },
+  "fine-profiling": {
+    "enabled": true,
+    "tracePercentage": 0.0,
+    "intervalMillis": 50,
+    "totalSeconds": 10,
+    "storeThresholdMillis": -1
+  },
+  "user": {
+    "enabled": true,
+    "userId": null,
+    "storeThresholdMillis": 0,
+    "fineProfiling": true
+  },
+  "plugins": [
+    {
+      "groupId": "io.informant",
+      "artifactId": "informant-integration-tests",
+      "enabled": true,
+      "properties": {
+        "starredHeadline": false,
+        "alternateHeadline": "",
+        "hasDefaultVal": "one"
+      }
+    },
+    {
+      "groupId": "io.informant",
+      "artifactId": "informant-plugin-testkit",
+      "enabled": true,
+      "properties": {}
+    }
+  ],
+  "pointcuts": []
+}

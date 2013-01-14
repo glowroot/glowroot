@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Config.CoreConfig;
+import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.Trace;
 import io.informant.testkit.TraceMarker;
@@ -63,10 +63,10 @@ public class StuckTraceTest {
     @Test
     public void shouldReadActiveStuckTrace() throws Exception {
         // given
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setStoreThresholdMillis(0);
-        coreConfig.setStuckThresholdSeconds(0);
-        container.getInformant().updateCoreConfig(coreConfig);
+        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(0);
+        generalConfig.setStuckThresholdSeconds(0);
+        container.getInformant().updateGeneralConfig(generalConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {

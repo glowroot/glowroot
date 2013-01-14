@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 package io.informant.testing.ui;
 
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Config.CoarseProfilingConfig;
-import io.informant.testkit.Config.CoreConfig;
-import io.informant.testkit.Config.FineProfilingConfig;
+import io.informant.testkit.CoarseProfilingConfig;
+import io.informant.testkit.FineProfilingConfig;
+import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
 
 import org.slf4j.Logger;
@@ -39,10 +39,10 @@ public final class UiTestingMain {
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(UI_PORT, false);
         // set thresholds low so there will be lots of data to view
-        CoreConfig coreConfig = container.getInformant().getCoreConfig();
-        coreConfig.setStoreThresholdMillis(0);
-        coreConfig.setSpanStackTraceThresholdMillis(100);
-        container.getInformant().updateCoreConfig(coreConfig);
+        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
+        generalConfig.setStoreThresholdMillis(0);
+        generalConfig.setSpanStackTraceThresholdMillis(100);
+        container.getInformant().updateGeneralConfig(generalConfig);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(500);

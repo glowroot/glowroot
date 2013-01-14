@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@ package io.informant.local.ui;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.config.ConfigService;
 import io.informant.core.util.DataSource;
+import io.informant.core.util.OnlyUsedByTests;
 import io.informant.local.log.LogMessage;
 import io.informant.local.log.LogMessageDao;
 import io.informant.local.trace.TraceSinkLocal;
@@ -45,15 +47,17 @@ class AdminJsonService implements JsonService {
 
     private final LogMessageDao logMessageDao;
     private final TraceSnapshotDao traceSnapshotDao;
+    private final ConfigService configService;
     private final TraceSinkLocal traceSinkLocal;
     private final DataSource dataSource;
 
     @Inject
     AdminJsonService(LogMessageDao logMessageDao, TraceSnapshotDao traceSnapshotDao,
-            TraceSinkLocal traceSinkLocal, DataSource dataSource) {
+            ConfigService configService, TraceSinkLocal traceSinkLocal, DataSource dataSource) {
 
         this.logMessageDao = logMessageDao;
         this.traceSnapshotDao = traceSnapshotDao;
+        this.configService = configService;
         this.traceSinkLocal = traceSinkLocal;
         this.dataSource = dataSource;
     }
@@ -73,6 +77,13 @@ class AdminJsonService implements JsonService {
         logger.debug("truncateData()");
         traceSnapshotDao.deleteAllSnapshots();
         compactData();
+    }
+
+    @OnlyUsedByTests
+    @JsonServiceMethod
+    void truncateConfig() throws SQLException {
+        logger.debug("truncateConfig()");
+        configService.deleteConfig();
     }
 
     @JsonServiceMethod
@@ -103,7 +114,7 @@ class AdminJsonService implements JsonService {
         } catch (IOException e) {
             // this isn't really possible since writing to StringBuilder
             logger.error(e.getMessage(), e);
-            return null;
+            return "[]";
         }
         return sb.toString();
     }
@@ -116,7 +127,7 @@ class AdminJsonService implements JsonService {
 
     @JsonServiceMethod
     String getNumPendingTraceWrites() {
-        logger.debug("handleNumPendingTraceWrites()");
+        logger.debug("getNumPendingTraceWrites()");
         return Integer.toString(traceSinkLocal.getPendingCount());
     }
 }

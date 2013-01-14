@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Copyright 2012 the original author or authors.
+  Copyright 2012-2013 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -29,12 +29,14 @@
 <script type="text/javascript" src="libs/spin/1.2.7/spin.min.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
-<button class="section-header realbtn"
-    onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
-  {{name}} <span class="configuration-status" id="{{id}}_status"></span>
-</button>
+<div style="margin-left: 40px">
+  <button class="section-header realbtn"
+      onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
+    {{name}} <span class="configuration-status" id="{{id}}_status"></span>
+  </button>
+</div>
 <br>
-<form class="section-body form-horizontal hide" id="form_{{id}}">
+<form class="section-body form-horizontal hide" id="form_{{id}}" style="margin-left: 60px">
   <fieldset>
     <div class="section-body-padding">
       <div class="control-group">
@@ -120,20 +122,20 @@
     showSpinner('#initialLoadSpinner')
     $.getJSON('config/read', function(config) {
       hideSpinner('#initialLoadSpinner')
-      var coreConfig = config.coreConfig
-      setStatus('#coreStatus', coreConfig.enabled, true)
-      $('#coreEnabled').attr('checked', coreConfig.enabled)
-      $('#storeThresholdMillis').val(coreConfig.storeThresholdMillis)
+      var generalConfig = config.generalConfig
+      setStatus('#coreStatus', generalConfig.enabled, true)
+      $('#coreEnabled').attr('checked', generalConfig.enabled)
+      $('#storeThresholdMillis').val(generalConfig.storeThresholdMillis)
       addIntegerValidator('#storeThresholdMillis')
-      $('#stuckThresholdSeconds').val(coreConfig.stuckThresholdSeconds)
+      $('#stuckThresholdSeconds').val(generalConfig.stuckThresholdSeconds)
       addIntegerValidator('#stuckThresholdSeconds')
-      $('#spanStackTraceThresholdMillis').val(coreConfig.spanStackTraceThresholdMillis)
+      $('#spanStackTraceThresholdMillis').val(generalConfig.spanStackTraceThresholdMillis)
       addIntegerValidator('#spanStackTraceThresholdMillis')
-      $('#maxSpans').val(coreConfig.maxSpans)
+      $('#maxSpans').val(generalConfig.maxSpans)
       addIntegerValidator('#maxSpans')
-      $('#snapshotExpirationDays').val(coreConfig.snapshotExpirationHours / 24)
+      $('#snapshotExpirationDays').val(generalConfig.snapshotExpirationHours / 24)
       addIntegerValidator('#snapshotExpirationDays')
-      $('#rollingSizeMb').val(coreConfig.rollingSizeMb)
+      $('#rollingSizeMb').val(generalConfig.rollingSizeMb)
       addIntegerValidator('#rollingSizeMb')
       $('#offscreenMeasure').text(config.dataDir)
       $('#dataDir').text(config.dataDir)
@@ -164,7 +166,7 @@
         $('#fineStoreThresholdMillis').val(fineConfig.storeThresholdMillis)
       }
       addIntegerOrEmptyValidator('#fineStoreThresholdMillis')
-      var userConfig = config.userTracingConfig
+      var userConfig = config.userConfig
       setStatus('#userStatus', userConfig.enabled)
       $('#userEnabled').attr('checked', userConfig.enabled)
       $('#userUserId').val(userConfig.userId)
@@ -182,15 +184,14 @@
           }
         }
         plugin.propertyDescriptors = propertyDescriptors
-        var html = pluginTemplate(plugin)
-        $('#plugins').append(html)
+        $('#plugins').append(pluginTemplate(plugin))
         var enabled = config.pluginConfigs[plugin.id].enabled
         setStatus('#' + escapeForSelector(plugin.id) + '_status', enabled)
         $('#' + escapeForSelector(plugin.id) + '_enabled').attr('checked', enabled)
         var pluginConfig = config.pluginConfigs[plugin.id]
         for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
           var propertyDescriptors = plugin.propertyDescriptors[j]
-          var value = pluginConfig[propertyDescriptors.name]
+          var value = pluginConfig.properties[propertyDescriptors.name]
           var selector = '#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)
           if (propertyDescriptors.type == 'boolean') {
             $(selector).attr('checked', value)
@@ -204,9 +205,9 @@
       }
     })
   }
-  // updateCoreConfig can take a while if resizing large rolling database
+  // updateGeneralConfig can take a while if resizing large rolling database
   var postingUpdateCore = false
-  function updateCoreConfig() {
+  function updateGeneralConfig() {
     // handle crazy user clicking on the button because this can take a while if resizing large
     // rolling database
     if (postingUpdateCore) return
@@ -258,7 +259,7 @@
       'intervalMillis': parseInteger(intervalMillis),
       'totalSeconds': parseInteger(totalSeconds)
     }
-    $.post('config/profiling/coarse', JSON.stringify(config), function() {
+    $.post('config/coarse-profiling', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#coarseSaveComplete')
       setStatus('#coarseStatus', config.enabled)
     })
@@ -284,7 +285,7 @@
       'totalSeconds': parseInteger(totalSeconds),
       'storeThresholdMillis': parseInteger(storeThresholdMillis)
     }
-    $.post('config/profiling/fine', JSON.stringify(config), function() {
+    $.post('config/fine-profiling', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#fineSaveComplete')
       setStatus('#fineStatus', config.enabled)
     })
@@ -302,7 +303,7 @@
       'storeThresholdMillis': parseInteger(storeThresholdMillis),
       'fineProfiling': $('#userFineProfiling').is(':checked')
     }
-    $.post('config/tracing/user', JSON.stringify(config), function() {
+    $.post('config/user', JSON.stringify(config), function() {
       showAndFadeSuccessMessage('#userSaveComplete')
       setStatus('#userStatus', config.enabled)
     })
@@ -310,7 +311,8 @@
   function updatePluginConfig(pluginId) {
     var plugin = pluginForId(pluginId)
     var config = {
-      'enabled': $('#' + escapeForSelector(pluginId) + '_enabled').is(':checked')
+      'enabled': $('#' + escapeForSelector(pluginId) + '_enabled').is(':checked'),
+      'properties': {}
     }
     var validationError = false
     for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
@@ -329,7 +331,7 @@
         } else {
           value = $(selector).val()
         }
-        config[propertyDescriptors.name] = value
+        config.properties[propertyDescriptors.name] = value
       }
     }
     // check for validation error
@@ -531,7 +533,7 @@
         </div>
       </div>
       <div class="form-actions section-body-save">
-        <button type="button" class="btn" onclick="updateCoreConfig()">Save changes</button>
+        <button type="button" class="btn" onclick="updateGeneralConfig()">Save changes</button>
         <!-- spinner because updating core config can take a while if resizing rolling file
              or changing trace snapshot expiration -->
         <span class="button-spinner hide" id="saveCoreButtonSpinner"></span>
@@ -752,8 +754,11 @@
       </div>
     </fieldset>
   </form>
-  <span class="button-spinner hide" id="initialLoadSpinner" style="padding-top: 40px"></span>
-  <div id="plugins"></div>
+  <button class="section-header realbtn" onclick="$('#plugins').toggleClass('hide')">
+    Plugins
+  </button>
+  <br>
+  <div class="hide" id="plugins"></div>
   <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0px"></span>
 </body>
 </html>

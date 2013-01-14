@@ -21,7 +21,7 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.Message;
 import io.informant.core.config.ConfigService;
-import io.informant.core.config.CoreConfig;
+import io.informant.core.config.GeneralConfig;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
@@ -140,8 +140,8 @@ public class TraceSnapshotService {
         // check if should store for user tracing
         String userId = trace.getUserId();
         if (userId != null
-                && userId.equals(configService.getUserTracingConfig().getUserId())
-                && duration >= TimeUnit.MILLISECONDS.toNanos(configService.getUserTracingConfig()
+                && userId.equals(configService.getUserConfig().getUserId())
+                && duration >= TimeUnit.MILLISECONDS.toNanos(configService.getUserConfig()
                         .getStoreThresholdMillis())) {
             return true;
         }
@@ -149,7 +149,7 @@ public class TraceSnapshotService {
         if (trace.isFine()) {
             int fineStoreThresholdMillis = configService.getFineProfilingConfig()
                     .getStoreThresholdMillis();
-            if (fineStoreThresholdMillis != CoreConfig.STORE_THRESHOLD_DISABLED) {
+            if (fineStoreThresholdMillis != GeneralConfig.STORE_THRESHOLD_DISABLED) {
                 return trace.getDuration() >= TimeUnit.MILLISECONDS
                         .toNanos(fineStoreThresholdMillis);
             }
@@ -159,8 +159,8 @@ public class TraceSnapshotService {
     }
 
     private boolean shouldStoreBasedOnCoreStoreThreshold(Trace trace) {
-        int storeThresholdMillis = configService.getCoreConfig().getStoreThresholdMillis();
-        return storeThresholdMillis != CoreConfig.STORE_THRESHOLD_DISABLED
+        int storeThresholdMillis = configService.getGeneralConfig().getStoreThresholdMillis();
+        return storeThresholdMillis != GeneralConfig.STORE_THRESHOLD_DISABLED
                 && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(storeThresholdMillis);
     }
 

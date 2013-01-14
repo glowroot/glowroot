@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,12 +68,11 @@ import com.google.inject.name.Named;
 public class HttpServer extends HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
-
+    private static final Gson gson = new Gson();
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
 
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
-    private final Gson gson = new Gson();
 
     @Inject
     HttpServer(@Named("ui.port") int port, TracePointJsonService tracePointJsonService,
@@ -103,33 +102,35 @@ public class HttpServer extends HttpServerBase {
         // calling the method in json service, e.g. /explorer/summary/abc123 below calls the method
         // getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/explorer/points$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/explorer/points$",
                 tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/explorer/summary/(.*)$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/explorer/summary/(.+)$",
                 traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/read$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/read$",
                 configJsonService, "getConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/core"),
-                configJsonService, "storeCoreConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling"
-                + "/coarse"), configJsonService, "storeCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/profiling/fine"),
-                configJsonService, "storeFineProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/tracing/user"),
-                configJsonService, "storeUserTracingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/config/plugin"
-                + "/([^/]+)$"), configJsonService, "storePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/threads/dump$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/core$",
+                configJsonService, "updateGeneralConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/coarse-profiling$",
+                configJsonService, "updateCoarseProfilingConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/fine-profiling$",
+                configJsonService, "updateFineProfilingConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/user",
+                configJsonService, "updateUserConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/plugin/(.+)$",
+                configJsonService, "updatePluginConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/threads/dump$",
                 threadDumpJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/data/compact$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/compact$",
                 adminJsonService, "compactData"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/data/truncate$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/truncate$",
                 adminJsonService, "truncateData"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin"
-                + "/numPendingTraceWrites$"), adminJsonService, "getNumPendingTraceWrites"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/log$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/config/truncate$",
+                adminJsonService, "truncateConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-trace-writes$",
+                adminJsonService, "getNumPendingTraceWrites"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/log$",
                 adminJsonService, "getLog"));
-        jsonServiceMappings.add(new JsonServiceMapping(Pattern.compile("^/admin/log/truncate$"),
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/log/truncate$",
                 adminJsonService, "truncateLog"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
@@ -352,8 +353,8 @@ public class HttpServer extends HttpServerBase {
         private final Pattern pattern;
         private final JsonService service;
         private final String methodName;
-        private JsonServiceMapping(Pattern pattern, JsonService service, String methodName) {
-            this.pattern = pattern;
+        private JsonServiceMapping(String pattern, JsonService service, String methodName) {
+            this.pattern = Pattern.compile(pattern);
             this.service = service;
             this.methodName = methodName;
         }

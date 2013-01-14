@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
  * Immutable structure to hold the session tracing config.
@@ -29,13 +31,13 @@ import com.google.gson.JsonSyntaxException;
  * @since 0.5
  */
 @Immutable
-public class UserTracingConfig {
+public class UserConfig {
 
-    private static final Gson gson = new Gson();
+    // serialize nulls so that all properties will be listed in config.json (for humans)
+    private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     private final boolean enabled;
 
-    @Nullable
     private final String userId;
 
     // store threshold of -1 means use core config store threshold
@@ -44,19 +46,15 @@ public class UserTracingConfig {
     private final int storeThresholdMillis;
     private final boolean fineProfiling;
 
-    static UserTracingConfig getDefaultInstance() {
-        return new Builder().build();
-    }
-
-    static UserTracingConfig fromJson(String json) throws JsonSyntaxException {
-        return gson.fromJson(json, UserTracingConfig.Builder.class).build();
-    }
-
-    public static Builder builder(UserTracingConfig base) {
+    public static Builder builder(UserConfig base) {
         return new Builder(base);
     }
 
-    private UserTracingConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
+    static UserConfig fromJson(JsonObject jsonObject) {
+        return gson.fromJson(jsonObject, UserConfig.Builder.class).build();
+    }
+
+    private UserConfig(boolean enabled, String userId, int storeThresholdMillis,
             boolean fineProfiling) {
 
         this.enabled = enabled;
@@ -65,8 +63,8 @@ public class UserTracingConfig {
         this.fineProfiling = fineProfiling;
     }
 
-    public String toJson() {
-        return gson.toJson(this);
+    public JsonObject toJson() {
+        return gson.toJsonTree(this).getAsJsonObject();
     }
 
     public boolean isEnabled() {
@@ -99,13 +97,12 @@ public class UserTracingConfig {
     public static class Builder {
 
         private boolean enabled = true;
-        @Nullable
         private String userId;
         private int storeThresholdMillis = 0;
         private boolean fineProfiling = true;
 
         private Builder() {}
-        private Builder(UserTracingConfig base) {
+        private Builder(UserConfig base) {
             enabled = base.enabled;
             userId = base.userId;
             storeThresholdMillis = base.storeThresholdMillis;
@@ -115,7 +112,7 @@ public class UserTracingConfig {
             this.enabled = enabled;
             return this;
         }
-        public Builder userId(@Nullable String userId) {
+        public Builder userId(String userId) {
             this.userId = userId;
             return this;
         }
@@ -127,8 +124,30 @@ public class UserTracingConfig {
             this.fineProfiling = fineProfiling;
             return this;
         }
-        public UserTracingConfig build() {
-            return new UserTracingConfig(enabled, userId, storeThresholdMillis,
+        public Builder overlay(JsonObject jsonObject) {
+            if (jsonObject.get("enabled") != null) {
+                enabled(jsonObject.get("enabled").getAsBoolean());
+            }
+            JsonElement userId = jsonObject.get("userId");
+            if (userId != null) {
+                if (userId.isJsonNull()) {
+                    userId("");
+                } else {
+                    userId(userId.getAsString());
+                }
+            }
+            JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
+            if (storeThresholdMillis != null) {
+                storeThresholdMillis(storeThresholdMillis.getAsInt());
+            }
+            JsonElement fineProfiling = jsonObject.get("fineProfiling");
+            if (fineProfiling != null) {
+                fineProfiling(fineProfiling.getAsBoolean());
+            }
+            return this;
+        }
+        public UserConfig build() {
+            return new UserConfig(enabled, userId, storeThresholdMillis,
                     fineProfiling);
         }
     }

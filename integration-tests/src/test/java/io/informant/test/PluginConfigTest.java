@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Config.PluginConfig;
 import io.informant.testkit.InformantContainer;
+import io.informant.testkit.PluginConfig;
 import io.informant.testkit.Trace;
 
 import java.util.Random;
@@ -80,6 +80,19 @@ public class PluginConfigTest {
     }
 
     @Test
+    public void shouldSetNullPropertyValueAsEmptyString() throws Exception {
+        // given
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setProperty("alternateHeadline", null);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        // when
+        PluginConfig updatedPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        // then
+        assertThat(updatedPluginConfig.getProperty("alternateHeadline")).isEqualTo(null);
+        assertThat(updatedPluginConfig.hasProperty("alternateHeadline")).isTrue();
+    }
+
+    @Test
     public void shouldClearPluginProperty() throws Exception {
         // given
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
@@ -91,7 +104,7 @@ public class PluginConfigTest {
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // then
         pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        assertThat(pluginConfig.getProperty("alternateHeadline")).isNull();
+        assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo(null);
     }
 
     @Test

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package io.informant.test;
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.api.PluginServices;
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Config.CoarseProfilingConfig;
-import io.informant.testkit.Config.FineProfilingConfig;
-import io.informant.testkit.Config.UserTracingConfig;
+import io.informant.testkit.CoarseProfilingConfig;
+import io.informant.testkit.FineProfilingConfig;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.MergedStackTreeNode;
 import io.informant.testkit.TraceMarker;
+import io.informant.testkit.UserConfig;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -148,11 +148,11 @@ public class ProfilingTest {
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setStoreThresholdMillis(10000);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
-        UserTracingConfig userTracingConfig = container.getInformant().getUserTracingConfig();
-        userTracingConfig.setUserId("able");
-        userTracingConfig.setStoreThresholdMillis(0);
-        userTracingConfig.setFineProfiling(true);
-        container.getInformant().updateUserTracingConfig(userTracingConfig);
+        UserConfig userConfig = container.getInformant().getUserConfig();
+        userConfig.setUserId("able");
+        userConfig.setStoreThresholdMillis(0);
+        userConfig.setFineProfiling(true);
+        container.getInformant().updateUserConfig(userConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTreeForAble.class);
         // then

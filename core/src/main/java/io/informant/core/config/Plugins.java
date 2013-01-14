@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
@@ -41,10 +40,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 
 /**
@@ -70,23 +67,12 @@ public final class Plugins {
                 }
             });
 
-    private static final Supplier<Map<String, PluginDescriptor>> pluginDescriptorMap = Suppliers
-            .memoize(new Supplier<Map<String, PluginDescriptor>>() {
-                public Map<String, PluginDescriptor> get() {
-                    return ImmutableMap.copyOf(buildPluginDescriptorMap());
-                }
-            });
-
     public static List<PluginDescriptor> getPackagedPluginDescriptors() {
         return packagedPluginDescriptors.get();
     }
 
     public static List<PluginDescriptor> getInstalledPluginDescriptors() {
         return installedPluginDescriptors.get();
-    }
-
-    static PluginDescriptor getDescriptor(String pluginId) {
-        return pluginDescriptorMap.get().get(pluginId);
     }
 
     private static Collection<PluginDescriptor> readInstalledPlugins() {
@@ -164,17 +150,6 @@ public final class Plugins {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
         }
-    }
-
-    private static Map<String, PluginDescriptor> buildPluginDescriptorMap() {
-        Map<String, PluginDescriptor> descriptorMap = Maps.newHashMap();
-        for (PluginDescriptor pluginDescriptor : Plugins.getPackagedPluginDescriptors()) {
-            descriptorMap.put(pluginDescriptor.getId(), pluginDescriptor);
-        }
-        for (PluginDescriptor pluginDescriptor : Plugins.getInstalledPluginDescriptors()) {
-            descriptorMap.put(pluginDescriptor.getId(), pluginDescriptor);
-        }
-        return descriptorMap;
     }
 
     private static PluginDescriptor createPluginDescriptor(Element pluginElement) {

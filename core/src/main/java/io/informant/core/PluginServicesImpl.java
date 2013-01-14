@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
 import io.informant.api.Timer;
 import io.informant.core.config.ConfigService;
-import io.informant.core.config.CoreConfig;
 import io.informant.core.config.FineProfilingConfig;
+import io.informant.core.config.GeneralConfig;
 import io.informant.core.config.PluginConfig;
-import io.informant.core.config.UserTracingConfig;
+import io.informant.core.config.UserConfig;
 import io.informant.core.trace.FineGrainedProfiler;
 import io.informant.core.trace.MetricImpl;
 import io.informant.core.trace.TerminateScheduledActionException;
@@ -80,7 +80,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final String pluginId;
 
     // cache for fast read access
-    private volatile CoreConfig coreConfig;
+    private volatile GeneralConfig generalConfig;
     private volatile PluginConfig pluginConfig;
 
     @Inject
@@ -102,8 +102,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         // add config listener first before caching config properties to avoid a
         // (remotely) possible race condition
         configService.addConfigListener(this);
-        coreConfig = configService.getCoreConfig();
-        pluginConfig = configService.getPluginConfig(pluginId);
+        generalConfig = configService.getGeneralConfig();
+        pluginConfig = configService.getPluginConfigOrNopInstance(pluginId);
     }
 
     @Override
@@ -113,15 +113,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public boolean isEnabled() {
-        return coreConfig.isEnabled() && pluginConfig.isEnabled();
+        return generalConfig.isEnabled() && pluginConfig.isEnabled();
     }
 
     @Override
-    @Nullable
     public String getStringProperty(String propertyName) {
         if (propertyName == null) {
             logger.warn("getStringProperty(): argument 'propertyName' must be non-null");
-            return null;
+            return "";
         }
         return pluginConfig.getStringProperty(propertyName);
     }
@@ -236,7 +235,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            int maxSpans = coreConfig.getMaxSpans();
+            int maxSpans = generalConfig.getMaxSpans();
             if (trace.getSpanCount() < maxSpans) {
                 // the trace limit has not been exceeded
                 trace.addSpan(messageSupplier, null);
@@ -296,17 +295,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     public void onChange() {
-        coreConfig = configService.getCoreConfig();
-        pluginConfig = configService.getPluginConfig(pluginId);
+        generalConfig = configService.getGeneralConfig();
+        pluginConfig = configService.getPluginConfigOrNopInstance(pluginId);
     }
 
     private boolean maybeScheduleFineProfilingUsingUserId(Trace trace, @Nullable String userId) {
         if (userId == null) {
             return false;
         }
-        UserTracingConfig userTracingConfig = configService.getUserTracingConfig();
-        if (userTracingConfig.isEnabled() && userTracingConfig.isFineProfiling()
-                && userId.equals(userTracingConfig.getUserId())) {
+        UserConfig userConfig = configService.getUserConfig();
+        if (userConfig.isEnabled() && userConfig.isFineProfiling()
+                && userId.equals(userConfig.getUserId())) {
             fineGrainedProfiler.scheduleProfiling(trace);
             return true;
         } else {
@@ -324,7 +323,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR
     private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
-        int maxSpans = coreConfig.getMaxSpans();
+        int maxSpans = generalConfig.getMaxSpans();
         if (trace.getSpanCount() >= maxSpans) {
             // the trace limit has been exceeded
             return new TimerWrappedInSpan(trace, metric, messageSupplier);
@@ -362,7 +361,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         private void endInternal(ErrorMessage errorMessage) {
             long endTick = ticker.read();
-            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(coreConfig
+            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(generalConfig
                     .getSpanStackTraceThresholdMillis())) {
                 span.setStackTrace(captureSpanStackTrace());
             }

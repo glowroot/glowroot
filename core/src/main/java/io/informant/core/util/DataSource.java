@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,25 +177,6 @@ public class DataSource {
         }
     }
 
-    @Nullable
-    public String queryForString(String sql, Object... args) throws SQLException {
-        synchronized (lock) {
-            if (jvmShutdownInProgress) {
-                return null;
-            }
-            return queryUnderLock(sql, args, new ResultSetExtractor<String>() {
-                @Nullable
-                public String extractData(ResultSet resultSet) throws SQLException {
-                    if (resultSet.next()) {
-                        return resultSet.getString(1);
-                    } else {
-                        return null;
-                    }
-                }
-            });
-        }
-    }
-
     public <T> List<T> query(String sql, Object[] args, RowMapper<T> rowMapper)
             throws SQLException {
 
@@ -241,24 +222,6 @@ public class DataSource {
                     preparedStatement.setObject(i + 1, args[i]);
                 }
                 return preparedStatement.executeUpdate();
-            } finally {
-                closeStatement(preparedStatement);
-            }
-        }
-    }
-
-    public int[] batchUpdate(String sql, BatchPreparedStatementSetter setter) throws SQLException {
-        synchronized (lock) {
-            if (jvmShutdownInProgress) {
-                return new int[0];
-            }
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            try {
-                for (int i = 0; i < setter.getBatchSize(); i++) {
-                    setter.setValues(preparedStatement, i);
-                    preparedStatement.addBatch();
-                }
-                return preparedStatement.executeBatch();
             } finally {
                 closeStatement(preparedStatement);
             }
@@ -362,12 +325,7 @@ public class DataSource {
         T mapRow(ResultSet resultSet) throws SQLException;
     }
 
-    public interface ResultSetExtractor<T> {
+    private interface ResultSetExtractor<T> {
         T extractData(ResultSet resultSet) throws SQLException;
-    }
-
-    public interface BatchPreparedStatementSetter {
-        int getBatchSize();
-        void setValues(PreparedStatement preparedStatement, int i) throws SQLException;
     }
 }

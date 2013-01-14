@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.config.PluginDescriptor.PropertyDescriptor;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -30,13 +29,9 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.io.CharStreams;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.JsonWriter;
 
 /**
  * Immutable structure to hold the current config for a plugin.
@@ -60,26 +55,22 @@ public class PluginConfig {
     @Nullable
     private final PluginDescriptor pluginDescriptor;
 
-    public static Builder builder(String pluginId, PluginConfig base) {
-        return new Builder(pluginId, base);
+    public static Builder builder(PluginConfig base) {
+        return new Builder(base);
     }
 
     static PluginConfig getNopInstance() {
         return new PluginConfig(false, ImmutableMap.<String, Optional<?>> of(), null);
     }
 
-    static PluginConfig fromJson(String pluginId, String json) throws JsonSyntaxException {
-        PluginConfig.Builder builder = PluginConfig.builder(pluginId);
-        builder.overlay(json, true);
+    static PluginConfig fromJson(JsonObject jsonObject, PluginDescriptor pluginDescriptor) {
+        PluginConfig.Builder builder = new Builder(pluginDescriptor);
+        builder.overlay(jsonObject, true);
         return builder.build();
     }
 
-    static Builder builder(String pluginId) {
-        return new Builder(pluginId);
-    }
-
     private PluginConfig(boolean enabled, ImmutableMap<String, Optional<?>> properties,
-            PluginDescriptor pluginDescriptor) {
+            @Nullable PluginDescriptor pluginDescriptor) {
 
         this.enabled = enabled;
         this.properties = properties;
@@ -90,12 +81,11 @@ public class PluginConfig {
         return enabled;
     }
 
-    @Nullable
     public String getStringProperty(String name) {
         Optional<?> optional = properties.get(name);
         if (optional == null) {
             logger.error("unexpected property name '{}'", name);
-            return null;
+            return "";
         }
         Object value = optional.orNull();
         if (value == null) {
@@ -146,59 +136,51 @@ public class PluginConfig {
         }
     }
 
-    // only non-hidden properties
-    String toJson() {
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        try {
-            toJson(jw);
-            jw.close();
-            return sb.toString();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return "{}";
+    public JsonObject toJson() {
+        if (pluginDescriptor == null) {
+            logger.error("cannot call toJson() on the nop instance");
+            return new JsonObject();
         }
-    }
-
-    public void toJson(JsonWriter jw) throws IOException {
-        // pluginDescriptor can be null for anonymous disabled instance, see getDisabledInstance()
-        jw.beginObject();
-        jw.name("enabled");
-        jw.value(enabled);
-        if (pluginDescriptor != null) {
-            for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
-                if (property.isHidden()) {
-                    continue;
-                }
-                jw.name(property.getName());
-                if (property.getType().equals("string")) {
-                    String value = getStringProperty(property.getName());
-                    if (value == null) {
-                        jw.nullValue();
-                    } else {
-                        jw.value(value);
-                    }
-                } else if (property.getType().equals("boolean")) {
-                    jw.value(getBooleanProperty(property.getName()));
-                } else if (property.getType().equals("double")) {
-                    Double value = getDoubleProperty(property.getName());
-                    if (value == null) {
-                        jw.nullValue();
-                    } else {
-                        jw.value(value);
-                    }
-                } else {
-                    logger.error("unexpected type '" + property.getType() + "', this should have"
-                            + " been caught by schema validation");
-                }
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("groupId", pluginDescriptor.getGroupId());
+        jsonObject.addProperty("artifactId", pluginDescriptor.getArtifactId());
+        jsonObject.addProperty("enabled", enabled);
+        JsonObject properties = new JsonObject();
+        for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
+            if (property.isHidden()) {
+                continue;
+            }
+            if (property.getType().equals("string")) {
+                String value = getStringProperty(property.getName());
+                properties.addProperty(property.getName(), value);
+            } else if (property.getType().equals("boolean")) {
+                boolean value = getBooleanProperty(property.getName());
+                properties.addProperty(property.getName(), value);
+            } else if (property.getType().equals("double")) {
+                Double value = getDoubleProperty(property.getName());
+                properties.addProperty(property.getName(), value);
+            } else {
+                logger.error("unexpected type '" + property.getType() + "', this should have"
+                        + " been caught by schema validation");
             }
         }
-        jw.endObject();
+        jsonObject.add("properties", properties);
+        return jsonObject;
+    }
+
+    String getId() {
+        if (pluginDescriptor == null) {
+            logger.error("cannot call getId() on the nop instance");
+            return "";
+        }
+        return pluginDescriptor == null ? "" : pluginDescriptor.getGroupId() + ":"
+                + pluginDescriptor.getArtifactId();
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
+                .add("id", getId())
                 .add("enabled", enabled)
                 .add("properties", properties)
                 .toString();
@@ -210,15 +192,15 @@ public class PluginConfig {
         private final PluginDescriptor pluginDescriptor;
         private final Map<String, Optional<?>> properties;
 
-        private Builder(String pluginId) {
-            this.pluginDescriptor = Plugins.getDescriptor(pluginId);
+        private Builder(PluginDescriptor pluginDescriptor) {
+            this.pluginDescriptor = pluginDescriptor;
             properties = Maps.newHashMap();
             for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
                 properties.put(property.getName(), Optional.fromNullable(property.getDefault()));
             }
         }
-        private Builder(String pluginId, PluginConfig base) {
-            this(pluginId);
+        private Builder(PluginConfig base) {
+            this(base.pluginDescriptor);
             this.enabled = base.enabled;
             properties.putAll(base.properties);
         }
@@ -226,22 +208,20 @@ public class PluginConfig {
             this.enabled = enabled;
             return this;
         }
-        public void overlay(String json) throws JsonSyntaxException {
-            overlay(json, false);
+        public void overlay(JsonObject jsonObject) {
+            overlay(jsonObject, false);
         }
         public PluginConfig build() {
             return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginDescriptor);
         }
-        private void overlay(String json, boolean ignoreWarnings) throws JsonSyntaxException {
-            JsonObject jsonObject = new JsonParser().parse(json).getAsJsonObject();
+        private void overlay(JsonObject jsonObject, boolean ignoreWarnings) {
             if (jsonObject.get("enabled") != null) {
                 enabled(jsonObject.get("enabled").getAsBoolean());
             }
-            for (Entry<String, JsonElement> subEntry : jsonObject.entrySet()) {
+            JsonObject properties = (JsonObject) Objects.firstNonNull(
+                    jsonObject.get("properties"), new JsonObject());
+            for (Entry<String, JsonElement> subEntry : properties.entrySet()) {
                 String name = subEntry.getKey();
-                if (name.equals("enabled")) {
-                    continue;
-                }
                 JsonElement value = subEntry.getValue();
                 if (value.isJsonNull()) {
                     setProperty(name, null, ignoreWarnings);

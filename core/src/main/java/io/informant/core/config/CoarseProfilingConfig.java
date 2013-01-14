@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
  * Immutable structure to hold the coarse-grained profiling config.
@@ -30,7 +32,8 @@ import com.google.gson.JsonSyntaxException;
 @Immutable
 public class CoarseProfilingConfig {
 
-    private static final Gson gson = new Gson();
+    // serialize nulls so that all properties will be listed in config.json (for humans)
+    private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     private final boolean enabled;
 
@@ -40,12 +43,8 @@ public class CoarseProfilingConfig {
     private final int intervalMillis;
     private final int totalSeconds;
 
-    static CoarseProfilingConfig getDefaultInstance() {
-        return new Builder().build();
-    }
-
-    static CoarseProfilingConfig fromJson(String json) throws JsonSyntaxException {
-        return gson.fromJson(json, CoarseProfilingConfig.Builder.class).build();
+    static CoarseProfilingConfig fromJson(JsonObject jsonObject) {
+        return gson.fromJson(jsonObject, CoarseProfilingConfig.Builder.class).build();
     }
 
     public static Builder builder(CoarseProfilingConfig base) {
@@ -61,8 +60,8 @@ public class CoarseProfilingConfig {
         this.totalSeconds = totalSeconds;
     }
 
-    public String toJson() {
-        return gson.toJson(this);
+    public JsonObject toJson() {
+        return gson.toJsonTree(this).getAsJsonObject();
     }
 
     public boolean isEnabled() {
@@ -119,6 +118,25 @@ public class CoarseProfilingConfig {
         }
         public Builder totalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
+            return this;
+        }
+        public Builder overlay(JsonObject jsonObject) {
+            JsonElement enabled = jsonObject.get("enabled");
+            if (enabled != null) {
+                enabled(enabled.getAsBoolean());
+            }
+            JsonElement initialDelayMillis = jsonObject.get("initialDelayMillis");
+            if (initialDelayMillis != null) {
+                initialDelayMillis(initialDelayMillis.getAsInt());
+            }
+            JsonElement intervalMillis = jsonObject.get("intervalMillis");
+            if (intervalMillis != null) {
+                intervalMillis(intervalMillis.getAsInt());
+            }
+            JsonElement totalSeconds = jsonObject.get("totalSeconds");
+            if (totalSeconds != null) {
+                totalSeconds(totalSeconds.getAsInt());
+            }
             return this;
         }
         public CoarseProfilingConfig build() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,22 @@ package io.informant.core.config;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.PluginServices.ConfigListener;
+import io.informant.core.util.OnlyUsedByTests;
 
+import java.io.File;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 
 /**
  * Stateful singleton service for accessing and updating config objects. Config objects are cached
@@ -42,99 +48,62 @@ public class ConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
 
-    private final ConfigDao configDao;
+    private final File configFile;
+    private final Object writeLock = new Object();
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
 
-    private volatile CoreConfig coreConfig;
-    private volatile CoarseProfilingConfig coarseProfilingConfig;
-    private volatile FineProfilingConfig fineProfilingConfig;
-    private volatile UserTracingConfig userTracingConfig;
-    private final ConcurrentMap<String, PluginConfig> pluginConfigs;
+    private volatile Config config;
 
     @Inject
-    ConfigService(ConfigDao configDao) {
+    ConfigService(@Named("data.dir") File dataDir) {
         logger.debug("<init>()");
-        this.configDao = configDao;
-
-        CoreConfig coreConfig = configDao.readCoreConfig();
-        if (coreConfig == null) {
-            logger.debug("<init>(): default core config is being used");
-            this.coreConfig = CoreConfig.getDefaultInstance();
-        } else {
-            logger.debug("<init>(): core config was read from local data store: {}", coreConfig);
-            this.coreConfig = coreConfig;
-        }
-
-        CoarseProfilingConfig coarseProfilingConfig = configDao.readCoarseProfilingConfig();
-        if (coarseProfilingConfig == null) {
-            logger.debug("<init>(): default coarse profiling config is being used");
-            this.coarseProfilingConfig = CoarseProfilingConfig.getDefaultInstance();
-        } else {
-            logger.debug("<init>(): coarse profiling config was read from local data store: {}",
-                    coarseProfilingConfig);
-            this.coarseProfilingConfig = coarseProfilingConfig;
-        }
-
-        FineProfilingConfig fineProfilingConfig = configDao.readFineProfilingConfig();
-        if (fineProfilingConfig == null) {
-            logger.debug("<init>(): default fine profiling config is being used");
-            this.fineProfilingConfig = FineProfilingConfig.getDefaultInstance();
-        } else {
-            logger.debug("<init>(): fine profiling config was read from local data store: {}",
-                    fineProfilingConfig);
-            this.fineProfilingConfig = fineProfilingConfig;
-        }
-
-        UserTracingConfig userTracingConfig = configDao.readUserTracingConfig();
-        if (userTracingConfig == null) {
-            logger.debug("<init>(): default user tracing config is being used");
-            this.userTracingConfig = UserTracingConfig.getDefaultInstance();
-        } else {
-            logger.debug("<init>(): user tracing config was read from local data store: {}",
-                    userTracingConfig);
-            this.userTracingConfig = userTracingConfig;
-        }
-
-        pluginConfigs = Maps.newConcurrentMap();
-        Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
-                Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            PluginConfig pluginConfig = configDao.readPluginConfig(pluginDescriptor.getId());
-            if (pluginConfig != null) {
-                pluginConfigs.put(pluginDescriptor.getId(), pluginConfig);
-            } else {
-                pluginConfigs.put(pluginDescriptor.getId(),
-                        PluginConfig.builder(pluginDescriptor.getId()).build());
-            }
-        }
+        configFile = new File(dataDir, "config.json");
+        config = Config.fromFile(configFile);
+        // it's nice to update config.json on startup if it is missing some/all config
+        // properties so that the file contents can be reviewed/updated/copied if desired
+        config.writeToFileIfNeeded(configFile);
     }
 
-    public CoreConfig getCoreConfig() {
-        return coreConfig;
+    public GeneralConfig getGeneralConfig() {
+        return config.getGeneralConfig();
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() {
-        return coarseProfilingConfig;
+        return config.getCoarseProfilingConfig();
     }
 
     public FineProfilingConfig getFineProfilingConfig() {
-        return fineProfilingConfig;
+        return config.getFineProfilingConfig();
     }
 
-    public UserTracingConfig getUserTracingConfig() {
-        return userTracingConfig;
+    public UserConfig getUserConfig() {
+        return config.getUserConfig();
     }
 
-    public PluginConfig getPluginConfig(String pluginId) {
-        PluginConfig pluginConfig = pluginConfigs.get(pluginId);
+    public PluginConfig getPluginConfigOrNopInstance(String pluginId) {
+        PluginConfig pluginConfig = getPluginConfig(pluginId);
         if (pluginConfig == null) {
-            logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId, Joiner
-                    .on(", ").join(pluginConfigs.keySet()));
+            List<String> ids = Lists.newArrayList();
+            for (PluginConfig item : config.getPluginConfigs()) {
+                ids.add(item.getId());
+            }
+            logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId,
+                    Joiner.on(", ").join(ids));
             return PluginConfig.getNopInstance();
         } else {
             return pluginConfig;
         }
+    }
+
+    @Nullable
+    public PluginConfig getPluginConfig(String pluginId) {
+        for (PluginConfig pluginConfig : config.getPluginConfigs()) {
+            if (pluginId.equals(pluginConfig.getId())) {
+                return pluginConfig;
+            }
+        }
+        return null;
     }
 
     public void addConfigListener(ConfigListener listener) {
@@ -142,42 +111,68 @@ public class ConfigService {
     }
 
     // TODO pass around config version to avoid possible clobbering
-    public void storeCoreConfig(CoreConfig config) {
-        configDao.storeCoreConfig(config);
-        // re-read from dao just to fail quickly in case of an issue
-        this.coreConfig = configDao.readCoreConfig();
+    public void updateGeneralConfig(GeneralConfig generalConfig) {
+        synchronized (writeLock) {
+            Config updatedConfig = Config.builder(config)
+                    .generalConfig(generalConfig)
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
         notifyConfigListeners();
     }
 
     // TODO pass around config version to avoid possible clobbering
-    public void storeCoarseProfilingConfig(CoarseProfilingConfig config) {
-        configDao.storeCoarseProfilingConfig(config);
-        // re-read from dao just to fail quickly in case of an issue
-        this.coarseProfilingConfig = configDao.readCoarseProfilingConfig();
+    public void updateCoarseProfilingConfig(CoarseProfilingConfig coarseProfilingConfig) {
+        synchronized (writeLock) {
+            Config updatedConfig = Config.builder(config)
+                    .coarseProfilingConfig(coarseProfilingConfig)
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
         notifyConfigListeners();
     }
 
     // TODO pass around config version to avoid possible clobbering
-    public void storeFineProfilingConfig(FineProfilingConfig config) {
-        configDao.storeFineProfilingConfig(config);
-        // re-read from dao just to fail quickly in case of an issue
-        this.fineProfilingConfig = configDao.readFineProfilingConfig();
+    public void updateFineProfilingConfig(FineProfilingConfig fineProfilingConfig) {
+        synchronized (writeLock) {
+            Config updatedConfig = Config.builder(config)
+                    .fineProfilingConfig(fineProfilingConfig)
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
         notifyConfigListeners();
     }
 
     // TODO pass around config version to avoid possible clobbering
-    public void storeUserTracingConfig(UserTracingConfig config) {
-        configDao.storeUserTracingConfig(config);
-        // re-read from dao just to fail quickly in case of an issue
-        this.userTracingConfig = configDao.readUserTracingConfig();
+    public void updateUserConfig(UserConfig userConfig) {
+        synchronized (writeLock) {
+            Config updatedConfig = Config.builder(config)
+                    .userConfig(userConfig)
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
         notifyConfigListeners();
     }
 
     // TODO pass around config version to avoid possible clobbering
-    public void storePluginConfig(String pluginId, PluginConfig pluginConfig) {
-        configDao.storePluginConfig(pluginId, pluginConfig);
-        // re-read from dao just to fail quickly in case of an issue
-        pluginConfigs.put(pluginId, configDao.readPluginConfig(pluginId));
+    public void updatePluginConfig(PluginConfig pluginConfig) {
+        synchronized (writeLock) {
+            List<PluginConfig> pluginConfigs = Lists.newArrayList(config.getPluginConfigs());
+            for (ListIterator<PluginConfig> i = pluginConfigs.listIterator(); i.hasNext();) {
+                if (pluginConfig.getId().equals(i.next().getId())) {
+                    i.set(pluginConfig);
+                }
+            }
+            Config updatedConfig = Config.builder(config)
+                    .pluginConfigs(ImmutableList.copyOf(pluginConfigs))
+                    .build();
+            updatedConfig.writeToFileIfNeeded(configFile);
+            config = updatedConfig;
+        }
         notifyConfigListeners();
     }
 
@@ -189,5 +184,11 @@ public class ConfigService {
         for (ConfigListener configListener : configListeners) {
             configListener.onChange();
         }
+    }
+
+    @OnlyUsedByTests
+    public void deleteConfig() {
+        configFile.delete();
+        config = Config.fromFile(configFile);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.informant.local.trace;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.config.ConfigService;
-import io.informant.core.config.CoreConfig;
+import io.informant.core.config.GeneralConfig;
 import io.informant.core.util.Clock;
 import io.informant.core.util.DaemonExecutors;
 
@@ -72,8 +72,8 @@ public class TraceSnapshotReaper implements Runnable {
     }
 
     private void runInternal() {
-        int snapshotExpirationHours = configService.getCoreConfig().getSnapshotExpirationHours();
-        if (snapshotExpirationHours != CoreConfig.SNAPSHOT_EXPIRATION_DISABLED) {
+        int snapshotExpirationHours = configService.getGeneralConfig().getSnapshotExpirationHours();
+        if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
             traceSnapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
                     - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.Config.CoarseProfilingConfig;
-import io.informant.testkit.Config.CoreConfig;
-import io.informant.testkit.Config.FineProfilingConfig;
-import io.informant.testkit.Config.PluginConfig;
-import io.informant.testkit.Config.UserTracingConfig;
+import io.informant.testkit.CoarseProfilingConfig;
+import io.informant.testkit.FineProfilingConfig;
+import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
+import io.informant.testkit.PluginConfig;
+import io.informant.testkit.UserConfig;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -40,7 +40,7 @@ public class ConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = InformantContainer.create(0, false);
     }
 
     @AfterClass
@@ -54,14 +54,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateCoreConfig() throws Exception {
+    public void shouldUpdateGeneralConfig() throws Exception {
         // given
-        CoreConfig config = container.getInformant().getCoreConfig();
+        GeneralConfig config = container.getInformant().getGeneralConfig();
         // when
         config = updateAllFields(config);
-        container.getInformant().updateCoreConfig(config);
+        container.getInformant().updateGeneralConfig(config);
         // then
-        CoreConfig updatedConfig = container.getInformant().getCoreConfig();
+        GeneralConfig updatedConfig = container.getInformant().getGeneralConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -90,14 +90,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateUserTracingConfig() throws Exception {
+    public void shouldUpdateUserConfig() throws Exception {
         // given
-        UserTracingConfig config = container.getInformant().getUserTracingConfig();
+        UserConfig config = container.getInformant().getUserConfig();
         // when
         config = updateAllFields(config);
-        container.getInformant().updateUserTracingConfig(config);
+        container.getInformant().updateUserConfig(config);
         // then
-        UserTracingConfig updatedConfig = container.getInformant().getUserTracingConfig();
+        UserConfig updatedConfig = container.getInformant().getUserConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -113,8 +113,8 @@ public class ConfigTest {
         assertThat(updatedConfig).isEqualTo(config);
     }
 
-    private static CoreConfig updateAllFields(CoreConfig config) {
-        CoreConfig updatedConfig = new CoreConfig();
+    private static GeneralConfig updateAllFields(GeneralConfig config) {
+        GeneralConfig updatedConfig = new GeneralConfig();
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         updatedConfig.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
@@ -143,8 +143,8 @@ public class ConfigTest {
         return updatedConfig;
     }
 
-    private static UserTracingConfig updateAllFields(UserTracingConfig config) {
-        UserTracingConfig updatedConfig = new UserTracingConfig();
+    private static UserConfig updateAllFields(UserConfig config) {
+        UserConfig updatedConfig = new UserConfig();
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setUserId(config.getUserId() + "x");
         updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);

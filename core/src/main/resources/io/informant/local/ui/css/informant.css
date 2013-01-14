@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -363,7 +363,7 @@ a:focus {
 }
 .section-header:hover,
 .section-header:focus {
-  background-color:#ddd;
+  background-color: #ddd;
 }
 .configuration-status {
   margin-left: 40px;
@@ -381,11 +381,29 @@ a:focus {
   margin: 0 0 20px 40px;
 }
 .section-body-padding {
-  padding: 24px;
+  padding: 30px 24px 24px 24px;
 }
+.inner-section-body {
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  margin: 20px;
+}
+.inner-section-body-padding {
+  padding: 30px 20px 20px 20px;
+}
+.inner-section-body-separator {
+  border-top-color: #ddd;
+  border-bottom: none;
+  margin: 30px 0 5px 0;
+}
+
 .form-horizontal .section-body-padding {
   /* the bottom of the form already has extra padding from margin-bottom on control-group */
   padding-bottom: 16px;
+}
+.form-horizontal .form-actions {
+  /* override bootstrap style to make button line up under form controls */
+  padding-left: 200px !important;
 }
 .section-body-save {
   margin-top: 0;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
  * Immutable structure to hold the fine-grained profiling config.
@@ -30,7 +32,8 @@ import com.google.gson.JsonSyntaxException;
 @Immutable
 public class FineProfilingConfig {
 
-    private static final Gson gson = new Gson();
+    // serialize nulls so that all properties will be listed in config.json (for humans)
+    private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     private final boolean enabled;
 
@@ -43,12 +46,8 @@ public class FineProfilingConfig {
     // threshold
     private final int storeThresholdMillis;
 
-    static FineProfilingConfig getDefaultInstance() {
-        return new Builder().build();
-    }
-
-    static FineProfilingConfig fromJson(String json) throws JsonSyntaxException {
-        return gson.fromJson(json, FineProfilingConfig.Builder.class).build();
+    static FineProfilingConfig fromJson(JsonObject jsonObject) {
+        return gson.fromJson(jsonObject, FineProfilingConfig.Builder.class).build();
     }
 
     public static Builder builder(FineProfilingConfig base) {
@@ -65,8 +64,8 @@ public class FineProfilingConfig {
         this.storeThresholdMillis = storeThresholdMillis;
     }
 
-    public String toJson() {
-        return gson.toJson(this);
+    public JsonObject toJson() {
+        return gson.toJsonTree(this).getAsJsonObject();
     }
 
     public boolean isEnabled() {
@@ -134,6 +133,29 @@ public class FineProfilingConfig {
         }
         public Builder storeThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
+            return this;
+        }
+        public Builder overlay(JsonObject jsonObject) {
+            JsonElement enabled = jsonObject.get("enabled");
+            if (enabled != null) {
+                enabled(enabled.getAsBoolean());
+            }
+            JsonElement tracePercentage = jsonObject.get("tracePercentage");
+            if (tracePercentage != null) {
+                tracePercentage(tracePercentage.getAsDouble());
+            }
+            JsonElement intervalMillis = jsonObject.get("intervalMillis");
+            if (intervalMillis != null) {
+                intervalMillis(intervalMillis.getAsInt());
+            }
+            JsonElement totalSeconds = jsonObject.get("totalSeconds");
+            if (totalSeconds != null) {
+                totalSeconds(totalSeconds.getAsInt());
+            }
+            JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
+            if (storeThresholdMillis != null) {
+                storeThresholdMillis(storeThresholdMillis.getAsInt());
+            }
             return this;
         }
         public FineProfilingConfig build() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@ import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
- * Immutable structure to hold the current core config.
+ * Immutable structure to hold the general config.
  * 
  * Default values should be conservative.
  * 
@@ -30,14 +32,15 @@ import com.google.gson.JsonSyntaxException;
  * @since 0.5
  */
 @Immutable
-public class CoreConfig {
+public class GeneralConfig {
+
+    // serialize nulls so that all properties will be listed in config.json (for humans)
+    private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     // don't store anything, essentially store threshold is infinite
     public static final int STORE_THRESHOLD_DISABLED = -1;
     // don't expire anything, essentially snapshot expiration is infinite
     public static final int SNAPSHOT_EXPIRATION_DISABLED = -1;
-
-    private static final Gson gson = new Gson();
 
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional spans
@@ -77,19 +80,15 @@ public class CoreConfig {
 
     private final boolean warnOnSpanOutsideTrace;
 
-    static CoreConfig getDefaultInstance() {
-        return new Builder().build();
+    static GeneralConfig fromJson(JsonObject jsonObject) {
+        return gson.fromJson(jsonObject, GeneralConfig.Builder.class).build();
     }
 
-    static CoreConfig fromJson(String json) throws JsonSyntaxException {
-        return gson.fromJson(json, CoreConfig.Builder.class).build();
-    }
-
-    public static Builder builder(CoreConfig base) {
+    public static Builder builder(GeneralConfig base) {
         return new Builder(base);
     }
 
-    private CoreConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
+    private GeneralConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
             int spanStackTraceThresholdMillis, int maxSpans, int snapshotExpirationHours,
             int rollingSizeMb, boolean warnOnSpanOutsideTrace) {
 
@@ -103,8 +102,8 @@ public class CoreConfig {
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
     }
 
-    public String toJson() {
-        return gson.toJson(this);
+    public JsonObject toJson() {
+        return gson.toJsonTree(this).getAsJsonObject();
     }
 
     public boolean isEnabled() {
@@ -165,7 +164,7 @@ public class CoreConfig {
         private boolean warnOnSpanOutsideTrace = false;
 
         private Builder() {}
-        private Builder(CoreConfig base) {
+        private Builder(GeneralConfig base) {
             enabled = base.enabled;
             storeThresholdMillis = base.storeThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
@@ -207,8 +206,44 @@ public class CoreConfig {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
-        public CoreConfig build() {
-            return new CoreConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
+        public Builder overlay(JsonObject jsonObject) {
+            JsonElement enabled = jsonObject.get("enabled");
+            if (enabled != null) {
+                enabled(enabled.getAsBoolean());
+            }
+            JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
+            if (storeThresholdMillis != null) {
+                storeThresholdMillis(storeThresholdMillis.getAsInt());
+            }
+            JsonElement stuckThresholdSeconds = jsonObject.get("stuckThresholdSeconds");
+            if (stuckThresholdSeconds != null) {
+                stuckThresholdSeconds(stuckThresholdSeconds.getAsInt());
+            }
+            JsonElement spanStackTraceThresholdMillis = jsonObject
+                    .get("spanStackTraceThresholdMillis");
+            if (spanStackTraceThresholdMillis != null) {
+                spanStackTraceThresholdMillis(spanStackTraceThresholdMillis.getAsInt());
+            }
+            JsonElement maxSpans = jsonObject.get("maxSpans");
+            if (maxSpans != null) {
+                maxSpans(maxSpans.getAsInt());
+            }
+            JsonElement snapshotExpirationHours = jsonObject.get("snapshotExpirationHours");
+            if (snapshotExpirationHours != null) {
+                snapshotExpirationHours(snapshotExpirationHours.getAsInt());
+            }
+            JsonElement rollingSizeMb = jsonObject.get("rollingSizeMb");
+            if (rollingSizeMb != null) {
+                rollingSizeMb(rollingSizeMb.getAsInt());
+            }
+            JsonElement warnOnSpanOutsideTrace = jsonObject.get("warnOnSpanOutsideTrace");
+            if (warnOnSpanOutsideTrace != null) {
+                warnOnSpanOutsideTrace(warnOnSpanOutsideTrace.getAsBoolean());
+            }
+            return this;
+        }
+        public GeneralConfig build() {
+            return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
                     spanStackTraceThresholdMillis, maxSpans, snapshotExpirationHours,
                     rollingSizeMb, warnOnSpanOutsideTrace);
         }
