@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import com.google.common.base.Objects;
 @ThreadSafe
 public class Span {
 
-    @Nullable
     private final MessageSupplier messageSupplier;
     @Nullable
     private volatile ErrorMessage errorMessage;
@@ -58,7 +57,7 @@ public class Span {
     @Nullable
     private volatile StackTraceElement[] stackTrace;
 
-    Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
+    Span(MessageSupplier messageSupplier, long traceStartTick, long startTick,
             int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
 
         this.messageSupplier = messageSupplier;
@@ -70,7 +69,6 @@ public class Span {
         this.traceMetric = traceMetric;
     }
 
-    @Nullable
     public MessageSupplier getMessageSupplier() {
         return messageSupplier;
     }
@@ -115,7 +113,7 @@ public class Span {
         return traceMetric;
     }
 
-    void setErrorMessage(ErrorMessage errorMessage) {
+    void setErrorMessage(@Nullable ErrorMessage errorMessage) {
         this.errorMessage = errorMessage;
     }
 

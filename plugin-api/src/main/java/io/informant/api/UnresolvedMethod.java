@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,17 +89,18 @@ public class UnresolvedMethod {
     }
 
     @Nullable
-    public <T> T invokeWithDefaultOnError(Object target, T defaultValue) {
+    public <T> T invokeWithDefaultOnError(Object target, @Nullable T defaultValue) {
         return invokeWithDefaultOnError(target, new Object[0], defaultValue);
     }
 
     @Nullable
-    public <T> T invokeWithDefaultOnError(Object target, Object parameters, T defaultValue) {
+    public <T> T invokeWithDefaultOnError(Object target, Object parameters, @Nullable T defaultValue) {
         return invokeWithDefaultOnError(target, new Object[] { parameters }, defaultValue);
     }
 
     @Nullable
-    public <T> T invokeWithDefaultOnError(Object target, Object[] parameters, T defaultValue) {
+    public <T> T invokeWithDefaultOnError(Object target, Object[] parameters,
+            @Nullable T defaultValue) {
         Method method = getResolvedMethod(target.getClass().getClassLoader());
         if (method == null) {
             // warning has already been logged in getResolvedMethod()
@@ -114,9 +115,30 @@ public class UnresolvedMethod {
     }
 
     @Nullable
-    public Object invokeStatic(ClassLoader loader, Object... parameters) throws Exception {
+    public <T> T invokeStaticWithDefaultOnError(Object target, @Nullable T defaultValue) {
+        return invokeStaticWithDefaultOnError(target, new Object[0], defaultValue);
+    }
+
+    @Nullable
+    public <T> T invokeStaticWithDefaultOnError(Object target, Object parameters,
+            @Nullable T defaultValue) {
+        return invokeStaticWithDefaultOnError(target, new Object[] { parameters }, defaultValue);
+    }
+
+    @Nullable
+    public <T> T invokeStaticWithDefaultOnError(ClassLoader loader, Object[] parameters,
+            @Nullable T defaultValue) throws Exception {
         Method method = getResolvedMethod(loader);
-        return invoke(method, null, parameters);
+        if (method == null) {
+            // warning has already been logged in getResolvedMethod()
+            return defaultValue;
+        }
+        try {
+            return (T) invoke(method, null, parameters);
+        } catch (Throwable t) {
+            logger.warn(t.getMessage(), t);
+            return defaultValue;
+        }
     }
 
     @Nullable

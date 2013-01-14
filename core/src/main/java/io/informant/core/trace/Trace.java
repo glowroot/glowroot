@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,14 +226,17 @@ public class Trace {
         return fineMergedStackTree;
     }
 
+    @Nullable
     public ScheduledFuture<?> getCoarseProfilingScheduledFuture() {
         return coarseProfilingScheduledFuture;
     }
 
+    @Nullable
     public ScheduledFuture<?> getFineProfilingScheduledFuture() {
         return fineProfilingScheduledFuture;
     }
 
+    @Nullable
     public ScheduledFuture<?> getStuckScheduledFuture() {
         return stuckScheduledFuture;
     }
@@ -338,13 +341,9 @@ public class Trace {
         return span;
     }
 
-    // one but not both args can be null
-    public Span addSpan(@Nullable io.informant.api.MessageSupplier messageSupplier,
+    public Span addSpan(io.informant.api.MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
 
-        if (messageSupplier == null && errorMessage == null) {
-            logger.error("addSpan(): both args cannot be null");
-        }
         return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
     }
 

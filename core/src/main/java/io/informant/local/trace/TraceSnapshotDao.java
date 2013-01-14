@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ public class TraceSnapshotDao {
         this.clock = clock;
         boolean errorOnInit = false;
         try {
-            SchemaUpgrader.upgradeTraceSnapshotTable(dataSource);
+            TraceSnapshotSchema.upgradeTraceSnapshotTable(dataSource);
             dataSource.syncTable("trace_snapshot", columns);
             dataSource.syncIndexes("trace_snapshot", indexes);
         } catch (SQLException e) {
@@ -266,7 +266,19 @@ public class TraceSnapshotDao {
         return snapshots.get(0);
     }
 
-    public int deleteSnapshotsBefore(long capturedAt) {
+    public void deleteAllSnapshots() {
+        logger.debug("deleteAllSnapshots()");
+        if (!valid) {
+            return;
+        }
+        try {
+            dataSource.execute("truncate table trace_snapshot");
+        } catch (SQLException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    int deleteSnapshotsBefore(long capturedAt) {
         logger.debug("deleteSnapshotsBefore(): capturedAt={}", capturedAt);
         if (!valid) {
             return 0;
@@ -277,18 +289,6 @@ public class TraceSnapshotDao {
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;
-        }
-    }
-
-    public void deleteAllSnapshots() {
-        logger.debug("deleteAllSnapshots()");
-        if (!valid) {
-            return;
-        }
-        try {
-            dataSource.execute("truncate table trace_snapshot");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
         }
     }
 

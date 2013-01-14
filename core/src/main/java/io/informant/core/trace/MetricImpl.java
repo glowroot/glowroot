@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package io.informant.core.trace;
 
 import io.informant.api.Metric;
 import io.informant.core.util.PartiallyThreadSafe;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 
@@ -71,6 +73,7 @@ public class MetricImpl implements Metric {
         }
     }
 
+    @Nullable
     TraceMetric get() {
         return traceMetric.get();
     }

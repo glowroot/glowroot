@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ import com.google.inject.Singleton;
 class TracePointJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
-
+    private static final Gson gson = new Gson();
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
     private final TraceSnapshotDao traceSnapshotDao;
@@ -65,7 +65,6 @@ class TracePointJsonService implements JsonService {
     private final TraceSnapshotService traceSnapshotService;
     private final Ticker ticker;
     private final Clock clock;
-    private final Gson gson = new Gson();
 
     @Inject
     TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
@@ -192,7 +191,7 @@ class TracePointJsonService implements JsonService {
             }
             Collections.sort(activeTraces,
                     Ordering.natural().onResultOf(new Function<Trace, Long>() {
-                        public Long apply(@Nullable Trace trace) {
+                        public Long apply(Trace trace) {
                             return trace.getStartTick();
                         }
                     }));
@@ -239,6 +238,8 @@ class TracePointJsonService implements JsonService {
                 return true;
             }
             String traceHeadline = trace.getRootSpan().getMessageSupplier().get().getText();
+            // getText() should never return null, but since its impl can be provided by a custom
+            // plugin, the return value is tested just to be safe
             if (traceHeadline == null) {
                 return false;
             }

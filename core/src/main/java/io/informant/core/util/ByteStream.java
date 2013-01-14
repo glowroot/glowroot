@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+
+import javax.annotation.Nullable;
 
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
@@ -146,6 +148,7 @@ public abstract class ByteStream {
             return hasNotSentTerminatingChunk;
         }
 
+        @Nullable
         public Object nextChunk() throws IOException {
             if (byteStream.hasNext()) {
                 byte[] next = byteStream.next();

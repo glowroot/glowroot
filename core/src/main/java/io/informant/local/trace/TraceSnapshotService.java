@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.Message;
-import io.informant.api.MessageSupplier;
 import io.informant.core.config.ConfigService;
 import io.informant.core.config.CoreConfig;
 import io.informant.core.trace.MergedStackTree;
@@ -66,7 +65,6 @@ import com.google.inject.Singleton;
 public class TraceSnapshotService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotService.class);
-
     private static final Gson gson = new Gson();
 
     private final ConfigService configService;
@@ -214,21 +212,21 @@ public class TraceSnapshotService {
         }
         if (snapshot.getSpans() != null) {
             sb.append(",\"spans\":");
-            // flush current StringBuilder as its own chunk and reset StringBuffer
+            // flush current StringBuilder as its own chunk and reset StringBuilder
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
             byteStreams.add(snapshot.getSpans());
         }
         if (snapshot.getCoarseMergedStackTree() != null) {
             sb.append(",\"coarseMergedStackTree\":");
-            // flush current StringBuilder as its own chunk and reset StringBuffer
+            // flush current StringBuilder as its own chunk and reset StringBuilder
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
             byteStreams.add(snapshot.getCoarseMergedStackTree());
         }
         if (snapshot.getFineMergedStackTree() != null) {
             sb.append(",\"fineMergedStackTree\":");
-            // flush current StringBuilder as its own chunk and reset StringBuffer
+            // flush current StringBuilder as its own chunk and reset StringBuilder
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
             byteStreams.add(snapshot.getFineMergedStackTree());
@@ -240,7 +238,7 @@ public class TraceSnapshotService {
     }
 
     // this feels more performant than gson.toJson(s)
-    private static String escapeJson(String s) {
+    private static String escapeJson(@Nullable String s) {
         StringWriter sw = new StringWriter();
         JsonWriter jw = new JsonWriter(sw);
         jw.setLenient(true);
@@ -275,7 +273,7 @@ public class TraceSnapshotService {
 
     @VisibleForTesting
     @Nullable
-    static ByteStream getMergedStackTree(MergedStackTree mergedStackTree) {
+    static ByteStream getMergedStackTree(@Nullable MergedStackTree mergedStackTree) {
         if (mergedStackTree == null) {
             return null;
         }
@@ -292,15 +290,6 @@ public class TraceSnapshotService {
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         writeException(exception, jw);
-        jw.close();
-        return sb.toString();
-    }
-
-    @Nullable
-    public static String getStackTraceJson(StackTraceElement[] stackTrace) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        writeStackTrace(stackTrace, jw);
         jw.close();
         return sb.toString();
     }
@@ -399,38 +388,35 @@ public class TraceSnapshotService {
             jw.value(span.getParentIndex());
             jw.name("nestingLevel");
             jw.value(span.getNestingLevel());
-            MessageSupplier messageSupplier = span.getMessageSupplier();
-            if (messageSupplier != null) {
-                Message message = messageSupplier.get();
-                jw.name("message");
-                jw.beginObject();
-                jw.name("text");
-                String text;
-                try {
-                    text = message.getText();
-                } catch (Throwable t) {
-                    // getText() could be plugin provided, e.g. if not using TemplateMessage
-                    text = "an error occurred calling getText() on " + message.getClass().getName();
-                    logger.warn(text, t);
-                }
-                jw.value(text);
-                Map<String, ?> detail = message.getDetail();
-                if (detail != null && !detail.isEmpty()) {
-                    jw.name("detail");
-                    new MessageDetailSerializer(jw).write(detail);
-                }
-                jw.endObject();
+            Message message = span.getMessageSupplier().get();
+            jw.name("message");
+            jw.beginObject();
+            jw.name("text");
+            String text;
+            try {
+                text = message.getText();
+            } catch (Throwable t) {
+                // getText() could be plugin provided, e.g. if not using TemplateMessage
+                text = "an error occurred calling getText() on " + message.getClass().getName();
+                logger.warn(text, t);
             }
+            jw.value(text);
+            Map<String, ?> detail = message.getDetail();
+            if (detail != null && !detail.isEmpty()) {
+                jw.name("detail");
+                new MessageDetailSerializer(jw).write(detail);
+            }
+            jw.endObject();
             ErrorMessage errorMessage = span.getErrorMessage();
             if (errorMessage != null) {
                 jw.name("error");
                 jw.beginObject();
                 jw.name("text");
                 jw.value(errorMessage.getText());
-                Map<String, ?> detail = errorMessage.getDetail();
-                if (detail != null) {
+                Map<String, ?> errorDetail = errorMessage.getDetail();
+                if (errorDetail != null) {
                     jw.name("detail");
-                    new MessageDetailSerializer(jw).write(detail);
+                    new MessageDetailSerializer(jw).write(errorDetail);
                 }
                 CapturedException exception = errorMessage.getException();
                 if (exception != null) {
@@ -525,15 +511,6 @@ public class TraceSnapshotService {
                 jw.endObject();
             } else if (curr == JsonWriterOp.POP_METRIC_NAME) {
                 metricNameStack.remove(metricNameStack.size() - 1);
-            }
-        }
-
-        @Nullable
-        private static String top(List<String> stack) {
-            if (stack.isEmpty()) {
-                return null;
-            } else {
-                return stack.get(stack.size() - 1);
             }
         }
 
