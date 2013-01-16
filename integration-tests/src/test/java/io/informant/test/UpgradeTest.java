@@ -40,15 +40,12 @@ public class UpgradeTest {
     public void shouldReadTraces() throws Exception {
         // given
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        Files.copy(Resources.newInputStreamSupplier(Resources
-                .getResource("for-upgrade-test/config.json")),
-                new File(dataDir, "config.json"));
-        Files.copy(Resources.newInputStreamSupplier(Resources
-                .getResource("for-upgrade-test/informant.h2.db")),
-                new File(dataDir, "informant.h2.db"));
-        Files.copy(Resources.newInputStreamSupplier(Resources
-                .getResource("for-upgrade-test/informant.rolling.db")),
-                new File(dataDir, "informant.rolling.db"));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
+                .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/informant.h2.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "informant.h2.db")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/informant.rolling.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "informant.rolling.db")));
         InformantContainer container = InformantContainer.create(0, true, dataDir);
         // when
         Trace trace = container.getInformant().getLastTrace();
@@ -64,7 +61,6 @@ public class UpgradeTest {
         // cleanup
         container.close();
     }
-
     // create initial database for upgrade test
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(0, true);

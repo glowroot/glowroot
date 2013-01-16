@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -331,7 +332,7 @@ public class HttpServer extends HttpServerBase {
             Map<String, Object> parameters = Maps.newHashMap();
             for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
                 String key = entry.getKey();
-                key = convertLowerHyphenToLowerCamel(key);
+                key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
                 if (entry.getValue().size() == 1) {
                     parameters.put(key, entry.getValue().get(0));
                 } else {
@@ -340,18 +341,6 @@ public class HttpServer extends HttpServerBase {
             }
             return gson.toJson(parameters);
         }
-    }
-
-    // can't use guava CaseFormat.LOWER_HYPHEN at the moment due to severe initialization
-    // performance of guava-jdk5's CharMatcher on JDK5
-    private static String convertLowerHyphenToLowerCamel(String s) {
-        int underscoreIndex;
-        while ((underscoreIndex = s.indexOf('-')) != -1) {
-            s = s.substring(0, underscoreIndex)
-                    + Character.toUpperCase(s.charAt(underscoreIndex + 1))
-                    + s.substring(underscoreIndex + 2);
-        }
-        return s;
     }
 
     private static class JsonServiceMapping {

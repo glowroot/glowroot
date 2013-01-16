@@ -17,6 +17,7 @@ package io.informant.plugin.servlet;
 
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
+import io.informant.shaded.google.common.base.Splitter;
 import io.informant.shaded.google.common.collect.ImmutableSet;
 
 /**
@@ -87,18 +88,10 @@ class ServletPluginProperties {
                 .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME);
         String captureSessionAttributesText = pluginServices
                 .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME);
-        // can't use guava Splitter at the moment due to severe initialization performance of
-        // guava-jdk5's CharMatcher on JDK5
-        ImmutableSet.Builder<String> paths = ImmutableSet.builder();
-        for (String path : captureSessionAttributesText.split(",")) {
-            path = path.trim();
-            if (!path.equals("")) {
-                paths.add(path);
-            }
-        }
         // update cached first so that another thread cannot come into this method and get a
         // positive match for text but then get the old cached attributes
-        captureSessionAttributePaths = paths.build();
+        captureSessionAttributePaths = ImmutableSet.copyOf(Splitter.on(',').trimResults()
+                .omitEmptyStrings().split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
