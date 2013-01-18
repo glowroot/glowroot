@@ -39,7 +39,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 
 /**
@@ -177,7 +176,7 @@ class ParsedTypeCache {
             return createParsedTypePlanB(typeName, loader);
         }
         try {
-            byte[] bytes = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
+            byte[] bytes = Resources.toByteArray(url);
             ClassReader cr = new ClassReader(bytes);
             cr.accept(cv, 0);
             return cv.build();

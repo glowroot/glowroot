@@ -19,6 +19,7 @@ import io.informant.api.Span.MessageUpdater;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ObjectArrays;
 
 /**
  * @author Trask Stalnaker
@@ -49,9 +50,7 @@ public class PointcutMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         if (hasReturnValue) {
-            Object[] messageArgs = new Object[args.length + 1];
-            System.arraycopy(args, 0, messageArgs, 0, args.length);
-            messageArgs[args.length] = returnValue;
+            Object[] messageArgs = ObjectArrays.concat(args, String.valueOf(returnValue));
             return Message.from(template + " => {{returnValue}}", messageArgs);
         } else {
             return Message.from(template, args);

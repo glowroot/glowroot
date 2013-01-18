@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -121,7 +120,7 @@ class TraceExportHttpService implements HttpService {
             logger.error("could not find resource '{}'", path);
             return "";
         } else {
-            return CharStreams.toString(Resources.newReaderSupplier(url, Charsets.UTF_8));
+            return Resources.toString(url, Charsets.UTF_8);
         }
     }
 

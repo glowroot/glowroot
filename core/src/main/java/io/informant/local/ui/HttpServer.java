@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
+import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
@@ -202,7 +203,7 @@ public class HttpServer extends HttpServerBase {
             logger.warn("unexpected path '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        byte[] staticContent = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
+        byte[] staticContent = Resources.toByteArray(url);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType);
@@ -301,9 +302,7 @@ public class HttpServer extends HttpServerBase {
             withOptionalArg = false;
         }
         if (withOptionalArg) {
-            Object[] argsWithOptional = new String[args.length + 1];
-            System.arraycopy(args, 0, argsWithOptional, 0, args.length);
-            argsWithOptional[args.length] = optionalArg;
+            Object[] argsWithOptional = ObjectArrays.concat(args, optionalArg);
             return method.invoke(object, argsWithOptional);
         } else {
             return method.invoke(object, args);
@@ -312,9 +311,7 @@ public class HttpServer extends HttpServerBase {
 
     private static Class<?>[] getParameterTypes(int length) {
         Class<?>[] parameterTypes = new Class<?>[length];
-        for (int i = 0; i < parameterTypes.length; i++) {
-            parameterTypes[i] = String.class;
-        }
+        Arrays.fill(parameterTypes, String.class);
         return parameterTypes;
     }
 

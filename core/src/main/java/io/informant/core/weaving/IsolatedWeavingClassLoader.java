@@ -32,8 +32,8 @@ import javax.annotation.concurrent.ThreadSafe;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
+import com.google.common.reflect.Reflection;
 
 /**
  * @author Trask Stalnaker
@@ -121,7 +121,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
         byte[] bytes;
         try {
-            bytes = ByteStreams.toByteArray(Resources.newInputStreamSupplier(url));
+            bytes = Resources.toByteArray(url);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
@@ -140,11 +140,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 inWeaving.remove();
             }
         }
-        if (name.indexOf('.') != -1) {
-            String packageName = name.substring(0, name.lastIndexOf('.'));
-            if (getPackage(packageName) == null) {
-                definePackage(packageName, null, null, null, null, null, null, null);
-            }
+        String packageName = Reflection.getPackageName(name);
+        if (getPackage(packageName) == null) {
+            definePackage(packageName, null, null, null, null, null, null, null);
         }
         return super.defineClass(name, bytes, 0, bytes.length);
     }
