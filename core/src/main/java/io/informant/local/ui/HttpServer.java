@@ -327,7 +327,9 @@ public class HttpServer extends HttpServerBase {
             Map<String, Object> parameters = Maps.newHashMap();
             for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
                 String key = entry.getKey();
-                key = convertUnderscoreToCamel(key);
+                // can't use guava CaseFormat.LOWER_HYPHEN at the moment due to severe
+                // initialization performance of guava-jdk5's CharMatcher on JDK5
+                key = convertLowerHyphenToLowerCamel(key);
                 if (entry.getValue().size() == 1) {
                     parameters.put(key, entry.getValue().get(0));
                 } else {
@@ -338,9 +340,9 @@ public class HttpServer extends HttpServerBase {
         }
     }
 
-    private static String convertUnderscoreToCamel(String s) {
+    private static String convertLowerHyphenToLowerCamel(String s) {
         int underscoreIndex;
-        while ((underscoreIndex = s.indexOf('_')) != -1) {
+        while ((underscoreIndex = s.indexOf('-')) != -1) {
             s = s.substring(0, underscoreIndex)
                     + Character.toUpperCase(s.charAt(underscoreIndex + 1))
                     + s.substring(underscoreIndex + 2);

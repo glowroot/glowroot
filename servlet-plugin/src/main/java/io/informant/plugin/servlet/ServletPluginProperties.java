@@ -96,7 +96,7 @@ final class ServletPluginProperties {
         String sessionAttributesText = pluginServices
                 .getStringProperty(SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
         // can't use guava Splitter at the moment due to severe initialization performance of
-        // guava-jdk5's Splitter on JDK5
+        // guava-jdk5's CharMatcher on JDK5
         ImmutableSet.Builder<String> paths = ImmutableSet.builder();
         for (String path : sessionAttributesText.split(",")) {
             path = path.trim();

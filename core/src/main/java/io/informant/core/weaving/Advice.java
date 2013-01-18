@@ -442,7 +442,7 @@ public class Advice {
     }
 
     // can't use guava Splitter at the moment due to severe initialization performance of
-    // guava-jdk5's Splitter on JDK5
+    // guava-jdk5's CharMatcher on JDK5
     private static Iterable<String> split(String str, char separator) {
         List<String> parts = Lists.newArrayList(str.split("\\Q" + separator + "\\E"));
         if (str.startsWith(Character.toString(separator))) {
