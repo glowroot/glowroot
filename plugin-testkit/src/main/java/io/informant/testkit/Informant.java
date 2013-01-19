@@ -307,19 +307,17 @@ public class Informant {
         }
     }
 
-    // it's a bit hard to determine whether the response was compressed since AsyncHttpClient (well,
-    // really, under the covers, Netty) automatically uncompresses the response and replaces the
-    // Content-Encoding header value with "identity"
-    //
-    // this method relies on the fact that the Netty server doesn't specify "identity" for
-    // uncompressed responses (it just leaves off the Content-Encoding header altogether)
+    // this method relies on io.informant.testkit.InformantContainer.SaveTheEncodingHandler
+    // being inserted into the Netty pipeline before the decompression handler (which removes the
+    // Content-Encoding header after decompression) so that the original Content-Encoding can be
+    // still be retrieved via the alternate http header X-Original-Content-Encoding
     private static boolean wasUncompressed(Response response) throws AssertionError {
         String contentLength = response.getHeader("Content-Length");
         if ("0".equals(contentLength)) {
             // zero-length responses are never compressed
             return false;
         }
-        String contentEncoding = response.getHeader("Content-Encoding");
-        return !"identity".equals(contentEncoding);
+        String contentEncoding = response.getHeader("X-Original-Content-Encoding");
+        return !"gzip".equals(contentEncoding);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.concurrent.ThreadSafe;
+
+import org.fest.reflect.core.Reflection;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.jboss.netty.handler.codec.http.HttpMessage;
 
 import com.google.common.collect.ImmutableMap;
 import com.ning.http.client.AsyncHttpClient;
@@ -145,11 +155,35 @@ public class InformantContainer {
         providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
                 executorService);
         builder.setAsyncHttpClientProviderConfig(providerConfig);
-        return new AsyncHttpClient(builder.build());
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
+        addSaveTheEncodingHandlerToNettyPipeline(asyncHttpClient);
+        return asyncHttpClient;
     }
 
     private static boolean useExternalJvmAppContainer() {
         return Boolean.valueOf(System.getProperty("externalJvmAppContainer"));
+    }
+
+    // Netty's HttpContentDecoder removes the Content-Encoding header during the decompression step
+    // which makes it difficult to verify that the response from Informant was compressed
+    //
+    // this method adds a ChannelHandler to the netty pipeline, before the decompression handler,
+    // and saves the original Content-Encoding header into another http header so it can be used
+    // later to verify that the response was compressed
+    private static void addSaveTheEncodingHandlerToNettyPipeline(AsyncHttpClient asyncHttpClient) {
+        // the next release of AsyncHttpClient will include a hook to modify the pipeline without
+        // having to resort to this reflection hack, see
+        // https://github.com/AsyncHttpClient/async-http-client/pull/205
+        ClientBootstrap plainBootstrap = Reflection.field("plainBootstrap")
+                .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
+        final ChannelPipelineFactory pipelineFactory = plainBootstrap.getPipelineFactory();
+        plainBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            public ChannelPipeline getPipeline() throws Exception {
+                ChannelPipeline pipeline = pipelineFactory.getPipeline();
+                pipeline.addBefore("inflater", "saveTheEncoding", new SaveTheEncodingHandler());
+                return pipeline;
+            }
+        });
     }
 
     @ThreadSafe
@@ -158,5 +192,20 @@ public class InformantContainer {
         void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass, String threadName)
                 throws Exception;
         void close() throws Exception;
+    }
+
+    private static class SaveTheEncodingHandler extends SimpleChannelHandler {
+        @Override
+        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+            Object msg = e.getMessage();
+            if (msg instanceof HttpMessage) {
+                HttpMessage m = (HttpMessage) msg;
+                String contentEncoding = m.getHeader(HttpHeaders.Names.CONTENT_ENCODING);
+                if (contentEncoding != null) {
+                    m.setHeader("X-Original-Content-Encoding", contentEncoding);
+                }
+            }
+            ctx.sendUpstream(e);
+        }
     }
 }

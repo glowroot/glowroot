@@ -585,6 +585,7 @@ class PreInitializeClasses {
         types.add(qos + ".logback.core.status.ErrorStatus");
         types.add(qos + ".logback.core.status.InfoStatus");
         types.add(qos + ".logback.core.status.OnConsoleStatusListener");
+        types.add(qos + ".logback.core.status.OnPrintStreamStatusListenerBase");
         types.add(qos + ".logback.core.status.Status");
         types.add(qos + ".logback.core.status.StatusBase");
         types.add(qos + ".logback.core.status.StatusChecker");
@@ -660,6 +661,7 @@ class PreInitializeClasses {
         types.add("org.objectweb.asm.ClassReader");
         types.add("org.objectweb.asm.ClassVisitor");
         types.add("org.objectweb.asm.ClassWriter");
+        types.add("org.objectweb.asm.Context");
         types.add("org.objectweb.asm.Edge");
         types.add("org.objectweb.asm.FieldVisitor");
         types.add("org.objectweb.asm.FieldWriter");

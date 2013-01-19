@@ -18,23 +18,23 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.1</version>
+      <version>1.7.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-slf4j-api</artifactId>
-      <version>1.7.1-SNAPSHOT</version>
+      <version>1.7.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-slf4jx-api</artifactId>
-      <version>1.7.1-SNAPSHOT</version>
+      <version>1.7.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-logback-classic</artifactId>
-      <version>1.0.7-SNAPSHOT</version>
+      <version>1.0.9-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -48,7 +48,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.7</version>
+      <version>1.0.9</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
