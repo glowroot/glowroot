@@ -57,6 +57,7 @@ public class DataSource {
     @Nullable
     private final File dbFile;
     private final boolean memDb;
+    private final Thread shutdownHookThread;
     @GuardedBy("lock")
     private Connection connection;
     private final Object lock = new Object();
@@ -80,6 +81,7 @@ public class DataSource {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
         }
+        shutdownHookThread = new ShutdownHookThread();
     }
 
     public DataSource(File dbFile) {
@@ -95,34 +97,8 @@ public class DataSource {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
         }
-        // implement jvm shutdown hook here instead of using default H2 jvm shutdown hook so that
-        // DataSource is aware of the shutdown and won't execute any sql during/after H2 shutdown
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    // update flag outside of lock in case there is a backlog of threads already
-                    // waiting on the lock (once the flag is set, any threads in the backlog that
-                    // haven't acquired the lock will abort quickly once they do obtain the lock)
-                    jvmShutdownInProgress = true;
-                    synchronized (lock) {
-                        connection.close();
-                    }
-                } catch (SQLException e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            }
-        });
-    }
-
-    public void close() throws SQLException {
-        logger.debug("close()");
-        synchronized (lock) {
-            if (jvmShutdownInProgress) {
-                return;
-            }
-            connection.close();
-        }
+        shutdownHookThread = new ShutdownHookThread();
+        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
     public void compact() throws SQLException {
@@ -265,6 +241,18 @@ public class DataSource {
         }
     }
 
+    @OnlyUsedByTests
+    public void close() throws SQLException {
+        logger.debug("close()");
+        synchronized (lock) {
+            if (jvmShutdownInProgress) {
+                return;
+            }
+            connection.close();
+        }
+        Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
+    }
+
     // lock must be acquired prior to calling this method
     private <T> T queryUnderLock(String sql, Object[] args, ResultSetExtractor<T> rse)
             throws SQLException {
@@ -327,5 +315,22 @@ public class DataSource {
 
     private interface ResultSetExtractor<T> {
         T extractData(ResultSet resultSet) throws SQLException;
+    }
+
+    private class ShutdownHookThread extends Thread {
+        @Override
+        public void run() {
+            try {
+                // update flag outside of lock in case there is a backlog of threads already
+                // waiting on the lock (once the flag is set, any threads in the backlog that
+                // haven't acquired the lock will abort quickly once they do obtain the lock)
+                jvmShutdownInProgress = true;
+                synchronized (lock) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                logger.warn(e.getMessage(), e);
+            }
+        }
     }
 }

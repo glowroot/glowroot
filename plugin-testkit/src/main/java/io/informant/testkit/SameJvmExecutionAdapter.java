@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -48,58 +49,68 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     private final Collection<Thread> preExistingThreads;
     private volatile IsolatedWeavingClassLoader isolatedWeavingClassLoader;
 
-    SameJvmExecutionAdapter(Map<String, String> properties) throws InstantiationException,
-            IllegalAccessException, ClassNotFoundException {
-
+    SameJvmExecutionAdapter(final Map<String, String> properties) throws Exception {
         preExistingThreads = Threads.currentThreads();
-
-        List<Mixin> mixins = Lists.newArrayList();
-        List<Advice> advisors = Lists.newArrayList();
+        final List<Mixin> mixins = Lists.newArrayList();
+        final List<Advice> advisors = Lists.newArrayList();
         for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
         }
-        // instantiate class loader
-        isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
-                AppUnderTest.class, RunnableWithMapArg.class,
-                RunnableWithWeavingMetricReturn.class, RunnableWithIntegerReturn.class);
-        // start agent inside class loader
-        isolatedWeavingClassLoader.newInstance(StartContainer.class, RunnableWithMapArg.class)
-                .run(properties);
-        // start weaving (needed to retrieve weaving metric from agent first)
-        WeavingMetric weavingMetric = isolatedWeavingClassLoader.newInstance(
-                GetWeavingMetric.class, RunnableWithWeavingMetricReturn.class).run();
-        isolatedWeavingClassLoader.initWeaver(weavingMetric);
+        // temporary thread is used to ensure ThreadLocals (e.g. Gson.calls) don't get bound to the
+        // main thread which could prevent the isolated weaving class loader from being gc'd
+        executeInTemporaryThread(new Callable<Void>() {
+            public Void call() throws Exception {
+                // instantiate class loader
+                isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(mixins, advisors,
+                        AppUnderTest.class, RunnableWithMapArg.class,
+                        RunnableWithWeavingMetricReturn.class, RunnableWithIntegerReturn.class);
+                // start agent inside class loader
+                isolatedWeavingClassLoader.newInstance(StartContainer.class,
+                        RunnableWithMapArg.class)
+                        .run(properties);
+                // start weaving (needed to retrieve weaving metric from agent first)
+                WeavingMetric weavingMetric = isolatedWeavingClassLoader.newInstance(
+                        GetWeavingMetric.class, RunnableWithWeavingMetricReturn.class).run();
+                isolatedWeavingClassLoader.initWeaver(weavingMetric);
+
+                return null;
+            }
+        });
     }
 
-    public int getPort() throws InstantiationException, IllegalAccessException,
-            ClassNotFoundException {
-
-        return isolatedWeavingClassLoader.newInstance(GetPort.class,
-                RunnableWithIntegerReturn.class).run();
+    public int getPort() throws Exception {
+        return executeInTemporaryThread(new Callable<Integer>() {
+            public Integer call() throws Exception {
+                return isolatedWeavingClassLoader.newInstance(GetPort.class,
+                        RunnableWithIntegerReturn.class).run();
+            }
+        });
     }
 
-    public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass,
+    public void executeAppUnderTest(final Class<? extends AppUnderTest> appUnderTestClass,
             String threadName) throws Exception {
 
-        String previousThreadName = Thread.currentThread().getName();
-        ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setName(threadName);
-        Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
-        try {
-            isolatedWeavingClassLoader.newInstance(appUnderTestClass, AppUnderTest.class)
-                    .executeApp();
-        } finally {
-            Thread.currentThread().setName(previousThreadName);
-            Thread.currentThread().setContextClassLoader(previousContextClassLoader);
-        }
+        // temporary thread is used to ensure ThreadLocals (e.g. Gson.calls) don't get bound to the
+        // main thread which could prevent the isolated weaving class loader from being gc'd
+        executeInTemporaryThread(threadName, new Callable<Void>() {
+            public Void call() throws Exception {
+                isolatedWeavingClassLoader.newInstance(appUnderTestClass, AppUnderTest.class)
+                        .executeApp();
+                return null;
+            }
+        });
     }
 
-    public void close() throws InstantiationException, IllegalAccessException,
-            ClassNotFoundException, InterruptedException {
-
+    public void close() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
-        isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
+        executeInTemporaryThread(new Callable<Void>() {
+            public Void call() throws Exception {
+                isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class)
+                        .run();
+                return null;
+            }
+        });
         Threads.postShutdownCheck(preExistingThreads);
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
         if (System.getProperty("java.version").startsWith("1.5")) {
@@ -110,6 +121,24 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
             // luckily JDK 1.6 has no such problem
         }
         isolatedWeavingClassLoader = null;
+    }
+
+    private static <V> V executeInTemporaryThread(Callable<V> callable) throws Exception {
+        return executeInTemporaryThread(null, callable);
+    }
+
+    private static <V> V executeInTemporaryThread(String threadName, Callable<V> callable)
+            throws Exception {
+        ThreadWithReturnValue<V> executeAppThread = new ThreadWithReturnValue<V>(callable);
+        if (threadName != null) {
+            executeAppThread.setName(threadName);
+        }
+        executeAppThread.start();
+        executeAppThread.join();
+        if (executeAppThread.exception != null) {
+            throw executeAppThread.exception;
+        }
+        return executeAppThread.returnValue;
     }
 
     private static void cleanUpDriverManagerInJdk5(ClassLoader classLoader) {
@@ -189,6 +218,26 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
                 throw new IllegalStateException(e);
             } finally {
                 Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+            }
+        }
+    }
+
+    private static class ThreadWithReturnValue<V> extends Thread {
+
+        private final Callable<V> callable;
+        private volatile V returnValue;
+        private volatile Exception exception;
+
+        public ThreadWithReturnValue(Callable<V> callable) {
+            this.callable = callable;
+        }
+
+        @Override
+        public void run() {
+            try {
+                returnValue = callable.call();
+            } catch (Exception e) {
+                exception = e;
             }
         }
     }
