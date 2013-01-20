@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,16 @@ import io.informant.core.weaving.IsolatedWeavingClassLoader;
 import io.informant.core.weaving.WeavingMetric;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 
+import java.sql.DriverManager;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.annotation.concurrent.ThreadSafe;
+
+import org.fest.reflect.core.Reflection;
 
 import com.google.common.collect.Lists;
 
@@ -97,7 +102,27 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         isolatedWeavingClassLoader.newInstance(ShutdownContainer.class, Runnable.class).run();
         Threads.postShutdownCheck(preExistingThreads);
         // de-reference class loader, otherwise leads to PermGen OutOfMemoryErrors
+        if (System.getProperty("java.version").startsWith("1.5")) {
+            cleanUpDriverManagerInJdk5(isolatedWeavingClassLoader);
+            // unfortunately, JDK 1.5 still has trouble releasing the IsolatedWeavingClassLoader
+            // even though there are only weak references left to it (verified by taking a heap dump
+            // here)
+            // luckily JDK 1.6 has no such problem
+        }
         isolatedWeavingClassLoader = null;
+    }
+
+    private static void cleanUpDriverManagerInJdk5(ClassLoader classLoader) {
+        Vector<?> drivers = Reflection.field("drivers").ofType(Vector.class)
+                .in(DriverManager.class).get();
+        for (Iterator<?> i = drivers.iterator(); i.hasNext();) {
+            Object driverInfo = i.next();
+            Class<?> driverClass = Reflection.field("driverClass").ofType(Class.class)
+                    .in(driverInfo).get();
+            if (driverClass.getClassLoader() == classLoader) {
+                i.remove();
+            }
+        }
     }
 
     public interface RunnableWithMapArg {
