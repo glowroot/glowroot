@@ -19,33 +19,36 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Trace explorer</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
-<link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap.min.css" type="text/css" />
-<link rel="stylesheet" href="libs/bootstrap/2.1.1/css/bootstrap-responsive.min.css"
+<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
     type="text/css" />
-<link rel="stylesheet" href="libs/bootstrap-datepicker/0.1-nightly-20120928-1/css/datepicker.css"
+<link rel="stylesheet" href="libs/bootstrap-datepicker/0.1-nightly-20130113-1/css/datepicker.css"
     type="text/css" />
-<link rel="stylesheet" href="libs/qtip/2.0.0-nightly-20121017/jquery.qtip.min.css"
+<link rel="stylesheet" href="libs/qtip/2.0.0-nightly-20130103/jquery.qtip.min.css"
     type="text/css" />
 <link rel="stylesheet" href="css/informant.css" type="text/css" />
-<script type="text/javascript" src="libs/jquery/1.8.2/jquery.min.js"></script>
-<script type="text/javascript" src="libs/bootstrap/2.1.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
+<!-- jquery-migrate is needed until qtip is jquery 1.9 compatible,
+     see https://github.com/Craga89/qTip2/issues/459 -->
+<script type="text/javascript" src="libs/jquery-migrate/1.0.0/jquery-migrate.min.js"></script>
+<script type="text/javascript" src="libs/bootstrap/2.2.2/js/bootstrap.min.js"></script>
 <script type="text/javascript"
-    src="libs/bootstrap-datepicker/0.1-nightly-20120928-1/js/bootstrap-datepicker.js">
+    src="libs/bootstrap-datepicker/0.1-nightly-20130113-1/js/bootstrap-datepicker.js">
 </script>
 <script type="text/javascript" src="libs/moment/1.7.2/moment.min.js"></script>
-<script type="text/javascript" src="libs/handlebars/1.0.rc.1/handlebars.js"></script>
+<script type="text/javascript" src="libs/handlebars/1.0.rc.2/handlebars.js"></script>
 <!--[if lt IE 9]>
 <script type="text/javascript" src="libs/flashcanvas/20110201/flashcanvas.js"></script>
 <![endif]-->
-<script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/jquery.flot.js"></script>
-<script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/jquery.flot.time.js"></script>
-<script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/jquery.flot.selection.js">
+<script type="text/javascript" src="libs/flot/0.8-nightly-20130114-1/jquery.flot.js"></script>
+<script type="text/javascript" src="libs/flot/0.8-nightly-20130114-1/jquery.flot.time.js"></script>
+<script type="text/javascript" src="libs/flot/0.8-nightly-20130114-1/jquery.flot.selection.js">
 </script>
-<script type="text/javascript" src="libs/flot/0.8-nightly-20120912-1/jquery.flot.navigate.js">
+<script type="text/javascript" src="libs/flot/0.8-nightly-20130114-1/jquery.flot.navigate.js">
 </script>
 <script type="text/javascript" src="libs/spin/1.2.7/spin.min.js"></script>
-<script type="text/javascript" src="libs/qtip/2.0.0-nightly-20121017/jquery.qtip.min.js"></script>
-<script type="text/javascript" src="libs/jquery-color/0.1-nightly-20121028/jquery.color.js">
+<script type="text/javascript" src="libs/qtip/2.0.0-nightly-20130103/jquery.qtip.min.js"></script>
+<script type="text/javascript" src="libs/jquery-color/2.1.2/jquery.color.min.js">
 </script>
 <script type="text/javascript" src="js/trace.js"></script>
 <script type="text/javascript" src="js/informant.js"></script>
@@ -513,11 +516,11 @@
               + '<br><div class="indent2"><div class="button-spinner hide" id="detailSpinner"'
               + ' style="margin-left: 0px; margin-top: 30px"></div></div>'
           var initialFixedOffset = {
-            top: $('.ui-tooltip').offset().top - $(window).scrollTop(),
-            left: $('.ui-tooltip').offset().left - $(window).scrollLeft()
+            top: $('.qtip').offset().top - $(window).scrollTop(),
+            left: $('.qtip').offset().left - $(window).scrollLeft()
             }
-          var initialWidth = $('.ui-tooltip').width()
-          var initialHeight = $('.ui-tooltip').height()
+          var initialWidth = $('.qtip').width()
+          var initialHeight = $('.qtip').height()
           $('#chart').qtip('hide')
           displayModal(summaryHtml, initialFixedOffset, initialWidth, initialHeight)
           $.getJSON('explorer/detail/' + id, function(response) {

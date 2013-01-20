@@ -90,7 +90,7 @@ body {
 .dropdown-menu li > a:active {
   background-color: #f6f6f6 !important;
 }
-.dropdown-menu a {
+.dropdown-menu li > a {
   /* override bootstrap styling */
   padding: 7px 24px;
 }

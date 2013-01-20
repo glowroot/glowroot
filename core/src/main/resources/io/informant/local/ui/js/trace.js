@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ var traceSummaryTemplateText = ''
 + '</div>'
 + 'start: {{date start}}<br>'
 + 'duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds<br>'
-+ '{{#each attributes}}'
-+ '  <div class="second-line-indent">{{name}}: {{value}}</div>'
-+ '{{/each}}'
++ '{{#eachKeyValuePair attributes}}'
++ '  <div class="second-line-indent">{{key}}: {{value}}</div>'
++ '{{/eachKeyValuePair}}'
 + '{{#if userId}}<div class="second-line-indent">user ID: {{userId}}</div>{{/if}}'
 + '{{#if error}}<div class="second-line-indent"><strong>error: {{error.text}}</strong></div>{{/if}}'
 + 'breakdown (in milliseconds):<br>'
@@ -186,6 +186,15 @@ var spansTemplateText = ''
 + '    {{/if}}'
 + '  </div>'
 + '</div>'
+Handlebars.registerHelper('eachKeyValuePair', function(map, options) {
+  var buffer = ''
+  if (map) {
+    $.each(map, function(key, value) {
+      buffer += options.fn({ key: key, value: value })
+    })
+  }
+  return buffer
+})
 Handlebars.registerHelper('date', function(timestamp) {
   return moment(timestamp).format('L h:mm:ss A (Z)')
 })
