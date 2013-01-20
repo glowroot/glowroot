@@ -87,6 +87,11 @@ public abstract class Message {
 
         @Override
         public String getText() {
+            // Matcher.appendReplacement() can't be used here since appendReplacement() applies
+            // special meaning to slashes '\' and dollar signs '$' in the replacement text.
+            // These special characters can be escaped in the replacement text via
+            // Matcher.quoteReplacemenet(), but the implementation below feels slightly more
+            // performant and not much more complex
             StringBuilder text = new StringBuilder();
             int curr = 0;
             int next;

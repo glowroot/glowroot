@@ -482,8 +482,7 @@ public class WeaverTest {
         String methodName = test.executeWithReturn();
         // then
         assertThat(methodName).isNotNull();
-        assertThat(methodName.substring(0, methodName.lastIndexOf("$"))).isEqualTo(
-                "executeWithReturn$informant$metric$abc$xyz");
+        assertThat(methodName).matches("executeWithReturn\\$informant\\$metric\\$abc\\$xyz\\$\\d+");
     }
 
     // ===================== static pointcuts =====================

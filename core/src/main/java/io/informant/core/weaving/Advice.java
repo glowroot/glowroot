@@ -33,7 +33,6 @@ import io.informant.api.weaving.Pointcut;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -47,7 +46,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -291,14 +289,10 @@ public class Advice {
         }
 
         private String buildPatternPart(String part) {
-            if (part.equals("*")) {
-                return ".*";
-            } else if (part.contains("*")) {
-                // convert * into .* and quote the rest of the text using \Q...\E
-                return "\\Q" + Joiner.on("\\E.*\\Q").join(split(part, '*')) + "\\E";
-            } else {
-                return "\\Q" + part + "\\E";
-            }
+            // convert * into .* and quote the rest of the text using \Q...\E
+            String pattern = "\\Q" + part.replace("*", "\\E.*\\Q") + "\\E";
+            // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
+            return pattern.replace("\\Q\\E", "");
         }
 
         private void initFromClass(Class<?> adviceClass) {
@@ -439,18 +433,5 @@ public class Advice {
             }
             return parameterKinds;
         }
-    }
-
-    // can't use guava Splitter at the moment due to severe initialization performance of
-    // guava-jdk5's CharMatcher on JDK5
-    private static Iterable<String> split(String str, char separator) {
-        List<String> parts = Lists.newArrayList(str.split("\\Q" + separator + "\\E"));
-        if (str.startsWith(Character.toString(separator))) {
-            parts.add(0, "");
-        }
-        if (str.endsWith(Character.toString(separator))) {
-            parts.add("");
-        }
-        return parts;
     }
 }
