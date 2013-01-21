@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
+        List<TracePoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
                 false, false, null, null, null, null, 1);
         TraceSnapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
@@ -90,7 +90,7 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
+        List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
                 snapshot.getDuration(), false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).hasSize(1);
@@ -102,7 +102,7 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
+        List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).isEmpty();
@@ -114,7 +114,7 @@ public class TraceSnapshotDaoTest {
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
         snapshotDao.storeSnapshot(snapshot);
         // when
-        List<TraceSnapshotPoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
+        List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).isEmpty();

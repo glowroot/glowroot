@@ -78,7 +78,7 @@ public class HttpServer extends HttpServerBase {
     @Inject
     HttpServer(@Named("ui.port") int port, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            TraceDetailHttpService traceDetailHttpService,
+            TraceSnapshotHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
             ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {

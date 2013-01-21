@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,11 @@ import javax.annotation.concurrent.Immutable;
 import com.google.common.base.Objects;
 
 /**
- * Structure used in the response to "/explorer/points".
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-public class TraceSnapshotPoint {
+public class TracePoint {
 
     private final String id;
     private final long capturedAt;
@@ -34,14 +32,13 @@ public class TraceSnapshotPoint {
     private final boolean completed;
     private final boolean error;
 
-    public static TraceSnapshotPoint from(String id, long capturedAt, double duration,
-            boolean completed, boolean error) {
-        return new TraceSnapshotPoint(id, capturedAt, duration, completed, error);
+    public static TracePoint from(String id, long capturedAt, double duration, boolean completed,
+            boolean error) {
+        return new TracePoint(id, capturedAt, duration, completed, error);
     }
 
-    private TraceSnapshotPoint(String id, long capturedAt, double duration, boolean completed,
+    private TracePoint(String id, long capturedAt, double duration, boolean completed,
             boolean error) {
-
         this.id = id;
         this.capturedAt = capturedAt;
         this.duration = duration;

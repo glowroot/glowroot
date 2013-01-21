@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.TraceRegistry;
 import io.informant.core.util.Clock;
+import io.informant.local.trace.TracePoint;
 import io.informant.local.trace.TraceSinkLocal;
 import io.informant.local.trace.TraceSnapshotDao;
 import io.informant.local.trace.TraceSnapshotDao.StringComparator;
-import io.informant.local.trace.TraceSnapshotPoint;
 import io.informant.local.trace.TraceSnapshotService;
 
 import java.io.IOException;
@@ -61,12 +61,12 @@ public class TracePointJsonServiceTest {
     // mostly the interesting tests are when requesting to=0 so active & pending traces are included
 
     @Test
-    public void shouldReturnActiveTraceInPlaceOfNotCompletedStoredTrace() throws IOException {
+    public void shouldReturnActivePointInPlaceOfNotCompletedStoredPoint() throws IOException {
         // given
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
-        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 123, 500, false));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
@@ -75,17 +75,17 @@ public class TracePointJsonServiceTest {
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
-        assertThat(response.getActiveTraces().size()).isEqualTo(1);
-        assertThat(response.getNormalTraces().size()).isEqualTo(0);
+        assertThat(response.getActivePoints().size()).isEqualTo(1);
+        assertThat(response.getNormalPoints().size()).isEqualTo(0);
     }
 
     @Test
-    public void shouldReturnCompletedStoredTraceInPlaceOfActiveTrace() throws IOException {
+    public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws IOException {
         // given
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
-        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 123, 500, true));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
@@ -94,18 +94,18 @@ public class TracePointJsonServiceTest {
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
-        assertThat(response.getActiveTraces().size()).isEqualTo(0);
-        assertThat(response.getNormalTraces().size()).isEqualTo(1);
+        assertThat(response.getActivePoints().size()).isEqualTo(0);
+        assertThat(response.getNormalPoints().size()).isEqualTo(1);
     }
 
     @Test
-    public void shouldReturnCompletedPendingTraceInPlaceOfActiveTrace() throws IOException {
+    public void shouldReturnCompletedPendingPointInPlaceOfActivePoint() throws IOException {
         // given
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
         pendingTraces.add(mockPendingTrace("id1", 500, true));
-        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        List<TracePoint> points = Lists.newArrayList();
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
@@ -113,8 +113,8 @@ public class TracePointJsonServiceTest {
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
-        assertThat(response.getActiveTraces().size()).isEqualTo(0);
-        assertThat(response.getNormalTraces().size()).isEqualTo(1);
+        assertThat(response.getActivePoints().size()).isEqualTo(0);
+        assertThat(response.getNormalPoints().size()).isEqualTo(1);
     }
 
     // this is relevant because completed pending traces don't have firm capturedAt
@@ -125,7 +125,7 @@ public class TracePointJsonServiceTest {
         List<Trace> activeTraces = Lists.newArrayList();
         List<Trace> pendingTraces = Lists.newArrayList();
         pendingTraces.add(mockPendingTrace("id1", 500, true));
-        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 10001, 500, true));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points, 10000, DEFAULT_CURRENT_TICK);
@@ -134,9 +134,9 @@ public class TracePointJsonServiceTest {
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
-        assertThat(response.getActiveTraces().size()).isEqualTo(0);
-        assertThat(response.getNormalTraces().size()).isEqualTo(1);
-        assertThat(response.getNormalTraces().get(0).getCapturedAt()).isEqualTo(10001);
+        assertThat(response.getActivePoints().size()).isEqualTo(0);
+        assertThat(response.getNormalPoints().size()).isEqualTo(1);
+        assertThat(response.getNormalPoints().get(0).getCapturedAt()).isEqualTo(10001);
     }
 
     @Test
@@ -150,7 +150,7 @@ public class TracePointJsonServiceTest {
         for (int i = 100; i < 200; i++) {
             pendingTraces.add(mockPendingTrace("id" + i, random.nextInt(1000), true));
         }
-        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        List<TracePoint> points = Lists.newArrayList();
         for (int i = 200; i < 300; i++) {
             points.add(mockPoint("id" + i, 1, random.nextInt(1000), true));
         }
@@ -161,10 +161,10 @@ public class TracePointJsonServiceTest {
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
-        assertThat(response.getActiveTraces().size()).isEqualTo(100);
-        assertThat(response.getNormalTraces().size()).isEqualTo(200);
-        assertThat(response.getActiveTraces()).isSorted();
-        assertThat(response.getNormalTraces()).isSorted();
+        assertThat(response.getActivePoints().size()).isEqualTo(100);
+        assertThat(response.getNormalPoints().size()).isEqualTo(200);
+        assertThat(response.getActivePoints()).isSorted();
+        assertThat(response.getNormalPoints()).isSorted();
     }
 
     @Test
@@ -180,7 +180,7 @@ public class TracePointJsonServiceTest {
             activeTraces.add(mockActiveTrace("id" + i, 500));
         }
         List<Trace> pendingTraces = Lists.newArrayList();
-        List<TraceSnapshotPoint> points = Lists.newArrayList();
+        List<TracePoint> points = Lists.newArrayList();
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
@@ -188,29 +188,29 @@ public class TracePointJsonServiceTest {
                 .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
         TracePointResponse response = TracePointResponse.from(responseJson);
-        assertThat(response.getActiveTraces().size()).isEqualTo(100);
-        assertThat(response.getNormalTraces().size()).isEqualTo(0);
+        assertThat(response.getActivePoints().size()).isEqualTo(100);
+        assertThat(response.getNormalPoints().size()).isEqualTo(0);
     }
 
     private static TracePointJsonService buildTracePointJsonService(List<Trace> activeTraces,
-            List<Trace> pendingTraces, List<TraceSnapshotPoint> points) {
+            List<Trace> pendingTraces, List<TracePoint> points) {
 
         return buildTracePointJsonService(activeTraces, pendingTraces, points,
                 DEFAULT_CURRENT_TIME_MILLIS, DEFAULT_CURRENT_TICK);
     }
 
     private static TracePointJsonService buildTracePointJsonService(List<Trace> activeTraces,
-            List<Trace> pendingTraces, List<TraceSnapshotPoint> points, long currentTimeMillis,
+            List<Trace> pendingTraces, List<TracePoint> points, long currentTimeMillis,
             long currentTick) {
 
-        Ordering<TraceSnapshotPoint> durationDescOrdering = Ordering.natural().reverse()
-                .onResultOf(new Function<TraceSnapshotPoint, Double>() {
-                    public Double apply(TraceSnapshotPoint trace) {
+        Ordering<TracePoint> durationDescOrdering = Ordering.natural().reverse()
+                .onResultOf(new Function<TracePoint, Double>() {
+                    public Double apply(TracePoint trace) {
                         return trace.getDuration();
                     }
                 });
 
-        List<TraceSnapshotPoint> orderedPoints = durationDescOrdering.sortedCopy(points);
+        List<TracePoint> orderedPoints = durationDescOrdering.sortedCopy(points);
 
         TraceSnapshotDao traceSnapshotDao = mock(TraceSnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
@@ -248,67 +248,68 @@ public class TracePointJsonServiceTest {
         return trace;
     }
 
-    private TraceSnapshotPoint mockPoint(String id, long capturedAt, long durationMillis,
+    private TracePoint mockPoint(String id, long capturedAt, long durationMillis,
             boolean completed) {
-        return TraceSnapshotPoint.from(id, capturedAt,
-                TimeUnit.MILLISECONDS.toNanos(durationMillis), completed, false);
+        return TracePoint.from(id, capturedAt, TimeUnit.MILLISECONDS.toNanos(durationMillis),
+                completed, false);
     }
 
     private static class TracePointResponse {
-        private final List<TracePoint> normalTraces;
-        private final List<TracePoint> errorTraces;
-        private final List<TracePoint> activeTraces;
+        private final List<RawPoint> normalPoints;
+        private final List<RawPoint> errorPoints;
+        private final List<RawPoint> activePoints;
         private static TracePointResponse from(String responseJson) {
             JsonObject points = new Gson().fromJson(responseJson, JsonElement.class)
                     .getAsJsonObject();
             JsonArray normalPointsJson = points.get("normalPoints").getAsJsonArray();
-            List<TracePoint> normalTraces = Lists.newArrayList();
+            List<RawPoint> normalPoints = Lists.newArrayList();
             for (int i = 0; i < normalPointsJson.size(); i++) {
                 JsonArray normalPointJson = normalPointsJson.get(i).getAsJsonArray();
-                normalTraces.add(TracePoint.from(normalPointJson));
+                normalPoints.add(RawPoint.from(normalPointJson));
             }
             JsonArray errorPointsJson = points.get("errorPoints").getAsJsonArray();
-            List<TracePoint> errorTraces = Lists.newArrayList();
+            List<RawPoint> errorPoints = Lists.newArrayList();
             for (int i = 0; i < errorPointsJson.size(); i++) {
                 JsonArray errorPointJson = errorPointsJson.get(i).getAsJsonArray();
-                errorTraces.add(TracePoint.from(errorPointJson));
+                errorPoints.add(RawPoint.from(errorPointJson));
             }
             JsonArray activePointsJson = points.get("activePoints").getAsJsonArray();
-            List<TracePoint> activeTraces = Lists.newArrayList();
+            List<RawPoint> activePoints = Lists.newArrayList();
             for (int i = 0; i < activePointsJson.size(); i++) {
                 JsonArray activePointJson = activePointsJson.get(i).getAsJsonArray();
-                activeTraces.add(TracePoint.from(activePointJson));
+                activePoints.add(RawPoint.from(activePointJson));
             }
-            return new TracePointResponse(normalTraces, errorTraces, activeTraces);
+            return new TracePointResponse(normalPoints, errorPoints, activePoints);
         }
-        private TracePointResponse(List<TracePoint> normalTraces, List<TracePoint> errorTraces,
-                List<TracePoint> activeTraces) {
-            this.normalTraces = normalTraces;
-            this.errorTraces = errorTraces;
-            this.activeTraces = activeTraces;
+        private TracePointResponse(List<RawPoint> normalPoints,
+                List<RawPoint> errorPoints,
+                List<RawPoint> activePoints) {
+            this.normalPoints = normalPoints;
+            this.errorPoints = errorPoints;
+            this.activePoints = activePoints;
         }
-        private List<TracePoint> getNormalTraces() {
-            return normalTraces;
+        private List<RawPoint> getNormalPoints() {
+            return normalPoints;
         }
-        public List<TracePoint> getErrorTraces() {
-            return errorTraces;
+        public List<RawPoint> getErrorPoints() {
+            return errorPoints;
         }
-        private List<TracePoint> getActiveTraces() {
-            return activeTraces;
+        private List<RawPoint> getActivePoints() {
+            return activePoints;
         }
     }
 
-    private static class TracePoint implements Comparable<TracePoint> {
+    private static class RawPoint implements Comparable<RawPoint> {
         private final long capturedAt;
         private final double durationSeconds;
         private final String id;
-        private static TracePoint from(JsonArray point) {
+        private static RawPoint from(JsonArray point) {
             long capturedAt = point.get(0).getAsLong();
             double durationSeconds = point.get(1).getAsDouble();
             String id = point.get(2).getAsString();
-            return new TracePoint(capturedAt, durationSeconds, id);
+            return new RawPoint(capturedAt, durationSeconds, id);
         }
-        private TracePoint(long capturedAt, double durationSeconds, String id) {
+        private RawPoint(long capturedAt, double durationSeconds, String id) {
             this.capturedAt = capturedAt;
             this.durationSeconds = durationSeconds;
             this.id = id;
@@ -323,7 +324,7 @@ public class TracePointJsonServiceTest {
             return id;
         }
         // natural sort order is by duration desc
-        public int compareTo(TracePoint o) {
+        public int compareTo(RawPoint o) {
             return Double.compare(o.durationSeconds, durationSeconds);
         }
     }

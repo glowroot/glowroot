@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,20 +39,20 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Json service to read trace data.
+ * Http service to read trace snapshot data.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-class TraceDetailHttpService implements HttpService {
+class TraceSnapshotHttpService implements HttpService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceDetailHttpService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotHttpService.class);
 
     private final TraceCommonService traceCommon;
 
     @Inject
-    TraceDetailHttpService(TraceCommonService traceCommon) {
+    TraceSnapshotHttpService(TraceCommonService traceCommon) {
         this.traceCommon = traceCommon;
     }
 

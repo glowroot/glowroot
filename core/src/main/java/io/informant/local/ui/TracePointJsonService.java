@@ -23,7 +23,7 @@ import io.informant.core.util.Clock;
 import io.informant.local.trace.TraceSinkLocal;
 import io.informant.local.trace.TraceSnapshotDao;
 import io.informant.local.trace.TraceSnapshotDao.StringComparator;
-import io.informant.local.trace.TraceSnapshotPoint;
+import io.informant.local.trace.TracePoint;
 import io.informant.local.trace.TraceSnapshotService;
 
 import java.io.IOException;
@@ -86,7 +86,7 @@ class TracePointJsonService implements JsonService {
 
     private class Handler {
 
-        private TraceRequest request;
+        private TracePointRequest request;
         private long requestAt;
         private long low;
         private long high;
@@ -97,15 +97,15 @@ class TracePointJsonService implements JsonService {
         private List<Trace> activeTraces = ImmutableList.of();
         private long capturedAt;
         private long captureTick;
-        private List<TraceSnapshotPoint> points;
+        private List<TracePoint> points;
 
         private String handle(String message) throws IOException {
             logger.debug("getPoints(): message={}", message);
             try {
-                request = gson.fromJson(message, TraceRequest.class);
+                request = gson.fromJson(message, TracePointRequest.class);
             } catch (JsonSyntaxException e) {
                 logger.warn(e.getMessage(), e);
-                return writeResponse(ImmutableList.<TraceSnapshotPoint> of(),
+                return writeResponse(ImmutableList.<TracePoint> of(),
                         ImmutableList.<Trace> of(), 0, 0, false);
             }
             requestAt = clock.currentTimeMillis();
@@ -150,8 +150,8 @@ class TracePointJsonService implements JsonService {
                     && request.getFrom() < requestAt;
         }
 
-        private List<TraceSnapshotPoint> getStoredAndPendingPoints(boolean captureActiveTraces) {
-            List<TraceSnapshotPoint> matchingPendingPoints;
+        private List<TracePoint> getStoredAndPendingPoints(boolean captureActiveTraces) {
+            List<TracePoint> matchingPendingPoints;
             // it only seems worth looking at pending traces if request asks for active traces
             if (captureActiveTraces) {
                 // important to grab pending traces before stored points to ensure none are
@@ -160,14 +160,14 @@ class TracePointJsonService implements JsonService {
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
-            List<TraceSnapshotPoint> points = traceSnapshotDao.readPoints(request.getFrom(),
+            List<TracePoint> points = traceSnapshotDao.readPoints(request.getFrom(),
                     request.getTo(), low, high, request.isBackground(), request.isErrorOnly(),
                     request.isFineOnly(), headlineComparator, request.getHeadline(),
                     userIdComparator, request.getUserId(), request.getLimit() + 1);
             if (!matchingPendingPoints.isEmpty()) {
                 // create single merged and limited list of points
-                List<TraceSnapshotPoint> combinedPoints = Lists.newArrayList(points);
-                for (TraceSnapshotPoint pendingPoint : matchingPendingPoints) {
+                List<TracePoint> combinedPoints = Lists.newArrayList(points);
+                for (TracePoint pendingPoint : matchingPendingPoints) {
                     mergeIntoCombinedPoints(pendingPoint, combinedPoints);
                 }
                 return combinedPoints;
@@ -204,8 +204,8 @@ class TracePointJsonService implements JsonService {
             captureTick = ticker.read();
         }
 
-        private List<TraceSnapshotPoint> getMatchingPendingPoints() {
-            List<TraceSnapshotPoint> points = Lists.newArrayList();
+        private List<TracePoint> getMatchingPendingPoints() {
+            List<TracePoint> points = Lists.newArrayList();
             for (Trace trace : traceSinkLocal.getPendingCompleteTraces()) {
                 if (matchesDuration(trace)
                         && matchesErrorOnly(trace)
@@ -213,7 +213,7 @@ class TracePointJsonService implements JsonService {
                         && matchesHeadline(trace)
                         && matchesUserId(trace)
                         && matchesBackground(trace)) {
-                    points.add(TraceSnapshotPoint.from(trace.getId(), clock.currentTimeMillis(),
+                    points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
                             trace.getDuration(), true, trace.isError()));
                 }
             }
@@ -285,14 +285,14 @@ class TracePointJsonService implements JsonService {
             return request.isBackground() == null || request.isBackground() == trace.isBackground();
         }
 
-        private void mergeIntoCombinedPoints(TraceSnapshotPoint pendingPoint,
-                List<TraceSnapshotPoint> combinedPoints) {
+        private void mergeIntoCombinedPoints(TracePoint pendingPoint,
+                List<TracePoint> combinedPoints) {
 
             boolean duplicate = false;
             int orderedInsertionIndex = 0;
             // check if duplicate and capture ordered insertion index at the same time
             for (int i = 0; i < combinedPoints.size(); i++) {
-                TraceSnapshotPoint point = combinedPoints.get(i);
+                TracePoint point = combinedPoints.get(i);
                 if (pendingPoint.getDuration() < point.getDuration()) {
                     // keep pushing orderedInsertionIndex down the line
                     orderedInsertionIndex = i + 1;
@@ -310,8 +310,8 @@ class TracePointJsonService implements JsonService {
         private void removeDuplicatesBetweenActiveTracesAndPoints() {
             for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
                 Trace activeTrace = i.next();
-                for (Iterator<TraceSnapshotPoint> j = points.iterator(); j.hasNext();) {
-                    TraceSnapshotPoint point = j.next();
+                for (Iterator<TracePoint> j = points.iterator(); j.hasNext();) {
+                    TracePoint point = j.next();
                     if (activeTrace.getId().equals(point.getId())) {
                         // prefer stored trace if it is completed, otherwise prefer active trace
                         if (point.isCompleted()) {
@@ -326,14 +326,14 @@ class TracePointJsonService implements JsonService {
             }
         }
 
-        private String writeResponse(List<TraceSnapshotPoint> points, List<Trace> activeTraces,
+        private String writeResponse(List<TracePoint> points, List<Trace> activeTraces,
                 long capturedAt, long captureTick, boolean limitExceeded) throws IOException {
 
             StringWriter sw = new StringWriter();
             JsonWriter jw = new JsonWriter(sw);
             jw.beginObject();
             jw.name("normalPoints").beginArray();
-            for (TraceSnapshotPoint point : points) {
+            for (TracePoint point : points) {
                 if (!point.isError()) {
                     jw.beginArray();
                     jw.value(point.getCapturedAt());
@@ -344,7 +344,7 @@ class TracePointJsonService implements JsonService {
             }
             jw.endArray();
             jw.name("errorPoints").beginArray();
-            for (TraceSnapshotPoint point : points) {
+            for (TracePoint point : points) {
                 if (point.isError()) {
                     jw.beginArray();
                     jw.value(point.getCapturedAt());

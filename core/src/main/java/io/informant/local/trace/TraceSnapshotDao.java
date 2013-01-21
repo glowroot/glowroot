@@ -156,7 +156,7 @@ public class TraceSnapshotDao {
         }
     }
 
-    public List<TraceSnapshotPoint> readPoints(long capturedFrom, long capturedTo,
+    public List<TracePoint> readPoints(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable Boolean background,
             boolean errorOnly, boolean fineOnly, @Nullable StringComparator headlineComparator,
             @Nullable String headline, @Nullable StringComparator userIdComparator,
@@ -416,10 +416,10 @@ public class TraceSnapshotDao {
     }
 
     @ThreadSafe
-    private static class PointRowMapper implements RowMapper<TraceSnapshotPoint> {
+    private static class PointRowMapper implements RowMapper<TracePoint> {
 
-        public TraceSnapshotPoint mapRow(ResultSet resultSet) throws SQLException {
-            return TraceSnapshotPoint.from(resultSet.getString(1), resultSet.getLong(2),
+        public TracePoint mapRow(ResultSet resultSet) throws SQLException {
+            return TracePoint.from(resultSet.getString(1), resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4), resultSet.getBoolean(5));
         }
     }
