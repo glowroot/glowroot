@@ -46,6 +46,7 @@ import io.informant.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
 import io.informant.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
 import io.informant.core.weaving.SomeAspect.NonMatchingStaticAdvice;
 import io.informant.core.weaving.SomeAspect.NotNestingAdvice;
+import io.informant.core.weaving.SomeAspect.NotNestingWithNoIsEnabledAdvice;
 import io.informant.core.weaving.SomeAspect.PrimitiveAdvice;
 import io.informant.core.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import io.informant.core.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
@@ -470,6 +471,22 @@ public class WeaverTest {
         assertThat(BasicAdvice.onReturnCount.get()).isEqualTo(2);
         assertThat(BasicAdvice.onThrowCount.get()).isEqualTo(0);
         assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldNotNestPointcutsEvenWithNoIsEnabled() throws Exception {
+        // given
+        NotNestingAdvice.resetThreadLocals();
+        Misc test = newWovenObject(NestingMisc.class, Misc.class,
+                NotNestingWithNoIsEnabledAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(NotNestingWithNoIsEnabledAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(NotNestingWithNoIsEnabledAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(NotNestingWithNoIsEnabledAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(NotNestingWithNoIsEnabledAdvice.onAfterCount.get()).isEqualTo(1);
+        assertThat(test.executeWithReturn()).isEqualTo("yes");
     }
 
     // ===================== @Pointcut.innerMethod =====================

@@ -217,53 +217,58 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
     private void defineAndEvaluateEnabledLocalVar(Advice advice) {
         Integer enabledLocal = null;
+        Method isEnabledAdvice = advice.getIsEnabledAdvice();
+        if (isEnabledAdvice != null) {
+            loadMethodArgs(advice.getIsEnabledParameterKinds(), 0, -1, advice.getAdviceType(),
+                    IsEnabled.class);
+            invokeStatic(advice.getAdviceType(), isEnabledAdvice);
+            enabledLocal = newLocal(Type.BOOLEAN_TYPE);
+            enabledLocals.put(advice, enabledLocal);
+            storeLocal(enabledLocal);
+        }
         if (!advice.getPointcut().captureNested()) {
+            // topFlowLocal must be defined/initialized outside of any code branches since it is
+            // referenced later on in resetAdviceFlowIfNecessary()
+            int topFlowLocal = newLocal(Type.BOOLEAN_TYPE);
+            topFlowLocals.put(advice, topFlowLocal);
+            push(false);
+            storeLocal(topFlowLocal);
+
+            Label setAdviceFlowBlockEnd = newLabel();
+            if (enabledLocal != null) {
+                loadLocal(enabledLocal);
+                visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
+            } else {
+                enabledLocal = newLocal(Type.BOOLEAN_TYPE);
+                enabledLocals.put(advice, enabledLocal);
+                // it will be initialized below
+            }
             // this index is based on the list of advisors that match the class which could be a
             // larger set than the list of advisors that match this method
             int i = adviceFlowThreadLocalNums.get(advice);
             getStatic(owner, "informant$adviceFlow$" + i, adviceFlowType);
             invokeVirtual(adviceFlowType, Method.getMethod("boolean isTop()"));
-            // store the boolean into both informant$topFlow$i and informant$enabled$i
-            // informant$topFlow$i stores the prior state and is needed at method exit to reset
-            // the static thread local informant$adviceFlow$i appropriately
-            dup();
             // and dup one more time for the subsequent conditional
             dup();
-            int topFlowLocal = newLocal(Type.BOOLEAN_TYPE);
-            topFlowLocals.put(advice, topFlowLocal);
+            // store the boolean into both informant$topFlow$i which stores the prior state and is
+            // needed at method exit to reset the static thread local informant$adviceFlow$i
+            // appropriately
             storeLocal(topFlowLocal);
-            enabledLocal = newLocal(Type.BOOLEAN_TYPE);
-            enabledLocals.put(advice, enabledLocal);
+            Label isTopBlockStart = newLabel();
+            visitJumpInsn(Opcodes.IFNE, isTopBlockStart);
+            // !isTop()
+            push(false);
             storeLocal(enabledLocal);
-            Label setAdviceFlowBlockEnd = newLabel();
-            visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
+            goTo(setAdviceFlowBlockEnd);
+            visitLabel(isTopBlockStart);
             getStatic(owner, "informant$adviceFlow$" + i, adviceFlowType);
             push(false);
             invokeVirtual(adviceFlowType, Method.getMethod("void setTop(boolean)"));
+            push(true);
+            storeLocal(enabledLocal);
             visitLabel(setAdviceFlowBlockEnd);
         }
-        Method isEnabledAdvice = advice.getIsEnabledAdvice();
-        if (isEnabledAdvice != null) {
-            Label enabledAdviceBlockEnd = null;
-            if (enabledLocal != null) {
-                enabledAdviceBlockEnd = newLabel();
-                loadLocal(enabledLocal);
-                visitJumpInsn(Opcodes.IFEQ, enabledAdviceBlockEnd);
-            }
-            loadMethodArgs(advice.getIsEnabledParameterKinds(), 0, -1, advice.getAdviceType(),
-                    IsEnabled.class);
-            invokeStatic(advice.getAdviceType(), isEnabledAdvice);
-            if (enabledLocal == null) {
-                enabledLocal = newLocal(Type.BOOLEAN_TYPE);
-                enabledLocals.put(advice, enabledLocal);
-            }
-            storeLocal(enabledLocal);
-            if (enabledAdviceBlockEnd != null) {
-                visitLabel(enabledAdviceBlockEnd);
-            }
-        }
     }
-
     private void defineTravelerLocalVar(Advice advice) {
         Method onBeforeAdvice = advice.getOnBeforeAdvice();
         if (onBeforeAdvice == null) {
@@ -426,6 +431,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Advice advice = advisors.get(i);
             if (!advice.getPointcut().captureNested()) {
                 Label setAdviceFlowBlockEnd = newLabel();
+                loadLocal(enabledLocals.get(advice));
+                visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
                 loadLocal(topFlowLocals.get(advice));
                 visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
                 int j = adviceFlowThreadLocalNums.get(advice);

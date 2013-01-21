@@ -473,6 +473,37 @@ public class SomeAspect {
             captureNested = false)
     public static class NotNestingAdvice extends BasicAdvice {}
 
+    @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "execute1",
+            captureNested = false)
+    public static class NotNestingWithNoIsEnabledAdvice {
+        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            onBeforeCount.set(0);
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+    }
+
     @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "execute*",
             methodArgs = { ".." }, metricName = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
