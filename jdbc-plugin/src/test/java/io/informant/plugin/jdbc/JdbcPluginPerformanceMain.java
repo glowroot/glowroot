@@ -109,6 +109,17 @@ public class JdbcPluginPerformanceMain {
         container.close();
     }
 
+    @SuppressWarnings("unused")
+    private static void testWithInformantResultSetNextDisabled() throws Exception {
+        System.out.print("with jdbc result set next metric disabled: ");
+        InformantContainer container = setUpContainer();
+        PluginConfig config = container.getInformant().getPluginConfig(PLUGIN_ID);
+        config.setProperty("captureResultSetNext", false);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, config);
+        container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
+        container.close();
+    }
+
     private static InformantContainer setUpContainer() throws Exception {
         InformantContainer container = InformantContainer.create();
         container.getInformant().setStoreThresholdMillis(60000);
