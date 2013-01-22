@@ -426,7 +426,7 @@ public class JdbcAspect {
     }
 
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*", methodArgs = { "int", ".." },
-            captureNested = false, metricName = "jdbc resultset value")
+            metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
@@ -457,8 +457,7 @@ public class JdbcAspect {
     }
 
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*",
-            methodArgs = { "java.lang.String", ".." }, captureNested = false,
-            metricName = "jdbc resultset value")
+            methodArgs = { "java.lang.String", ".." }, metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice2 {
         private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
