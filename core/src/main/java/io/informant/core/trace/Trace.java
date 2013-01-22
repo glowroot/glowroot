@@ -18,6 +18,7 @@ package io.informant.core.trace;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.api.MessageSupplier;
 import io.informant.core.util.Clock;
 import io.informant.core.util.PartiallyThreadSafe;
 
@@ -117,7 +118,7 @@ public class Trace {
     private final WeavingMetricImpl weavingMetric;
     private final TraceMetric weavingTraceMetric;
 
-    public Trace(MetricImpl metric, io.informant.api.MessageSupplier messageSupplier,
+    public Trace(MetricImpl metric, MessageSupplier messageSupplier,
             Clock clock, Ticker ticker, WeavingMetricImpl weavingMetric) {
 
         this.ticker = ticker;
@@ -327,23 +328,15 @@ public class Trace {
         }
     }
 
-    public Span pushSpan(MetricImpl metric,
-            io.informant.api.MessageSupplier messageSupplier) {
-
+    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier) {
         long startTick = ticker.read();
         TraceMetric traceMetric = metric.start(startTick);
-        Span span = rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
-        if (traceMetric.isFirstStart()) {
-            traceMetrics.add(metric.get());
-            traceMetric.firstStartSeen();
-            metrics.add(metric);
-        }
-        return span;
+        seenMetric(metric, traceMetric);
+        return rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
     }
 
-    public Span addSpan(io.informant.api.MessageSupplier messageSupplier,
+    public Span addSpan(MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
-
         return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
     }
 
@@ -360,12 +353,16 @@ public class Trace {
 
     public TraceMetric startTraceMetric(MetricImpl metric) {
         TraceMetric traceMetric = metric.start();
+        seenMetric(metric, traceMetric);
+        return traceMetric;
+    }
+
+    private void seenMetric(MetricImpl metric, TraceMetric traceMetric) {
         if (traceMetric.isFirstStart()) {
             traceMetrics.add(metric.get());
             traceMetric.firstStartSeen();
             metrics.add(metric);
         }
-        return traceMetric;
     }
 
     @Override
