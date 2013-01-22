@@ -73,15 +73,17 @@ public class MetricImpl implements Metric {
         }
     }
 
+    void clearThreadLocal() {
+        traceMetric.remove();
+    }
+
+    // only used by WeavingMetricImpl
     @Nullable
     TraceMetric get() {
         return traceMetric.get();
     }
 
-    void clearThreadLocal() {
-        traceMetric.remove();
-    }
-
+    // only used by WeavingMetricImpl
     TraceMetric initThreadLocal() {
         TraceMetric item = new TraceMetric(name, ticker);
         traceMetric.set(item);

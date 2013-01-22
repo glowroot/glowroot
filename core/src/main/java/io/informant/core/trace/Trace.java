@@ -359,7 +359,7 @@ public class Trace {
 
     private void seenMetric(MetricImpl metric, TraceMetric traceMetric) {
         if (traceMetric.isFirstStart()) {
-            traceMetrics.add(metric.get());
+            traceMetrics.add(traceMetric);
             traceMetric.firstStartSeen();
             metrics.add(metric);
         }
