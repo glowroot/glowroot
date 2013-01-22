@@ -25,6 +25,7 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.core.weaving.Advice.ParameterKind;
+import io.informant.core.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
@@ -51,16 +52,20 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingMethodVisitor.class);
 
-    private static final Type adviceFlowType = Type.getType(AdviceFlowThreadLocal.class);
+    private static final Type adviceFlowOuterHolderType = Type.getType(AdviceFlowOuterHolder.class);
+    private static final Type adviceFlowHolderType = Type.getType(AdviceFlowHolder.class);
 
     private final int access;
     private final String name;
     private final Type owner;
     private final List<Advice> advisors;
-    private final Map<Advice, Integer> adviceFlowThreadLocalNums;
+    private final Map<Advice, Integer> adviceFlowOuterHolderNums;
     private final Type[] argumentTypes;
 
-    private final Map<Advice, Integer> topFlowLocals = Maps.newHashMap();
+    private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
+    // the adviceFlow stores the value in the holder at the beginning of the advice so the holder
+    // can be reset at the end of the advice
+    private final Map<Advice, Integer> adviceFlowLocals = Maps.newHashMap();
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
@@ -71,14 +76,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private Label outerStartLabel;
 
     protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
-            Type owner, List<Advice> advisors, Map<Advice, Integer> adviceFlowThreadLocalNums) {
+            Type owner, List<Advice> advisors, Map<Advice, Integer> adviceFlowOuterHolderNums) {
 
         super(Opcodes.ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
         this.advisors = advisors;
-        this.adviceFlowThreadLocalNums = adviceFlowThreadLocalNums;
+        this.adviceFlowOuterHolderNums = adviceFlowOuterHolderNums;
         argumentTypes = Type.getArgumentTypes(desc);
         for (Advice advice : advisors) {
             if (!advice.getPointcut().captureNested() || advice.getOnThrowAdvice() != null
@@ -108,11 +113,17 @@ class WeavingMethodVisitor extends AdviceAdapter {
             // applicable
             for (int i = 0; i < advisors.size(); i++) {
                 Advice advice = advisors.get(i);
-                Integer topFlowLocalIndex = topFlowLocals.get(advice);
-                if (topFlowLocalIndex != null) {
-                    super.visitLocalVariable("informant$topFlow$" + i,
+                Integer adviceFlowHolderLocalIndex = adviceFlowHolderLocals.get(advice);
+                if (adviceFlowHolderLocalIndex != null) {
+                    super.visitLocalVariable("informant$adviceFlowHolder$" + i,
+                            adviceFlowHolderType.getDescriptor(), null, outerStartLabel,
+                            outerEndLabel, adviceFlowHolderLocalIndex);
+                }
+                Integer adviceFlowLocalIndex = adviceFlowLocals.get(advice);
+                if (adviceFlowLocalIndex != null) {
+                    super.visitLocalVariable("informant$adviceFlow" + i,
                             Type.BOOLEAN_TYPE.getDescriptor(), null, outerStartLabel,
-                            outerEndLabel, topFlowLocalIndex);
+                            outerEndLabel, adviceFlowLocalIndex);
                 }
                 Integer enabledLocalIndex = enabledLocals.get(advice);
                 if (enabledLocalIndex != null) {
@@ -229,10 +240,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (!advice.getPointcut().captureNested()) {
             // topFlowLocal must be defined/initialized outside of any code branches since it is
             // referenced later on in resetAdviceFlowIfNecessary()
-            int topFlowLocal = newLocal(Type.BOOLEAN_TYPE);
-            topFlowLocals.put(advice, topFlowLocal);
+            int adviceFlowHolderLocal = newLocal(adviceFlowHolderType);
+            adviceFlowHolderLocals.put(advice, adviceFlowHolderLocal);
+            visitInsn(ACONST_NULL);
+            storeLocal(adviceFlowHolderLocal);
+
+            int adviceFlowLocal = newLocal(Type.BOOLEAN_TYPE);
+            adviceFlowLocals.put(advice, adviceFlowLocal);
             push(false);
-            storeLocal(topFlowLocal);
+            storeLocal(adviceFlowLocal);
 
             Label setAdviceFlowBlockEnd = newLabel();
             if (enabledLocal != null) {
@@ -245,30 +261,38 @@ class WeavingMethodVisitor extends AdviceAdapter {
             }
             // this index is based on the list of advisors that match the class which could be a
             // larger set than the list of advisors that match this method
-            int i = adviceFlowThreadLocalNums.get(advice);
-            getStatic(owner, "informant$adviceFlow$" + i, adviceFlowType);
-            invokeVirtual(adviceFlowType, Method.getMethod("boolean isTop()"));
+            int i = adviceFlowOuterHolderNums.get(advice);
+            getStatic(owner, "informant$adviceFlow$" + i, adviceFlowOuterHolderType);
+            invokeVirtual(adviceFlowOuterHolderType, Method.getMethod(
+                    AdviceFlowHolder.class.getName() + " getInnerHolder()"));
             // and dup one more time for the subsequent conditional
             dup();
             // store the boolean into both informant$topFlow$i which stores the prior state and is
             // needed at method exit to reset the static thread local informant$adviceFlow$i
             // appropriately
-            storeLocal(topFlowLocal);
+            storeLocal(adviceFlowHolderLocal);
+            invokeVirtual(adviceFlowHolderType, Method.getMethod("boolean isTop()"));
             Label isTopBlockStart = newLabel();
+            dup();
+            storeLocal(adviceFlowLocal);
             visitJumpInsn(Opcodes.IFNE, isTopBlockStart);
             // !isTop()
             push(false);
             storeLocal(enabledLocal);
             goTo(setAdviceFlowBlockEnd);
+            // enabled
             visitLabel(isTopBlockStart);
-            getStatic(owner, "informant$adviceFlow$" + i, adviceFlowType);
+            loadLocal(adviceFlowHolderLocal);
             push(false);
-            invokeVirtual(adviceFlowType, Method.getMethod("void setTop(boolean)"));
+            // note that setTop() is only called if enabled is true, so it only needs to be reset
+            // at the end of the advice if enabled is true
+            invokeVirtual(adviceFlowHolderType, Method.getMethod("void setTop(boolean)"));
             push(true);
             storeLocal(enabledLocal);
             visitLabel(setAdviceFlowBlockEnd);
         }
     }
+
     private void defineTravelerLocalVar(Advice advice) {
         Method onBeforeAdvice = advice.getOnBeforeAdvice();
         if (onBeforeAdvice == null) {
@@ -433,12 +457,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 Label setAdviceFlowBlockEnd = newLabel();
                 loadLocal(enabledLocals.get(advice));
                 visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
-                loadLocal(topFlowLocals.get(advice));
+                loadLocal(adviceFlowLocals.get(advice));
                 visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
-                int j = adviceFlowThreadLocalNums.get(advice);
-                getStatic(owner, "informant$adviceFlow$" + j, adviceFlowType);
+                // isTop was true at the beginning of the advice, need to reset it now
+                loadLocal(adviceFlowHolderLocals.get(advice));
                 push(true);
-                invokeVirtual(adviceFlowType, Method.getMethod("void setTop(boolean)"));
+                invokeVirtual(adviceFlowHolderType, Method.getMethod("void setTop(boolean)"));
                 visitLabel(setAdviceFlowBlockEnd);
             }
         }
@@ -508,9 +532,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 .add("name", name)
                 .add("owner", owner)
                 .add("advisors", advisors)
-                .add("adviceFlowThreadLocalNums", adviceFlowThreadLocalNums)
+                .add("adviceFlowThreadLocalNums", adviceFlowOuterHolderNums)
                 .add("argumentTypes", argumentTypes)
-                .add("topFlowLocals", topFlowLocals)
+                .add("topFlowLocals", adviceFlowHolderLocals)
                 .add("enabledLocals", enabledLocals)
                 .add("travelerLocals", travelerLocals)
                 .add("needsTryCatch", needsTryCatch)

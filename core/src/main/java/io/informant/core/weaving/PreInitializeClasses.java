@@ -311,8 +311,10 @@ class PreInitializeClasses {
         types.add("io.informant.core.trace.WeavingMetricImpl$NopTimer");
         types.add("io.informant.core.weaving.Advice");
         types.add("io.informant.core.weaving.Advice$ParameterKind");
-        types.add("io.informant.core.weaving.AdviceFlowThreadLocal");
-        types.add("io.informant.core.weaving.AdviceFlowThreadLocal$1");
+        types.add("io.informant.core.weaving.AdviceFlowOuterHolder");
+        types.add("io.informant.core.weaving.AdviceFlowOuterHolder$1");
+        types.add("io.informant.core.weaving.AdviceFlowOuterHolder$2");
+        types.add("io.informant.core.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("io.informant.core.weaving.AdviceMatcher");
         types.add("io.informant.core.weaving.MixinMatcher");
         types.add("io.informant.core.weaving.ParsedMethod");

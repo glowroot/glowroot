@@ -48,7 +48,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
-    private static final Type adviceFlowType = Type.getType(AdviceFlowThreadLocal.class);
+    private static final Type adviceFlowType = Type.getType(AdviceFlowOuterHolder.class);
 
     private final List<Mixin> mixins;
     private final List<Advice> advisors;
@@ -62,7 +62,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     @Nullable
     private Type type;
 
-    private final Map<Advice, Integer> adviceFlowThreadLocalNums = Maps.newHashMap();
+    private final Map<Advice, Integer> adviceFlowOuterHolderNums = Maps.newHashMap();
     private boolean writtenAdviceFlowThreadLocals = false;
 
     private int innerMethodCounter;
@@ -135,7 +135,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         }
         logger.debug("visit(): adviceMatchers={}", adviceMatchers);
         for (int i = 0; i < adviceMatchers.size(); i++) {
-            adviceFlowThreadLocalNums.put(adviceMatchers.get(i).getAdvice(), i);
+            adviceFlowOuterHolderNums.put(adviceMatchers.get(i).getAdvice(), i);
         }
         if (matchedMixins.isEmpty()) {
             super.visit(version, access, name, signature, superName, interfaceNames);
@@ -245,7 +245,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 mv = cv.visitMethod(currAccess, currMethodName, desc, signature, exceptions);
             }
             return new WeavingMethodVisitor(mv, currAccess, currMethodName, desc, type,
-                    matchingAdvisors, adviceFlowThreadLocalNums);
+                    matchingAdvisors, adviceFlowOuterHolderNums);
         }
     }
 
@@ -329,7 +329,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 .add("adviceMatchers", adviceMatchers)
                 .add("matchedMixins", matchedMixins)
                 .add("type", type)
-                .add("adviceFlowThreadLocalNums", adviceFlowThreadLocalNums)
+                .add("adviceFlowThreadLocalNums", adviceFlowOuterHolderNums)
                 .add("writtenAdviceFlowThreadLocals", writtenAdviceFlowThreadLocals)
                 .add("innerMethodCounter", innerMethodCounter)
                 .add("nothingAtAllToWeave", nothingAtAllToWeave)
