@@ -33,6 +33,7 @@ import io.informant.core.trace.FineGrainedProfiler;
 import io.informant.core.trace.MetricImpl;
 import io.informant.core.trace.TerminateScheduledActionException;
 import io.informant.core.trace.Trace;
+import io.informant.core.trace.TraceMetric;
 import io.informant.core.trace.TraceRegistry;
 import io.informant.core.trace.TraceSink;
 import io.informant.core.trace.WeavingMetricImpl;
@@ -218,13 +219,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("startTimer(): argument 'metric' must be non-null");
             return NopTimer.INSTANCE;
         }
-        Trace trace = traceRegistry.getCurrentTrace();
-        if (trace == null) {
-            // TODO return global collector?
-            return NopTimer.INSTANCE;
-        } else {
-            return trace.startTraceMetric((MetricImpl) metric);
+        TraceMetric traceMetric = ((MetricImpl) metric).get();
+        if (!traceMetric.isLinkedToTrace()) {
+            Trace trace = traceRegistry.getCurrentTrace();
+            if (trace == null) {
+                // TODO return global collector?
+                return NopTimer.INSTANCE;
+            }
+            trace.linkTraceMetric((MetricImpl) metric, traceMetric);
         }
+        traceMetric.start();
+        return traceMetric;
     }
 
     @Override
@@ -326,7 +331,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         int maxSpans = generalConfig.getMaxSpans();
         if (trace.getSpanCount() >= maxSpans) {
             // the trace limit has been exceeded
-            return new TimerWrappedInSpan(trace, metric, messageSupplier);
+            return new TimerWrappedInSpan(startTimer(metric), trace, messageSupplier);
         } else {
             return new SpanImpl(trace.pushSpan(metric, messageSupplier), trace);
         }
@@ -368,9 +373,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             trace.popSpan(span, endTick, errorMessage);
             if (trace.isCompleted()) {
                 // the root span has been popped off
-                // since the metrics are bound to the thread, they need to be recorded and reset
-                // while still in the trace thread, before the thread is reused for another trace
-                trace.clearThreadLocalMetrics();
                 cancelScheduledFuture(trace.getCoarseProfilingScheduledFuture());
                 cancelScheduledFuture(trace.getStuckScheduledFuture());
                 cancelScheduledFuture(trace.getFineProfilingScheduledFuture());
@@ -379,6 +381,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // from the registry and storing it
                 traceSink.onCompletedTrace(trace);
                 traceRegistry.removeTrace(trace);
+                // if the thread local trace metrics are still needed they should have been promoted
+                // by TraceSink.onCompletedTrace() above (via Trace.promoteTraceMetrics())
+                trace.resetTraceMetrics();
             }
         }
         private StackTraceElement[] captureSpanStackTrace() {
@@ -416,13 +421,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private static class TimerWrappedInSpan implements Span {
+        private final Timer timer;
         private final Trace trace;
         private final MessageSupplier messageSupplier;
-        private final Timer timer;
-        public TimerWrappedInSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
+        public TimerWrappedInSpan(Timer timer, Trace trace, MessageSupplier messageSupplier) {
+            this.timer = timer;
             this.trace = trace;
             this.messageSupplier = messageSupplier;
-            timer = trace.startTraceMetric(metric);
         }
         public void end() {
             timer.end();

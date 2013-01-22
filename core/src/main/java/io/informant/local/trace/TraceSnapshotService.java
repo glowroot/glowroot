@@ -27,7 +27,6 @@ import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
-import io.informant.core.trace.TraceMetric;
 import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.core.util.ByteStream;
 
@@ -254,14 +253,7 @@ public class TraceSnapshotService {
 
     @Nullable
     private static String getMetricsJson(Trace trace) {
-        List<TraceMetric> traceMetrics = trace.getTraceMetrics();
-        if (traceMetrics.isEmpty()) {
-            return null;
-        }
-        List<Snapshot> items = Lists.newArrayList();
-        for (TraceMetric traceMetric : traceMetrics) {
-            items.add(traceMetric.getSnapshot());
-        }
+        List<Snapshot> items = trace.getTraceMetricSnapshots();
         Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
                 new Function<Snapshot, Long>() {
                     public Long apply(Snapshot input) {

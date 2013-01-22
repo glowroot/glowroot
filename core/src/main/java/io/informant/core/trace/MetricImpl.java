@@ -18,8 +18,6 @@ package io.informant.core.trace;
 import io.informant.api.Metric;
 import io.informant.core.util.PartiallyThreadSafe;
 
-import javax.annotation.Nullable;
-
 import com.google.common.base.Ticker;
 
 /**
@@ -30,7 +28,12 @@ import com.google.common.base.Ticker;
 public class MetricImpl implements Metric {
 
     private final String name;
-    private final ThreadLocal<TraceMetric> traceMetric = new ThreadLocal<TraceMetric>();
+    private final ThreadLocal<TraceMetric> traceMetricHolder = new ThreadLocal<TraceMetric>() {
+        @Override
+        protected TraceMetric initialValue() {
+            return new TraceMetric(name, ticker);
+        }
+    };
 
     private final Ticker ticker;
 
@@ -43,50 +46,17 @@ public class MetricImpl implements Metric {
         return name;
     }
 
-    // item.start() avoids a ticker read in some cases, so don't just implement as
-    // start(ticker.read())
-    TraceMetric start() {
-        TraceMetric item = traceMetric.get();
-        if (item == null) {
-            // no race condition here because traceMetric is a ThreadLocal
-            item = new TraceMetric(name, ticker);
-            item.start();
-            traceMetric.set(item);
-            return item;
-        } else {
-            item.start();
-            return item;
-        }
+    public TraceMetric get() {
+        return traceMetricHolder.get();
     }
 
     TraceMetric start(long startTick) {
-        TraceMetric item = traceMetric.get();
-        if (item == null) {
-            // no race condition here because traceMetric is a ThreadLocal
-            item = new TraceMetric(name, ticker);
-            item.start(startTick);
-            traceMetric.set(item);
-            return item;
-        } else {
-            item.start(startTick);
-            return item;
-        }
+        TraceMetric traceMetric = traceMetricHolder.get();
+        traceMetric.start(startTick);
+        return traceMetric;
     }
 
-    void clearThreadLocal() {
-        traceMetric.remove();
-    }
-
-    // only used by WeavingMetricImpl
-    @Nullable
-    TraceMetric get() {
-        return traceMetric.get();
-    }
-
-    // only used by WeavingMetricImpl
-    TraceMetric initThreadLocal() {
-        TraceMetric item = new TraceMetric(name, ticker);
-        traceMetric.set(item);
-        return item;
+    void resetTraceMetric() {
+        traceMetricHolder.get().reset();
     }
 }

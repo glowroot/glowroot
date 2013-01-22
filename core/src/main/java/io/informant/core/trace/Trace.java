@@ -19,6 +19,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.MessageSupplier;
+import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.core.util.Clock;
 import io.informant.core.util.PartiallyThreadSafe;
 
@@ -39,6 +40,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -118,6 +120,8 @@ public class Trace {
     private final WeavingMetricImpl weavingMetric;
     private final TraceMetric weavingTraceMetric;
 
+    private volatile ImmutableList<Snapshot> finalTraceMetricSnapshots;
+
     public Trace(MetricImpl metric, MessageSupplier messageSupplier,
             Clock clock, Ticker ticker, WeavingMetricImpl weavingMetric) {
 
@@ -126,15 +130,20 @@ public class Trace {
         id = new TraceUniqueId(startTimeMillis);
         startDate = new Date(startTimeMillis);
         long startTick = ticker.read();
+        // 'this' is only being passed to metric.start() to be stored in a ThreadLocal (should not
+        // violate safe publication)
         TraceMetric traceMetric = metric.start(startTick);
+        traceMetric.setCurrentTrace(this);
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
         traceMetrics.add(traceMetric);
         metrics.add(metric);
-        traceMetric.firstStartSeen();
         // the weaving metric thread local is initialized to an empty TraceMetric instance so that
         // it can be cached in this class (otherwise it is painful to synchronize properly between
         // clearThreadLocalMetrics() and getTraceMetrics())
-        weavingTraceMetric = weavingMetric.initThreadLocal();
+        //
+        // 'this' is only being passed to metric.start() to be stored in a ThreadLocal (should not
+        // violate safe publication)
+        weavingTraceMetric = weavingMetric.initTraceMetric(this);
         this.weavingMetric = weavingMetric;
     }
 
@@ -195,14 +204,11 @@ public class Trace {
         return fineMergedStackTree != null;
     }
 
-    public List<TraceMetric> getTraceMetrics() {
-        if (weavingTraceMetric.getCount() == 0) {
-            return traceMetrics;
-        } else {
-            List<TraceMetric> values = Lists.newArrayList(traceMetrics);
-            values.add(weavingTraceMetric);
-            return values;
+    public ImmutableList<Snapshot> getTraceMetricSnapshots() {
+        if (finalTraceMetricSnapshots != null) {
+            return finalTraceMetricSnapshots;
         }
+        return buildTraceMetricSnapshots();
     }
 
     public Span getRootSpan() {
@@ -240,17 +246,6 @@ public class Trace {
     @Nullable
     public ScheduledFuture<?> getStuckScheduledFuture() {
         return stuckScheduledFuture;
-    }
-
-    // must be called by the trace thread
-    public void clearThreadLocalMetrics() {
-        // reset metric thread locals to clear their state for next time
-        for (MetricImpl metric : metrics) {
-            metric.clearThreadLocal();
-        }
-        // reset weaving metric thread local to prevent the thread from continuing to
-        // increment the one associated to this trace
-        weavingMetric.clearThreadLocal();
     }
 
     // returns previous value
@@ -300,6 +295,51 @@ public class Trace {
         this.stuckScheduledFuture = scheduledFuture;
     }
 
+    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier) {
+        long startTick = ticker.read();
+        TraceMetric traceMetric = metric.start(startTick);
+        if (!traceMetric.isLinkedToTrace()) {
+            linkTraceMetric(metric, traceMetric);
+        }
+        return rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
+    }
+
+    public Span addSpan(MessageSupplier messageSupplier,
+            @Nullable ErrorMessage errorMessage) {
+        return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
+    }
+
+    // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
+    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
+    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
+    public void popSpan(Span span, long endTick, ErrorMessage errorMessage) {
+        rootSpan.popSpan(span, endTick, errorMessage);
+        TraceMetric traceMetric = span.getTraceMetric();
+        if (traceMetric != null) {
+            traceMetric.end(endTick);
+        }
+    }
+
+    public void linkTraceMetric(MetricImpl metric, TraceMetric traceMetric) {
+        traceMetrics.add(traceMetric);
+        traceMetric.setCurrentTrace(this);
+        metrics.add(metric);
+    }
+
+    public void promoteTraceMetrics() {
+        finalTraceMetricSnapshots = buildTraceMetricSnapshots();
+    }
+
+    public void resetTraceMetrics() {
+        // reset metric thread locals to clear their state for next time
+        for (MetricImpl metric : metrics) {
+            metric.resetTraceMetric();
+        }
+        // reset weaving metric thread local to prevent the thread from continuing to
+        // increment the one associated to this trace
+        weavingMetric.resetTraceMetric();
+    }
+
     void captureStackTrace(boolean fine) {
         Thread thread = threadHolder.get();
         if (thread != null) {
@@ -328,41 +368,17 @@ public class Trace {
         }
     }
 
-    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier) {
-        long startTick = ticker.read();
-        TraceMetric traceMetric = metric.start(startTick);
-        seenMetric(metric, traceMetric);
-        return rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
-    }
-
-    public Span addSpan(MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage) {
-        return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
-    }
-
-    // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
-    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
-    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    public void popSpan(Span span, long endTick, ErrorMessage errorMessage) {
-        rootSpan.popSpan(span, endTick, errorMessage);
-        TraceMetric traceMetric = span.getTraceMetric();
-        if (traceMetric != null) {
-            traceMetric.end(endTick);
+    private ImmutableList<Snapshot> buildTraceMetricSnapshots() {
+        // since the metrics are bound to the thread, they need to be recorded and reset
+        // while still in the trace thread, before the thread is reused for another trace
+        ImmutableList.Builder<Snapshot> traceMetricSnapshots = ImmutableList.builder();
+        for (TraceMetric traceMetric : traceMetrics) {
+            traceMetricSnapshots.add(traceMetric.getSnapshot());
         }
-    }
-
-    public TraceMetric startTraceMetric(MetricImpl metric) {
-        TraceMetric traceMetric = metric.start();
-        seenMetric(metric, traceMetric);
-        return traceMetric;
-    }
-
-    private void seenMetric(MetricImpl metric, TraceMetric traceMetric) {
-        if (traceMetric.isFirstStart()) {
-            traceMetrics.add(traceMetric);
-            traceMetric.firstStartSeen();
-            metrics.add(metric);
+        if (weavingTraceMetric.getCount() > 0) {
+            traceMetricSnapshots.add(weavingTraceMetric.getSnapshot());
         }
+        return traceMetricSnapshots.build();
     }
 
     @Override

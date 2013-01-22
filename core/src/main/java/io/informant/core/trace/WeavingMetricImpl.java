@@ -44,22 +44,25 @@ public class WeavingMetricImpl implements WeavingMetric {
     }
 
     public Timer start() {
-        // initThreadLocal is called at the beginning of every trace, and clearThreadLocal is called
-        // at the end of every trace, so metricImpl.get() can be used to check if currently in a
+        // initTraceMetric is called at the beginning of every trace, and resetTraceMetric is called
+        // at the end of every trace, so isLinkedToTrace() can be used to check if currently in a
         // trace
-        if (metricImpl.get() == null) {
+        TraceMetric traceMetric = metricImpl.get();
+        if (!traceMetric.isLinkedToTrace()) {
             return NopTimer.INSTANCE;
-        } else {
-            return metricImpl.start();
         }
+        traceMetric.start();
+        return traceMetric;
     }
 
-    TraceMetric initThreadLocal() {
-        return metricImpl.initThreadLocal();
+    TraceMetric initTraceMetric(Trace trace) {
+        TraceMetric traceMetric = metricImpl.get();
+        traceMetric.setCurrentTrace(trace);
+        return traceMetric;
     }
 
-    void clearThreadLocal() {
-        metricImpl.clearThreadLocal();
+    void resetTraceMetric() {
+        metricImpl.resetTraceMetric();
     }
 
     @ThreadSafe

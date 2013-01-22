@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.informant.core.trace;
 import io.informant.api.Timer;
 import io.informant.core.util.PartiallyThreadSafe;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Objects;
@@ -46,10 +47,12 @@ public class TraceMetric implements Timer {
     // any non-volatile fields are read, creating a memory barrier and making the latest values of
     // the non-volatile fields visible to the reading thread
     private volatile int selfNestingLevel;
-    // this field cannot piggyback on the volatility of selfNestingLevel like the others, but that
-    // is ok since it is primarily read (cheap for volatile) and rarely updated ('expensive' for
-    // volatile)
-    private volatile boolean firstStart = true;
+
+    // storing Trace here is just an optimization to avoid a second ThreadLocal call in cases where
+    // the TraceMetric ThreadLocal already has to be looked up
+    // there is no visibility issue for this field as it is only ever accessed by a single thread
+    @Nullable
+    private Trace currentTrace;
 
     private final Ticker ticker;
 
@@ -86,16 +89,12 @@ public class TraceMetric implements Timer {
         end(ticker.read());
     }
 
-    boolean isFirstStart() {
-        return firstStart;
-    }
-
-    void firstStartSeen() {
-        firstStart = false;
+    public boolean isLinkedToTrace() {
+        return currentTrace != null;
     }
 
     // start() avoids a ticker read in some cases, so don't just implement as start(ticker.read())
-    void start() {
+    public void start() {
         if (selfNestingLevel == 0) {
             this.startTick = ticker.read();
         }
@@ -126,6 +125,20 @@ public class TraceMetric implements Timer {
         return count;
     }
 
+    void reset() {
+        total = 0;
+        min = Long.MAX_VALUE;
+        max = Long.MIN_VALUE;
+        count = 0;
+        startTick = 0;
+        selfNestingLevel = 0;
+        currentTrace = null;
+    }
+
+    void setCurrentTrace(Trace currentTrace) {
+        this.currentTrace = currentTrace;
+    }
+
     private void recordData(long time) {
         if (time > max) {
             max = time;
@@ -147,7 +160,8 @@ public class TraceMetric implements Timer {
                 .add("count", count)
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
-                .add("firstStart", firstStart)
+                // don't add currentTrace since that leads to infinite loop
+                .add("currentTraceId", currentTrace.getId())
                 .toString();
     }
 
