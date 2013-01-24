@@ -95,9 +95,6 @@ public abstract class PluginServices {
     // sets trace attribute in
     public abstract void setTraceAttribute(String name, @Nullable String value);
 
-    @Nullable
-    public abstract MessageSupplier getRootMessageSupplier();
-
     private static PluginServices createPluginServices(String pluginId) {
         try {
             Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
@@ -191,11 +188,6 @@ public abstract class PluginServices {
         public void setUserId(@Nullable String userId) {}
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
-        @Override
-        @Nullable
-        public MessageSupplier getRootMessageSupplier() {
-            return null;
-        }
 
         @ThreadSafe
         private static class NopMetric implements Metric {

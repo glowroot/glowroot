@@ -288,17 +288,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    @Override
-    @Nullable
-    public MessageSupplier getRootMessageSupplier() {
-        Trace trace = traceRegistry.getCurrentTrace();
-        if (trace == null) {
-            return null;
-        } else {
-            return trace.getRootSpan().getMessageSupplier();
-        }
-    }
-
     public void onChange() {
         generalConfig = configService.getGeneralConfig();
         pluginConfig = configService.getPluginConfigOrNopInstance(pluginId);

@@ -197,17 +197,6 @@ class PluginServicesProxy extends PluginServices {
         }
     }
 
-    @Override
-    @Nullable
-    public MessageSupplier getRootMessageSupplier() {
-        if (pluginServices == null) {
-            throw new IllegalStateException("Informant hasn't finished initializing yet."
-                    + "  Plugins should check isEnabled() first.");
-        } else {
-            return pluginServices.getRootMessageSupplier();
-        }
-    }
-
     void start(PluginServicesImplFactory pluginServicesImplFactory, ConfigService configService) {
         this.pluginServices = pluginServicesImplFactory.create(pluginId);
         // not that proxy points to the real PluginServices, register the pending listeners and

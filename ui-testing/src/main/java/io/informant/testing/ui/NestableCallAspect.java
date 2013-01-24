@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,13 @@ public class NestableCallAspect {
             .get("io.informant:informant-ui-testing");
 
     @Pointcut(typeName = "io.informant.testing.ui.NestableCall", methodName = "execute",
-            metricName = "nestable")
+            metricName = "nestable", captureNested = false)
     public static class NestableCallAdvice {
         private static final Metric metric = pluginServices.getMetric(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && pluginServices.getRootMessageSupplier() == null;
+            return pluginServices.isEnabled();
         }
         @OnBefore
         public static Span onBefore() {
@@ -87,13 +87,13 @@ public class NestableCallAspect {
     }
 
     @Pointcut(typeName = "io.informant.testing.ui.NestableCall", methodName = "execute",
-            metricName = "nestable and very long")
+            metricName = "nestable and very long", captureNested = false)
     public static class NestableCallLongMetricAdvice {
         private static final Metric metric = pluginServices
                 .getMetric(NestableCallLongMetricAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && pluginServices.getRootMessageSupplier() != null;
+            return pluginServices.isEnabled();
         }
         @OnBefore
         public static Span onBefore() {
