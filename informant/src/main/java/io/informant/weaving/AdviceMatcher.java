@@ -168,6 +168,8 @@ class AdviceMatcher {
                 return Modifier.isStatic(modifiers);
             case NOT_STATIC:
                 return !Modifier.isStatic(modifiers);
+            case ABSTRACT:
+                return Modifier.isAbstract(modifiers);
         }
         return false;
     }

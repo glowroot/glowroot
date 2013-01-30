@@ -87,13 +87,11 @@ public class JavaagentContainer implements Container {
     private volatile long numConsoleBytes;
 
     public static JavaagentContainer createWithFileDb() throws Exception {
-        File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        return new JavaagentContainer(dataDir, 0, true, false);
+        return new JavaagentContainer(null, 0, true, false);
     }
 
     public static JavaagentContainer createWithFileDb(int uiPort) throws Exception {
-        File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        return new JavaagentContainer(dataDir, uiPort, true, false);
+        return new JavaagentContainer(null, uiPort, true, false);
     }
 
     public JavaagentContainer(@Nullable File dataDir, int uiPort, boolean useFileDb, boolean shared)
@@ -289,7 +287,10 @@ public class JavaagentContainer implements Container {
         command.add("-Dinformant.data.dir=" + dataDir.getAbsolutePath());
         command.add("-Dinformant.ui.port=" + uiPort);
         if (!useFileDb) {
-            command.add("-Dinternal.h2.memdb=true");
+            command.add("-Dinformant.internal.h2.memdb=true");
+        }
+        if (Boolean.getBoolean("informant.internal.ui.devMode")) {
+            command.add("-Dinformant.internal.ui.devMode=true");
         }
         command.add(JavaagentContainer.class.getName());
         command.add(Integer.toString(containerPort));

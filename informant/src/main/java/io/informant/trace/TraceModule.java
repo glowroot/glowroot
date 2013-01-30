@@ -22,18 +22,15 @@ import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.Iterables;
 
 import io.informant.api.PluginServices;
 import io.informant.common.Clock;
+import io.informant.config.AdviceCache;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
-import io.informant.config.PluginDescriptorCache;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.trace.model.WeavingMetricNameImpl;
-import io.informant.weaving.Advice;
-import io.informant.weaving.MixinType;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.WeavingClassFileTransformer;
 
@@ -53,6 +50,7 @@ public class TraceModule {
     private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
     private final MetricCache metricCache;
+    private final AdviceCache adviceCache;
 
     private final StuckTraceCollector stuckTraceCollector;
     private final CoarseProfiler coarseProfiler;
@@ -80,6 +78,8 @@ public class TraceModule {
         weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
         metricCache = new MetricCache(ticker);
+        adviceCache = new AdviceCache(configModule.getPluginDescriptorCache(),
+                configService.getPointcutConfigs());
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
                 new Random());
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
@@ -91,12 +91,8 @@ public class TraceModule {
     }
 
     public WeavingClassFileTransformer createWeavingClassFileTransformer() {
-        PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
-        MixinType[] mixinTypes = Iterables.toArray(pluginDescriptorCache.getMixinTypes(),
-                MixinType.class);
-        Advice[] advisors = Iterables.toArray(pluginDescriptorCache.getAdvisors(), Advice.class);
-        return new WeavingClassFileTransformer(mixinTypes, advisors, parsedTypeCache,
-                weavingMetricName);
+        return new WeavingClassFileTransformer(adviceCache.getMixinTypes(),
+                adviceCache.getAdvisorsSupplier(), parsedTypeCache, weavingMetricName);
     }
 
     public PluginServices getPluginServices(String pluginId) {
@@ -109,6 +105,10 @@ public class TraceModule {
 
     public TraceRegistry getTraceRegistry() {
         return traceRegistry;
+    }
+
+    public AdviceCache getAdviceCache() {
+        return adviceCache;
     }
 
     @OnlyUsedByTests

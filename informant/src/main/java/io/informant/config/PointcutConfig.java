@@ -33,7 +33,7 @@ import io.informant.api.weaving.MethodModifier;
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
- * Immutable structure to hold an adhoc span/metric pointcut.
+ * Immutable structure to hold a dynamic span/metric pointcut.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -45,7 +45,6 @@ public class PointcutConfig {
     private final String typeName;
     private final String methodName;
     private final ImmutableList<String> methodArgTypeNames;
-    @Nullable
     private final String methodReturnTypeName;
     private final ImmutableList<MethodModifier> methodModifiers;
     @Nullable
@@ -57,7 +56,7 @@ public class PointcutConfig {
     @VisibleForTesting
     public PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
             String methodName, @ReadOnly List<String> methodArgTypeNames,
-            @Nullable String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
+            String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
             @Nullable String metricName, @Nullable String spanTemplate) {
         this.captureItems = ImmutableList.copyOf(captureItems);
         this.typeName = typeName;
@@ -89,7 +88,6 @@ public class PointcutConfig {
         return methodArgTypeNames;
     }
 
-    @Nullable
     public String getMethodReturnTypeName() {
         return methodReturnTypeName;
     }
@@ -127,6 +125,7 @@ public class PointcutConfig {
             throws JsonMappingException {
         checkRequiredProperty(typeName, "typeName");
         checkRequiredProperty(methodName, "methodName");
+        checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
         return new PointcutConfig(orEmpty(captureItems), typeName, methodName,
                 orEmpty(methodArgTypeNames), methodReturnTypeName, orEmpty(methodModifiers),
                 metricName, spanTemplate);

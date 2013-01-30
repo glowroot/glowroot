@@ -26,7 +26,6 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -46,7 +45,6 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.informant.weaving.ParsedType.Builder;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -59,8 +57,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
-    private static final Type adviceFlowType = Type.getType(AdviceFlowOuterHolder.class);
-
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
     @Nullable
@@ -72,14 +68,12 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
     @LazyNonNull
     private Type type;
-    private ImmutableMap<Advice, Integer> adviceFlowOuterHolderNums = ImmutableMap.of();
-    private boolean writtenAdviceFlowThreadLocals = false;
 
     private int innerMethodCounter;
 
     private boolean nothingAtAllToWeave = false;
     @LazyNonNull
-    private Builder parsedType;
+    private ParsedType.Builder parsedType;
 
     public WeavingClassVisitor(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
@@ -115,7 +109,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             return;
         }
         logger.debug("visit(): adviceMatchers={}", adviceMatchers);
-        adviceFlowOuterHolderNums = getAdviceFlowOuterHolderNums(adviceMatchers);
         super.visit(version, access, name, signature, superName,
                 getInterfacesIncludingMixins(interfaceNames, matchedMixinTypes));
     }
@@ -141,13 +134,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
         MethodVisitor mv = null;
-        if (name.equals("<clinit>")) {
-            writeThreadLocalFields();
-            mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            mv = new InitThreadLocals(mv, access, name, desc);
-            // there can only be at most one clinit
-            writtenAdviceFlowThreadLocals = true;
-        } else if (name.equals("<init>") && !matchedMixinTypes.isEmpty()) {
+        if (name.equals("<init>") && !matchedMixinTypes.isEmpty()) {
             mv = cv.visitMethod(access, name, desc, signature, exceptions);
             mv = new InitMixins(mv, access, name, desc, matchedMixinTypes, type);
         }
@@ -168,11 +155,10 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             }
             mv = cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
-                    matchingAdvisors, adviceFlowOuterHolderNums);
+                    matchingAdvisors);
         } else {
             logger.warn("cannot add metrics to <clinit> or <init> methods at this time");
-            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                    adviceFlowOuterHolderNums);
+            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
         }
     }
 
@@ -185,15 +171,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         }
         // type can be null, but not if nothingAtAllToWeave is false
         checkNotNull(type, "Call to visit() is required");
-        if (!writtenAdviceFlowThreadLocals) {
-            writeThreadLocalFields();
-            MethodVisitor mv = super.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
-            mv.visitCode();
-            writeThreadLocalInitialization(mv);
-            mv.visitInsn(RETURN);
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
         for (MixinType mixinType : matchedMixinTypes) {
             ClassReader cr;
             try {
@@ -228,7 +205,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             }
         }
     }
-
     boolean isNothingAtAllToWeave() {
         return nothingAtAllToWeave;
     }
@@ -270,16 +246,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return matchedMixinTypesBuilder.build();
     }
 
-    private ImmutableMap<Advice, Integer> getAdviceFlowOuterHolderNums(
-            ImmutableList<AdviceMatcher> adviceMatchers) {
-        ImmutableMap.Builder<Advice, Integer> adviceFlowOuterHolderNumsBuilder =
-                ImmutableMap.builder();
-        for (int i = 0; i < adviceMatchers.size(); i++) {
-            adviceFlowOuterHolderNumsBuilder.put(adviceMatchers.get(i).getAdvice(), i);
-        }
-        return adviceFlowOuterHolderNumsBuilder.build();
-    }
-
     private static String[] getInterfacesIncludingMixins(String[] interfaceNames,
             ImmutableList<MixinType> matchedMixinTypes) {
         if (matchedMixinTypes.isEmpty()) {
@@ -295,10 +261,14 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod) {
+        checkNotNull(parsedType, "Call to visit() is required");
         List<Advice> matchingAdvisors = Lists.newArrayList();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
                 matchingAdvisors.add(adviceMatcher.getAdvice());
+                if (adviceMatcher.getAdvice().isDynamic()) {
+                    parsedType.setDynamicallyWoven(true);
+                }
             }
         }
         return matchingAdvisors;
@@ -349,44 +319,14 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return first ? null : currMethodName;
     }
 
-    private void writeThreadLocalFields() {
-        for (int i = 0; i < adviceMatchers.size(); i++) {
-            if (!adviceMatchers.get(i).getAdvice().getPointcut().captureNested()) {
-                super.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "informant$adviceFlow$" + i,
-                        adviceFlowType.getDescriptor(), null, null);
-            }
-        }
-    }
-
-    private void writeThreadLocalInitialization(MethodVisitor mv) {
-        checkNotNull(type, "Call to visit() is required");
-        for (int i = 0; i < adviceMatchers.size(); i++) {
-            if (!adviceMatchers.get(i).getAdvice().getPointcut().captureNested()) {
-                // cannot use visitLdcInsn(Type) since .class constants are not supported in classes
-                // that were compiled to jdk 1.4
-                mv.visitLdcInsn(adviceMatchers.get(i).getAdvice().getAdviceType().getClassName());
-                mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
-                        "(Ljava/lang/String;)Ljava/lang/Class;");
-                String adviceFlowInternalName = adviceFlowType.getInternalName();
-                mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "getSharedInstance",
-                        "(Ljava/lang/Class;)L" + adviceFlowInternalName + ";");
-                mv.visitFieldInsn(PUTSTATIC, type.getInternalName(), "informant$adviceFlow$" + i,
-                        adviceFlowType.getDescriptor());
-            }
-        }
-    }
-
     @Override
     public String toString() {
         // not including fields that are just direct copies from Weaver
         ToStringHelper toStringHelper = Objects.toStringHelper(this)
-                .add("adviceFlowType", adviceFlowType)
                 .add("codeSource", codeSource)
                 .add("adviceMatchers", adviceMatchers)
                 .add("matchedMixinTypes", matchedMixinTypes)
                 .add("type", type)
-                .add("adviceFlowThreadLocalNums", adviceFlowOuterHolderNums)
-                .add("writtenAdviceFlowThreadLocals", writtenAdviceFlowThreadLocals)
                 .add("innerMethodCounter", innerMethodCounter)
                 .add("nothingAtAllToWeave", nothingAtAllToWeave);
         if (parsedType != null) {
@@ -431,18 +371,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                     invokeVirtual(type, new Method(initMethodName, "()V"));
                 }
             }
-        }
-    }
-
-    private class InitThreadLocals extends AdviceAdapter {
-
-        InitThreadLocals(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM4, mv, access, name, desc);
-        }
-
-        @Override
-        protected void onMethodEnter() {
-            writeThreadLocalInitialization(this);
         }
     }
 }

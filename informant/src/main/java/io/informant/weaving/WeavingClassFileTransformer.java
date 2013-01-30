@@ -17,8 +17,10 @@ package io.informant.weaving;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
+import java.util.List;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -38,7 +40,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
     private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> advisors;
+    private final Supplier<ImmutableList<Advice>> advisors;
     private final WeavingMetric weavingMetric;
 
     private final ParsedTypeCache parsedTypeCache;
@@ -68,10 +70,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // calculation in the test class io.informant.core.weaving.preinit.GlobalCollector, and
     // hard-coded results in io.informant.core.weaving.PreInitializeClasses)
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
-    public WeavingClassFileTransformer(MixinType[] mixinTypes, Advice[] advisors,
-            ParsedTypeCache parsedTypeCache, WeavingMetric weavingMetric) {
+    public WeavingClassFileTransformer(List<MixinType> mixinTypes,
+            Supplier<ImmutableList<Advice>> advisors, ParsedTypeCache parsedTypeCache,
+            WeavingMetric weavingMetric) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
-        this.advisors = ImmutableList.copyOf(advisors);
+        this.advisors = advisors;
         this.parsedTypeCache = parsedTypeCache;
         this.weavingMetric = weavingMetric;
         bootLoaderWeaver = new Weaver(this.mixinTypes, this.advisors, null, parsedTypeCache,

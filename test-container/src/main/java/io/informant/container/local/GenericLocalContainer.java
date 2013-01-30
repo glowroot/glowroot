@@ -28,7 +28,7 @@ import com.google.common.collect.Maps;
 
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
-import io.informant.config.PluginDescriptorCache;
+import io.informant.config.AdviceCache;
 import io.informant.container.SpyingLogFilter;
 import io.informant.container.SpyingLogFilter.MessageCount;
 import io.informant.container.SpyingLogFilterCheck;
@@ -80,9 +80,9 @@ public class GenericLocalContainer<T> {
         }
         informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        PluginDescriptorCache pluginDescriptorCache = new PluginDescriptorCache();
-        loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
-        loader.setAdvisors(pluginDescriptorCache.getAdvisors());
+        AdviceCache adviceCache = informantModule.getTraceModule().getAdviceCache();
+        loader.setMixinTypes(adviceCache.getMixinTypes());
+        loader.setAdvisors(adviceCache.getAdvisors());
         loader.addBridgeClasses(appInterface);
         loader.addExcludePackages("io.informant.api", "io.informant.common", "io.informant.config",
                 "io.informant.local", "io.informant.snapshot", "io.informant.trace",

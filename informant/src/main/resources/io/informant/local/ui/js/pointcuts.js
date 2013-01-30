@@ -35,12 +35,18 @@ define(function (require) {
 
   function read() {
     Informant.showSpinner('#initialLoadSpinner');
-    $.getJSON('config/read', function (config) {
+    $.getJSON('config', function (config) {
       Informant.hideSpinner('#initialLoadSpinner');
       var pointcutConfigs = config.pointcutConfigs;
       var i;
       for (i = 0; i < pointcutConfigs.length; i++) {
         applyPointcutEditTemplate(pointcutConfigs[i]);
+      }
+      if (config.pointcutConfigsOutOfSync) {
+        $('#retransformClassesButton').removeClass('hide');
+      }
+      if (config.retransformClassesSupported) {
+        $('#retransformClassesDiv').removeClass('hide');
       }
     });
   }
@@ -58,6 +64,10 @@ define(function (require) {
     }
 
     function matchingMethodNames(partialMethodName, callback) {
+      if (partialMethodName.indexOf('*') !== -1) {
+        callback([ partialMethodName ]);
+        return;
+      }
       var url = 'pointcut/matching-method-names?type-name='
           + $('#pointcutTypeName_' + pointcutNum).val() + '&partial-method-name='
           + partialMethodName + '&limit=7';
@@ -66,21 +76,21 @@ define(function (require) {
       });
     }
 
-    function signatureText(modifiers, returnType, methodName, argTypes) {
-      var signature = '';
+    function signatureText(signature) {
+      var text = '';
       var i;
-      for (i = 0; i < modifiers.length; i++) {
-        signature += modifiers[i].toLowerCase() + ' ';
+      for (i = 0; i < signature.modifiers.length; i++) {
+        text += signature.modifiers[i] + ' ';
       }
-      signature += returnType + ' ' + methodName + '(';
-      for (i = 0; i < argTypes.length; i++) {
+      text += signature.returnTypeName + ' ' + signature.name + '(';
+      for (i = 0; i < signature.argTypeNames.length; i++) {
         if (i > 0) {
-          signature += ', ';
+          text += ', ';
         }
-        signature += argTypes[i];
+        text += signature.argTypeNames[i];
       }
-      signature += ')';
-      return signature;
+      text += ')';
+      return text;
     }
 
     function updateSpanTemplate() {
@@ -89,7 +99,19 @@ define(function (require) {
         // no radio button selected
         return;
       }
-      var template = $('#pointcutTypeName_' + pointcutNum).val() + '.' + signature.name + '()';
+      var template;
+      if (signature.modifiers.indexOf('abstract') != -1) {
+        template = '{{this.class.name}}.';
+      } else {
+        template = $('#pointcutTypeName_' + pointcutNum).val() + '.';
+      }
+      if (signature.all) {
+        // 'all matching' is selected
+        template += '{{methodName}}()';
+        $('#pointcutSpanTemplate_' + pointcutNum).val(template);
+        return;
+      }
+      template += signature.name + '()';
       var i;
       for (i = 0; i < signature.argTypeNames.length; i++) {
         if (i === 0) {
@@ -99,7 +121,7 @@ define(function (require) {
         }
       }
       if (signature.returnTypeName !== 'void') {
-        template += ' => {{?}}';
+        template += ' => {{ret}}';
       }
       $('#pointcutSpanTemplate_' + pointcutNum).val(template);
     }
@@ -111,25 +133,26 @@ define(function (require) {
         var $pointcutMethodSignatures = $('#pointcutMethodSignatures_' + pointcutNum);
         $pointcutMethodSignatures.html('');
         $('#pointcutSpanTemplate_' + pointcutNum).val('');
-        var html = '<div style="padding-top: 20px;">';
+        var html = '';
         var i;
         for (i = 0; i < signatures.length; i++) {
-          html += '<div style="padding: 10px 0;">'
-              + '<div class="radio">'
+          html += '<div class="radio">'
               + '<input type="radio" name="pointcutMethodSignature_' + pointcutNum + '" value="' + i
-              + '">'
-              + signatureText(signatures[i].modifiers, signatures[i].returnTypeName,
-              signatures[i].name, signatures[i].argTypeNames)
-              + '<br></div></div>';
+              + '">' + signatureText(signatures[i]) + '</div>';
         }
-        html += '</div>';
+        if (signatures.length > 1) {
+          html += '<div class="radio">'
+            + '<input type="radio" name="pointcutMethodSignature_' + pointcutNum
+            + '" value="all">all of the above</div>';
+        }
         $pointcutMethodSignatures.append(html);
         $pointcutMethodSignatures.data('signatures', signatures);
         var $pointcutMethodSignatureRadio =
             $('input[type=radio][name=pointcutMethodSignature_' + pointcutNum + ']');
         $pointcutMethodSignatureRadio.change(function () {
           var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked');
-          if (span) {
+          var trace = $('#pointcutCaptureTrace_' + pointcutNum).is(':checked');
+          if (span || trace) {
             updateSpanTemplate();
           }
         });
@@ -151,7 +174,27 @@ define(function (require) {
       var $pointcutMethodName = $('#pointcutMethodName_' + pointcutNum);
       if (methodName !== $pointcutMethodName.data('selectedValue')) {
         $pointcutMethodName.data('selectedValue', methodName);
-        matchingMethods(methodName);
+        if (methodName.indexOf('*') !== -1) {
+          var $pointcutMethodSignatures = $('#pointcutMethodSignatures_' + pointcutNum);
+          $pointcutMethodSignatures.html('<div class="radio"><input type="radio" checked="checked">'
+              + 'all methods with the above name</input></div>');
+          $pointcutMethodSignatures.data('signatures',
+              [
+               {
+                 all: true,
+                 argTypeNames: [ '..' ],
+                 returnTypeName: '',
+                 modifiers: []
+               }
+             ]);
+          var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked');
+          var trace = $('#pointcutCaptureTrace_' + pointcutNum).is(':checked');
+          if (span || trace) {
+            updateSpanTemplate();
+          }
+        } else {
+          matchingMethods(methodName);
+        }
       }
       return methodName;
     }
@@ -173,12 +216,12 @@ define(function (require) {
         $pointcutSpanSection.addClass('hide');
       }
       var $pointcutSpanTemplate = $('#pointcutSpanTemplate_' + pointcutNum);
-      if (span && $pointcutSpanTemplate.val() === '') {
-        // populate default template value on selecting span
+      if ((span || trace) && $pointcutSpanTemplate.val() === '') {
+        // populate default template value on selecting span/trace
         updateSpanTemplate();
       }
-      if (!span) {
-        // clear template value on de-selecting span
+      if (!span && !trace) {
+        // clear template value on de-selecting span/trace
         $pointcutSpanTemplate.val('');
       }
     }
@@ -192,6 +235,14 @@ define(function (require) {
           + pointcutNum + ']:checked');
       if (selectedMethodSignature.length === 0) {
         return undefined;
+      }
+      if (selectedMethodSignature.val() === 'all') {
+        return {
+          all: true,
+          argTypeNames: [ '..' ],
+          returnTypeName: '',
+          modifiers: []
+        };
       }
       return signatures[selectedMethodSignature.val()];
     }
@@ -213,15 +264,13 @@ define(function (require) {
         alert('method for pointcut must be selected');
         return;
       }
-      // methodReturnTypeName and methodModifiers are intentionally not included in pointcuts since
-      // the method name and arg types are enough to uniquely identify the method, and further
-      // restricting the pointcut based on return type and modifiers would make it brittle to slight
-      // changes in the return type (e.g. narrowing) or modifiers on the method (e.g. visibility)
       var updatedPointcut = {
         'captureItems': captureItems,
         'typeName': $('#pointcutTypeName_' + pointcutNum).val(),
         'methodName': $('#pointcutMethodName_' + pointcutNum).val(),
         'methodArgTypeNames': signature.argTypeNames,
+        'methodReturnTypeName': signature.returnTypeName,
+        'methodModifiers': signature.modifiers,
         'metricName': $('#pointcutMetricName_' + pointcutNum).val(),
         'spanTemplate': $('#pointcutSpanTemplate_' + pointcutNum).val()
       };
@@ -233,9 +282,15 @@ define(function (require) {
       }
       $.post(url, JSON.stringify(updatedPointcut), function (response) {
         Informant.showAndFadeSuccessMessage('#pointcutSaveComplete_' + pointcutNum);
+        var somethingChanged = (response !== pointcut.version);
         pointcut = updatedPointcut;
         pointcut.version = response;
         fixLabels();
+        if (somethingChanged) {
+          // don't display button if save is performed without any changes (i.e. therefore version
+          // hash is still the same)
+          $('#retransformClassesButton').removeClass('hide');
+        }
       });
     }
 
@@ -302,6 +357,7 @@ define(function (require) {
               $('#pointcut_' + pointcutNum).remove();
             });
             $pointcutForm.collapse('hide');
+            $('#retransformClassesButton').removeClass('hide');
           });
         } else {
           // collapsing using accordion function, then removing completely
@@ -317,13 +373,25 @@ define(function (require) {
       $('#pointcutTypeName_' + pointcutNum).val(pointcut.typeName);
       $('#pointcutMethodName_' + pointcutNum).val(pointcut.methodName);
       var $pointcutMethodSignatures = $('#pointcutMethodSignatures_' + pointcutNum);
-      $pointcutMethodSignatures.html('<div style="padding-top: 20px;">'
-          + pointcut.methodName + '(' + pointcut.methodArgTypeNames.join(', ') + ')</div>');
-      $pointcutMethodSignatures.data('signatures', [
-        {
-          argTypeNames: pointcut.methodArgTypeNames
-        }
-      ]);
+      if (pointcut.methodArgTypeNames.length === 1 && pointcut.methodArgTypeNames[0] === '..'
+          && pointcut.methodModifiers.length === 0 && pointcut.methodReturnTypeName === '') {
+        $pointcutMethodSignatures.html('<div class="radio"><input type="radio" checked="checked">'
+            + 'all methods with the above name</input></div>');
+      } else {
+        $pointcutMethodSignatures.html('<div class="radio"><input type="radio" checked="checked">'
+            + pointcut.methodModifiers.join(' ') + ' ' + pointcut.methodReturnTypeName + ' '
+            + pointcut.methodName + '(' + pointcut.methodArgTypeNames.join(', ')
+            + ')</input></div>');
+      }
+      $pointcutMethodSignatures.data('signatures',
+          [
+           {
+             name: pointcut.methodName,
+             argTypeNames: pointcut.methodArgTypeNames,
+             returnTypeName: pointcut.methodReturnTypeName,
+             modifiers: pointcut.methodModifiers
+           }
+         ]);
       if (pointcut.captureItems.indexOf('metric') !== -1) {
         $('#pointcutCaptureMetric_' + pointcutNum).attr('checked', true);
       }
@@ -333,7 +401,6 @@ define(function (require) {
       if (pointcut.captureItems.indexOf('trace') !== -1) {
         $('#pointcutCaptureTrace_' + pointcutNum).attr('checked', true);
       }
-      // TODO 'methodArgTypeNames': signature.argTypeNames,
       $('#pointcutMetricName_' + pointcutNum).val(pointcut.metricName);
       $('#pointcutSpanTemplate_' + pointcutNum).val(pointcut.spanTemplate);
       updateSectionHiding();
@@ -356,6 +423,23 @@ define(function (require) {
     read();
     $('#pointcutNewButton button').click(function () {
       applyPointcutEditTemplate({});
+    });
+    var postingRetransformClasses = false;
+    $('#retransformClassesButton').click(function () {
+      // handle crazy user clicking on the button
+      if (postingRetransformClasses) {
+        return;
+      }
+      postingRetransformClasses = true;
+      $.post('admin/pointcut/retransform-classes', function () {
+        postingRetransformClasses = false;
+        Informant.hideSpinner('#retransformClassesSpinner');
+        Informant.showAndFadeSuccessMessage('#retransformClassesSuccessMessage');
+      });
+      // in case button is clicked again before success message is hidden
+      $('#retransformClassesSuccessMessage').addClass('hide');
+      Informant.showSpinner('#retransformClassesSpinner');
+      $('#retransformClassesButton').addClass('hide');
     });
   });
 });

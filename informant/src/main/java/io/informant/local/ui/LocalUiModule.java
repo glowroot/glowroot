@@ -16,6 +16,7 @@
 package io.informant.local.ui;
 
 import java.io.File;
+import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -68,7 +69,8 @@ public class LocalUiModule {
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
             StorageModule storageModule, SnapshotModule snapshotModule, TraceModule traceModule,
-            @ReadOnly Map<String, String> properties) throws Exception {
+            @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties)
+            throws Exception {
 
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
@@ -94,11 +96,12 @@ public class LocalUiModule {
         // useful to know it was set to 0 than to display its value (which is needed to view the
         // page anyways)
         ConfigJsonService configJsonService = new ConfigJsonService(configService, rollingFile,
-                pluginDescriptorCache, dataDir);
+                pluginDescriptorCache, dataDir, traceModule.getAdviceCache(), instrumentation);
         PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
                 parsedTypeCache);
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
-        AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
+        AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
+                configService, traceModule.getAdviceCache(), parsedTypeCache, instrumentation,
                 traceSink, dataSource, traceRegistry);
 
         // for now only a single http worker thread to keep # of threads down
@@ -199,7 +202,7 @@ public class LocalUiModule {
                 tracePointJsonService, "getPoints"));
         jsonServiceMappings.add(new JsonServiceMapping("^/explorer/summary/(.+)$",
                 traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/read$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/config$",
                 configJsonService, "getConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/general$",
                 configJsonService, "updateGeneralConfig"));
@@ -227,10 +230,12 @@ public class LocalUiModule {
                 pointcutConfigJsonService, "getMatchingMethods"));
         jsonServiceMappings.add(new JsonServiceMapping("^/threads/dump$",
                 threadDumpJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/compact$",
-                adminJsonService, "compactData"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/pointcut/retransform-classes$",
+                adminJsonService, "retransformClasses"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/compact$",
+                adminJsonService, "compactData"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/config/reset-all$",
                 adminJsonService, "resetAllConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-complete-traces$",

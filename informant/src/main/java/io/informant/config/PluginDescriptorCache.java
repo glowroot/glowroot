@@ -33,12 +33,7 @@ import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.informant.api.weaving.Mixin;
-import io.informant.api.weaving.Pointcut;
 import io.informant.common.ObjectMappers;
-import io.informant.weaving.Advice;
-import io.informant.weaving.Advice.AdviceConstructionException;
-import io.informant.weaving.MixinType;
 
 /**
  * @author Trask Stalnaker
@@ -53,8 +48,6 @@ public class PluginDescriptorCache {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
-    private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> advisors;
 
     public PluginDescriptorCache() {
         ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
@@ -65,25 +58,6 @@ public class PluginDescriptorCache {
             logger.error(e.getMessage(), e);
         }
         this.pluginDescriptors = pluginDescriptors.build();
-
-        ImmutableList.Builder<MixinType> mixinTypes = ImmutableList.builder();
-        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
-        for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
-            for (String aspect : pluginDescriptor.getAspects()) {
-                try {
-                    // don't initialize the aspect since that will trigger static initializers which
-                    // will probably call PluginServices.get()
-                    Class<?> aspectClass = Class.forName(aspect, false,
-                            PluginDescriptor.class.getClassLoader());
-                    advisors.addAll(getAdvisors(aspectClass));
-                    mixinTypes.addAll(getMixinTypes(aspectClass));
-                } catch (ClassNotFoundException e) {
-                    logger.warn("aspect not found: {}", aspect);
-                }
-            }
-        }
-        this.mixinTypes = mixinTypes.build();
-        this.advisors = advisors.build();
     }
 
     // don't return ImmutableList since this method is used by UiTestingMain and when UiTestingMain
@@ -92,21 +66,6 @@ public class PluginDescriptorCache {
     @Immutable
     public List<PluginDescriptor> getPluginDescriptors() {
         return pluginDescriptors;
-    }
-
-    // don't return ImmutableList since this method is used by SameJvmExecutionAdapter and when
-    // SameJvmExecutionAdapter is compiled by maven, it is compiled against shaded informant,
-    // but then if a unit test is run inside an IDE without rebuilding SameJvmExecutionAdapter it
-    // will fail since informant is then unshaded
-    @Immutable
-    public List<MixinType> getMixinTypes() {
-        return mixinTypes;
-    }
-
-    // don't return ImmutableList, see comment above
-    @Immutable
-    public List<Advice> getAdvisors() {
-        return advisors;
     }
 
     private static List<PluginDescriptor> readInstalledPlugins() throws IOException {
@@ -142,32 +101,6 @@ public class PluginDescriptorCache {
             logger.error("error in file {}: {}", url.toExternalForm(), e.getMessage());
             return ImmutableList.of();
         }
-    }
-
-    private static List<Advice> getAdvisors(Class<?> aspectClass) {
-        List<Advice> advisors = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
-            if (pointcut != null) {
-                try {
-                    advisors.add(Advice.from(pointcut, memberClass));
-                } catch (AdviceConstructionException e) {
-                    logger.error("invalid advice '{}': {}", memberClass.getName(), e.getMessage());
-                }
-            }
-        }
-        return advisors;
-    }
-
-    private static List<MixinType> getMixinTypes(Class<?> aspectClass) {
-        List<MixinType> mixinTypes = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            Mixin mixin = memberClass.getAnnotation(Mixin.class);
-            if (mixin != null) {
-                mixinTypes.add(MixinType.from(mixin, memberClass));
-            }
-        }
-        return mixinTypes;
     }
 
     private static List<URL> getResources(String resourceName) throws IOException {

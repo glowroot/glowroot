@@ -91,27 +91,22 @@ class PointcutConfigJsonService {
             matchingMethod.put("name", parsedMethod.getName());
             ArrayNode argTypeNames = mapper.createArrayNode();
             for (String argTypeName : parsedMethod.getArgTypeNames()) {
-                argTypeNames.add(getSimplifiedTypeName(argTypeName));
+                argTypeNames.add(argTypeName);
             }
             matchingMethod.put("argTypeNames", argTypeNames);
-            matchingMethod.put("returnTypeName",
-                    getSimplifiedTypeName(parsedMethod.getReturnTypeName()));
+            matchingMethod.put("returnTypeName", parsedMethod.getReturnTypeName());
             ArrayNode modifiers = mapper.createArrayNode();
             for (String modifier : Modifier.toString(parsedMethod.getModifiers()).split(" ")) {
-                modifiers.add(modifier.toUpperCase(Locale.ENGLISH));
+                // TODO push modifier filtering into ParsedMethod, no need to track these
+                if (modifier.equals("synchronized") || modifier.equals("final")) {
+                    continue;
+                }
+                modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
             }
             matchingMethod.put("modifiers", modifiers);
             matchingMethods.add(matchingMethod);
         }
         return mapper.writeValueAsString(matchingMethods);
-    }
-
-    // strip "java.lang." from String, Object, etc
-    private String getSimplifiedTypeName(String typeName) {
-        if (typeName.matches("java\\.lang\\.[^\\.]+")) {
-            return typeName.substring("java.lang.".length());
-        }
-        return typeName;
     }
 
     private static class TypeNameRequest {

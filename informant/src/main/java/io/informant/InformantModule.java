@@ -17,12 +17,14 @@ package io.informant;
 
 import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -38,6 +40,7 @@ import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.snapshot.SnapshotModule;
 import io.informant.trace.TraceModule;
+import io.informant.weaving.dynamic.RetransformClasses;
 
 /**
  * @author Trask Stalnaker
@@ -56,7 +59,8 @@ public class InformantModule {
     private final TraceModule traceModule;
     private final LocalUiModule uiModule;
 
-    InformantModule(@ReadOnly Map<String, String> properties) throws Exception {
+    InformantModule(@ReadOnly Map<String, String> properties,
+            @Nullable Instrumentation instrumentation) throws Exception {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
         File dataDir = DataDir.getDataDir(properties);
@@ -72,11 +76,16 @@ public class InformantModule {
         traceModule = new TraceModule(ticker, clock, configModule,
                 snapshotModule.getSnapshotTraceSink(), scheduledExecutor);
         uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, storageModule,
-                snapshotModule, traceModule, properties);
-    }
+                snapshotModule, traceModule, instrumentation, properties);
 
-    ClassFileTransformer createWeavingClassFileTransformer() {
-        return traceModule.createWeavingClassFileTransformer();
+        ClassFileTransformer transformer = traceModule.createWeavingClassFileTransformer();
+        if (instrumentation != null) {
+            if (System.getProperty("java.version").startsWith("1.5")) {
+                instrumentation.addTransformer(transformer);
+            } else {
+                RetransformClasses.addRetransformingTransformer(instrumentation, transformer);
+            }
+        }
     }
 
     PluginServices getPluginServices(String pluginId) {

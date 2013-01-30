@@ -60,5 +60,7 @@ public interface ConfigService {
 
     void removePointcutConfig(String version) throws Exception;
 
+    void retransformClasses() throws Exception;
+
     void compactData() throws Exception;
 }

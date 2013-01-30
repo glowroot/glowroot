@@ -23,6 +23,7 @@ import java.security.ProtectionDomain;
 import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -53,14 +54,14 @@ class Weaver implements Opcodes {
             Boolean.valueOf(System.getProperty("informant.internal.weaving.verify"));
 
     private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> advisors;
+    private final Supplier<ImmutableList<Advice>> advisors;
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
 
     private final WeavingMetric weavingMetric;
 
-    Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors,
+    Weaver(ImmutableList<MixinType> mixinTypes, Supplier<ImmutableList<Advice>> advisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
             WeavingMetric weavingMetric) {
         this.mixinTypes = mixinTypes;
@@ -99,7 +100,7 @@ class Weaver implements Opcodes {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES, parsedTypeCache, loader,
                     codeSource, className);
-            WeavingClassVisitor cv = new WeavingClassVisitor(mixinTypes, advisors, loader,
+            WeavingClassVisitor cv = new WeavingClassVisitor(mixinTypes, advisors.get(), loader,
                     parsedTypeCache, codeSource, cw);
             ClassReader cr = new ClassReader(classBytes);
             try {

@@ -15,10 +15,6 @@
  */
 package io.informant.weaving;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
 import io.informant.markers.NotThreadSafe;
 import io.informant.markers.PartiallyThreadSafe;
 import io.informant.markers.UsedByGeneratedBytecode;
@@ -31,18 +27,6 @@ import io.informant.markers.UsedByGeneratedBytecode;
 @PartiallyThreadSafe("AdviceFlowHolder returned by getInnerHolder() is not thread safe")
 public class AdviceFlowOuterHolder {
 
-    // runtime cache of AdviceFlowThreadLocal for Advice with Pointcut.captureNested() "false".
-    // a given AdviceFlowThreadLocal is shared across all of a given advice's pointcuts.
-    // the call to getSharedInstance() is cached in a woven class's static initializer in order to
-    // minimize the semi-expensive cache lookup
-    private static final LoadingCache<Class<?>, AdviceFlowOuterHolder> sharedThreadLocals =
-            CacheBuilder.newBuilder().build(new CacheLoader<Class<?>, AdviceFlowOuterHolder>() {
-                @Override
-                public AdviceFlowOuterHolder load(Class<?> key) {
-                    return new AdviceFlowOuterHolder();
-                }
-            });
-
     // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
     // use ThreadLocal.set()
     private final ThreadLocal<AdviceFlowHolder> topHolder = new ThreadLocal<AdviceFlowHolder>() {
@@ -53,8 +37,8 @@ public class AdviceFlowOuterHolder {
     };
 
     @UsedByGeneratedBytecode
-    public static AdviceFlowOuterHolder getSharedInstance(Class<?> adviceClass) {
-        return sharedThreadLocals.getUnchecked(adviceClass);
+    public static AdviceFlowOuterHolder create() {
+        return new AdviceFlowOuterHolder();
     }
 
     private AdviceFlowOuterHolder() {}

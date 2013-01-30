@@ -24,7 +24,6 @@ import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.objectweb.asm.Label;
@@ -63,7 +62,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final String name;
     private final Type owner;
     private final ImmutableList<Advice> advisors;
-    private final ImmutableMap<Advice, Integer> adviceFlowOuterHolderNums;
     private final Type[] argumentTypes;
     private final Type returnType;
 
@@ -82,14 +80,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private boolean visitedLocalVariableThis;
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
-            @ReadOnly List<Advice> advisors, @ReadOnly Map<Advice,
-            Integer> adviceFlowOuterHolderNums) {
+            @ReadOnly List<Advice> advisors) {
         super(ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
         this.advisors = ImmutableList.copyOf(advisors);
-        this.adviceFlowOuterHolderNums = ImmutableMap.copyOf(adviceFlowOuterHolderNums);
         argumentTypes = Type.getArgumentTypes(desc);
         returnType = Type.getReturnType(desc);
         for (Advice advice : advisors) {
@@ -271,17 +267,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 enabledLocals.put(advice, enabledLocal);
                 // it will be initialized below
             }
-            // this index is based on the list of advisors that match the class which could be a
-            // larger set than the list of advisors that match this method
-            int i = adviceFlowOuterHolderNums.get(advice);
-            getStatic(owner, "informant$adviceFlow$" + i, adviceFlowOuterHolderType);
+            getStatic(Type.getType(advice.getGeneratedAdviceFlowClass()), "adviceFlow",
+                    adviceFlowOuterHolderType);
             invokeVirtual(adviceFlowOuterHolderType, Method.getMethod(
                     AdviceFlowHolder.class.getName() + " getInnerHolder()"));
             // and dup one more time for the subsequent conditional
             dup();
             // store the boolean into both informant$topFlow$i which stores the prior state and is
-            // needed at method exit to reset the static thread local informant$adviceFlow$i
-            // appropriately
+            // needed at method exit to reset the static thread local adviceFlow appropriately
             storeLocal(adviceFlowHolderLocal);
             invokeVirtual(adviceFlowHolderType, Method.getMethod("boolean isTop()"));
             Label isTopBlockStart = newLabel();
@@ -629,7 +622,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 .add("name", name)
                 .add("owner", owner)
                 .add("advisors", advisors)
-                .add("adviceFlowThreadLocalNums", adviceFlowOuterHolderNums)
                 .add("argumentTypes", argumentTypes)
                 .add("topFlowLocals", adviceFlowHolderLocals)
                 .add("enabledLocals", enabledLocals)

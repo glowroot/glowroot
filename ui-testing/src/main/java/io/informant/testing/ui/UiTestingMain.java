@@ -32,6 +32,8 @@ import io.informant.container.local.LocalContainer;
  */
 public class UiTestingMain {
 
+    // need to use javaagent when testing pointcuts.html, otherwise class/method auto completion
+    // won't be available
     private static final boolean useJavaagent = false;
     // r.js optimization and less compilation steps aren't needed in ui dev mode
     private static final boolean useUiDevMode = true;

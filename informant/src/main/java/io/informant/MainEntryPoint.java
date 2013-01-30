@@ -103,10 +103,7 @@ public class MainEntryPoint {
         // TODO make this configurable
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
-        informantModule = new InformantModule(properties);
-        if (instrumentation != null) {
-            instrumentation.addTransformer(informantModule.createWeavingClassFileTransformer());
-        }
+        informantModule = new InformantModule(properties, instrumentation);
         return informantModule;
     }
 

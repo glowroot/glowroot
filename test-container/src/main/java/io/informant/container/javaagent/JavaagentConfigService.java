@@ -141,6 +141,10 @@ class JavaagentConfigService implements ConfigService {
         httpClient.post("/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
+    public void retransformClasses() throws Exception {
+        httpClient.post("/admin/pointcut/retransform-classes", "");
+    }
+
     public void compactData() throws Exception {
         httpClient.post("/admin/data/compact", "");
     }
@@ -150,7 +154,7 @@ class JavaagentConfigService implements ConfigService {
     }
 
     private Config getConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/config/read"),
+        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/config"),
                 Config.class);
     }
 }

@@ -540,8 +540,6 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.EmptyImmutableBiMap");
         types.add("com.google.common.collect.EmptyImmutableList");
         types.add("com.google.common.collect.EmptyImmutableSet");
-        types.add("com.google.common.collect.EmptyImmutableSortedMap");
-        types.add("com.google.common.collect.EmptyImmutableSortedSet");
         types.add("com.google.common.collect.FluentIterable");
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
@@ -552,10 +550,6 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.ImmutableCollection$Builder");
         types.add("com.google.common.collect.ImmutableCollection$EmptyImmutableCollection");
         types.add("com.google.common.collect.ImmutableEntry");
-        types.add("com.google.common.collect.ImmutableEnumMap");
-        types.add("com.google.common.collect.ImmutableEnumMap$1");
-        types.add("com.google.common.collect.ImmutableEnumMap$2");
-        types.add("com.google.common.collect.ImmutableEnumMap$2$1");
         types.add("com.google.common.collect.ImmutableList");
         types.add("com.google.common.collect.ImmutableList$1");
         types.add("com.google.common.collect.ImmutableList$Builder");
@@ -568,10 +562,6 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.ImmutableMapValues");
         types.add("com.google.common.collect.ImmutableMapValues$1");
         types.add("com.google.common.collect.ImmutableSet");
-        types.add("com.google.common.collect.ImmutableSortedMap");
-        types.add("com.google.common.collect.ImmutableSortedMapFauxverideShim");
-        types.add("com.google.common.collect.ImmutableSortedSet");
-        types.add("com.google.common.collect.ImmutableSortedSetFauxverideShim");
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterables$8");
         types.add("com.google.common.collect.Iterators");
@@ -579,7 +569,6 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.Iterators$12");
         types.add("com.google.common.collect.Iterators$13");
         types.add("com.google.common.collect.Iterators$2");
-        types.add("com.google.common.collect.Iterators$3");
         types.add("com.google.common.collect.Iterators$8");
         types.add("com.google.common.collect.Lists");
         types.add("com.google.common.collect.Lists$RandomAccessReverseList");
@@ -602,19 +591,12 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.RegularImmutableBiMap$Inverse$InverseEntrySet$1");
         types.add("com.google.common.collect.RegularImmutableBiMap$NonTerminalBiMapEntry");
         types.add("com.google.common.collect.RegularImmutableList");
-        types.add("com.google.common.collect.RegularImmutableMap");
-        types.add("com.google.common.collect.RegularImmutableMap$1");
-        types.add("com.google.common.collect.RegularImmutableMap$EntrySet");
-        types.add("com.google.common.collect.RegularImmutableMap$LinkedEntry");
-        types.add("com.google.common.collect.RegularImmutableMap$NonTerminalEntry");
-        types.add("com.google.common.collect.RegularImmutableMap$TerminalEntry");
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
         types.add("com.google.common.collect.Sets");
         types.add("com.google.common.collect.SingletonImmutableBiMap");
         types.add("com.google.common.collect.SingletonImmutableList");
         types.add("com.google.common.collect.SingletonImmutableSet");
-        types.add("com.google.common.collect.SortedIterable");
         types.add("com.google.common.collect.TransformedIterator");
         types.add("com.google.common.collect.UnmodifiableIterator");
         types.add("com.google.common.collect.UnmodifiableListIterator");
@@ -682,7 +664,6 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.Advice$ParameterKind");
         types.add("io.informant.weaving.AdviceFlowOuterHolder");
         types.add("io.informant.weaving.AdviceFlowOuterHolder$1");
-        types.add("io.informant.weaving.AdviceFlowOuterHolder$2");
         types.add("io.informant.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("io.informant.weaving.AdviceMatcher");
         types.add("io.informant.weaving.MixinMatcher");
@@ -703,7 +684,6 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.WeavingClassFileTransformer$1");
         types.add("io.informant.weaving.WeavingClassVisitor");
         types.add("io.informant.weaving.WeavingClassVisitor$InitMixins");
-        types.add("io.informant.weaving.WeavingClassVisitor$InitThreadLocals");
         types.add("io.informant.weaving.WeavingMethodVisitor");
         types.add("io.informant.weaving.WeavingMethodVisitor$MarkerException");
         types.add("io.informant.weaving.WeavingMetric");

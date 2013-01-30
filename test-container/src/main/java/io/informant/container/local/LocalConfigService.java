@@ -203,6 +203,11 @@ class LocalConfigService implements ConfigService {
         configService.deletePointcutConfig(version);
     }
 
+    public void retransformClasses() throws Exception {
+        throw new IllegalStateException(
+                "Retransforming classes only works inside javaagent container");
+    }
+
     public void compactData() throws SQLException {
         dataSource.compact();
     }

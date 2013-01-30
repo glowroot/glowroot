@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
@@ -69,7 +70,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             ImmutableList<Advice> advisors, ImmutableList<Class<?>> bridgeClasses,
             ImmutableList<String> excludePackages, WeavingMetric weavingMetric) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        weaver = new Weaver(mixinTypes, advisors, this, new ParsedTypeCache(), weavingMetric);
+        weaver = new Weaver(mixinTypes, Suppliers.ofInstance(advisors), this,
+                new ParsedTypeCache(), weavingMetric);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
     }
@@ -163,6 +165,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             if (name.startsWith(excludePackage + ".")) {
                 return true;
             }
+        }
+        if (name.matches("io.informant.weaving.GeneratedAdviceFlow[0-9]+")
+                || name.equals(AdviceFlowOuterHolder.class.getName())
+                || name.equals(AdviceFlowOuterHolder.AdviceFlowHolder.class.getName())) {
+            return true;
         }
         return false;
     }

@@ -122,7 +122,7 @@ public class PointcutConfig {
         return metricName;
     }
 
-    public void setMetricName(@Nullable String metricName) {
+    public void setMetricName(String metricName) {
         this.metricName = metricName;
     }
 
@@ -202,6 +202,7 @@ public class PointcutConfig {
         checkRequiredProperty(methodArgTypeNames, "methodArgTypeNames");
         checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
         checkRequiredProperty(methodModifiers, "methodModifiers");
+        checkRequiredProperty(metricName, "metricName");
         checkRequiredProperty(version, "version");
         PointcutConfig config = new PointcutConfig(version);
         config.setCaptureItems(captureItems);

@@ -27,19 +27,22 @@ limitations under the License.
       <fieldset>
         <div class="accordion-form-padding">
           <div class="control-group">
-            <label class="control-label" for="pointcutTypeName_{{num}}">Type</label>
+            <label class="control-label" for="pointcutTypeName_{{num}}">Type name</label>
             <div class="controls">
               <input type="text" data-provide="typeahead" id="pointcutTypeName_{{num}}"
                      style="width: 40em">
             </div>
           </div>
           <div class="control-group">
-            <label class="control-label" for="pointcutMethodName_{{num}}">Method</label>
+            <label class="control-label" for="pointcutMethodName_{{num}}">Method name</label>
             <div class="controls">
               <input type="text" data-provide="typeahead" id="pointcutMethodName_{{num}}"
                      style="width: 40em">
-              <div id="pointcutMethodSignatures_{{num}}"></div>
             </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="pointcutMethodSignatures_{{num}}">Signature</label>
+            <div class="controls" id="pointcutMethodSignatures_{{num}}"></div>
           </div>
           <div class="control-group">
             <label class="control-label">Capture</label>
@@ -56,7 +59,7 @@ limitations under the License.
             </div>
           </div>
           <div class="control-group hide" id="pointcutMetricSection_{{num}}">
-            <label class="control-label" for="pointcutMetricName_{{num}}">Metric Name</label>
+            <label class="control-label" for="pointcutMetricName_{{num}}">Metric name</label>
             <div class="controls">
               <input type="text" id="pointcutMetricName_{{num}}" style="width: 10em;">
             </div>

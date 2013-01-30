@@ -38,20 +38,23 @@ class ParsedType {
     private final String superName;
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
+    private final boolean dynamicallyWoven;
 
     // interfaces that do not extend anything have null superClass
     static ParsedType from(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
-        return new ParsedType(iface, name, superName, interfaceNames, methods);
+        return new ParsedType(iface, name, superName, interfaceNames, methods, false);
     }
 
     private ParsedType(boolean iface, String name, @Nullable String superName,
-            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
+            ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods,
+            boolean dynamicallyWoven) {
         this.iface = iface;
         this.name = name;
         this.superName = superName;
         this.interfaceNames = interfaceNames;
         this.methods = methods;
+        this.dynamicallyWoven = dynamicallyWoven;
     }
 
     boolean isInterface() {
@@ -87,6 +90,10 @@ class ParsedType {
         return null;
     }
 
+    public boolean isDynamicallyWoven() {
+        return dynamicallyWoven;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -95,6 +102,7 @@ class ParsedType {
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
                 .add("methods", methods)
+                .add("dynamicallyWoven", dynamicallyWoven)
                 .toString();
     }
 
@@ -112,6 +120,7 @@ class ParsedType {
         private final String superName;
         private final ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
+        private boolean dynamicallyWoven;
 
         private Builder(boolean iface, String name, @Nullable String superName,
                 ImmutableList<String> interfaceNames) {
@@ -125,8 +134,13 @@ class ParsedType {
             methods.add(method);
         }
 
+        public void setDynamicallyWoven(boolean dynamicallyWoven) {
+            this.dynamicallyWoven = dynamicallyWoven;
+        }
+
         ParsedType build() {
-            return new ParsedType(iface, name, superName, interfaceNames, methods.build());
+            return new ParsedType(iface, name, superName, interfaceNames, methods.build(),
+                    dynamicallyWoven);
         }
     }
 }

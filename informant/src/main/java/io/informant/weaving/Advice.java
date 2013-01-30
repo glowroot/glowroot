@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -113,9 +114,12 @@ public class Advice {
     private final ImmutableList<ParameterKind> onThrowParameterKinds;
     private final ImmutableList<ParameterKind> onAfterParameterKinds;
 
-    public static Advice from(Pointcut pointcut, Class<?> adviceClass)
+    private final Class<?> generatedAdviceFlowClass;
+    private final boolean dynamic;
+
+    public static Advice from(Pointcut pointcut, Class<?> adviceClass, boolean dynamic)
             throws AdviceConstructionException {
-        return new Builder(pointcut, adviceClass).build();
+        return new Builder(pointcut, adviceClass, dynamic).build();
     }
 
     private Advice(Pointcut pointcut, Type adviceType, @Nullable Pattern pointcutTypePattern,
@@ -126,7 +130,8 @@ public class Advice {
             ImmutableList<ParameterKind> onBeforeParameterKinds,
             ImmutableList<ParameterKind> onReturnParameterKinds,
             ImmutableList<ParameterKind> onThrowParameterKinds,
-            ImmutableList<ParameterKind> onAfterParameterKinds) {
+            ImmutableList<ParameterKind> onAfterParameterKinds, Class<?> generatedAdviceFlowClass,
+            boolean dynamic) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
         this.pointcutTypePattern = pointcutTypePattern;
@@ -142,6 +147,8 @@ public class Advice {
         this.onReturnParameterKinds = onReturnParameterKinds;
         this.onThrowParameterKinds = onThrowParameterKinds;
         this.onAfterParameterKinds = onAfterParameterKinds;
+        this.generatedAdviceFlowClass = generatedAdviceFlowClass;
+        this.dynamic = dynamic;
     }
 
     Pointcut getPointcut() {
@@ -212,6 +219,14 @@ public class Advice {
         return onAfterParameterKinds;
     }
 
+    Class<?> getGeneratedAdviceFlowClass() {
+        return generatedAdviceFlowClass;
+    }
+
+    boolean isDynamic() {
+        return dynamic;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -230,6 +245,8 @@ public class Advice {
                 .add("onReturnParameterKinds", onReturnParameterKinds)
                 .add("onThrowParameterKinds", onThrowParameterKinds)
                 .add("onAfterParameterKinds", onAfterParameterKinds)
+                .add("generatedAdviceFlowClass", generatedAdviceFlowClass)
+                .add("dynamic", dynamic)
                 .toString();
     }
 
@@ -273,7 +290,10 @@ public class Advice {
         private ImmutableList<ParameterKind> onThrowParameterKinds = ImmutableList.of();
         private ImmutableList<ParameterKind> onAfterParameterKinds = ImmutableList.of();
 
-        private Builder(Pointcut pointcut, Class<?> adviceClass)
+        private final Class<?> generatedAdviceFlowClass;
+        private final boolean dynamic;
+
+        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean dynamic)
                 throws AdviceConstructionException {
             this.pointcut = pointcut;
             adviceType = Type.getType(adviceClass);
@@ -292,6 +312,25 @@ public class Advice {
                     initOnAfterAdvice(adviceClass, method);
                 }
             }
+            try {
+                generatedAdviceFlowClass = AdviceFlowGenerator.generate();
+            } catch (SecurityException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e.getMessage());
+            } catch (IllegalArgumentException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e.getMessage());
+            } catch (NoSuchMethodException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e.getMessage());
+            } catch (IllegalAccessException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e.getMessage());
+            } catch (InvocationTargetException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e.getMessage());
+            }
+            this.dynamic = dynamic;
         }
 
         @Nullable
@@ -426,7 +465,8 @@ public class Advice {
             return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
                     isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
                     travelerType, isEnabledParameterKinds, onBeforeParameterKinds,
-                    onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds);
+                    onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds,
+                    generatedAdviceFlowClass, dynamic);
         }
 
         private static ImmutableList<ParameterKind> getParameterKinds(
@@ -463,6 +503,7 @@ public class Advice {
             }
             return parameterKinds.build();
         }
+
         @Nullable
         private static ParameterKind findParam(Annotation[] parameterAnnotations,
                 @ReadOnly List<ParameterKind> validArgTypes) {

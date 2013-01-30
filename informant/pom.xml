@@ -321,6 +321,7 @@
             <manifestEntries>
               <Premain-Class>io.informant.MainEntryPoint</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
+              <Can-Retransform-Classes>true</Can-Retransform-Classes>
             </manifestEntries>
           </archive>
           <excludes>
@@ -457,6 +458,10 @@
                       <pattern>org.slf4j</pattern>
                       <shadedPattern>io.informant.shaded.slf4j</shadedPattern>
                     </relocation>
+                    <relocation>
+                      <pattern>com.github.mustachejava</pattern>
+                      <shadedPattern>io.informant.shaded.github.mustachejava</shadedPattern>
+                    </relocation>
                   </relocations>
                 </configuration>
               </execution>
@@ -514,6 +519,12 @@
                 <option>-keep class io.informant.weaving.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
                 <option>-keep class io.informant.shaded.google.common.** { *; }</option>
+                <!-- keep DefaultMustacheFactory.compile() which is used by generated advice -->
+                <option>
+                  -keep class io.informant.shaded.github.mustachejava.DefaultMustacheFactory
+                  { public io.informant.shaded.github.mustachejava.Mustache
+                    compile(java.io.Reader, java.lang.String); }
+                </option>
                 <!-- keep all logback appenders -->
                 <option>
                   -keep class * extends io.informant.shaded.qos.logback.core.Appender { *; }
@@ -522,8 +533,8 @@
                   at http://proguard.sourceforge.net/manual/examples.html) -->
                 <option>
                   -keepclassmembers enum *
-                  { public static **[] values(); public static **
-                  valueOf(java.lang.String); }
+                  { public static **[] values();
+                    public static ** valueOf(java.lang.String); }
                 </option>
               </options>
             </configuration>

@@ -56,7 +56,7 @@ define(function (require) {
 
   function read() {
     Informant.showSpinner('#initialLoadSpinner');
-    $.getJSON('config/read', function (config) {
+    $.getJSON('config', function (config) {
       Informant.hideSpinner('#initialLoadSpinner');
       var generalConfig = config.generalConfig;
       setStatus('#generalStatus', generalConfig.enabled, true);

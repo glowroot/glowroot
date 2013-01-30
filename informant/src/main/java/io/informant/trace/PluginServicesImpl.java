@@ -62,6 +62,8 @@ import io.informant.trace.model.WeavingMetricNameImpl;
 @ThreadSafe
 class PluginServicesImpl extends PluginServices implements ConfigListener {
 
+    private static final String DYNAMIC_POINTCUTS_PLUGIN_ID = "io.informant:dynamic-pointcuts";
+
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
 
     private final TraceRegistry traceRegistry;
@@ -101,14 +103,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         // (remotely) possible race condition
         configService.addConfigListener(this);
         configService.addPluginConfigListener(pluginId, this);
-        pluginConfig = configService.getPluginConfig(pluginId);
-        if (pluginConfig == null) {
-            List<String> ids = Lists.newArrayList();
-            for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
-                ids.add(pluginDescriptor.getId());
+        if (!pluginId.equals(DYNAMIC_POINTCUTS_PLUGIN_ID)) {
+            pluginConfig = configService.getPluginConfig(pluginId);
+            if (pluginConfig == null) {
+                List<String> ids = Lists.newArrayList();
+                for (PluginDescriptor pluginDescriptor : pluginDescriptorCache
+                        .getPluginDescriptors()) {
+                    ids.add(pluginDescriptor.getId());
+                }
+                logger.warn("unexpected plugin id '{}', available plugin ids: {}", pluginId,
+                        Joiner.on(", ").join(ids));
             }
-            logger.warn("unexpected plugin id '{}', available plugin ids: {}", pluginId,
-                    Joiner.on(", ").join(ids));
         }
         // call onChange() to initialize the cached configuration property values
         onChange();
@@ -298,8 +303,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     public void onChange() {
         GeneralConfig generalConfig = configService.getGeneralConfig();
-        pluginConfig = configService.getPluginConfig(pluginId);
-        enabled = generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
+        if (pluginId.equals(DYNAMIC_POINTCUTS_PLUGIN_ID)) {
+            enabled = generalConfig.isEnabled();
+        } else {
+            pluginConfig = configService.getPluginConfig(pluginId);
+            enabled = generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
+        }
         maxSpans = generalConfig.getMaxSpans();
     }
 

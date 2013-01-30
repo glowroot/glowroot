@@ -955,7 +955,7 @@ public class WeaverTest {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut != null) {
-            loader.setAdvisors(ImmutableList.of(Advice.from(pointcut, adviceClass)));
+            loader.setAdvisors(ImmutableList.of(Advice.from(pointcut, adviceClass, false)));
         }
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         if (mixin != null) {

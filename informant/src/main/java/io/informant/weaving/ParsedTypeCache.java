@@ -18,6 +18,7 @@ package io.informant.weaving;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.List;
@@ -35,6 +36,7 @@ import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -150,15 +152,43 @@ public class ParsedTypeCache {
 
     public List<ParsedMethod> getMatchingParsedMethods(String typeName, String methodName) {
         List<ParsedType> parsedTypes = getMatchingParsedTypes(typeName);
-        List<ParsedMethod> methodMethods = Lists.newArrayList();
+        // use set to remove duplicate methods (e.g. same type loaded by multiple class loaders)
+        Set<ParsedMethod> parsedMethods = Sets.newHashSet();
         for (ParsedType parsedType : parsedTypes) {
             for (ParsedMethod parsedMethod : parsedType.getMethods()) {
                 if (parsedMethod.getName().equals(methodName)) {
-                    methodMethods.add(parsedMethod);
+                    parsedMethods.add(parsedMethod);
                 }
             }
         }
-        return methodMethods;
+        // order methods by accessibility, then by name, then by number of args
+        return ParsedMethodOrdering.INSTANCE.sortedCopy(parsedMethods);
+    }
+
+    public List<Class<?>> getDynamicallyWovenClasses() {
+        List<Class<?>> classes = Lists.newArrayList();
+        for (Entry<ClassLoader, ConcurrentMap<String, ParsedType>> outerEntry : parsedTypeCache
+                .asMap().entrySet()) {
+            for (Entry<String, ParsedType> innerEntry : outerEntry.getValue().entrySet()) {
+                if (innerEntry.getValue().isDynamicallyWoven()) {
+                    try {
+                        classes.add(outerEntry.getKey().loadClass(innerEntry.getKey()));
+                    } catch (ClassNotFoundException e) {
+                        logger.warn(e.getMessage(), e);
+                    }
+                }
+            }
+        }
+        return classes;
+    }
+
+    public List<Class<?>> getClassesToDynamicallyReweave(Set<String> targetTypeNames) {
+        List<Class<?>> classes = Lists.newArrayList();
+        for (ClassLoader loader : parsedTypeCache.asMap().keySet()) {
+            classes.addAll(getClassesToDynamicallyReweave(targetTypeNames, loader));
+        }
+        classes.addAll(getClassesToDynamicallyReweave(targetTypeNames, null));
+        return classes;
     }
 
     void add(ParsedType parsedType, @Nullable ClassLoader loader) {
@@ -212,8 +242,8 @@ public class ParsedTypeCache {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
         } catch (ClassNotFoundException e) {
-            // log at debug level only since this code must not be getting used anyways, as it would
-            // fail on execution since the type doesn't exist
+            // log at debug level only since the code referencing the class must not be getting used
+            // anyways, as it would fail on execution since the type doesn't exist
             logger.debug("type not found '{}' while parsing: {}", typeName, parseContext);
             return ImmutableList.of();
         }
@@ -230,6 +260,80 @@ public class ParsedTypeCache {
 
     private ParsedType getOrCreateParsedType(String typeName, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
+        ClassLoader parsedTypeLoader = getParsedTypeLoader(typeName, loader);
+        ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(parsedTypeLoader);
+        ParsedType parsedType = loaderParsedTypes.get(typeName);
+        if (parsedType == null) {
+            parsedType = createParsedType(typeName, parsedTypeLoader);
+            ParsedType storedParsedType = loaderParsedTypes.putIfAbsent(typeName, parsedType);
+            if (storedParsedType != null) {
+                // (rare) concurrent ParsedType creation, use the one that made it into the map
+                parsedType = storedParsedType;
+            }
+            typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
+        }
+        return parsedType;
+    }
+
+    private List<Class<?>> getClassesToDynamicallyReweave(Set<String> targetTypeNames,
+            @Nullable ClassLoader loader) {
+        List<Class<?>> classes = Lists.newArrayList();
+        for (ParsedType parsedType : getParsedTypes(loader).values()) {
+            if (shouldReweave(parsedType, loader, targetTypeNames)) {
+                try {
+                    classes.add(Class.forName(parsedType.getName(), false, loader));
+                } catch (ClassNotFoundException e) {
+                    logger.warn(e.getMessage(), e);
+                }
+            }
+        }
+        return classes;
+    }
+
+    private boolean shouldReweave(ParsedType parsedType, @Nullable ClassLoader loader,
+            Set<String> targetTypeNames) {
+        List<String> superTypeNames = getExistingTypeHierarchy(parsedType, loader);
+        for (String superTypeName : superTypeNames) {
+            if (targetTypeNames.contains(superTypeName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<String> getExistingTypeHierarchy(ParsedType parsedType,
+            @Nullable ClassLoader loader) {
+        List<String> superTypes = Lists.newArrayList(parsedType.getName());
+        String superName = parsedType.getSuperName();
+        if (superName != null && !superName.equals("java.lang.Object")) {
+            ParsedType superParsedType = getExistingParsedType(superName, loader);
+            if (superParsedType != null) {
+                superTypes.addAll(getExistingTypeHierarchy(superParsedType, loader));
+            }
+        }
+        for (String interfaceName : parsedType.getInterfaceNames()) {
+            ParsedType interfaceParsedType = getExistingParsedType(interfaceName, loader);
+            if (interfaceParsedType != null) {
+                superTypes.addAll(getExistingTypeHierarchy(interfaceParsedType, loader));
+            }
+        }
+        return superTypes;
+    }
+
+    @Nullable
+    private ParsedType getExistingParsedType(String typeName, @Nullable ClassLoader loader) {
+        ClassLoader parsedTypeLoader = getParsedTypeLoader(typeName, loader);
+        if (parsedTypeLoader == null) {
+            return bootLoaderParsedTypeCache.get(typeName);
+        }
+        return parsedTypeCache.getUnchecked(parsedTypeLoader).get(typeName);
+    }
+
+    @Nullable
+    private ClassLoader getParsedTypeLoader(String typeName, @Nullable ClassLoader loader) {
+        if (loader == null) {
+            return null;
+        }
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
         // class hasn't already been loaded, so instead, call the package protected
         // ClassLoader.findLoadClass()
@@ -252,18 +356,7 @@ public class ParsedTypeCache {
             // ClassLoader.getResource(), as well as being a good optimization in other cases
             parsedTypeLoader = type.getClassLoader();
         }
-        ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(parsedTypeLoader);
-        ParsedType parsedType = loaderParsedTypes.get(typeName);
-        if (parsedType == null) {
-            parsedType = createParsedType(typeName, parsedTypeLoader);
-            ParsedType storedParsedType = loaderParsedTypes.putIfAbsent(typeName, parsedType);
-            if (storedParsedType != null) {
-                // (rare) concurrent ParsedType creation, use the one that made it into the map
-                parsedType = storedParsedType;
-            }
-            typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
-        }
-        return parsedType;
+        return parsedTypeLoader;
     }
 
     private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader)
@@ -362,6 +455,35 @@ public class ParsedTypeCache {
                 return className;
             } else {
                 return className + " (" + codeSource.getLocation() + ")";
+            }
+        }
+    }
+
+    private static class ParsedMethodOrdering extends Ordering<ParsedMethod> {
+
+        private static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
+
+        @Override
+        public int compare(@Nullable ParsedMethod left, @Nullable ParsedMethod right) {
+            return ComparisonChain.start()
+                    .compare(getAccessibility(left), getAccessibility(right))
+                    .compare(left.getName(), right.getName())
+                    .compare(left.getArgTypeNames().size(), right.getArgTypeNames().size())
+                    .compare(left.getArgTypeNames().size(), right.getArgTypeNames().size())
+                    .result();
+        }
+
+        private static int getAccessibility(ParsedMethod parsedMethod) {
+            int modifiers = parsedMethod.getModifiers();
+            if (Modifier.isPublic(modifiers)) {
+                return 1;
+            } else if (Modifier.isProtected(modifiers)) {
+                return 2;
+            } else if (Modifier.isPrivate(modifiers)) {
+                return 4;
+            } else {
+                // package-private
+                return 3;
             }
         }
     }
