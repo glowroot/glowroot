@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.informant.local.trace;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-import io.informant.api.UnresolvedMethod;
+import io.informant.api.Optional;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Optional;
 import com.google.gson.stream.JsonWriter;
 
 /**
@@ -35,13 +34,6 @@ import com.google.gson.stream.JsonWriter;
 class MessageDetailSerializer {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageDetailSerializer.class);
-
-    @Nullable
-    private static final Class<?> SHADED_OPTIONAL_CLASS = getShadedOptionalClass();
-    private static final UnresolvedMethod isPresentMethod = UnresolvedMethod.from(
-            "io.informant.shaded.google.common.base.Optional", "isPresent");
-    private static final UnresolvedMethod getMethod = UnresolvedMethod.from(
-            "io.informant.shaded.google.common.base.Optional", "get");
 
     private final JsonWriter jw;
 
@@ -85,31 +77,9 @@ class MessageDetailSerializer {
             }
         } else if (value instanceof Map) {
             write((Map<?, ?>) value);
-        } else if (SHADED_OPTIONAL_CLASS != null
-                && SHADED_OPTIONAL_CLASS.isAssignableFrom(value.getClass())) {
-            // this is hackery to make informant plugin unit tests (e.g. ServletPluginTest) pass
-            // inside an IDE when running against unshaded informant-core
-            //
-            // informant plugins are compiled directly against shaded guava, so when they pass a
-            // detail map with a value of type Optional, it is the shaded Optional class
-            boolean present = isPresentMethod.invokeWithDefaultOnError(value, false);
-            if (present) {
-                write(getMethod.invokeWithDefaultOnError(value, "<error calling Optional.get()>"));
-            } else {
-                jw.nullValue();
-            }
         } else {
             logger.warn("detail map has unexpected value type '{}'", value.getClass().getName());
             jw.value(value.toString());
-        }
-    }
-
-    @Nullable
-    private static Class<?> getShadedOptionalClass() {
-        try {
-            return Class.forName("io.informant.shaded.google.common.base.Optional");
-        } catch (ClassNotFoundException e) {
-            return null;
         }
     }
 }

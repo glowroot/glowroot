@@ -50,6 +50,9 @@ import org.h2.store.FileLister;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -72,8 +75,8 @@ public final class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
-    private static final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
-    private static final WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
+    private static volatile ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
+    private static volatile WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
             Ticker.systemTicker());
 
     @Nullable
@@ -88,6 +91,14 @@ public final class MainEntryPoint {
     @GuardedBy("returnPluginServicesProxy")
     private static final List<PluginServicesProxy> pluginServicesProxies = Lists.newArrayList();
     private static final AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
+
+    private static final LoadingCache<String, PluginServices> pluginServices =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
+                @Override
+                public PluginServices load(String pluginId) {
+                    return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
+                }
+            });
 
     // javaagent entry point
     public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
@@ -133,7 +144,7 @@ public final class MainEntryPoint {
     }
 
     // called via reflection from io.informant.api.PluginServices
-    public static PluginServices createPluginServices(String pluginId) {
+    public static PluginServices getPluginServices(String pluginId) {
         if (returnPluginServicesProxy.get()) {
             synchronized (returnPluginServicesProxy) {
                 if (returnPluginServicesProxy.get()) {
@@ -144,7 +155,7 @@ public final class MainEntryPoint {
                 }
             }
         }
-        return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
+        return pluginServices.getUnchecked(pluginId);
     }
 
     @VisibleForTesting
@@ -220,6 +231,8 @@ public final class MainEntryPoint {
             }
             InformantModule.close(injector);
             injector = null;
+            pluginServicesProxies.clear();
+            pluginServices.invalidateAll();
         }
     }
 

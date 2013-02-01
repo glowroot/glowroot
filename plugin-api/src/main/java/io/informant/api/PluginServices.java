@@ -21,10 +21,6 @@ import java.lang.reflect.Method;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
 /**
  * This is the primary service exposed to plugins.
  * 
@@ -40,18 +36,10 @@ public abstract class PluginServices {
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
 
     private static final String MAIN_ENTRY_POINT_CLASS_NAME = "io.informant.core.MainEntryPoint";
-    private static final String CREATE_PLUGIN_SERVICES_METHOD_NAME = "createPluginServices";
-
-    private static final LoadingCache<String, PluginServices> pluginServices = CacheBuilder
-            .newBuilder().build(new CacheLoader<String, PluginServices>() {
-                @Override
-                public PluginServices load(String pluginId) {
-                    return createPluginServices(pluginId);
-                }
-            });
+    private static final String GET_PLUGIN_SERVICES_METHOD_NAME = "getPluginServices";
 
     public static PluginServices get(String pluginId) {
-        return pluginServices.getUnchecked(pluginId);
+        return getPluginServices(pluginId);
     }
 
     protected PluginServices() {}
@@ -95,11 +83,11 @@ public abstract class PluginServices {
     // sets trace attribute in
     public abstract void setTraceAttribute(String name, @Nullable String value);
 
-    private static PluginServices createPluginServices(String pluginId) {
+    private static PluginServices getPluginServices(String pluginId) {
         try {
             Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
             Method getPluginServicesMethod = mainEntryPointClass.getMethod(
-                    CREATE_PLUGIN_SERVICES_METHOD_NAME, String.class);
+                    GET_PLUGIN_SERVICES_METHOD_NAME, String.class);
             return (PluginServices) getPluginServicesMethod.invoke(null, pluginId);
         } catch (ClassNotFoundException e) {
             // this really really really shouldn't happen

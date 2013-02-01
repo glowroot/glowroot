@@ -55,13 +55,7 @@ import io.informant.core.weaving.SomeAspect.StaticInjectTargetClassAdvice;
 import io.informant.core.weaving.SomeAspect.TypeNamePatternAdvice;
 import io.informant.core.weaving.SomeAspect.VeryBadAdvice;
 
-import java.util.List;
-
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -788,26 +782,19 @@ public class WeaverTest {
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceClass, Class<?>... extraBridgeClasses) throws Exception {
 
+        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
-        List<Advice> advisors;
-        if (pointcut == null) {
-            advisors = ImmutableList.of();
-        } else {
-            advisors = ImmutableList.of(Advice.from(pointcut, adviceClass));
+        if (pointcut != null) {
+            loader.addAdvisors(Advice.from(pointcut, adviceClass));
         }
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
-        List<Mixin> mixins;
-        if (mixin == null) {
-            mixins = ImmutableList.of();
-        } else {
-            mixins = ImmutableList.of(mixin);
+        if (mixin != null) {
+            loader.addMixins(mixin);
         }
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification
-        List<Class<?>> bridgeClasses = Lists.asList(bridgeClass, adviceClass, extraBridgeClasses);
-        IsolatedWeavingClassLoader weavingClassLoader = new IsolatedWeavingClassLoader(mixins,
-                advisors, Iterables.toArray(bridgeClasses, Class.class));
-        weavingClassLoader.initWeaver(NopWeavingMetric.INSTANCE);
-        return weavingClassLoader.newInstance(implClass, bridgeClass);
+        loader.addBridgeClasses(bridgeClass, adviceClass);
+        loader.addBridgeClasses(extraBridgeClasses);
+        return loader.build().newInstance(implClass, bridgeClass);
     }
 }

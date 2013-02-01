@@ -17,20 +17,16 @@ package io.informant.core.weaving;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-import io.informant.api.Timer;
 import io.informant.api.weaving.Mixin;
 import io.informant.core.util.OnlyUsedByTests;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
@@ -45,13 +41,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(IsolatedWeavingClassLoader.class);
 
-    private final ImmutableList<Mixin> mixins;
-    private final ImmutableList<Advice> advisors;
-    private final List<Class<?>> bridgeClasses;
+    private final Weaver weaver;
+    // bridge classes can be either interfaces or base classes
+    private final ImmutableList<Class<?>> bridgeClasses;
+    private final ImmutableList<String> excludePackages;
     // guarded by 'this'
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
-    @Nullable
-    private volatile Weaver weaver;
 
     private final ThreadLocal<Boolean> inWeaving = new ThreadLocal<Boolean>() {
         @Override
@@ -60,15 +55,17 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
     };
 
-    // bridge classes can be either interfaces or base classes
-    public IsolatedWeavingClassLoader(List<Mixin> mixins, List<Advice> advisors,
-            Class<?>... bridgeClasses) {
+    public static Builder builder() {
+        return new Builder();
+    }
 
+    private IsolatedWeavingClassLoader(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
+            ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
+            WeavingMetric weavingMetric) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        this.mixins = ImmutableList.copyOf(mixins);
-        this.advisors = ImmutableList.copyOf(advisors);
-        this.bridgeClasses = ImmutableList.copyOf(Lists.asList(WeavingMetric.class,
-                Timer.class, bridgeClasses));
+        weaver = new Weaver(mixins, advisors, this, new ParsedTypeCache(), weavingMetric);
+        this.bridgeClasses = bridgeClasses;
+        this.excludePackages = excludePackages;
     }
 
     public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
@@ -81,16 +78,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
     }
 
-    // TODO this api is a bit awkward requiring construction and then initialization
-    public void initWeaver(WeavingMetric weavingMetric) {
-        weaver = new Weaver(mixins, advisors, this, new ParsedTypeCache(), weavingMetric);
-    }
-
     @Override
     protected synchronized Class<?> loadClass(String name, boolean resolve)
             throws ClassNotFoundException {
 
-        if (isInBootstrapClassLoader(name)) {
+        if (loadWithParentClassLoader(name)) {
             return super.loadClass(name, resolve);
         }
         Class<?> c = classes.get(name);
@@ -108,11 +100,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             if (bridgeClass.getName().equals(name)) {
                 return bridgeClass;
             }
-        }
-        // don't weave informant classes, included shaded classes like h2 jdbc driver
-        if (name.startsWith("io/informant/core/") || name.startsWith("io/informant/local/")
-                || name.startsWith("io/informant/shaded/")) {
-            return super.findClass(name);
         }
         String resourceName = TypeNames.toInternal(name) + ".class";
         URL url = getResource(resourceName);
@@ -159,12 +146,52 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return false;
     }
 
+    private boolean loadWithParentClassLoader(String name) {
+        if (isInBootstrapClassLoader(name)) {
+            return true;
+        }
+        for (String excludePackage : excludePackages) {
+            if (name.startsWith(excludePackage + ".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean isInBootstrapClassLoader(String name) {
         try {
             Class<?> c = Class.forName(name, false, ClassLoader.getSystemClassLoader());
             return c.getClassLoader() == null;
         } catch (ClassNotFoundException e) {
             return false;
+        }
+    }
+
+    public static class Builder {
+        private final ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
+        private final ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
+        private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
+        private WeavingMetric weavingMetric = NopWeavingMetric.INSTANCE;
+        private Builder() {}
+        public void addMixins(Mixin... mixins) {
+            this.mixins.add(mixins);
+        }
+        public void addAdvisors(Advice... advisors) {
+            this.advisors.add(advisors);
+        }
+        public void addBridgeClasses(Class<?>... bridgeClasses) {
+            this.bridgeClasses.add(bridgeClasses);
+        }
+        public void addExcludePackages(String... excludePackages) {
+            this.excludePackages.add(excludePackages);
+        }
+        public void weavingMetric(WeavingMetric weavingMetric) {
+            this.weavingMetric = weavingMetric;
+        }
+        public IsolatedWeavingClassLoader build() {
+            return new IsolatedWeavingClassLoader(mixins.build(), advisors.build(),
+                    bridgeClasses.build(), excludePackages.build(), weavingMetric);
         }
     }
 }
