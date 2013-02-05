@@ -1,0 +1,74 @@
+import checkers.igj.quals.*;
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package com.google.common.base;
+
+public class Objects {
+    public static <T> T firstNonNull(@Nullable T first, T second);
+}
+
+public class Optional<T> {
+    public static <T extends @Nullable Object> Optional<@NonNull T> fromNullable(
+            T nullableReference);
+}
+
+public class Strings {
+    @AssertNonNullIfFalse("#1")
+    public static boolean isNullOrEmpty(@Nullable String string);
+}
+
+/* ========================================================================== */
+package com.google.common.collect;
+
+@Immutable
+public class ImmutableList<E> {
+    public static <E> ImmutableList<E> copyOf(@ReadOnly Collection<? extends E> elements);
+}
+
+public class ImmutableList$Builder<E> {
+    public Builder<E> addAll(@ReadOnly Iterable<? extends E> elements);
+}
+
+@Immutable
+public class ImmutableMap<K, V> {
+    public static <K, V> ImmutableMap<K, V> copyOf(@ReadOnly Map<? extends K, ? extends V> map);
+}
+
+@Immutable
+public class ImmutableCollection<E> {}
+
+@Immutable
+public class ImmutableSet<E> {
+    public static <E> ImmutableSet<E> copyOf(@ReadOnly Collection<? extends E> elements);
+    public static <E> ImmutableSet<E> copyOf(@ReadOnly Iterable<? extends E> elements);
+}
+
+public class Iterables {
+    public static <T> Iterable<T> concat(@ReadOnly Iterable<? extends T> a,
+        @ReadOnly Iterable<? extends T> b);
+    public static <T> Iterable<T> filter(@ReadOnly Iterable<?> unfiltered, Class<T> type);
+}
+
+public class Lists {
+    public static <E extends @Nullable Object> ArrayList<E> newArrayList();
+    public static <E extends @Nullable Object> ArrayList<E> newArrayListWithCapacity(
+            int initialArraySize);
+    public static <E extends @Nullable Object> ArrayList<E> newArrayList(
+            @ReadOnly Iterable<? extends E> elements);
+    public static <T> List<T> reverse(@ReadOnly List<T> list);
+    public static <E> CopyOnWriteArrayList<E> newCopyOnWriteArrayList(
+            @ReadOnly Iterable<? extends E> elements);
+}
+
+public class Ordering<T> {
+    public <E extends T> List<E> sortedCopy(@ReadOnly Iterable<E> iterable);
+}
+
+public class Queues {
+    public static <E> ConcurrentLinkedQueue<E> newConcurrentLinkedQueue();
+}
+
+public class Sets {
+    public static <E> SetView<E> difference(@ReadOnly Set<E> set1, @ReadOnly Set<?> set2);
+}

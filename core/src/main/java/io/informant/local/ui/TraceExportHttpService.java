@@ -31,8 +31,6 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.annotation.Nullable;
-
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -41,6 +39,8 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
@@ -115,13 +115,14 @@ class TraceExportHttpService implements HttpService {
     }
 
     private String getResourceContent(String path) throws IOException {
-        URL url = Resources.getResource(path);
-        if (url == null) {
+        URL url;
+        try {
+            url = Resources.getResource(path);
+        } catch (IllegalArgumentException e) {
             logger.error("could not find resource '{}'", path);
             return "";
-        } else {
-            return Resources.toString(url, Charsets.UTF_8);
         }
+        return Resources.toString(url, Charsets.UTF_8);
     }
 
     private static class ExportByteStream extends ByteStream {

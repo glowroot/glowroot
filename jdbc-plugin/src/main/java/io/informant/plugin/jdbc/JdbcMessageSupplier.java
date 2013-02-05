@@ -21,8 +21,9 @@ import io.informant.shaded.google.common.collect.ImmutableList;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.AssertNonNullIfTrue;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Jdbc span captured by AspectJ pointcut.
@@ -50,7 +51,6 @@ import javax.annotation.concurrent.ThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 class JdbcMessageSupplier extends MessageSupplier {
 
     private static final int NEXT_HAS_NOT_BEEN_CALLED = -1;
@@ -60,9 +60,9 @@ class JdbcMessageSupplier extends MessageSupplier {
 
     // parameters and batchedParameters cannot both be non-null
     @Nullable
-    private final List<Object> parameters;
+    private final List</*@Nullable*/Object> parameters;
     @Nullable
-    private final ImmutableList<List<Object>> batchedParameters;
+    private final ImmutableList<List</*@Nullable*/Object>> batchedParameters;
 
     // this is only used for batching of non-PreparedStatements
     @Nullable
@@ -95,10 +95,15 @@ class JdbcMessageSupplier extends MessageSupplier {
                 null, connectionHashCode);
     }
 
-    private JdbcMessageSupplier(@Nullable String sql, @Nullable List<Object> parameters,
-            @Nullable ImmutableList<List<Object>> batchedParameters,
+    private JdbcMessageSupplier(@Nullable String sql,
+            @Nullable List</*@Nullable*/Object> parameters,
+            @Nullable ImmutableList<List</*@Nullable*/Object>> batchedParameters,
             @Nullable ImmutableList<String> batchedSqls, @Nullable Integer connectionHashCode) {
 
+        if (sql == null && batchedSqls == null) {
+            throw new NullPointerException("Constructor args 'sql' and 'batchedSqls' cannot both"
+                    + " be null (enforced by static factory methods)");
+        }
         this.sql = sql;
         this.parameters = parameters;
         this.batchedParameters = batchedParameters;
@@ -111,8 +116,12 @@ class JdbcMessageSupplier extends MessageSupplier {
         StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");
         if (batchedSqls != null) {
-            appendBatchedSqls(sb);
+            appendBatchedSqls(sb, batchedSqls);
             return Message.from(sb.toString());
+        }
+        if (sql == null) {
+            throw new NullPointerException("Fields 'sql' and 'batchedSqls' cannot both be null"
+                    + " (enforced by static factory methods)");
         }
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {
             // print out number of batches to make it easy to identify
@@ -126,7 +135,7 @@ class JdbcMessageSupplier extends MessageSupplier {
         if (isUsingParameters() && !parameters.isEmpty()) {
             appendParameters(sb, parameters);
         } else if (isUsingBatchedParameters()) {
-            for (List<Object> oneParameters : batchedParameters) {
+            for (List</*@Nullable*/Object> oneParameters : batchedParameters) {
                 appendParameters(sb, oneParameters);
             }
         }
@@ -155,23 +164,14 @@ class JdbcMessageSupplier extends MessageSupplier {
         this.numRows = numRows;
     }
 
+    @AssertNonNullIfTrue("parameters")
     private boolean isUsingParameters() {
         return parameters != null;
     }
 
+    @AssertNonNullIfTrue("batchedParameters")
     private boolean isUsingBatchedParameters() {
         return batchedParameters != null;
-    }
-
-    private void appendBatchedSqls(StringBuilder sb) {
-        boolean first = true;
-        for (String batchedSql : batchedSqls) {
-            if (!first) {
-                sb.append(", ");
-            }
-            sb.append(batchedSql);
-            first = false;
-        }
     }
 
     private void appendRowCount(StringBuilder sb, String[] args) {
@@ -184,7 +184,18 @@ class JdbcMessageSupplier extends MessageSupplier {
         args[1] = Integer.toString(numRows);
     }
 
-    private static void appendParameters(StringBuilder sb, List<Object> parameters) {
+    private static void appendBatchedSqls(StringBuilder sb, @ReadOnly List<String> batchedSqls) {
+        boolean first = true;
+        for (String batchedSql : batchedSqls) {
+            if (!first) {
+                sb.append(", ");
+            }
+            sb.append(batchedSql);
+            first = false;
+        }
+    }
+
+    private static void appendParameters(StringBuilder sb, List</*@Nullable*/Object> parameters) {
         sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {

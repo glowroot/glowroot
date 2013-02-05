@@ -15,6 +15,8 @@
  */
 package io.informant.api;
 
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Objects;
 
 /**
@@ -29,7 +31,8 @@ public abstract class Optional<T> {
 
     public abstract boolean isPresent();
 
-    public abstract T or(T defaultValue);
+    @Nullable
+    public abstract T or(@Nullable T defaultValue);
 
     @SuppressWarnings("unchecked")
     public static <T> Optional<T> absent() {
@@ -49,11 +52,12 @@ public abstract class Optional<T> {
         return new Present<T>(reference);
     }
 
-    public static <T> Optional<T> fromNullable(T nullableReference) {
+    public static <T extends /*@Nullable*/Object> Optional</*@NonNull*/T> fromNullable(
+            T nullableReference) {
         if (nullableReference == null) {
             return absent();
         } else {
-            return new Present<T>(nullableReference);
+            return new Present</*@NonNull*/T>(nullableReference);
         }
     }
 
@@ -68,7 +72,8 @@ public abstract class Optional<T> {
             return false;
         }
         @Override
-        public Object or(Object defaultValue) {
+        @Nullable
+        public Object or(@Nullable Object defaultValue) {
             return defaultValue;
         }
     }
@@ -87,7 +92,7 @@ public abstract class Optional<T> {
             return true;
         }
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             if (o instanceof Present) {
                 return ((Present<?>) o).get().equals(reference);
             } else {
@@ -99,7 +104,7 @@ public abstract class Optional<T> {
             return Objects.hashCode(reference);
         }
         @Override
-        public T or(T defaultValue) {
+        public T or(@Nullable T defaultValue) {
             return reference;
         }
     }

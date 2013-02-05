@@ -18,8 +18,7 @@ package io.informant.api;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 /**
  * This is the primary service exposed to plugins.
@@ -30,7 +29,6 @@ import javax.annotation.concurrent.ThreadSafe;
  * @since 0.5
  */
 // TODO write javadocs for all public methods
-@ThreadSafe
 public abstract class PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
@@ -88,31 +86,39 @@ public abstract class PluginServices {
             Class<?> mainEntryPointClass = Class.forName(MAIN_ENTRY_POINT_CLASS_NAME);
             Method getPluginServicesMethod = mainEntryPointClass.getMethod(
                     GET_PLUGIN_SERVICES_METHOD_NAME, String.class);
-            return (PluginServices) getPluginServicesMethod.invoke(null, pluginId);
+            PluginServices pluginServices = (PluginServices) getPluginServicesMethod.invoke(null,
+                    pluginId);
+            if (pluginServices == null) {
+                // this really really really shouldn't happen
+                logger.error(MAIN_ENTRY_POINT_CLASS_NAME + "." + GET_PLUGIN_SERVICES_METHOD_NAME
+                        + "(" + pluginId + ") returned null");
+                return new PluginServicesNop();
+            }
+            return pluginServices;
         } catch (ClassNotFoundException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new NopPluginServices();
+            return new PluginServicesNop();
         } catch (SecurityException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new NopPluginServices();
+            return new PluginServicesNop();
         } catch (NoSuchMethodException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new NopPluginServices();
+            return new PluginServicesNop();
         } catch (IllegalArgumentException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new NopPluginServices();
+            return new PluginServicesNop();
         } catch (IllegalAccessException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new NopPluginServices();
+            return new PluginServicesNop();
         } catch (InvocationTargetException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new NopPluginServices();
+            return new PluginServicesNop();
         }
     }
 
@@ -123,7 +129,7 @@ public abstract class PluginServices {
         void onChange();
     }
 
-    private static class NopPluginServices extends PluginServices {
+    private static class PluginServicesNop extends PluginServices {
         @Override
         public Metric getMetric(Class<?> adviceClass) {
             return NopMetric.INSTANCE;
@@ -177,7 +183,6 @@ public abstract class PluginServices {
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
 
-        @ThreadSafe
         private static class NopMetric implements Metric {
             private static final NopMetric INSTANCE = new NopMetric();
             public String getName() {
@@ -185,7 +190,6 @@ public abstract class PluginServices {
             }
         }
 
-        @ThreadSafe
         private static class NopSpan implements Span {
             private static final NopSpan INSTANCE = new NopSpan();
             public void end() {}
@@ -193,7 +197,6 @@ public abstract class PluginServices {
             public void updateMessage(MessageUpdater updater) {}
         }
 
-        @ThreadSafe
         private static class NopTimer implements Timer {
             private static final NopTimer INSTANCE = new NopTimer();
             public void end() {}

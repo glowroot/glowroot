@@ -1,0 +1,8 @@
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package org.h2.store;
+
+public class FileLister {
+    public static void tryUnlockDatabase(List<String> files, @Nullable String message);
+}

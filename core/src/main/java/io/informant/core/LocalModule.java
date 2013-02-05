@@ -19,12 +19,11 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.log.LogMessageSink;
 import io.informant.core.trace.TraceSink;
+import io.informant.core.util.ThreadSafe;
 import io.informant.local.log.LogMessageSinkLocal;
 import io.informant.local.trace.TraceSinkLocal;
 import io.informant.local.trace.TraceSnapshotReaper;
 import io.informant.local.ui.HttpServer;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;

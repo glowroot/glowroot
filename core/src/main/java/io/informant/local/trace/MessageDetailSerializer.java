@@ -23,7 +23,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.gson.stream.JsonWriter;
 
@@ -41,13 +42,14 @@ class MessageDetailSerializer {
         this.jw = jw;
     }
 
-    void write(Map<?, ?> detail) throws IOException {
+    void write(@ReadOnly Map<?, ? extends /*@Nullable*/Object> detail) throws IOException {
         jw.beginObject();
         for (Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();
             if (key instanceof String) {
                 jw.name((String) key);
             } else if (key == null) {
+                // this map comes from plugin, so need to defensively check against null key
                 logger.warn("detail map has null key");
                 jw.name("");
             } else {

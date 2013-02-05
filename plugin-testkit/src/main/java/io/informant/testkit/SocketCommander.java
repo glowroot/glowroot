@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package io.informant.testkit;
 
+import io.informant.core.util.ThreadSafe;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -26,11 +28,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import checkers.lock.quals.GuardedBy;
+import checkers.nullness.quals.LazyNonNull;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
@@ -54,8 +56,10 @@ class SocketCommander {
 
     private final Object lock = new Object();
     // Socket and ObjectOutputStream are not thread safe so access is synchronized using lock
+    @LazyNonNull
     @GuardedBy("lock")
     private volatile Socket socket;
+    @LazyNonNull
     @GuardedBy("lock")
     private volatile ObjectOutputStream objectOut;
 

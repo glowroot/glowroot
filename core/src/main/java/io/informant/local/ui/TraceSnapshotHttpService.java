@@ -24,8 +24,6 @@ import io.informant.core.util.ByteStream;
 
 import java.io.IOException;
 
-import javax.annotation.Nullable;
-
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -34,6 +32,8 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

@@ -24,7 +24,7 @@ import io.informant.core.util.PartiallyThreadSafe;
 import java.util.List;
 import java.util.Queue;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
@@ -115,7 +115,7 @@ class RootSpan {
         }
     }
 
-    Span addSpan(long startTick, MessageSupplier messageSupplier,
+    Span addSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
 
         Span span = createSpan(startTick, messageSupplier, errorMessage, null);
@@ -125,7 +125,7 @@ class RootSpan {
         return span;
     }
 
-    private Span createSpan(long startTick, MessageSupplier messageSupplier,
+    private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric) {
 
         Span currentSpan = spanStack.get(spanStack.size() - 1);
@@ -143,22 +143,18 @@ class RootSpan {
 
     private void popSpanSafe(Span span) {
         if (spanStack.isEmpty()) {
-            logger.error("span stack is empty, cannot pop '{}'", span.getMessageSupplier().get()
-                    .getText());
+            logger.error("span stack is empty, cannot pop span: {}", span);
             return;
         }
         Span pop = spanStack.remove(spanStack.size() - 1);
         if (!pop.equals(span)) {
             // somehow(?) a pop was missed (or maybe too many pops), this is just damage control
-            logger.error("found '{}' at the top of the stack when expecting '{}'", pop
-                    .getMessageSupplier().get().getText(), span.getMessageSupplier().get()
-                    .getText());
+            logger.error("found span {} at top of stack when expecting another span {}", pop, span);
             while (!spanStack.isEmpty() && !pop.equals(span)) {
                 pop = spanStack.remove(spanStack.size() - 1);
             }
             if (spanStack.isEmpty() && !pop.equals(span)) {
-                logger.error("popped entire stack, never found '{}'", span.getMessageSupplier()
-                        .get().getText());
+                logger.error("popped entire stack, never found span: {}", span);
             }
         }
     }

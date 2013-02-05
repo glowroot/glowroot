@@ -206,5 +206,36 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>checker</id>
+      <build>
+        <plugins>
+          <plugin>
+            <!-- running checker framework check requires jdk7 -->
+            <groupId>edu.washington.cs.types.checker</groupId>
+            <artifactId>checker-maven-plugin</artifactId>
+            <version>1.6.0</version>
+            <executions>
+              <execution>
+                <phase>process-classes</phase>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <processors>
+                <processor>checkers.nullness.NullnessChecker</processor>
+                <processor>checkers.igj.IGJChecker</processor>
+              </processors>
+              <failOnError>false</failOnError>
+              <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
+              <javaParams>-Djsr308_imports=checkers.nullness.quals.*</javaParams>
+              <javacParams>-Astubs=${basedir}/../core/src/main/stubs -Alint=nulltest</javacParams>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

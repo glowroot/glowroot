@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package io.informant.core.trace;
 
-import java.util.Collection;
+import java.util.Queue;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.Queues;
 import com.google.inject.Singleton;
@@ -34,10 +34,11 @@ public class TraceRegistry {
 
     // collection of active running traces, ordered by start time
     // TODO precise ordering by start time would require synchronization or some other method
-    private final Collection<Trace> traces = Queues.newConcurrentLinkedQueue();
+    private final Queue<Trace> traces = Queues.newConcurrentLinkedQueue();
 
     // active running trace being executed by the current thread
-    private final ThreadLocal<Trace> currentTraceHolder = new ThreadLocal<Trace>();
+    private final ThreadLocal</*@Nullable*/Trace> currentTraceHolder =
+            new ThreadLocal</*@Nullable*/Trace>();
 
     @Nullable
     public Trace getCurrentTrace() {
@@ -55,7 +56,7 @@ public class TraceRegistry {
     }
 
     // returns list of traces ordered by start time
-    public Collection<Trace> getTraces() {
+    public Iterable<Trace> getTraces() {
         return traces;
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,10 @@ import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 
+import checkers.igj.quals.ReadOnly;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 
 /**
@@ -38,17 +37,18 @@ import com.google.common.collect.Lists;
 @Static
 public final class Threads {
 
-    public static Collection<Thread> currentThreads() {
-        return Collections2.filter(Thread.getAllStackTraces().keySet(),
-                new Predicate<Thread>() {
-                    public boolean apply(Thread input) {
-                        return input.getState() != State.TERMINATED;
-                    }
-                });
+    public static List<Thread> currentThreads() {
+        List<Thread> threads = Lists.newArrayList();
+        for (Thread thread : Thread.getAllStackTraces().keySet()) {
+            if (thread.getState() != State.TERMINATED) {
+                threads.add(thread);
+            }
+        }
+        return threads;
     }
 
     // ensure the test didn't create any non-daemon threads
-    public static void preShutdownCheck(final Collection<Thread> preExistingThreads)
+    public static void preShutdownCheck(final @ReadOnly Collection<Thread> preExistingThreads)
             throws InterruptedException {
 
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
@@ -75,14 +75,14 @@ public final class Threads {
     }
 
     // ensure the test shutdown all threads that it created
-    public static void postShutdownCheck(Collection<Thread> preExistingThreads)
+    public static void postShutdownCheck(@ReadOnly Collection<Thread> preExistingThreads)
             throws InterruptedException {
 
         // give it 5 seconds to shutdown threads
         long startedAt = System.currentTimeMillis();
         while (true) {
-            Collection<Thread> rogueThreads = Collections2.filter(currentThreads(),
-                    Predicates.not(Predicates.in(preExistingThreads)));
+            List<Thread> rogueThreads = Lists.newArrayList(currentThreads());
+            rogueThreads.removeAll(preExistingThreads);
             if (rogueThreads.isEmpty()) {
                 // success
                 return;

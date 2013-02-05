@@ -15,11 +15,11 @@
  */
 package io.informant.core.weaving.preinit;
 
-import javax.annotation.Nullable;
-
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -50,7 +50,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, @Nullable String[] exceptions) {
+            @Nullable String signature, String/*@Nullable*/[] exceptions) {
 
         ReferencedMethod referencedMethod = ReferencedMethod.from(typeName, name, desc);
         MethodCollector methodCollector = new MethodCollector();

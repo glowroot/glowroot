@@ -23,11 +23,11 @@ import io.informant.api.Span;
 import io.informant.api.Timer;
 import io.informant.core.PluginServicesImpl.PluginServicesImplFactory;
 import io.informant.core.config.ConfigService;
+import io.informant.core.util.ThreadSafe;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.Lists;
 

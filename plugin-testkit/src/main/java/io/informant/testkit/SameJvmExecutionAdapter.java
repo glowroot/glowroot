@@ -19,6 +19,7 @@ import io.informant.api.weaving.Mixin;
 import io.informant.core.MainEntryPoint;
 import io.informant.core.config.PluginDescriptor;
 import io.informant.core.config.Plugins;
+import io.informant.core.util.ThreadSafe;
 import io.informant.core.util.Threads;
 import io.informant.core.weaving.Advice;
 import io.informant.core.weaving.IsolatedWeavingClassLoader;
@@ -26,8 +27,6 @@ import io.informant.testkit.InformantContainer.ExecutionAdapter;
 
 import java.util.Collection;
 import java.util.Map;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * @author Trask Stalnaker
@@ -43,7 +42,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         preExistingThreads = Threads.currentThreads();
         MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
+        for (PluginDescriptor plugin : Plugins.getPluginDescriptors()) {
             loader.addMixins(plugin.getMixins().toArray(new Mixin[0]));
             loader.addAdvisors(plugin.getAdvisors().toArray(new Advice[0]));
         }

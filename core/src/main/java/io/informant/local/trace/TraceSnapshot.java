@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,13 @@
  */
 package io.informant.local.trace;
 
+import io.informant.api.Logger;
+import io.informant.api.LoggerFactory;
+import io.informant.core.trace.TraceUniqueId;
 import io.informant.core.util.ByteStream;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import io.informant.core.util.ThreadSafe;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -182,14 +185,16 @@ public class TraceSnapshot {
 
     static class Builder {
 
-        @Nullable
+        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+
+        @LazyNonNull
         private String id;
         private long startAt;
         private long duration;
         private boolean stuck;
         private boolean completed;
         private boolean background;
-        @Nullable
+        @LazyNonNull
         private String headline;
         @Nullable
         private String attributes;
@@ -293,6 +298,15 @@ public class TraceSnapshot {
         }
 
         TraceSnapshot build() {
+            if (id == null) {
+                logger.error("setId() must be called before build()", new Exception());
+                id = new TraceUniqueId(System.currentTimeMillis()).get();
+                headline = "<error: no id provided>";
+            }
+            if (headline == null) {
+                logger.error("setHeadline() must be called before build()", new Exception());
+                headline = "<error: no headline provided>";
+            }
             return new TraceSnapshot(id, startAt, duration, stuck, completed, background,
                     headline, attributes, userId, errorText, errorDetail, exception,
                     metrics, spans, coarseMergedStackTree, fineMergedStackTree);

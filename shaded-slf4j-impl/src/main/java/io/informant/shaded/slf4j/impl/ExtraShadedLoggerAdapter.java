@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 package io.informant.shaded.slf4j.impl;
 
 import io.informant.shaded.slf4j.helpers.MarkerIgnoringBase;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 @SuppressWarnings("serial")
 public class ExtraShadedLoggerAdapter extends MarkerIgnoringBase {
 
@@ -43,19 +46,19 @@ public class ExtraShadedLoggerAdapter extends MarkerIgnoringBase {
         logger.trace(msg);
     }
 
-    public void trace(String format, Object arg) {
+    public void trace(String format, @Nullable Object arg) {
         logger.trace(format, arg);
     }
 
-    public void trace(String format, Object arg1, Object arg2) {
+    public void trace(String format, @Nullable Object arg1, @Nullable Object arg2) {
         logger.trace(format, arg1, arg2);
     }
 
-    public void trace(String format, Object... arguments) {
+    public void trace(String format, @Nullable Object... arguments) {
         logger.trace(format, arguments);
     }
 
-    public void trace(String msg, Throwable t) {
+    public void trace(@Nullable String msg, Throwable t) {
         logger.trace(msg, t);
     }
 
@@ -67,19 +70,19 @@ public class ExtraShadedLoggerAdapter extends MarkerIgnoringBase {
         logger.debug(msg);
     }
 
-    public void debug(String format, Object arg) {
+    public void debug(String format, @Nullable Object arg) {
         logger.debug(format, arg);
     }
 
-    public void debug(String format, Object arg1, Object arg2) {
+    public void debug(String format, @Nullable Object arg1, @Nullable Object arg2) {
         logger.debug(format, arg1, arg2);
     }
 
-    public void debug(String format, Object... arguments) {
+    public void debug(String format, @Nullable Object... arguments) {
         logger.debug(format, arguments);
     }
 
-    public void debug(String msg, Throwable t) {
+    public void debug(@Nullable String msg, Throwable t) {
         logger.debug(msg, t);
     }
 
@@ -91,19 +94,19 @@ public class ExtraShadedLoggerAdapter extends MarkerIgnoringBase {
         logger.info(msg);
     }
 
-    public void info(String format, Object arg) {
+    public void info(String format, @Nullable Object arg) {
         logger.info(format, arg);
     }
 
-    public void info(String format, Object arg1, Object arg2) {
+    public void info(String format, @Nullable Object arg1, @Nullable Object arg2) {
         logger.info(format, arg1, arg2);
     }
 
-    public void info(String format, Object... arguments) {
+    public void info(String format, @Nullable Object... arguments) {
         logger.info(format, arguments);
     }
 
-    public void info(String msg, Throwable t) {
+    public void info(@Nullable String msg, Throwable t) {
         logger.info(msg, t);
     }
 
@@ -115,19 +118,19 @@ public class ExtraShadedLoggerAdapter extends MarkerIgnoringBase {
         logger.warn(msg);
     }
 
-    public void warn(String format, Object arg) {
+    public void warn(String format, @Nullable Object arg) {
         logger.warn(format, arg);
     }
 
-    public void warn(String format, Object... arguments) {
-        logger.warn(format, arguments);
-    }
-
-    public void warn(String format, Object arg1, Object arg2) {
+    public void warn(String format, @Nullable Object arg1, @Nullable Object arg2) {
         logger.warn(format, arg1, arg2);
     }
 
-    public void warn(String msg, Throwable t) {
+    public void warn(String format, @Nullable Object... arguments) {
+        logger.warn(format, arguments);
+    }
+
+    public void warn(@Nullable String msg, Throwable t) {
         logger.warn(msg, t);
     }
 
@@ -139,19 +142,19 @@ public class ExtraShadedLoggerAdapter extends MarkerIgnoringBase {
         logger.error(msg);
     }
 
-    public void error(String format, Object arg) {
+    public void error(String format, @Nullable Object arg) {
         logger.error(format, arg);
     }
 
-    public void error(String format, Object arg1, Object arg2) {
+    public void error(String format, @Nullable Object arg1, @Nullable Object arg2) {
         logger.error(format, arg1, arg2);
     }
 
-    public void error(String format, Object... arguments) {
+    public void error(String format, @Nullable Object... arguments) {
         logger.error(format, arguments);
     }
 
-    public void error(String msg, Throwable t) {
+    public void error(@Nullable String msg, Throwable t) {
         logger.error(msg, t);
     }
 }

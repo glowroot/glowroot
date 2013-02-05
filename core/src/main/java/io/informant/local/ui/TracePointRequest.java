@@ -15,7 +15,7 @@
  */
 package io.informant.local.ui;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 

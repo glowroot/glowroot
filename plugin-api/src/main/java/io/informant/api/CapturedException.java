@@ -15,8 +15,8 @@
  */
 package io.informant.api;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * This class primarily exists because Exceptions are not thread safe.
@@ -40,7 +40,7 @@ public class CapturedException {
     }
 
     private static CapturedException from(Throwable t,
-            @Nullable StackTraceElement[] causedStackTrace) {
+            StackTraceElement/*@Nullable*/[] causedStackTrace) {
 
         int framesInCommon = 0;
         StackTraceElement[] stackTrace = t.getStackTrace();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import io.informant.api.weaving.Pointcut;
 import java.util.Map;
 import java.util.Random;
 
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 
 /**
@@ -64,16 +66,12 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         public static Span onBefore(@InjectTarget Object expensive) {
+            // not delegating to onBeforeInternal(), this span returns message supplier with detail
             return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute0", cause)));
-            }
+            onAfterInternal(span, 0);
         }
     }
 
@@ -86,17 +84,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute1", cause)));
-            }
+            onAfterInternal(span, 1);
         }
     }
 
@@ -109,17 +103,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute2", cause)));
-            }
+            onAfterInternal(span, 2);
         }
     }
 
@@ -132,17 +122,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute3", cause)));
-            }
+            onAfterInternal(span, 3);
         }
     }
 
@@ -155,17 +141,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute4", cause)));
-            }
+            onAfterInternal(span, 4);
         }
     }
 
@@ -178,17 +160,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute5", cause)));
-            }
+            onAfterInternal(span, 5);
         }
     }
 
@@ -201,17 +179,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute6", cause)));
-            }
+            onAfterInternal(span, 6);
         }
     }
 
@@ -224,17 +198,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute7", cause)));
-            }
+            onAfterInternal(span, 7);
         }
     }
 
@@ -247,17 +217,13 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute8", cause)));
-            }
+            onAfterInternal(span, 8);
         }
     }
 
@@ -270,23 +236,41 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
+        @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+            return onBeforeInternal(expensive, metric);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            if (random.nextDouble() < 0.9) {
-                span.end();
-            } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
-                        "exception in execute9", cause)));
-            }
+            onAfterInternal(span, 9);
         }
     }
 
+    @Nullable
+    private static Span onBeforeInternal(Object expensive, Metric metric) {
+        if (random.nextDouble() < 0.05) {
+            return null;
+        }
+        return pluginServices.startSpan(getMessageSupplier(expensive), metric);
+    }
+
+    private static void onAfterInternal(Span span, int num) {
+        if (span == null) {
+            pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span message",
+                    new RuntimeException("Exception in execute" + num, cause)));
+            return;
+        }
+        if (random.nextDouble() < 0.95) {
+            span.end();
+        } else {
+            span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+                    "Exception in execute" + num, cause)));
+        }
+    }
     private static MessageSupplier getMessageSupplier(Object expensive) {
-        return MessageSupplier.from(getHeadline.invokeWithDefaultOnError(expensive,
-                "<error calling ExpensiveCall.getHeadline()>"));
+        String headline = (String) getHeadline.invokeWithDefaultOnError(expensive,
+                "<error calling ExpensiveCall.getHeadline()>");
+        return MessageSupplier.from(headline);
     }
 
     private static MessageSupplier getMessageSupplierWithDetail(final Object expensive) {
@@ -297,8 +281,9 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                return Message.withDetail(getHeadline.invokeWithDefaultOnError(expensive,
-                        "<error calling ExpensiveCall.getHeadline()>"), detail);
+                String headline = (String) getHeadline.invokeWithDefaultOnError(expensive,
+                        "<error calling ExpensiveCall.getHeadline()>");
+                return Message.withDetail(headline, detail);
             }
         };
     }

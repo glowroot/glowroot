@@ -19,8 +19,9 @@ import io.informant.api.weaving.MethodModifier;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -54,16 +55,16 @@ public class PointcutConfig {
         return gson.fromJson(jsonObject, PointcutConfig.Builder.class).build();
     }
 
-    private PointcutConfig(ImmutableList<CaptureItem> captureItems, String typeName,
-            String methodName, ImmutableList<String> methodArgTypeNames,
-            String methodReturnTypeName, ImmutableList<MethodModifier> methodModifiers,
+    private PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
+            String methodName, @ReadOnly List<String> methodArgTypeNames,
+            String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
             String metricName, String spanTemplate) {
-        this.captureItems = captureItems;
+        this.captureItems = ImmutableList.copyOf(captureItems);
         this.typeName = typeName;
         this.methodName = methodName;
-        this.methodArgTypeNames = methodArgTypeNames;
+        this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
         this.methodReturnTypeName = methodReturnTypeName;
-        this.methodModifiers = methodModifiers;
+        this.methodModifiers = ImmutableList.copyOf(methodModifiers);
         this.metricName = metricName;
         this.spanTemplate = spanTemplate;
     }
@@ -131,24 +132,33 @@ public class PointcutConfig {
                 .toString();
     }
 
+    @Immutable
     public enum CaptureItem {
         METRIC, SPAN, TRACE;
     }
 
     public static class Builder {
 
+        @ReadOnly
         private List<CaptureItem> captureItems = ImmutableList.of();
+        @Nullable
         private String typeName;
+        @Nullable
         private String methodName;
+        @ReadOnly
         private List<String> methodArgTypeNames = ImmutableList.of();
+        @Nullable
         private String methodReturnTypeName;
+        @ReadOnly
         private List<MethodModifier> methodModifiers = ImmutableList.of();
+        @Nullable
         private String metricName;
+        @Nullable
         private String spanTemplate;
 
         private Builder() {}
 
-        public Builder captureItems(List<CaptureItem> captureItems) {
+        public Builder captureItems(@ReadOnly List<CaptureItem> captureItems) {
             this.captureItems = captureItems;
             return this;
         }
@@ -160,7 +170,7 @@ public class PointcutConfig {
             this.methodName = methodName;
             return this;
         }
-        public Builder methodArgTypeNames(List<String> methodArgTypeNames) {
+        public Builder methodArgTypeNames(@ReadOnly List<String> methodArgTypeNames) {
             this.methodArgTypeNames = methodArgTypeNames;
             return this;
         }
@@ -168,7 +178,7 @@ public class PointcutConfig {
             this.methodReturnTypeName = methodReturnTypeName;
             return this;
         }
-        public Builder methodModifiers(List<MethodModifier> methodModifiers) {
+        public Builder methodModifiers(@ReadOnly List<MethodModifier> methodModifiers) {
             this.methodModifiers = methodModifiers;
             return this;
         }
@@ -181,9 +191,23 @@ public class PointcutConfig {
             return this;
         }
         public PointcutConfig build() {
-            return new PointcutConfig(ImmutableList.copyOf(captureItems), typeName, methodName,
-                    ImmutableList.copyOf(methodArgTypeNames), methodReturnTypeName,
-                    ImmutableList.copyOf(methodModifiers), metricName, spanTemplate);
+            if (typeName == null) {
+                throw new NullPointerException("Call to typeName() is required");
+            }
+            if (methodName == null) {
+                throw new NullPointerException("Call to methodName() is required");
+            }
+            if (methodReturnTypeName == null) {
+                throw new NullPointerException("Call to methodReturnTypeName() is required");
+            }
+            if (metricName == null) {
+                throw new NullPointerException("Call to metricName() is required");
+            }
+            if (spanTemplate == null) {
+                throw new NullPointerException("Call to spanTemplate() is required");
+            }
+            return new PointcutConfig(captureItems, typeName, methodName, methodArgTypeNames,
+                    methodReturnTypeName, methodModifiers, metricName, spanTemplate);
         }
     }
 }

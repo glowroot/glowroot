@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,54 +15,54 @@
  */
 package io.informant.api;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * This is simply a wrapper of the SLF4J Logger API without the Marker support.
  * 
- * Currently, Informant uses (a shaded version of) Logback as its SLF4J binding. In the future,
- * however, it may use a custom SLF4J binding to store error messages in its embedded H2 database so
- * that any error messages can be displayed in the embedded UI.
+ * By using this wrapper, Informant is able to use either shaded or unshaded slf4j binding, as well
+ * as log messages to its embedded H2 database so the log messages can be displayed via the user
+ * interface.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
+@Immutable
 public interface Logger {
 
     boolean isTraceEnabled();
     void trace(String msg);
     void trace(String format, @Nullable Object arg);
     void trace(String format, @Nullable Object arg1, @Nullable Object arg2);
-    void trace(String format, Object... argArray);
-    void trace(String msg, Throwable t);
+    void trace(String format, @Nullable Object... argArray);
+    void trace(@Nullable String msg, Throwable t);
 
     boolean isDebugEnabled();
     void debug(String msg);
     void debug(String format, @Nullable Object arg);
     void debug(String format, @Nullable Object arg1, @Nullable Object arg2);
-    void debug(String format, Object... argArray);
-    void debug(String msg, Throwable t);
+    void debug(String format, @Nullable Object... argArray);
+    void debug(@Nullable String msg, Throwable t);
 
     boolean isInfoEnabled();
     void info(String msg);
     void info(String format, @Nullable Object arg);
     void info(String format, @Nullable Object arg1, @Nullable Object arg2);
-    void info(String format, Object... argArray);
-    void info(String msg, Throwable t);
+    void info(String format, @Nullable Object... argArray);
+    void info(@Nullable String msg, Throwable t);
 
     boolean isWarnEnabled();
     void warn(String msg);
     void warn(String format, @Nullable Object arg);
     void warn(String format, @Nullable Object arg1, @Nullable Object arg2);
-    void warn(String format, Object... argArray);
-    void warn(String msg, Throwable t);
+    void warn(String format, @Nullable Object... argArray);
+    void warn(@Nullable String msg, Throwable t);
 
     boolean isErrorEnabled();
     void error(String msg);
     void error(String format, @Nullable Object arg);
     void error(String format, @Nullable Object arg1, @Nullable Object arg2);
-    void error(String format, Object... argArray);
-    void error(String msg, Throwable t);
+    void error(String format, @Nullable Object... argArray);
+    void error(@Nullable String msg, Throwable t);
 }

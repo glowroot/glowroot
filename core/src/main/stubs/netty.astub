@@ -1,0 +1,8 @@
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package org.jboss.netty.handler.stream;
+
+public interface ChunkedInput {
+    @Nullable Object nextChunk();
+}

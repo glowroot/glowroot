@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,27 @@
 package io.informant.core.log;
 
 import io.informant.api.Logger;
+import io.informant.core.util.ThreadSafe;
 import io.informant.shaded.slf4j.LoggerFactory;
 import io.informant.shaded.slf4j.helpers.MessageFormatter;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Implementations of LoggerFactory and Logger from the Plugin API.
  * 
- * These are simply wrappers of the SLF4J Logger API without the Marker support.
- * 
- * Currently, Informant uses (a shaded version of) Logback as its SLF4J binding. In the future,
- * however, it may use a custom SLF4J binding to store error messages in its embedded H2 database so
- * that any error messages can be displayed in the embedded UI.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// called via reflection from io.informant.api.LoggerFactory
+// instantiated via reflection from io.informant.api.LoggerFactory
 @ThreadSafe
-public final class LoggerFactoryImpl {
+public class LoggerFactoryImpl extends io.informant.api.LoggerFactory {
 
     @Nullable
     private static volatile LogMessageSink logMessageSink;
 
-    public static Logger getLogger(String name) {
+    @Override
+    protected Logger getLogger(String name) {
         return new LoggerImpl(name);
     }
 
@@ -49,7 +44,7 @@ public final class LoggerFactoryImpl {
         LoggerFactoryImpl.logMessageSink = logMessageSink;
     }
 
-    @ThreadSafe
+    @Immutable
     private static class LoggerImpl implements Logger {
 
         private final io.informant.shaded.slf4j.Logger logger;
@@ -69,10 +64,10 @@ public final class LoggerFactoryImpl {
         public void trace(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.trace(format, arg1, arg2);
         }
-        public void trace(String format, Object... arguments) {
+        public void trace(String format, @Nullable Object... arguments) {
             logger.trace(format, arguments);
         }
-        public void trace(String msg, Throwable t) {
+        public void trace(@Nullable String msg, Throwable t) {
             logger.trace(msg, t);
         }
         public boolean isDebugEnabled() {
@@ -87,10 +82,10 @@ public final class LoggerFactoryImpl {
         public void debug(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.debug(format, arg1, arg2);
         }
-        public void debug(String format, Object... arguments) {
+        public void debug(String format, @Nullable Object... arguments) {
             logger.debug(format, arguments);
         }
-        public void debug(String msg, Throwable t) {
+        public void debug(@Nullable String msg, Throwable t) {
             logger.debug(msg, t);
         }
         public boolean isInfoEnabled() {
@@ -105,10 +100,10 @@ public final class LoggerFactoryImpl {
         public void info(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.info(format, arg1, arg2);
         }
-        public void info(String format, Object... arguments) {
+        public void info(String format, @Nullable Object... arguments) {
             logger.info(format, arguments);
         }
-        public void info(String msg, Throwable t) {
+        public void info(@Nullable String msg, Throwable t) {
             logger.info(msg, t);
         }
         public boolean isWarnEnabled() {
@@ -134,14 +129,14 @@ public final class LoggerFactoryImpl {
                         MessageFormatter.format(format, arg1, arg2).getMessage(), null);
             }
         }
-        public void warn(String format, Object... arguments) {
+        public void warn(String format, @Nullable Object... arguments) {
             logger.warn(format, arguments);
             if (logMessageSink != null) {
                 logMessageSink.onLogMessage(Level.WARN, logger.getName(),
                         MessageFormatter.arrayFormat(format, arguments).getMessage(), null);
             }
         }
-        public void warn(String msg, Throwable t) {
+        public void warn(@Nullable String msg, Throwable t) {
             logger.warn(msg, t);
             if (logMessageSink != null) {
                 logMessageSink.onLogMessage(Level.WARN, logger.getName(), msg, t);
@@ -170,20 +165,18 @@ public final class LoggerFactoryImpl {
                         MessageFormatter.format(format, arg1, arg2).getMessage(), null);
             }
         }
-        public void error(String format, Object... arguments) {
+        public void error(String format, @Nullable Object... arguments) {
             logger.error(format, arguments);
             if (logMessageSink != null) {
                 logMessageSink.onLogMessage(Level.ERROR, logger.getName(),
                         MessageFormatter.arrayFormat(format, arguments).getMessage(), null);
             }
         }
-        public void error(String msg, Throwable t) {
+        public void error(@Nullable String msg, Throwable t) {
             logger.error(msg, t);
             if (logMessageSink != null) {
                 logMessageSink.onLogMessage(Level.ERROR, logger.getName(), msg, t);
             }
         }
     }
-
-    private LoggerFactoryImpl() {}
 }

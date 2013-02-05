@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import java.lang.ref.WeakReference;
 import java.sql.Statement;
 import java.util.Collection;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of statements since the underlying
@@ -33,24 +32,25 @@ import javax.annotation.concurrent.NotThreadSafe;
  * @see java.sql.Statement#addBatch(String)
  * @since 0.5
  */
-@NotThreadSafe
 class StatementMirror {
 
-    // this doesn't apply to PreparedStatementMirror
+    // this field is not used by PreparedStatementMirror subclass
+    //
+    // ok for this field to be non-volatile since it is only temporary storage for a single thread
+    // while that thread is adding batches into the statement and executing it
     @Nullable
     private Collection<String> batchedSql;
 
-    // the lastJdbcMessageSupplier is stored so that its numRows field
-    // can be incremented inside the advice for ResultSet.next()
+    // the lastJdbcMessageSupplier is stored so that its numRows field can be incremented inside the
+    // advice for ResultSet.next()
     //
-    // PreparedStatementMirror objects are cached as long as the application
-    // server caches the PreparedStatement
-    // so a weak reference is used here to allow the JdbcSpan to be collected
-    // once it is out of scope
-    // (and no longer strongly referenced via the current trace)
-    // TODO clear this immediately on Statement.close()?
+    // PreparedStatementMirror objects are cached as long as the application server caches the
+    // PreparedStatement, so a weak reference is used here to allow the JdbcSpan to be collected
+    // once it is out of scope (and no longer strongly referenced via the current trace)
+    // TODO clear this on Statement.close() instead of using weak reference?
     //
-    // TODO is it ok for this to be non-volatile?
+    // ok for this field to be non-volatile since it is only temporary storage for a single thread
+    // while that thread is adding batches into the statement and executing it
     @Nullable
     private WeakReference<JdbcMessageSupplier> lastJdbcMessageSupplier;
 

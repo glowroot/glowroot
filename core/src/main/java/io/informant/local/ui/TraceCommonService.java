@@ -24,7 +24,7 @@ import io.informant.local.trace.TraceSnapshotService;
 
 import java.io.IOException;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;

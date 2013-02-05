@@ -22,8 +22,9 @@ import io.informant.core.config.PluginDescriptor.PropertyDescriptor;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -52,26 +53,21 @@ public class PluginConfig {
     // its plugin.xml file
     private final ImmutableMap<String, Optional<?>> properties;
 
-    @Nullable
     private final PluginDescriptor pluginDescriptor;
 
     public static Builder builder(PluginConfig base) {
         return new Builder(base);
     }
 
-    static PluginConfig getNopInstance() {
-        return new PluginConfig(false, ImmutableMap.<String, Optional<?>> of(), null);
-    }
-
-    static PluginConfig fromJson(JsonObject jsonObject, PluginDescriptor pluginDescriptor) {
+    static PluginConfig fromJson(@ReadOnly JsonObject jsonObject,
+            PluginDescriptor pluginDescriptor) {
         PluginConfig.Builder builder = new Builder(pluginDescriptor);
         builder.overlay(jsonObject, true);
         return builder.build();
     }
 
     private PluginConfig(boolean enabled, ImmutableMap<String, Optional<?>> properties,
-            @Nullable PluginDescriptor pluginDescriptor) {
-
+            PluginDescriptor pluginDescriptor) {
         this.enabled = enabled;
         this.properties = properties;
         this.pluginDescriptor = pluginDescriptor;
@@ -137,10 +133,6 @@ public class PluginConfig {
     }
 
     public JsonObject toJson() {
-        if (pluginDescriptor == null) {
-            logger.error("cannot call toJson() on the nop instance");
-            return new JsonObject();
-        }
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("groupId", pluginDescriptor.getGroupId());
         jsonObject.addProperty("artifactId", pluginDescriptor.getArtifactId());
@@ -169,12 +161,7 @@ public class PluginConfig {
     }
 
     String getId() {
-        if (pluginDescriptor == null) {
-            logger.error("cannot call getId() on the nop instance");
-            return "";
-        }
-        return pluginDescriptor == null ? "" : pluginDescriptor.getGroupId() + ":"
-                + pluginDescriptor.getArtifactId();
+        return pluginDescriptor.getGroupId() + ":" + pluginDescriptor.getArtifactId();
     }
 
     @Override
@@ -208,15 +195,16 @@ public class PluginConfig {
             this.enabled = enabled;
             return this;
         }
-        public void overlay(JsonObject jsonObject) {
+        public void overlay(@ReadOnly JsonObject jsonObject) {
             overlay(jsonObject, false);
         }
         public PluginConfig build() {
             return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginDescriptor);
         }
-        private void overlay(JsonObject jsonObject, boolean ignoreWarnings) {
-            if (jsonObject.get("enabled") != null) {
-                enabled(jsonObject.get("enabled").getAsBoolean());
+        private void overlay(@ReadOnly JsonObject jsonObject, boolean ignoreWarnings) {
+            JsonElement enabled = jsonObject.get("enabled");
+            if (enabled != null) {
+                enabled(enabled.getAsBoolean());
             }
             JsonObject properties = (JsonObject) Objects.firstNonNull(
                     jsonObject.get("properties"), new JsonObject());
@@ -248,7 +236,8 @@ public class PluginConfig {
         // value which may be out of sync if the plugin has been updated and the given property has
         // changed, e.g. from not hidden to hidden, in which case the associated error messages
         // should be suppressed
-        private Builder setProperty(String name, @Nullable Object value, boolean ignoreWarnings) {
+        private Builder setProperty(String name, @Immutable @Nullable Object value,
+                boolean ignoreWarnings) {
             PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
             if (property == null) {
                 if (!ignoreWarnings) {

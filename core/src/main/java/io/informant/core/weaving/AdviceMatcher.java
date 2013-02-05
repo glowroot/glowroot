@@ -23,10 +23,10 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.annotation.concurrent.Immutable;
-
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import checkers.igj.quals.Immutable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -47,7 +47,7 @@ class AdviceMatcher {
 
     AdviceMatcher(Advice advice, Type targetType, List<ParsedType> superTypes) {
         this.advice = advice;
-        targetTypeMatch = isTypeMatch(targetType.getClassName());
+        targetTypeMatch = isTypeMatch(targetType.getClassName(), advice);
         preMatchedSuperTypes = buildPreMatchedSuperTypes(superTypes);
     }
 
@@ -74,20 +74,11 @@ class AdviceMatcher {
     private ImmutableList<ParsedType> buildPreMatchedSuperTypes(List<ParsedType> superTypes) {
         ImmutableList.Builder<ParsedType> builder = ImmutableList.builder();
         for (ParsedType superType : superTypes) {
-            if (isTypeMatch(superType.getName())) {
+            if (isTypeMatch(superType.getName(), advice)) {
                 builder.add(superType);
             }
         }
         return builder.build();
-    }
-
-    private boolean isTypeMatch(String typeName) {
-        Pattern pointcutTypePattern = advice.getPointcutTypePattern();
-        if (pointcutTypePattern == null) {
-            return advice.getPointcut().typeName().equals(typeName);
-        } else {
-            return pointcutTypePattern.matcher(typeName).matches();
-        }
     }
 
     private boolean isMethodMatch(ParsedMethod parsedMethod) {
@@ -203,5 +194,14 @@ class AdviceMatcher {
                 // shallow display of parsed types
                 .add("preMatchedSuperTypes", preMatchedSuperTypeNames)
                 .toString();
+    }
+
+    private static boolean isTypeMatch(String typeName, Advice advice) {
+        Pattern pointcutTypePattern = advice.getPointcutTypePattern();
+        if (pointcutTypePattern == null) {
+            return advice.getPointcut().typeName().equals(typeName);
+        } else {
+            return pointcutTypePattern.matcher(typeName).matches();
+        }
     }
 }

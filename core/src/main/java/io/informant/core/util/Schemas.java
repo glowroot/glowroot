@@ -30,12 +30,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -60,7 +63,7 @@ public final class Schemas {
         sqlTypeNames.put(Types.DOUBLE, "double");
     }
 
-    static void syncTable(String tableName, ImmutableList<Column> columns,
+    static void syncTable(String tableName, @ReadOnly List<Column> columns,
             Connection connection) throws SQLException {
 
         if (!tableExists(tableName, connection)) {
@@ -73,10 +76,10 @@ public final class Schemas {
         }
     }
 
-    static void syncIndexes(String tableName, List<Index> indexes, Connection connection)
+    static void syncIndexes(String tableName, @ReadOnly List<Index> indexes, Connection connection)
             throws SQLException {
 
-        Set<Index> desiredIndexes = Sets.newHashSet(indexes);
+        ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
         Set<Index> existingIndexes = getIndexes(tableName, connection);
         for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {
             execute("drop index " + index.getName(), connection);
@@ -119,8 +122,8 @@ public final class Schemas {
         return columns.build();
     }
 
-    private static void createTable(String tableName, List<Column> columns, Connection connection)
-            throws SQLException {
+    private static void createTable(String tableName, @ReadOnly List<Column> columns,
+            Connection connection) throws SQLException {
 
         StringBuilder sql = new StringBuilder();
         sql.append("create table " + tableName + " (");
@@ -147,7 +150,7 @@ public final class Schemas {
         }
     }
 
-    private static boolean tableNeedsUpgrade(String tableName, List<Column> columns,
+    private static boolean tableNeedsUpgrade(String tableName, @ReadOnly List<Column> columns,
             Connection connection) throws SQLException {
 
         if (primaryKeyNeedsUpgrade(tableName, Iterables.filter(columns, PrimaryKeyColumn.class),
@@ -173,7 +176,7 @@ public final class Schemas {
     }
 
     private static boolean primaryKeyNeedsUpgrade(String tableName,
-            Iterable<PrimaryKeyColumn> primaryKeyColumns, Connection connection)
+            @ReadOnly Iterable<PrimaryKeyColumn> primaryKeyColumns, Connection connection)
             throws SQLException {
 
         ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
@@ -193,7 +196,7 @@ public final class Schemas {
     }
 
     @VisibleForTesting
-    static Set<Index> getIndexes(String tableName, Connection connection)
+    static ImmutableSet<Index> getIndexes(String tableName, Connection connection)
             throws SQLException {
 
         Multimap<String, String> indexColumns = ArrayListMultimap.create();
@@ -212,14 +215,14 @@ public final class Schemas {
         } finally {
             resultSet.close();
         }
-        Set<Index> indexes = Sets.newHashSet();
+        ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
         for (Entry<String, Collection<String>> entry : indexColumns.asMap().entrySet()) {
             String name = entry.getKey();
             String[] columns = Iterables.toArray(entry.getValue(), String.class);
             indexes.add(new Index(name, columns));
 
         }
-        return indexes;
+        return indexes.build();
     }
 
     private static void createIndex(String tableName, Index index, Connection connection)
@@ -246,6 +249,7 @@ public final class Schemas {
         }
     }
 
+    @Immutable
     public static class Column {
         private final String name;
         private final int type;
@@ -262,12 +266,14 @@ public final class Schemas {
         }
     }
 
+    @Immutable
     public static class PrimaryKeyColumn extends Column {
         public PrimaryKeyColumn(String name, int type) {
             super(name, type);
         }
     }
 
+    @Immutable
     public static class Index {
         // nameUpper and columnsUpper are used to make equals/hashCode case insensitive
         private final String name;

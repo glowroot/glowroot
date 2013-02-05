@@ -15,9 +15,8 @@
  */
 package io.informant.core.weaving;
 
+import io.informant.core.util.NotThreadSafe;
 import io.informant.core.util.PartiallyThreadSafe;
-
-import javax.annotation.concurrent.NotThreadSafe;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

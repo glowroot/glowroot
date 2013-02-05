@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package io.informant.core.trace;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.Mutable;
 
 import com.google.common.base.Strings;
 
@@ -31,23 +32,24 @@ import com.google.common.base.Strings;
  * @since 0.5
  */
 @Immutable
-class TraceUniqueId {
+public class TraceUniqueId {
 
     // used to populate id (below)
+    @Mutable
     private static final AtomicLong idCounter = new AtomicLong();
 
     private static final long MAX_ID = (long) Math.pow(16, 6); // at most 6 bytes in hex form
 
-    private final long startTimeMillis;
+    private final long startAt;
     private final long id;
 
-    TraceUniqueId(long startTimeMillis) {
-        this.startTimeMillis = startTimeMillis;
+    public TraceUniqueId(long startAt) {
+        this.startAt = startAt;
         id = idCounter.getAndIncrement();
     }
 
     public String get() {
-        return twelveDigitHex(startTimeMillis) + BigInteger.valueOf(id % MAX_ID).toString(16);
+        return twelveDigitHex(startAt) + BigInteger.valueOf(id % MAX_ID).toString(16);
     }
 
     private static String twelveDigitHex(long x) {

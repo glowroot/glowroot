@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.informant.packager;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * This provides the binding for the plugin configuration defined in the pom.xml file.

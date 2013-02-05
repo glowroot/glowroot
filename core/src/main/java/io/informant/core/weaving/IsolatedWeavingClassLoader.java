@@ -19,12 +19,11 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.weaving.Mixin;
 import io.informant.core.util.OnlyUsedByTests;
+import io.informant.core.util.ThreadSafe;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -112,10 +111,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        // don't weave before the weaver has been set via initWeaver()
-        // also don't do recursive weaving (i.e. don't weave any of the classes which are performing
-        // the weaving itself)
-        if (weaver != null && !inWeaving.get()) {
+        // don't do recursive weaving (i.e. don't weave any of the classes which are performing the
+        // weaving itself)
+        if (!inWeaving.get()) {
             inWeaving.set(true);
             try {
                 byte[] originalBytes = bytes;

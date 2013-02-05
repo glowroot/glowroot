@@ -15,7 +15,8 @@
  */
 package io.informant.core.config;
 
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
@@ -46,7 +47,7 @@ public class FineProfilingConfig {
     // threshold
     private final int storeThresholdMillis;
 
-    static FineProfilingConfig fromJson(JsonObject jsonObject) {
+    static FineProfilingConfig fromJson(@ReadOnly JsonObject jsonObject) {
         return gson.fromJson(jsonObject, FineProfilingConfig.Builder.class).build();
     }
 
@@ -135,7 +136,7 @@ public class FineProfilingConfig {
             this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
-        public Builder overlay(JsonObject jsonObject) {
+        public Builder overlay(@ReadOnly JsonObject jsonObject) {
             JsonElement enabled = jsonObject.get("enabled");
             if (enabled != null) {
                 enabled(enabled.getAsBoolean());

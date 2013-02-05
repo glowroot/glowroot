@@ -18,7 +18,7 @@ package io.informant.testkit;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -28,33 +28,45 @@ import com.google.common.base.Objects;
  */
 public class Config {
 
+    @Nullable
     private GeneralConfig generalConfig;
+    @Nullable
     private CoarseProfilingConfig coarseProfilingConfig;
+    @Nullable
     private FineProfilingConfig fineProfilingConfig;
+    @Nullable
     private UserConfig userConfig;
+    @Nullable
     private Map<String, PluginConfig> pluginConfigs;
+    @Nullable
     private List<PointcutConfig> pointcutConfigs;
 
+    @Nullable
     public GeneralConfig getGeneralConfig() {
         return generalConfig;
     }
 
+    @Nullable
     public CoarseProfilingConfig getCoarseProfilingConfig() {
         return coarseProfilingConfig;
     }
 
+    @Nullable
     public FineProfilingConfig getFineProfilingConfig() {
         return fineProfilingConfig;
     }
 
+    @Nullable
     public UserConfig getUserConfig() {
         return userConfig;
     }
 
+    @Nullable
     public Map<String, PluginConfig> getPluginConfigs() {
         return pluginConfigs;
     }
 
+    @Nullable
     public List<PointcutConfig> getPointcutConfigs() {
         return pointcutConfigs;
     }

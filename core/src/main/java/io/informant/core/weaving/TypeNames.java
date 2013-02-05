@@ -16,8 +16,7 @@
 package io.informant.core.weaving;
 
 import io.informant.core.util.Static;
-
-import javax.annotation.Nullable;
+import checkers.nullness.quals.PolyNull;
 
 import com.google.common.collect.ImmutableList;
 
@@ -28,8 +27,8 @@ import com.google.common.collect.ImmutableList;
 @Static
 final class TypeNames {
 
-    @Nullable
-    public static String fromInternal(@Nullable String typeName) {
+    @PolyNull
+    public static String fromInternal(@PolyNull String typeName) {
         if (typeName == null) {
             return null;
         } else {
@@ -37,17 +36,19 @@ final class TypeNames {
         }
     }
 
-    // does not accept null values in typeNames array
-    public static ImmutableList<String> fromInternal(String[] typeNames) {
+    public static ImmutableList<String> fromInternal(String/*@Nullable*/[] typeNames) {
+        if (typeNames == null) {
+            return ImmutableList.of();
+        }
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         for (String typeName : typeNames) {
-            builder.add(fromInternal(typeName));
+            builder.add(typeName.replace('/', '.'));
         }
         return builder.build();
     }
 
-    @Nullable
-    public static String toInternal(@Nullable String typeName) {
+    @PolyNull
+    public static String toInternal(@PolyNull String typeName) {
         if (typeName == null) {
             return null;
         } else {

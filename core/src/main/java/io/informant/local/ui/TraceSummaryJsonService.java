@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import io.informant.core.util.ByteStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import javax.annotation.Nullable;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -47,8 +45,7 @@ class TraceSummaryJsonService implements JsonService {
 
     // this method returns byte[] directly to avoid converting to it utf8 string and back again
     @JsonServiceMethod
-    @Nullable
-    byte[] getSummary(String id) throws IOException {
+    byte/*@Nullable*/[] getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
         ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, false);
         if (byteStream == null) {

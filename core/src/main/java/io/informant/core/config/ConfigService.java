@@ -25,9 +25,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -79,21 +78,6 @@ public class ConfigService {
 
     public UserConfig getUserConfig() {
         return config.getUserConfig();
-    }
-
-    public PluginConfig getPluginConfigOrNopInstance(String pluginId) {
-        PluginConfig pluginConfig = getPluginConfig(pluginId);
-        if (pluginConfig == null) {
-            List<String> ids = Lists.newArrayList();
-            for (PluginConfig item : config.getPluginConfigs()) {
-                ids.add(item.getId());
-            }
-            logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId,
-                    Joiner.on(", ").join(ids));
-            return PluginConfig.getNopInstance();
-        } else {
-            return pluginConfig;
-        }
     }
 
     @Nullable
@@ -176,7 +160,7 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public List<PointcutConfig> readPointcutConfigs() {
+    public ImmutableList<PointcutConfig> readPointcutConfigs() {
         return config.getPointcutConfigs();
     }
 

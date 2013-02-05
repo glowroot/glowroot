@@ -15,6 +15,9 @@
  */
 package io.informant.core.trace;
 
+import io.informant.core.util.NotThreadSafe;
+import io.informant.core.util.ThreadSafe;
+
 import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
@@ -22,8 +25,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
@@ -88,7 +91,8 @@ public class MergedStackTree {
         addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
     }
 
-    private void addToStackTree(List<StackTraceElementPlus> stackTrace, State threadState) {
+    private void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
+            State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;
@@ -154,7 +158,8 @@ public class MergedStackTree {
             String metricName = getMetricName(element);
             if (metricName != null) {
                 String originalMethodName = stackTrace[i].getMethodName();
-                List<String> metricNames = Lists.newArrayList(metricName);
+                List<String> metricNames = Lists.newArrayList();
+                metricNames.add(metricName);
                 // skip over successive $metric$ methods up to and including the "original" method
                 while (++i < stackTrace.length) {
                     metricName = getMetricName(stackTrace[i]);
@@ -192,29 +197,33 @@ public class MergedStackTree {
     private static boolean matches(StackTraceElement stackTraceElement,
             MergedStackTreeNode childNode, boolean leaf, State threadState) {
 
-        if (childNode.isLeaf() && leaf) {
+        State leafThreadState = childNode.getLeafThreadState();
+        if (leafThreadState != null && leaf) {
             // only consider thread state when matching the leaf node
             return stackTraceElement.equals(childNode.getStackTraceElement())
-                    && threadState == childNode.getLeafThreadState();
-        } else if (!childNode.isLeaf() && !leaf) {
+                    && threadState == leafThreadState;
+        } else if (leafThreadState == null && !leaf) {
             return stackTraceElement.equals(childNode.getStackTraceElement());
         } else {
             return false;
         }
     }
 
+    @NotThreadSafe
     public static class StackTraceElementPlus {
         private final StackTraceElement stackTraceElement;
+        @ReadOnly
         @Nullable
         private final List<String> metricNames;
         private StackTraceElementPlus(StackTraceElement stackTraceElement,
-                @Nullable List<String> metricNames) {
+                @ReadOnly @Nullable List<String> metricNames) {
             this.stackTraceElement = stackTraceElement;
             this.metricNames = metricNames;
         }
         public StackTraceElement getStackTraceElement() {
             return stackTraceElement;
         }
+        @ReadOnly
         @Nullable
         public List<String> getMetricNames() {
             return metricNames;

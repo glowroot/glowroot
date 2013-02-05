@@ -32,6 +32,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -120,6 +122,7 @@ public final class DaemonExecutors {
             this.executor = executor;
         }
 
+        @Nullable
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             Object result = method.invoke(executor, args);
             String methodName = method.getName();

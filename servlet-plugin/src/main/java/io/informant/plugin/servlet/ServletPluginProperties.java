@@ -17,13 +17,7 @@ package io.informant.plugin.servlet;
 
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
-import io.informant.shaded.google.common.base.Function;
 import io.informant.shaded.google.common.collect.ImmutableSet;
-import io.informant.shaded.google.common.collect.Iterables;
-
-import java.util.Set;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Convenience methods for accessing servlet plugin property values.
@@ -31,7 +25,6 @@ import javax.annotation.concurrent.ThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 final class ServletPluginProperties {
 
     private static final String SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME =
@@ -68,13 +61,13 @@ final class ServletPluginProperties {
         return sessionUserIdAttributePath;
     }
 
-    static Set<String> sessionAttributePaths() {
+    static ImmutableSet<String> sessionAttributePaths() {
         return sessionAttributePaths;
     }
 
     // only the first-level attribute names (e.g. "one", "abc") as opposed to full paths (e.g.
     // "one.two", "abc.def") returned by getSessionAttributePaths()
-    static Set<String> sessionAttributeNames() {
+    static ImmutableSet<String> sessionAttributeNames() {
         return sessionAttributeNames;
     }
 
@@ -107,23 +100,22 @@ final class ServletPluginProperties {
         // update cached first so that another thread cannot come into this method and get a
         // positive match for text but then get the old cached attributes
         sessionAttributePaths = paths.build();
-        sessionAttributeNames = ImmutableSet.copyOf(Iterables.transform(sessionAttributePaths,
-                substringBefore('.')));
+        sessionAttributeNames = buildSessionAttributeNames();
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
     }
 
-    private static Function<String, String> substringBefore(final char separator) {
-        return new Function<String, String>() {
-            public String apply(String input) {
-                int index = input.indexOf(separator);
-                if (index == -1) {
-                    return input;
-                } else {
-                    return input.substring(0, index);
-                }
+    private static ImmutableSet<String> buildSessionAttributeNames() {
+        ImmutableSet.Builder<String> sessionAttributeNames = ImmutableSet.builder();
+        for (String sessionAttributePath : sessionAttributePaths) {
+            int index = sessionAttributePath.indexOf('.');
+            if (index == -1) {
+                sessionAttributeNames.add(sessionAttributePath);
+            } else {
+                sessionAttributeNames.add(sessionAttributePath.substring(0, index));
             }
-        };
+        }
+        return sessionAttributeNames.build();
     }
 
     private ServletPluginProperties() {}

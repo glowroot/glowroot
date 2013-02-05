@@ -30,11 +30,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.h2.jdbc.JdbcConnection;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.GuardedBy;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -54,9 +54,9 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
+    // null means use memDb
     @Nullable
     private final File dbFile;
-    private final boolean memDb;
     private final Thread shutdownHookThread;
     @GuardedBy("lock")
     private Connection connection;
@@ -73,10 +73,9 @@ public class DataSource {
 
     // creates an in-memory database
     public DataSource() {
-        this.dbFile = null;
-        this.memDb = true;
+        dbFile = null;
         try {
-            connection = createConnection();
+            connection = createConnection(null);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
@@ -90,9 +89,8 @@ public class DataSource {
         } else {
             this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
         }
-        this.memDb = false;
         try {
-            connection = createConnection();
+            connection = createConnection(dbFile);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException(e);
@@ -102,7 +100,7 @@ public class DataSource {
     }
 
     public void compact() throws SQLException {
-        if (memDb) {
+        if (dbFile == null) {
             return;
         }
         synchronized (lock) {
@@ -111,7 +109,7 @@ public class DataSource {
             }
             execute("shutdown compact");
             preparedStatementCache.invalidateAll();
-            connection = createConnection();
+            connection = createConnection(dbFile);
         }
     }
 
@@ -153,6 +151,7 @@ public class DataSource {
         }
     }
 
+    @ReadOnly
     public <T> List<T> query(String sql, Object[] args, RowMapper<T> rowMapper)
             throws SQLException {
 
@@ -181,7 +180,7 @@ public class DataSource {
         }
     }
 
-    public int update(String sql, Object... args) throws SQLException {
+    public int update(String sql, @Nullable Object... args) throws SQLException {
         if (jvmShutdownInProgress) {
             // this can get called a lot inserting trace snapshots, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
@@ -276,10 +275,11 @@ public class DataSource {
         try {
             return preparedStatementCache.get(sql);
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof SQLException) {
-                throw (SQLException) e.getCause();
+            Throwable cause = e.getCause();
+            if (cause instanceof SQLException) {
+                throw (SQLException) cause;
             } else {
-                logger.error(e.getMessage(), e.getCause());
+                logger.error(e.getMessage(), e);
                 SQLException f = new SQLException("Unexpected not-really-a-sql-exception");
                 f.initCause(e);
                 throw f;
@@ -292,10 +292,11 @@ public class DataSource {
         // does nothing since all prepared statements are pooled
     }
 
-    private Connection createConnection() throws SQLException {
+    private static Connection createConnection(@Nullable File dbFile)
+            throws SQLException {
         // do not use java.sql.DriverManager or org.h2.Driver because these register the driver
         // globally with the JVM
-        if (memDb) {
+        if (dbFile == null) {
             return new JdbcConnection("jdbc:h2:mem:", new Properties());
         } else {
             String dbPath = dbFile.getPath();

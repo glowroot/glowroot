@@ -17,7 +17,7 @@ package io.informant.testkit;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -27,17 +27,24 @@ import com.google.common.base.Objects;
  */
 public class PointcutConfig {
 
+    @Nullable
     private List<CaptureItem> captureItems;
+    @Nullable
     private String typeName;
+    @Nullable
     private String methodName;
+    @Nullable
     private List<String> methodArgTypeNames;
+    @Nullable
     private String methodReturnTypeName;
+    @Nullable
     private List<MethodModifier> methodModifiers;
     @Nullable
     private String metricName;
     @Nullable
     private String spanTemplate;
 
+    @Nullable
     public List<CaptureItem> getCaptureItems() {
         return captureItems;
     }
@@ -46,6 +53,7 @@ public class PointcutConfig {
         this.captureItems = captureItems;
     }
 
+    @Nullable
     public String getTypeName() {
         return typeName;
     }
@@ -54,6 +62,7 @@ public class PointcutConfig {
         this.typeName = typeName;
     }
 
+    @Nullable
     public String getMethodName() {
         return methodName;
     }
@@ -62,6 +71,7 @@ public class PointcutConfig {
         this.methodName = methodName;
     }
 
+    @Nullable
     public List<String> getMethodArgTypeNames() {
         return methodArgTypeNames;
     }
@@ -70,6 +80,7 @@ public class PointcutConfig {
         this.methodArgTypeNames = methodArgTypeNames;
     }
 
+    @Nullable
     public String getMethodReturnTypeName() {
         return methodReturnTypeName;
     }
@@ -78,6 +89,7 @@ public class PointcutConfig {
         this.methodReturnTypeName = methodReturnTypeName;
     }
 
+    @Nullable
     public List<MethodModifier> getMethodModifiers() {
         return methodModifiers;
     }
@@ -86,6 +98,7 @@ public class PointcutConfig {
         this.methodModifiers = methodModifiers;
     }
 
+    @Nullable
     public String getMetricName() {
         return metricName;
     }
@@ -94,6 +107,7 @@ public class PointcutConfig {
         this.metricName = metricName;
     }
 
+    @Nullable
     public String getSpanTemplate() {
         return spanTemplate;
     }

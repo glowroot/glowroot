@@ -20,6 +20,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.Message;
+import io.informant.api.MessageSupplier;
 import io.informant.core.config.ConfigService;
 import io.informant.core.config.GeneralConfig;
 import io.informant.core.trace.MergedStackTree;
@@ -36,18 +37,23 @@ import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
@@ -79,10 +85,9 @@ public class TraceSnapshotService {
 
     public TraceSnapshot from(Trace trace, long captureTick, boolean includeDetail)
             throws IOException {
-
         TraceSnapshot.Builder builder = TraceSnapshot.builder();
         builder.id(trace.getId());
-        builder.startAt(trace.getStartDate().getTime());
+        builder.startAt(trace.getStartAt());
         builder.stuck(trace.isStuck() && !trace.isCompleted());
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
@@ -96,11 +101,11 @@ public class TraceSnapshotService {
             builder.completed(false);
         }
         builder.background(trace.isBackground());
-        builder.headline(trace.getRootSpan().getMessageSupplier().get().getText());
+        builder.headline(trace.getHeadline());
         ErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
         if (errorMessage != null) {
             builder.errorText(errorMessage.getText());
-            Map<String, ?> detail = errorMessage.getDetail();
+            Map<String, ? extends /*@Nullable*/Object> detail = errorMessage.getDetail();
             if (detail != null) {
                 StringBuilder sb = new StringBuilder();
                 JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
@@ -113,9 +118,18 @@ public class TraceSnapshotService {
                 builder.exception(getExceptionJson(exception));
             }
         }
-        Map<String, String> attributes = trace.getAttributes();
+        Map<String, Optional<String>> attributes = trace.getAttributes();
         if (!attributes.isEmpty()) {
-            builder.attributes(gson.toJson(attributes));
+            StringBuilder sb = new StringBuilder();
+            JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
+            jw.beginObject();
+            for (Entry<String, Optional<String>> entry : attributes.entrySet()) {
+                jw.name(entry.getKey());
+                jw.value(entry.getValue().orNull());
+            }
+            jw.endObject();
+            jw.close();
+            builder.attributes(sb.toString());
         }
         builder.userId(trace.getUserId());
         builder.metrics(getMetricsJson(trace));
@@ -130,7 +144,6 @@ public class TraceSnapshotService {
         }
         return builder.build();
     }
-
     public boolean shouldStore(Trace trace) {
         if (trace.isStuck() || trace.isError()) {
             return true;
@@ -165,7 +178,6 @@ public class TraceSnapshotService {
 
     public static ByteStream toByteStream(TraceSnapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
-
         List<ByteStream> byteStreams = Lists.newArrayList();
         StringBuilder sb = new StringBuilder();
         sb.append("{\"id\":\"");
@@ -184,17 +196,20 @@ public class TraceSnapshotService {
         sb.append(snapshot.isBackground());
         sb.append(",\"headline\":");
         sb.append(escapeJson(snapshot.getHeadline()));
-        if (snapshot.getAttributes() != null) {
+        String attributes = snapshot.getAttributes();
+        if (attributes != null) {
             sb.append(",\"attributes\":");
-            sb.append(snapshot.getAttributes());
+            sb.append(attributes);
         }
-        if (snapshot.getUserId() != null) {
+        String userId = snapshot.getUserId();
+        if (userId != null) {
             sb.append(",\"userId\":");
-            sb.append(escapeJson(snapshot.getUserId()));
+            sb.append(escapeJson(userId));
         }
-        if (snapshot.getErrorText() != null) {
+        String errorText = snapshot.getErrorText();
+        if (errorText != null) {
             sb.append(",\"error\":{\"text\":");
-            sb.append(escapeJson(snapshot.getErrorText()));
+            sb.append(escapeJson(errorText));
             if (snapshot.getErrorDetail() != null) {
                 sb.append(",\"detail\":");
                 sb.append(snapshot.getErrorDetail());
@@ -205,30 +220,34 @@ public class TraceSnapshotService {
             }
             sb.append("}");
         }
-        if (snapshot.getMetrics() != null) {
+        String metrics = snapshot.getMetrics();
+        if (metrics != null) {
             sb.append(",\"metrics\":");
-            sb.append(snapshot.getMetrics());
+            sb.append(metrics);
         }
-        if (snapshot.getSpans() != null) {
+        ByteStream spans = snapshot.getSpans();
+        if (spans != null) {
             sb.append(",\"spans\":");
             // flush current StringBuilder as its own chunk and reset StringBuilder
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
-            byteStreams.add(snapshot.getSpans());
+            byteStreams.add(spans);
         }
-        if (snapshot.getCoarseMergedStackTree() != null) {
+        ByteStream coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
+        if (coarseMergedStackTree != null) {
             sb.append(",\"coarseMergedStackTree\":");
             // flush current StringBuilder as its own chunk and reset StringBuilder
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
-            byteStreams.add(snapshot.getCoarseMergedStackTree());
+            byteStreams.add(coarseMergedStackTree);
         }
-        if (snapshot.getFineMergedStackTree() != null) {
+        ByteStream fineMergedStackTree = snapshot.getFineMergedStackTree();
+        if (fineMergedStackTree != null) {
             sb.append(",\"fineMergedStackTree\":");
             // flush current StringBuilder as its own chunk and reset StringBuilder
             byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
             sb.setLength(0);
-            byteStreams.add(snapshot.getFineMergedStackTree());
+            byteStreams.add(fineMergedStackTree);
         }
         sb.append("}");
         // flush current StringBuilder as its own chunk
@@ -256,8 +275,11 @@ public class TraceSnapshotService {
         List<Snapshot> items = trace.getTraceMetricSnapshots();
         Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
                 new Function<Snapshot, Long>() {
-                    public Long apply(Snapshot input) {
-                        return input.getTotal();
+                    public Long apply(@Nullable Snapshot snapshot) {
+                        if (snapshot == null) {
+                            throw new NullPointerException("Ordering of non-null elements only");
+                        }
+                        return snapshot.getTotal();
                     }
                 });
         return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
@@ -288,7 +310,6 @@ public class TraceSnapshotService {
 
     private static void writeException(CapturedException exception, JsonWriter jw)
             throws IOException {
-
         jw.beginObject();
         jw.name("display");
         jw.value(exception.getDisplay());
@@ -296,16 +317,16 @@ public class TraceSnapshotService {
         writeStackTrace(exception.getStackTrace(), jw);
         jw.name("framesInCommonWithCaused");
         jw.value(exception.getFramesInCommonWithCaused());
-        if (exception.getCause() != null) {
+        CapturedException cause = exception.getCause();
+        if (cause != null) {
             jw.name("cause");
-            writeException(exception.getCause(), jw);
+            writeException(cause, jw);
         }
         jw.endObject();
     }
 
     private static void writeStackTrace(StackTraceElement[] stackTrace, JsonWriter jw)
             throws IOException {
-
         jw.beginArray();
         List<StackTraceElementPlus> elements = MergedStackTree
                 .stripSyntheticMetricMethods(stackTrace);
@@ -319,13 +340,15 @@ public class TraceSnapshotService {
 
         private static final int TARGET_CHUNK_SIZE = 8192;
 
+        @ReadOnly
         private final Iterator<Span> spans;
         private final long captureTick;
         private final ByteArrayOutputStream baos;
         private final Writer raw;
         private final JsonWriter jw;
 
-        private SpansByteStream(Iterator<Span> spans, long captureTick) throws IOException {
+        private SpansByteStream(@ReadOnly Iterator<Span> spans, long captureTick)
+                throws IOException {
             this.spans = spans;
             this.captureTick = captureTick;
             baos = new ByteArrayOutputStream(2 * TARGET_CHUNK_SIZE);
@@ -380,32 +403,35 @@ public class TraceSnapshotService {
             jw.value(span.getParentIndex());
             jw.name("nestingLevel");
             jw.value(span.getNestingLevel());
-            Message message = span.getMessageSupplier().get();
-            jw.name("message");
-            jw.beginObject();
-            jw.name("text");
-            String text;
-            try {
-                text = message.getText();
-            } catch (Throwable t) {
-                // getText() could be plugin provided, e.g. if not using TemplateMessage
-                text = "an error occurred calling getText() on " + message.getClass().getName();
-                logger.warn(text, t);
+            MessageSupplier messageSupplier = span.getMessageSupplier();
+            if (messageSupplier != null) {
+                Message message = messageSupplier.get();
+                jw.name("message");
+                jw.beginObject();
+                jw.name("text");
+                String text;
+                try {
+                    text = message.getText();
+                } catch (Throwable t) {
+                    // getText() could be plugin provided, e.g. if not using TemplateMessage
+                    text = "an error occurred calling getText() on " + message.getClass().getName();
+                    logger.warn(text, t);
+                }
+                jw.value(text);
+                Map<String, ? extends /*@Nullable*/Object> detail = message.getDetail();
+                if (detail != null && !detail.isEmpty()) {
+                    jw.name("detail");
+                    new MessageDetailSerializer(jw).write(detail);
+                }
+                jw.endObject();
             }
-            jw.value(text);
-            Map<String, ?> detail = message.getDetail();
-            if (detail != null && !detail.isEmpty()) {
-                jw.name("detail");
-                new MessageDetailSerializer(jw).write(detail);
-            }
-            jw.endObject();
             ErrorMessage errorMessage = span.getErrorMessage();
             if (errorMessage != null) {
                 jw.name("error");
                 jw.beginObject();
                 jw.name("text");
                 jw.value(errorMessage.getText());
-                Map<String, ?> errorDetail = errorMessage.getDetail();
+                Map<String, ? extends /*@Nullable*/Object> errorDetail = errorMessage.getDetail();
                 if (errorDetail != null) {
                     jw.name("detail");
                     new MessageDetailSerializer(jw).write(errorDetail);
@@ -466,10 +492,11 @@ public class TraceSnapshotService {
                 MergedStackTreeNode currNode = (MergedStackTreeNode) curr;
                 jw.beginObject();
                 toVisit.add(JsonWriterOp.END_OBJECT);
-                if (currNode.isSyntheticRoot()) {
+                StackTraceElement stackTraceElement = currNode.getStackTraceElement();
+                if (stackTraceElement == null) {
                     jw.name("stackTraceElement").value("<multiple root nodes>");
                 } else {
-                    jw.name("stackTraceElement").value(currNode.getStackTraceElement().toString());
+                    jw.name("stackTraceElement").value(stackTraceElement.toString());
                     Collection<String> currMetricNames = currNode.getMetricNames();
                     for (String currMetricName : currMetricNames) {
                         if (metricNameStack.isEmpty() || !currMetricName.equals(
@@ -481,8 +508,9 @@ public class TraceSnapshotService {
                         }
                     }
                     jw.name("sampleCount").value(currNode.getSampleCount());
-                    if (currNode.isLeaf()) {
-                        jw.name("leafThreadState").value(currNode.getLeafThreadState().name());
+                    State leafThreadState = currNode.getLeafThreadState();
+                    if (leafThreadState != null) {
+                        jw.name("leafThreadState").value(leafThreadState.name());
                         jw.name("metricNames");
                         jw.beginArray();
                         for (String metricName : metricNameStack) {
@@ -506,6 +534,7 @@ public class TraceSnapshotService {
             }
         }
 
+        @Immutable
         private static enum JsonWriterOp {
             END_OBJECT, END_ARRAY, POP_METRIC_NAME;
         }

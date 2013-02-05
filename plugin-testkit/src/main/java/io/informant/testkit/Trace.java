@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
  */
 public class Trace {
 
+    @Nullable
     private String id;
     private long from;
     private long to;
@@ -41,6 +42,7 @@ public class Trace {
     private boolean active;
     private boolean stuck;
     private boolean completed;
+    @Nullable
     private String headline;
     @Nullable
     private Map<String, String> attributes;
@@ -59,6 +61,7 @@ public class Trace {
 
     private boolean summary;
 
+    @Nullable
     public String getId() {
         return id;
     }
@@ -87,6 +90,7 @@ public class Trace {
         return completed;
     }
 
+    @Nullable
     public String getHeadline() {
         return headline;
     }
@@ -220,21 +224,26 @@ public class Trace {
 
     public static class CapturedException {
 
+        @Nullable
         private String display;
+        @Nullable
         private List<String> stackTrace;
         private int framesInCommonWithCaused;
         @Nullable
         private CapturedException cause;
 
+        @Nullable
         public String getDisplay() {
             return display;
         }
+        @Nullable
         public List<String> getStackTrace() {
             return stackTrace;
         }
         public int getFramesInCommonWithCaused() {
             return framesInCommonWithCaused;
         }
+        @Nullable
         public CapturedException getCause() {
             return cause;
         }
@@ -251,6 +260,7 @@ public class Trace {
 
     public static class Metric {
 
+        @Nullable
         private String name;
         private long total;
         private long min;
@@ -260,6 +270,7 @@ public class Trace {
         private boolean minActive;
         private boolean maxActive;
 
+        @Nullable
         public String getName() {
             return name;
         }
@@ -358,10 +369,12 @@ public class Trace {
 
     public static class Message {
 
+        @Nullable
         private String text;
         @Nullable
         private Map<String, Object> detail;
 
+        @Nullable
         public String getText() {
             return text;
         }

@@ -27,6 +27,8 @@ import java.util.Locale;
 
 import org.objectweb.asm.Type;
 
+import checkers.nullness.quals.Nullable;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -57,6 +59,9 @@ class PointcutConfigJsonService implements JsonService {
     String getMatchingTypeNames(String requestJson) throws IOException {
         logger.debug("getMatchingTypeNames(): requestJson={}", requestJson);
         TypeNameRequest request = gson.fromJson(requestJson, TypeNameRequest.class);
+        if (request.partialTypeName == null) {
+            throw new IllegalStateException("Request missing partialTypeName attribute");
+        }
         List<String> matchingTypeNames = parsedTypeCache.getMatchingTypeNames(
                 request.partialTypeName, request.limit);
         return gson.toJson(matchingTypeNames);
@@ -66,6 +71,12 @@ class PointcutConfigJsonService implements JsonService {
     String getMatchingMethodNames(String requestJson) throws IOException {
         logger.debug("getMatchingMethodNames(): requestJson={}", requestJson);
         MethodNameRequest request = gson.fromJson(requestJson, MethodNameRequest.class);
+        if (request.typeName == null) {
+            throw new IllegalStateException("Request missing typeName attribute");
+        }
+        if (request.partialMethodName == null) {
+            throw new IllegalStateException("Request missing partialMethodName attribute");
+        }
         List<String> matchingMethodNames = parsedTypeCache.getMatchingMethodNames(
                 request.typeName, request.partialMethodName, request.limit);
         return gson.toJson(matchingMethodNames);
@@ -75,6 +86,12 @@ class PointcutConfigJsonService implements JsonService {
     String getMatchingMethods(String requestJson) throws IOException {
         logger.debug("getMatchingMethods(): requestJson={}", requestJson);
         MethodRequest request = gson.fromJson(requestJson, MethodRequest.class);
+        if (request.typeName == null) {
+            throw new IllegalStateException("Request missing typeName attribute");
+        }
+        if (request.methodName == null) {
+            throw new IllegalStateException("Request missing methodName attribute");
+        }
         List<ParsedMethod> parsedMethods = parsedTypeCache.getMatchingParsedMethods(
                 request.typeName, request.methodName);
         JsonArray matchingMethods = new JsonArray();
@@ -109,13 +126,15 @@ class PointcutConfigJsonService implements JsonService {
 
     class TypeNameRequest {
 
+        @Nullable
         private String partialTypeName;
         private int limit;
 
+        @Nullable
         public String getPartialTypeName() {
             return partialTypeName;
         }
-        public void setPartialTypeName(String partialTypeName) {
+        public void setPartialTypeName(@Nullable String partialTypeName) {
             this.partialTypeName = partialTypeName;
         }
         public int getLimit() {
@@ -128,20 +147,24 @@ class PointcutConfigJsonService implements JsonService {
 
     class MethodNameRequest {
 
+        @Nullable
         private String typeName;
+        @Nullable
         private String partialMethodName;
         private int limit;
 
+        @Nullable
         public String getTypeName() {
             return typeName;
         }
-        public void setTypeName(String typeName) {
+        public void setTypeName(@Nullable String typeName) {
             this.typeName = typeName;
         }
+        @Nullable
         public String getPartialMethodName() {
             return partialMethodName;
         }
-        public void setPartialMethodName(String partialMethodName) {
+        public void setPartialMethodName(@Nullable String partialMethodName) {
             this.partialMethodName = partialMethodName;
         }
         public int getLimit() {
@@ -154,19 +177,23 @@ class PointcutConfigJsonService implements JsonService {
 
     class MethodRequest {
 
+        @Nullable
         private String typeName;
+        @Nullable
         private String methodName;
 
+        @Nullable
         public String getTypeName() {
             return typeName;
         }
-        public void setTypeName(String typeName) {
+        public void setTypeName(@Nullable String typeName) {
             this.typeName = typeName;
         }
+        @Nullable
         public String getMethodName() {
             return methodName;
         }
-        public void setMethodName(String methodName) {
+        public void setMethodName(@Nullable String methodName) {
             this.methodName = methodName;
         }
     }

@@ -28,6 +28,7 @@ import io.informant.core.util.RollingFile;
 import io.informant.core.util.Schemas.Column;
 import io.informant.core.util.Schemas.Index;
 import io.informant.core.util.Schemas.PrimaryKeyColumn;
+import io.informant.core.util.ThreadSafe;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -36,8 +37,8 @@ import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -156,6 +157,7 @@ public class TraceSnapshotDao {
         }
     }
 
+    @ReadOnly
     public List<TracePoint> readPoints(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable Boolean background,
             boolean errorOnly, boolean fineOnly, @Nullable StringComparator headlineComparator,

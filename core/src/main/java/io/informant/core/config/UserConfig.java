@@ -15,8 +15,9 @@
  */
 package io.informant.core.config;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
@@ -37,9 +38,8 @@ public class UserConfig {
     private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     private final boolean enabled;
-
+    @Nullable
     private final String userId;
-
     // store threshold of -1 means use core config store threshold
     // for session traces, the real threshold is the minimum of this and the core
     // threshold
@@ -50,11 +50,11 @@ public class UserConfig {
         return new Builder(base);
     }
 
-    static UserConfig fromJson(JsonObject jsonObject) {
+    static UserConfig fromJson(@ReadOnly JsonObject jsonObject) {
         return gson.fromJson(jsonObject, UserConfig.Builder.class).build();
     }
 
-    private UserConfig(boolean enabled, String userId, int storeThresholdMillis,
+    private UserConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
             boolean fineProfiling) {
 
         this.enabled = enabled;
@@ -97,6 +97,7 @@ public class UserConfig {
     public static class Builder {
 
         private boolean enabled = true;
+        @Nullable
         private String userId;
         private int storeThresholdMillis = 0;
         private boolean fineProfiling = true;
@@ -124,9 +125,10 @@ public class UserConfig {
             this.fineProfiling = fineProfiling;
             return this;
         }
-        public Builder overlay(JsonObject jsonObject) {
-            if (jsonObject.get("enabled") != null) {
-                enabled(jsonObject.get("enabled").getAsBoolean());
+        public Builder overlay(@ReadOnly JsonObject jsonObject) {
+            JsonElement enabled = jsonObject.get("enabled");
+            if (enabled != null) {
+                enabled(enabled.getAsBoolean());
             }
             JsonElement userId = jsonObject.get("userId");
             if (userId != null) {
@@ -147,8 +149,7 @@ public class UserConfig {
             return this;
         }
         public UserConfig build() {
-            return new UserConfig(enabled, userId, storeThresholdMillis,
-                    fineProfiling);
+            return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling);
         }
     }
 }

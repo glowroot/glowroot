@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import io.informant.shaded.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
@@ -30,7 +30,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 // HttpServletRequest wrapper does not make assumptions about the @Nullable properties of the
 // underlying javax.servlet.http.HttpServletRequest since it's just an interface and could
 // theoretically return null even where it seems to not make sense
-@NotThreadSafe
 class HttpServletRequest {
 
     private static final UnresolvedMethod getSessionOneArgMethod = UnresolvedMethod.from(
@@ -68,18 +67,19 @@ class HttpServletRequest {
 
     @Nullable
     String getMethod() {
-        return getMethodMethod.invokeWithDefaultOnError(realRequest,
+        return (String) getMethodMethod.invokeWithDefaultOnError(realRequest,
                 "<error calling HttpServletRequest.getMethod()>");
     }
 
     @Nullable
     String getRequestURI() {
-        return getRequestURIMethod.invokeWithDefaultOnError(realRequest,
+        return (String) getRequestURIMethod.invokeWithDefaultOnError(realRequest,
                 "<error calling HttpServletRequest.getRequestURI()>");
     }
 
+    @ReadOnly
     Map<?, ?> getParameterMap() {
-        Map<?, ?> parameterMap = getParameterMapMethod.invokeWithDefaultOnError(
+        Map<?, ?> parameterMap = (Map<?, ?>) getParameterMapMethod.invokeWithDefaultOnError(
                 realRequest, ImmutableMap.of());
         if (parameterMap == null) {
             return ImmutableMap.of();
@@ -90,7 +90,7 @@ class HttpServletRequest {
 
     @Nullable
     String getAttribute(String name) {
-        return getAttributeMethod.invokeWithDefaultOnError(realRequest, name,
+        return (String) getAttributeMethod.invokeWithDefaultOnError(realRequest, name,
                 "<error calling ServletRequest.getAttribute()>");
     }
 }

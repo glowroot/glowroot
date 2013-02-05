@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.informant.testkit;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.MainEntryPoint;
+import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 import io.informant.testkit.internal.ClassPath;
 
@@ -31,8 +32,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

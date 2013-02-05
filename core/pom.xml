@@ -106,9 +106,9 @@
       <version>3.1.2</version>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>2.0.1</version>
+      <groupId>edu.washington.cs.types.checker</groupId>
+      <artifactId>checker-quals-jdk5</artifactId>
+      <version>1.6.0</version>
     </dependency>
     <dependency>
       <groupId>org.easytesting</groupId>
@@ -240,6 +240,10 @@
               <shadedPattern>io.informant.shaded.javax.annotation</shadedPattern>
             </relocation>
             <relocation>
+              <pattern>checkers</pattern>
+              <shadedPattern>io.informant.shaded.checkers</shadedPattern>
+            </relocation>
+            <relocation>
               <pattern>com.google.gson</pattern>
               <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
             </relocation>
@@ -346,27 +350,6 @@
 
   <profiles>
     <profile>
-      <id>mac</id>
-      <activation>
-        <os>
-          <family>mac</family>
-        </os>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.wvengen</groupId>
-            <artifactId>proguard-maven-plugin</artifactId>
-            <configuration>
-              <libs>
-                <lib>${java.home}/../Classes/classes.jar</lib>
-              </libs>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <id>release</id>
       <build>
         <plugins>
@@ -394,6 +377,27 @@
                   |Apache License 2.0
                 </licenseMerge>
               </licenseMerges>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.wvengen</groupId>
+            <artifactId>proguard-maven-plugin</artifactId>
+            <configuration>
+              <libs>
+                <lib>${java.home}/../Classes/classes.jar</lib>
+              </libs>
             </configuration>
           </plugin>
         </plugins>

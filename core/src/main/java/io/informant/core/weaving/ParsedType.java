@@ -15,11 +15,9 @@
  */
 package io.informant.core.weaving;
 
-import java.util.List;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.NotThreadSafe;
+import io.informant.core.util.NotThreadSafe;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -40,6 +38,7 @@ class ParsedType {
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
 
+    // interfaces that do not extend anything have null superClass
     static ParsedType from(String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
         return new ParsedType(false, name, superName, interfaceNames, methods);
@@ -73,7 +72,7 @@ class ParsedType {
         return superName;
     }
 
-    List<String> getInterfaceNames() {
+    ImmutableList<String> getInterfaceNames() {
         return interfaceNames;
     }
 

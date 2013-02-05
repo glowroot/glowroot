@@ -23,8 +23,9 @@ import io.informant.core.weaving.Advice;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -53,8 +54,8 @@ public class PluginDescriptor {
     private final ImmutableMap<String, PropertyDescriptor> propertyDescriptorsByName;
 
     PluginDescriptor(String name, String groupId, String artifactId, String version,
-            List<PropertyDescriptor> propertyDescriptors, List<String> aspects) {
-
+            @ReadOnly List<PropertyDescriptor> propertyDescriptors,
+            @ReadOnly List<String> aspects) {
         this.name = name;
         this.groupId = groupId;
         this.artifactId = artifactId;
@@ -104,15 +105,15 @@ public class PluginDescriptor {
         return version;
     }
 
-    public List<PropertyDescriptor> getPropertyDescriptors() {
+    public ImmutableList<PropertyDescriptor> getPropertyDescriptors() {
         return propertyDescriptors;
     }
 
-    public List<Mixin> getMixins() {
+    public ImmutableList<Mixin> getMixins() {
         return mixins;
     }
 
-    public List<Advice> getAdvisors() {
+    public ImmutableList<Advice> getAdvisors() {
         return advisors;
     }
 
@@ -137,8 +138,8 @@ public class PluginDescriptor {
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
         List<Advice> advisors = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
-            if (memberClass.isAnnotationPresent(Pointcut.class)) {
-                Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
+            Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
+            if (pointcut != null) {
                 advisors.add(Advice.from(pointcut, memberClass));
             }
         }
@@ -148,8 +149,9 @@ public class PluginDescriptor {
     private static List<Mixin> getMixins(Class<?> aspectClass) {
         List<Mixin> mixins = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
-            if (memberClass.isAnnotationPresent(Mixin.class)) {
-                mixins.add(memberClass.getAnnotation(Mixin.class));
+            Mixin mixin = memberClass.getAnnotation(Mixin.class);
+            if (mixin != null) {
+                mixins.add(mixin);
             }
         }
         return mixins;
@@ -166,7 +168,8 @@ public class PluginDescriptor {
         @Nullable
         private final String description;
         PropertyDescriptor(String prompt, String name, String type,
-                @Nullable Object defaultValue, boolean hidden, @Nullable String description) {
+                @Immutable @Nullable Object defaultValue, boolean hidden,
+                @Nullable String description) {
             this.prompt = prompt;
             this.name = name;
             this.type = type;
@@ -183,6 +186,7 @@ public class PluginDescriptor {
         public String getType() {
             return type;
         }
+        @Immutable
         @Nullable
         public Object getDefault() {
             return defaultValue;

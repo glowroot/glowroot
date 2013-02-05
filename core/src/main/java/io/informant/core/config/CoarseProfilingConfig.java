@@ -15,7 +15,8 @@
  */
 package io.informant.core.config;
 
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
@@ -43,7 +44,7 @@ public class CoarseProfilingConfig {
     private final int intervalMillis;
     private final int totalSeconds;
 
-    static CoarseProfilingConfig fromJson(JsonObject jsonObject) {
+    static CoarseProfilingConfig fromJson(@ReadOnly JsonObject jsonObject) {
         return gson.fromJson(jsonObject, CoarseProfilingConfig.Builder.class).build();
     }
 
@@ -120,7 +121,7 @@ public class CoarseProfilingConfig {
             this.totalSeconds = totalSeconds;
             return this;
         }
-        public Builder overlay(JsonObject jsonObject) {
+        public Builder overlay(@ReadOnly JsonObject jsonObject) {
             JsonElement enabled = jsonObject.get("enabled");
             if (enabled != null) {
                 enabled(enabled.getAsBoolean());

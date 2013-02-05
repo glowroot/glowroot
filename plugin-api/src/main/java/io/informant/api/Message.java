@@ -17,7 +17,8 @@ package io.informant.api;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -41,9 +42,12 @@ public abstract class Message {
 
     public abstract String getText();
 
+    @ReadOnly
     @Nullable
-    public abstract Map<String, ?> getDetail();
+    public abstract Map<String, ? extends /*@Nullable*/Object> getDetail();
 
+    // keep constructor protected, if plugins could subclass, then extra validation would be
+    // required to ensure the Message contract is maintained
     protected Message() {}
 
     @Override
@@ -62,7 +66,8 @@ public abstract class Message {
         return new TemplateMessage(template, args, null);
     }
 
-    public static Message withDetail(String message, Map<String, ?> detail) {
+    public static Message withDetail(String message,
+            @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
         return new TemplateMessage(message, null, detail);
     }
 
@@ -71,13 +76,13 @@ public abstract class Message {
         private static final Logger logger = LoggerFactory.getLogger(TemplateMessage.class);
 
         private final String template;
+        private final String/*@Nullable*/[] args;
+        @ReadOnly
         @Nullable
-        private final String[] args;
-        @Nullable
-        private final Map<String, ?> detail;
+        private final Map<String, ? extends /*@Nullable*/Object> detail;
 
-        private TemplateMessage(String template, @Nullable String[] args,
-                @Nullable Map<String, ?> detail) {
+        private TemplateMessage(String template, String/*@Nullable*/[] args,
+                @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
             this.template = template;
             this.args = args;
             this.detail = detail;
@@ -109,8 +114,9 @@ public abstract class Message {
         }
 
         @Override
+        @ReadOnly
         @Nullable
-        public Map<String, ?> getDetail() {
+        public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
     }

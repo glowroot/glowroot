@@ -1,0 +1,203 @@
+import checkers.igj.quals.*;
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package com.google.gson;
+
+@Immutable
+class Gson {
+    Gson() @AssignsFields;
+    <T> TypeAdapter<T> getAdapter(TypeToken<T> type);
+    <T> TypeAdapter<T> getDelegateAdapter(TypeAdapterFactory skipPast, TypeToken<T> type);
+    <T> TypeAdapter<T> getAdapter(Class<T> type);
+    JsonElement toJsonTree(@ReadOnly @Nullable Object src);
+    JsonElement toJsonTree(@ReadOnly @Nullable Object src, Type type);
+    String toJson(@ReadOnly @Nullable Object src);
+    String toJson(@ReadOnly @Nullable Object src, Type type);
+    void toJson(@ReadOnly @Nullable Object src, Appendable writer) throws JsonIOException;
+    void toJson(@ReadOnly @Nullable Object src, Type type, Appendable writer)
+            throws JsonIOException;
+    void toJson(@ReadOnly @Nullable Object src, Type type, JsonWriter writer)
+            throws JsonIOException;
+    String toJson(@ReadOnly @Nullable JsonElement jsonElement);
+    void toJson(@ReadOnly @Nullable JsonElement jsonElement, Appendable writer)
+            throws JsonIOException;
+    void toJson(@ReadOnly @Nullable JsonElement jsonElement, JsonWriter writer)
+            throws JsonIOException;
+    <T> T fromJson(@Nullable String json, Class<T> type) throws JsonSyntaxException;
+    <T> T fromJson(@Nullable String json, Type type) throws JsonSyntaxException;
+    <T> T fromJson(Reader json, Class<T> type) throws JsonSyntaxException,JsonIOException;
+    <T> T fromJson(Reader json, Type type) throws JsonIOException,JsonSyntaxException;
+    <T> T fromJson(JsonReader json, Type type) throws JsonIOException,JsonSyntaxException;
+    <T> T fromJson(@ReadOnly @Nullable JsonElement json, Class<T> type) throws JsonSyntaxException;
+    <T> T fromJson(@ReadOnly @Nullable JsonElement json, Type type) throws JsonSyntaxException;
+}
+
+@I
+class JsonElement {
+    JsonElement() @AssignsFields;
+    boolean isJsonArray() @ReadOnly;
+    boolean isJsonObject() @ReadOnly;
+    boolean isJsonPrimitive() @ReadOnly;
+    boolean isJsonNull() @ReadOnly;
+    @I JsonObject getAsJsonObject() @I;
+    @I JsonArray getAsJsonArray() @I;
+    @I JsonPrimitive getAsJsonPrimitive() @I;
+    @I JsonNull getAsJsonNull() @I;
+    boolean getAsBoolean() @ReadOnly;
+    Number getAsNumber() @ReadOnly;
+    String getAsString() @ReadOnly;
+    double getAsDouble() @ReadOnly;
+    float getAsFloat() @ReadOnly;
+    long getAsLong() @ReadOnly;
+    int getAsInt() @ReadOnly;
+    byte getAsByte() @ReadOnly;
+    char getAsCharacter() @ReadOnly;
+    BigDecimal getAsBigDecimal() @ReadOnly;
+    BigInteger getAsBigInteger() @ReadOnly;
+    short getAsShort() @ReadOnly;
+}
+
+@I
+class JsonArray extends JsonElement implements Iterable<JsonElement> {
+    JsonArray() @AssignsFields;
+    void add(@Nullable JsonElement element) @I;
+    void addAll(JsonArray array) @I;
+    int size() @ReadOnly;
+    @I Iterator<JsonElement> iterator() @I;
+    @Nullable JsonElement get(int i) @I;
+    @Nullable Number getAsNumber() @ReadOnly;
+    @Nullable String getAsString() @ReadOnly;
+    double getAsDouble() @ReadOnly;
+    @Nullable BigDecimal getAsBigDecimal() @ReadOnly;
+    @Nullable BigInteger getAsBigInteger() @ReadOnly;
+    float getAsFloat() @ReadOnly;
+    long getAsLong() @ReadOnly;
+    int getAsInt() @ReadOnly;
+    byte getAsByte() @ReadOnly;
+    char getAsCharacter() @ReadOnly;
+    short getAsShort() @ReadOnly;
+    boolean getAsBoolean() @ReadOnly;
+}
+
+@I
+class JsonObject extends JsonElement {
+    JsonObject() @AssignsFields;
+    void add(String memberName, @Nullable JsonElement value);
+    @Nullable JsonElement remove(String memberName);
+    void addProperty(String property, @Nullable String value);
+    void addProperty(String property, @Nullable Number value);
+    void addProperty(String property, @Nullable Boolean value);
+    void addProperty(String property, @Nullable Character value);
+    @I Set<Entry<String,JsonElement>> entrySet() @I;
+    boolean has(String memberName) @ReadOnly;
+    @I @Nullable JsonElement get(String memberName) @I;
+    @I @Nullable JsonPrimitive getAsJsonPrimitive(String memberName) @I;
+    @I @Nullable JsonArray getAsJsonArray(String memberName) @I;
+    @I @Nullable JsonObject getAsJsonObject(String memberName) @I;
+}
+
+class JsonPrimitive extends JsonElement {
+    JsonPrimitive(Boolean value) @AssignsFields;
+    JsonPrimitive(Number value) @AssignsFields;
+    JsonPrimitive(String value) @AssignsFields;
+    JsonPrimitive(Character value) @AssignsFields;
+    boolean isBoolean() @ReadOnly;
+    boolean getAsBoolean() @ReadOnly;
+    boolean isNumber() @ReadOnly;
+    Number getAsNumber() @ReadOnly;
+    boolean isString() @ReadOnly;
+    String getAsString() @ReadOnly;
+    double getAsDouble() @ReadOnly;
+    BigDecimal getAsBigDecimal() @ReadOnly;
+    BigInteger getAsBigInteger() @ReadOnly;
+    float getAsFloat() @ReadOnly;
+    long getAsLong() @ReadOnly;
+    short getAsShort() @ReadOnly;
+    int getAsInt() @ReadOnly;
+    byte getAsByte(); @ReadOnly
+    char getAsCharacter() @ReadOnly;
+}
+
+class JsonNull extends JsonElement {
+    JsonNull INSTANCE;
+    JsonNull() @AssignsFields;
+}
+
+class TypeAdapter<T> {
+    TypeAdapter() @AssignsFields;
+    void write(JsonWriter out, @Nullable T value) throws IOException;
+    void toJson(Writer out, @Nullable T value) throws IOException;
+    TypeAdapter<T> nullSafe();
+    String toJson(@Nullable T value) throws IOException;
+    JsonElement toJsonTree(@Nullable T value);
+    @Nullable T read(JsonReader in) throws IOException;
+    @Nullable T fromJson(Reader in) throws IOException;
+    @Nullable T fromJson(String json) throws IOException;
+    @Nullable T fromJsonTree(JsonElement jsonTree);
+}
+
+interface TypeAdapterFactory {
+    @Nullable <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type);
+}
+
+/* ========================================================================== */
+package com.google.gson.stream;
+
+class JsonWriter implements Closeable, Flushable {
+    JsonWriter(Writer writer);
+    void setIndent(String indent);
+    void setLenient(boolean lenient);
+    boolean isLenient();
+    void setHtmlSafe(boolean htmlSafe);
+    boolean isHtmlSafe();
+    void setSerializeNulls(boolean serializeNulls);
+    boolean getSerializeNulls();
+    JsonWriter beginArray() throws IOException;
+    JsonWriter endArray() throws IOException;
+    JsonWriter beginObject() throws IOException;
+    JsonWriter endObject() throws IOException;
+    JsonWriter name(String name) throws IOException;
+    JsonWriter value(@Nullable String value) throws IOException;
+    JsonWriter nullValue() throws IOException;
+    JsonWriter value(boolean value) throws IOException;
+    JsonWriter value(double value) throws IOException;
+    JsonWriter value(long value) throws IOException;
+    JsonWriter value(@Nullable Number value) throws IOException;
+    void flush() throws IOException;
+    void close() throws IOException;
+}
+
+class JsonReader implements Closeable {
+    JsonReader(Reader reader);
+    void setLenient(boolean lenient);
+    boolean isLenient();
+    void beginArray() throws IOException;
+    void endArray() throws IOException;
+    void beginObject() throws IOException;
+    void endObject() throws IOException;
+    boolean hasNext() throws IOException;
+    JsonToken peek() throws IOException;
+    String nextName() throws IOException;
+    String nextString() throws IOException;
+    boolean nextBoolean() throws IOException;
+    void nextNull() throws IOException;
+    double nextDouble() throws IOException;
+    long nextLong() throws IOException;
+    int nextInt() throws IOException;
+    void close() throws IOException;
+    void skipValue() throws IOException;
+}
+
+/* ========================================================================== */
+package com.google.gson.reflect;
+
+class TypeToken<T> {
+    Class<? super T> getRawType();
+    Type getType();
+    boolean isAssignableFrom(Class<?> type);
+    boolean isAssignableFrom(Type type);
+    boolean isAssignableFrom(TypeToken<?> type);
+    TypeToken<?> get(Type type);
+    <T> TypeToken<T> get(Class<T> type);
+}

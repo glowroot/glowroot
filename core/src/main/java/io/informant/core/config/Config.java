@@ -23,13 +23,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -38,6 +38,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 /**
  * @author Trask Stalnaker
@@ -65,19 +66,7 @@ class Config {
     private final ImmutableList<PointcutConfig> pointcutConfigs;
 
     static Config fromFile(File configFile) {
-        JsonObject rootJsonObject;
-        if (configFile.exists()) {
-            try {
-                String configJson = Files.toString(configFile, Charsets.UTF_8);
-                JsonElement jsonElement = new JsonParser().parse(configJson);
-                rootJsonObject = asJsonObject(jsonElement);
-            } catch (IOException e) {
-                logger.error("error reading config.json file", e);
-                rootJsonObject = new JsonObject();
-            }
-        } else {
-            rootJsonObject = new JsonObject();
-        }
+        JsonObject rootJsonObject = createRootJsonObject(configFile);
         GeneralConfig generalConfig = GeneralConfig
                 .fromJson(asJsonObject(rootJsonObject.get(GENERAL)));
         CoarseProfilingConfig coarseProfilingConfig = CoarseProfilingConfig
@@ -86,31 +75,12 @@ class Config {
                 .fromJson(asJsonObject(rootJsonObject.get(FINE_PROFILING)));
         UserConfig userConfig = UserConfig.fromJson(asJsonObject(rootJsonObject.get(USER)));
 
-        Map<String, JsonObject> pluginConfigJsonObjects = Maps.newHashMap();
-        JsonArray pluginsJsonArray = asJsonArray(rootJsonObject.get(PLUGINS));
-        for (Iterator<JsonElement> i = pluginsJsonArray.iterator(); i.hasNext();) {
-            JsonObject pluginConfigJsonObject = i.next().getAsJsonObject();
-            String groupId = pluginConfigJsonObject.get("groupId").getAsString();
-            String artifactId = pluginConfigJsonObject.get("artifactId").getAsString();
-            pluginConfigJsonObjects.put(groupId + ":" + artifactId, pluginConfigJsonObject);
-        }
-        Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
-                Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors());
-        ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            JsonObject pluginConfigJsonObject = Objects.firstNonNull(
-                    pluginConfigJsonObjects.get(pluginDescriptor.getId()), new JsonObject());
-            PluginConfig pluginConfig = PluginConfig.fromJson(pluginConfigJsonObject,
-                    pluginDescriptor);
-            pluginConfigs.add(pluginConfig);
-        }
-        ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
-        JsonArray pointcutsJsonArray = asJsonArray(rootJsonObject.get(POINTCUTS));
-        for (Iterator<JsonElement> i = pointcutsJsonArray.iterator(); i.hasNext();) {
-            PointcutConfig pointcutConfig = PointcutConfig.fromJson(i.next().getAsJsonObject());
-            pointcutConfigs.add(pointcutConfig);
-        }
-
+        Map<String, JsonObject> pluginConfigJsonObjects = createPluginConfigJsonObjects(
+                rootJsonObject);
+        ImmutableList.Builder<PluginConfig> pluginConfigs = createPluginConfigs(
+                pluginConfigJsonObjects);
+        ImmutableList.Builder<PointcutConfig> pointcutConfigs = createPointcutConfigs(
+                rootJsonObject);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig, userConfig,
                 pluginConfigs.build(), pointcutConfigs.build());
     }
@@ -195,8 +165,78 @@ class Config {
         }
     }
 
-    private static JsonObject asJsonObject(@Nullable JsonElement jsonElement) {
-        if (jsonElement == null) {
+    private static JsonObject createRootJsonObject(File configFile) {
+        if (configFile.exists()) {
+            try {
+                String configJson = Files.toString(configFile, Charsets.UTF_8);
+                JsonElement jsonElement = new JsonParser().parse(configJson);
+                return asJsonObject(jsonElement);
+            } catch (IOException e) {
+                logger.error("error reading config.json file", e);
+                return new JsonObject();
+            }
+        } else {
+            return new JsonObject();
+        }
+    }
+
+    private static Map<String, JsonObject> createPluginConfigJsonObjects(
+            JsonObject rootJsonObject) {
+        Map<String, JsonObject> pluginConfigJsonObjects = Maps.newHashMap();
+        JsonArray pluginsJsonArray = asJsonArray(rootJsonObject.get(PLUGINS));
+        for (Iterator<JsonElement> i = pluginsJsonArray.iterator(); i.hasNext();) {
+            JsonObject pluginConfigJsonObject = asJsonObject(i.next());
+            JsonElement groupId = pluginConfigJsonObject.get("groupId");
+            if (groupId == null) {
+                logger.warn("error in config.json file, groupId is missing");
+                continue;
+            }
+            if (!(groupId instanceof JsonPrimitive) || !((JsonPrimitive) groupId).isString()) {
+                logger.warn("error in config.json file, groupId is not a json string");
+                continue;
+            }
+            JsonElement artifactId = pluginConfigJsonObject.get("artifactId");
+            if (artifactId == null) {
+                logger.warn("error in config.json file, artifactId is missing");
+                continue;
+            }
+            if (!(artifactId instanceof JsonPrimitive)
+                    || !((JsonPrimitive) artifactId).isString()) {
+                logger.warn("error in config.json file, artifactId is not a json string");
+                continue;
+            }
+            pluginConfigJsonObjects.put(groupId.getAsString() + ":" + artifactId.getAsString(),
+                    pluginConfigJsonObject);
+        }
+        return pluginConfigJsonObjects;
+    }
+
+    private static ImmutableList.Builder<PluginConfig> createPluginConfigs(
+            Map<String, JsonObject> pluginConfigJsonObjects) {
+        ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
+        for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
+            JsonObject pluginConfigJsonObject = Objects.firstNonNull(
+                    pluginConfigJsonObjects.get(pluginDescriptor.getId()), new JsonObject());
+            PluginConfig pluginConfig = PluginConfig.fromJson(pluginConfigJsonObject,
+                    pluginDescriptor);
+            pluginConfigs.add(pluginConfig);
+        }
+        return pluginConfigs;
+    }
+
+    private static ImmutableList.Builder<PointcutConfig> createPointcutConfigs(
+            JsonObject rootJsonObject) {
+        ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
+        JsonArray pointcutsJsonArray = asJsonArray(rootJsonObject.get(POINTCUTS));
+        for (Iterator<JsonElement> i = pointcutsJsonArray.iterator(); i.hasNext();) {
+            PointcutConfig pointcutConfig = PointcutConfig.fromJson(i.next().getAsJsonObject());
+            pointcutConfigs.add(pointcutConfig);
+        }
+        return pointcutConfigs;
+    }
+
+    private static JsonObject asJsonObject(@ReadOnly @Nullable JsonElement jsonElement) {
+        if (jsonElement == null || jsonElement.isJsonNull()) {
             return new JsonObject();
         } else if (jsonElement.isJsonObject()) {
             return jsonElement.getAsJsonObject();
@@ -207,8 +247,8 @@ class Config {
         }
     }
 
-    private static JsonArray asJsonArray(@Nullable JsonElement jsonElement) {
-        if (jsonElement == null) {
+    private static JsonArray asJsonArray(@ReadOnly @Nullable JsonElement jsonElement) {
+        if (jsonElement == null || jsonElement.isJsonNull()) {
             return new JsonArray();
         } else if (jsonElement.isJsonArray()) {
             return jsonElement.getAsJsonArray();

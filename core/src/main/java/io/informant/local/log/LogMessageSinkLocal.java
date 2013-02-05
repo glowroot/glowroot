@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;
@@ -75,7 +75,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
         lastWarningTick = ticker.read() - TimeUnit.SECONDS.toNanos(60);
     }
 
-    public void onLogMessage(Level level, String loggerName, String message,
+    public void onLogMessage(Level level, String loggerName, @Nullable String message,
             @Nullable Throwable t) {
 
         if (inStoreLogMessage.get()) {
@@ -117,8 +117,8 @@ public class LogMessageSinkLocal implements LogMessageSink {
         }
     }
 
-    private void logMessageAsync(final Level level, final String loggerName, final String message,
-            @Nullable final Throwable t) {
+    private void logMessageAsync(final Level level, final String loggerName,
+            final @Nullable String message, final @Nullable Throwable t) {
 
         synchronized (executorService) {
             if (executorService.isShutdown()) {

@@ -16,8 +16,7 @@
 package io.informant.api;
 
 import io.informant.api.Span.MessageUpdater;
-
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ObjectArrays;
 

@@ -22,7 +22,6 @@ import io.informant.testkit.Trace;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,6 +29,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

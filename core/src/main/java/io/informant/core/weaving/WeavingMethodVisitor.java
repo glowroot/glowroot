@@ -31,8 +31,6 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -40,7 +38,13 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -58,8 +62,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final int access;
     private final String name;
     private final Type owner;
-    private final List<Advice> advisors;
-    private final Map<Advice, Integer> adviceFlowOuterHolderNums;
+    private final ImmutableList<Advice> advisors;
+    private final ImmutableMap<Advice, Integer> adviceFlowOuterHolderNums;
     private final Type[] argumentTypes;
 
     private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
@@ -70,20 +74,21 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
     private boolean needsTryCatch;
-    @Nullable
+    @LazyNonNull
     private Label catchStartLabel;
-    @Nullable
+    @LazyNonNull
     private Label outerStartLabel;
 
     protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
-            Type owner, List<Advice> advisors, Map<Advice, Integer> adviceFlowOuterHolderNums) {
+            Type owner, @ReadOnly List<Advice> advisors,
+            @ReadOnly Map<Advice, Integer> adviceFlowOuterHolderNums) {
 
         super(Opcodes.ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
-        this.advisors = advisors;
-        this.adviceFlowOuterHolderNums = adviceFlowOuterHolderNums;
+        this.advisors = ImmutableList.copyOf(advisors);
+        this.adviceFlowOuterHolderNums = ImmutableMap.copyOf(adviceFlowOuterHolderNums);
         argumentTypes = Type.getArgumentTypes(desc);
         for (Advice advice : advisors) {
             if (!advice.getPointcut().captureNested() || advice.getOnThrowAdvice() != null
@@ -95,9 +100,34 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Override
+    protected void onMethodEnter() {
+        outerStartLabel = newLabel();
+        visitLabel(outerStartLabel);
+        // enabled and traveler locals must be defined outside of the try block so they will be
+        // accessible in the catch block
+        for (int i = 0; i < advisors.size(); i++) {
+            Advice advice = advisors.get(i);
+            defineAndEvaluateEnabledLocalVar(advice);
+            defineTravelerLocalVar(advice);
+        }
+        // all advice should be executed outside of the try/catch, otherwise a programming error in
+        // the advice will trigger @OnThrow which is confusing at best
+        for (Advice advice : advisors) {
+            invokeOnBefore(advice, travelerLocals.get(advice));
+        }
+        if (needsTryCatch) {
+            catchStartLabel = newLabel();
+            visitLabel(catchStartLabel);
+        }
+    }
+
+    @Override
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
 
+        if (outerStartLabel == null) {
+            throw new NullPointerException("Call to onMethodEnter() is required");
+        }
         if (name.equals("this")) {
             // this is only so that eclipse debugger will not display <unknown receiving type>
             // inside code when inside of code before the previous method start label
@@ -152,6 +182,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
         if (needsTryCatch) {
+            if (catchStartLabel == null) {
+                throw new NullPointerException("Call to onMethodEnter() is required");
+            }
             Label catchEndLabel = newLabel();
             Label catchHandlerLabel2 = newLabel();
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
@@ -168,28 +201,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
             throwException();
         }
         super.visitMaxs(maxStack, maxLocals);
-    }
-
-    @Override
-    protected void onMethodEnter() {
-        outerStartLabel = newLabel();
-        visitLabel(outerStartLabel);
-        // enabled and traveler locals must be defined outside of the try block so they will be
-        // accessible in the catch block
-        for (int i = 0; i < advisors.size(); i++) {
-            Advice advice = advisors.get(i);
-            defineAndEvaluateEnabledLocalVar(advice);
-            defineTravelerLocalVar(advice);
-        }
-        // all advice should be executed outside of the try/catch, otherwise a programming error in
-        // the advice will trigger @OnThrow which is confusing at best
-        for (Advice advice : advisors) {
-            invokeOnBefore(advice, travelerLocals.get(advice));
-        }
-        if (needsTryCatch) {
-            catchStartLabel = newLabel();
-            visitLabel(catchStartLabel);
-        }
     }
 
     @Override
@@ -336,7 +347,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
         }
-        if (enabledLocal != null) {
+        if (onBeforeBlockEnd != null) {
             visitLabel(onBeforeBlockEnd);
         }
     }
@@ -390,7 +401,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 }
                 invokeStatic(advice.getAdviceType(), onReturnAdvice);
             }
-            if (enabledLocal != null) {
+            if (onReturnBlockEnd != null) {
                 visitLabel(onReturnBlockEnd);
             }
         }
@@ -422,7 +433,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                         travelerLocals.get(advice), advice.getAdviceType(), OnThrow.class);
                 invokeStatic(advice.getAdviceType(), onThrowAdvice);
             }
-            if (enabledLocal != null) {
+            if (onThrowBlockEnd != null) {
                 visitLabel(onThrowBlockEnd);
             }
         }
@@ -444,7 +455,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             loadMethodArgs(advice.getOnAfterParameterKinds(), 0, travelerLocals.get(advice),
                     advice.getAdviceType(), OnAfter.class);
             invokeStatic(advice.getAdviceType(), onAfterAdvice);
-            if (enabledLocal != null) {
+            if (onAfterBlockEnd != null) {
                 visitLabel(onAfterBlockEnd);
             }
         }

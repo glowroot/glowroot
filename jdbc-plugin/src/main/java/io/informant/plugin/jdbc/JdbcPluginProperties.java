@@ -18,15 +18,12 @@ package io.informant.plugin.jdbc;
 import io.informant.shaded.google.common.collect.HashMultimap;
 import io.informant.shaded.google.common.collect.ImmutableMultimap;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 /**
  * API for other plugins to modify the jdbc plugin behavior.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 public final class JdbcPluginProperties {
 
     private static volatile ImmutableMultimap<String, Integer> displayBinaryParameterAsHex =

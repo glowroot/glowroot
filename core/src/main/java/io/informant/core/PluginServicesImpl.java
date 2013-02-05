@@ -28,6 +28,8 @@ import io.informant.core.config.ConfigService;
 import io.informant.core.config.FineProfilingConfig;
 import io.informant.core.config.GeneralConfig;
 import io.informant.core.config.PluginConfig;
+import io.informant.core.config.PluginDescriptor;
+import io.informant.core.config.Plugins;
 import io.informant.core.config.UserConfig;
 import io.informant.core.trace.FineGrainedProfiler;
 import io.informant.core.trace.MetricImpl;
@@ -38,17 +40,20 @@ import io.informant.core.trace.TraceRegistry;
 import io.informant.core.trace.TraceSink;
 import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.core.util.Clock;
+import io.informant.core.util.NotThreadSafe;
+import io.informant.core.util.ThreadSafe;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.nullness.quals.Nullable;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
@@ -82,6 +87,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     // cache for fast read access
     private volatile GeneralConfig generalConfig;
+    @Nullable
     private volatile PluginConfig pluginConfig;
 
     @Inject
@@ -104,7 +110,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         // (remotely) possible race condition
         configService.addConfigListener(this);
         generalConfig = configService.getGeneralConfig();
-        pluginConfig = configService.getPluginConfigOrNopInstance(pluginId);
+        pluginConfig = configService.getPluginConfig(pluginId);
+        if (pluginConfig == null) {
+            List<String> ids = Lists.newArrayList();
+            for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
+                ids.add(pluginDescriptor.getId());
+            }
+            logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId,
+                    Joiner.on(", ").join(ids));
+        }
     }
 
     @Override
@@ -114,7 +128,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public boolean isEnabled() {
-        return generalConfig.isEnabled() && pluginConfig.isEnabled();
+        return generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
     }
 
     @Override
@@ -123,7 +137,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("getStringProperty(): argument 'propertyName' must be non-null");
             return "";
         }
-        return pluginConfig.getStringProperty(propertyName);
+        if (pluginConfig == null) {
+            return "";
+        } else {
+            return pluginConfig.getStringProperty(propertyName);
+        }
     }
 
     @Override
@@ -132,7 +150,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("getBooleanProperty(): argument 'propertyName' must be non-null");
             return false;
         }
-        return pluginConfig.getBooleanProperty(propertyName);
+        if (pluginConfig == null) {
+            return false;
+        } else {
+            return pluginConfig.getBooleanProperty(propertyName);
+        }
     }
 
     @Override
@@ -142,7 +164,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("getDoubleProperty(): argument 'propertyName' must be non-null");
             return null;
         }
-        return pluginConfig.getDoubleProperty(propertyName);
+        if (pluginConfig == null) {
+            return null;
+        } else {
+            return pluginConfig.getDoubleProperty(propertyName);
+        }
     }
 
     @Override
@@ -290,7 +316,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     public void onChange() {
         generalConfig = configService.getGeneralConfig();
-        pluginConfig = configService.getPluginConfigOrNopInstance(pluginId);
+        pluginConfig = configService.getPluginConfig(pluginId);
     }
 
     private boolean maybeScheduleFineProfilingUsingUserId(Trace trace, @Nullable String userId) {
@@ -349,11 +375,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public void updateMessage(MessageUpdater updater) {
             if (updater == null) {
                 logger.warn("updateMessage(): argument 'updater' must be non-null");
-            } else {
-                updater.update(span.getMessageSupplier());
+                return;
+            }
+            MessageSupplier messageSupplier = span.getMessageSupplier();
+            if (messageSupplier != null) {
+                updater.update(messageSupplier);
             }
         }
-        private void endInternal(ErrorMessage errorMessage) {
+        private void endInternal(@Nullable ErrorMessage errorMessage) {
             long endTick = ticker.read();
             if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(generalConfig
                     .getSpanStackTraceThresholdMillis())) {
@@ -401,7 +430,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     logger.error(e.getMessage(), e);
                 } catch (ExecutionException e) {
                     if (!(e.getCause() instanceof TerminateScheduledActionException)) {
-                        logger.error(e.getMessage(), e.getCause());
+                        logger.error(e.getMessage(), e);
                     }
                 }
             }

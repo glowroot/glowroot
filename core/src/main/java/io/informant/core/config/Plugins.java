@@ -18,16 +18,14 @@ package io.informant.core.config;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.config.PluginDescriptor.PropertyDescriptor;
+import io.informant.core.util.Resources2;
 import io.informant.core.util.Static;
 import io.informant.core.util.XmlDocuments;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.List;
 
-import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
@@ -36,11 +34,14 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
@@ -53,37 +54,27 @@ public final class Plugins {
 
     private static final Logger logger = LoggerFactory.getLogger(Plugins.class);
 
-    private static final Supplier<List<PluginDescriptor>> packagedPluginDescriptors = Suppliers
-            .memoize(new Supplier<List<PluginDescriptor>>() {
-                public List<PluginDescriptor> get() {
-                    return ImmutableList.copyOf(readPackagedPlugins());
+    private static final Supplier<ImmutableList<PluginDescriptor>> pluginDescriptors =
+            Suppliers.memoize(new Supplier<ImmutableList<PluginDescriptor>>() {
+                public ImmutableList<PluginDescriptor> get() {
+                    return ImmutableList.copyOf(Iterables.concat(readPackagedPlugins(),
+                            readInstalledPlugins()));
                 }
             });
 
-    private static final Supplier<List<PluginDescriptor>> installedPluginDescriptors = Suppliers
-            .memoize(new Supplier<List<PluginDescriptor>>() {
-                public List<PluginDescriptor> get() {
-                    return ImmutableList.copyOf(readInstalledPlugins());
-                }
-            });
-
-    public static List<PluginDescriptor> getPackagedPluginDescriptors() {
-        return packagedPluginDescriptors.get();
+    // don't return ImmutableList since this is used by UiTestingMain and ImmutableList gets shaded
+    @ReadOnly
+    public static List<PluginDescriptor> getPluginDescriptors() {
+        return pluginDescriptors.get();
     }
 
-    public static List<PluginDescriptor> getInstalledPluginDescriptors() {
-        return installedPluginDescriptors.get();
-    }
-
-    private static Collection<PluginDescriptor> readInstalledPlugins() {
+    @ReadOnly
+    private static List<PluginDescriptor> readInstalledPlugins() {
         try {
-            Enumeration<URL> e = Plugins.class.getClassLoader().getResources(
-                    "META-INF/io.informant.plugin.xml");
             List<PluginDescriptor> plugins = Lists.newArrayList();
-            while (e.hasMoreElements()) {
-                URL resourceURL = e.nextElement();
+            for (URL url : Resources2.getResources("META-INF/io.informant.plugin.xml")) {
                 Document document = XmlDocuments.newValidatedDocument(Resources
-                        .newInputStreamSupplier(resourceURL));
+                        .newInputStreamSupplier(url));
                 Element root = document.getDocumentElement();
                 plugins.add(createPluginDescriptor(root));
             }
@@ -100,19 +91,17 @@ public final class Plugins {
         }
     }
 
-    private static Collection<PluginDescriptor> readPackagedPlugins() {
+    @ReadOnly
+    private static List<PluginDescriptor> readPackagedPlugins() {
         try {
-            Enumeration<URL> e = Plugins.class.getClassLoader().getResources(
-                    "META-INF/io.informant.package.xml");
-            if (!e.hasMoreElements()) {
+            List<URL> urls = Resources2.getResources("META-INF/io.informant.package.xml");
+            if (urls.isEmpty()) {
                 return ImmutableList.of();
             }
-            URL resourceURL = e.nextElement();
-            if (e.hasMoreElements()) {
+            if (urls.size() > 1) {
                 List<String> resourcePaths = Lists.newArrayList();
-                resourcePaths.add("'" + resourceURL.getPath() + "'");
-                while (e.hasMoreElements()) {
-                    resourcePaths.add("'" + e.nextElement().getPath() + "'");
+                for (URL url : urls) {
+                    resourcePaths.add("'" + url.getPath() + "'");
                 }
                 logger.error("more than one resource found with name 'META-INF"
                         + "/io.informant.package.xml'. This file is only supported inside of an"
@@ -122,11 +111,11 @@ public final class Plugins {
             Document document;
             try {
                 document = XmlDocuments.newValidatedDocument(Resources
-                        .newInputStreamSupplier(resourceURL));
+                        .newInputStreamSupplier(urls.get(0)));
             } catch (SAXParseException f) {
                 logger.error("error reading/validating META-INF/io.informant.package.xml: "
                         + f.getMessage(), f);
-                return ImmutableSet.of();
+                return ImmutableList.of();
             }
             Element root = document.getDocumentElement();
             List<PluginDescriptor> plugins = Lists.newArrayList();

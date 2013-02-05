@@ -15,7 +15,7 @@
  */
 package io.informant.testkit;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 

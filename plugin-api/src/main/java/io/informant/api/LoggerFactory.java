@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,8 @@
  */
 package io.informant.api;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * This is simply a wrapper of the SLF4J Logger API without the Marker support.
@@ -31,57 +28,51 @@ import javax.annotation.concurrent.ThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class LoggerFactory {
+public abstract class LoggerFactory {
 
     private static final String LOGGER_FACTORY_IMPL_CLASS_NAME =
             "io.informant.core.log.LoggerFactoryImpl";
-    private static final String GET_LOGGER_METHOD_NAME = "getLogger";
 
     @Nullable
-    private static final Method getPluginServicesMethod;
+    private static final LoggerFactory instance;
 
     static {
-        Method method;
+        instance = getLoggerFactoryInstance();
+    }
+
+    protected LoggerFactory() {}
+
+    protected abstract Logger getLogger(String name);
+
+    public static Logger getLogger(Class<?> type) {
+        if (instance == null) {
+            return new LoggerImpl(type);
+        }
+        return instance.getLogger(type.getName());
+    }
+
+    @Nullable
+    private static LoggerFactory getLoggerFactoryInstance() {
+        Class<?> loggerFactoryImplClass;
         try {
-            Class<?> mainEntryPointClass = Class.forName(LOGGER_FACTORY_IMPL_CLASS_NAME);
-            method = mainEntryPointClass.getMethod(GET_LOGGER_METHOD_NAME, String.class);
+            loggerFactoryImplClass = Class.forName(LOGGER_FACTORY_IMPL_CLASS_NAME);
         } catch (ClassNotFoundException e) {
             // this happens during the plugin-api unit tests at which time
             // io.informant.core.LoggerFactoryImpl is not available
-            method = null;
-        } catch (NoSuchMethodException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
-            e.printStackTrace();
-            throw new IllegalStateException(e);
-        }
-        getPluginServicesMethod = method;
-    }
-
-    public static Logger getLogger(Class<?> type) {
-        if (getPluginServicesMethod == null) {
-            return new LoggerImpl(type);
+            return null;
         }
         try {
-            return (Logger) getPluginServicesMethod.invoke(null, type.getName());
-        } catch (SecurityException e) {
+            return (LoggerFactory) loggerFactoryImplClass.newInstance();
+        } catch (InstantiationException e) {
             // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
-            e.printStackTrace();
-            throw new IllegalStateException(e);
-        } catch (IllegalArgumentException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
+            // couldn't load the logger so best recourse at this point is to write error to
+            // stderr
             e.printStackTrace();
             throw new IllegalStateException(e);
         } catch (IllegalAccessException e) {
             // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
-            e.printStackTrace();
-            throw new IllegalStateException(e);
-        } catch (InvocationTargetException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to stderr
+            // couldn't load the logger so best recourse at this point is to write error to
+            // stderr
             e.printStackTrace();
             throw new IllegalStateException(e);
         }
@@ -89,7 +80,7 @@ public final class LoggerFactory {
 
     // this is used during the plugin-api unit tests at which time
     // io.informant.core.LoggerFactoryImpl is not available
-    @ThreadSafe
+    @Immutable
     private static class LoggerImpl implements Logger {
 
         private final org.slf4j.Logger logger;
@@ -109,10 +100,10 @@ public final class LoggerFactory {
         public void trace(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.trace(format, arg1, arg2);
         }
-        public void trace(String format, Object... arguments) {
+        public void trace(String format, @Nullable Object... arguments) {
             logger.trace(format, arguments);
         }
-        public void trace(String msg, Throwable t) {
+        public void trace(@Nullable String msg, Throwable t) {
             logger.trace(msg, t);
         }
         public boolean isDebugEnabled() {
@@ -127,10 +118,10 @@ public final class LoggerFactory {
         public void debug(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.debug(format, arg1, arg2);
         }
-        public void debug(String format, Object... arguments) {
+        public void debug(String format, @Nullable Object... arguments) {
             logger.debug(format, arguments);
         }
-        public void debug(String msg, Throwable t) {
+        public void debug(@Nullable String msg, Throwable t) {
             logger.debug(msg, t);
         }
         public boolean isInfoEnabled() {
@@ -145,10 +136,10 @@ public final class LoggerFactory {
         public void info(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.info(format, arg1, arg2);
         }
-        public void info(String format, Object... arguments) {
+        public void info(String format, @Nullable Object... arguments) {
             logger.info(format, arguments);
         }
-        public void info(String msg, Throwable t) {
+        public void info(@Nullable String msg, Throwable t) {
             logger.info(msg, t);
         }
         public boolean isWarnEnabled() {
@@ -163,10 +154,10 @@ public final class LoggerFactory {
         public void warn(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.warn(format, arg1, arg2);
         }
-        public void warn(String format, Object... arguments) {
+        public void warn(String format, @Nullable Object... arguments) {
             logger.warn(format, arguments);
         }
-        public void warn(String msg, Throwable t) {
+        public void warn(@Nullable String msg, Throwable t) {
             logger.warn(msg, t);
         }
         public boolean isErrorEnabled() {
@@ -181,13 +172,11 @@ public final class LoggerFactory {
         public void error(String format, @Nullable Object arg1, @Nullable Object arg2) {
             logger.error(format, arg1, arg2);
         }
-        public void error(String format, Object... arguments) {
+        public void error(String format, @Nullable Object... arguments) {
             logger.error(format, arguments);
         }
-        public void error(String msg, Throwable t) {
+        public void error(@Nullable String msg, Throwable t) {
             logger.error(msg, t);
         }
     }
-
-    private LoggerFactory() {}
 }

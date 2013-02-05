@@ -42,10 +42,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-
 import org.h2.store.FileLister;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.GuardedBy;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
@@ -96,6 +97,9 @@ public final class MainEntryPoint {
             CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
                 @Override
                 public PluginServices load(String pluginId) {
+                    if (injector == null) {
+                        throw new NullPointerException("Call to start() is required");
+                    }
                     return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
                 }
             });
@@ -145,6 +149,9 @@ public final class MainEntryPoint {
 
     // called via reflection from io.informant.api.PluginServices
     public static PluginServices getPluginServices(String pluginId) {
+        if (injector == null) {
+            throw new NullPointerException("Call to start() is required");
+        }
         if (returnPluginServicesProxy.get()) {
             synchronized (returnPluginServicesProxy) {
                 if (returnPluginServicesProxy.get()) {
@@ -159,7 +166,7 @@ public final class MainEntryPoint {
     }
 
     @VisibleForTesting
-    public static void start(Map<String, String> properties) {
+    public static void start(@ReadOnly Map<String, String> properties) {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
         synchronized (lock) {
             if (injector != null) {
@@ -188,11 +195,7 @@ public final class MainEntryPoint {
     private static WeavingClassFileTransformer newWeavingClassFileTransformer() {
         List<Mixin> mixins = Lists.newArrayList();
         List<Advice> advisors = Lists.newArrayList();
-        for (PluginDescriptor plugin : Plugins.getPackagedPluginDescriptors()) {
-            mixins.addAll(plugin.getMixins());
-            advisors.addAll(plugin.getAdvisors());
-        }
-        for (PluginDescriptor plugin : Plugins.getInstalledPluginDescriptors()) {
+        for (PluginDescriptor plugin : Plugins.getPluginDescriptors()) {
             mixins.addAll(plugin.getMixins());
             advisors.addAll(plugin.getAdvisors());
         }
@@ -219,6 +222,9 @@ public final class MainEntryPoint {
 
     @OnlyUsedByTests
     public static int getPort() {
+        if (injector == null) {
+            throw new NullPointerException("Call to start() is required");
+        }
         return injector.getInstance(HttpServer.class).getPort();
     }
 

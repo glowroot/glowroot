@@ -131,32 +131,34 @@ var spansTemplateText = ''
 + '    {{nanosToMillis duration}}{{#if active}}..{{/if}}'
 + '  </div>'
 + '  <div style="margin-left: {{add 2 offsetColumnWidth}}em">'
-+ '    {{#ifLongMessage message.text}}'
-+ '      <div>'
-+ '        <span class="unexpanded-content">'
-+ '          {{firstPart message.text}}'
-+ '          <span class="red"><strong>...</strong></span>'
-+ '          {{lastPart message.text}}'
-+ '        </span>'
-+ '        <div class="expanded-content breakword hide">'
++ '    {{#if message}}'
++ '      {{#ifLongMessage message.text}}'
++ '        <div>'
++ '          <span class="unexpanded-content">'
++ '            {{firstPart message.text}}'
++ '            <span class="red"><strong>...</strong></span>'
++ '            {{lastPart message.text}}'
++ '          </span>'
++ '          <div class="expanded-content breakword hide">'
++ '            {{message.text}}'
++ '          </div>'
++ '        </div>'
++ '      {{^}}'
++ '        <div class="unexpanded-padding">'
 + '          {{message.text}}'
 + '        </div>'
-+ '      </div>'
-+ '    {{^}}'
-+ '      <div class="unexpanded-padding">'
-+ '        {{message.text}}'
-+ '      </div>'
-+ '    {{/ifLongMessage}}'
-+ '    {{#if message.detail}}'
-+ '      <div class="indent2">'
-+ '        <span class="unexpanded-content red">detail</span>'
-+ '        <div class="expanded-content hide">'
-+ '          {{{messageDetailHtml message.detail}}}'
++ '      {{/ifLongMessage}}'
++ '      {{#if message.detail}}'
++ '        <div class="indent2">'
++ '          <span class="unexpanded-content red">detail</span>'
++ '          <div class="expanded-content hide">'
++ '            {{{messageDetailHtml message.detail}}}'
++ '          </div>'
 + '        </div>'
-+ '      </div>'
++ '      {{/if}}'
 + '    {{/if}}'
 + '    {{#if error}}'
-+ '      <div class="indent2">'
++ '      <div{{{errorIndent message}}}>'
 + '        <strong><span class="indent1">{{error.text}}</span></strong>'
 + '        <br>'
 + '        {{#if error.detail}}'
@@ -165,7 +167,7 @@ var spansTemplateText = ''
 + '          </div>'
 + '        {{/if}}'
 + '        {{#if error.exception}}'
-+ '          <div class="indent1">'
++ '          <div{{{exceptionIndent message}}}>'
 + '            <span class="unexpanded-content red">exception</span>'
                // using span so background will stretch beyond page border if needed
 + '            <span class="expanded-content nowrap hide">'
@@ -227,6 +229,20 @@ Handlebars.registerHelper('ifLongMessage', function(message, options) {
     return options.fn(this)
   } else {
     return options.inverse(this)
+  }
+})
+Handlebars.registerHelper('errorIndent', function(message, options) {
+  if (message) {
+    return ' class="indent2"'
+  } else {
+    return ''
+  }
+})
+Handlebars.registerHelper('exceptionIndent', function(message, options) {
+  if (message) {
+    return ' class="indent1"'
+  } else {
+    return ' class="indent2"'
   }
 })
 Handlebars.registerHelper('ifRolledOver', function(value, options) {

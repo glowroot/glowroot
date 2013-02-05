@@ -37,9 +37,9 @@
       <version>1.0.9-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>2.0.1</version>
+      <groupId>edu.washington.cs.types.checker</groupId>
+      <artifactId>checker-quals-jdk5</artifactId>
+      <version>1.6.0</version>
     </dependency>
     <!-- provides org.slf4j.impl classes to compile "unshaded" option against, can't just add stub
       org.slf4j.impl classes to this project because then they are seen inside eclipse by other

@@ -19,12 +19,12 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.weaving.Mixin;
 import io.informant.core.trace.WeavingMetricImpl;
+import io.informant.core.util.ThreadSafe;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -59,9 +59,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                             return new Weaver(mixins, advisors, loader, parsedTypeCache, metric);
                         }
                     });
-    // the weaver for the boot class loader (null) has to be stored separately since LoadingCache
-    // doesn't accept null keys, and using an Optional<ClassLoader> for the key makes the weakness
-    // on the Optional instance instead of on the ClassLoader instance
+    // the weaver for the bootstrap class loader (null) has to be stored separately since
+    // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
+    // the weakness on the Optional instance instead of on the ClassLoader instance
     private final Weaver bootLoaderWeaver;
 
     private volatile boolean disabled;

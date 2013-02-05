@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,8 @@
 package io.informant.local.log;
 
 import io.informant.core.log.Level;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -32,23 +31,23 @@ public class LogMessage {
     private final long timestamp;
     private final Level level;
     private final String loggerName;
+    @Nullable
     private final String text;
     @Nullable
     private final String exception; // json data
 
-    public static LogMessage from(long timestamp, Level level, String loggerName, String text) {
+    public static LogMessage from(long timestamp, Level level, String loggerName,
+            @Nullable String text) {
         return from(timestamp, level, loggerName, text, null);
     }
 
-    public static LogMessage from(long timestamp, Level level, String loggerName, String text,
-            @Nullable String exception) {
-
+    public static LogMessage from(long timestamp, Level level, String loggerName,
+            @Nullable String text, @Nullable String exception) {
         return new LogMessage(timestamp, level, loggerName, text, exception);
     }
 
-    private LogMessage(long timestamp, Level level, String loggerName, String text,
+    private LogMessage(long timestamp, Level level, String loggerName, @Nullable String text,
             @Nullable String exception) {
-
         this.timestamp = timestamp;
         this.level = level;
         this.loggerName = loggerName;
@@ -68,6 +67,7 @@ public class LogMessage {
         return loggerName;
     }
 
+    @Nullable
     public String getText() {
         return text;
     }

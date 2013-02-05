@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 package io.informant.plugin.servlet;
 
 import io.informant.api.UnresolvedMethod;
-import io.informant.shaded.google.common.collect.ImmutableSet;
 
-import java.util.Collections;
 import java.util.Enumeration;
+import java.util.NoSuchElementException;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
@@ -31,7 +30,6 @@ import javax.annotation.concurrent.ThreadSafe;
 // HttpSession wrapper does not make assumptions about the @Nullable properties of the underlying
 // javax.servlet.http.HttpSession since it's just an interface and could theoretically return null
 // even where it seems to not make sense
-@ThreadSafe
 class HttpSession {
 
     private static final UnresolvedMethod getIdMethod = UnresolvedMethod.from(
@@ -54,7 +52,7 @@ class HttpSession {
     }
 
     String getId() {
-        String id = getIdMethod.invokeWithDefaultOnError(realSession, "");
+        String id = (String) getIdMethod.invokeWithDefaultOnError(realSession, "");
         if (id == null) {
             return "";
         } else {
@@ -63,14 +61,14 @@ class HttpSession {
     }
 
     boolean isNew() {
-        return isNewMethod.invokeWithDefaultOnError(realSession, false);
+        return (Boolean) isNewMethod.invokeWithDefaultOnError(realSession, false);
     }
 
     Enumeration<?> getAttributeNames() {
         Enumeration<?> attributeNames = (Enumeration<?>) getAttributeNamesMethod
                 .invokeWithDefaultOnError(realSession, null);
         if (attributeNames == null) {
-            return Collections.enumeration(ImmutableSet.of());
+            return EmptyEnumeration.INSTANCE;
         } else {
             return attributeNames;
         }
@@ -80,5 +78,16 @@ class HttpSession {
     Object getAttribute(String name) {
         return getAttributeMethod.invokeWithDefaultOnError(realSession, name,
                 "<error calling HttpSession.getAttribute()>");
+    }
+
+    @Immutable
+    private static class EmptyEnumeration implements Enumeration<Object> {
+        private static final EmptyEnumeration INSTANCE = new EmptyEnumeration();
+        public boolean hasMoreElements() {
+            return false;
+        }
+        public Object nextElement() {
+            throw new NoSuchElementException();
+        }
     }
 }

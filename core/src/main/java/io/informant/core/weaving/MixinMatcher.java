@@ -19,9 +19,10 @@ import io.informant.api.weaving.Mixin;
 
 import java.util.List;
 
-import javax.annotation.concurrent.Immutable;
-
 import org.objectweb.asm.Type;
+
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 
 /**
  * @author Trask Stalnaker
@@ -35,7 +36,7 @@ class MixinMatcher {
     private final boolean alreadyImplementsMixin;
     private final boolean superClassMatch;
 
-    MixinMatcher(Mixin mixin, Type targetType, List<ParsedType> superTypes) {
+    MixinMatcher(Mixin mixin, Type targetType, @ReadOnly List<ParsedType> superTypes) {
         this.mixin = mixin;
         targetTypeClassMatch = isTypeMatch(targetType.getClassName());
 

@@ -40,7 +40,7 @@ import java.util.Enumeration;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Defines pointcuts and captures data on
@@ -63,13 +63,14 @@ public class ServletAspect {
     private static final PluginServices pluginServices = PluginServices
             .get("io.informant.plugins:servlet-plugin");
 
-    private static final ThreadLocal<ServletMessageSupplier> topLevel =
-            new ThreadLocal<ServletMessageSupplier>();
+    private static final ThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
+            new ThreadLocal</*@Nullable*/ServletMessageSupplier>();
 
     // the life of this thread local is tied to the life of the topLevel thread local
     // it is only created if the topLevel thread local exists, and it is cleared when topLevel
     // thread local is cleared
-    private static final ThreadLocal<ErrorMessage> sendError = new ThreadLocal<ErrorMessage>();
+    private static final ThreadLocal</*@Nullable*/ErrorMessage> sendError =
+            new ThreadLocal</*@Nullable*/ErrorMessage>();
 
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service",
             methodArgs = { "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },

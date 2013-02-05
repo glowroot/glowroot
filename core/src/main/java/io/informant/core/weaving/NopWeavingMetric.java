@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,13 @@
 package io.informant.core.weaving;
 
 import io.informant.api.Timer;
-
-import javax.annotation.concurrent.ThreadSafe;
-
+import checkers.igj.quals.Immutable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class NopWeavingMetric implements WeavingMetric {
 
     static final NopWeavingMetric INSTANCE = new NopWeavingMetric();
@@ -32,7 +31,6 @@ class NopWeavingMetric implements WeavingMetric {
         return NopTimer.INSTANCE;
     }
 
-    @ThreadSafe
     private static class NopTimer implements Timer {
         private static final NopTimer INSTANCE = new NopTimer();
         public void end() {}

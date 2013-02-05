@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,8 @@
  */
 package io.informant.packager;
 
-import java.util.List;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -67,11 +65,11 @@ public class PluginDescriptor {
         return version;
     }
 
-    public List<PropertyDescriptor> getProperties() {
+    public ImmutableList<PropertyDescriptor> getProperties() {
         return properties;
     }
 
-    public List<String> getAspects() {
+    public ImmutableList<String> getAspects() {
         return aspects;
     }
 

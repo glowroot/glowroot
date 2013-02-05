@@ -17,9 +17,8 @@ package io.informant.core.trace;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import io.informant.core.util.ThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -35,6 +34,7 @@ import com.google.common.base.Objects;
 @ThreadSafe
 public class Span {
 
+    @Nullable
     private final MessageSupplier messageSupplier;
     @Nullable
     private volatile ErrorMessage errorMessage;
@@ -54,10 +54,9 @@ public class Span {
     @Nullable
     private final TraceMetric traceMetric;
 
-    @Nullable
-    private volatile StackTraceElement[] stackTrace;
+    private volatile StackTraceElement/*@Nullable*/[] stackTrace;
 
-    Span(MessageSupplier messageSupplier, long traceStartTick, long startTick,
+    Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
             int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
 
         this.messageSupplier = messageSupplier;
@@ -69,6 +68,7 @@ public class Span {
         this.traceMetric = traceMetric;
     }
 
+    @Nullable
     public MessageSupplier getMessageSupplier() {
         return messageSupplier;
     }
@@ -103,8 +103,7 @@ public class Span {
         return nestingLevel;
     }
 
-    @Nullable
-    public StackTraceElement[] getStackTrace() {
+    public StackTraceElement/*@Nullable*/[] getStackTrace() {
         return stackTrace;
     }
 
@@ -121,14 +120,14 @@ public class Span {
         this.endTick = endTick;
     }
 
-    public void setStackTrace(@Nullable StackTraceElement[] stackTrace) {
+    public void setStackTrace(StackTraceElement[] stackTrace) {
         this.stackTrace = stackTrace;
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("message", messageSupplier.get())
+                .add("message", messageSupplier == null ? null : messageSupplier.get())
                 .add("errorMessage", errorMessage)
                 .add("traceStartTick", traceStartTick)
                 .add("startTick", startTick)

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@ package io.informant.core.trace;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-
-import javax.annotation.concurrent.ThreadSafe;
+import io.informant.core.util.ThreadSafe;
 
 import com.google.common.base.Objects;
 
@@ -48,8 +47,7 @@ class CollectStuckTraceCommand implements Runnable {
         logger.debug("run(): trace.id={}", trace.getId());
         if (trace.isCompleted()) {
             if (tracePreviouslyCompleted) {
-                logger.warn("trace '{}' already completed", trace.getRootSpan()
-                        .getMessageSupplier().get().getText());
+                logger.warn("trace already completed: {}", trace);
                 throw new IllegalStateException("Trace already completed, just throwing to"
                         + " terminate subsequent scheduled executions");
             } else {

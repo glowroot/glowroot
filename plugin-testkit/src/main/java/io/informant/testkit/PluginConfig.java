@@ -17,7 +17,7 @@ package io.informant.testkit;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
@@ -31,8 +31,7 @@ import com.google.gson.GsonBuilder;
 public class PluginConfig {
 
     private boolean enabled;
-    // map values are @Nullable
-    private final Map<String, Object> properties = Maps.newHashMap();
+    private final Map<String, /*@Nullable*/Object> properties = Maps.newHashMap();
 
     String toJson() {
         Gson gson = new GsonBuilder().serializeNulls().create();

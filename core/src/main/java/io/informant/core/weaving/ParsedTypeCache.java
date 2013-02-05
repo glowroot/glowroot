@@ -17,6 +17,7 @@ package io.informant.core.weaving;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.ThreadSafe;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -31,14 +32,13 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
@@ -96,7 +96,7 @@ public class ParsedTypeCache {
                         }
                     });
 
-    // the parsed types for the boot class loader (null) have to be stored separately since
+    // the parsed types for the bootstrap class loader (null) have to be stored separately since
     // LoadingCache doesn't accept null keys, and using an Optional<ClassLoader> for the key makes
     // the weakness on the Optional instance which is not strongly referenced from anywhere and
     // therefore the keys will most likely be cleared while their class loaders are still being used
@@ -125,7 +125,7 @@ public class ParsedTypeCache {
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
-    public List<String> getMatchingMethodNames(String typeName, String partialMethodName,
+    public ImmutableList<String> getMatchingMethodNames(String typeName, String partialMethodName,
             int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newTreeSet();
@@ -137,7 +137,7 @@ public class ParsedTypeCache {
                 }
             }
         }
-        List<String> sortedMethodNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
+        ImmutableList<String> sortedMethodNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
                 .immutableSortedCopy(methodNames);
         if (methodNames.size() > limit) {
             return sortedMethodNames.subList(0, limit);
@@ -232,9 +232,12 @@ public class ParsedTypeCache {
         ParsedType parsedType = loaderParsedTypes.get(typeName);
         if (parsedType == null) {
             parsedType = createParsedType(typeName, parsedTypeLoader);
-            loaderParsedTypes.putIfAbsent(typeName, parsedType);
+            ParsedType storedParsedType = loaderParsedTypes.putIfAbsent(typeName, parsedType);
+            if (storedParsedType != null) {
+                // (rare) concurrent ParsedType creation, use the one that made it into the map
+                parsedType = storedParsedType;
+            }
             typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
-            parsedType = loaderParsedTypes.get(typeName);
         }
         superTypes.add(parsedType);
         addSuperTypes(parsedType.getSuperName(), superTypes, loader);
@@ -248,7 +251,8 @@ public class ParsedTypeCache {
         String path = TypeNames.toInternal(typeName) + ".class";
         URL url;
         if (loader == null) {
-            url = ClassLoader.getSystemClassLoader().getResource(path);
+            // null loader means the bootstrap class loader
+            url = ClassLoader.getSystemResource(path);
         } else {
             url = loader.getResource(path);
         }
@@ -310,8 +314,9 @@ public class ParsedTypeCache {
         for (Class<?> iface : type.getInterfaces()) {
             interfaceNames.add(iface.getName());
         }
-        return ParsedType.from(typeName, type.getSuperclass().getName(), interfaceNames.build(),
-                parsedMethods.build());
+        Class<?> superclass = type.getSuperclass();
+        String superName = superclass == null ? null : superclass.getName();
+        return ParsedType.from(typeName, superName, interfaceNames.build(), parsedMethods.build());
     }
 
     private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
@@ -336,8 +341,7 @@ public class ParsedTypeCache {
         private String name;
         @Nullable
         private String superName;
-        @Nullable
-        private String[] interfaceNames;
+        private String/*@Nullable*/[] interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
         private ParsedTypeClassVisitor() {
@@ -345,8 +349,8 @@ public class ParsedTypeCache {
         }
 
         @Override
-        public void visit(int version, int access, String name, String signature,
-                @Nullable String superName, String[] interfaceNames) {
+        public void visit(int version, int access, String name, @Nullable String signature,
+                @Nullable String superName, String/*@Nullable*/[] interfaceNames) {
 
             this.name = name;
             if (superName == null || superName.equals("java/lang/Object")) {
@@ -360,7 +364,7 @@ public class ParsedTypeCache {
         @Override
         @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, @Nullable String[] exceptions) {
+                @Nullable String signature, String/*@Nullable*/[] exceptions) {
 
             methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc),
                     Type.getReturnType(desc), access));
@@ -368,6 +372,9 @@ public class ParsedTypeCache {
         }
 
         private ParsedType build() {
+            if (name == null) {
+                throw new NullPointerException("Call to visit() is required");
+            }
             return ParsedType.from(TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
                     TypeNames.fromInternal(interfaceNames), methods.build());
         }

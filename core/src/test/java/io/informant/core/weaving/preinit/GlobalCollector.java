@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import org.objectweb.asm.ClassReader;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;

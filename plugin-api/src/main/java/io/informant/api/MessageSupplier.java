@@ -17,6 +17,8 @@ package io.informant.api;
 
 import java.util.Map;
 
+import checkers.igj.quals.ReadOnly;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -36,7 +38,6 @@ public abstract class MessageSupplier {
         };
     }
 
-    // the objects in args must be thread safe
     public static MessageSupplier from(final String template, final String... args) {
         return new MessageSupplier() {
             @Override
@@ -46,8 +47,8 @@ public abstract class MessageSupplier {
         };
     }
 
-    // the objects in detail must be thread safe
-    public static MessageSupplier withDetail(final String message, final Map<String, ?> detail) {
+    public static MessageSupplier withDetail(final String message,
+            final @ReadOnly Map<String, String> detail) {
         return new MessageSupplier() {
             @Override
             public Message get() {

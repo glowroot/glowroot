@@ -31,10 +31,7 @@ import io.informant.core.util.RollingFile;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -72,14 +69,12 @@ class ConfigJsonService implements JsonService {
     @JsonServiceMethod
     String getConfig() throws IOException, SQLException {
         logger.debug("getConfig()");
-        List<PluginDescriptor> pluginDescriptors = Lists.newArrayList(Iterables.concat(
-                Plugins.getPackagedPluginDescriptors(), Plugins.getInstalledPluginDescriptors()));
         JsonObject configJson = new JsonObject();
         configJson.add("generalConfig", configService.getGeneralConfig().toJson());
         configJson.add("coarseProfilingConfig", configService.getCoarseProfilingConfig().toJson());
         configJson.add("fineProfilingConfig", configService.getFineProfilingConfig().toJson());
         configJson.add("userConfig", configService.getUserConfig().toJson());
-        configJson.add("pluginDescriptors", gson.toJsonTree(pluginDescriptors));
+        configJson.add("pluginDescriptors", gson.toJsonTree(Plugins.getPluginDescriptors()));
         configJson.add("pluginConfigs", getPluginConfigsJson());
         configJson.add("pointcutConfigs", getPoincutConfigsJson());
         configJson.addProperty("dataDir", dataDir.getCanonicalPath());
@@ -176,12 +171,12 @@ class ConfigJsonService implements JsonService {
 
     private JsonObject getPluginConfigsJson() {
         JsonObject jsonObject = new JsonObject();
-        Iterable<PluginDescriptor> pluginDescriptors = Iterables.concat(
-                Plugins.getPackagedPluginDescriptors(),
-                Plugins.getInstalledPluginDescriptors());
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            PluginConfig pluginConfig = configService
-                    .getPluginConfigOrNopInstance(pluginDescriptor.getId());
+        for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
+            PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.getId());
+            if (pluginConfig == null) {
+                throw new IllegalStateException("Plugin config not found for plugin id '"
+                        + pluginDescriptor.getId() + "'");
+            }
             jsonObject.add(pluginDescriptor.getId(), pluginConfig.toJson());
         }
         return jsonObject;

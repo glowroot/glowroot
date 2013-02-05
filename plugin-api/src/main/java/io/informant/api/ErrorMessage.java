@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,24 @@ package io.informant.api;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
 /**
+ * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value
+ * types. It can also contain nested maps (which have the same restrictions on value types,
+ * including additional levels of nested maps). The detail map cannot have null keys.
+ * 
+ * As an extra bonus, detail map can also contain io.informant.api.Optional values which is useful
+ * for Maps that do not accept null values, e.g.
+ * io.informant.shaded.google.common.collect.ImmutableMap.
+ * 
+ * The detail map does not need to be thread safe as long as it is only instantiated in response to
+ * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the
+ * map.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
@@ -30,12 +42,15 @@ public abstract class ErrorMessage {
 
     public abstract String getText();
 
+    @ReadOnly
     @Nullable
-    public abstract Map<String, ?> getDetail();
+    public abstract Map<String, ? extends /*@Nullable*/Object> getDetail();
 
     @Nullable
     public abstract CapturedException getException();
 
+    // keep constructor protected, if plugins could subclass, then extra validation would be
+    // required to ensure the Message contract is maintained
     protected ErrorMessage() {}
 
     @Override
@@ -57,24 +72,26 @@ public abstract class ErrorMessage {
 
     private static Throwable getRootCause(Throwable t) {
         Throwable root = t;
-        while (root.getCause() != null) {
-            root = root.getCause();
+        Throwable cause = root.getCause();
+        while (cause != null) {
+            root = cause;
+            cause = root.getCause();
         }
         return root;
     }
 
-    @Immutable
     private static class ErrorMessageImpl extends ErrorMessage {
 
         private final String text;
+        @ReadOnly
         @Nullable
-        private final Map<String, ?> detail;
+        private final Map<String, ? extends /*@Nullable*/Object> detail;
         @Nullable
         private final CapturedException exception;
 
-        private ErrorMessageImpl(String text, @Nullable Map<String, ?> detail,
+        private ErrorMessageImpl(String text,
+                @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail,
                 @Nullable CapturedException exception) {
-
             this.text = text;
             this.detail = detail;
             this.exception = exception;
@@ -86,8 +103,9 @@ public abstract class ErrorMessage {
         }
 
         @Override
+        @ReadOnly
         @Nullable
-        public Map<String, ?> getDetail() {
+        public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
 

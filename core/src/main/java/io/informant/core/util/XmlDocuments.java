@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
-import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -37,6 +36,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
@@ -104,14 +105,15 @@ public final class XmlDocuments {
             if (systemId.startsWith(prefix)) {
                 String simpleName = systemId.substring(prefix.length());
                 String path = "io/informant/core/schema/" + simpleName;
-                URL url = Resources.getResource(path);
-                if (url == null) {
+                URL url;
+                try {
+                    url = Resources.getResource(path);
+                } catch (IllegalArgumentException e) {
                     logger.error("could not find resource '{}'", path);
                     return null;
-                } else {
-                    return new InputSource(Resources.newReaderSupplier(url, Charsets.UTF_8)
-                            .getInput());
                 }
+                return new InputSource(Resources.newReaderSupplier(url, Charsets.UTF_8)
+                        .getInput());
             } else {
                 logger.error("unexpected xml resource requested: publicId={}, systemId={}",
                         new Object[] { publicId, systemId });

@@ -53,7 +53,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Defines pointcuts to capture data on {@link Statement}, {@link PreparedStatement},
@@ -396,12 +396,13 @@ public class JdbcAspect {
                 @InjectTarget ResultSet resultSet) {
 
             try {
-                if (resultSet.getStatement() == null) {
+                Statement statement = resultSet.getStatement();
+                if (statement == null) {
                     // this is not a statement execution, it is some other execution of
                     // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
                     return;
                 }
-                StatementMirror mirror = getStatementMirror(resultSet.getStatement());
+                StatementMirror mirror = getStatementMirror(statement);
                 JdbcMessageSupplier lastSpan = mirror.getLastJdbcMessageSupplier();
                 if (lastSpan == null) {
                     // tracing must be disabled (e.g. exceeded trace limit per operation)
@@ -542,8 +543,8 @@ public class JdbcAspect {
         // internally uses a java.sql API that is woven, or an internal API, or even a mis-matched
         // combination like using a PreparedStatement but not creating it via
         // Connection.prepareStatement())
-        private static final ThreadLocal<String> inDatabaseMetataDataMethod =
-                new ThreadLocal<String>();
+        private static final ThreadLocal</*@Nullable*/String> inDatabaseMetataDataMethod =
+                new ThreadLocal</*@Nullable*/String>();
         // plugin configuration property spanForDatabaseMetaData is cached to limit map lookups
         private static volatile boolean pluginEnabled;
         private static volatile boolean spanEnabled;
@@ -638,7 +639,6 @@ public class JdbcAspect {
         }
     }
 
-    @Nullable
     private static String getConnectionHashCode(DatabaseMetaData databaseMetaData) {
         try {
             return Integer.toHexString(databaseMetaData.getConnection().hashCode());

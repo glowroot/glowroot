@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Servlet span captured by AspectJ pointcut.
@@ -43,7 +43,6 @@ import javax.annotation.concurrent.ThreadSafe;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
 class ServletMessageSupplier extends MessageSupplier {
 
     // TODO allow additional notation for session attributes to capture, e.g.
@@ -68,13 +67,13 @@ class ServletMessageSupplier extends MessageSupplier {
     private final String requestMethod;
     @Nullable
     private final String requestURI;
-    @Nullable
+    @LazyNonNull
     private volatile ImmutableMap<String, String[]> requestParameterMap;
 
     // the initial value is the sessionId as it was present at the beginning of the request
     @Nullable
     private final String sessionIdInitialValue;
-    @Nullable
+    @LazyNonNull
     private volatile String sessionIdUpdatedValue;
 
     // session attributes may not be thread safe, so they must be converted to Strings
@@ -86,7 +85,7 @@ class ServletMessageSupplier extends MessageSupplier {
     private final ImmutableMap<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
-    @Nullable
+    @LazyNonNull
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(@Nullable String requestMethod, @Nullable String requestURI,
@@ -105,7 +104,7 @@ class ServletMessageSupplier extends MessageSupplier {
 
     @Override
     public Message get() {
-        ImmutableMap.Builder<String, Object> detail = ImmutableMap.builder();
+        Map<String, Object> detail = Maps.newHashMap();
         addRequestParameterDetail(detail);
         addSessionAttributeDetail(detail);
         String message;
@@ -118,7 +117,7 @@ class ServletMessageSupplier extends MessageSupplier {
         } else {
             message = requestMethod + " " + requestURI;
         }
-        return Message.withDetail(message, detail.build());
+        return Message.withDetail(message, detail);
     }
 
     boolean isRequestParameterMapCaptured() {
@@ -137,7 +136,7 @@ class ServletMessageSupplier extends MessageSupplier {
                 map.put(key, new String[] { "****" });
                 continue;
             }
-            String[] value = (String[]) entry.getValue();
+            String/*@Nullable*/[] value = (String/*@Nullable*/[]) entry.getValue();
             if (value == null) {
                 // just to be safe since ImmutableMap won't accept nulls
                 map.put(key, new String[0]);
@@ -170,9 +169,9 @@ class ServletMessageSupplier extends MessageSupplier {
         return sessionIdUpdatedValue;
     }
 
-    private void addRequestParameterDetail(ImmutableMap.Builder<String, Object> detail) {
+    private void addRequestParameterDetail(Map<String, Object> detail) {
         if (requestParameterMap != null && !requestParameterMap.isEmpty()) {
-            ImmutableMap.Builder<String, Object> nestedDetail = ImmutableMap.builder();
+            Map<String, Object> nestedDetail = Maps.newHashMap();
             for (String parameterName : requestParameterMap.keySet()) {
                 String[] values = requestParameterMap.get(parameterName);
                 if (values.length == 0) {
@@ -183,11 +182,11 @@ class ServletMessageSupplier extends MessageSupplier {
                     nestedDetail.put(parameterName, Joiner.on(", ").join(values));
                 }
             }
-            detail.put("request parameters", nestedDetail.build());
+            detail.put("request parameters", nestedDetail);
         }
     }
 
-    private void addSessionAttributeDetail(ImmutableMap.Builder<String, Object> detail) {
+    private void addSessionAttributeDetail(Map<String, Object> detail) {
         if (ServletPluginProperties.captureSessionId()) {
             if (sessionIdUpdatedValue != null) {
                 detail.put("session id (at beginning of this request)",
@@ -197,31 +196,31 @@ class ServletMessageSupplier extends MessageSupplier {
                 detail.put("session id", sessionIdInitialValue);
             }
         }
-        if (sessionAttributeInitialValueMap != null && sessionAttributeUpdatedValueMap == null) {
-            // session attributes were captured at the beginning of the request, and no session
-            // attributes were updated mid-request
-            detail.put("session attributes", sessionAttributeInitialValueMap);
-        } else if (sessionAttributeInitialValueMap == null
-                && sessionAttributeUpdatedValueMap != null) {
+        if (sessionAttributeInitialValueMap != null) {
+            if (sessionAttributeUpdatedValueMap == null) {
+                // session attributes were captured at the beginning of the request, and no session
+                // attributes were updated mid-request
+                detail.put("session attributes", sessionAttributeInitialValueMap);
+            } else {
+                // session attributes were updated mid-request
+                Map<String, Object> sessionAttributeInitialValuePlusMap = Maps.newHashMap();
+                sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
+                // add empty values into initial values for any updated attributes that are not
+                // already present in initial values nested detail map
+                for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
+                        .entrySet()) {
+                    if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
+                        sessionAttributeInitialValuePlusMap.put(entry.getKey(), Optional.absent());
+                    }
+                }
+                detail.put("session attributes (at beginning of this request)",
+                        sessionAttributeInitialValuePlusMap);
+                detail.put("session attributes (updated during this request)",
+                        sessionAttributeUpdatedValueMap);
+            }
+        } else if (sessionAttributeUpdatedValueMap != null) {
             // no session attributes were available at the beginning of the request, and session
             // attributes were updated mid-request
-            detail.put("session attributes (updated during this request)",
-                    sessionAttributeUpdatedValueMap);
-        } else if (sessionAttributeUpdatedValueMap != null) {
-            // session attributes were updated mid-request
-            ImmutableMap.Builder<String, Object> sessionAttributeInitialValuePlusMap =
-                    ImmutableMap.builder();
-            sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
-            // add empty values into initial values for any updated attributes that are not already
-            // present in initial values nested detail map
-            for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
-                    .entrySet()) {
-                if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
-                    sessionAttributeInitialValuePlusMap.put(entry.getKey(), Optional.absent());
-                }
-            }
-            detail.put("session attributes (at beginning of this request)",
-                    sessionAttributeInitialValuePlusMap.build());
             detail.put("session attributes (updated during this request)",
                     sessionAttributeUpdatedValueMap);
         } else {

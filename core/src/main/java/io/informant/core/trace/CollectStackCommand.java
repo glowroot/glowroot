@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,9 @@ package io.informant.core.trace;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.ThreadSafe;
 
 import java.util.concurrent.ScheduledExecutorService;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;

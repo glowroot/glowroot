@@ -15,7 +15,7 @@
  */
 package io.informant.local.trace;
 
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
 
 import com.google.common.base.Objects;
 

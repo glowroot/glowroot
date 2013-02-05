@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 
@@ -37,6 +40,7 @@ class DataDir {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDir.class);
 
+    @Nullable
     private static final File BASE_DIR;
 
     static {
@@ -59,15 +63,16 @@ class DataDir {
         BASE_DIR = baseDir;
     }
 
-    static File getDataDirWithNoWarning(Map<String, String> properties) {
+    static File getDataDirWithNoWarning(@ReadOnly Map<String, String> properties) {
         return getDataDir(properties, true);
     }
 
-    static File getDataDir(Map<String, String> properties) {
+    static File getDataDir(@ReadOnly Map<String, String> properties) {
         return getDataDir(properties, false);
     }
 
-    private static File getDataDir(Map<String, String> properties, boolean disableWarnings) {
+    private static File getDataDir(@ReadOnly Map<String, String> properties,
+            boolean disableWarnings) {
         String dataDirOverride = properties.get("data.dir");
         if (dataDirOverride != null) {
             // used by unit tests

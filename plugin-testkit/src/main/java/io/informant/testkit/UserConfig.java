@@ -15,7 +15,7 @@
  */
 package io.informant.testkit;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -26,6 +26,7 @@ import com.google.common.base.Objects;
 public class UserConfig {
 
     private boolean enabled;
+    @Nullable
     private String userId;
     private int storeThresholdMillis;
     private boolean fineProfiling;
@@ -38,11 +39,12 @@ public class UserConfig {
         this.enabled = enabled;
     }
 
+    @Nullable
     public String getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(@Nullable String userId) {
         this.userId = userId;
     }
 

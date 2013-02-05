@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 package io.informant.testkit;
 
 import io.informant.testkit.Trace.CapturedException;
-
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 
@@ -28,8 +27,11 @@ import com.google.common.base.Objects;
 public class LogMessage {
 
     private long timestamp;
+    @Nullable
     private Level level;
+    @Nullable
     private String loggerName;
+    @Nullable
     private String text;
     @Nullable
     private CapturedException exception;
@@ -38,18 +40,22 @@ public class LogMessage {
         return timestamp;
     }
 
+    @Nullable
     public Level getLevel() {
         return level;
     }
 
+    @Nullable
     public String getLoggerName() {
         return loggerName;
     }
 
+    @Nullable
     public String getText() {
         return text;
     }
 
+    @Nullable
     public CapturedException getException() {
         return exception;
     }

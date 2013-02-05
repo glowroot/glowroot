@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,18 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.Timer;
 import io.informant.api.weaving.Mixin;
+import io.informant.core.util.ThreadSafe;
 
 import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.util.List;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.CheckClassAdapter;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -59,11 +58,11 @@ class Weaver implements Opcodes {
 
     private final WeavingMetric metric;
 
-    Weaver(List<Mixin> mixins, List<Advice> advisors, @Nullable ClassLoader loader,
-            ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
+    Weaver(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
+            @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
 
-        this.mixins = ImmutableList.copyOf(mixins);
-        this.advisors = ImmutableList.copyOf(advisors);
+        this.mixins = mixins;
+        this.advisors = advisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.metric = metric;

@@ -17,10 +17,10 @@ package io.informant.core.weaving;
 
 import java.util.Arrays;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import org.objectweb.asm.Type;
+
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 

@@ -17,9 +17,8 @@ package io.informant.core.trace;
 
 import io.informant.api.Timer;
 import io.informant.core.util.PartiallyThreadSafe;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
@@ -160,8 +159,8 @@ public class TraceMetric implements Timer {
                 .add("count", count)
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
-                // don't add currentTrace since that leads to infinite loop
-                .add("currentTraceId", currentTrace.getId())
+                // don't add currentTrace itself since that leads to infinite loop
+                .add("currentTraceId", currentTrace == null ? null : currentTrace.getId())
                 .toString();
     }
 

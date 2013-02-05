@@ -15,7 +15,8 @@
  */
 package io.informant.core.config;
 
-import javax.annotation.concurrent.Immutable;
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
@@ -80,7 +81,7 @@ public class GeneralConfig {
 
     private final boolean warnOnSpanOutsideTrace;
 
-    static GeneralConfig fromJson(JsonObject jsonObject) {
+    static GeneralConfig fromJson(@ReadOnly JsonObject jsonObject) {
         return gson.fromJson(jsonObject, GeneralConfig.Builder.class).build();
     }
 
@@ -206,7 +207,7 @@ public class GeneralConfig {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
-        public Builder overlay(JsonObject jsonObject) {
+        public Builder overlay(@ReadOnly JsonObject jsonObject) {
             JsonElement enabled = jsonObject.get("enabled");
             if (enabled != null) {
                 enabled(enabled.getAsBoolean());

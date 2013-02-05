@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,15 @@
  */
 package io.informant.core.trace;
 
+import io.informant.core.util.ThreadSafe;
+
 import java.lang.Thread.State;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
@@ -62,12 +65,12 @@ public class MergedStackTreeNode {
     }
 
     static MergedStackTreeNode create(StackTraceElement stackTraceElement,
-            @Nullable Collection<String> metricNames) {
+            @ReadOnly @Nullable List<String> metricNames) {
         return new MergedStackTreeNode(stackTraceElement, metricNames, 1);
     }
 
     private MergedStackTreeNode(@Nullable StackTraceElement stackTraceElement,
-            @Nullable Collection<String> metricNames, int sampleCount) {
+            @ReadOnly @Nullable List<String> metricNames, int sampleCount) {
 
         this.stackTraceElement = stackTraceElement;
         if (metricNames == null) {
@@ -82,7 +85,7 @@ public class MergedStackTreeNode {
         childNodes.add(methodTreeElement);
     }
 
-    void addAllAbsentMetricNames(Collection<String> metricNames) {
+    void addAllAbsentMetricNames(@ReadOnly List<String> metricNames) {
         this.metricNames.addAllAbsent(metricNames);
     }
 
@@ -94,10 +97,6 @@ public class MergedStackTreeNode {
     // an appropriate lock so that two threads do not try to increment the count at the same time
     void incrementSampleCount() {
         sampleCount++;
-    }
-
-    public boolean isSyntheticRoot() {
-        return stackTraceElement == null;
     }
 
     public Collection<MergedStackTreeNode> getChildNodes() {
@@ -116,10 +115,6 @@ public class MergedStackTreeNode {
 
     public int getSampleCount() {
         return sampleCount;
-    }
-
-    public boolean isLeaf() {
-        return leafThreadState != null;
     }
 
     @Nullable

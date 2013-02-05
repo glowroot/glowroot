@@ -15,17 +15,19 @@
  */
 package io.informant.testkit;
 
+import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.LogMessage.Level;
 import io.informant.testkit.Trace.CapturedException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.ThreadSafe;
+import java.util.Map;
 
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
@@ -134,8 +136,13 @@ public class Informant {
         post("/config/user", new GsonBuilder().serializeNulls().create().toJson(config));
     }
 
+    @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
-        return getConfig().getPluginConfigs().get(pluginId);
+        Map<String, PluginConfig> pluginConfigs = getConfig().getPluginConfigs();
+        if (pluginConfigs == null) {
+            return null;
+        }
+        return pluginConfigs.get(pluginId);
     }
 
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
@@ -183,16 +190,16 @@ public class Informant {
         String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
         JsonObject response = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject();
-        JsonArray normalPoints = response.get("normalPoints").getAsJsonArray();
-        JsonArray errorPoints = response.get("errorPoints").getAsJsonArray();
+        JsonArray normalPoints = asJsonArrayOrEmpty(response.get("normalPoints"));
+        JsonArray errorPoints = asJsonArrayOrEmpty(response.get("errorPoints"));
         JsonArray points = new JsonArray();
         points.addAll(normalPoints);
         points.addAll(errorPoints);
-        if (points.size() == 0) {
+        JsonArray lastTracePoint = getMaxPointByCapturedAt(points);
+        if (lastTracePoint == null) {
             throw new AssertionError("no trace found");
         } else {
-            JsonArray point = getMaxPointByCapturedAt(points);
-            String traceId = point.get(2).getAsString();
+            String traceId = lastTracePoint.get(2).getAsString();
             if (summary) {
                 String traceJson = get("/explorer/summary/" + traceId);
                 Trace trace = gson.fromJson(traceJson, Trace.class);
@@ -300,6 +307,13 @@ public class Informant {
     private Config getConfig() throws Exception {
         String json = get("/config/read");
         return gson.fromJson(json, Config.class);
+    }
+
+    private static JsonArray asJsonArrayOrEmpty(@ReadOnly @Nullable JsonElement jsonElement) {
+        if (jsonElement == null || !jsonElement.isJsonArray()) {
+            return new JsonArray();
+        }
+        return jsonElement.getAsJsonArray();
     }
 
     private static String validateAndReturnBody(Response response) throws IOException {

@@ -21,14 +21,15 @@ import io.informant.core.log.Level;
 import io.informant.core.util.DataSource;
 import io.informant.core.util.DataSource.RowMapper;
 import io.informant.core.util.Schemas.Column;
+import io.informant.core.util.ThreadSafe;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
+import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -77,6 +78,7 @@ public class LogMessageDao {
         valid = localValid;
     }
 
+    @ReadOnly
     public List<LogMessage> readLogMessages() {
         if (!valid) {
             return ImmutableList.of();

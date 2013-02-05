@@ -36,9 +36,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
-
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
@@ -47,6 +44,8 @@ import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -211,8 +210,10 @@ public class HttpServer extends HttpServerBase {
             logger.warn("unexpected extension '{}' for path '{}'", extension, path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        URL url = Resources.getResource(path);
-        if (url == null) {
+        URL url;
+        try {
+            url = Resources.getResource(path);
+        } catch (IllegalArgumentException e) {
             logger.warn("unexpected path '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -281,21 +282,23 @@ public class HttpServer extends HttpServerBase {
         if (responseText == null) {
             response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
+            preventCaching(response);
         } else if (responseText instanceof String) {
             response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            preventCaching(response);
         } else if (responseText instanceof byte[]) {
             response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+            preventCaching(response);
         } else {
             logger.error("unexpected type of json service response '{}'", responseText.getClass()
                     .getName());
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            response = new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
-        preventCaching(response);
         return response;
     }
 
@@ -360,7 +363,6 @@ public class HttpServer extends HttpServerBase {
         return s;
     }
 
-    @Immutable
     private static class JsonServiceMapping {
         private final Pattern pattern;
         private final JsonService service;

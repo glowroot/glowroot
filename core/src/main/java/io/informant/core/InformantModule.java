@@ -27,6 +27,7 @@ import io.informant.core.util.Clock;
 import io.informant.core.util.DaemonExecutors;
 import io.informant.core.util.DataSource;
 import io.informant.core.util.RollingFile;
+import io.informant.core.util.ThreadSafe;
 import io.informant.core.weaving.ParsedTypeCache;
 import io.informant.local.log.LogMessageSinkLocal;
 import io.informant.local.trace.TraceSinkLocal;
@@ -38,12 +39,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.fest.reflect.core.Reflection;
 import org.fest.reflect.exception.ReflectionError;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+
+import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;
@@ -75,7 +76,7 @@ class InformantModule extends AbstractModule {
     private final WeavingMetricImpl weavingMetric;
     private final ParsedTypeCache parsedTypeCache;
 
-    InformantModule(Map<String, String> properties, ParsedTypeCache parsedTypeCache,
+    InformantModule(@ReadOnly Map<String, String> properties, ParsedTypeCache parsedTypeCache,
             WeavingMetricImpl weavingMetric) {
         this.properties = ImmutableMap.copyOf(properties);
         this.weavingMetric = weavingMetric;

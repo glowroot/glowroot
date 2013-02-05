@@ -17,6 +17,7 @@ package io.informant.testkit;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.internal.TempDirs;
 
 import java.io.File;
@@ -24,8 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import org.fest.reflect.core.Reflection;
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -143,7 +142,7 @@ public class InformantContainer {
         executionAdapter.close();
     }
 
-    private AsyncHttpClient createAsyncHttpClient() {
+    private static AsyncHttpClient createAsyncHttpClient() {
         ExecutorService executorService = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()

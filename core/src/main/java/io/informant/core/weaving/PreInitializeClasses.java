@@ -18,6 +18,7 @@ package io.informant.core.weaving;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.util.Static;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -41,7 +42,8 @@ class PreInitializeClasses {
 
     private static Logger logger = LoggerFactory.getLogger(PreInitializeClasses.class);
 
-    static void preInitializeClasses(ClassLoader loader) {
+    // null loader means the bootstrap class loader
+    static void preInitializeClasses(@Nullable ClassLoader loader) {
         for (String type : usedTypes()) {
             initialize(type, loader);
         }
@@ -52,7 +54,7 @@ class PreInitializeClasses {
         }
     }
 
-    private static void initialize(String type, ClassLoader loader) {
+    private static void initialize(String type, @Nullable ClassLoader loader) {
         try {
             Class.forName(type, true, loader);
         } catch (ClassNotFoundException e) {
@@ -196,6 +198,8 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.EmptyImmutableList");
         types.add("com.google.common.collect.EmptyImmutableMap");
         types.add("com.google.common.collect.EmptyImmutableSet");
+        types.add("com.google.common.collect.EmptyImmutableSortedMap");
+        types.add("com.google.common.collect.EmptyImmutableSortedSet");
         types.add("com.google.common.collect.FluentIterable");
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
@@ -218,6 +222,10 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.ImmutableMapValues");
         types.add("com.google.common.collect.ImmutableMapValues$1");
         types.add("com.google.common.collect.ImmutableSet");
+        types.add("com.google.common.collect.ImmutableSortedMap");
+        types.add("com.google.common.collect.ImmutableSortedMapFauxverideShim");
+        types.add("com.google.common.collect.ImmutableSortedSet");
+        types.add("com.google.common.collect.ImmutableSortedSetFauxverideShim");
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterables$8");
         types.add("com.google.common.collect.Iterators");
@@ -251,6 +259,7 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.SingletonImmutableList");
         types.add("com.google.common.collect.SingletonImmutableMap");
         types.add("com.google.common.collect.SingletonImmutableSet");
+        types.add("com.google.common.collect.SortedIterable");
         types.add("com.google.common.collect.TransformedImmutableSet");
         types.add("com.google.common.collect.TransformedImmutableSet$1");
         types.add("com.google.common.collect.TransformedIterator");

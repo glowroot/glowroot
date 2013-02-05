@@ -16,9 +16,8 @@
 package io.informant.core.trace;
 
 import io.informant.api.Timer;
+import io.informant.core.util.ThreadSafe;
 import io.informant.core.weaving.WeavingMetric;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;

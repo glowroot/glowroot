@@ -18,7 +18,7 @@ package io.informant.core.weaving.preinit;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;

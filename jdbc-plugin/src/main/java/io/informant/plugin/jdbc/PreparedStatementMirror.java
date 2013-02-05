@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,28 +24,25 @@ import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of prepared statements since the underlying
  * {@link PreparedStatement} values cannot be inspected after they have been set.
  * 
- * TODO does this need to be thread safe? Need to research JDBC spec, can one thread create a
- * PreparedStatement and set some parameters into it, and then have another thread execute it (with
- * those previously set parameters), if there is nothing that says no, then may need to make this
- * thread safe
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@NotThreadSafe
 class PreparedStatementMirror extends StatementMirror {
 
     private final String sql;
-    private List<Object> parameters;
+    // ok for this field to be non-volatile since it is only temporary storage for a single thread
+    // while that thread is setting parameter values into the prepared statement and executing it
+    private List</*@Nullable*/Object> parameters;
+    // ok for this field to be non-volatile since it is only temporary storage for a single thread
+    // while that thread is setting parameter values into the prepared statement and executing it
     @Nullable
-    private Collection<List<Object>> batchedParameters;
+    private Collection<List</*@Nullable*/Object>> batchedParameters;
 
     public PreparedStatementMirror(String sql) {
         this.sql = sql;
@@ -61,7 +58,7 @@ class PreparedStatementMirror extends StatementMirror {
         parameters = Lists.newArrayListWithCapacity(parameters.size());
     }
 
-    public ImmutableList<List<Object>> getBatchedParametersCopy() {
+    public ImmutableList<List</*@Nullable*/Object>> getBatchedParametersCopy() {
         if (batchedParameters == null) {
             return ImmutableList.of();
         } else {
@@ -75,7 +72,7 @@ class PreparedStatementMirror extends StatementMirror {
         return batchedParameters != null;
     }
 
-    public List<Object> getParametersCopy() {
+    public List</*@Nullable*/Object> getParametersCopy() {
         // cannot return ImmutableList.copyOf() since ImmutableList does not allow null elements
         return Lists.newArrayList(parameters);
     }
@@ -118,12 +115,9 @@ class PreparedStatementMirror extends StatementMirror {
 
     static class ByteArrayParameterValue {
         private final int length;
-        @Nullable
-        private final byte[] bytes;
-        private final boolean displayAsHex;
+        private final byte/*@Nullable*/[] bytes;
         public ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {
             length = bytes.length;
-            this.displayAsHex = displayAsHex;
             if (displayAsHex) {
                 // only retain bytes if needed for displaying as hex
                 this.bytes = bytes;
@@ -133,7 +127,7 @@ class PreparedStatementMirror extends StatementMirror {
         }
         @Override
         public String toString() {
-            if (displayAsHex) {
+            if (bytes != null) {
                 return toHex(bytes);
             } else {
                 return "{" + length + " bytes}";

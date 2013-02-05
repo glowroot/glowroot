@@ -29,16 +29,18 @@ import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
+import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.GuardedBy;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -65,8 +67,8 @@ public class Trace {
 
     // timing data is tracked in nano seconds which cannot be converted into dates
     // (see javadoc for System.nanoTime())
-    // so the start time is also tracked in a date object here
-    private final Date startDate;
+    // so the start time is also tracked here
+    private final long startAt;
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
@@ -77,7 +79,8 @@ public class Trace {
     //
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
-    private volatile Map<String, String> attributes;
+    @LazyNonNull
+    private volatile Map<String, Optional<String>> attributes;
 
     @Nullable
     private volatile String userId;
@@ -97,8 +100,10 @@ public class Trace {
     private final RootSpan rootSpan;
 
     // stack trace data constructed from coarse-grained profiling
+    @LazyNonNull
     private volatile MergedStackTree coarseMergedStackTree;
     // stack trace data constructed from fine-grained profiling
+    @LazyNonNull
     private volatile MergedStackTree fineMergedStackTree;
 
     // the thread is needed so that stack traces can be taken from a different thread
@@ -120,15 +125,15 @@ public class Trace {
     private final WeavingMetricImpl weavingMetric;
     private final TraceMetric weavingTraceMetric;
 
+    @LazyNonNull
     private volatile ImmutableList<Snapshot> finalTraceMetricSnapshots;
 
     public Trace(MetricImpl metric, MessageSupplier messageSupplier,
             Clock clock, Ticker ticker, WeavingMetricImpl weavingMetric) {
 
         this.ticker = ticker;
-        long startTimeMillis = clock.currentTimeMillis();
-        id = new TraceUniqueId(startTimeMillis);
-        startDate = new Date(startTimeMillis);
+        startAt = clock.currentTimeMillis();
+        id = new TraceUniqueId(startAt);
         long startTick = ticker.read();
         // 'this' is only being passed to metric.start() to be stored in a ThreadLocal (should not
         // violate safe publication)
@@ -147,8 +152,8 @@ public class Trace {
         this.weavingMetric = weavingMetric;
     }
 
-    public Date getStartDate() {
-        return startDate;
+    public long getStartAt() {
+        return startAt;
     }
 
     public String getId() {
@@ -181,7 +186,8 @@ public class Trace {
         return background;
     }
 
-    public Map<String, String> getAttributes() {
+    @ReadOnly
+    public Map<String, Optional<String>> getAttributes() {
         if (attributes == null) {
             return ImmutableMap.of();
         } else {
@@ -215,10 +221,20 @@ public class Trace {
         return rootSpan.getRootSpan();
     }
 
+    public String getHeadline() {
+        MessageSupplier messageSupplier = rootSpan.getRootSpan().getMessageSupplier();
+        if (messageSupplier == null) {
+            logger.error("found root span with null message supplier in trace");
+            return "";
+        }
+        return messageSupplier.get().getText();
+    }
+
     public int getSpanCount() {
         return rootSpan.getSize();
     }
 
+    @ReadOnly
     public Iterable<Span> getSpans() {
         return rootSpan.getSpans();
     }
@@ -268,7 +284,7 @@ public class Trace {
         }
         // synchronization is only for visibility guarantee
         synchronized (attributes) {
-            attributes.put(name, value);
+            attributes.put(name, Optional.fromNullable(value));
         }
     }
 
@@ -304,7 +320,7 @@ public class Trace {
         return rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
     }
 
-    public Span addSpan(MessageSupplier messageSupplier,
+    public Span addSpan(@Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
         return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
     }
@@ -312,7 +328,7 @@ public class Trace {
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    public void popSpan(Span span, long endTick, ErrorMessage errorMessage) {
+    public void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
         rootSpan.popSpan(span, endTick, errorMessage);
         TraceMetric traceMetric = span.getTraceMetric();
         if (traceMetric != null) {
@@ -345,6 +361,10 @@ public class Trace {
         if (thread != null) {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
+            if (threadInfo == null) {
+                // thread is no longer alive
+                return;
+            }
             // check if trace is completed to avoid small window between trace completion and
             // canceling the scheduled command that invokes this method
             if (rootSpan.isCompleted()) {
@@ -385,7 +405,7 @@ public class Trace {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("startDate", startDate)
+                .add("startDate", startAt)
                 .add("stuck", stuck)
                 .add("background", background)
                 .add("attributes", attributes)

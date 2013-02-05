@@ -32,15 +32,16 @@ import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
 
 import java.lang.annotation.Annotation;
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
+
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -56,24 +57,26 @@ public class Advice {
 
     private static final Logger logger = LoggerFactory.getLogger(Advice.class);
 
-    private static final Collection<ParameterKind> isEnabledValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
-            ParameterKind.METHOD_NAME);
-    private static final Collection<ParameterKind> onBeforeValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
-            ParameterKind.METHOD_NAME);
-    private static final Collection<ParameterKind> onReturnValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
-            ParameterKind.METHOD_NAME, ParameterKind.RETURN, ParameterKind.TRAVELER);
-    private static final Collection<ParameterKind> onThrowValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
-            ParameterKind.METHOD_NAME, ParameterKind.THROWABLE, ParameterKind.TRAVELER);
-    private static final Collection<ParameterKind> onAfterValidParameterKinds = ImmutableList.of(
-            ParameterKind.TARGET, ParameterKind.METHOD_ARG, ParameterKind.METHOD_ARG_ARRAY,
-            ParameterKind.METHOD_NAME,
-            ParameterKind.TRAVELER);
+    private static final ImmutableList<ParameterKind> isEnabledValidParameterKinds =
+            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
+                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME);
+    private static final ImmutableList<ParameterKind> onBeforeValidParameterKinds =
+            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
+                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME);
+    private static final ImmutableList<ParameterKind> onReturnValidParameterKinds =
+            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
+                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
+                    ParameterKind.RETURN, ParameterKind.TRAVELER);
+    private static final ImmutableList<ParameterKind> onThrowValidParameterKinds =
+            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
+                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
+                    ParameterKind.THROWABLE, ParameterKind.TRAVELER);
+    private static final ImmutableList<ParameterKind> onAfterValidParameterKinds =
+            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
+                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
+                    ParameterKind.TRAVELER);
 
-    private static final Map<Class<? extends Annotation>, ParameterKind> parameterKindMap =
+    private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
                     .put(InjectTarget.class, ParameterKind.TARGET)
                     .put(InjectMethodArg.class, ParameterKind.METHOD_ARG)
@@ -226,6 +229,7 @@ public class Advice {
                 .toString();
     }
 
+    @Immutable
     enum ParameterKind {
         TARGET, METHOD_ARG, METHOD_ARG_ARRAY, PRIMITIVE_METHOD_ARG, METHOD_NAME, RETURN, THROWABLE,
         TRAVELER;
@@ -239,17 +243,17 @@ public class Advice {
         private final Pattern pointcutTypePattern;
         @Nullable
         private final Pattern pointcutMethodPattern;
-        @Nullable
+        @LazyNonNull
         private Method isEnabledAdvice;
-        @Nullable
+        @LazyNonNull
         private Method onBeforeAdvice;
-        @Nullable
+        @LazyNonNull
         private Method onReturnAdvice;
-        @Nullable
+        @LazyNonNull
         private Method onThrowAdvice;
-        @Nullable
+        @LazyNonNull
         private Method onAfterAdvice;
-        @Nullable
+        @LazyNonNull
         private Type travelerType;
 
         private ParameterKind[] isEnabledParameterKinds = new ParameterKind[0];
@@ -264,7 +268,19 @@ public class Advice {
             adviceType = Type.getType(adviceClass);
             pointcutTypePattern = buildPattern(pointcut.typeName());
             pointcutMethodPattern = buildPattern(pointcut.methodName());
-            initFromClass(adviceClass);
+            for (java.lang.reflect.Method method : adviceClass.getMethods()) {
+                if (method.isAnnotationPresent(IsEnabled.class)) {
+                    initIsEnabledAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnBefore.class)) {
+                    initOnBeforeAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnReturn.class)) {
+                    initOnReturnAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnThrow.class)) {
+                    initOnThrowAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnAfter.class)) {
+                    initOnAfterAdvice(adviceClass, method);
+                }
+            }
         }
 
         @Nullable
@@ -295,101 +311,105 @@ public class Advice {
             return pattern.replace("\\Q\\E", "");
         }
 
-        private void initFromClass(Class<?> adviceClass) {
-            for (java.lang.reflect.Method method : adviceClass.getMethods()) {
-                if (method.isAnnotationPresent(IsEnabled.class)) {
-                    if (isEnabledAdvice != null) {
-                        logger.error("@Pointcut '{}' has more than one @IsEnabled method",
-                                adviceClass.getName());
-                    } else {
-                        isEnabledAdvice = Method.getMethod(method);
-                        isEnabledParameterKinds = getParameterKinds(
-                                method.getParameterAnnotations(),
-                                method.getParameterTypes(), isEnabledValidParameterKinds);
-                        if (isEnabledAdvice.getReturnType().getSort() != Type.BOOLEAN) {
-                            logger.error("@IsEnabled method must return boolean");
-                            isEnabledAdvice = null;
-                            isEnabledParameterKinds = new ParameterKind[0];
-                        }
-                    }
-                } else if (method.isAnnotationPresent(OnBefore.class)) {
-                    if (onBeforeAdvice != null) {
-                        logger.error("@Pointcut '{}' has more than one @OnBefore method",
-                                adviceClass.getName());
-                    } else {
-                        onBeforeAdvice = Method.getMethod(method);
-                        onBeforeParameterKinds = getParameterKinds(
-                                method.getParameterAnnotations(),
-                                method.getParameterTypes(), onBeforeValidParameterKinds);
-                        if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
-                            if (onBeforeAdvice.getReturnType().getSort() < Type.ARRAY) {
-                                logger.error("primitive types are not supported (yet) as the"
-                                        + " @OnBefore return type (and for subsequent"
-                                        + " @InjectTraveler)");
-                            } else {
-                                travelerType = onBeforeAdvice.getReturnType();
-                            }
-                        }
-                    }
-                } else if (method.isAnnotationPresent(OnReturn.class)) {
-                    if (onReturnAdvice != null) {
-                        logger.error("@Pointcut '{}' has more than one @OnSucces method",
-                                adviceClass.getName());
-                    } else {
-                        onReturnAdvice = Method.getMethod(method);
-                        onReturnParameterKinds = getParameterKinds(
-                                method.getParameterAnnotations(),
-                                method.getParameterTypes(), onReturnValidParameterKinds);
-                        for (int i = 1; i < onReturnParameterKinds.length; i++) {
-                            if (onReturnParameterKinds[i] == ParameterKind.RETURN) {
-                                logger.error("@InjectReturn must be the first argument to"
-                                        + " @OnReturn");
-                                onReturnAdvice = null;
-                                onReturnParameterKinds = new ParameterKind[0];
-                                break;
-                            }
-                        }
-                    }
-                } else if (method.isAnnotationPresent(OnThrow.class)) {
-                    if (onThrowAdvice != null) {
-                        logger.error("@Pointcut '{}' has more than one @OnThrow method",
-                                adviceClass.getName());
-                    } else {
-                        onThrowAdvice = Method.getMethod(method);
-                        onThrowParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                                method.getParameterTypes(), onThrowValidParameterKinds);
-                        for (int i = 1; i < onThrowParameterKinds.length; i++) {
-                            if (onThrowParameterKinds[i] == ParameterKind.THROWABLE) {
-                                logger.error("@InjectThrowable must be the first argument to"
-                                        + " @OnThrow");
-                                onThrowAdvice = null;
-                                onThrowParameterKinds = new ParameterKind[0];
-                                break;
-                            }
-                        }
-                        if (onThrowAdvice != null
-                                && onThrowAdvice.getReturnType().getSort() != Type.VOID) {
-                            logger.error("@OnThrow method must return void (for now)");
-                            onThrowAdvice = null;
-                            onThrowParameterKinds = new ParameterKind[0];
-                        }
-                    }
-                } else if (method.isAnnotationPresent(OnAfter.class)) {
-                    if (onAfterAdvice != null) {
-                        logger.error("@Pointcut '{}' has more than one @OnAfter method",
-                                adviceClass.getName());
-                    } else {
-                        onAfterAdvice = Method.getMethod(method);
-                        onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                                method.getParameterTypes(), onAfterValidParameterKinds);
-                        if (onAfterAdvice.getReturnType().getSort() != Type.VOID) {
-                            logger.error("@OnAfter method must return void");
-                            onAfterAdvice = null;
-                            onAfterParameterKinds = new ParameterKind[0];
-                        }
-                    }
+        private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+            if (isEnabledAdvice != null) {
+                logger.error("@Pointcut '{}' has more than one @IsEnabled method",
+                        adviceClass.getName());
+                return;
+            }
+            Method isEnabledAdvice = Method.getMethod(method);
+            ParameterKind[] isEnabledParameterKinds = getParameterKinds(
+                    method.getParameterAnnotations(), method.getParameterTypes(),
+                    isEnabledValidParameterKinds);
+            if (isEnabledAdvice.getReturnType().getSort() == Type.BOOLEAN) {
+                this.isEnabledAdvice = isEnabledAdvice;
+                this.isEnabledParameterKinds = isEnabledParameterKinds;
+            } else {
+                logger.error("@IsEnabled method must return boolean");
+            }
+        }
+
+        private void initOnBeforeAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+            if (onBeforeAdvice != null) {
+                logger.error("@Pointcut '{}' has more than one @OnBefore method",
+                        adviceClass.getName());
+                return;
+            }
+            onBeforeAdvice = Method.getMethod(method);
+            onBeforeParameterKinds = getParameterKinds(method.getParameterAnnotations(),
+                    method.getParameterTypes(), onBeforeValidParameterKinds);
+            if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
+                if (onBeforeAdvice.getReturnType().getSort() < Type.ARRAY) {
+                    logger.error("primitive types are not supported (yet) as the"
+                            + " @OnBefore return type (and for subsequent"
+                            + " @InjectTraveler)");
+                } else {
+                    travelerType = onBeforeAdvice.getReturnType();
                 }
             }
+        }
+
+        private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+            if (onReturnAdvice != null) {
+                logger.error("@Pointcut '{}' has more than one @OnSucces method",
+                        adviceClass.getName());
+                return;
+            }
+            Method onReturnAdvice = Method.getMethod(method);
+            ParameterKind[] onReturnParameterKinds = getParameterKinds(
+                    method.getParameterAnnotations(), method.getParameterTypes(),
+                    onReturnValidParameterKinds);
+            for (int i = 1; i < onReturnParameterKinds.length; i++) {
+                if (onReturnParameterKinds[i] == ParameterKind.RETURN) {
+                    logger.error("@InjectReturn must be the first argument to @OnReturn");
+                    return;
+                }
+            }
+            this.onReturnAdvice = onReturnAdvice;
+            this.onReturnParameterKinds = onReturnParameterKinds;
+        }
+
+        private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+            if (onThrowAdvice != null) {
+                logger.error("@Pointcut '{}' has more than one @OnThrow method",
+                        adviceClass.getName());
+                return;
+            }
+            Method onThrowAdvice = Method.getMethod(method);
+            ParameterKind[] onThrowParameterKinds = getParameterKinds(
+                    method.getParameterAnnotations(), method.getParameterTypes(),
+                    onThrowValidParameterKinds);
+            for (int i = 1; i < onThrowParameterKinds.length; i++) {
+                if (onThrowParameterKinds[i] == ParameterKind.THROWABLE) {
+                    logger.error("@InjectThrowable must be the first argument to"
+                            + " @OnThrow");
+                    return;
+                }
+            }
+            if (onThrowAdvice.getReturnType().getSort() != Type.VOID) {
+                logger.error("@OnThrow method must return void (for now)");
+                return;
+            }
+            this.onThrowAdvice = onThrowAdvice;
+            this.onThrowParameterKinds = onThrowParameterKinds;
+        }
+
+        private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+            if (onAfterAdvice != null) {
+                logger.error("@Pointcut '{}' has more than one @OnAfter method",
+                        adviceClass.getName());
+                return;
+            }
+            Method onAfterAdvice = Method.getMethod(method);
+            ParameterKind[] onAfterParameterKinds = getParameterKinds(
+                    method.getParameterAnnotations(), method.getParameterTypes(),
+                    onAfterValidParameterKinds);
+            if (onAfterAdvice.getReturnType().getSort() != Type.VOID) {
+                logger.error("@OnAfter method must return void");
+                return;
+            }
+            this.onAfterAdvice = onAfterAdvice;
+            this.onAfterParameterKinds = onAfterParameterKinds;
         }
 
         private Advice build() {
@@ -400,7 +420,7 @@ public class Advice {
         }
 
         private static ParameterKind[] getParameterKinds(Annotation[][] parameterAnnotations,
-                Class<?>[] parameterTypes, Collection<ParameterKind> validArgTypes) {
+                Class<?>[] parameterTypes, @ReadOnly List<ParameterKind> validArgTypes) {
 
             ParameterKind[] parameterKinds = new ParameterKind[parameterAnnotations.length];
             for (int i = 0; i < parameterAnnotations.length; i++) {

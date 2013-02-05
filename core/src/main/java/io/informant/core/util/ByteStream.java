@@ -25,11 +25,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import javax.annotation.Nullable;
-
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.stream.ChunkedInput;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
 
@@ -71,8 +72,8 @@ public abstract class ByteStream {
         }
     }
 
-    public static ByteStream of(List<ByteStream> byteStreams) {
-        return new ConcatByteStream(byteStreams.iterator());
+    public static ByteStream of(@ReadOnly List<ByteStream> byteStreams) {
+        return new ConcatByteStream(byteStreams);
     }
 
     private static class ByteStreamOfOne extends ByteStream {
@@ -98,11 +99,12 @@ public abstract class ByteStream {
 
     private static class ConcatByteStream extends ByteStream {
 
+        @ReadOnly
         private final Iterator<ByteStream> byteStreams;
         private ByteStream curr = new EmptyByteStream();
 
-        private ConcatByteStream(Iterator<ByteStream> byteStreams) {
-            this.byteStreams = byteStreams;
+        private ConcatByteStream(@ReadOnly List<ByteStream> byteStreams) {
+            this.byteStreams = byteStreams.iterator();
         }
 
         @Override
