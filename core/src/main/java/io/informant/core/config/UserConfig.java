@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the session tracing config.
@@ -50,8 +51,12 @@ public class UserConfig {
         return new Builder(base);
     }
 
-    static UserConfig fromJson(@ReadOnly JsonObject jsonObject) {
-        return gson.fromJson(jsonObject, UserConfig.Builder.class).build();
+    static UserConfig fromJson(@ReadOnly JsonObject configObject) throws JsonSyntaxException {
+        return gson.fromJson(configObject, UserConfig.Builder.class).build();
+    }
+
+    static UserConfig getDefault() {
+        return new Builder().build();
     }
 
     private UserConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
@@ -125,26 +130,26 @@ public class UserConfig {
             this.fineProfiling = fineProfiling;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject jsonObject) {
-            JsonElement enabled = jsonObject.get("enabled");
-            if (enabled != null) {
-                enabled(enabled.getAsBoolean());
+        public Builder overlay(@ReadOnly JsonObject configObject) {
+            JsonElement enabledElement = configObject.get("enabled");
+            if (enabledElement != null) {
+                enabled(enabledElement.getAsBoolean());
             }
-            JsonElement userId = jsonObject.get("userId");
-            if (userId != null) {
-                if (userId.isJsonNull()) {
+            JsonElement userIdElement = configObject.get("userId");
+            if (userIdElement != null) {
+                if (userIdElement.isJsonNull()) {
                     userId("");
                 } else {
-                    userId(userId.getAsString());
+                    userId(userIdElement.getAsString());
                 }
             }
-            JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
-            if (storeThresholdMillis != null) {
-                storeThresholdMillis(storeThresholdMillis.getAsInt());
+            JsonElement storeThresholdMillisElement = configObject.get("storeThresholdMillis");
+            if (storeThresholdMillisElement != null) {
+                storeThresholdMillis(storeThresholdMillisElement.getAsInt());
             }
-            JsonElement fineProfiling = jsonObject.get("fineProfiling");
-            if (fineProfiling != null) {
-                fineProfiling(fineProfiling.getAsBoolean());
+            JsonElement fineProfilingElement = configObject.get("fineProfiling");
+            if (fineProfilingElement != null) {
+                fineProfiling(fineProfilingElement.getAsBoolean());
             }
             return this;
         }

@@ -109,11 +109,18 @@ public class PluginDescriptor {
         return propertyDescriptors;
     }
 
-    public ImmutableList<Mixin> getMixins() {
+    // don't return ImmutableList since this method is used by SameJvmExecutionAdapter and when
+    // SameJvmExecutionAdapter is compiled by maven, it is compiled against shaded informant,
+    // but then if a unit test is run inside an IDE without rebuilding SameJvmExecutionAdapter it
+    // will fail since informant is then unshaded
+    @ReadOnly
+    public List<Mixin> getMixins() {
         return mixins;
     }
 
-    public ImmutableList<Advice> getAdvisors() {
+    // don't return ImmutableList, see comment above
+    @ReadOnly
+    public List<Advice> getAdvisors() {
         return advisors;
     }
 

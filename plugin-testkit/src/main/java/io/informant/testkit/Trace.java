@@ -112,29 +112,16 @@ public class Trace {
 
     @Nullable
     public List<Metric> getMetrics() {
-        if (metrics == null) {
-            return null;
-        }
-        // the informant weaving metric is a bit unpredictable since tests are often run inside the
-        // same InformantContainer for test speed, so test order affects whether any classes are
-        // woven during the test or not
-        // it's easiest to just ignore this metric completely
-        List<Metric> stableMetrics = Lists.newArrayList(metrics);
-        for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
-            if (i.next().getName().equals("informant weaving")) {
-                i.remove();
-            }
-        }
-        return stableMetrics;
+        return getStableMetrics();
     }
 
     @Nullable
     public List<String> getMetricNames() {
-        List<Metric> metrics = getMetrics();
-        if (metrics == null) {
+        List<Metric> stableMetrics = getStableMetrics();
+        if (stableMetrics == null) {
             return null;
         }
-        return Lists.transform(metrics, new Function<Metric, String>() {
+        return Lists.transform(stableMetrics, new Function<Metric, String>() {
             public String apply(Metric metric) {
                 return metric.getName();
             }
@@ -172,6 +159,24 @@ public class Trace {
         this.summary = summary;
     }
 
+    // the informant weaving metric is a bit unpredictable since tests are often run inside the
+    // same InformantContainer for test speed, so test order affects whether any classes are
+    // woven during the test or not
+    // it's easiest to just ignore this metric completely
+    @Nullable
+    private List<Metric> getStableMetrics() {
+        if (metrics == null) {
+            return null;
+        }
+        List<Metric> stableMetrics = Lists.newArrayList(metrics);
+        for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
+            if (i.next().getName().equals("informant weaving")) {
+                i.remove();
+            }
+        }
+        return stableMetrics;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -199,7 +204,7 @@ public class Trace {
         @Nullable
         private Map<String, Object> detail;
         @Nullable
-        private CapturedException exception;
+        private ExceptionInfo exception;
 
         public String getText() {
             return text;
@@ -209,7 +214,7 @@ public class Trace {
             return detail;
         }
         @Nullable
-        public CapturedException getException() {
+        public ExceptionInfo getException() {
             return exception;
         }
         @Override
@@ -222,7 +227,7 @@ public class Trace {
         }
     }
 
-    public static class CapturedException {
+    public static class ExceptionInfo {
 
         @Nullable
         private String display;
@@ -230,7 +235,7 @@ public class Trace {
         private List<String> stackTrace;
         private int framesInCommonWithCaused;
         @Nullable
-        private CapturedException cause;
+        private ExceptionInfo cause;
 
         @Nullable
         public String getDisplay() {
@@ -244,7 +249,7 @@ public class Trace {
             return framesInCommonWithCaused;
         }
         @Nullable
-        public CapturedException getCause() {
+        public ExceptionInfo getCause() {
             return cause;
         }
         @Override
@@ -394,10 +399,10 @@ public class Trace {
     public static class ErrorMessage extends Message {
 
         @Nullable
-        private CapturedException exception;
+        private ExceptionInfo exception;
 
         @Nullable
-        public CapturedException getException() {
+        public ExceptionInfo getException() {
             return exception;
         }
         @Override

@@ -40,7 +40,9 @@ import com.google.common.collect.ImmutableList;
 @Static
 class PreInitializeClasses {
 
-    private static Logger logger = LoggerFactory.getLogger(PreInitializeClasses.class);
+    private static final Logger logger = LoggerFactory.getLogger(PreInitializeClasses.class);
+
+    private PreInitializeClasses() {}
 
     // null loader means the bootstrap class loader
     static void preInitializeClasses(@Nullable ClassLoader loader) {
@@ -291,8 +293,8 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.SettableFuture");
         types.add("com.google.common.util.concurrent.UncheckedExecutionException");
         types.add("com.google.common.util.concurrent.Uninterruptibles");
-        types.add("io.informant.api.CapturedException");
         types.add("io.informant.api.ErrorMessage");
+        types.add("io.informant.api.ExceptionInfo");
         types.add("io.informant.api.Logger");
         types.add("io.informant.api.LoggerFactory");
         types.add("io.informant.api.LoggerFactory$LoggerImpl");
@@ -776,6 +778,4 @@ class PreInitializeClasses {
             return false;
         }
     }
-
-    private PreInitializeClasses() {}
 }

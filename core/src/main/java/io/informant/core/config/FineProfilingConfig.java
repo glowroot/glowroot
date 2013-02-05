@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the fine-grained profiling config.
@@ -47,8 +48,13 @@ public class FineProfilingConfig {
     // threshold
     private final int storeThresholdMillis;
 
-    static FineProfilingConfig fromJson(@ReadOnly JsonObject jsonObject) {
-        return gson.fromJson(jsonObject, FineProfilingConfig.Builder.class).build();
+    static FineProfilingConfig fromJson(@ReadOnly JsonObject configObject)
+            throws JsonSyntaxException {
+        return gson.fromJson(configObject, FineProfilingConfig.Builder.class).build();
+    }
+
+    static FineProfilingConfig getDefault() {
+        return new Builder().build();
     }
 
     public static Builder builder(FineProfilingConfig base) {
@@ -136,26 +142,26 @@ public class FineProfilingConfig {
             this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject jsonObject) {
-            JsonElement enabled = jsonObject.get("enabled");
-            if (enabled != null) {
-                enabled(enabled.getAsBoolean());
+        public Builder overlay(@ReadOnly JsonObject configObject) {
+            JsonElement enabledElement = configObject.get("enabled");
+            if (enabledElement != null) {
+                enabled(enabledElement.getAsBoolean());
             }
-            JsonElement tracePercentage = jsonObject.get("tracePercentage");
-            if (tracePercentage != null) {
-                tracePercentage(tracePercentage.getAsDouble());
+            JsonElement tracePercentageElement = configObject.get("tracePercentage");
+            if (tracePercentageElement != null) {
+                tracePercentage(tracePercentageElement.getAsDouble());
             }
-            JsonElement intervalMillis = jsonObject.get("intervalMillis");
-            if (intervalMillis != null) {
-                intervalMillis(intervalMillis.getAsInt());
+            JsonElement intervalMillisElement = configObject.get("intervalMillis");
+            if (intervalMillisElement != null) {
+                intervalMillis(intervalMillisElement.getAsInt());
             }
-            JsonElement totalSeconds = jsonObject.get("totalSeconds");
-            if (totalSeconds != null) {
-                totalSeconds(totalSeconds.getAsInt());
+            JsonElement totalSecondsElement = configObject.get("totalSeconds");
+            if (totalSecondsElement != null) {
+                totalSeconds(totalSecondsElement.getAsInt());
             }
-            JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
-            if (storeThresholdMillis != null) {
-                storeThresholdMillis(storeThresholdMillis.getAsInt());
+            JsonElement storeThresholdMillisElement = configObject.get("storeThresholdMillis");
+            if (storeThresholdMillisElement != null) {
+                storeThresholdMillis(storeThresholdMillisElement.getAsInt());
             }
             return this;
         }

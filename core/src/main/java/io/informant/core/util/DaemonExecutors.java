@@ -43,9 +43,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * @since 0.5
  */
 @Static
-public final class DaemonExecutors {
+public class DaemonExecutors {
 
     private static final String NAME_COUNTER_SUFFIX = "-%d";
+
+    private DaemonExecutors() {}
 
     // same as Executors.newCachedThreadPool(), but with custom thread factory to name and daemonize
     // its threads
@@ -123,7 +125,7 @@ public final class DaemonExecutors {
         }
 
         @Nullable
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
             Object result = method.invoke(executor, args);
             String methodName = method.getName();
             if (methodName.equals("shutdown") || methodName.equals("shutdownNow")) {
@@ -133,6 +135,4 @@ public final class DaemonExecutors {
             return result;
         }
     }
-
-    private DaemonExecutors() {}
 }

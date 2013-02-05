@@ -28,13 +28,15 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class UiTestingMain {
+public class UiTestingMain {
 
     private static final int UI_PORT = 4000;
     // this is off by default because it is annoying to have these messages in the console
     private static final boolean TEST_LOG_MESSAGES = false;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
+
+    private UiTestingMain() {}
 
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(UI_PORT, false);
@@ -63,9 +65,9 @@ public final class UiTestingMain {
                 io.informant.api.LoggerFactory.getLogger(GenerateTraces.class);
         public void executeApp() throws InterruptedException {
             int count = 0;
-            Exception causeException1 = new IllegalStateException("Cause 1");
-            Exception causeException2 = new RuntimeException("Cause 2", causeException1);
-            Exception causeException3 = new IllegalArgumentException("Cause 3", causeException2);
+            Exception cause1 = new NullPointerException("Cause 1");
+            Exception cause2 = new IllegalStateException("Cause 2", cause1);
+            Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
             while (true) {
                 // one very short trace that will have an empty merged stack tree
                 new NestableCall(1, 10, 100).execute();
@@ -79,13 +81,11 @@ public final class UiTestingMain {
                         logger.warn("everything is actually ok");
                     } else {
                         logger.warn("everything is actually ok", new IllegalStateException(
-                                "just testing", causeException3));
+                                "just testing", cause3));
                     }
                 }
                 Thread.sleep(1000);
             }
         }
     }
-
-    private UiTestingMain() {}
 }

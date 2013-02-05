@@ -31,6 +31,8 @@ class Types {
     private static final ConcurrentMap<String, Boolean> bootstrapTypes = Maps.newConcurrentMap();
     private static final ConcurrentMap<String, Boolean> allTypes = Maps.newConcurrentMap();
 
+    private Types() {}
+
     static boolean inBootstrapClassLoader(String type) {
         Boolean cached = bootstrapTypes.get(type);
         if (cached == null) {
@@ -73,6 +75,4 @@ class Types {
     private static Class<?> getType(String typeName) throws ClassNotFoundException {
         return Class.forName(typeName.replace('/', '.'), false, ClassLoader.getSystemClassLoader());
     }
-
-    private Types() {}
 }

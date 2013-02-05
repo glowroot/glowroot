@@ -43,10 +43,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 /**
  * @author Trask Stalnaker
@@ -232,6 +228,7 @@ public class TracePointJsonServiceTest {
         return new TracePointJsonService(traceSnapshotDao, traceRegistry, traceSinkLocal,
                 traceSnapshotService, ticker, clock);
     }
+
     private static Trace mockActiveTrace(String id, long durationMillis) {
         Trace trace = mock(Trace.class);
         when(trace.getId()).thenReturn(id);
@@ -252,80 +249,5 @@ public class TracePointJsonServiceTest {
             boolean completed) {
         return TracePoint.from(id, capturedAt, TimeUnit.MILLISECONDS.toNanos(durationMillis),
                 completed, false);
-    }
-
-    private static class TracePointResponse {
-        private final List<RawPoint> normalPoints;
-        private final List<RawPoint> errorPoints;
-        private final List<RawPoint> activePoints;
-        private static TracePointResponse from(String responseJson) {
-            JsonObject points = new Gson().fromJson(responseJson, JsonElement.class)
-                    .getAsJsonObject();
-            JsonArray normalPointsJson = points.get("normalPoints").getAsJsonArray();
-            List<RawPoint> normalPoints = Lists.newArrayList();
-            for (int i = 0; i < normalPointsJson.size(); i++) {
-                JsonArray normalPointJson = normalPointsJson.get(i).getAsJsonArray();
-                normalPoints.add(RawPoint.from(normalPointJson));
-            }
-            JsonArray errorPointsJson = points.get("errorPoints").getAsJsonArray();
-            List<RawPoint> errorPoints = Lists.newArrayList();
-            for (int i = 0; i < errorPointsJson.size(); i++) {
-                JsonArray errorPointJson = errorPointsJson.get(i).getAsJsonArray();
-                errorPoints.add(RawPoint.from(errorPointJson));
-            }
-            JsonArray activePointsJson = points.get("activePoints").getAsJsonArray();
-            List<RawPoint> activePoints = Lists.newArrayList();
-            for (int i = 0; i < activePointsJson.size(); i++) {
-                JsonArray activePointJson = activePointsJson.get(i).getAsJsonArray();
-                activePoints.add(RawPoint.from(activePointJson));
-            }
-            return new TracePointResponse(normalPoints, errorPoints, activePoints);
-        }
-        private TracePointResponse(List<RawPoint> normalPoints,
-                List<RawPoint> errorPoints,
-                List<RawPoint> activePoints) {
-            this.normalPoints = normalPoints;
-            this.errorPoints = errorPoints;
-            this.activePoints = activePoints;
-        }
-        private List<RawPoint> getNormalPoints() {
-            return normalPoints;
-        }
-        public List<RawPoint> getErrorPoints() {
-            return errorPoints;
-        }
-        private List<RawPoint> getActivePoints() {
-            return activePoints;
-        }
-    }
-
-    private static class RawPoint implements Comparable<RawPoint> {
-        private final long capturedAt;
-        private final double durationSeconds;
-        private final String id;
-        private static RawPoint from(JsonArray point) {
-            long capturedAt = point.get(0).getAsLong();
-            double durationSeconds = point.get(1).getAsDouble();
-            String id = point.get(2).getAsString();
-            return new RawPoint(capturedAt, durationSeconds, id);
-        }
-        private RawPoint(long capturedAt, double durationSeconds, String id) {
-            this.capturedAt = capturedAt;
-            this.durationSeconds = durationSeconds;
-            this.id = id;
-        }
-        private long getCapturedAt() {
-            return capturedAt;
-        }
-        private double getDurationSeconds() {
-            return durationSeconds;
-        }
-        private String getId() {
-            return id;
-        }
-        // natural sort order is by duration desc
-        public int compareTo(RawPoint o) {
-            return Double.compare(o.durationSeconds, durationSeconds);
-        }
     }
 }

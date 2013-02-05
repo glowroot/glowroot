@@ -105,11 +105,11 @@ public class Advice {
     @Nullable
     private final Type travelerType;
 
-    private final ParameterKind[] isEnabledParameterKinds;
-    private final ParameterKind[] onBeforeParameterKinds;
-    private final ParameterKind[] onReturnParameterKinds;
-    private final ParameterKind[] onThrowParameterKinds;
-    private final ParameterKind[] onAfterParameterKinds;
+    private final ImmutableList<ParameterKind> isEnabledParameterKinds;
+    private final ImmutableList<ParameterKind> onBeforeParameterKinds;
+    private final ImmutableList<ParameterKind> onReturnParameterKinds;
+    private final ImmutableList<ParameterKind> onThrowParameterKinds;
+    private final ImmutableList<ParameterKind> onAfterParameterKinds;
 
     public static Advice from(Pointcut pointcut, Class<?> adviceClass) {
         return new Builder(pointcut, adviceClass).build();
@@ -119,10 +119,11 @@ public class Advice {
             @Nullable Pattern pointcutMethodPattern, @Nullable Method isEnabledAdvice,
             @Nullable Method onBeforeAdvice, @Nullable Method onReturnAdvice,
             @Nullable Method onThrowAdvice, @Nullable Method onAfterAdvice,
-            @Nullable Type travelerType, ParameterKind[] isEnabledParameterKinds,
-            ParameterKind[] onBeforeParameterKinds, ParameterKind[] onReturnParameterKinds,
-            ParameterKind[] onThrowParameterKinds, ParameterKind[] onAfterParameterKinds) {
-
+            @Nullable Type travelerType, ImmutableList<ParameterKind> isEnabledParameterKinds,
+            ImmutableList<ParameterKind> onBeforeParameterKinds,
+            ImmutableList<ParameterKind> onReturnParameterKinds,
+            ImmutableList<ParameterKind> onThrowParameterKinds,
+            ImmutableList<ParameterKind> onAfterParameterKinds) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
         this.pointcutTypePattern = pointcutTypePattern;
@@ -188,23 +189,23 @@ public class Advice {
         return onAfterAdvice;
     }
 
-    ParameterKind[] getIsEnabledParameterKinds() {
+    ImmutableList<ParameterKind> getIsEnabledParameterKinds() {
         return isEnabledParameterKinds;
     }
 
-    ParameterKind[] getOnBeforeParameterKinds() {
+    ImmutableList<ParameterKind> getOnBeforeParameterKinds() {
         return onBeforeParameterKinds;
     }
 
-    ParameterKind[] getOnReturnParameterKinds() {
+    ImmutableList<ParameterKind> getOnReturnParameterKinds() {
         return onReturnParameterKinds;
     }
 
-    ParameterKind[] getOnThrowParameterKinds() {
+    ImmutableList<ParameterKind> getOnThrowParameterKinds() {
         return onThrowParameterKinds;
     }
 
-    ParameterKind[] getOnAfterParameterKinds() {
+    ImmutableList<ParameterKind> getOnAfterParameterKinds() {
         return onAfterParameterKinds;
     }
 
@@ -256,11 +257,11 @@ public class Advice {
         @LazyNonNull
         private Type travelerType;
 
-        private ParameterKind[] isEnabledParameterKinds = new ParameterKind[0];
-        private ParameterKind[] onBeforeParameterKinds = new ParameterKind[0];
-        private ParameterKind[] onReturnParameterKinds = new ParameterKind[0];
-        private ParameterKind[] onThrowParameterKinds = new ParameterKind[0];
-        private ParameterKind[] onAfterParameterKinds = new ParameterKind[0];
+        private ImmutableList<ParameterKind> isEnabledParameterKinds = ImmutableList.of();
+        private ImmutableList<ParameterKind> onBeforeParameterKinds = ImmutableList.of();
+        private ImmutableList<ParameterKind> onReturnParameterKinds = ImmutableList.of();
+        private ImmutableList<ParameterKind> onThrowParameterKinds = ImmutableList.of();
+        private ImmutableList<ParameterKind> onAfterParameterKinds = ImmutableList.of();
 
         // TODO use builder to construct, then can use final fields
         private Builder(Pointcut pointcut, Class<?> adviceClass) {
@@ -317,13 +318,11 @@ public class Advice {
                         adviceClass.getName());
                 return;
             }
-            Method isEnabledAdvice = Method.getMethod(method);
-            ParameterKind[] isEnabledParameterKinds = getParameterKinds(
-                    method.getParameterAnnotations(), method.getParameterTypes(),
-                    isEnabledValidParameterKinds);
-            if (isEnabledAdvice.getReturnType().getSort() == Type.BOOLEAN) {
-                this.isEnabledAdvice = isEnabledAdvice;
-                this.isEnabledParameterKinds = isEnabledParameterKinds;
+            Method asmMethod = Method.getMethod(method);
+            if (asmMethod.getReturnType().getSort() == Type.BOOLEAN) {
+                this.isEnabledAdvice = asmMethod;
+                this.isEnabledParameterKinds = getParameterKinds(method.getParameterAnnotations(),
+                        method.getParameterTypes(), isEnabledValidParameterKinds);
             } else {
                 logger.error("@IsEnabled method must return boolean");
             }
@@ -355,18 +354,17 @@ public class Advice {
                         adviceClass.getName());
                 return;
             }
-            Method onReturnAdvice = Method.getMethod(method);
-            ParameterKind[] onReturnParameterKinds = getParameterKinds(
+            ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
                     method.getParameterAnnotations(), method.getParameterTypes(),
                     onReturnValidParameterKinds);
-            for (int i = 1; i < onReturnParameterKinds.length; i++) {
-                if (onReturnParameterKinds[i] == ParameterKind.RETURN) {
+            for (int i = 1; i < parameterKinds.size(); i++) {
+                if (parameterKinds.get(i) == ParameterKind.RETURN) {
                     logger.error("@InjectReturn must be the first argument to @OnReturn");
                     return;
                 }
             }
-            this.onReturnAdvice = onReturnAdvice;
-            this.onReturnParameterKinds = onReturnParameterKinds;
+            this.onReturnAdvice = Method.getMethod(method);
+            this.onReturnParameterKinds = parameterKinds;
         }
 
         private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
@@ -375,23 +373,23 @@ public class Advice {
                         adviceClass.getName());
                 return;
             }
-            Method onThrowAdvice = Method.getMethod(method);
-            ParameterKind[] onThrowParameterKinds = getParameterKinds(
+            ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
                     method.getParameterAnnotations(), method.getParameterTypes(),
                     onThrowValidParameterKinds);
-            for (int i = 1; i < onThrowParameterKinds.length; i++) {
-                if (onThrowParameterKinds[i] == ParameterKind.THROWABLE) {
+            for (int i = 1; i < parameterKinds.size(); i++) {
+                if (parameterKinds.get(i) == ParameterKind.THROWABLE) {
                     logger.error("@InjectThrowable must be the first argument to"
                             + " @OnThrow");
                     return;
                 }
             }
-            if (onThrowAdvice.getReturnType().getSort() != Type.VOID) {
+            Method asmMethod = Method.getMethod(method);
+            if (asmMethod.getReturnType().getSort() != Type.VOID) {
                 logger.error("@OnThrow method must return void (for now)");
                 return;
             }
-            this.onThrowAdvice = onThrowAdvice;
-            this.onThrowParameterKinds = onThrowParameterKinds;
+            this.onThrowAdvice = asmMethod;
+            this.onThrowParameterKinds = parameterKinds;
         }
 
         private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
@@ -400,16 +398,14 @@ public class Advice {
                         adviceClass.getName());
                 return;
             }
-            Method onAfterAdvice = Method.getMethod(method);
-            ParameterKind[] onAfterParameterKinds = getParameterKinds(
-                    method.getParameterAnnotations(), method.getParameterTypes(),
-                    onAfterValidParameterKinds);
-            if (onAfterAdvice.getReturnType().getSort() != Type.VOID) {
+            Method asmMethod = Method.getMethod(method);
+            if (asmMethod.getReturnType().getSort() != Type.VOID) {
                 logger.error("@OnAfter method must return void");
                 return;
             }
-            this.onAfterAdvice = onAfterAdvice;
-            this.onAfterParameterKinds = onAfterParameterKinds;
+            this.onAfterAdvice = asmMethod;
+            this.onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),
+                    method.getParameterTypes(), onAfterValidParameterKinds);
         }
 
         private Advice build() {
@@ -419,39 +415,40 @@ public class Advice {
                     onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds);
         }
 
-        private static ParameterKind[] getParameterKinds(Annotation[][] parameterAnnotations,
+        private static ImmutableList<ParameterKind> getParameterKinds(
+                Annotation[][] parameterAnnotations,
                 Class<?>[] parameterTypes, @ReadOnly List<ParameterKind> validArgTypes) {
 
-            ParameterKind[] parameterKinds = new ParameterKind[parameterAnnotations.length];
+            ImmutableList.Builder<ParameterKind> parameterKinds = ImmutableList.builder();
             for (int i = 0; i < parameterAnnotations.length; i++) {
-                boolean found = false;
+                ParameterKind foundParameterKind = null;
                 for (Annotation annotation : parameterAnnotations[i]) {
                     ParameterKind parameterKind = parameterKindMap.get(annotation.annotationType());
                     if (parameterKind == null) {
                         continue;
                     }
-                    if (found) {
+                    if (foundParameterKind != null) {
                         logger.error("multiple annotations found on a single parameter");
                     }
                     if (validArgTypes.contains(parameterKind)) {
-                        parameterKinds[i] = parameterKind;
-                        found = true;
+                        foundParameterKind = parameterKind;
                     } else {
                         logger.error("annotation '" + annotation.annotationType().getName()
                                 + "' found in an invalid location");
                     }
                 }
-                if (!found) {
+                if (foundParameterKind == null) {
                     // no applicable annotations found
-                    parameterKinds[i] = ParameterKind.METHOD_ARG;
+                    foundParameterKind = ParameterKind.METHOD_ARG;
                 }
-                if (parameterKinds[i] == ParameterKind.METHOD_ARG
+                if (foundParameterKind == ParameterKind.METHOD_ARG
                         && parameterTypes[i].isPrimitive()) {
                     // special case to track primitive method args for possible autoboxing
-                    parameterKinds[i] = ParameterKind.PRIMITIVE_METHOD_ARG;
+                    foundParameterKind = ParameterKind.PRIMITIVE_METHOD_ARG;
                 }
+                parameterKinds.add(foundParameterKind);
             }
-            return parameterKinds;
+            return parameterKinds.build();
         }
     }
 }

@@ -72,7 +72,7 @@ import com.google.inject.Injector;
  * @since 0.5
  */
 @Static
-public final class MainEntryPoint {
+public class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
@@ -103,6 +103,8 @@ public final class MainEntryPoint {
                     return injector.getInstance(PluginServicesImplFactory.class).create(pluginId);
                 }
             });
+
+    private MainEntryPoint() {}
 
     // javaagent entry point
     public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
@@ -241,6 +243,4 @@ public final class MainEntryPoint {
             pluginServices.invalidateAll();
         }
     }
-
-    private MainEntryPoint() {}
 }

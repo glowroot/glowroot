@@ -29,7 +29,7 @@ public interface Span extends Timer {
     // TODO revisit this, what about setMessage(MessageSupplier) instead?
     void updateMessage(MessageUpdater updater);
 
-    public interface MessageUpdater {
+    interface MessageUpdater {
         void update(MessageSupplier messageSupplier);
     }
 }

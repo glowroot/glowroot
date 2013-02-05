@@ -128,7 +128,7 @@ class PreparedStatementMirror extends StatementMirror {
         @Override
         public String toString() {
             if (bytes != null) {
-                return toHex(bytes);
+                return "0x" + HashCodes.fromBytes(bytes).toString();
             } else {
                 return "{" + length + " bytes}";
             }
@@ -144,9 +144,5 @@ class PreparedStatementMirror extends StatementMirror {
         public String toString() {
             return "{stream:" + o.getClass().getSimpleName() + "}";
         }
-    }
-
-    private static String toHex(byte[] bytes) {
-        return "0x" + HashCodes.fromBytes(bytes).toString();
     }
 }

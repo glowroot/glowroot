@@ -32,4 +32,3 @@ interface HttpService {
     @Nullable
     HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException;
 }
-

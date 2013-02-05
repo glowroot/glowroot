@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.LogMessage;
 import io.informant.testkit.LogMessage.Level;
-import io.informant.testkit.Trace.CapturedException;
+import io.informant.testkit.Trace.ExceptionInfo;
 
 import java.util.List;
 
@@ -74,22 +74,22 @@ public class LogMessageTest {
         assertThat(messages.get(0).getLevel()).isEqualTo(Level.WARN);
         assertThat(messages.get(0).getLoggerName()).isEqualTo(GenerateLogMessage.class.getName());
         assertThat(messages.get(0).getText()).isEqualTo("a warning from app under test");
-        CapturedException exception = messages.get(0).getException();
+        ExceptionInfo exception = messages.get(0).getException();
         assertThat(exception).isNotNull();
         assertThat(exception.getDisplay()).isEqualTo("java.lang.IllegalStateException: Ex msg");
-        CapturedException cause = exception.getCause();
+        ExceptionInfo cause = exception.getCause();
         assertThat(cause).isNotNull();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(cause.getFramesInCommonWithCaused()).isEqualTo(
                 exception.getStackTrace().size() - 1);
         cause = cause.getCause();
         assertThat(cause).isNotNull();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.RuntimeException: Cause 2");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
         assertThat(cause.getFramesInCommonWithCaused()).isEqualTo(
                 exception.getStackTrace().size() - 1);
         cause = cause.getCause();
         assertThat(cause).isNotNull();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 1");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
         assertThat(cause.getFramesInCommonWithCaused()).isEqualTo(
                 exception.getStackTrace().size() - 1);
         assertThat(cause.getCause()).isNull();
@@ -99,11 +99,11 @@ public class LogMessageTest {
     public static class GenerateLogMessage implements AppUnderTest {
         private static final Logger logger = LoggerFactory.getLogger(GenerateLogMessage.class);
         public void executeApp() throws Exception {
-            Exception causeException1 = new IllegalStateException("Cause 1");
-            Exception causeException2 = new RuntimeException("Cause 2", causeException1);
-            Exception causeException3 = new IllegalArgumentException("Cause 3", causeException2);
-            logger.warn("a warning from app under test", new IllegalStateException("Ex msg",
-                    causeException3));
+            Exception cause1 = new NullPointerException("Cause 1");
+            Exception cause2 = new IllegalStateException("Cause 2", cause1);
+            Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
+            logger.warn("a warning from app under test",
+                    new IllegalStateException("Ex msg", cause3));
         }
     }
 }

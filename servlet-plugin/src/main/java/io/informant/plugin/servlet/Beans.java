@@ -35,7 +35,7 @@ import checkers.nullness.quals.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-final class Beans {
+class Beans {
 
     private static final Logger logger = LoggerFactory.getLogger(Beans.class);
 
@@ -80,6 +80,8 @@ final class Beans {
                             return getPropertyNames(type);
                         }
                     });
+
+    private Beans() {}
 
     @Nullable
     static Object value(@Nullable Object obj, String[] path, int currIndex) {
@@ -195,6 +197,4 @@ final class Beans {
     // this unused private method is required for use as SENTINEL_METHOD above
     @SuppressWarnings("unused")
     private static void sentinelMethod() {}
-
-    private Beans() {}
 }

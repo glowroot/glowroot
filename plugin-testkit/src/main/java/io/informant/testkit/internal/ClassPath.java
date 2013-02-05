@@ -23,7 +23,9 @@ import checkers.nullness.quals.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class ClassPath {
+public class ClassPath {
+
+    private ClassPath() {}
 
     @Nullable
     public static File getInformantCoreJarFile() {
@@ -47,6 +49,4 @@ public final class ClassPath {
         }
         return null;
     }
-
-    private ClassPath() {}
 }

@@ -18,7 +18,6 @@ package io.informant.core.weaving;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.weaving.Mixin;
-import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.core.util.ThreadSafe;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -73,7 +72,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // io.informant.core.weaving.preinit.GlobalCollector, and hard-coded results in
     // io.informant.core.weaving.PreInitializeClasses)
     public WeavingClassFileTransformer(Mixin[] mixins, Advice[] advisors,
-            ParsedTypeCache parsedTypeCache, WeavingMetricImpl metric) {
+            ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
 
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);

@@ -82,7 +82,7 @@ class TracePointJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String getPoints(String message) throws IOException {
+    String getPoints(String message) throws IOException, JsonSyntaxException {
         logger.debug("getPoints(): message={}", message);
         TracePointRequest request;
         try {

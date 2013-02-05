@@ -17,6 +17,7 @@ package io.informant.core.config;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.JsonElements;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
@@ -39,6 +39,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * @author Trask Stalnaker
@@ -65,24 +66,30 @@ class Config {
     private final ImmutableList<PluginConfig> pluginConfigs;
     private final ImmutableList<PointcutConfig> pointcutConfigs;
 
-    static Config fromFile(File configFile) {
-        JsonObject rootJsonObject = createRootJsonObject(configFile);
+    static Config fromFile(File configFile) throws IOException, JsonSyntaxException {
+        JsonObject rootConfigObject = createRootConfigObject(configFile);
         GeneralConfig generalConfig = GeneralConfig
-                .fromJson(asJsonObject(rootJsonObject.get(GENERAL)));
+                .fromJson(JsonElements.getOptionalObject(rootConfigObject, GENERAL));
         CoarseProfilingConfig coarseProfilingConfig = CoarseProfilingConfig
-                .fromJson(asJsonObject(rootJsonObject.get(COARSE_PROFILING)));
+                .fromJson(JsonElements.getOptionalObject(rootConfigObject, COARSE_PROFILING));
         FineProfilingConfig fineProfilingConfig = FineProfilingConfig
-                .fromJson(asJsonObject(rootJsonObject.get(FINE_PROFILING)));
-        UserConfig userConfig = UserConfig.fromJson(asJsonObject(rootJsonObject.get(USER)));
+                .fromJson(JsonElements.getOptionalObject(rootConfigObject, FINE_PROFILING));
+        UserConfig userConfig = UserConfig.fromJson(JsonElements.getOptionalObject(
+                rootConfigObject, USER));
 
-        Map<String, JsonObject> pluginConfigJsonObjects = createPluginConfigJsonObjects(
-                rootJsonObject);
-        ImmutableList.Builder<PluginConfig> pluginConfigs = createPluginConfigs(
-                pluginConfigJsonObjects);
-        ImmutableList.Builder<PointcutConfig> pointcutConfigs = createPointcutConfigs(
-                rootJsonObject);
+        Map<String, JsonObject> pluginConfigObjects = createPluginConfigObjects(rootConfigObject);
+        ImmutableList.Builder<PluginConfig> pluginConfigs =
+                createPluginConfigs(pluginConfigObjects);
+        ImmutableList.Builder<PointcutConfig> pointcutConfigs =
+                createPointcutConfigs(rootConfigObject);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig, userConfig,
                 pluginConfigs.build(), pointcutConfigs.build());
+    }
+
+    static Config getDefault() {
+        return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
+                FineProfilingConfig.getDefault(), UserConfig.getDefault(),
+                ImmutableList.<PluginConfig> of(), ImmutableList.<PointcutConfig> of());
     }
 
     static Builder builder(Config base) {
@@ -126,31 +133,31 @@ class Config {
     }
 
     void writeToFileIfNeeded(File configFile) {
-        JsonObject rootJsonObject = new JsonObject();
-        rootJsonObject.add(GENERAL, generalConfig.toJson());
-        rootJsonObject.add(COARSE_PROFILING, coarseProfilingConfig.toJson());
-        rootJsonObject.add(FINE_PROFILING, fineProfilingConfig.toJson());
-        rootJsonObject.add(USER, userConfig.toJson());
+        JsonObject rootConfigObject = new JsonObject();
+        rootConfigObject.add(GENERAL, generalConfig.toJson());
+        rootConfigObject.add(COARSE_PROFILING, coarseProfilingConfig.toJson());
+        rootConfigObject.add(FINE_PROFILING, fineProfilingConfig.toJson());
+        rootConfigObject.add(USER, userConfig.toJson());
 
-        JsonArray pluginsJsonArray = new JsonArray();
+        JsonArray pluginsArray = new JsonArray();
         for (PluginConfig pluginConfig : pluginConfigs) {
-            pluginsJsonArray.add(pluginConfig.toJson());
+            pluginsArray.add(pluginConfig.toJson());
         }
-        JsonArray pointcutsJsonArray = new JsonArray();
+        JsonArray pointcutsArray = new JsonArray();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            pointcutsJsonArray.add(pointcutConfig.toJson());
+            pointcutsArray.add(pointcutConfig.toJson());
         }
-        rootJsonObject.add(PLUGINS, pluginsJsonArray);
-        rootJsonObject.add(POINTCUTS, pointcutsJsonArray);
+        rootConfigObject.add(PLUGINS, pluginsArray);
+        rootConfigObject.add(POINTCUTS, pointcutsArray);
 
-        String configJson = gson.toJson(rootJsonObject);
+        String configJson = gson.toJson(rootConfigObject);
         boolean contentEqual = false;
         if (configFile.exists()) {
             try {
                 String existingConfigJson = Files.toString(configFile, Charsets.UTF_8);
                 contentEqual = configJson.equals(existingConfigJson);
             } catch (IOException e) {
-                logger.error("error reading config.json file", e);
+                logger.error("error reading config.json file: " + e.getMessage(), e);
             }
         }
         if (contentEqual) {
@@ -159,34 +166,38 @@ class Config {
             return;
         }
         try {
-            Files.write(gson.toJson(rootJsonObject), configFile, Charsets.UTF_8);
+            Files.write(gson.toJson(rootConfigObject), configFile, Charsets.UTF_8);
         } catch (IOException e) {
-            logger.error("error writing config.json file", e);
+            logger.error("error writing config.json file: " + e.getMessage(), e);
         }
     }
 
-    private static JsonObject createRootJsonObject(File configFile) {
-        if (configFile.exists()) {
-            try {
-                String configJson = Files.toString(configFile, Charsets.UTF_8);
-                JsonElement jsonElement = new JsonParser().parse(configJson);
-                return asJsonObject(jsonElement);
-            } catch (IOException e) {
-                logger.error("error reading config.json file", e);
-                return new JsonObject();
+    private static JsonObject createRootConfigObject(@Nullable File configFile) throws IOException,
+            JsonSyntaxException {
+        if (configFile != null && configFile.exists()) {
+            String configJson = Files.toString(configFile, Charsets.UTF_8);
+            JsonElement jsonElement = new JsonParser().parse(configJson);
+            if (jsonElement.isJsonObject()) {
+                return jsonElement.getAsJsonObject();
+            } else {
+                throw new JsonSyntaxException("Expecting root element to be a json object");
             }
         } else {
             return new JsonObject();
         }
     }
 
-    private static Map<String, JsonObject> createPluginConfigJsonObjects(
-            JsonObject rootJsonObject) {
-        Map<String, JsonObject> pluginConfigJsonObjects = Maps.newHashMap();
-        JsonArray pluginsJsonArray = asJsonArray(rootJsonObject.get(PLUGINS));
+    private static Map<String, JsonObject> createPluginConfigObjects(JsonObject rootConfigObject)
+            throws JsonSyntaxException {
+        Map<String, JsonObject> pluginConfigObjects = Maps.newHashMap();
+        JsonArray pluginsJsonArray = JsonElements.getOptionalArray(rootConfigObject, PLUGINS);
         for (Iterator<JsonElement> i = pluginsJsonArray.iterator(); i.hasNext();) {
-            JsonObject pluginConfigJsonObject = asJsonObject(i.next());
-            JsonElement groupId = pluginConfigJsonObject.get("groupId");
+            JsonElement pluginConfigElement = i.next();
+            if (!pluginConfigElement.isJsonObject()) {
+                throw new JsonSyntaxException("Expecting plugin element to be a json object");
+            }
+            JsonObject pluginConfigObject = pluginConfigElement.getAsJsonObject();
+            JsonElement groupId = pluginConfigObject.get("groupId");
             if (groupId == null) {
                 logger.warn("error in config.json file, groupId is missing");
                 continue;
@@ -195,7 +206,7 @@ class Config {
                 logger.warn("error in config.json file, groupId is not a json string");
                 continue;
             }
-            JsonElement artifactId = pluginConfigJsonObject.get("artifactId");
+            JsonElement artifactId = pluginConfigObject.get("artifactId");
             if (artifactId == null) {
                 logger.warn("error in config.json file, artifactId is missing");
                 continue;
@@ -205,19 +216,19 @@ class Config {
                 logger.warn("error in config.json file, artifactId is not a json string");
                 continue;
             }
-            pluginConfigJsonObjects.put(groupId.getAsString() + ":" + artifactId.getAsString(),
-                    pluginConfigJsonObject);
+            pluginConfigObjects.put(groupId.getAsString() + ":" + artifactId.getAsString(),
+                    pluginConfigObject);
         }
-        return pluginConfigJsonObjects;
+        return pluginConfigObjects;
     }
 
     private static ImmutableList.Builder<PluginConfig> createPluginConfigs(
-            Map<String, JsonObject> pluginConfigJsonObjects) {
+            Map<String, JsonObject> pluginConfigObjects) {
         ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
         for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
-            JsonObject pluginConfigJsonObject = Objects.firstNonNull(
-                    pluginConfigJsonObjects.get(pluginDescriptor.getId()), new JsonObject());
-            PluginConfig pluginConfig = PluginConfig.fromJson(pluginConfigJsonObject,
+            JsonObject pluginConfigObject = Objects.firstNonNull(
+                    pluginConfigObjects.get(pluginDescriptor.getId()), new JsonObject());
+            PluginConfig pluginConfig = PluginConfig.fromJson(pluginConfigObject,
                     pluginDescriptor);
             pluginConfigs.add(pluginConfig);
         }
@@ -225,38 +236,14 @@ class Config {
     }
 
     private static ImmutableList.Builder<PointcutConfig> createPointcutConfigs(
-            JsonObject rootJsonObject) {
+            JsonObject rootConfigObject) throws JsonSyntaxException {
         ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
-        JsonArray pointcutsJsonArray = asJsonArray(rootJsonObject.get(POINTCUTS));
+        JsonArray pointcutsJsonArray = JsonElements.getOptionalArray(rootConfigObject, POINTCUTS);
         for (Iterator<JsonElement> i = pointcutsJsonArray.iterator(); i.hasNext();) {
             PointcutConfig pointcutConfig = PointcutConfig.fromJson(i.next().getAsJsonObject());
             pointcutConfigs.add(pointcutConfig);
         }
         return pointcutConfigs;
-    }
-
-    private static JsonObject asJsonObject(@ReadOnly @Nullable JsonElement jsonElement) {
-        if (jsonElement == null || jsonElement.isJsonNull()) {
-            return new JsonObject();
-        } else if (jsonElement.isJsonObject()) {
-            return jsonElement.getAsJsonObject();
-        } else {
-            logger.warn("error in config.json file, expecting json object but found: {}",
-                    jsonElement);
-            return new JsonObject();
-        }
-    }
-
-    private static JsonArray asJsonArray(@ReadOnly @Nullable JsonElement jsonElement) {
-        if (jsonElement == null || jsonElement.isJsonNull()) {
-            return new JsonArray();
-        } else if (jsonElement.isJsonArray()) {
-            return jsonElement.getAsJsonArray();
-        } else {
-            logger.warn("error in config.json file, expecting json array but found: {}",
-                    jsonElement);
-            return new JsonArray();
-        }
     }
 
     static class Builder {

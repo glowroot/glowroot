@@ -53,6 +53,7 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
@@ -249,7 +250,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (!traceMetric.isLinkedToTrace()) {
             Trace trace = traceRegistry.getCurrentTrace();
             if (trace == null) {
-                // TODO return global collector?
                 return NopTimer.INSTANCE;
             }
             trace.linkTraceMetric((MetricImpl) metric, traceMetric);
@@ -404,7 +404,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 trace.resetTraceMetrics();
             }
         }
-        private StackTraceElement[] captureSpanStackTrace() {
+        private ImmutableList<StackTraceElement> captureSpanStackTrace() {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             // need to strip back 5 stack calls:
             // 1 - java.lang.Thread.getStackTrace()
@@ -413,9 +413,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             // 4 - io.informant.core.PluginServicesImpl$SpanImpl.end()/endWithError()
             // 5 - the @Pointcut @OnReturn/@OnThrow/@OnAfter method
             // (possibly more if the @Pointcut method doesn't call end()/endWithError() directly)
-            StackTraceElement[] spanStackTrace = new StackTraceElement[stackTrace.length - 5];
-            System.arraycopy(stackTrace, 5, spanStackTrace, 0, spanStackTrace.length);
-            return spanStackTrace;
+            return ImmutableList.copyOf(stackTrace).subList(5, stackTrace.length);
         }
         private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {
             if (scheduledFuture == null) {

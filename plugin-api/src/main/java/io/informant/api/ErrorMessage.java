@@ -47,7 +47,7 @@ public abstract class ErrorMessage {
     public abstract Map<String, ? extends /*@Nullable*/Object> getDetail();
 
     @Nullable
-    public abstract CapturedException getException();
+    public abstract ExceptionInfo getException();
 
     // keep constructor protected, if plugins could subclass, then extra validation would be
     // required to ensure the Message contract is maintained
@@ -63,11 +63,11 @@ public abstract class ErrorMessage {
     }
 
     public static ErrorMessage from(Throwable t) {
-        return new ErrorMessageImpl(getRootCause(t).toString(), null, CapturedException.from(t));
+        return new ErrorMessageImpl(getRootCause(t).toString(), null, ExceptionInfo.from(t));
     }
 
     public static ErrorMessage from(String message, Throwable t) {
-        return new ErrorMessageImpl(message, null, CapturedException.from(t));
+        return new ErrorMessageImpl(message, null, ExceptionInfo.from(t));
     }
 
     private static Throwable getRootCause(Throwable t) {
@@ -87,11 +87,11 @@ public abstract class ErrorMessage {
         @Nullable
         private final Map<String, ? extends /*@Nullable*/Object> detail;
         @Nullable
-        private final CapturedException exception;
+        private final ExceptionInfo exception;
 
         private ErrorMessageImpl(String text,
                 @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail,
-                @Nullable CapturedException exception) {
+                @Nullable ExceptionInfo exception) {
             this.text = text;
             this.detail = detail;
             this.exception = exception;
@@ -111,7 +111,7 @@ public abstract class ErrorMessage {
 
         @Override
         @Nullable
-        public CapturedException getException() {
+        public ExceptionInfo getException() {
             return exception;
         }
     }

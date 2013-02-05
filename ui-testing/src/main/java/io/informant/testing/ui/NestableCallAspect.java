@@ -81,7 +81,8 @@ public class NestableCallAspect {
             if (random.nextDouble() < 0.8) {
                 span.end();
             } else {
-                span.endWithError(ErrorMessage.from("randomized error", new RuntimeException()));
+                span.endWithError(ErrorMessage
+                        .from("randomized error", new IllegalStateException()));
             }
         }
     }

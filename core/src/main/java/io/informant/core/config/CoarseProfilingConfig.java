@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the coarse-grained profiling config.
@@ -44,8 +45,13 @@ public class CoarseProfilingConfig {
     private final int intervalMillis;
     private final int totalSeconds;
 
-    static CoarseProfilingConfig fromJson(@ReadOnly JsonObject jsonObject) {
-        return gson.fromJson(jsonObject, CoarseProfilingConfig.Builder.class).build();
+    static CoarseProfilingConfig fromJson(@ReadOnly JsonObject configObject)
+            throws JsonSyntaxException {
+        return gson.fromJson(configObject, CoarseProfilingConfig.Builder.class).build();
+    }
+
+    static CoarseProfilingConfig getDefault() {
+        return new Builder().build();
     }
 
     public static Builder builder(CoarseProfilingConfig base) {
@@ -121,22 +127,22 @@ public class CoarseProfilingConfig {
             this.totalSeconds = totalSeconds;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject jsonObject) {
-            JsonElement enabled = jsonObject.get("enabled");
-            if (enabled != null) {
-                enabled(enabled.getAsBoolean());
+        public Builder overlay(@ReadOnly JsonObject configObject) {
+            JsonElement enabledElement = configObject.get("enabled");
+            if (enabledElement != null) {
+                enabled(enabledElement.getAsBoolean());
             }
-            JsonElement initialDelayMillis = jsonObject.get("initialDelayMillis");
-            if (initialDelayMillis != null) {
-                initialDelayMillis(initialDelayMillis.getAsInt());
+            JsonElement initialDelayMillisElement = configObject.get("initialDelayMillis");
+            if (initialDelayMillisElement != null) {
+                initialDelayMillis(initialDelayMillisElement.getAsInt());
             }
-            JsonElement intervalMillis = jsonObject.get("intervalMillis");
-            if (intervalMillis != null) {
-                intervalMillis(intervalMillis.getAsInt());
+            JsonElement intervalMillisElement = configObject.get("intervalMillis");
+            if (intervalMillisElement != null) {
+                intervalMillis(intervalMillisElement.getAsInt());
             }
-            JsonElement totalSeconds = jsonObject.get("totalSeconds");
-            if (totalSeconds != null) {
-                totalSeconds(totalSeconds.getAsInt());
+            JsonElement totalSecondsElement = configObject.get("totalSeconds");
+            if (totalSecondsElement != null) {
+                totalSeconds(totalSecondsElement.getAsInt());
             }
             return this;
         }

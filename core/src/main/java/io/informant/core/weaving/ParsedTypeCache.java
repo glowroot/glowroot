@@ -28,7 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -38,6 +38,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
@@ -83,7 +84,7 @@ public class ParsedTypeCache {
     //
     // note, not using nested loading cache since the nested loading cache maintains a strong
     // reference to the class loader
-    private final LoadingCache<ClassLoader, ConcurrentMap<String, ParsedType>> parsedTypes =
+    private final LoadingCache<ClassLoader, ConcurrentMap<String, ParsedType>> parsedTypeCache =
             CacheBuilder.newBuilder().weakKeys()
                     .build(new CacheLoader<ClassLoader, ConcurrentMap<String, ParsedType>>() {
                         @Override
@@ -102,10 +103,10 @@ public class ParsedTypeCache {
     // therefore the keys will most likely be cleared while their class loaders are still being used
     //
     // intentionally avoiding Maps.newConcurrentMap() for the same reason as above
-    private final ConcurrentMap<String, ParsedType> bootLoaderParsedTypes =
+    private final ConcurrentMap<String, ParsedType> bootLoaderParsedTypeCache =
             new ConcurrentHashMap<String, ParsedType>();
 
-    private final TreeMap<String, String> typeNameUppers = Maps.newTreeMap();
+    private final SortedMap<String, String> typeNameUppers = Maps.newTreeMap();
 
     // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
     public List<String> getMatchingTypeNames(String partialTypeName, int limit) {
@@ -169,19 +170,16 @@ public class ParsedTypeCache {
     // TODO is it worth removing duplicates from resulting type hierarchy list?
     ImmutableList<ParsedType> getTypeHierarchy(@Nullable String typeName,
             @Nullable ClassLoader loader) {
-
-        ImmutableList.Builder<ParsedType> superTypes = ImmutableList.builder();
-        addSuperTypes(typeName, superTypes, loader);
-        return superTypes.build();
+        return ImmutableList.copyOf(getSuperTypes(typeName, loader));
     }
 
     private List<ParsedType> getMatchingParsedTypes(String typeName) {
         List<ParsedType> parsedTypes = Lists.newArrayList();
-        ParsedType parsedType = bootLoaderParsedTypes.get(typeName);
+        ParsedType parsedType = bootLoaderParsedTypeCache.get(typeName);
         if (parsedType != null) {
             parsedTypes.add(parsedType);
         }
-        for (Map<String, ParsedType> loaderParsedTypes : this.parsedTypes.asMap().values()) {
+        for (Map<String, ParsedType> loaderParsedTypes : this.parsedTypeCache.asMap().values()) {
             parsedType = loaderParsedTypes.get(typeName);
             if (parsedType != null) {
                 parsedTypes.add(parsedType);
@@ -190,11 +188,11 @@ public class ParsedTypeCache {
         return parsedTypes;
     }
 
-    private void addSuperTypes(@Nullable String typeName,
-            ImmutableList.Builder<ParsedType> superTypes, @Nullable ClassLoader loader) {
-
+    @ReadOnly
+    private List<ParsedType> getSuperTypes(@Nullable String typeName,
+            @Nullable ClassLoader loader) {
         if (typeName == null || typeName.equals("java.lang.Object")) {
-            return;
+            return ImmutableList.of();
         }
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
         // class hasn't already been loaded, so instead, call the package protected
@@ -202,22 +200,15 @@ public class ParsedTypeCache {
         Class<?> type;
         try {
             type = (Class<?>) findLoadedClassMethod.invoke(loader, typeName);
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            superTypes.add(ParsedType.fromMissing(typeName));
-            return;
         } catch (IllegalArgumentException e) {
             logger.error(e.getMessage(), e);
-            superTypes.add(ParsedType.fromMissing(typeName));
-            return;
+            return ImmutableList.of(ParsedType.fromMissing(typeName));
         } catch (IllegalAccessException e) {
             logger.error(e.getMessage(), e);
-            superTypes.add(ParsedType.fromMissing(typeName));
-            return;
+            return ImmutableList.of(ParsedType.fromMissing(typeName));
         } catch (InvocationTargetException e) {
             logger.error(e.getMessage(), e);
-            superTypes.add(ParsedType.fromMissing(typeName));
-            return;
+            return ImmutableList.of(ParsedType.fromMissing(typeName));
         }
         ClassLoader parsedTypeLoader = loader;
         if (type != null) {
@@ -228,6 +219,18 @@ public class ParsedTypeCache {
             // ClassLoader.getResource(), as well as being a good optimization in other cases
             parsedTypeLoader = type.getClassLoader();
         }
+        List<ParsedType> superTypes = Lists.newArrayList();
+        ParsedType parsedType = getOrCreateParsedType(typeName, parsedTypeLoader);
+        superTypes.add(parsedType);
+        superTypes.addAll(getSuperTypes(parsedType.getSuperName(), loader));
+        for (String interfaceName : parsedType.getInterfaceNames()) {
+            superTypes.addAll(getSuperTypes(interfaceName, loader));
+        }
+        return superTypes;
+    }
+
+    private ParsedType getOrCreateParsedType(String typeName,
+            @Nullable ClassLoader parsedTypeLoader) {
         ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(parsedTypeLoader);
         ParsedType parsedType = loaderParsedTypes.get(typeName);
         if (parsedType == null) {
@@ -239,11 +242,7 @@ public class ParsedTypeCache {
             }
             typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
         }
-        superTypes.add(parsedType);
-        addSuperTypes(parsedType.getSuperName(), superTypes, loader);
-        for (String interfaceName : parsedType.getInterfaceNames()) {
-            addSuperTypes(interfaceName, superTypes, loader);
-        }
+        return parsedType;
     }
 
     private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader) {
@@ -302,12 +301,12 @@ public class ParsedTypeCache {
     private ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
         ImmutableList.Builder<ParsedMethod> parsedMethods = ImmutableList.builder();
         for (Method method : type.getDeclaredMethods()) {
-            Type[] argTypes = new Type[method.getParameterTypes().length];
-            for (int j = 0; j < argTypes.length; j++) {
-                argTypes[j] = Type.getType(method.getParameterTypes()[j]);
+            ImmutableList.Builder<Type> argTypes = ImmutableList.builder();
+            for (Class<?> parameterType : method.getParameterTypes()) {
+                argTypes.add(Type.getType(parameterType));
             }
             Type returnType = Type.getType(method.getReturnType());
-            parsedMethods.add(ParsedMethod.from(method.getName(), argTypes, returnType,
+            parsedMethods.add(ParsedMethod.from(method.getName(), argTypes.build(), returnType,
                     method.getModifiers()));
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
@@ -321,17 +320,17 @@ public class ParsedTypeCache {
 
     private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
         if (loader == null) {
-            return bootLoaderParsedTypes;
+            return bootLoaderParsedTypeCache;
         } else {
-            return parsedTypes.getUnchecked(loader);
+            return parsedTypeCache.getUnchecked(loader);
         }
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("parsedTypes", parsedTypes)
-                .add("bootLoaderParsedTypes", bootLoaderParsedTypes)
+                .add("parsedTypes", parsedTypeCache)
+                .add("bootLoaderParsedTypes", bootLoaderParsedTypeCache)
                 .toString();
     }
 
@@ -365,8 +364,7 @@ public class ParsedTypeCache {
         @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
-
-            methods.add(ParsedMethod.from(name, Type.getArgumentTypes(desc),
+            methods.add(ParsedMethod.from(name, ImmutableList.copyOf(Type.getArgumentTypes(desc)),
                     Type.getReturnType(desc), access));
             return null;
         }

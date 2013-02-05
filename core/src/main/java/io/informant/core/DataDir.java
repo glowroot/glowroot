@@ -63,6 +63,8 @@ class DataDir {
         BASE_DIR = baseDir;
     }
 
+    private DataDir() {}
+
     static File getDataDirWithNoWarning(@ReadOnly Map<String, String> properties) {
         return getDataDir(properties, true);
     }

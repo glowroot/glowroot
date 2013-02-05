@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
     // to avoid constant folding by the compiler, this field must *not* be final
     public static String REQUESTED_API_VERSION = "1.6";
 
-    private static StaticLoggerBinder SINGLETON = new StaticLoggerBinder();
+    private static final StaticLoggerBinder SINGLETON = new StaticLoggerBinder();
 
     private StaticLoggerBinder() {}
 

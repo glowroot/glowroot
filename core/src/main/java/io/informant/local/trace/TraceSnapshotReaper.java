@@ -47,7 +47,7 @@ public class TraceSnapshotReaper implements Runnable {
     private final Clock clock;
 
     @Inject
-    private TraceSnapshotReaper(ConfigService configService, TraceSnapshotDao traceSnapshotDao,
+    TraceSnapshotReaper(ConfigService configService, TraceSnapshotDao traceSnapshotDao,
             Clock clock) {
 
         this.configService = configService;

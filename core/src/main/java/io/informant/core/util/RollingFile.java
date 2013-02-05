@@ -99,15 +99,18 @@ public class RollingFile {
 
         @Override
         public boolean hasNext() {
+            if (block.getLength() > Integer.MAX_VALUE) {
+                // TODO read and lzf decode bytes in chunks to avoid having to allocate a single
+                // large byte array
+                logger.error("cannot currently read more than Integer.MAX_VALUE bytes",
+                        new Throwable());
+                return false;
+            }
             return !end;
         }
 
-        // TODO read and lzf decode bytes in chunks
         @Override
         public byte[] next() throws IOException {
-            if (block.getLength() > Integer.MAX_VALUE) {
-                logger.error("cannot read more than Integer.MAX_VALUE bytes", new Throwable());
-            }
             synchronized (lock) {
                 if (!rollingOut.stillExists(block)) {
                     end = true;

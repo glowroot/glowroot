@@ -19,10 +19,11 @@ import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Optional;
 import io.informant.shaded.google.common.base.Joiner;
-import io.informant.shaded.google.common.base.Objects;
+import io.informant.shaded.google.common.base.Strings;
 import io.informant.shaded.google.common.collect.ImmutableMap;
 import io.informant.shaded.google.common.collect.Maps;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
@@ -111,9 +112,9 @@ class ServletMessageSupplier extends MessageSupplier {
         if (requestMethod == null && requestURI == null) {
             message = "";
         } else if (requestMethod == null) {
-            message = Objects.firstNonNull(requestURI, "");
+            message = Strings.nullToEmpty(requestURI);
         } else if (requestURI == null) {
-            message = Objects.firstNonNull(requestMethod, "");
+            message = Strings.nullToEmpty(requestMethod);
         } else {
             message = requestMethod + " " + requestURI;
         }
@@ -130,7 +131,7 @@ class ServletMessageSupplier extends MessageSupplier {
         ImmutableMap.Builder<String, String[]> map = ImmutableMap.builder();
         for (Entry<?, ?> entry : requestParameterMap.entrySet()) {
             String key = (String) entry.getKey();
-            if (key.toLowerCase().contains("password")) {
+            if (key.toLowerCase(Locale.ENGLISH).contains("password")) {
                 // TODO implement configuration options for white listing and/or black listing
                 // certain request parameters and sql bind variables
                 map.put(key, new String[] { "****" });
@@ -190,7 +191,7 @@ class ServletMessageSupplier extends MessageSupplier {
         if (ServletPluginProperties.captureSessionId()) {
             if (sessionIdUpdatedValue != null) {
                 detail.put("session id (at beginning of this request)",
-                        Objects.firstNonNull(sessionIdInitialValue, ""));
+                        Strings.nullToEmpty(sessionIdInitialValue));
                 detail.put("session id (updated during this request)", sessionIdUpdatedValue);
             } else if (sessionIdInitialValue != null) {
                 detail.put("session id", sessionIdInitialValue);

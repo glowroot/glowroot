@@ -17,7 +17,7 @@ package io.informant.testkit;
 
 import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.LogMessage.Level;
-import io.informant.testkit.Trace.CapturedException;
+import io.informant.testkit.Trace.ExceptionInfo;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -251,9 +251,9 @@ public class Informant {
     }
 
     @Nullable
-    public CapturedException getException(String exceptionBlockId) throws Exception {
+    public ExceptionInfo getException(String exceptionBlockId) throws Exception {
         String exceptionJson = get("/block/" + exceptionBlockId);
-        return gson.fromJson(exceptionJson, CapturedException.class);
+        return gson.fromJson(exceptionJson, ExceptionInfo.class);
     }
 
     public void cleanUpAfterEachTest() throws Exception {

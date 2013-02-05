@@ -262,7 +262,7 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder errorText(String errorText) {
+        Builder errorText(@Nullable String errorText) {
             this.errorText = errorText;
             return this;
         }
@@ -272,7 +272,7 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder exception(String exception) {
+        Builder exception(@Nullable String exception) {
             this.exception = exception;
             return this;
         }
@@ -299,12 +299,12 @@ public class TraceSnapshot {
 
         TraceSnapshot build() {
             if (id == null) {
-                logger.error("setId() must be called before build()", new Exception());
+                logger.error("setId() must be called before build()");
                 id = new TraceUniqueId(System.currentTimeMillis()).get();
                 headline = "<error: no id provided>";
             }
             if (headline == null) {
-                logger.error("setHeadline() must be called before build()", new Exception());
+                logger.error("setHeadline() must be called before build()");
                 headline = "<error: no headline provided>";
             }
             return new TraceSnapshot(id, startAt, duration, stuck, completed, background,

@@ -26,6 +26,8 @@ import java.sql.SQLException;
  */
 class TraceSnapshotSchema {
 
+    private TraceSnapshotSchema() {}
+
     static void upgradeTraceSnapshotTable(DataSource dataSource) throws SQLException {
         if (!dataSource.tableExists("trace_snapshot")) {
             return;

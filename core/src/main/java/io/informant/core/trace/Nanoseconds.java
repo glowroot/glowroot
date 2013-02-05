@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,9 @@ import io.informant.core.util.Static;
  * @since 0.5
  */
 @Static
-final class Nanoseconds {
+class Nanoseconds {
+
+    private Nanoseconds() {}
 
     // nano times roll over every 292 years, so it is important to test differences between
     // nano times (e.g. nano2 - nano1 >= 0, not nano1 <= nano2)
@@ -32,6 +34,4 @@ final class Nanoseconds {
     public static boolean lessThan(long nano1, long nano2) {
         return nano2 - nano1 >= 0;
     }
-
-    private Nanoseconds() {}
 }

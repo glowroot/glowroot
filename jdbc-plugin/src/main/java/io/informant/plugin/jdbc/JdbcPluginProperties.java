@@ -24,10 +24,12 @@ import io.informant.shaded.google.common.collect.ImmutableMultimap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public final class JdbcPluginProperties {
+public class JdbcPluginProperties {
 
     private static volatile ImmutableMultimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
+
+    private JdbcPluginProperties() {}
 
     // this can always be called multiple times with the same sql if want to display multiple
     // parameters in the same sql as hex
@@ -41,6 +43,4 @@ public final class JdbcPluginProperties {
     static boolean displayBinaryParameterAsHex(String sql, int parameterIndex) {
         return displayBinaryParameterAsHex.containsEntry(sql, parameterIndex);
     }
-
-    private JdbcPluginProperties() {}
 }

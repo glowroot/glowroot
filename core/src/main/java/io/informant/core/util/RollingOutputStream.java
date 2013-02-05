@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 /**
  * Needs to be externally synchronized around startBlock()/write()/endBlock().
  * 
@@ -36,15 +35,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 class RollingOutputStream extends OutputStream {
 
+    static final int HEADER_SKIP_BYTES = 20;
+
     private static final Logger logger = LoggerFactory.getLogger(RollingOutputStream.class);
+
+    private static final int FSYNC_INTERVAL_MILLIS = 2000;
+    private static final int HEADER_CURR_INDEX_POS = 0;
 
     private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
             .newSingleThreadScheduledExecutor("Informant-RollingOutputFsync");
-
-    private static final int FSYNC_INTERVAL_MILLIS = 2000;
-
-    private static final int HEADER_CURR_INDEX_POS = 0;
-    static final int HEADER_SKIP_BYTES = 20;
 
     private final File rollingFile;
     private RandomAccessFile out;
@@ -172,12 +171,12 @@ class RollingOutputStream extends OutputStream {
         out.close();
         tmpOut.close();
         if (!rollingFile.delete()) {
-            logger.error("unable to delete existing rolling file during resize", new Throwable());
+            logger.error("unable to delete existing rolling file during resize");
             // TODO recover as best as possible
             return;
         }
         if (!tmpRollingFile.renameTo(rollingFile)) {
-            logger.error("unable to rename new rolling file during resize", new Throwable());
+            logger.error("unable to rename new rolling file during resize");
             // TODO recover as best as possible
             return;
         }
@@ -218,7 +217,7 @@ class RollingOutputStream extends OutputStream {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         if (len > rollingSizeBytes) {
-            logger.error("cannot write more bytes than max file size", new Throwable());
+            logger.error("cannot write more bytes than max file size");
             return;
         }
         long remaining = rollingSizeBytes - currPosition;

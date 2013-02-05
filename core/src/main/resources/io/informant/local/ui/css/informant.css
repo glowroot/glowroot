@@ -16,6 +16,7 @@
 body {
   padding: 32px 0px;
 }
+
 @font-face {
   font-family: 'SpecialElite-Regular';
   src: url('../libs/specialelite/1.0/specialelite.eot');
@@ -25,12 +26,14 @@ body {
   font-weight: normal;
   font-style: normal;
 }
+
 .pin-vertical-scrollbar {
   /* always display vertical scrollbar so content doesn't shift horizontally when the vertical
      scrollbar shows up because the page dynamically expanded greater than a single screen, or
      contracted down to a single screen, e.g. when showing or hiding content */
   overflow-y: scroll;
 }
+
 .header {
   font-weight: normal;
   font-size: 36px;
@@ -38,6 +41,7 @@ body {
   margin: 10px 0 24px 0;
   text-rendering: optimizelegibility;
 }
+
 .header-logo {
   font-family: 'SpecialElite-Regular';
   font-size: 38px;
@@ -47,38 +51,47 @@ body {
   color: #b12930;
   background-color: #eee;
 }
+
 .header-logo-export {
   font-family: 'Special Elite';
   color: #b12930;
 }
+
 .header-page-name {
   color: #555;
   padding-left: 14px;
 }
+
 .header-see-also {
   font-size: 20px;
 }
+
 .header-see-also .dropdown-toggle {
   background-color: #eee;
   border-radius: 6px;
   padding: 3px 28px 6px 28px;
   cursor: pointer;
 }
+
 .header-see-also .dropdown-toggle:hover,
 .header-see-also .dropdown-toggle:focus {
   /* need to indicate focus for keyboard nav */
   background-color: #ddd;
 }
+
 .header-see-also .dropdown-menu {
   text-align: right;
   padding: 3px 6px;
 }
+
 .header-see-also li {
   padding: 2px 0;
 }
+
 .header-see-also:hover .dropdown-menu {
   display: block;
 }
+
 .dropdown-menu li > a:hover,
 .dropdown-menu li > a:focus  {
   /* override bootstrap styling */
@@ -87,13 +100,16 @@ body {
   background-image: none !important;
   border-radius: 6px;
 }
+
 .dropdown-menu li > a:active {
   background-color: #f6f6f6 !important;
 }
+
 .dropdown-menu li > a {
   /* override bootstrap styling */
   padding: 7px 24px;
 }
+
 .dropdown-menu {
   background-color: #ddd !important;
   -webkit-box-shadow: none !important;
@@ -101,28 +117,33 @@ body {
   box-shadow: none !important;
   border: none !important;
 }
+
 input:focus {
   /* override bootstrap-datepicker styling with slightly darker blue focus border */
   border-color: rgba(66, 134, 189, 0.8) !important;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 8px rgba(66, 134, 189, 0.6) !important;
 }
+
 .control-group.error input:focus {
   /* need to force border on error to bootstrap default (without this, default red is overridden by
      darker blue color in above selector) */
   border-color: #953B39 !important;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075),0 0 6px #D59392 !important;
 }
+
 .datepicker td.today {
   /* override bootstrap-datepicker styling */
   background-color: #ccc !important;
   background-image: none !important;
 }
+
 .datepicker td.today:hover {
   /* override bootstrap-datepicker styling */
   /* placed after '.datepicker td.today' to override that style when today is hovered */
   background-color: #eee !important;
   background-image: none !important;
 }
+
 .datepicker td.active,
 .datepicker td.active:hover {
   /* override bootstrap-datepicker styling */
@@ -139,14 +160,17 @@ input:focus {
   /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
   border-collapse: separate !important;
 }
+
 .datepicker td.active:hover {
   /* placed after '.datepicker td.active:hover' to override that style when active is hovered */
   background-color: #eee !important;
 }
+
 .datepicker table {
   /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
   border-collapse: separate !important;
 }
+
 .button-success-message {
   display: inline-block;
   color: green;
@@ -154,6 +178,7 @@ input:focus {
   margin-left: 10px;
   vertical-align: middle;
 }
+
 .button-error-message {
   display: inline-block;
   color: red;
@@ -161,29 +186,35 @@ input:focus {
   margin-left: 10px;
   vertical-align: middle;
 }
+
 .button-spinner {
   display: inline-block;
   margin-left: 30px;
   vertical-align: middle;
 }
+
 .metrics-table td {
   padding-left: 0px;
   padding-right: 16px;
   text-align: right;
 }
+
 a {
   text-decoration: none;
   color: #b12930;
 }
+
 a:hover,
 a:focus {
   text-decoration: none;
   color: #b12930;
-  background-color:#ddd;
+  background-color: #ddd;
 }
+
 a:active {
-  background-color:#ccc;
+  background-color: #ccc;
 }
+
 .inline-anchor {
   /* extra vertical padding only applies if line-height accommodates it */
   padding: 4px 4px;
@@ -192,57 +223,71 @@ a:active {
   margin: 0 -4px;
   border-radius: 4px;
 }
+
 .input-medium0 {
-  width:135px;
+  width: 135px;
 }
+
 .input-xlarge0 {
-  width:270px;
+  width: 270px;
 }
+
 .qtip-override {
   max-width: 500px;
   font-size: 12px;
   line-height: 16px;
   background-color: #eee;
 }
+
 .qtip-override .ui-tooltip-content {
   padding: 1em 0.5em 0.75em 0.5em;
 }
+
 .qtip-border-color-0 {
   border-color: #edc240;
 }
+
 .qtip-border-color-1 {
   border-color: #cb4b4b;
 }
+
 .qtip-border-color-2 {
   border-color: #afd8f8;
 }
+
 .modal {
   overflow-y: scroll;
   -webkit-border-radius: 6px 0 0 6px !important;
   -moz-border-radius: 6px 0 0 6px !important;
   border-radius: 6px 0 0 6px !important;
 }
+
 .modal-content {
   /* any change to this must also be made in the calculation of contentHeight and contentWidth
      in displayModal() function in explorer.html */
   padding: 20px 0 20px 20px;
 }
+
 .modal .close {
   opacity: .5;
 }
+
 .modal .close:hover {
   opacity: .8;
 }
+
 .second-line-indent {
   padding-left: 20px;
   text-indent: -20px;
 }
+
 .lightbtn {
   display: inline-block;
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 4px;
 }
+
 .realbtn {
   /* upside to real button: mouse click does not focus on button, can use :active to provide
                             feedback on clicking already focused button
@@ -258,15 +303,18 @@ a:active {
   text-align: left;
   vertical-align: bottom;
 }
+
 .lightbtn:hover,
 .lightbtn:focus,
 .realbtn:hover,
 .realbtn:focus {
-  background-color:#ddd;
+  background-color: #ddd;
 }
+
 .realbtn:active {
-  background-color:#ccc;
+  background-color: #ccc;
 }
+
 .unexpanded-content,
 .expanded-content {
   cursor: pointer;
@@ -276,80 +324,99 @@ a:active {
      require horizontal scrolling still have padding to their right */
   margin-right: 20px;
 }
+
 .unexpanded-content:hover,
 .unexpanded-content:focus,
 .expanded-content:hover,
 .expanded-content:focus {
-  background-color:#ddd;
+  background-color: #ddd;
 }
+
 .unexpanded-content {
   /* these are spans, giving them inline-block increases the vertical padding
      making them look more substantial as 'buttons' */
   display: inline-block;
 }
+
 .expanded-content {
-  background-color:#eee;
+  background-color: #eee;
   /* margin for white space between successive expanded elements, at the bottom so that
      expanding doesn't create jitter/shift down of expanding section */
   margin-bottom: 4px;
 }
+
 span.expanded-content {
   /* normally expanded-content are divs, but if they are spans they should be inline-block */
   display: inline-block;
 }
+
 .unexpanded-padding {
   /* some elements need the same padding as expanding elements */
   padding: 2px 1em 2px 1em;
 }
+
 .unexpanded-vertical-padding {
   /* some elements need the same vertical padding as expanding elements */
   padding: 2px 0 2px 0;
 }
+
 .offscreen {
   position: absolute;
   left: -999em;
 }
+
 div:focus,
 span:focus,
 a:focus {
   /* these elements change their background color to indicate focus */
   outline: 0;
 }
+
 .red {
   color: #b12930;
 }
+
 .indent1 {
   margin-left: 1em;
 }
+
 .indent2 {
   margin-left: 2em;
 }
+
 .pad1 {
   padding-left: 1em;
   padding-right: 1em;
 }
+
 .rounded4 {
   border-radius: 4px;
   padding-top: 4px;
   padding-bottom: 4px;
 }
+
 .nowrap {
   white-space: nowrap;
 }
+
 .breakword {
   word-wrap: break-word;
 }
+
 .textindent1 {
   text-indent: -1em;
   margin-left: 1em;
 }
+
 .nav-tabs > li > a:hover {
   /* slightly darken bootstrap tabs to match .lightbtn */
   border-color: #ddd #ddd #ccc;
 }
+
 .nav > li > a:hover {
   background-color: #ddd;
 }
+
 .section-header {
   display: block;
   width: 100%;
@@ -361,6 +428,7 @@ a:focus {
   font-size: 19px;
   line-height: normal;
 }
+
 .new-pointcut-header {
   display: block;
   margin-left: 40px;
@@ -371,40 +439,50 @@ a:focus {
   font-size: 19px;
   line-height: normal;
 }
+
 .section-header:hover,
 .section-header:focus {
   background-color: #ddd;
 }
+
 .pointcut-header:hover,
 .pointcut-header:focus {
   background-color: #ddd;
 }
+
 .configuration-status {
   margin-left: 40px;
 }
+
 .configuration-status-on {
   color: green;
 }
+
 .configuration-status-off {
   color: red;
 }
+
 .section-body {
   /* sometimes need no padding since save footer needs to extend to both right and left edge */
   background-color: #eee;
   border-radius: 8px;
   margin: 0 0 20px 40px;
 }
+
 .section-body-padding {
   padding: 30px 24px 24px 24px;
 }
+
 .inner-section-body {
   background-color: #f5f5f5;
   border-radius: 6px;
   margin: 20px;
 }
+
 .inner-section-body-padding {
   padding: 30px 20px 20px 20px;
 }
+
 .inner-section-body-separator {
   border-top-color: #ddd;
   border-bottom: none;
@@ -415,15 +493,18 @@ a:focus {
   /* the bottom of the form already has extra padding from margin-bottom on control-group */
   padding-bottom: 16px;
 }
+
 .form-horizontal .form-actions {
   /* override bootstrap style to make button line up under form controls */
   padding-left: 200px !important;
 }
+
 .section-body-save {
   margin-top: 0;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
 }
+
 .flat-pre {
   /* slightly modified version of bootstrap's pre */
   /* intentionally not breaking long single-words for stack trace formatting, though this requires
@@ -440,74 +521,65 @@ a:focus {
   background-color: #eee;
   border-radius: 8px;
 }
+
 .inlineblock {
   display: inline-block;
 }
+
 .hide {
   display: none !important;
 }
+
 .explorer-chart {
-   position: absolute;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
+
 .explorer-limit-exceeded {
   padding: 10px 35px;
   color: #B94A48;
   background-color: #F2DEDE;
   border-color: #EED3D7;
 }
+
 .explorer-guide {
   padding: 4px 35px;
   background-color: #eee;
   border-radius: 6px;
 }
+
 .adhoc-pointcut-heading {
   margin-left: 20px;
   margin-bottom: 20px;
   /*font-weight: bold;*/
   font-size: 16px;
 }
+
 .adhoc-pointcut-group {
   margin-bottom: 10px;
   clear: both;
 }
+
 .adhoc-pointcut-label {
   font-weight: bold;
   width: 240px;
   float: left;
   text-align: right;
 }
+
 .adhoc-pointcut-value {
   margin-left: 260px;
 }
+
 .adhoc-pointcut-actions {
   margin-left: 260px;
   margin-top: 20px;
 }
+
 .adhoc-pointcut-actions button {
   /* small padding between edit and delete buttons */
   margin-right: 5px;
 }
-/*
-.readonly-form-group {
-  margin-bottom: 10px;
-  clear: both;
-}
-.readonly-form-label {
-  width: 200px;
-  float: left;
-  text-align: right;
-}
-.readonly-form-controls {
-  margin-left: 220px;
-}
-.readonly-form-actions {
-  margin-left: 220px;
-}
-.readonly-form-horizontal .form-actions {
-  padding-left: 240px;
-}
-*/

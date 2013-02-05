@@ -40,8 +40,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 /**
@@ -49,7 +49,7 @@ import com.google.common.collect.Sets;
  * @since 0.5
  */
 @Static
-public final class Schemas {
+public class Schemas {
 
     private static final Logger logger = LoggerFactory.getLogger(Schemas.class);
 
@@ -62,6 +62,8 @@ public final class Schemas {
         sqlTypeNames.put(Types.CLOB, "clob");
         sqlTypeNames.put(Types.DOUBLE, "double");
     }
+
+    private Schemas() {}
 
     static void syncTable(String tableName, @ReadOnly List<Column> columns,
             Connection connection) throws SQLException {
@@ -146,7 +148,8 @@ public final class Schemas {
         sql.append(")");
         execute(sql.toString(), connection);
         if (tableNeedsUpgrade(tableName, columns, connection)) {
-            logger.error("the logic in createTable() needs fixing", new Throwable());
+            logger.warn("table {} thinks it still needs to be upgraded, even after it was just"
+                    + "upgraded", tableName);
         }
     }
 
@@ -199,7 +202,7 @@ public final class Schemas {
     static ImmutableSet<Index> getIndexes(String tableName, Connection connection)
             throws SQLException {
 
-        Multimap<String, String> indexColumns = ArrayListMultimap.create();
+        ListMultimap<String, String> indexColumns = ArrayListMultimap.create();
         ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), false, false);
         try {
@@ -218,8 +221,7 @@ public final class Schemas {
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
         for (Entry<String, Collection<String>> entry : indexColumns.asMap().entrySet()) {
             String name = entry.getKey();
-            String[] columns = Iterables.toArray(entry.getValue(), String.class);
-            indexes.add(new Index(name, columns));
+            indexes.add(new Index(name, entry.getValue()));
 
         }
         return indexes.build();
@@ -280,8 +282,7 @@ public final class Schemas {
         private final String nameUpper;
         private final ImmutableList<String> columns;
         private final ImmutableList<String> columnsUpper;
-
-        public Index(String name, String... columns) {
+        public Index(String name, @ReadOnly Iterable<String> columns) {
             this.name = name;
             this.nameUpper = name.toUpperCase(Locale.ENGLISH);
             this.columns = ImmutableList.copyOf(columns);
@@ -313,6 +314,4 @@ public final class Schemas {
             return Objects.hashCode(nameUpper, columnsUpper);
         }
     }
-
-    private Schemas() {}
 }

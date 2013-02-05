@@ -76,7 +76,6 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public WeavingClassVisitor(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
             @Nullable CodeSource codeSource, ClassVisitor cv) {
-
         super(ASM4, cv);
         this.mixins = mixins;
         this.advisors = advisors;
@@ -99,60 +98,17 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             return;
         }
         type = Type.getObjectType(name);
-        List<ParsedType> superTypes = Lists.newArrayList();
-        superTypes.addAll(parsedTypeCache.getTypeHierarchy(TypeNames.fromInternal(superName),
-                loader));
-        for (String interfaceName : interfaceNames) {
-            superTypes.addAll(parsedTypeCache.getTypeHierarchy(
-                    TypeNames.fromInternal(interfaceName), loader));
-        }
-        for (Iterator<ParsedType> i = superTypes.iterator(); i.hasNext();) {
-            ParsedType superType = i.next();
-            if (superType.isMissing()) {
-                i.remove();
-                logger.warn("type not found '{}' while recursing super types of '{}'{}",
-                        new Object[] { superType.getName(), type.getClassName(),
-                                codeSource == null ? "" : "(" + codeSource.getLocation() + ")" });
-            }
-        }
-        ImmutableList.Builder<AdviceMatcher> adviceMatchersBuilder = ImmutableList.builder();
-        for (Advice advice : advisors) {
-            AdviceMatcher adviceMatcher = new AdviceMatcher(advice, type, superTypes);
-            if (adviceMatcher.isClassLevelMatch()) {
-                adviceMatchersBuilder.add(adviceMatcher);
-            }
-        }
-        adviceMatchers = adviceMatchersBuilder.build();
-        ImmutableList.Builder<Mixin> matchedMixinsBuilder = ImmutableList.builder();
-        for (Mixin mixin : mixins) {
-            MixinMatcher mixinMatcher = new MixinMatcher(mixin, type, superTypes);
-            if (mixinMatcher.isMatch()) {
-                matchedMixinsBuilder.add(mixin);
-            }
-        }
-        matchedMixins = matchedMixinsBuilder.build();
+        List<ParsedType> superTypes = getSuperTypes(superName, interfaceNames);
+        adviceMatchers = getAdviceMatchers(type, superTypes);
+        matchedMixins = getMatchedMixins(type, superTypes);
         if (adviceMatchers.isEmpty() && matchedMixins.isEmpty()) {
             nothingAtAllToWeave = true;
             return;
         }
         logger.debug("visit(): adviceMatchers={}", adviceMatchers);
-        ImmutableMap.Builder<Advice, Integer> adviceFlowOuterHolderNumsBuilder =
-                ImmutableMap.builder();
-        for (int i = 0; i < adviceMatchers.size(); i++) {
-            adviceFlowOuterHolderNumsBuilder.put(adviceMatchers.get(i).getAdvice(), i);
-        }
-        adviceFlowOuterHolderNums = adviceFlowOuterHolderNumsBuilder.build();
-        if (matchedMixins.isEmpty()) {
-            super.visit(version, access, name, signature, superName, interfaceNames);
-        } else {
-            List<String> interfacesIncludingMixins = Lists.newArrayList(interfaceNames);
-            // add mixin types
-            for (Mixin mixin : mixins) {
-                interfacesIncludingMixins.add(Type.getInternalName(mixin.mixin()));
-            }
-            super.visit(version, access, name, signature, superName,
-                    Iterables.toArray(interfacesIncludingMixins, String.class));
-        }
+        adviceFlowOuterHolderNums = getAdviceFlowOuterHolderNums(adviceMatchers);
+        super.visit(version, access, name, signature, superName,
+                getInterfacesIncludingMixins(interfaceNames, matchedMixins));
     }
 
     @Override
@@ -163,7 +119,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         if (parsedType == null) {
             throw new NullPointerException("Call to visit() is required");
         }
-        ParsedMethod parsedMethod = ParsedMethod.from(name, Type.getArgumentTypes(desc),
+        ParsedMethod parsedMethod = ParsedMethod.from(name,
+                ImmutableList.copyOf(Type.getArgumentTypes(desc)),
                 Type.getReturnType(desc), access);
         parsedType.addMethod(parsedMethod);
         if (nothingAtAllToWeave) {
@@ -190,64 +147,25 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             mv = new InitMixins(mv, access, name, desc, matchedMixins, type);
         }
         if ((access & ACC_SYNTHETIC) != 0) {
-            // skip synthetic methods
-            if (mv == null) {
-                return cv.visitMethod(access, name, desc, signature, exceptions);
-            } else {
-                return mv;
-            }
+            return visitMethod(mv, access, name, desc, signature, exceptions);
         }
-        List<Advice> matchingAdvisors = Lists.newArrayList();
-        for (AdviceMatcher adviceMatcher : adviceMatchers) {
-            if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
-                matchingAdvisors.add(adviceMatcher.getAdvice());
-            }
-        }
+        List<Advice> matchingAdvisors = getMatchingAdvisors(access, parsedMethod);
         if (matchingAdvisors.isEmpty()) {
-            if (mv == null) {
-                return cv.visitMethod(access, name, desc, signature, exceptions);
-            } else {
-                return mv;
+            return visitMethod(mv, access, name, desc, signature, exceptions);
+        } else if (mv == null) {
+            String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
+                    signature, exceptions, matchingAdvisors);
+            if (innerWrappedName != null) {
+                name = innerWrappedName;
+                access = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (access & ACC_STATIC);
             }
+            mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+                    adviceFlowOuterHolderNums);
         } else {
-            logger.debug("visitMethod(): weaving method '{}'", name);
-            String currMethodName = name;
-            String nextMethodName = null;
-            int currAccess = access;
-            for (Advice advice : matchingAdvisors) {
-                String metricName = advice.getPointcut().metricName();
-                if (metricName.length() != 0) {
-                    nextMethodName = name + "$informant$metric$" + metricName.replace(' ', '$')
-                            + '$' + innerMethodCounter++;
-                    if (mv == null) {
-                        MethodVisitor mv2 = cv.visitMethod(currAccess, currMethodName, desc,
-                                signature, exceptions);
-                        GeneratorAdapter mg = new GeneratorAdapter(mv2, currAccess, nextMethodName,
-                                desc);
-                        if ((access & ACC_STATIC) == 0) {
-                            mg.loadThis();
-                            mg.loadArgs();
-                            mg.invokeVirtual(type, new Method(nextMethodName, desc));
-                        } else {
-                            mg.loadArgs();
-                            mg.invokeStatic(type, new Method(nextMethodName, desc));
-                        }
-                        mg.returnValue();
-                        mg.endMethod();
-                        currMethodName = nextMethodName;
-                        currAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL;
-                        currAccess += (access & ACC_STATIC);
-                    } else {
-                        // already too late, a method with the same name was already created above
-                        logger.error("");
-                    }
-                }
-            }
-            if (mv == null) {
-                mv = cv.visitMethod(currAccess, currMethodName, desc, signature, exceptions);
-            }
-            return new WeavingMethodVisitor(mv, currAccess, currMethodName, desc, type,
-                    matchingAdvisors, adviceFlowOuterHolderNums);
+            logger.error("cannot add metrics to <clinit> or <init> methods at this time");
+            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
+                    adviceFlowOuterHolderNums);
         }
     }
 
@@ -301,6 +219,128 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     boolean isNothingAtAllToWeave() {
         return nothingAtAllToWeave;
+    }
+
+    private List<ParsedType> getSuperTypes(@Nullable String superName, String[] interfaceNames) {
+        List<ParsedType> superTypes = Lists.newArrayList();
+        superTypes.addAll(parsedTypeCache.getTypeHierarchy(TypeNames.fromInternal(superName),
+                loader));
+        for (String interfaceName : interfaceNames) {
+            superTypes.addAll(parsedTypeCache.getTypeHierarchy(
+                    TypeNames.fromInternal(interfaceName), loader));
+        }
+        for (Iterator<ParsedType> i = superTypes.iterator(); i.hasNext();) {
+            ParsedType superType = i.next();
+            if (superType.isMissing()) {
+                i.remove();
+                logger.warn("type not found '{}' while recursing super types of '{}'{}",
+                        new Object[] { superType.getName(),
+                                type == null ? "???" : type.getClassName(),
+                                codeSource == null ? "" : "(" + codeSource.getLocation() + ")" });
+            }
+        }
+        return superTypes;
+    }
+
+    private ImmutableList<AdviceMatcher> getAdviceMatchers(Type type, List<ParsedType> superTypes) {
+        ImmutableList.Builder<AdviceMatcher> adviceMatchersBuilder = ImmutableList.builder();
+        for (Advice advice : advisors) {
+            AdviceMatcher adviceMatcher = new AdviceMatcher(advice, type, superTypes);
+            if (adviceMatcher.isClassLevelMatch()) {
+                adviceMatchersBuilder.add(adviceMatcher);
+            }
+        }
+        return adviceMatchersBuilder.build();
+    }
+
+    private ImmutableList<Mixin> getMatchedMixins(Type type, List<ParsedType> superTypes) {
+        ImmutableList.Builder<Mixin> matchedMixinsBuilder = ImmutableList.builder();
+        for (Mixin mixin : mixins) {
+            MixinMatcher mixinMatcher = new MixinMatcher(mixin, type, superTypes);
+            if (mixinMatcher.isMatch()) {
+                matchedMixinsBuilder.add(mixin);
+            }
+        }
+        return matchedMixinsBuilder.build();
+    }
+
+    private ImmutableMap<Advice, Integer> getAdviceFlowOuterHolderNums(
+            ImmutableList<AdviceMatcher> adviceMatchers) {
+        ImmutableMap.Builder<Advice, Integer> adviceFlowOuterHolderNumsBuilder =
+                ImmutableMap.builder();
+        for (int i = 0; i < adviceMatchers.size(); i++) {
+            adviceFlowOuterHolderNumsBuilder.put(adviceMatchers.get(i).getAdvice(), i);
+        }
+        return adviceFlowOuterHolderNumsBuilder.build();
+    }
+
+    private static String[] getInterfacesIncludingMixins(String[] interfaceNames,
+            ImmutableList<Mixin> matchedMixins) {
+        if (matchedMixins.isEmpty()) {
+            return interfaceNames;
+        }
+        List<String> interfacesIncludingMixins = Lists.newArrayList(interfaceNames);
+        for (Mixin matchedMixin : matchedMixins) {
+            interfacesIncludingMixins.add(Type.getInternalName(matchedMixin.mixin()));
+        }
+        return Iterables.toArray(interfacesIncludingMixins, String.class);
+    }
+
+    private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod) {
+        List<Advice> matchingAdvisors = Lists.newArrayList();
+        for (AdviceMatcher adviceMatcher : adviceMatchers) {
+            if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
+                matchingAdvisors.add(adviceMatcher.getAdvice());
+            }
+        }
+        return matchingAdvisors;
+    }
+
+    private MethodVisitor visitMethod(@Nullable MethodVisitor mv, int access, String name,
+            String desc, @Nullable String signature, String/*@Nullable*/[] exceptions) {
+        if (mv == null) {
+            return cv.visitMethod(access, name, desc, signature, exceptions);
+        } else {
+            return mv;
+        }
+    }
+
+    // returns null if no synthetic metric marker methods were needed
+    @Nullable
+    private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
+            String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
+            List<Advice> matchingAdvisors) {
+
+        if (type == null) {
+            throw new NullPointerException("Call to visit() is required");
+        }
+        int innerAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (outerAccess & ACC_STATIC);
+        boolean first = true;
+        String currMethodName = outerName;
+        for (Advice advice : matchingAdvisors) {
+            String metricName = advice.getPointcut().metricName();
+            if (metricName.length() == 0) {
+                continue;
+            }
+            String nextMethodName = outerName + "$informant$metric$" + metricName.replace(' ', '$')
+                    + '$' + innerMethodCounter++;
+            int access = first ? outerAccess : innerAccess;
+            MethodVisitor mv2 = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
+            GeneratorAdapter mg = new GeneratorAdapter(mv2, access, nextMethodName, desc);
+            if ((outerAccess & ACC_STATIC) == 0) {
+                mg.loadThis();
+                mg.loadArgs();
+                mg.invokeVirtual(type, new Method(nextMethodName, desc));
+            } else {
+                mg.loadArgs();
+                mg.invokeStatic(type, new Method(nextMethodName, desc));
+            }
+            mg.returnValue();
+            mg.endMethod();
+            currMethodName = nextMethodName;
+            first = false;
+        }
+        return first ? null : currMethodName;
     }
 
     private void writeThreadLocalFields() {

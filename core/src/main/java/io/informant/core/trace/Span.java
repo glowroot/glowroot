@@ -21,6 +21,7 @@ import io.informant.core.util.ThreadSafe;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 
 /**
  * The "span" terminology is borrowed from <a
@@ -53,8 +54,8 @@ public class Span {
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
     private final TraceMetric traceMetric;
-
-    private volatile StackTraceElement/*@Nullable*/[] stackTrace;
+    @Nullable
+    private volatile ImmutableList<StackTraceElement> stackTrace;
 
     Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
             int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
@@ -103,7 +104,8 @@ public class Span {
         return nestingLevel;
     }
 
-    public StackTraceElement/*@Nullable*/[] getStackTrace() {
+    @Nullable
+    public ImmutableList<StackTraceElement> getStackTrace() {
         return stackTrace;
     }
 
@@ -120,7 +122,7 @@ public class Span {
         this.endTick = endTick;
     }
 
-    public void setStackTrace(StackTraceElement[] stackTrace) {
+    public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
         this.stackTrace = stackTrace;
     }
 

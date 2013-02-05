@@ -33,6 +33,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -56,7 +57,7 @@ class PointcutConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String getMatchingTypeNames(String requestJson) throws IOException {
+    String getMatchingTypeNames(String requestJson) throws IOException, JsonSyntaxException {
         logger.debug("getMatchingTypeNames(): requestJson={}", requestJson);
         TypeNameRequest request = gson.fromJson(requestJson, TypeNameRequest.class);
         if (request.partialTypeName == null) {
@@ -68,7 +69,7 @@ class PointcutConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String getMatchingMethodNames(String requestJson) throws IOException {
+    String getMatchingMethodNames(String requestJson) throws IOException, JsonSyntaxException {
         logger.debug("getMatchingMethodNames(): requestJson={}", requestJson);
         MethodNameRequest request = gson.fromJson(requestJson, MethodNameRequest.class);
         if (request.typeName == null) {
@@ -83,7 +84,7 @@ class PointcutConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String getMatchingMethods(String requestJson) throws IOException {
+    String getMatchingMethods(String requestJson) throws IOException, JsonSyntaxException {
         logger.debug("getMatchingMethods(): requestJson={}", requestJson);
         MethodRequest request = gson.fromJson(requestJson, MethodRequest.class);
         if (request.typeName == null) {

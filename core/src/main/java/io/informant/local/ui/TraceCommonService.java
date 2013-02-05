@@ -20,7 +20,8 @@ import io.informant.core.trace.TraceRegistry;
 import io.informant.core.util.ByteStream;
 import io.informant.local.trace.TraceSnapshot;
 import io.informant.local.trace.TraceSnapshotDao;
-import io.informant.local.trace.TraceSnapshotService;
+import io.informant.local.trace.TraceSnapshotWriter;
+import io.informant.local.trace.TraceWriter;
 
 import java.io.IOException;
 
@@ -37,17 +38,13 @@ import com.google.inject.Singleton;
 @Singleton
 class TraceCommonService {
 
-    private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
     @Inject
-    TraceCommonService(TraceSnapshotService traceSnapshotService,
-            TraceSnapshotDao traceSnapshotDao,
+    TraceCommonService(TraceSnapshotDao traceSnapshotDao,
             TraceRegistry traceRegistry, Ticker ticker) {
-
-        this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
         this.ticker = ticker;
@@ -59,9 +56,9 @@ class TraceCommonService {
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                TraceSnapshot snapshot = traceSnapshotService.from(active, ticker.read(),
+                TraceSnapshot snapshot = TraceWriter.toTraceSnapshot(active, ticker.read(),
                         includeDetail);
-                return TraceSnapshotService.toByteStream(snapshot, true);
+                return TraceSnapshotWriter.toByteStream(snapshot, true);
             }
         }
         TraceSnapshot snapshot;
@@ -73,7 +70,7 @@ class TraceCommonService {
         if (snapshot == null) {
             return null;
         } else {
-            return TraceSnapshotService.toByteStream(snapshot, false);
+            return TraceSnapshotWriter.toByteStream(snapshot, false);
         }
     }
 }

@@ -28,14 +28,14 @@ public abstract class Clock {
 
     public abstract long currentTimeMillis();
 
-    public static Clock systemClock() {
-        return SYSTEM_CLOCK;
-    }
-
     private static final Clock SYSTEM_CLOCK = new Clock() {
         @Override
         public long currentTimeMillis() {
             return System.currentTimeMillis();
         }
     };
+
+    public static Clock systemClock() {
+        return SYSTEM_CLOCK;
+    }
 }

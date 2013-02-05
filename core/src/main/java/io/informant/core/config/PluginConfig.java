@@ -59,10 +59,10 @@ public class PluginConfig {
         return new Builder(base);
     }
 
-    static PluginConfig fromJson(@ReadOnly JsonObject jsonObject,
+    static PluginConfig fromJson(@ReadOnly JsonObject configObject,
             PluginDescriptor pluginDescriptor) {
         PluginConfig.Builder builder = new Builder(pluginDescriptor);
-        builder.overlay(jsonObject, true);
+        builder.overlay(configObject, true);
         return builder.build();
     }
 
@@ -133,31 +133,31 @@ public class PluginConfig {
     }
 
     public JsonObject toJson() {
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("groupId", pluginDescriptor.getGroupId());
-        jsonObject.addProperty("artifactId", pluginDescriptor.getArtifactId());
-        jsonObject.addProperty("enabled", enabled);
-        JsonObject properties = new JsonObject();
+        JsonObject configObject = new JsonObject();
+        configObject.addProperty("groupId", pluginDescriptor.getGroupId());
+        configObject.addProperty("artifactId", pluginDescriptor.getArtifactId());
+        configObject.addProperty("enabled", enabled);
+        JsonObject propertyMapObject = new JsonObject();
         for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
             if (property.isHidden()) {
                 continue;
             }
             if (property.getType().equals("string")) {
                 String value = getStringProperty(property.getName());
-                properties.addProperty(property.getName(), value);
+                propertyMapObject.addProperty(property.getName(), value);
             } else if (property.getType().equals("boolean")) {
                 boolean value = getBooleanProperty(property.getName());
-                properties.addProperty(property.getName(), value);
+                propertyMapObject.addProperty(property.getName(), value);
             } else if (property.getType().equals("double")) {
                 Double value = getDoubleProperty(property.getName());
-                properties.addProperty(property.getName(), value);
+                propertyMapObject.addProperty(property.getName(), value);
             } else {
                 logger.error("unexpected type '" + property.getType() + "', this should have"
                         + " been caught by schema validation");
             }
         }
-        jsonObject.add("properties", properties);
-        return jsonObject;
+        configObject.add("properties", propertyMapObject);
+        return configObject;
     }
 
     String getId() {
@@ -195,22 +195,22 @@ public class PluginConfig {
             this.enabled = enabled;
             return this;
         }
-        public void overlay(@ReadOnly JsonObject jsonObject) {
-            overlay(jsonObject, false);
+        public void overlay(@ReadOnly JsonObject configObject) {
+            overlay(configObject, false);
         }
         public PluginConfig build() {
             return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginDescriptor);
         }
-        private void overlay(@ReadOnly JsonObject jsonObject, boolean ignoreWarnings) {
-            JsonElement enabled = jsonObject.get("enabled");
-            if (enabled != null) {
-                enabled(enabled.getAsBoolean());
+        private void overlay(@ReadOnly JsonObject configObject, boolean ignoreWarnings) {
+            JsonElement enabledElement = configObject.get("enabled");
+            if (enabledElement != null) {
+                enabled(enabledElement.getAsBoolean());
             }
-            JsonObject properties = (JsonObject) Objects.firstNonNull(
-                    jsonObject.get("properties"), new JsonObject());
-            for (Entry<String, JsonElement> subEntry : properties.entrySet()) {
-                String name = subEntry.getKey();
-                JsonElement value = subEntry.getValue();
+            JsonObject propertyMapObject = (JsonObject) Objects.firstNonNull(
+                    configObject.get("properties"), new JsonObject());
+            for (Entry<String, JsonElement> property : propertyMapObject.entrySet()) {
+                String name = property.getKey();
+                JsonElement value = property.getValue();
                 if (value.isJsonNull()) {
                     setProperty(name, null, ignoreWarnings);
                 } else if (value.isJsonPrimitive()) {

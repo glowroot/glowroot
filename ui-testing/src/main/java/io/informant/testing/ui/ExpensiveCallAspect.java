@@ -257,13 +257,13 @@ public class ExpensiveCallAspect {
     private static void onAfterInternal(Span span, int num) {
         if (span == null) {
             pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span message",
-                    new RuntimeException("Exception in execute" + num, cause)));
+                    new IllegalStateException("Exception in execute" + num, cause)));
             return;
         }
         if (random.nextDouble() < 0.95) {
             span.end();
         } else {
-            span.endWithError(ErrorMessage.from("randomized error", new RuntimeException(
+            span.endWithError(ErrorMessage.from("randomized error", new IllegalStateException(
                     "Exception in execute" + num, cause)));
         }
     }

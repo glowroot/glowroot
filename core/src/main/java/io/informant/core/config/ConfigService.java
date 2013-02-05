@@ -21,6 +21,7 @@ import io.informant.api.PluginServices.ConfigListener;
 import io.informant.core.util.OnlyUsedByTests;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -30,6 +31,8 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -58,7 +61,17 @@ public class ConfigService {
     ConfigService(@Named("data.dir") File dataDir) {
         logger.debug("<init>()");
         configFile = new File(dataDir, "config.json");
-        config = Config.fromFile(configFile);
+        try {
+            config = Config.fromFile(configFile);
+        } catch (IOException e) {
+            logger.warn("error reading config.json file: " + e.getMessage());
+            config = Config.getDefault();
+            // no point in trying to save the invalid config file since it couldn't be read
+        } catch (JsonSyntaxException e) {
+            logger.warn("error loading config.json file: " + e.getMessage());
+            config = Config.getDefault();
+            saveInvalidConfigFile(configFile);
+        }
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         config.writeToFileIfNeeded(configFile);
@@ -235,8 +248,17 @@ public class ConfigService {
     }
 
     @OnlyUsedByTests
-    public void deleteConfig() {
+    public void deleteConfig() throws IOException, JsonSyntaxException {
         configFile.delete();
         config = Config.fromFile(configFile);
+    }
+
+    // make a copy of the invalid config file since it will be overwritten with default config
+    private static void saveInvalidConfigFile(File configFile) {
+        try {
+            File copy = new File(configFile.getParentFile(), configFile.getName() + ".invalid");
+            Files.copy(configFile, copy);
+        } catch (IOException f) {
+        }
     }
 }

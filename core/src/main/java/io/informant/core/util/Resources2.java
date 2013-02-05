@@ -29,7 +29,9 @@ import com.google.common.io.Resources;
  * @since 0.5
  */
 @Static
-public final class Resources2 {
+public class Resources2 {
+
+    private Resources2() {}
 
     public static List<URL> getResources(String resourceName) throws IOException {
         ClassLoader loader = Resources2.class.getClassLoader();
@@ -40,6 +42,4 @@ public final class Resources2 {
         }
         return Collections.list(loader.getResources(resourceName));
     }
-
-    private Resources2() {}
 }

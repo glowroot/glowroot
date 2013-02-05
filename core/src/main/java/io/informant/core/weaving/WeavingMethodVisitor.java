@@ -75,14 +75,13 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private boolean needsTryCatch;
     @LazyNonNull
-    private Label catchStartLabel;
+    private Label methodStartLabel;
     @LazyNonNull
-    private Label outerStartLabel;
+    private Label catchStartLabel;
 
     protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
             Type owner, @ReadOnly List<Advice> advisors,
             @ReadOnly Map<Advice, Integer> adviceFlowOuterHolderNums) {
-
         super(Opcodes.ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;
@@ -101,8 +100,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     @Override
     protected void onMethodEnter() {
-        outerStartLabel = newLabel();
-        visitLabel(outerStartLabel);
+        methodStartLabel = newLabel();
+        visitLabel(methodStartLabel);
         // enabled and traveler locals must be defined outside of the try block so they will be
         // accessible in the catch block
         for (int i = 0; i < advisors.size(); i++) {
@@ -125,7 +124,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
 
-        if (outerStartLabel == null) {
+        if (methodStartLabel == null) {
             throw new NullPointerException("Call to onMethodEnter() is required");
         }
         if (name.equals("this")) {
@@ -138,7 +137,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             // so this is a good place to put the outer end label for the local variable 'this'
             Label outerEndLabel = newLabel();
             visitLabel(outerEndLabel);
-            super.visitLocalVariable(name, desc, signature, outerStartLabel, outerEndLabel, index);
+            super.visitLocalVariable(name, desc, signature, methodStartLabel, outerEndLabel, index);
             // at the same time, may as well define local vars for enabled and traveler as
             // applicable
             for (int i = 0; i < advisors.size(); i++) {
@@ -146,19 +145,19 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 Integer adviceFlowHolderLocalIndex = adviceFlowHolderLocals.get(advice);
                 if (adviceFlowHolderLocalIndex != null) {
                     super.visitLocalVariable("informant$adviceFlowHolder$" + i,
-                            adviceFlowHolderType.getDescriptor(), null, outerStartLabel,
+                            adviceFlowHolderType.getDescriptor(), null, methodStartLabel,
                             outerEndLabel, adviceFlowHolderLocalIndex);
                 }
                 Integer adviceFlowLocalIndex = adviceFlowLocals.get(advice);
                 if (adviceFlowLocalIndex != null) {
                     super.visitLocalVariable("informant$adviceFlow" + i,
-                            Type.BOOLEAN_TYPE.getDescriptor(), null, outerStartLabel,
+                            Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
                             outerEndLabel, adviceFlowLocalIndex);
                 }
                 Integer enabledLocalIndex = enabledLocals.get(advice);
                 if (enabledLocalIndex != null) {
                     super.visitLocalVariable("informant$enabled$" + i,
-                            Type.BOOLEAN_TYPE.getDescriptor(), null, outerStartLabel,
+                            Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
                             outerEndLabel, enabledLocalIndex);
                 }
                 Integer travelerLocalIndex = travelerLocals.get(advice);
@@ -169,8 +168,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                                 + " but traveler type is null");
                     } else {
                         super.visitLocalVariable("informant$traveler$" + i,
-                                travelerType.getDescriptor(), null, outerStartLabel, outerEndLabel,
-                                travelerLocalIndex);
+                                travelerType.getDescriptor(), null, methodStartLabel,
+                                outerEndLabel, travelerLocalIndex);
                     }
                 }
             }
@@ -213,19 +212,19 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 // to prevent this, any exception that occurs inside @OnReturn or @OnAfter is caught
                 // and wrapped in a marker exception, and then unwrapped and re-thrown inside
                 // the overall try/catch block
-                Label catchStartLabel = newLabel();
+                Label innerCatchStartLabel = newLabel();
                 Label continueLabel = newLabel();
-                Label catchEndLabel = newLabel();
+                Label innerCatchEndLabel = newLabel();
 
-                visitLabel(catchStartLabel);
+                visitLabel(innerCatchStartLabel);
                 visitOnReturnAdvice(opcode);
                 visitOnAfterAdvice();
                 resetAdviceFlowIfNecessary();
                 goTo(continueLabel);
 
-                visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,
+                visitTryCatchBlock(innerCatchStartLabel, innerCatchEndLabel, innerCatchEndLabel,
                         "java/lang/Throwable");
-                visitLabel(catchEndLabel);
+                visitLabel(innerCatchEndLabel);
                 invokeStatic(MarkerException.TYPE, MarkerException.STATIC_FACTORY_METHOD);
                 throwException();
 
@@ -237,6 +236,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             }
         }
     }
+
     private void defineAndEvaluateEnabledLocalVar(Advice advice) {
         Integer enabledLocal = null;
         Method isEnabledAdvice = advice.getIsEnabledAdvice();
@@ -365,44 +365,45 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 loadLocal(enabledLocal);
                 visitJumpInsn(Opcodes.IFEQ, onReturnBlockEnd);
             }
-            int sort = onReturnAdvice.getReturnType().getSort();
-            if (onReturnAdvice.getArgumentTypes().length == 0) {
-                if (sort == Type.LONG || sort == Type.DOUBLE) {
-                    pop2();
-                } else if (sort != Type.VOID) {
-                    pop();
-                }
-                invokeStatic(advice.getAdviceType(), onReturnAdvice);
-            } else {
-                int startIndex = 0;
-                if (advice.getOnReturnParameterKinds()[0] == ParameterKind.RETURN) {
-                    // @InjectReturn must be the first argument to @OnReturn (if present)
-                    if (opcode == RETURN) {
-                        logger.error("cannot @InjectReturn on a @Pointcut returning void");
-                        // try to pass null (TODO handle primitive types also)
-                        visitInsn(ACONST_NULL);
-                    } else if (opcode == ARETURN || opcode == ATHROW) {
-                        dup();
-                    } else {
-                        if (opcode == LRETURN || opcode == DRETURN) {
-                            dup2();
-                        } else {
-                            dup();
-                        }
-                    }
-                    startIndex++;
-                }
-                loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex,
-                        travelerLocals.get(advice), advice.getAdviceType(), OnReturn.class);
-                if (sort == Type.LONG || sort == Type.DOUBLE) {
-                    pop2();
-                } else if (sort != Type.VOID) {
-                    pop();
-                }
-                invokeStatic(advice.getAdviceType(), onReturnAdvice);
-            }
+            weaveOnReturnAdvice(opcode, advice, onReturnAdvice);
             if (onReturnBlockEnd != null) {
                 visitLabel(onReturnBlockEnd);
+            }
+        }
+    }
+
+    private void weaveOnReturnAdvice(int opcode, Advice advice, Method onReturnAdvice) {
+        if (onReturnAdvice.getArgumentTypes().length > 0) {
+            int startIndex = 0;
+            if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.RETURN) {
+                // @InjectReturn must be the first argument to @OnReturn (if present)
+                loadReturnValue(opcode);
+                startIndex = 1;
+            }
+            loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex,
+                    travelerLocals.get(advice), advice.getAdviceType(), OnReturn.class);
+        }
+        int sort = onReturnAdvice.getReturnType().getSort();
+        if (sort == Type.LONG || sort == Type.DOUBLE) {
+            pop2();
+        } else if (sort != Type.VOID) {
+            pop();
+        }
+        invokeStatic(advice.getAdviceType(), onReturnAdvice);
+    }
+
+    private void loadReturnValue(int opcode) {
+        if (opcode == RETURN) {
+            logger.error("cannot @InjectReturn on a @Pointcut returning void");
+            // try to pass null (TODO handle primitive types also)
+            visitInsn(ACONST_NULL);
+        } else if (opcode == ARETURN || opcode == ATHROW) {
+            dup();
+        } else {
+            if (opcode == LRETURN || opcode == DRETURN) {
+                dup2();
+            } else {
+                dup();
             }
         }
     }
@@ -424,7 +425,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 invokeStatic(advice.getAdviceType(), onThrowAdvice);
             } else {
                 int startIndex = 0;
-                if (advice.getOnThrowParameterKinds()[0] == ParameterKind.THROWABLE) {
+                if (advice.getOnThrowParameterKinds().get(0) == ParameterKind.THROWABLE) {
                     // @InjectThrowable must be the first argument to @OnThrow (if present)
                     dup();
                     startIndex++;
@@ -479,33 +480,18 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void loadMethodArgs(ParameterKind[] parameterTypes, int startIndex,
+    private void loadMethodArgs(@ReadOnly List<ParameterKind> parameterTypes, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
             Class<? extends Annotation> annotationType) {
 
         int argIndex = 0;
-        for (int i = startIndex; i < parameterTypes.length; i++) {
-            ParameterKind parameterType = parameterTypes[i];
+        for (int i = startIndex; i < parameterTypes.size(); i++) {
+            ParameterKind parameterType = parameterTypes.get(i);
             if (parameterType == ParameterKind.TARGET) {
-                if ((access & Opcodes.ACC_STATIC) == 0) {
-                    loadThis();
-                } else {
-                    // cannot use push(Type) since .class constants are not supported in classes
-                    // that were compiled to jdk 1.4
-                    push(owner.getClassName());
-                    mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
-                            "(Ljava/lang/String;)Ljava/lang/Class;");
-                }
+                loadTarget();
             } else if (parameterType == ParameterKind.METHOD_ARG) {
-                if (argIndex < argumentTypes.length) {
-                    loadArg(argIndex);
-                    // autobox
-                    box(argumentTypes[argIndex++]);
-                } else {
-                    logger.error("the @" + annotationType.getSimpleName() + " method in "
-                            + adviceType.getClassName() + " has more @"
-                            + InjectMethodArg.class.getSimpleName() + " arguments than the number"
-                            + " of args in the target method", new Throwable());
+                if (loadMethodArg(adviceType, annotationType, argIndex)) {
+                    argIndex++;
                 }
             } else if (parameterType == ParameterKind.METHOD_ARG_ARRAY) {
                 loadArgArray();
@@ -513,26 +499,62 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 // no autobox
                 loadArg(argIndex++);
             } else if (parameterType == ParameterKind.METHOD_NAME) {
-                if (name.contains("$informant$metric$")) {
-                    // strip off internal metric identifier from method name
-                    push(name.substring(0, name.indexOf("$informant$metric$")));
-                } else {
-                    push(name);
-                }
+                loadMethodName();
             } else if (parameterType == ParameterKind.TRAVELER) {
-                if (travelerLocal == null) {
-                    logger.error("the @" + annotationType.getSimpleName() + " method in "
-                            + adviceType.getClassName() + " requested @"
-                            + InjectTraveler.class.getSimpleName() + " but @"
-                            + OnBefore.class.getSimpleName() + " returns void");
-                    // try to pass null (TODO handle primitive types also)
-                    visitInsn(ACONST_NULL);
-                } else {
-                    loadLocal(travelerLocal);
-                }
+                loadTraveler(travelerLocal, adviceType, annotationType);
             } else {
                 logger.error("unexpected parameter type {} at index {}", parameterType, i);
             }
+        }
+    }
+
+    private void loadTarget() {
+        if ((access & Opcodes.ACC_STATIC) == 0) {
+            loadThis();
+        } else {
+            // cannot use push(Type) since .class constants are not supported in classes
+            // that were compiled to jdk 1.4
+            push(owner.getClassName());
+            mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                    "(Ljava/lang/String;)Ljava/lang/Class;");
+        }
+    }
+
+    private boolean loadMethodArg(Type adviceType, Class<? extends Annotation> annotationType,
+            int argIndex) {
+        if (argIndex >= argumentTypes.length) {
+            logger.error("the @" + annotationType.getSimpleName() + " method in "
+                    + adviceType.getClassName() + " has more @"
+                    + InjectMethodArg.class.getSimpleName() + " arguments than the number of args"
+                    + " in the target method");
+            return false;
+        }
+        loadArg(argIndex);
+        // autobox
+        box(argumentTypes[argIndex]);
+        return true;
+    }
+
+    private void loadMethodName() {
+        if (name.contains("$informant$metric$")) {
+            // strip off internal metric identifier from method name
+            push(name.substring(0, name.indexOf("$informant$metric$")));
+        } else {
+            push(name);
+        }
+    }
+
+    private void loadTraveler(@Nullable Integer travelerLocal, Type adviceType,
+            Class<? extends Annotation> annotationType) {
+        if (travelerLocal == null) {
+            logger.error("the @" + annotationType.getSimpleName() + " method in "
+                    + adviceType.getClassName() + " requested @"
+                    + InjectTraveler.class.getSimpleName() + " but @"
+                    + OnBefore.class.getSimpleName() + " returns void");
+            // try to pass null (TODO handle primitive types also)
+            visitInsn(ACONST_NULL);
+        } else {
+            loadLocal(travelerLocal);
         }
     }
 
@@ -549,8 +571,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 .add("enabledLocals", enabledLocals)
                 .add("travelerLocals", travelerLocals)
                 .add("needsTryCatch", needsTryCatch)
-                .add("catchStartLabel", catchStartLabel)
-                .add("outerStartLabel", outerStartLabel)
+                .add("outerCatchStartLabel", catchStartLabel)
+                .add("outerStartLabel", methodStartLabel)
                 .toString();
     }
 

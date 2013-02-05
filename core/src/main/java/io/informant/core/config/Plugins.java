@@ -62,7 +62,9 @@ public final class Plugins {
                 }
             });
 
-    // don't return ImmutableList since this is used by UiTestingMain and ImmutableList gets shaded
+    // don't return ImmutableList since this method is used by UiTestingMain and when UiTestingMain
+    // is compiled by maven, it is compiled against shaded informant, but then if it is run inside
+    // an IDE without rebuilding UiTestingMain it will fail since informant is then unshaded
     @ReadOnly
     public static List<PluginDescriptor> getPluginDescriptors() {
         return pluginDescriptors.get();

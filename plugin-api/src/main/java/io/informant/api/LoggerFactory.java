@@ -64,15 +64,13 @@ public abstract class LoggerFactory {
         try {
             return (LoggerFactory) loggerFactoryImplClass.newInstance();
         } catch (InstantiationException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to
-            // stderr
+            // this really really really shouldn't happen, but anyways, couldn't load the logger so
+            // best recourse at this point is to write error to stderr
             e.printStackTrace();
             throw new IllegalStateException(e);
         } catch (IllegalAccessException e) {
-            // this really really really shouldn't happen, but anyways,
-            // couldn't load the logger so best recourse at this point is to write error to
-            // stderr
+            // this really really really shouldn't happen, but anyways, couldn't load the logger so
+            // best recourse at this point is to write error to stderr
             e.printStackTrace();
             throw new IllegalStateException(e);
         }

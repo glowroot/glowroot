@@ -33,7 +33,7 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
-import io.informant.shaded.google.common.base.Objects;
+import io.informant.shaded.google.common.base.Strings;
 import io.informant.shaded.google.common.collect.ImmutableMap;
 
 import java.util.Enumeration;
@@ -269,9 +269,13 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@InjectTarget Object realSession, @InjectMethodArg String name,
+        public static void onAfter(@InjectTarget Object realSession,
+                @InjectMethodArg @Nullable String name,
                 @InjectMethodArg @Nullable Object value) {
-
+            if (name == null) {
+                // theoretically possible, so just ignore
+                return;
+            }
             HttpSession session = HttpSession.from(realSession);
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
@@ -291,7 +295,8 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@InjectTarget Object realSession, @InjectMethodArg String name) {
+        public static void onAfter(@InjectTarget Object realSession,
+                @InjectMethodArg @Nullable String name) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc
             SetAttributeAdvice.onAfter(realSession, name, null);
@@ -395,7 +400,6 @@ public class ServletAspect {
 
     private static void updateUserIdIfApplicable(String name, @Nullable Object value,
             HttpSession session) {
-
         if (value == null) {
             // if user id value is set to null, don't clear it
             return;
@@ -418,38 +422,50 @@ public class ServletAspect {
     private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
             String name, @Nullable Object value, HttpSession session) {
 
-        if (ServletPluginProperties.sessionAttributeNames().contains(name)
-                || ServletPluginProperties.sessionAttributeNames().contains("*")) {
+        if (ServletPluginProperties.captureSessionAttributeNames().contains(name)
+                || ServletPluginProperties.captureSessionAttributeNames().contains("*")) {
             // update all session attributes (possibly nested) at or under the set attribute
-            for (String path : ServletPluginProperties.sessionAttributePaths()) {
-                if (path.equals(name) || path.equals("*")) {
-                    if (value == null) {
-                        messageSupplier.putSessionAttributeChangedValue(name, null);
-                    } else {
-                        messageSupplier.putSessionAttributeChangedValue(name, value.toString());
-                    }
-                } else if (path.startsWith(name + ".")) {
-                    if (path.endsWith(".*")) {
-                        path = path.substring(0, path.length() - 2);
-                        Object val = getSessionAttribute(session, path);
-                        if (val == null) {
-                            messageSupplier.putSessionAttributeChangedValue(path, null);
-                        } else {
-                            for (Entry<String, String> entry : Beans.propertiesAsText(val)
-                                    .entrySet()) {
-                                messageSupplier.putSessionAttributeChangedValue(
-                                        path + "." + entry.getKey(), entry.getValue());
-                            }
-                        }
-                    } else if (value == null) {
-                        // no need to navigate path since it will always be null
-                        messageSupplier.putSessionAttributeChangedValue(path, null);
-                    } else {
-                        String val = getSessionAttributeTextValue(session, path);
-                        messageSupplier.putSessionAttributeChangedValue(path, val);
-                    }
+            for (String capturePath : ServletPluginProperties.captureSessionAttributePaths()) {
+                if (capturePath.equals(name) || capturePath.equals("*")) {
+                    updateSessionAttribute(messageSupplier, name, value);
+                } else if (capturePath.startsWith(name + ".")) {
+                    updateNestedSessionAttributes(messageSupplier, capturePath, value,
+                            session);
                 }
             }
+        }
+    }
+
+    private static void updateSessionAttribute(ServletMessageSupplier messageSupplier, String name,
+            @Nullable Object value) {
+        if (value == null) {
+            messageSupplier.putSessionAttributeChangedValue(name, null);
+        } else {
+            messageSupplier.putSessionAttributeChangedValue(name, value.toString());
+        }
+    }
+
+    private static void updateNestedSessionAttributes(ServletMessageSupplier messageSupplier,
+            String capturePath, @Nullable Object value, HttpSession session) {
+
+        if (capturePath.endsWith(".*")) {
+            capturePath = capturePath.substring(0, capturePath.length() - 2);
+            Object val = getSessionAttribute(session, capturePath);
+            if (val == null) {
+                messageSupplier.putSessionAttributeChangedValue(capturePath, null);
+            } else {
+                for (Entry<String, String> entry : Beans.propertiesAsText(val)
+                        .entrySet()) {
+                    messageSupplier.putSessionAttributeChangedValue(
+                            capturePath + "." + entry.getKey(), entry.getValue());
+                }
+            }
+        } else if (value == null) {
+            // no need to navigate path since it will always be null
+            messageSupplier.putSessionAttributeChangedValue(capturePath, null);
+        } else {
+            String val = getSessionAttributeTextValue(session, capturePath);
+            messageSupplier.putSessionAttributeChangedValue(capturePath, val);
         }
     }
 
@@ -479,14 +495,14 @@ public class ServletAspect {
 
     @Nullable
     private static ImmutableMap<String, String> getSessionAttributes(HttpSession session) {
-        Set<String> sessionAttributePaths = ServletPluginProperties.sessionAttributePaths();
-        if (sessionAttributePaths.isEmpty()) {
+        Set<String> capturePaths = ServletPluginProperties.captureSessionAttributePaths();
+        if (capturePaths.isEmpty()) {
             return null;
         }
-        ImmutableMap.Builder<String, String> sessionAttributeMap = ImmutableMap.builder();
+        ImmutableMap.Builder<String, String> captureMap = ImmutableMap.builder();
         // dump only http session attributes in list
-        for (String attributePath : sessionAttributePaths) {
-            if (attributePath.equals("*")) {
+        for (String capturePath : capturePaths) {
+            if (capturePath.equals("*")) {
                 for (Enumeration<?> e = session.getAttributeNames(); e.hasMoreElements();) {
                     String attributeName = (String) e.nextElement();
                     Object value = session.getAttribute(attributeName);
@@ -494,25 +510,24 @@ public class ServletAspect {
                     // request for the same session just removed the attribute
                     String valueString = value == null ? "" : value.toString();
                     // taking no chances on value.toString() possibly returning null
-                    sessionAttributeMap.put(attributeName, Objects.firstNonNull(valueString, ""));
+                    captureMap.put(attributeName, Strings.nullToEmpty(valueString));
                 }
-            } else if (attributePath.endsWith(".*")) {
-                attributePath = attributePath.substring(0, attributePath.length() - 2);
-                Object value = getSessionAttribute(session, attributePath);
+            } else if (capturePath.endsWith(".*")) {
+                capturePath = capturePath.substring(0, capturePath.length() - 2);
+                Object value = getSessionAttribute(session, capturePath);
                 if (value != null) {
                     for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
-                        sessionAttributeMap.put(attributePath + "." + entry.getKey(),
-                                entry.getValue());
+                        captureMap.put(capturePath + "." + entry.getKey(), entry.getValue());
                     }
                 }
             } else {
-                String value = getSessionAttributeTextValue(session, attributePath);
+                String value = getSessionAttributeTextValue(session, capturePath);
                 if (value != null) {
-                    sessionAttributeMap.put(attributePath, value);
+                    captureMap.put(capturePath, value);
                 }
             }
         }
-        return sessionAttributeMap.build();
+        return captureMap.build();
     }
 
     @Nullable
@@ -522,9 +537,7 @@ public class ServletAspect {
     }
 
     @Nullable
-    private static Object getSessionAttribute(HttpSession session,
-            String attributePath) {
-
+    private static Object getSessionAttribute(HttpSession session, String attributePath) {
         if (attributePath.indexOf('.') == -1) {
             // fast path
             return session.getAttribute(attributePath);

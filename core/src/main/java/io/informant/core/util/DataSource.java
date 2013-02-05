@@ -152,17 +152,16 @@ public class DataSource {
     }
 
     @ReadOnly
-    public <T> List<T> query(String sql, Object[] args, RowMapper<T> rowMapper)
+    public <T> List<T> query(String sql, @ReadOnly List<?> args, RowMapper<T> rowMapper)
             throws SQLException {
-
         synchronized (lock) {
             if (jvmShutdownInProgress) {
                 return ImmutableList.of();
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
             try {
-                for (int i = 0; i < args.length; i++) {
-                    preparedStatement.setObject(i + 1, args[i]);
+                for (int i = 0; i < args.size(); i++) {
+                    preparedStatement.setObject(i + 1, args.get(i));
                 }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 try {

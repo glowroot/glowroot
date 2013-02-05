@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.test.plugin.LogCauseExceptionAspect;
-import io.informant.test.plugin.LogCauseExceptionAspect.LogCauseExceptionAdvice;
+import io.informant.test.plugin.LogCauseAspect;
+import io.informant.test.plugin.LogCauseAspect.LogCauseAdvice;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.CapturedException;
+import io.informant.testkit.Trace.ExceptionInfo;
 import io.informant.testkit.TraceMarker;
 
 import java.util.Set;
@@ -83,7 +83,7 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        CapturedException exception = trace.getSpans().get(1).getError().getException();
+        ExceptionInfo exception = trace.getSpans().get(1).getError().getException();
         assertThat(exception.getStackTrace().get(0)).startsWith(
                 ShouldCaptureErrorWithSpanStackTrace.class.getName() + ".traceMarker(");
     }
@@ -100,36 +100,36 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        CapturedException exception = trace.getSpans().get(1).getError().getException();
+        ExceptionInfo exception = trace.getSpans().get(1).getError().getException();
         assertThat(exception.getDisplay()).isEqualTo(
                 "java.lang.Exception: java.lang.IllegalArgumentException: Cause 3");
         assertThat(exception.getStackTrace().get(0)).startsWith(
-                LogCauseExceptionAdvice.class.getName() + ".onAfter(");
+                LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(exception.getFramesInCommonWithCaused()).isZero();
-        CapturedException cause = exception.getCause();
+        ExceptionInfo cause = exception.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseExceptionAspect.class.getName() + ".<clinit>(");
+                LogCauseAspect.class.getName() + ".<clinit>(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
-        Set<Integer> causeExceptionLineNumbers = Sets.newHashSet();
-        causeExceptionLineNumbers.add(getFirstLineNumber(cause));
+        Set<Integer> causeLineNumbers = Sets.newHashSet();
+        causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.RuntimeException: Cause 2");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseExceptionAspect.class.getName() + ".<clinit>(");
+                LogCauseAspect.class.getName() + ".<clinit>(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
-        causeExceptionLineNumbers.add(getFirstLineNumber(cause));
+        causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
-        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 1");
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
         assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseExceptionAspect.class.getName() + ".<clinit>(");
+                LogCauseAspect.class.getName() + ".<clinit>(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
-        causeExceptionLineNumbers.add(getFirstLineNumber(cause));
+        causeLineNumbers.add(getFirstLineNumber(cause));
         // make sure they are all different line numbers
-        assertThat(causeExceptionLineNumbers).hasSize(3);
+        assertThat(causeLineNumbers).hasSize(3);
     }
 
-    private static int getFirstLineNumber(CapturedException cause) {
+    private static int getFirstLineNumber(ExceptionInfo cause) {
         String element = cause.getStackTrace().get(0);
         return Integer.parseInt(element.substring(element.lastIndexOf(':') + 1,
                 element.length() - 1));
@@ -163,7 +163,7 @@ public class ErrorCaptureTest {
             traceMarker();
         }
         public void traceMarker() throws Exception {
-            new LogCauseException().log("abc");
+            new LogCause().log("abc");
         }
     }
 }

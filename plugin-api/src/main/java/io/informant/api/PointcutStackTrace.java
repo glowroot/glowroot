@@ -54,10 +54,10 @@ public class PointcutStackTrace extends RuntimeException {
             while (elements[i].getMethodName().contains("$informant$")) {
                 i++;
             }
-            // i++ once more to strip one element since all pointcuts are on method execution, and
-            // the stack trace will either be at method entry (if captured @OnBefore) or at method
-            // exit (if captured @OnReturn/@OnThrow/@OnAfter), which doesn't provide any more info
-            // than the call point one level up in the stack
+            // increment i once more to strip one element since all pointcuts are on method
+            // execution, and the stack trace will either be at method entry (if captured @OnBefore)
+            // or at method exit (if captured @OnReturn/@OnThrow/@OnAfter), which doesn't provide
+            // any more info than the call point one level up in the stack
             i++;
             StackTraceElement[] trimmedElements = new StackTraceElement[elements.length - i];
             System.arraycopy(elements, i, trimmedElements, 0, trimmedElements.length);

@@ -19,6 +19,7 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.TraceSink;
+import io.informant.core.util.Clock;
 import io.informant.core.util.DaemonExecutors;
 
 import java.io.IOException;
@@ -31,6 +32,8 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+
+import checkers.lock.quals.GuardedBy;
 
 /**
  * Implementation of TraceSink for local storage in embedded H2 database. Some day there may be
@@ -52,19 +55,23 @@ public class TraceSinkLocal implements TraceSink {
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Ticker ticker;
+    private final Clock clock;
     private final Set<Trace> pendingCompleteTraces = Sets.newCopyOnWriteArraySet();
 
-    private volatile long lastWarningTick;
-    private volatile int countSinceLastWarning;
+    private final Object warningLock = new Object();
+    @GuardedBy("warningLock")
+    private long lastWarningAt;
+    @GuardedBy("warningLock")
+    private int countSinceLastWarning;
 
     @Inject
     TraceSinkLocal(TraceSnapshotService traceSnapshotService, TraceSnapshotDao traceSnapshotDao,
-            Ticker ticker) {
-
+            Ticker ticker, Clock clock) {
         this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
-        lastWarningTick = ticker.read() - TimeUnit.SECONDS.toNanos(60);
+        this.clock = clock;
+        lastWarningAt = clock.currentTimeMillis() - TimeUnit.SECONDS.toNanos(60);
     }
 
     public void onCompletedTrace(final Trace trace) {
@@ -78,8 +85,8 @@ public class TraceSinkLocal implements TraceSink {
             executorService.execute(new Runnable() {
                 public void run() {
                     try {
-                        traceSnapshotDao.storeSnapshot(traceSnapshotService.from(trace,
-                                Long.MAX_VALUE));
+                        traceSnapshotDao.storeSnapshot(TraceWriter.toTraceSnapshot(trace,
+                                Long.MAX_VALUE, true));
                     } catch (IOException e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -89,20 +96,23 @@ public class TraceSinkLocal implements TraceSink {
         }
     }
 
-    // synchronized to prevent two threads from logging the warning at the same time (one should
-    // log it and the other should increment the count for the next log)
-    private synchronized void logPendingLimitWarning() {
-        long tick = ticker.read();
-        if (TimeUnit.NANOSECONDS.toSeconds(tick - lastWarningTick) >= 60) {
-            logger.warn("not storing a trace in the local h2 database because of an excessive"
-                    + " backlog of {} traces already waiting to be stored (this warning will"
-                    + " appear at most once a minute, there were {} additional traces not stored"
-                    + " in the local h2 database since the last warning)", PENDING_LIMIT,
-                    countSinceLastWarning);
-            lastWarningTick = tick;
-            countSinceLastWarning = 0;
-        } else {
-            countSinceLastWarning++;
+    private void logPendingLimitWarning() {
+        // synchronized to prevent two threads from logging the warning at the same time (one should
+        // log it and the other should increment the count for the next log)
+        synchronized (warningLock) {
+            long currentTimeMillis = clock.currentTimeMillis();
+            if (TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis - lastWarningAt) >= 60) {
+                logger.warn("not storing a trace in the local h2 database because of an excessive"
+                        + " backlog of {} traces already waiting to be stored (this warning will"
+                        + " appear at most once a minute, there were {} additional traces not"
+                        + " stored in the local h2 database since the last warning)",
+                        PENDING_LIMIT,
+                        countSinceLastWarning);
+                lastWarningAt = currentTimeMillis;
+                countSinceLastWarning = 0;
+            } else {
+                countSinceLastWarning++;
+            }
         }
     }
 
@@ -110,7 +120,7 @@ public class TraceSinkLocal implements TraceSink {
     // single thread executor in StuckTraceCollector
     public void onStuckTrace(Trace trace) {
         try {
-            TraceSnapshot snaphsot = traceSnapshotService.from(trace, ticker.read());
+            TraceSnapshot snaphsot = TraceWriter.toTraceSnapshot(trace, ticker.read(), true);
             if (!trace.isCompleted()) {
                 traceSnapshotDao.storeSnapshot(snaphsot);
             }

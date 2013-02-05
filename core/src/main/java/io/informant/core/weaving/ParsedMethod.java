@@ -15,14 +15,13 @@
  */
 package io.informant.core.weaving;
 
-import java.util.Arrays;
-
 import org.objectweb.asm.Type;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 
 /**
  * @author Trask Stalnaker
@@ -32,17 +31,19 @@ import com.google.common.base.Objects;
 public class ParsedMethod {
 
     private final String name;
-    private final Type[] argTypes;
+    private final ImmutableList<Type> argTypes;
     private final Type returnType;
     private final int modifiers;
 
-    static ParsedMethod from(String name, Type[] argTypes, Type returnType, int modifiers) {
+    static ParsedMethod from(String name, ImmutableList<Type> argTypes, Type returnType,
+            int modifiers) {
         return new ParsedMethod(name, argTypes, returnType, modifiers);
     }
 
-    private ParsedMethod(String name, Type[] args, Type returnType, int modifiers) {
+    private ParsedMethod(String name, ImmutableList<Type> argTypes, Type returnType,
+            int modifiers) {
         this.name = name;
-        this.argTypes = args;
+        this.argTypes = argTypes;
         this.returnType = returnType;
         this.modifiers = modifiers;
     }
@@ -51,7 +52,7 @@ public class ParsedMethod {
         return name;
     }
 
-    public Type[] getArgTypes() {
+    public ImmutableList<Type> getArgTypes() {
         return argTypes;
     }
 
@@ -72,7 +73,7 @@ public class ParsedMethod {
         }
         if (obj instanceof ParsedMethod) {
             ParsedMethod that = (ParsedMethod) obj;
-            return Objects.equal(name, that.name) && Arrays.equals(argTypes, that.argTypes);
+            return Objects.equal(name, that.name) && Objects.equal(argTypes, that.argTypes);
         }
         return false;
     }

@@ -132,23 +132,9 @@ class JdbcMessageSupplier extends MessageSupplier {
         String[] args = new String[numArgs];
         sb.append("{}");
         args[0] = sql;
-        if (isUsingParameters() && !parameters.isEmpty()) {
-            appendParameters(sb, parameters);
-        } else if (isUsingBatchedParameters()) {
-            for (List</*@Nullable*/Object> oneParameters : batchedParameters) {
-                appendParameters(sb, oneParameters);
-            }
-        }
-        if (numRows != NEXT_HAS_NOT_BEEN_CALLED) {
-            appendRowCount(sb, args);
-        }
-        sb.append(" [connection: ");
-        if (connectionHashCode == null) {
-            sb.append("???");
-        } else {
-            sb.append(Integer.toHexString(connectionHashCode));
-        }
-        sb.append("]");
+        appendParameters(sb);
+        appendRowCount(sb, args);
+        appendConnectionHashCode(sb);
         return Message.from(sb.toString(), args);
     }
 
@@ -174,7 +160,20 @@ class JdbcMessageSupplier extends MessageSupplier {
         return batchedParameters != null;
     }
 
+    private void appendParameters(StringBuilder sb) {
+        if (isUsingParameters() && !parameters.isEmpty()) {
+            appendParameters(sb, parameters);
+        } else if (isUsingBatchedParameters()) {
+            for (List</*@Nullable*/Object> oneParameters : batchedParameters) {
+                appendParameters(sb, oneParameters);
+            }
+        }
+    }
+
     private void appendRowCount(StringBuilder sb, String[] args) {
+        if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
+            return;
+        }
         sb.append(" => {}");
         if (numRows == 1) {
             sb.append(" row");
@@ -182,6 +181,16 @@ class JdbcMessageSupplier extends MessageSupplier {
             sb.append(" rows");
         }
         args[1] = Integer.toString(numRows);
+    }
+
+    private void appendConnectionHashCode(StringBuilder sb) {
+        sb.append(" [connection: ");
+        if (connectionHashCode == null) {
+            sb.append("???");
+        } else {
+            sb.append(Integer.toHexString(connectionHashCode));
+        }
+        sb.append("]");
     }
 
     private static void appendBatchedSqls(StringBuilder sb, @ReadOnly List<String> batchedSqls) {

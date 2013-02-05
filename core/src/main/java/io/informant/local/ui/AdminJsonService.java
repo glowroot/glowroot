@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import com.google.common.io.CharStreams;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -54,7 +55,6 @@ class AdminJsonService implements JsonService {
     @Inject
     AdminJsonService(LogMessageDao logMessageDao, TraceSnapshotDao traceSnapshotDao,
             ConfigService configService, TraceSinkLocal traceSinkLocal, DataSource dataSource) {
-
         this.logMessageDao = logMessageDao;
         this.traceSnapshotDao = traceSnapshotDao;
         this.configService = configService;
@@ -81,7 +81,7 @@ class AdminJsonService implements JsonService {
 
     @OnlyUsedByTests
     @JsonServiceMethod
-    void truncateConfig() throws SQLException {
+    void truncateConfig() throws IOException, JsonSyntaxException {
         logger.debug("truncateConfig()");
         configService.deleteConfig();
     }

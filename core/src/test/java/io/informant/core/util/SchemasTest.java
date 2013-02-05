@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import java.util.Set;
 import org.h2.jdbc.JdbcConnection;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -42,7 +44,8 @@ public class SchemasTest {
         // when
         Set<Index> indexes = Schemas.getIndexes("tab", connection);
         assertThat(indexes).hasSize(1);
-        assertThat(indexes.iterator().next()).isEqualTo(new Index("tab_idx", "a"));
+        assertThat(indexes.iterator().next())
+                .isEqualTo(new Index("tab_idx", ImmutableList.of("a")));
         // then
     }
 

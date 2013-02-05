@@ -60,8 +60,24 @@ public class MergedStackTreeNode {
 
     // this is for creating a single synthetic root node above other root nodes when there are
     // multiple root nodes
-    static MergedStackTreeNode createSyntheticRoot(int sampleCount) {
-        return new MergedStackTreeNode(null, null, sampleCount);
+    @Nullable
+    static MergedStackTreeNode createSyntheticRoot(List<MergedStackTreeNode> rootNodes) {
+        if (rootNodes.isEmpty()) {
+            return null;
+        } else if (rootNodes.size() == 1) {
+            return rootNodes.get(0);
+        } else {
+            int totalSampleCount = 0;
+            for (MergedStackTreeNode rootNode : rootNodes) {
+                totalSampleCount += rootNode.getSampleCount();
+            }
+            MergedStackTreeNode syntheticRootNode = new MergedStackTreeNode(null, null,
+                    totalSampleCount);
+            for (MergedStackTreeNode rootNode : rootNodes) {
+                syntheticRootNode.addChildNode(rootNode);
+            }
+            return syntheticRootNode;
+        }
     }
 
     static MergedStackTreeNode create(StackTraceElement stackTraceElement,

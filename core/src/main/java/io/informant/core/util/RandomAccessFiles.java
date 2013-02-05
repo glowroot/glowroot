@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,9 @@ import java.io.RandomAccessFile;
  * @since 0.5
  */
 @Static
-final class RandomAccessFiles {
+class RandomAccessFiles {
+
+    private RandomAccessFiles() {}
 
     static int readFully(RandomAccessFile in, byte[] b) throws IOException {
         return readFully(in, b, 0, b.length);
@@ -56,6 +58,4 @@ final class RandomAccessFiles {
             total += n;
         }
     }
-
-    private RandomAccessFiles() {}
 }

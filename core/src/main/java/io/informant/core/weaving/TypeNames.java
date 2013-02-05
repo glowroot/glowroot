@@ -25,7 +25,9 @@ import com.google.common.collect.ImmutableList;
  * @since 0.5
  */
 @Static
-final class TypeNames {
+class TypeNames {
+
+    private TypeNames() {}
 
     @PolyNull
     public static String fromInternal(@PolyNull String typeName) {
@@ -55,6 +57,4 @@ final class TypeNames {
             return typeName.replace('.', '/');
         }
     }
-
-    private TypeNames() {}
 }

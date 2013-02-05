@@ -25,16 +25,17 @@ import io.informant.shaded.google.common.collect.ImmutableSet;
  * @author Trask Stalnaker
  * @since 0.5
  */
-final class ServletPluginProperties {
+class ServletPluginProperties {
 
-    private static final String SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME =
+    private static final String SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME =
             "sessionUserIdAttribute";
 
     // a special single value of "*" means capture all session attributes
     // this can be useful for finding the session attribute that represents the user id
     // TODO support "*.*", "*.*.*", etc
     // TODO support partial wildcards, e.g. "context*"
-    private static final String SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME = "sessionAttributes";
+    private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
+            "captureSessionAttributes";
 
     private static final String CAPTURE_SESSION_ID_PROPERTY_NAME = "captureSessionId";
     private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
@@ -43,8 +44,8 @@ final class ServletPluginProperties {
             .get("io.informant.plugins:servlet-plugin");
 
     private static volatile String sessionUserIdAttributePath;
-    private static volatile ImmutableSet<String> sessionAttributePaths = ImmutableSet.of();
-    private static volatile ImmutableSet<String> sessionAttributeNames = ImmutableSet.of();
+    private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
+    private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
     private static volatile boolean captureSessionId;
     private static volatile boolean captureStartup;
 
@@ -57,18 +58,20 @@ final class ServletPluginProperties {
         updateCache();
     }
 
+    private ServletPluginProperties() {}
+
     static String sessionUserIdAttributePath() {
         return sessionUserIdAttributePath;
     }
 
-    static ImmutableSet<String> sessionAttributePaths() {
-        return sessionAttributePaths;
+    static ImmutableSet<String> captureSessionAttributePaths() {
+        return captureSessionAttributePaths;
     }
 
     // only the first-level attribute names (e.g. "one", "abc") as opposed to full paths (e.g.
-    // "one.two", "abc.def") returned by getSessionAttributePaths()
-    static ImmutableSet<String> sessionAttributeNames() {
-        return sessionAttributeNames;
+    // "one.two", "abc.def") returned by captureSessionAttributePaths()
+    static ImmutableSet<String> captureSessionAttributeNames() {
+        return captureSessionAttributeNames;
     }
 
     static boolean captureSessionId() {
@@ -85,13 +88,13 @@ final class ServletPluginProperties {
 
     private static void updateCache() {
         sessionUserIdAttributePath = pluginServices
-                .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PATH_PROPERTY_NAME);
-        String sessionAttributesText = pluginServices
-                .getStringProperty(SESSION_ATTRIBUTE_PATHS_PROPERTY_NAME);
+                .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME);
+        String captureSessionAttributesText = pluginServices
+                .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME);
         // can't use guava Splitter at the moment due to severe initialization performance of
         // guava-jdk5's CharMatcher on JDK5
         ImmutableSet.Builder<String> paths = ImmutableSet.builder();
-        for (String path : sessionAttributesText.split(",")) {
+        for (String path : captureSessionAttributesText.split(",")) {
             path = path.trim();
             if (!path.equals("")) {
                 paths.add(path);
@@ -99,24 +102,22 @@ final class ServletPluginProperties {
         }
         // update cached first so that another thread cannot come into this method and get a
         // positive match for text but then get the old cached attributes
-        sessionAttributePaths = paths.build();
-        sessionAttributeNames = buildSessionAttributeNames();
+        captureSessionAttributePaths = paths.build();
+        captureSessionAttributeNames = buildCaptureSessionAttributeNames();
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
     }
 
-    private static ImmutableSet<String> buildSessionAttributeNames() {
-        ImmutableSet.Builder<String> sessionAttributeNames = ImmutableSet.builder();
-        for (String sessionAttributePath : sessionAttributePaths) {
-            int index = sessionAttributePath.indexOf('.');
+    private static ImmutableSet<String> buildCaptureSessionAttributeNames() {
+        ImmutableSet.Builder<String> captureSessionAttributeNames = ImmutableSet.builder();
+        for (String captureSessionAttributePath : captureSessionAttributePaths) {
+            int index = captureSessionAttributePath.indexOf('.');
             if (index == -1) {
-                sessionAttributeNames.add(sessionAttributePath);
+                captureSessionAttributeNames.add(captureSessionAttributePath);
             } else {
-                sessionAttributeNames.add(sessionAttributePath.substring(0, index));
+                captureSessionAttributeNames.add(captureSessionAttributePath.substring(0, index));
             }
         }
-        return sessionAttributeNames.build();
+        return captureSessionAttributeNames.build();
     }
-
-    private ServletPluginProperties() {}
 }

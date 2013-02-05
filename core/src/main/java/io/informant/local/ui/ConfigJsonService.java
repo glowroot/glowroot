@@ -36,6 +36,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -75,8 +76,8 @@ class ConfigJsonService implements JsonService {
         configJson.add("fineProfilingConfig", configService.getFineProfilingConfig().toJson());
         configJson.add("userConfig", configService.getUserConfig().toJson());
         configJson.add("pluginDescriptors", gson.toJsonTree(Plugins.getPluginDescriptors()));
-        configJson.add("pluginConfigs", getPluginConfigsJson());
-        configJson.add("pointcutConfigs", getPoincutConfigsJson());
+        configJson.add("pluginConfigs", getPluginConfigMapObject());
+        configJson.add("pointcutConfigs", getPoincutConfigArray());
         configJson.addProperty("dataDir", dataDir.getCanonicalPath());
         configJson.addProperty("uiPort", uiPort);
         return configJson.toString();
@@ -85,10 +86,10 @@ class ConfigJsonService implements JsonService {
     @JsonServiceMethod
     void updateGeneralConfig(String configJson) {
         logger.debug("updateGeneralConfig(): configJson={}", configJson);
-        JsonObject configJsonObject = new JsonParser().parse(configJson).getAsJsonObject();
+        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
         GeneralConfig config = configService.getGeneralConfig();
         GeneralConfig.Builder builder = GeneralConfig.builder(config);
-        builder.overlay(configJsonObject);
+        builder.overlay(configObject);
         configService.updateGeneralConfig(builder.build());
         try {
             // resize() doesn't do anything if the new and old value are the same
@@ -103,49 +104,49 @@ class ConfigJsonService implements JsonService {
     @JsonServiceMethod
     void updateCoarseProfilingConfig(String configJson) {
         logger.debug("updateCoarseProfilingConfig(): configJson={}", configJson);
-        JsonObject configJsonObject = new JsonParser().parse(configJson).getAsJsonObject();
+        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
         CoarseProfilingConfig config = configService.getCoarseProfilingConfig();
         CoarseProfilingConfig.Builder builder = CoarseProfilingConfig.builder(config);
-        builder.overlay(configJsonObject);
+        builder.overlay(configObject);
         configService.updateCoarseProfilingConfig(builder.build());
     }
 
     @JsonServiceMethod
     void updateFineProfilingConfig(String configJson) {
         logger.debug("updateFineProfilingConfig(): configJson={}", configJson);
-        JsonObject configJsonObject = new JsonParser().parse(configJson).getAsJsonObject();
+        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
         FineProfilingConfig config = configService.getFineProfilingConfig();
         FineProfilingConfig.Builder builder = FineProfilingConfig.builder(config);
-        builder.overlay(configJsonObject);
+        builder.overlay(configObject);
         configService.updateFineProfilingConfig(builder.build());
     }
 
     @JsonServiceMethod
     void updateUserConfig(String configJson) {
         logger.debug("updateUserConfig(): configJson={}", configJson);
-        JsonObject configJsonObject = new JsonParser().parse(configJson).getAsJsonObject();
+        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
         UserConfig config = configService.getUserConfig();
         UserConfig.Builder builder = UserConfig.builder(config);
-        builder.overlay(configJsonObject);
+        builder.overlay(configObject);
         configService.updateUserConfig(builder.build());
     }
 
     @JsonServiceMethod
     void updatePluginConfig(String pluginId, String configJson) {
         logger.debug("updatePluginConfig(): pluginId={}, configJson={}", pluginId, configJson);
-        JsonObject configJsonObject = new JsonParser().parse(configJson).getAsJsonObject();
+        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
         PluginConfig config = configService.getPluginConfig(pluginId);
         if (config == null) {
             logger.warn("plugin id '{}' not found", pluginId);
             return;
         }
         PluginConfig.Builder builder = PluginConfig.builder(config);
-        builder.overlay(configJsonObject);
+        builder.overlay(configObject);
         configService.updatePluginConfig(builder.build());
     }
 
     @JsonServiceMethod
-    String addPointcutConfig(String configJson) {
+    String addPointcutConfig(String configJson) throws JsonSyntaxException {
         logger.debug("addPointcutConfig(): configJson={}", configJson);
         PointcutConfig pointcut = gson.fromJson(configJson, PointcutConfig.Builder.class).build();
         String uniqueHash = configService.insertPointcutConfig(pointcut);
@@ -153,7 +154,8 @@ class ConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String updatePointcutConfig(String previousUniqueHash, String configJson) {
+    String updatePointcutConfig(String previousUniqueHash, String configJson)
+            throws JsonSyntaxException {
         logger.debug("updatePointcutConfig(): previousUniqueHash={}, configJson={}",
                 previousUniqueHash, configJson);
         PointcutConfig pointcutConfig = gson.fromJson(configJson, PointcutConfig.Builder.class)
@@ -169,20 +171,20 @@ class ConfigJsonService implements JsonService {
         configService.deletePointcutConfig(new JsonParser().parse(uniqueHashJson).getAsString());
     }
 
-    private JsonObject getPluginConfigsJson() {
-        JsonObject jsonObject = new JsonObject();
+    private JsonObject getPluginConfigMapObject() {
+        JsonObject mapObject = new JsonObject();
         for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.getId());
             if (pluginConfig == null) {
                 throw new IllegalStateException("Plugin config not found for plugin id '"
                         + pluginDescriptor.getId() + "'");
             }
-            jsonObject.add(pluginDescriptor.getId(), pluginConfig.toJson());
+            mapObject.add(pluginDescriptor.getId(), pluginConfig.toJson());
         }
-        return jsonObject;
+        return mapObject;
     }
 
-    private JsonArray getPoincutConfigsJson() {
+    private JsonArray getPoincutConfigArray() {
         JsonArray jsonArray = new JsonArray();
         for (PointcutConfig pointcutConfig : configService.readPointcutConfigs()) {
             jsonArray.add(pointcutConfig.toJsonWithUniqueHash());

@@ -57,6 +57,36 @@ public class GlobalCollector {
         processMethod(rootMethod, false);
     }
 
+    public void registerType(String typeName) throws IOException {
+        addType(typeName);
+    }
+
+    public void processOverrides() throws IOException {
+        while (true) {
+            for (String typeName : typeCollectors.keySet()) {
+                addOverrideReferencedMethods(typeName);
+                addOverrideBootstrapMethods(typeName);
+            }
+            if (overrides.isEmpty()) {
+                return;
+            }
+            for (ReferencedMethod override : overrides) {
+                processMethod(override);
+            }
+            overrides.clear();
+        }
+    }
+
+    public List<String> usedTypes() {
+        List<String> typeNames = Lists.newArrayList();
+        for (String typeName : Sets.newTreeSet(typeCollectors.keySet())) {
+            if (!Types.inBootstrapClassLoader(typeName) && Types.exists(typeName)) {
+                typeNames.add(typeName.replace('/', '.'));
+            }
+        }
+        return typeNames;
+    }
+
     private void processMethod(ReferencedMethod rootMethod, boolean expected) throws IOException {
         if (referencedMethods.contains(rootMethod)) {
             return;
@@ -99,32 +129,6 @@ public class GlobalCollector {
         if (methodCollector != null && !Types.inBootstrapClassLoader(rootMethod.getOwner())) {
             processMethod(methodCollector);
         }
-    }
-
-    public void processOverrides() throws IOException {
-        while (true) {
-            for (String typeName : typeCollectors.keySet()) {
-                addOverrideReferencedMethods(typeName);
-                addOverrideBootstrapMethods(typeName);
-            }
-            if (overrides.isEmpty()) {
-                return;
-            }
-            for (ReferencedMethod override : overrides) {
-                processMethod(override);
-            }
-            overrides.clear();
-        }
-    }
-
-    public List<String> usedTypes() {
-        List<String> typeNames = Lists.newArrayList();
-        for (String typeName : Sets.newTreeSet(typeCollectors.keySet())) {
-            if (!Types.inBootstrapClassLoader(typeName) && Types.exists(typeName)) {
-                typeNames.add(typeName.replace('/', '.'));
-            }
-        }
-        return typeNames;
     }
 
     private void processMethod(MethodCollector methodCollector) throws IOException {

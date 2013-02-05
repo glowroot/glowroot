@@ -54,6 +54,8 @@
   </properties>
 
   <build>
+    <!-- this property is just for supporting sonar analysis of javascript files -->
+    <sourceDirectory>${source.directory}</sourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -275,6 +277,32 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>not-sonar-javascript</id>
+      <activation>
+        <property>
+          <name>sonar.language</name>
+          <value>!js</value>
+        </property>
+      </activation>
+      <properties>
+        <source.directory>src/main/java</source.directory>
+      </properties>
+    </profile>
+    <profile>
+      <id>sonar-javascript</id>
+      <activation>
+        <property>
+          <name>sonar.language</name>
+          <value>js</value>
+        </property>
+      </activation>
+      <properties>
+        <source.directory>src/main/resources</source.directory>
+        <sonar.branch>Javascript</sonar.branch>
+        <sonar.exclusions>io/informant/local/ui/libs/**</sonar.exclusions>
+      </properties>
     </profile>
   </profiles>
 </project>

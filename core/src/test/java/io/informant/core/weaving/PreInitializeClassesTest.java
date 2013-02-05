@@ -45,13 +45,16 @@ public class PreInitializeClassesTest {
                 "io/informant/core/log/LoggerFactoryImpl$LoggerImpl", "<init>",
                 "(Ljava/lang/String;)V"));
 
+        // register WeavingMetricImpl since the WeavingClassFileTransformer constructor accepts the
+        // WeavingMetric interface and so WeavingMetricImpl would otherwise co unseen
+        globalCollector.registerType("io/informant/core/trace/WeavingMetricImpl");
         // "call" WeavingClassFileTransformer constructor to capture its lazy loading weavers
         // structure
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/core/weaving/WeavingClassFileTransformer", "<init>",
                 "([Lio/informant/api/weaving/Mixin;[Lio/informant/core/weaving/Advice;"
                         + "Lio/informant/core/weaving/ParsedTypeCache;"
-                        + "Lio/informant/core/trace/WeavingMetricImpl;)V"));
+                        + "Lio/informant/core/weaving/WeavingMetric;)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/core/weaving/WeavingClassFileTransformer", "transform",

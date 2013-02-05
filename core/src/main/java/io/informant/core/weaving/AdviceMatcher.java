@@ -27,6 +27,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
@@ -106,7 +107,7 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgTypesMatch(Type[] argTypes) {
+    private boolean isMethodArgTypesMatch(@ReadOnly List<Type> argTypes) {
         String[] pointcutMethodArgs = advice.getPointcut().methodArgs();
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
@@ -118,18 +119,18 @@ class AdviceMatcher {
                     return true;
                 }
             }
-            if (argTypes.length == i) {
+            if (argTypes.size() == i) {
                 // have run out of argument types to match
                 return false;
             }
             // only supporting * at this point
             if (!pointcutMethodArgs[i].equals("*")
-                    && !pointcutMethodArgs[i].equals(argTypes[i].getClassName())) {
+                    && !pointcutMethodArgs[i].equals(argTypes.get(i).getClassName())) {
                 return false;
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
-        return argTypes.length == pointcutMethodArgs.length;
+        return argTypes.size() == pointcutMethodArgs.length;
     }
 
     private boolean isMethodReturnMatch(Type returnType) {

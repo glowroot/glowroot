@@ -29,6 +29,7 @@ import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold an adhoc span/metric pointcut.
@@ -51,8 +52,8 @@ public class PointcutConfig {
     private final String metricName;
     private final String spanTemplate;
 
-    static PointcutConfig fromJson(JsonObject jsonObject) {
-        return gson.fromJson(jsonObject, PointcutConfig.Builder.class).build();
+    static PointcutConfig fromJson(JsonObject configObject) throws JsonSyntaxException {
+        return gson.fromJson(configObject, PointcutConfig.Builder.class).build();
     }
 
     private PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
@@ -74,9 +75,9 @@ public class PointcutConfig {
     }
 
     public JsonObject toJsonWithUniqueHash() {
-        JsonObject jsonObject = gson.toJsonTree(this).getAsJsonObject();
-        jsonObject.addProperty("uniqueHash", getUniqueHash());
-        return jsonObject;
+        JsonObject configObject = gson.toJsonTree(this).getAsJsonObject();
+        configObject.addProperty("uniqueHash", getUniqueHash());
+        return configObject;
     }
 
     public String getUniqueHash() {

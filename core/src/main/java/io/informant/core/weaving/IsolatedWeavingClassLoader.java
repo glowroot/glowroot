@@ -23,6 +23,8 @@ import io.informant.core.util.ThreadSafe;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
@@ -111,14 +113,18 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        // don't do recursive weaving (i.e. don't weave any of the classes which are performing the
-        // weaving itself)
+        return weaveClass(name, bytes);
+    }
+
+    private Class<?> weaveClass(String name, byte[] bytes) throws ClassFormatError {
+        byte[] wovenBytes = bytes;
         if (!inWeaving.get()) {
+            // don't do recursive weaving (i.e. don't weave any of the classes which are performing
+            // the weaving itself)
             inWeaving.set(true);
             try {
-                byte[] originalBytes = bytes;
-                bytes = weaver.weave(originalBytes, name);
-                if (bytes != originalBytes) {
+                wovenBytes = weaver.weave(bytes, name);
+                if (wovenBytes != bytes) {
                     logger.debug("findClass(): transformed {}", name);
                 }
             } finally {
@@ -129,7 +135,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         if (getPackage(packageName) == null) {
             definePackage(packageName, null, null, null, null, null, null, null);
         }
-        return super.defineClass(name, bytes, 0, bytes.length);
+        return super.defineClass(name, wovenBytes, 0, wovenBytes.length);
     }
 
     private <S> boolean isBridgeable(String name) {
@@ -188,8 +194,13 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.weavingMetric = weavingMetric;
         }
         public IsolatedWeavingClassLoader build() {
-            return new IsolatedWeavingClassLoader(mixins.build(), advisors.build(),
-                    bridgeClasses.build(), excludePackages.build(), weavingMetric);
+            return AccessController.doPrivileged(
+                    new PrivilegedAction<IsolatedWeavingClassLoader>() {
+                        public IsolatedWeavingClassLoader run() {
+                            return new IsolatedWeavingClassLoader(mixins.build(), advisors.build(),
+                                    bridgeClasses.build(), excludePackages.build(), weavingMetric);
+                        }
+                    });
         }
     }
 }

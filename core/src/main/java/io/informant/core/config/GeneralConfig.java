@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the general config.
@@ -35,13 +36,13 @@ import com.google.gson.JsonObject;
 @Immutable
 public class GeneralConfig {
 
-    // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = new GsonBuilder().serializeNulls().create();
-
     // don't store anything, essentially store threshold is infinite
     public static final int STORE_THRESHOLD_DISABLED = -1;
     // don't expire anything, essentially snapshot expiration is infinite
     public static final int SNAPSHOT_EXPIRATION_DISABLED = -1;
+
+    // serialize nulls so that all properties will be listed in config.json (for humans)
+    private static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional spans
@@ -81,8 +82,12 @@ public class GeneralConfig {
 
     private final boolean warnOnSpanOutsideTrace;
 
-    static GeneralConfig fromJson(@ReadOnly JsonObject jsonObject) {
-        return gson.fromJson(jsonObject, GeneralConfig.Builder.class).build();
+    static GeneralConfig fromJson(@ReadOnly JsonObject configObject) throws JsonSyntaxException {
+        return gson.fromJson(configObject, GeneralConfig.Builder.class).build();
+    }
+
+    static GeneralConfig getDefault() {
+        return new Builder().build();
     }
 
     public static Builder builder(GeneralConfig base) {
@@ -207,39 +212,40 @@ public class GeneralConfig {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject jsonObject) {
-            JsonElement enabled = jsonObject.get("enabled");
-            if (enabled != null) {
-                enabled(enabled.getAsBoolean());
+        public Builder overlay(@ReadOnly JsonObject configObject) {
+            JsonElement enabledElement = configObject.get("enabled");
+            if (enabledElement != null) {
+                enabled(enabledElement.getAsBoolean());
             }
-            JsonElement storeThresholdMillis = jsonObject.get("storeThresholdMillis");
-            if (storeThresholdMillis != null) {
-                storeThresholdMillis(storeThresholdMillis.getAsInt());
+            JsonElement storeThresholdMillisElement = configObject.get("storeThresholdMillis");
+            if (storeThresholdMillisElement != null) {
+                storeThresholdMillis(storeThresholdMillisElement.getAsInt());
             }
-            JsonElement stuckThresholdSeconds = jsonObject.get("stuckThresholdSeconds");
-            if (stuckThresholdSeconds != null) {
-                stuckThresholdSeconds(stuckThresholdSeconds.getAsInt());
+            JsonElement stuckThresholdSecondsElement = configObject.get("stuckThresholdSeconds");
+            if (stuckThresholdSecondsElement != null) {
+                stuckThresholdSeconds(stuckThresholdSecondsElement.getAsInt());
             }
-            JsonElement spanStackTraceThresholdMillis = jsonObject
+            JsonElement spanStackTraceThresholdMillisElement = configObject
                     .get("spanStackTraceThresholdMillis");
-            if (spanStackTraceThresholdMillis != null) {
-                spanStackTraceThresholdMillis(spanStackTraceThresholdMillis.getAsInt());
+            if (spanStackTraceThresholdMillisElement != null) {
+                spanStackTraceThresholdMillis(spanStackTraceThresholdMillisElement.getAsInt());
             }
-            JsonElement maxSpans = jsonObject.get("maxSpans");
-            if (maxSpans != null) {
-                maxSpans(maxSpans.getAsInt());
+            JsonElement maxSpansElement = configObject.get("maxSpans");
+            if (maxSpansElement != null) {
+                maxSpans(maxSpansElement.getAsInt());
             }
-            JsonElement snapshotExpirationHours = jsonObject.get("snapshotExpirationHours");
-            if (snapshotExpirationHours != null) {
-                snapshotExpirationHours(snapshotExpirationHours.getAsInt());
+            JsonElement snapshotExpirationHoursElement = configObject
+                    .get("snapshotExpirationHours");
+            if (snapshotExpirationHoursElement != null) {
+                snapshotExpirationHours(snapshotExpirationHoursElement.getAsInt());
             }
-            JsonElement rollingSizeMb = jsonObject.get("rollingSizeMb");
-            if (rollingSizeMb != null) {
-                rollingSizeMb(rollingSizeMb.getAsInt());
+            JsonElement rollingSizeMbElement = configObject.get("rollingSizeMb");
+            if (rollingSizeMbElement != null) {
+                rollingSizeMb(rollingSizeMbElement.getAsInt());
             }
-            JsonElement warnOnSpanOutsideTrace = jsonObject.get("warnOnSpanOutsideTrace");
-            if (warnOnSpanOutsideTrace != null) {
-                warnOnSpanOutsideTrace(warnOnSpanOutsideTrace.getAsBoolean());
+            JsonElement warnOnSpanOutsideTraceElement = configObject.get("warnOnSpanOutsideTrace");
+            if (warnOnSpanOutsideTraceElement != null) {
+                warnOnSpanOutsideTrace(warnOnSpanOutsideTraceElement.getAsBoolean());
             }
             return this;
         }

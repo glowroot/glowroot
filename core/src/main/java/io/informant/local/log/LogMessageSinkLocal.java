@@ -15,23 +15,23 @@
  */
 package io.informant.local.log;
 
-import io.informant.api.CapturedException;
+import io.informant.api.ExceptionInfo;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.log.Level;
 import io.informant.core.log.LogMessageSink;
 import io.informant.core.util.Clock;
 import io.informant.core.util.DaemonExecutors;
-import io.informant.local.trace.TraceSnapshotService;
+import io.informant.local.trace.TraceWriter;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 
-import com.google.common.base.Ticker;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -54,11 +54,13 @@ public class LogMessageSinkLocal implements LogMessageSink {
 
     private final LogMessageDao logMessageDao;
     private final Clock clock;
-    private final Ticker ticker;
     private final AtomicInteger pendingCount = new AtomicInteger();
 
-    private volatile long lastWarningTick;
-    private volatile int countSinceLastWarning;
+    private final Object warningLock = new Object();
+    @GuardedBy("warningLock")
+    private long lastWarningAt;
+    @GuardedBy("warningLock")
+    private int countSinceLastWarning;
 
     private final ThreadLocal<Boolean> inStoreLogMessage = new ThreadLocal<Boolean>() {
         @Override
@@ -68,11 +70,10 @@ public class LogMessageSinkLocal implements LogMessageSink {
     };
 
     @Inject
-    LogMessageSinkLocal(LogMessageDao logMessageDao, Clock clock, Ticker ticker) {
+    LogMessageSinkLocal(LogMessageDao logMessageDao, Clock clock) {
         this.logMessageDao = logMessageDao;
         this.clock = clock;
-        this.ticker = ticker;
-        lastWarningTick = ticker.read() - TimeUnit.SECONDS.toNanos(60);
+        lastWarningAt = clock.currentTimeMillis() - TimeUnit.SECONDS.toMillis(60);
     }
 
     public void onLogMessage(Level level, String loggerName, @Nullable String message,
@@ -90,30 +91,33 @@ public class LogMessageSinkLocal implements LogMessageSink {
         logMessageAsync(level, loggerName, message, t);
     }
 
-    // synchronized to prevent two threads from logging the warning at the same time (one should
-    // log it and the other should increment the count for the next log)
-    private synchronized void logPendingLimitWarning() {
-        long tick = ticker.read();
-        if (TimeUnit.NANOSECONDS.toSeconds(tick - lastWarningTick) >= 60) {
-            inStoreLogMessage.set(true);
-            try {
-                String message = "not storing a log message in the local h2 database because of an"
-                        + " excessive backlog of " + PENDING_LIMIT + " log messages already"
-                        + " waiting to be stored (this warning will appear at most once a minute,"
-                        + " there were " + countSinceLastWarning + " additional log messages not"
-                        + " stored in the local h2 database since the last warning)";
-                // inStoreLogMessage is true, so that onLogMessage() which is called from
-                // logger.warn(), will short-circuit not execute anything
-                logger.warn(message);
-                // but it is still good to get this warning in the log_message table
-                logMessageAsync(Level.WARN, LogMessageSinkLocal.class.getName(), message, null);
-            } finally {
-                inStoreLogMessage.set(false);
+    private void logPendingLimitWarning() {
+        // synchronized to prevent two threads from logging the warning at the same time (one should
+        // log it and the other should increment the count for the next log)
+        synchronized (warningLock) {
+            long currentTimeMillis = clock.currentTimeMillis();
+            if (TimeUnit.NANOSECONDS.toSeconds(currentTimeMillis - lastWarningAt) >= 60) {
+                inStoreLogMessage.set(true);
+                try {
+                    String message = "not storing a log message in the local h2 database because of"
+                            + " an excessive backlog of " + PENDING_LIMIT + " log messages already"
+                            + " waiting to be stored (this warning will appear at most once a"
+                            + " minute, there were " + countSinceLastWarning + " additional log"
+                            + " messages not stored in the local h2 database since the last"
+                            + " warning)";
+                    // inStoreLogMessage is true, so that onLogMessage() which is called from
+                    // logger.warn(), will short-circuit not execute anything
+                    logger.warn(message);
+                    // but it is still good to get this warning in the log_message table
+                    logMessageAsync(Level.WARN, LogMessageSinkLocal.class.getName(), message, null);
+                } finally {
+                    inStoreLogMessage.set(false);
+                }
+                lastWarningAt = currentTimeMillis;
+                countSinceLastWarning = 0;
+            } else {
+                countSinceLastWarning++;
             }
-            lastWarningTick = tick;
-            countSinceLastWarning = 0;
-        } else {
-            countSinceLastWarning++;
         }
     }
 
@@ -133,8 +137,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
                         String exceptionJson = null;
                         if (t != null) {
                             try {
-                                exceptionJson = TraceSnapshotService
-                                        .getExceptionJson(CapturedException.from(t));
+                                exceptionJson = TraceWriter.getExceptionJson(ExceptionInfo.from(t));
                             } catch (IOException e) {
                                 logger.error(e.getMessage(), e);
                             }

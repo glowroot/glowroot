@@ -80,7 +80,8 @@ public class TraceSnapshotDao {
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
     private static final ImmutableList<Index> indexes = ImmutableList.of(new Index(
-            "trace_snapshot_idx", "captured_at", "duration", "id", "completed", "error"));
+            "trace_snapshot_idx", ImmutableList.of("captured_at", "duration", "id", "completed",
+                    "error")));
 
     private final DataSource dataSource;
     private final RollingFile rollingFile;
@@ -164,12 +165,14 @@ public class TraceSnapshotDao {
             @Nullable String headline, @Nullable StringComparator userIdComparator,
             @Nullable String userId, int limit) {
 
-        logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
-                + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
-                + " headlineComparator={}, headline={}, userIdComparator={}, userId={}",
-                new Object[] { capturedFrom, capturedTo, durationLow, durationHigh, background,
-                        errorOnly, fineOnly, headlineComparator, headline, userIdComparator,
-                        userId });
+        if (logger.isDebugEnabled()) {
+            logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
+                    + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
+                    + " headlineComparator={}, headline={}, userIdComparator={}, userId={}",
+                    new Object[] { capturedFrom, capturedTo, durationLow, durationHigh, background,
+                            errorOnly, fineOnly, headlineComparator, headline, userIdComparator,
+                            userId });
+        }
         if (!valid) {
             return ImmutableList.of();
         }
@@ -211,7 +214,7 @@ public class TraceSnapshotDao {
             }
             sql += " order by duration desc limit ?";
             args.add(limit);
-            return dataSource.query(sql, args.toArray(), new PointRowMapper());
+            return dataSource.query(sql, args, new PointRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -230,7 +233,7 @@ public class TraceSnapshotDao {
                     + " completed, background, headline, attributes, user_id, error_text,"
                     + " error_detail, exception, metrics, spans, coarse_merged_stack_tree,"
                     + " fine_merged_stack_tree from trace_snapshot where id = ?",
-                    new Object[] { id }, new TraceRowMapper());
+                    ImmutableList.of(id), new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -254,7 +257,7 @@ public class TraceSnapshotDao {
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
                     + " background, headline, attributes, user_id, error_text, error_detail,"
-                    + " exception, metrics from trace_snapshot where id = ?", new Object[] { id },
+                    + " exception, metrics from trace_snapshot where id = ?", ImmutableList.of(id),
                     new TraceSnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);

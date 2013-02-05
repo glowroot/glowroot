@@ -15,7 +15,7 @@
  */
 package io.informant.testkit;
 
-import io.informant.testkit.Trace.CapturedException;
+import io.informant.testkit.Trace.ExceptionInfo;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
@@ -34,7 +34,7 @@ public class LogMessage {
     @Nullable
     private String text;
     @Nullable
-    private CapturedException exception;
+    private ExceptionInfo exception;
 
     public long getTimestamp() {
         return timestamp;
@@ -56,7 +56,7 @@ public class LogMessage {
     }
 
     @Nullable
-    public CapturedException getException() {
+    public ExceptionInfo getException() {
         return exception;
     }
 

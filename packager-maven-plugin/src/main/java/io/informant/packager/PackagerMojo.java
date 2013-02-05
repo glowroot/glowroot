@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -46,7 +45,6 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -192,7 +190,10 @@ public class PackagerMojo extends AbstractMojo {
         for (Artifact artifact : artifacts) {
             if (artifact.getGroupId().equals("io.informant")
                     && artifact.getArtifactId().equals("informant-core")) {
-                return new Manifest(new JarFile(artifact.getFile()).getManifest());
+                JarFile jarFile = new JarFile(artifact.getFile());
+                Manifest manifest = jarFile.getManifest();
+                jarFile.close();
+                return new Manifest(manifest);
             }
         }
         throw new MojoExecutionException("Missing project dependency io.informant:informant-core");
@@ -335,33 +336,53 @@ public class PackagerMojo extends AbstractMojo {
         for (PropertyDescriptor property : pluginDescriptor.getProperties()) {
             PropertyConfig override = getPropertyConfig(pluginConfig, property.getName());
             out.println("        <property>");
-            if (override != null && override.getPrompt() != null) {
-                out.println("          <prompt>" + override.getPrompt() + "</prompt>");
-            } else {
-                out.println("          <prompt>" + property.getPrompt() + "</prompt>");
-            }
+            writePrompt(out, property, override);
             out.println("          <name>" + property.getName() + "</name>");
             out.println("          <type>" + property.getType() + "</type>");
-            if (override != null && override.getDefault() != null) {
-                out.println("          <default>" + override.getDefault() + "</default>");
-            } else if (property.getDefault() != null) {
-                out.println("          <default>" + property.getDefault() + "</default>");
-            }
-            if (override != null && override.getHidden() != null) {
-                out.println("          <hidden>" + override.getHidden() + "</hidden>");
-            } else if (property.getHidden() != null) {
-                out.println("          <hidden>" + property.getHidden() + "</hidden>");
-            }
-            if (override != null && override.getDescription() != null) {
-                out.println("          <description>" + override.getDescription()
-                        + "</description>");
-            } else if (property.getDescription() != null) {
-                out.println("          <description>" + property.getDescription()
-                        + "</description>");
-            }
+            writeDefault(out, property, override);
+            writeHidden(out, property, override);
+            writeDescription(out, property, override);
             out.println("        </property>");
         }
         out.println("      </properties>");
+    }
+
+    private void writePrompt(PrintWriter out, PropertyDescriptor descriptor,
+            PropertyConfig config) {
+        if (config != null && config.getPrompt() != null) {
+            out.println("          <prompt>" + config.getPrompt() + "</prompt>");
+        } else {
+            out.println("          <prompt>" + descriptor.getPrompt() + "</prompt>");
+        }
+    }
+
+    private void writeDefault(PrintWriter out, PropertyDescriptor descriptor,
+            PropertyConfig config) {
+        if (config != null && config.getDefault() != null) {
+            out.println("          <default>" + config.getDefault() + "</default>");
+        } else if (descriptor.getDefault() != null) {
+            out.println("          <default>" + descriptor.getDefault() + "</default>");
+        }
+    }
+
+    private void writeHidden(PrintWriter out, PropertyDescriptor descriptor,
+            PropertyConfig config) {
+        if (config != null && config.getHidden() != null) {
+            out.println("          <hidden>" + config.getHidden() + "</hidden>");
+        } else if (descriptor.getHidden() != null) {
+            out.println("          <hidden>" + descriptor.getHidden() + "</hidden>");
+        }
+    }
+
+    private void writeDescription(PrintWriter out, PropertyDescriptor descriptor,
+            PropertyConfig config) {
+        if (config != null && config.getDescription() != null) {
+            out.println("          <description>" + config.getDescription()
+                    + "</description>");
+        } else if (descriptor.getDescription() != null) {
+            out.println("          <description>" + descriptor.getDescription()
+                    + "</description>");
+        }
     }
 
     @Nullable
@@ -435,7 +456,7 @@ public class PackagerMojo extends AbstractMojo {
 
     private void createDependencyReducedPom() throws IOException {
         Model model = project.getOriginalModel();
-        model.setDependencies(new ArrayList<Dependency>());
+        model.setDependencies(Lists.newArrayList());
         File dependencyReducedPomLocation = new File(project.getBuild().getDirectory(),
                 "dependency-reduced-pom.xml");
         if (dependencyReducedPomLocation.exists()) {

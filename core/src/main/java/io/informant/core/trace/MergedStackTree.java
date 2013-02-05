@@ -20,7 +20,9 @@ import io.informant.core.util.ThreadSafe;
 
 import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +32,7 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
@@ -59,39 +62,19 @@ public class MergedStackTree {
 
     @Nullable
     public MergedStackTreeNode getRootNode() {
-        List<MergedStackTreeNode> rootNodes = Lists.newArrayList(this.rootNodes);
-        if (rootNodes.size() == 0) {
-            return null;
-        } else if (rootNodes.size() == 1) {
-            return rootNodes.get(0);
-        } else {
-            int totalSampleCount = 0;
-            for (MergedStackTreeNode rootNode : rootNodes) {
-                totalSampleCount += rootNode.getSampleCount();
-            }
-            MergedStackTreeNode syntheticRootNode = MergedStackTreeNode
-                    .createSyntheticRoot(totalSampleCount);
-            for (MergedStackTreeNode rootNode : rootNodes) {
-                syntheticRootNode.addChildNode(rootNode);
-            }
-            return syntheticRootNode;
-        }
+        return MergedStackTreeNode.createSyntheticRoot(ImmutableList.copyOf(rootNodes));
     }
 
     void addStackTrace(ThreadInfo threadInfo) {
         synchronized (lock) {
             // TODO put into list, then merge every 100, or whenever merge is requested
-            StackTraceElement[] stackTrace = threadInfo.getStackTrace();
-            addToStackTree(stackTrace, threadInfo.getThreadState());
+            List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
+            addToStackTree(stripSyntheticMetricMethods(stackTrace), threadInfo.getThreadState());
         }
     }
 
     @VisibleForTesting
-    public void addToStackTree(StackTraceElement[] stackTrace, State threadState) {
-        addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
-    }
-
-    private void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
+    public void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
             State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
@@ -149,25 +132,26 @@ public class MergedStackTree {
 
     // recreate the stack trace as it would have been without the synthetic $metric$ methods
     public static List<StackTraceElementPlus> stripSyntheticMetricMethods(
-            StackTraceElement[] stackTrace) {
+            @ReadOnly List<StackTraceElement> stackTrace) {
 
-        List<StackTraceElementPlus> stackTracePlus = Lists
-                .newArrayListWithCapacity(stackTrace.length);
-        for (int i = 0; i < stackTrace.length; i++) {
-            StackTraceElement element = stackTrace[i];
+        List<StackTraceElementPlus> stackTracePlus = Lists.newArrayListWithCapacity(
+                stackTrace.size());
+        for (Iterator<StackTraceElement> i = stackTrace.iterator(); i.hasNext();) {
+            StackTraceElement element = i.next();
             String metricName = getMetricName(element);
             if (metricName != null) {
-                String originalMethodName = stackTrace[i].getMethodName();
+                String originalMethodName = element.getMethodName();
                 List<String> metricNames = Lists.newArrayList();
                 metricNames.add(metricName);
                 // skip over successive $metric$ methods up to and including the "original" method
-                while (++i < stackTrace.length) {
-                    metricName = getMetricName(stackTrace[i]);
+                while (i.hasNext()) {
+                    StackTraceElement skipElement = i.next();
+                    metricName = getMetricName(skipElement);
                     if (metricName == null) {
                         // loop should always terminate here since synthetic $metric$ methods should
                         // never be the last element (the last element is the first element in the
                         // call stack)
-                        originalMethodName = stackTrace[i].getMethodName();
+                        originalMethodName = skipElement.getMethodName();
                         break;
                     }
                     metricNames.add(metricName);

@@ -36,12 +36,7 @@ public class LogMessage {
     @Nullable
     private final String exception; // json data
 
-    public static LogMessage from(long timestamp, Level level, String loggerName,
-            @Nullable String text) {
-        return from(timestamp, level, loggerName, text, null);
-    }
-
-    public static LogMessage from(long timestamp, Level level, String loggerName,
+    static LogMessage from(long timestamp, Level level, String loggerName,
             @Nullable String text, @Nullable String exception) {
         return new LogMessage(timestamp, level, loggerName, text, exception);
     }

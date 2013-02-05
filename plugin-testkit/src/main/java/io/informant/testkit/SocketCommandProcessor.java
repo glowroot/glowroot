@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ class SocketCommandProcessor implements Runnable {
 
     private final ObjectInputStream objectIn;
     private final ObjectOutputStream objectOut;
+    private Collection<Thread> preExistingThreads;
 
     SocketCommandProcessor(ObjectInputStream objectIn, ObjectOutputStream objectOut) {
         this.objectIn = objectIn;
@@ -67,7 +68,6 @@ class SocketCommandProcessor implements Runnable {
     }
 
     private void runInternal() throws Exception {
-        Collection<Thread> preExistingThreads = null;
         while (true) {
             CommandWrapper commandWrapper = (CommandWrapper) objectIn.readObject();
             logger.debug("command received by external jvm: {}", commandWrapper);
@@ -79,20 +79,7 @@ class SocketCommandProcessor implements Runnable {
                 } else if (command.equals(KILL_COMMAND)) {
                     System.exit(0);
                 } else if (command.equals(SHUTDOWN_COMMAND)) {
-                    if (preExistingThreads == null) {
-                        // EXECUTE_APP was never run
-                        respond(SHUTDOWN_RESPONSE, commandNum);
-                    } else {
-                        try {
-                            Threads.preShutdownCheck(preExistingThreads);
-                            MainEntryPoint.shutdown();
-                            Threads.postShutdownCheck(preExistingThreads);
-                            respond(SHUTDOWN_RESPONSE, commandNum);
-                        } catch (RogueThreadsException e) {
-                            logger.error(e.getMessage(), e);
-                            respond(EXCEPTION_RESPONSE, commandNum);
-                        }
-                    }
+                    shutdown(commandNum);
                 } else {
                     logger.error("unexpected command '" + command + "'");
                     respond(EXCEPTION_RESPONSE, commandNum);
@@ -105,14 +92,7 @@ class SocketCommandProcessor implements Runnable {
                 } else {
                     Object commandName = argList.get(0);
                     if (commandName.equals(EXECUTE_APP_COMMAND)) {
-                        if (preExistingThreads == null) {
-                            // wait until the first execute app command to capture pre-existing
-                            // threads, otherwise may pick up DestroyJavaVM thread
-                            preExistingThreads = Threads.currentThreads();
-                        }
-                        String appClassName = (String) argList.get(1);
-                        String threadName = (String) argList.get(2);
-                        executeAppAndRespond(appClassName, threadName, commandNum);
+                        executeAppAndRespond(commandNum, argList);
                     } else {
                         logger.error("unexpected command '" + commandName + "'");
                         respond(EXCEPTION_RESPONSE, commandNum);
@@ -125,9 +105,31 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void executeAppAndRespond(String appClassName, String threadName, int commandNum)
-            throws Exception {
+    private void shutdown(int commandNum) throws IOException, InterruptedException {
+        if (preExistingThreads == null) {
+            // EXECUTE_APP was never run
+            respond(SHUTDOWN_RESPONSE, commandNum);
+        } else {
+            try {
+                Threads.preShutdownCheck(preExistingThreads);
+                MainEntryPoint.shutdown();
+                Threads.postShutdownCheck(preExistingThreads);
+                respond(SHUTDOWN_RESPONSE, commandNum);
+            } catch (RogueThreadsException e) {
+                logger.error(e.getMessage(), e);
+                respond(EXCEPTION_RESPONSE, commandNum);
+            }
+        }
+    }
 
+    private void executeAppAndRespond(int commandNum, List<?> argList) throws Exception {
+        if (preExistingThreads == null) {
+            // wait until the first execute app command to capture pre-existing
+            // threads, otherwise may pick up DestroyJavaVM thread
+            preExistingThreads = Threads.currentThreads();
+        }
+        String appClassName = (String) argList.get(1);
+        String threadName = (String) argList.get(2);
         Class<?> appClass = Class.forName(appClassName);
         String previousThreadName = Thread.currentThread().getName();
         Thread.currentThread().setName(threadName);

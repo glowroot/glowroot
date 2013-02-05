@@ -55,12 +55,12 @@ public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
 
+    private static final AtomicInteger threadNameCounter = new AtomicInteger();
+
     private final ExecutionAdapter executionAdapter;
     private final File dataDir;
     private final AsyncHttpClient asyncHttpClient;
     private final Informant informant;
-
-    private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
     public static InformantContainer create() throws Exception {
         return create(0, true);

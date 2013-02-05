@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ public class MockCatalinaHttpServletRequest extends MockHttpServletRequest {
     }
 
     @SuppressWarnings("serial")
-    private final class ParameterMap<K, V> extends HashMap<K, V> {
+    private class ParameterMap<K, V> extends HashMap<K, V> {
         private boolean locked = false;
 
         @Override

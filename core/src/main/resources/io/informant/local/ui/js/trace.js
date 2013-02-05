@@ -74,7 +74,7 @@ var traceDetailTemplateText = ''
 + '    <div id="sps"></div>'
 + '  {{/ifRolledOver}}'
 + '{{/if}}'
-   // todo combine merged stack tree into template to consolidate code between coarse and fine mst
+   // TODO combine merged stack tree into template to consolidate code between coarse and fine mst
 + '{{#if coarseMergedStackTree}}'
 + '  {{#ifRolledOver coarseMergedStackTree}}'
 + '    <div>coarse-grained profile <em>rolled over</em></div>'

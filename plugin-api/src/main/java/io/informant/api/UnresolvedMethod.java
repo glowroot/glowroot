@@ -16,6 +16,8 @@
 package io.informant.api;
 
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
@@ -41,7 +43,13 @@ public class UnresolvedMethod {
     private static final Method SENTINEL_METHOD;
 
     static {
-        SENTINEL_CLASS_LOADER = new ClassLoader() {};
+
+        SENTINEL_CLASS_LOADER = AccessController.doPrivileged(
+                new PrivilegedAction<ClassLoader>() {
+                    public ClassLoader run() {
+                        return new ClassLoader() {};
+                    }
+                });
         try {
             SENTINEL_METHOD = UnresolvedMethod.class.getDeclaredMethod("sentinelMethod");
         } catch (SecurityException e) {
@@ -121,19 +129,20 @@ public class UnresolvedMethod {
     }
 
     @Nullable
-    public Object invokeStaticWithDefaultOnError(Object target, @Nullable Object defaultValue) {
-        return invokeStaticWithDefaultOnError(target, new Object[0], defaultValue);
+    public Object invokeStaticWithDefaultOnError(@Nullable ClassLoader loader,
+            @Nullable Object defaultValue) {
+        return invokeStaticWithDefaultOnError(loader, new Object[0], defaultValue);
     }
 
     @Nullable
-    public Object invokeStaticWithDefaultOnError(Object target, Object parameters,
+    public Object invokeStaticWithDefaultOnError(@Nullable ClassLoader loader, Object parameters,
             @Nullable Object defaultValue) {
-        return invokeStaticWithDefaultOnError(target, new Object[] { parameters }, defaultValue);
+        return invokeStaticWithDefaultOnError(loader, new Object[] { parameters }, defaultValue);
     }
 
     @Nullable
     public Object invokeStaticWithDefaultOnError(@Nullable ClassLoader loader, Object[] parameters,
-            @Nullable Object defaultValue) throws Exception {
+            @Nullable Object defaultValue) {
         Method method = getResolvedMethod(loader);
         if (method == null) {
             // warning has already been logged in getResolvedMethod()
@@ -175,11 +184,12 @@ public class UnresolvedMethod {
                         + " 'unresolvedParameterTypes' cannot both be null (enforced by static"
                         + " factory methods)");
             } else {
-                Class<?>[] parameterTypes = new Class<?>[unresolvedParameterTypes.length];
+                Class<?>[] resolvedParameterTypes = new Class<?>[unresolvedParameterTypes.length];
                 for (int i = 0; i < unresolvedParameterTypes.length; i++) {
-                    parameterTypes[i] = Class.forName(unresolvedParameterTypes[i], false, loader);
+                    resolvedParameterTypes[i] = Class.forName(unresolvedParameterTypes[i], false,
+                            loader);
                 }
-                return resolvedClass.getMethod(name, parameterTypes);
+                return resolvedClass.getMethod(name, resolvedParameterTypes);
             }
         } catch (ClassNotFoundException e) {
             // this is only logged once because the sentinel method is returned and cached

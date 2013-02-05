@@ -35,7 +35,9 @@ import com.google.common.collect.Lists;
  */
 @OnlyUsedByTests
 @Static
-public final class Threads {
+public class Threads {
+
+    private Threads() {}
 
     public static List<Thread> currentThreads() {
         List<Thread> threads = Lists.newArrayList();
@@ -143,6 +145,4 @@ public final class Threads {
             return toStringHelper.toString();
         }
     }
-
-    private Threads() {}
 }

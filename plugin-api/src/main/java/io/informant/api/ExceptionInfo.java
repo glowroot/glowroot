@@ -15,6 +15,12 @@
  */
 package io.informant.api;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.ListIterator;
+
+import com.google.common.collect.ImmutableList;
+
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 
@@ -25,30 +31,32 @@ import checkers.nullness.quals.Nullable;
  * @since 0.5
  */
 @Immutable
-public class CapturedException {
+public class ExceptionInfo {
 
     private final String display;
     // for inner cause exceptions, stackTrace only includes frames not in common with caused
-    private final StackTraceElement[] stackTrace;
+    private final ImmutableList<StackTraceElement> stackTrace;
     // this is for printing '... 18 more' at end of cause instead of entire stack trace
     private final int framesInCommonWithCaused;
     @Nullable
-    private final CapturedException cause;
+    private final ExceptionInfo cause;
 
-    public static CapturedException from(Throwable t) {
+    public static ExceptionInfo from(Throwable t) {
         return from(t, null);
     }
 
-    private static CapturedException from(Throwable t,
-            StackTraceElement/*@Nullable*/[] causedStackTrace) {
+    private static ExceptionInfo from(Throwable t,
+            @Nullable List<StackTraceElement> causedStackTrace) {
 
         int framesInCommon = 0;
-        StackTraceElement[] stackTrace = t.getStackTrace();
+        ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
         if (causedStackTrace != null) {
-            while (framesInCommon < stackTrace.length && framesInCommon < causedStackTrace.length) {
-                StackTraceElement element = stackTrace[stackTrace.length - 1 - framesInCommon];
-                StackTraceElement causedElement = causedStackTrace[causedStackTrace.length - 1
-                        - framesInCommon];
+            ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
+            ListIterator<StackTraceElement> j = causedStackTrace.listIterator(causedStackTrace
+                    .size());
+            while (i.hasPrevious() && j.hasPrevious()) {
+                StackTraceElement element = i.previous();
+                StackTraceElement causedElement = j.previous();
                 if (!element.equals(causedElement)) {
                     break;
                 }
@@ -56,26 +64,22 @@ public class CapturedException {
             }
             if (framesInCommon > 0) {
                 // strip off common frames
-                StackTraceElement[] stackTraceWithoutCommon =
-                        new StackTraceElement[stackTrace.length - framesInCommon];
-                System.arraycopy(stackTrace, 0, stackTraceWithoutCommon, 0,
-                        stackTraceWithoutCommon.length);
-                stackTrace = stackTraceWithoutCommon;
+                stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommon);
             }
         }
         Throwable cause = t.getCause();
         if (cause == null) {
-            return new CapturedException(t.toString(), stackTrace, null, framesInCommon);
+            return new ExceptionInfo(t.toString(), stackTrace, null, framesInCommon);
         } else {
             // pass t's original stack trace to construct the nested cause
             // (not stackTraces, which now has common frames removed)
-            return new CapturedException(t.toString(), stackTrace, from(cause, t.getStackTrace()),
-                    framesInCommon);
+            return new ExceptionInfo(t.toString(), stackTrace, from(cause,
+                    Arrays.asList(t.getStackTrace())), framesInCommon);
         }
     }
-    private CapturedException(String display, StackTraceElement[] stackTrace,
-            @Nullable CapturedException cause, int framesInCommon) {
 
+    private ExceptionInfo(String display, ImmutableList<StackTraceElement> stackTrace,
+            @Nullable ExceptionInfo cause, int framesInCommon) {
         this.display = display;
         this.stackTrace = stackTrace;
         this.cause = cause;
@@ -86,7 +90,9 @@ public class CapturedException {
         return display;
     }
 
-    public StackTraceElement[] getStackTrace() {
+    // don't expose ImmutableList (or any guava types) from plugin api methods
+    @Immutable
+    public List<StackTraceElement> getStackTrace() {
         return stackTrace;
     }
 
@@ -95,7 +101,7 @@ public class CapturedException {
     }
 
     @Nullable
-    public CapturedException getCause() {
+    public ExceptionInfo getCause() {
         return cause;
     }
 }

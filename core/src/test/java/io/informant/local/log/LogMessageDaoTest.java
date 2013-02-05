@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class LogMessageDaoTest {
     public void shouldReadLogMessage() {
         // given
         logMessageDao.storeLogMessage(LogMessage.from(123456, Level.WARN,
-                LogMessageDaoTest.class.getName(), "a warning msg"));
+                LogMessageDaoTest.class.getName(), "a warning msg", null));
         // when
         List<LogMessage> logMessages = logMessageDao.readLogMessages();
         // then
@@ -75,7 +75,7 @@ public class LogMessageDaoTest {
         // given
         for (int i = 0; i < 1000; i++) {
             logMessageDao.storeLogMessage(LogMessage.from(i, Level.WARN,
-                    LogMessageDaoTest.class.getName(), "a warning msg"));
+                    LogMessageDaoTest.class.getName(), "a warning msg", null));
         }
         // when
         // then
@@ -89,13 +89,13 @@ public class LogMessageDaoTest {
         // given
         for (int i = 0; i < 1000; i++) {
             logMessageDao.storeLogMessage(LogMessage.from(i, Level.WARN,
-                    LogMessageDaoTest.class.getName(), "a warning msg"));
+                    LogMessageDaoTest.class.getName(), "a warning msg", null));
         }
         // when
         // then
         for (int i = 0; i < 1000; i++) {
             logMessageDao.storeLogMessage(LogMessage.from(1000 + i, Level.WARN,
-                    LogMessageDaoTest.class.getName(), "a warning msg"));
+                    LogMessageDaoTest.class.getName(), "a warning msg", null));
             assertThat(logMessageDao.count()).isLessThan(1100L);
         }
     }
