@@ -48,6 +48,11 @@
     <url>https://github.com/informant/informant</url>
   </scm>
 
+  <properties>
+    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+    <sonar.jacoco.reportPath>${basedir}/../target/jacoco-combined.exec</sonar.jacoco.reportPath>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -233,6 +238,40 @@
               <javaParams>-Djsr308_imports=checkers.nullness.quals.*</javaParams>
               <javacParams>-Astubs=${basedir}/../core/src/main/stubs -Alint=nulltest</javacParams>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- this profile should be activated using -Djacoco since the presence of that property will
+        disable class shading and proguard-ing in core/pom.xml, otherwise the bytecode changes done
+        to the classes during shading and proguard-ing will modify the jacoco class id and the sonar
+        reports won't report usage of those bytecode modified classes.
+        also, -Djacoco=true will disable JarFileShadingTest in integration-tests since that will
+        fail when class shading is disabled -->
+      <id>active-this-profile-using-the-jacoco-property</id>
+      <activation>
+        <property>
+          <name>jacoco</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.6.2.201302030002</version>
+            <configuration>
+              <destFile>${basedir}/../target/jacoco-combined.exec</destFile>
+            </configuration>
+            <executions>
+              <execution>
+                <id>prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

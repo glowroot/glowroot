@@ -154,6 +154,20 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>io.informant.core.Viewer</mainClass>
+            </manifest>
+            <manifestEntries>
+              <Premain-Class>io.informant.core.MainEntryPoint</Premain-Class>
+              <Can-Redefine-Classes>true</Can-Redefine-Classes>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.0</version>
         <executions>
@@ -168,7 +182,6 @@
             ${project.build.directory}/dependency-reduced-pom.xml
           </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
-          <shadeSourcesContent>true</shadeSourcesContent>
           <filters>
             <filter>
               <artifact>org.sonatype.sisu:sisu-guice</artifact>
@@ -202,153 +215,162 @@
               </excludes>
             </filter>
           </filters>
-          <relocations>
-            <relocation>
-              <pattern>org.objectweb.asm</pattern>
-              <shadedPattern>io.informant.shaded.objectweb.asm</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>org.h2</pattern>
-              <shadedPattern>io.informant.shaded.h2</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- shade thread names as well to make it easy to identify informant threads -->
-              <rawString>true</rawString>
-              <pattern>H2 File Lock Watchdog</pattern>
-              <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- shade thread names as well to make it easy to identify informant threads -->
-              <rawString>true</rawString>
-              <pattern>H2 Log Writer</pattern>
-              <shadedPattern>Informant-H2 Log Writer</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.ning.compress</pattern>
-              <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.ning.http</pattern>
-              <shadedPattern>io.informant.shaded.ning.http</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.google.common</pattern>
-              <shadedPattern>io.informant.shaded.google.common</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>javax.annotation</pattern>
-              <shadedPattern>io.informant.shaded.javax.annotation</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>checkers</pattern>
-              <shadedPattern>io.informant.shaded.checkers</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.google.gson</pattern>
-              <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>org.jboss.netty</pattern>
-              <shadedPattern>io.informant.shaded.jboss.netty</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.google.inject</pattern>
-              <shadedPattern>io.informant.shaded.google.inject</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>javax.inject</pattern>
-              <shadedPattern>io.informant.shaded.javax.inject</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>org.aopalliance</pattern>
-              <shadedPattern>io.informant.shaded.aopalliance</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>org.fest</pattern>
-              <shadedPattern>io.informant.shaded.fest</shadedPattern>
-            </relocation>
-          </relocations>
-          <transformers>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-              <mainClass>io.informant.core.Viewer</mainClass>
-              <manifestEntries>
-                <Premain-Class>io.informant.core.MainEntryPoint</Premain-Class>
-                <Can-Redefine-Classes>true</Can-Redefine-Classes>
-              </manifestEntries>
-            </transformer>
-          </transformers>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.github.wvengen</groupId>
-        <artifactId>proguard-maven-plugin</artifactId>
-        <version>2.0.6</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>proguard</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <includeDependency>false</includeDependency>
-          <obfuscate>false</obfuscate>
-          <libs>
-            <!-- this path is overridden on osx, see the mac profile below -->
-            <lib>${java.home}/lib/rt.jar</lib>
-          </libs>
-          <options>
-            <option>-dontoptimize</option>
-            <option>-dontnote **</option>
-            <option>-dontwarn **</option>
-            <option>-keep class io.informant.core.MainEntryPoint { *; }</option>
-            <option>-keep class io.informant.core.InformantModule { *; }</option>
-            <option>
-              -keepclassmembers class * { @io.informant.shaded.google.inject.Inject *;
-              }
-            </option>
-            <option>-keep class io.informant.local.**JsonService { *; }</option>
-            <option>-keep class io.informant.api.** { *; }</option>
-            <option>-keep class io.informant.core.** { *; }</option>
-            <!-- test classes use DaemonExecutors -->
-            <option>-keep class io.informant.core.util.DaemonExecutors { *; }</option>
-            <option>-keep class io.informant.core.util.Files { *; }</option>
-            <option>-keep class io.informant.core.util.Threads { *; }</option>
-            <option>-keep class io.informant.core.weaving.IsolatedWeavingClassLoader { *; }</option>
-            <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
-            <option>-keep class io.informant.shaded.google.common.** { *; }</option>
-            <!-- keep all logback appenders -->
-            <option>
-              -keep class * extends io.informant.shaded.qos.logback.core.Appender { *;
-              }
-            </option>
-            <option>
-              -keep class
-              io.informant.shaded.ning.http.client.providers.netty.NettyAsyncHttpProvider
-              {
-              *; }
-            </option>
-            <!-- keep special enumeration methods (see "Processing enumeration classes" section at
-              http://proguard.sourceforge.net/manual/examples.html) -->
-            <option>
-              -keepclassmembers enum * { public static **[] values(); public static **
-              valueOf(java.lang.String); }
-            </option>
-          </options>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>net.sf.proguard</groupId>
-            <artifactId>proguard-base</artifactId>
-            <version>4.8</version>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>
 
   <profiles>
+    <profile>
+      <!-- this profile is active by default, and disabled only when running jacoco code coverage
+        reports, see jacoco profile comment in parent pom.xml for more detail -->
+      <id>shade-and-proguard</id>
+      <activation>
+        <property>
+          <name>!jacoco</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <shadeSourcesContent>true</shadeSourcesContent>
+              <relocations>
+                <relocation>
+                  <pattern>org.objectweb.asm</pattern>
+                  <shadedPattern>io.informant.shaded.objectweb.asm</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.h2</pattern>
+                  <shadedPattern>io.informant.shaded.h2</shadedPattern>
+                </relocation>
+                <relocation>
+                  <!-- shade thread names as well to make it easy to identify informant threads -->
+                  <rawString>true</rawString>
+                  <pattern>H2 File Lock Watchdog</pattern>
+                  <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
+                </relocation>
+                <relocation>
+                  <!-- shade thread names as well to make it easy to identify informant threads -->
+                  <rawString>true</rawString>
+                  <pattern>H2 Log Writer</pattern>
+                  <shadedPattern>Informant-H2 Log Writer</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.ning.compress</pattern>
+                  <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.ning.http</pattern>
+                  <shadedPattern>io.informant.shaded.ning.http</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.common</pattern>
+                  <shadedPattern>io.informant.shaded.google.common</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>javax.annotation</pattern>
+                  <shadedPattern>io.informant.shaded.javax.annotation</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>checkers</pattern>
+                  <shadedPattern>io.informant.shaded.checkers</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.gson</pattern>
+                  <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.jboss.netty</pattern>
+                  <shadedPattern>io.informant.shaded.jboss.netty</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.inject</pattern>
+                  <shadedPattern>io.informant.shaded.google.inject</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>javax.inject</pattern>
+                  <shadedPattern>io.informant.shaded.javax.inject</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.aopalliance</pattern>
+                  <shadedPattern>io.informant.shaded.aopalliance</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.fest</pattern>
+                  <shadedPattern>io.informant.shaded.fest</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>com.github.wvengen</groupId>
+            <artifactId>proguard-maven-plugin</artifactId>
+            <version>2.0.6</version>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>proguard</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <includeDependency>false</includeDependency>
+              <obfuscate>false</obfuscate>
+              <libs>
+                <!-- this path is overridden on osx, see the mac profile below -->
+                <lib>${java.home}/lib/rt.jar</lib>
+              </libs>
+              <options>
+                <option>-dontoptimize</option>
+                <option>-dontnote **</option>
+                <option>-dontwarn **</option>
+                <option>-keep class io.informant.core.MainEntryPoint { *; }</option>
+                <option>-keep class io.informant.core.InformantModule { *; }</option>
+                <option>
+                  -keepclassmembers class * { @io.informant.shaded.google.inject.Inject *; }
+                </option>
+                <option>-keep class io.informant.local.**JsonService { *; }</option>
+                <option>-keep class io.informant.api.** { *; }</option>
+                <option>-keep class io.informant.core.** { *; }</option>
+                <!-- test classes use DaemonExecutors -->
+                <option>-keep class io.informant.core.util.DaemonExecutors { *; }</option>
+                <option>-keep class io.informant.core.util.Files { *; }</option>
+                <option>-keep class io.informant.core.util.Threads { *; }</option>
+                <option>
+                  -keep class io.informant.core.weaving.IsolatedWeavingClassLoader { *; }
+                </option>
+                <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
+                <option>-keep class io.informant.shaded.google.common.** { *; }</option>
+                <!-- keep all logback appenders -->
+                <option>
+                  -keep class * extends io.informant.shaded.qos.logback.core.Appender { *; }
+                </option>
+                <option>
+                  -keep class
+                  io.informant.shaded.ning.http.client.providers.netty.NettyAsyncHttpProvider { *; }
+                </option>
+                <!-- keep special enumeration methods (see "Processing enumeration classes" section
+                  at http://proguard.sourceforge.net/manual/examples.html) -->
+                <option>
+                  -keepclassmembers enum *
+                  { public static **[] values(); public static ** valueOf(java.lang.String); }
+                </option>
+              </options>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>net.sf.proguard</groupId>
+                <artifactId>proguard-base</artifactId>
+                <version>4.8</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>release</id>
       <build>

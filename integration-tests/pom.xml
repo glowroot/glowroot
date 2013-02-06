@@ -63,9 +63,6 @@
           the integration-test phase at which time the Informant jar has been built and is on the
           surefire test class path -->
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>-XX:MaxPermSize=128m</argLine>
-        </configuration>
         <executions>
           <execution>
             <!-- override default test phase goal -->
@@ -107,4 +104,30 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>active-this-profile-using-the-jacoco-property</id>
+      <activation>
+        <property>
+          <name>jacoco</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <!-- running jacoco requires disabling class shading, and this test will fail when
+                  class shading is disabled, see jacoco profile comment in parent pom.xml for more
+                  detail -->
+                <exclude>**/JarFileShadingTest.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

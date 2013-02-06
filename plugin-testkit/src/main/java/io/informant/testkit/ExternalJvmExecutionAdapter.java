@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +61,14 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         String classpath = System.getProperty("java.class.path");
         command.add("-cp");
         command.add(classpath);
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        List<String> arguments = runtimeMXBean.getInputArguments();
+        for (String argument : arguments) {
+            if (argument.startsWith("-javaagent:")) {
+                // pass on the jacoco agent in particular
+                command.add(argument);
+            }
+        }
         File javaagentJarFile = ClassPath.getInformantCoreJarFile();
         if (javaagentJarFile == null) {
             javaagentJarFile = ClassPath.getDelegatingJavaagentJarFile();
