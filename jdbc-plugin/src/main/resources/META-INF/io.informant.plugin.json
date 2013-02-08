@@ -1,0 +1,40 @@
+{
+  "name": "Jdbc Plugin",
+  "groupId": "io.informant.plugins",
+  "artifactId": "jdbc-plugin",
+  "version": "0.5-SNAPSHOT",
+  "properties": [
+    {
+      "prompt": "Capture timing metrics for ResultSet.next()",
+      "name": "captureResultSetNext",
+      "type": "boolean",
+      "default": true,
+      "description": [
+        "Capture timing metrics for executions of ResultSet.next() to read the next record in a",
+        " result set. This defaults to true since the timing for this metric is a good indication",
+        " of jdbc fetch size issues and database latency, but it can be disabled if it is common",
+        " to return millions of records and the overhead of System.nanoTime() becomes relevant."
+      ]
+    },
+    {
+      "prompt": "Capture timing metrics for ResultSet.get*()",
+      "name": "captureResultSetGet",
+      "type": "boolean",
+      "default": false,
+      "description": [
+        "Capture timing metrics for executions of ResultSet.get*() to read the individual column",
+        " values out of a result set record. This defaults to false since the number of calls can",
+        " be excessive and generally ResultSet.next() captures more interesting info with less",
+        " overhead."
+      ]
+    },
+    {
+      "prompt": "Capture spans for executions of DatabaseMetaData.*()",
+      "name": "spanForDatabaseMetaData",
+      "type": "boolean"
+    }
+  ],
+  "aspects": [
+    "io.informant.plugin.jdbc.JdbcAspect"
+  ]
+}

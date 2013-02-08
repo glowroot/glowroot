@@ -1,0 +1,32 @@
+{
+  "name": "Integration Tests Plugin",
+  "groupId": "io.informant",
+  "artifactId": "informant-integration-tests",
+  "version": "0.5-SNAPSHOT",
+  "properties": [
+    {
+      "prompt": "Starred headline",
+      "name": "starredHeadline",
+      "type": "boolean"
+    },
+    {
+      "prompt": "Alternate headline",
+      "name": "alternateHeadline",
+      "type": "string"
+    },
+    {
+      "prompt": "Has default val",
+      "name": "hasDefaultVal",
+      "type": "string",
+      "default": "one"
+    }
+  ],
+  "aspects": [
+    "io.informant.test.plugin.LevelOneAspect",
+    "io.informant.test.plugin.LevelTwoAspect",
+    "io.informant.test.plugin.LevelThreeAspect",
+    "io.informant.test.plugin.LogErrorAspect",
+    "io.informant.test.plugin.LogCauseAspect",
+    "io.informant.test.plugin.PauseAspect"
+  ]
+}

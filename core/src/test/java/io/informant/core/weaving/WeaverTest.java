@@ -57,6 +57,8 @@ import io.informant.core.weaving.SomeAspect.VeryBadAdvice;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -785,11 +787,11 @@ public class WeaverTest {
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut != null) {
-            loader.addAdvisors(Advice.from(pointcut, adviceClass));
+            loader.setAdvisors(ImmutableList.of(Advice.from(pointcut, adviceClass)));
         }
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            loader.addMixins(mixin);
+            loader.setMixins(ImmutableList.of(mixin));
         }
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification

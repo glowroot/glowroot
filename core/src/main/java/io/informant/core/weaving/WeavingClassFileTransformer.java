@@ -67,13 +67,12 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     // because of the crazy pre-initialization of javaagent classes (see
     // io.informant.core.weaving.PreInitializeClasses), all inputs into this class should be
-    // concrete, non-subclassed types (e.g. no List or WeavingMetric interfaces) so that the correct
-    // set of used classes can be computed (see calculation in the test class
-    // io.informant.core.weaving.preinit.GlobalCollector, and hard-coded results in
-    // io.informant.core.weaving.PreInitializeClasses)
+    // concrete, non-subclassed types so that the correct set of used classes can be computed (see
+    // calculation in the test class io.informant.core.weaving.preinit.GlobalCollector, and
+    // hard-coded results in io.informant.core.weaving.PreInitializeClasses)
+    // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
     public WeavingClassFileTransformer(Mixin[] mixins, Advice[] advisors,
             ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
-
         this.mixins = ImmutableList.copyOf(mixins);
         this.advisors = ImmutableList.copyOf(advisors);
         this.parsedTypeCache = parsedTypeCache;
@@ -85,7 +84,6 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     public byte[] transform(@Nullable ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
-
         // don't weave informant classes, included shaded classes like h2 jdbc driver
         if (disabled || className.startsWith("io/informant/core/")
                 || className.startsWith("io/informant/local/")

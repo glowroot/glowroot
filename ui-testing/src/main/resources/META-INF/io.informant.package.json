@@ -1,0 +1,34 @@
+{
+  "plugins": [
+    {
+      "name": "Test 1",
+      "groupId": "io.informant.plugins.test1",
+      "artifactId": "test1-plugin",
+      "version": "0.1",
+      "properties": [
+        {
+          "prompt": "Test with default",
+          "name": "testWithDefault",
+          "type": "string",
+          "default": "the lazy fox jumped"
+        },
+        {
+          "prompt": "Test with hidden",
+          "name": "testWithHidden",
+          "type": "string",
+          "default": "a hidden default",
+          "hidden": true
+        }
+      ],
+      "aspects": []
+    },
+    {
+      "name": "Test 2",
+      "groupId": "io.informant.plugins.test2",
+      "artifactId": "test2-plugin",
+      "version": "0.2",
+      "properties": [],
+      "aspects": []
+    }
+  ]
+}

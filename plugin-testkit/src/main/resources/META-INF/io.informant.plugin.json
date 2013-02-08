@@ -1,0 +1,10 @@
+{
+  "name": "Plugin Testkit Plugin",
+  "groupId": "io.informant",
+  "artifactId": "informant-plugin-testkit",
+  "version": "0.5-SNAPSHOT",
+  "properties": [],
+  "aspects": [
+    "io.informant.testkit.TraceMarkerAspect"
+  ]
+}

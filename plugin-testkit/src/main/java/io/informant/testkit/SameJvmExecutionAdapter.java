@@ -15,13 +15,10 @@
  */
 package io.informant.testkit;
 
-import io.informant.api.weaving.Mixin;
 import io.informant.core.MainEntryPoint;
-import io.informant.core.config.PluginDescriptor;
-import io.informant.core.config.Plugins;
+import io.informant.core.config.PluginInfoCache;
 import io.informant.core.util.ThreadSafe;
 import io.informant.core.util.Threads;
-import io.informant.core.weaving.Advice;
 import io.informant.core.weaving.IsolatedWeavingClassLoader;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 
@@ -42,10 +39,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         preExistingThreads = Threads.currentThreads();
         MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        for (PluginDescriptor plugin : Plugins.getPluginDescriptors()) {
-            loader.addMixins(plugin.getMixins().toArray(new Mixin[0]));
-            loader.addAdvisors(plugin.getAdvisors().toArray(new Advice[0]));
-        }
+        PluginInfoCache pluginInfoCache = new PluginInfoCache();
+        loader.setMixins(pluginInfoCache.getMixins());
+        loader.setAdvisors(pluginInfoCache.getAdvisors());
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local");
         loader.weavingMetric(MainEntryPoint.getWeavingMetric());

@@ -17,7 +17,6 @@ package io.informant.core.config;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-import io.informant.core.config.PluginDescriptor.PropertyDescriptor;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,30 +46,29 @@ public class PluginConfig {
 
     private final boolean enabled;
 
-    // all defined properties (as defined in each plugin's io.informant.plugin.xml file) are
+    // all defined properties (as defined in each plugin's io.informant.plugin.json file) are
     // included in the property map, even those properties with null value, so that an appropriate
     // error can be logged if a plugin tries to access a property value that it hasn't defined in
-    // its plugin.xml file
+    // its plugin.json file
     private final ImmutableMap<String, Optional<?>> properties;
 
-    private final PluginDescriptor pluginDescriptor;
+    private final PluginInfo pluginInfo;
 
     public static Builder builder(PluginConfig base) {
         return new Builder(base);
     }
 
-    static PluginConfig fromJson(@ReadOnly JsonObject configObject,
-            PluginDescriptor pluginDescriptor) {
-        PluginConfig.Builder builder = new Builder(pluginDescriptor);
+    static PluginConfig fromJson(@ReadOnly JsonObject configObject, PluginInfo pluginInfo) {
+        PluginConfig.Builder builder = new Builder(pluginInfo);
         builder.overlay(configObject, true);
         return builder.build();
     }
 
     private PluginConfig(boolean enabled, ImmutableMap<String, Optional<?>> properties,
-            PluginDescriptor pluginDescriptor) {
+            PluginInfo pluginInfo) {
         this.enabled = enabled;
         this.properties = properties;
-        this.pluginDescriptor = pluginDescriptor;
+        this.pluginInfo = pluginInfo;
     }
 
     public boolean isEnabled() {
@@ -134,26 +132,27 @@ public class PluginConfig {
 
     public JsonObject toJson() {
         JsonObject configObject = new JsonObject();
-        configObject.addProperty("groupId", pluginDescriptor.getGroupId());
-        configObject.addProperty("artifactId", pluginDescriptor.getArtifactId());
+        configObject.addProperty("groupId", pluginInfo.getGroupId());
+        configObject.addProperty("artifactId", pluginInfo.getArtifactId());
         configObject.addProperty("enabled", enabled);
         JsonObject propertyMapObject = new JsonObject();
-        for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
+        for (PropertyDescriptor property : pluginInfo.getPropertyDescriptors()) {
             if (property.isHidden()) {
                 continue;
             }
-            if (property.getType().equals("string")) {
-                String value = getStringProperty(property.getName());
-                propertyMapObject.addProperty(property.getName(), value);
-            } else if (property.getType().equals("boolean")) {
-                boolean value = getBooleanProperty(property.getName());
-                propertyMapObject.addProperty(property.getName(), value);
-            } else if (property.getType().equals("double")) {
-                Double value = getDoubleProperty(property.getName());
-                propertyMapObject.addProperty(property.getName(), value);
-            } else {
-                logger.error("unexpected type '" + property.getType() + "', this should have"
-                        + " been caught by schema validation");
+            switch (property.getType()) {
+            case STRING:
+                propertyMapObject.addProperty(property.getName(),
+                        getStringProperty(property.getName()));
+                break;
+            case BOOLEAN:
+                propertyMapObject.addProperty(property.getName(),
+                        getBooleanProperty(property.getName()));
+                break;
+            case DOUBLE:
+                propertyMapObject.addProperty(property.getName(),
+                        getDoubleProperty(property.getName()));
+                break;
             }
         }
         configObject.add("properties", propertyMapObject);
@@ -161,7 +160,7 @@ public class PluginConfig {
     }
 
     String getId() {
-        return pluginDescriptor.getGroupId() + ":" + pluginDescriptor.getArtifactId();
+        return pluginInfo.getGroupId() + ":" + pluginInfo.getArtifactId();
     }
 
     @Override
@@ -176,18 +175,18 @@ public class PluginConfig {
     public static class Builder {
 
         private boolean enabled = true;
-        private final PluginDescriptor pluginDescriptor;
+        private final PluginInfo pluginInfo;
         private final Map<String, Optional<?>> properties;
 
-        private Builder(PluginDescriptor pluginDescriptor) {
-            this.pluginDescriptor = pluginDescriptor;
+        private Builder(PluginInfo pluginInfo) {
+            this.pluginInfo = pluginInfo;
             properties = Maps.newHashMap();
-            for (PropertyDescriptor property : pluginDescriptor.getPropertyDescriptors()) {
+            for (PropertyDescriptor property : pluginInfo.getPropertyDescriptors()) {
                 properties.put(property.getName(), Optional.fromNullable(property.getDefault()));
             }
         }
         private Builder(PluginConfig base) {
-            this(base.pluginDescriptor);
+            this(base.pluginInfo);
             this.enabled = base.enabled;
             properties.putAll(base.properties);
         }
@@ -199,7 +198,7 @@ public class PluginConfig {
             overlay(configObject, false);
         }
         public PluginConfig build() {
-            return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginDescriptor);
+            return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginInfo);
         }
         private void overlay(@ReadOnly JsonObject configObject, boolean ignoreWarnings) {
             JsonElement enabledElement = configObject.get("enabled");
@@ -238,43 +237,82 @@ public class PluginConfig {
         // should be suppressed
         private Builder setProperty(String name, @Immutable @Nullable Object value,
                 boolean ignoreWarnings) {
-            PropertyDescriptor property = pluginDescriptor.getPropertyDescriptor(name);
-            if (property == null) {
+            PropertyDescriptor propertyDescriptor = getPropertyDescriptor(name);
+            if (propertyDescriptor == null) {
                 if (!ignoreWarnings) {
                     logger.warn("unexpected property name '{}'", name);
                 }
                 return this;
             }
-            if (property.isHidden()) {
+            if (propertyDescriptor.isHidden()) {
                 if (!ignoreWarnings) {
                     logger.warn("cannot set hidden property '{}' with value '{}', hidden"
-                            + " properties can only be set by via io.informant.plugin.xml or"
-                            + " io.informant.package.xml", name, value);
+                            + " properties can only be set by via io.informant.plugin.json or"
+                            + " io.informant.package.json", name, value);
                 }
                 return this;
             }
-            if (value != null && !property.getJavaClass().isAssignableFrom(value.getClass())) {
-                if (!ignoreWarnings) {
-                    logger.warn("unexpected property type '{}' for property name '{}'", value
-                            .getClass().getName(), name);
-                }
+            switch (propertyDescriptor.getType()) {
+            case STRING:
+                setStringProperty(name, value, ignoreWarnings);
+                return this;
+            case BOOLEAN:
+                setBooleanProperty(name, value, ignoreWarnings);
+                return this;
+            case DOUBLE:
+                setDoubleProperty(name, value, ignoreWarnings);
                 return this;
             }
-            if (value == null && property.getJavaClass() == Boolean.class) {
-                if (!ignoreWarnings) {
-                    logger.warn("boolean property types do not accept null values");
+            return this;
+        }
+        @Nullable
+        private PropertyDescriptor getPropertyDescriptor(String name) {
+            for (PropertyDescriptor propertyDescriptor : pluginInfo.getPropertyDescriptors()) {
+                if (propertyDescriptor.getName().equals(name)) {
+                    return propertyDescriptor;
                 }
-                properties.put(name, Optional.of(false));
-            } else if (value == null && property.getJavaClass() == String.class) {
+            }
+            return null;
+        }
+        private void setStringProperty(String name, @Nullable Object value,
+                boolean ignoreWarnings) {
+            if (value == null) {
                 if (!ignoreWarnings) {
                     logger.warn("string property types do not accept null values"
                             + " (use empty string instead)");
                 }
                 properties.put(name, Optional.of(""));
-            } else {
-                properties.put(name, Optional.fromNullable(value));
+            } else if (value instanceof String) {
+                properties.put(name, Optional.of(value));
+            } else if (!ignoreWarnings) {
+                logger.warn("unexpected property type '{}' for property name '{}'", value
+                        .getClass().getName(), name);
             }
-            return this;
+        }
+        private void setBooleanProperty(String name, @Nullable Object value,
+                boolean ignoreWarnings) {
+            if (value == null) {
+                if (!ignoreWarnings) {
+                    logger.warn("boolean property types do not accept null values");
+                }
+                properties.put(name, Optional.of(false));
+            } else if (value instanceof Boolean) {
+                properties.put(name, Optional.of(value));
+            } else if (!ignoreWarnings) {
+                logger.warn("unexpected property type '{}' for property name '{}'", value
+                        .getClass().getName(), name);
+            }
+        }
+        private void setDoubleProperty(String name, @Nullable Object value,
+                boolean ignoreWarnings) {
+            if (value == null) {
+                properties.put(name, Optional.absent());
+            } else if (value instanceof Double) {
+                properties.put(name, Optional.of(value));
+            } else if (!ignoreWarnings) {
+                logger.warn("unexpected property type '{}' for property name '{}'", value
+                        .getClass().getName(), name);
+            }
         }
     }
 }

@@ -28,8 +28,8 @@ import io.informant.core.config.ConfigService;
 import io.informant.core.config.FineProfilingConfig;
 import io.informant.core.config.GeneralConfig;
 import io.informant.core.config.PluginConfig;
-import io.informant.core.config.PluginDescriptor;
-import io.informant.core.config.Plugins;
+import io.informant.core.config.PluginInfo;
+import io.informant.core.config.PluginInfoCache;
 import io.informant.core.config.UserConfig;
 import io.informant.core.trace.FineGrainedProfiler;
 import io.informant.core.trace.MetricImpl;
@@ -62,7 +62,7 @@ import com.google.inject.assistedinject.Assisted;
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
  * isEnabled(), getStringProperty(), etc can be scoped to the given plugin. The pluginId should be
  * "groupId:artifactId", constructed from the plugin's maven coordinates (or at least matching the
- * groupId and artifactId specified in the plugin's io.informant.plugin.xml).
+ * groupId and artifactId specified in the plugin's io.informant.plugin.json).
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -83,7 +83,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final WeavingMetricImpl weavingMetric;
 
     // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
-    // plugin's io.informant.plugin.xml
+    // plugin's io.informant.plugin.json
     private final String pluginId;
 
     // cache for fast read access
@@ -95,8 +95,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache,
             FineGrainedProfiler fineGrainedProfiler, Clock clock, Ticker ticker,
-            Random random, WeavingMetricImpl weavingMetric, @Assisted String pluginId) {
-
+            Random random, WeavingMetricImpl weavingMetric, PluginInfoCache pluginInfoCache,
+            @Assisted String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configService = configService;
@@ -114,8 +114,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             List<String> ids = Lists.newArrayList();
-            for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
-                ids.add(pluginDescriptor.getId());
+            for (PluginInfo pluginInfo : pluginInfoCache.getPluginInfos()) {
+                ids.add(pluginInfo.getId());
             }
             logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId,
                     Joiner.on(", ").join(ids));

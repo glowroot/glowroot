@@ -19,6 +19,7 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.PluginServicesImpl.PluginServicesImplFactory;
 import io.informant.core.config.ConfigService;
+import io.informant.core.config.PluginInfoCache;
 import io.informant.core.trace.CoarseGrainedProfiler;
 import io.informant.core.trace.FineGrainedProfiler;
 import io.informant.core.trace.StuckTraceCollector;
@@ -73,14 +74,16 @@ class InformantModule extends AbstractModule {
     private static final boolean USE_NETTY_BLOCKING_IO = false;
 
     private final ImmutableMap<String, String> properties;
-    private final WeavingMetricImpl weavingMetric;
+    private final PluginInfoCache pluginInfoCache;
     private final ParsedTypeCache parsedTypeCache;
+    private final WeavingMetricImpl weavingMetric;
 
-    InformantModule(@ReadOnly Map<String, String> properties, ParsedTypeCache parsedTypeCache,
-            WeavingMetricImpl weavingMetric) {
+    InformantModule(@ReadOnly Map<String, String> properties, PluginInfoCache pluginInfoCache,
+            ParsedTypeCache parsedTypeCache, WeavingMetricImpl weavingMetric) {
         this.properties = ImmutableMap.copyOf(properties);
-        this.weavingMetric = weavingMetric;
+        this.pluginInfoCache = pluginInfoCache;
         this.parsedTypeCache = parsedTypeCache;
+        this.weavingMetric = weavingMetric;
     }
 
     @Override
@@ -98,14 +101,20 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    WeavingMetricImpl providesWeavingMetricImpl() {
-        return weavingMetric;
+    PluginInfoCache providesPluginInfoCache() {
+        return pluginInfoCache;
     }
 
     @Provides
     @Singleton
     ParsedTypeCache providesParsedTypeCache() {
         return parsedTypeCache;
+    }
+
+    @Provides
+    @Singleton
+    WeavingMetricImpl providesWeavingMetricImpl() {
+        return weavingMetric;
     }
 
     @Provides

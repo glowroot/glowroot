@@ -22,8 +22,8 @@ import io.informant.core.config.ConfigService;
 import io.informant.core.config.FineProfilingConfig;
 import io.informant.core.config.GeneralConfig;
 import io.informant.core.config.PluginConfig;
-import io.informant.core.config.PluginDescriptor;
-import io.informant.core.config.Plugins;
+import io.informant.core.config.PluginInfo;
+import io.informant.core.config.PluginInfoCache;
 import io.informant.core.config.PointcutConfig;
 import io.informant.core.config.UserConfig;
 import io.informant.core.util.GsonFactory;
@@ -56,14 +56,17 @@ class ConfigJsonService implements JsonService {
 
     private final ConfigService configService;
     private final RollingFile rollingFile;
+    private final PluginInfoCache pluginInfoCache;
     private final File dataDir;
     private final int uiPort;
 
     @Inject
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
-            @Named("data.dir") File dataDir, @Named("ui.port") int uiPort) {
+            PluginInfoCache pluginInfoCache, @Named("data.dir") File dataDir,
+            @Named("ui.port") int uiPort) {
         this.configService = configService;
         this.rollingFile = rollingFile;
+        this.pluginInfoCache = pluginInfoCache;
         this.dataDir = dataDir;
         this.uiPort = uiPort;
     }
@@ -76,7 +79,7 @@ class ConfigJsonService implements JsonService {
         configJson.add("coarseProfilingConfig", configService.getCoarseProfilingConfig().toJson());
         configJson.add("fineProfilingConfig", configService.getFineProfilingConfig().toJson());
         configJson.add("userConfig", configService.getUserConfig().toJson());
-        configJson.add("pluginDescriptors", gson.toJsonTree(Plugins.getPluginDescriptors()));
+        configJson.add("pluginInfos", gson.toJsonTree(pluginInfoCache.getPluginInfos()));
         configJson.add("pluginConfigs", getPluginConfigMapObject());
         configJson.add("pointcutConfigs", getPoincutConfigArray());
         configJson.addProperty("dataDir", dataDir.getCanonicalPath());
@@ -174,13 +177,13 @@ class ConfigJsonService implements JsonService {
 
     private JsonObject getPluginConfigMapObject() {
         JsonObject mapObject = new JsonObject();
-        for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
-            PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.getId());
+        for (PluginInfo pluginInfo : pluginInfoCache.getPluginInfos()) {
+            PluginConfig pluginConfig = configService.getPluginConfig(pluginInfo.getId());
             if (pluginConfig == null) {
                 throw new IllegalStateException("Plugin config not found for plugin id '"
-                        + pluginDescriptor.getId() + "'");
+                        + pluginInfo.getId() + "'");
             }
-            mapObject.add(pluginDescriptor.getId(), pluginConfig.toJson());
+            mapObject.add(pluginInfo.getId(), pluginConfig.toJson());
         }
         return mapObject;
     }

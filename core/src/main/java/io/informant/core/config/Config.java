@@ -23,9 +23,11 @@ import io.informant.core.util.JsonElements;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
@@ -66,7 +68,8 @@ class Config {
     private final ImmutableList<PluginConfig> pluginConfigs;
     private final ImmutableList<PointcutConfig> pointcutConfigs;
 
-    static Config fromFile(File configFile) throws IOException, JsonSyntaxException {
+    static Config fromFile(File configFile, @ReadOnly List<PluginInfo> pluginInfos)
+            throws IOException, JsonSyntaxException {
         JsonObject rootConfigObject = createRootConfigObject(configFile);
         GeneralConfig generalConfig = GeneralConfig
                 .fromJson(JsonElements.getOptionalObject(rootConfigObject, GENERAL));
@@ -79,7 +82,7 @@ class Config {
 
         Map<String, JsonObject> pluginConfigObjects = createPluginConfigObjects(rootConfigObject);
         ImmutableList.Builder<PluginConfig> pluginConfigs =
-                createPluginConfigs(pluginConfigObjects);
+                createPluginConfigs(pluginConfigObjects, pluginInfos);
         ImmutableList.Builder<PointcutConfig> pointcutConfigs =
                 createPointcutConfigs(rootConfigObject);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig, userConfig,
@@ -223,13 +226,13 @@ class Config {
     }
 
     private static ImmutableList.Builder<PluginConfig> createPluginConfigs(
-            Map<String, JsonObject> pluginConfigObjects) {
+            Map<String, JsonObject> pluginConfigJsonObjects,
+            @ReadOnly List<PluginInfo> pluginInfos) {
         ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
-        for (PluginDescriptor pluginDescriptor : Plugins.getPluginDescriptors()) {
+        for (PluginInfo pluginInfo : pluginInfos) {
             JsonObject pluginConfigObject = Objects.firstNonNull(
-                    pluginConfigObjects.get(pluginDescriptor.getId()), new JsonObject());
-            PluginConfig pluginConfig = PluginConfig.fromJson(pluginConfigObject,
-                    pluginDescriptor);
+                    pluginConfigJsonObjects.get(pluginInfo.getId()), new JsonObject());
+            PluginConfig pluginConfig = PluginConfig.fromJson(pluginConfigObject, pluginInfo);
             pluginConfigs.add(pluginConfig);
         }
         return pluginConfigs;

@@ -261,7 +261,7 @@
       $('#userStoreThresholdMillis').val(userConfig.storeThresholdMillis)
       addIntegerValidator('#userStoreThresholdMillis')
       $('#userFineProfiling').attr('checked', userConfig.fineProfiling)
-      plugins = config.pluginDescriptors
+      plugins = config.pluginInfos
       for (var i = 0; i < plugins.length; i++) {
         var plugin = plugins[i]
         plugin.id = plugin.groupId + ':' + plugin.artifactId

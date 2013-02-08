@@ -17,7 +17,6 @@ package io.informant.core.weaving;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-import io.informant.core.util.ThreadSafe;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -51,12 +50,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import com.google.inject.Singleton;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@ThreadSafe
+@Singleton
 public class ParsedTypeCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ParsedTypeCache.class);

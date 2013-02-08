@@ -25,12 +25,15 @@ import java.io.IOException;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
+
+import checkers.igj.quals.ReadOnly;
 
 /**
  * @author Trask Stalnaker
@@ -172,17 +175,17 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     public static class Builder {
-        private final ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
-        private final ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        private ImmutableList<Mixin> mixins = ImmutableList.of();
+        private ImmutableList<Advice> advisors = ImmutableList.of();
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
         private WeavingMetric weavingMetric = NopWeavingMetric.INSTANCE;
         private Builder() {}
-        public void addMixins(Mixin... mixins) {
-            this.mixins.add(mixins);
+        public void setMixins(@ReadOnly List<Mixin> mixins) {
+            this.mixins = ImmutableList.copyOf(mixins);
         }
-        public void addAdvisors(Advice... advisors) {
-            this.advisors.add(advisors);
+        public void setAdvisors(@ReadOnly List<Advice> advisors) {
+            this.advisors = ImmutableList.copyOf(advisors);
         }
         public void addBridgeClasses(Class<?>... bridgeClasses) {
             this.bridgeClasses.add(bridgeClasses);
@@ -197,7 +200,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
                         public IsolatedWeavingClassLoader run() {
-                            return new IsolatedWeavingClassLoader(mixins.build(), advisors.build(),
+                            return new IsolatedWeavingClassLoader(mixins, advisors,
                                     bridgeClasses.build(), excludePackages.build(), weavingMetric);
                         }
                     });

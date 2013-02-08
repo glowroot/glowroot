@@ -21,8 +21,7 @@ import io.informant.api.PluginServices;
 import io.informant.api.weaving.Mixin;
 import io.informant.core.PluginServicesImpl.PluginServicesImplFactory;
 import io.informant.core.config.ConfigService;
-import io.informant.core.config.PluginDescriptor;
-import io.informant.core.config.Plugins;
+import io.informant.core.config.PluginInfoCache;
 import io.informant.core.log.LogMessageSink;
 import io.informant.core.log.LoggerFactoryImpl;
 import io.informant.core.trace.WeavingMetricImpl;
@@ -76,8 +75,9 @@ public class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
-    private static volatile ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
-    private static volatile WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
+    private static final PluginInfoCache pluginInfoCache = new PluginInfoCache();
+    private static final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
+    private static final WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
             Ticker.systemTicker());
 
     @Nullable
@@ -174,8 +174,8 @@ public class MainEntryPoint {
             if (injector != null) {
                 throw new IllegalStateException("Informant is already started");
             }
-            injector = Guice.createInjector(new InformantModule(properties, parsedTypeCache,
-                    weavingMetric));
+            injector = Guice.createInjector(new InformantModule(properties, pluginInfoCache,
+                    parsedTypeCache, weavingMetric));
             InformantModule.start(injector);
         }
         LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
@@ -195,14 +195,9 @@ public class MainEntryPoint {
     }
 
     private static WeavingClassFileTransformer newWeavingClassFileTransformer() {
-        List<Mixin> mixins = Lists.newArrayList();
-        List<Advice> advisors = Lists.newArrayList();
-        for (PluginDescriptor plugin : Plugins.getPluginDescriptors()) {
-            mixins.addAll(plugin.getMixins());
-            advisors.addAll(plugin.getAdvisors());
-        }
-        return new WeavingClassFileTransformer(Iterables.toArray(mixins, Mixin.class),
-                Iterables.toArray(advisors, Advice.class), parsedTypeCache, weavingMetric);
+        Mixin[] mixins = Iterables.toArray(pluginInfoCache.getMixins(), Mixin.class);
+        Advice[] advisors = Iterables.toArray(pluginInfoCache.getAdvisors(), Advice.class);
+        return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache, weavingMetric);
     }
 
     private static ImmutableMap<String, String> getInformantProperties() {

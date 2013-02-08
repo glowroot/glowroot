@@ -50,6 +50,7 @@ public class ConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
 
+    private final PluginInfoCache pluginInfoCache;
     private final File configFile;
     private final Object writeLock = new Object();
 
@@ -58,11 +59,12 @@ public class ConfigService {
     private volatile Config config;
 
     @Inject
-    ConfigService(@Named("data.dir") File dataDir) {
+    ConfigService(@Named("data.dir") File dataDir, PluginInfoCache pluginInfoCache) {
         logger.debug("<init>()");
+        this.pluginInfoCache = pluginInfoCache;
         configFile = new File(dataDir, "config.json");
         try {
-            config = Config.fromFile(configFile);
+            config = Config.fromFile(configFile, pluginInfoCache.getPluginInfos());
         } catch (IOException e) {
             logger.warn("error reading config.json file: " + e.getMessage());
             config = Config.getDefault();
@@ -250,7 +252,7 @@ public class ConfigService {
     @OnlyUsedByTests
     public void deleteConfig() throws IOException, JsonSyntaxException {
         configFile.delete();
-        config = Config.fromFile(configFile);
+        config = Config.fromFile(configFile, pluginInfoCache.getPluginInfos());
     }
 
     // make a copy of the invalid config file since it will be overwritten with default config
