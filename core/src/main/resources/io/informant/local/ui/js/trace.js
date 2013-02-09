@@ -231,14 +231,14 @@ Handlebars.registerHelper('ifLongMessage', function(message, options) {
     return options.inverse(this)
   }
 })
-Handlebars.registerHelper('errorIndent', function(message, options) {
+Handlebars.registerHelper('errorIndent', function(message) {
   if (message) {
     return ' class="indent2"'
   } else {
     return ''
   }
 })
-Handlebars.registerHelper('exceptionIndent', function(message, options) {
+Handlebars.registerHelper('exceptionIndent', function(message) {
   if (message) {
     return ' class="indent1"'
   } else {

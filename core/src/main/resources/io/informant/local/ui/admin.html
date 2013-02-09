@@ -41,7 +41,7 @@
 {{/each}}{{#if framesInCommonWithCaused}}        ... {{framesInCommonWithCaused}} common frames omitted
 {{/if}}{{#if cause}}{{>exceptionCause cause}}{{/if}}</script>
 <script type="text/javascript">
-  Handlebars.registerHelper('formatTimestamp', function(timestamp, options) {
+  Handlebars.registerHelper('formatTimestamp', function(timestamp) {
     return moment(timestamp).format('MM/DD/YYYY HH:mm:ss.SSS')
   })
   Handlebars.registerHelper('uppercase', function(value) {
