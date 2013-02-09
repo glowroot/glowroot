@@ -17,6 +17,7 @@ package io.informant.local.ui;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.GsonFactory;
 import io.informant.core.weaving.ParsedMethod;
 import io.informant.core.weaving.ParsedTypeCache;
 
@@ -47,7 +48,7 @@ import com.google.inject.Singleton;
 class PointcutConfigJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonFactory.create();
 
     private final ParsedTypeCache parsedTypeCache;
 

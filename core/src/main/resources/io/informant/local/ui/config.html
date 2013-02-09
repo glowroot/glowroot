@@ -190,14 +190,14 @@
     }
   })
   Handlebars.registerHelper('ifMetric', function(pointcut, options) {
-    if (pointcut.captureItems.indexOf('METRIC') != -1) {
+    if (pointcut.captureItems.indexOf('metric') != -1) {
       return options.fn(this)
     } else {
       return options.inverse(this)
     }
   })
   Handlebars.registerHelper('ifSpan', function(pointcut, options) {
-    if (pointcut.captureItems.indexOf('SPAN') != -1) {
+    if (pointcut.captureItems.indexOf('span') != -1) {
       return options.fn(this)
     } else {
       return options.inverse(this)
@@ -610,13 +610,13 @@
     function savePointcut() {
       var captureItems = []
       if ($('#pointcutCaptureMetric_' + pointcutNum).is(':checked')) {
-        captureItems.push('METRIC')
+        captureItems.push('metric')
       }
       if ($('#pointcutCaptureSpan_' + pointcutNum).is(':checked')) {
-        captureItems.push('SPAN')
+        captureItems.push('span')
       }
       if ($('#pointcutCaptureTrace_' + pointcutNum).is(':checked')) {
-        captureItems.push('TRACE')
+        captureItems.push('trace')
       }
       var signature = getSignature()
       if (!signature) {
@@ -714,13 +714,13 @@
       $('#pointcutMethodSignatures_' + pointcutNum).data('signatures', [{
         argTypeNames: pointcut.methodArgTypeNames
       }])
-      if (pointcut.captureItems.indexOf('METRIC') != -1) {
+      if (pointcut.captureItems.indexOf('metric') != -1) {
         $('#pointcutCaptureMetric_' + pointcutNum).attr('checked', true)
       }
-      if (pointcut.captureItems.indexOf('SPAN') != -1) {
+      if (pointcut.captureItems.indexOf('span') != -1) {
         $('#pointcutCaptureSpan_' + pointcutNum).attr('checked', true)
       }
-      if (pointcut.captureItems.indexOf('TRACE') != -1) {
+      if (pointcut.captureItems.indexOf('trace') != -1) {
         $('#pointcutCaptureTrace_' + pointcutNum).attr('checked', true)
       }
       // TODO 'methodArgTypeNames': signature.argTypeNames,

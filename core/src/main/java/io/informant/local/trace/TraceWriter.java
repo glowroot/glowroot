@@ -28,6 +28,7 @@ import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.core.util.ByteStream;
+import io.informant.core.util.GsonFactory;
 import io.informant.core.util.Static;
 
 import java.io.ByteArrayOutputStream;
@@ -63,7 +64,7 @@ import checkers.nullness.quals.Nullable;
 public class TraceWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceWriter.class);
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonFactory.create();
 
     private TraceWriter() {}
 

@@ -17,6 +17,7 @@ package io.informant.core.config;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.GsonFactory;
 import io.informant.core.util.JsonElements;
 
 import java.io.File;
@@ -33,7 +34,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -49,8 +49,8 @@ import com.google.gson.JsonSyntaxException;
 class Config {
 
     private static final Logger logger = LoggerFactory.getLogger(Config.class);
-    private static final Gson gson = new GsonBuilder().disableHtmlEscaping().serializeNulls()
-            .setPrettyPrinting().create();
+    private static final Gson gson = GsonFactory.newBuilder().disableHtmlEscaping()
+            .serializeNulls().setPrettyPrinting().create();
 
     private static final String GENERAL = "general";
     private static final String COARSE_PROFILING = "coarse-profiling";

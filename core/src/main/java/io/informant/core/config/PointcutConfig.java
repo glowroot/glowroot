@@ -16,6 +16,7 @@
 package io.informant.core.config;
 
 import io.informant.api.weaving.MethodModifier;
+import io.informant.core.util.GsonFactory;
 
 import java.util.List;
 
@@ -27,7 +28,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
@@ -41,7 +41,7 @@ import com.google.gson.JsonSyntaxException;
 public class PointcutConfig {
 
     // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = new GsonBuilder().serializeNulls().create();
+    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
 
     private final ImmutableList<CaptureItem> captureItems;
     private final String typeName;

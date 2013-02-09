@@ -15,6 +15,8 @@
  */
 package io.informant.local.ui;
 
+import io.informant.core.util.GsonFactory;
+
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -29,12 +31,14 @@ import com.google.gson.JsonObject;
  */
 class TracePointResponse {
 
+    private static final Gson gson = GsonFactory.create();
+
     private final List<TracePointResponse.RawPoint> normalPoints;
     private final List<TracePointResponse.RawPoint> errorPoints;
     private final List<TracePointResponse.RawPoint> activePoints;
 
     static TracePointResponse from(String responseJson) {
-        JsonObject points = new Gson().fromJson(responseJson, JsonElement.class).getAsJsonObject();
+        JsonObject points = gson.fromJson(responseJson, JsonElement.class).getAsJsonObject();
         JsonArray normalPointsJson = points.get("normalPoints").getAsJsonArray();
         List<TracePointResponse.RawPoint> normalPoints = Lists.newArrayList();
         for (int i = 0; i < normalPointsJson.size(); i++) {

@@ -28,6 +28,7 @@ import io.informant.local.trace.TraceSnapshotDao;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 import com.google.common.io.CharStreams;
 import com.google.gson.JsonSyntaxException;
@@ -99,7 +100,7 @@ class AdminJsonService implements JsonService {
                 jw.name("timestamp");
                 jw.value(logMessage.getTimestamp());
                 jw.name("level");
-                jw.value(logMessage.getLevel().name());
+                jw.value(logMessage.getLevel().name().toLowerCase(Locale.ENGLISH));
                 jw.name("loggerName");
                 jw.value(logMessage.getLoggerName());
                 jw.name("text");

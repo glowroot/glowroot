@@ -15,12 +15,12 @@
  */
 package io.informant.core.config;
 
+import io.informant.core.util.GsonFactory;
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -42,7 +42,7 @@ public class GeneralConfig {
     public static final int SNAPSHOT_EXPIRATION_DISABLED = -1;
 
     // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = new GsonBuilder().serializeNulls().create();
+    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
 
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional spans

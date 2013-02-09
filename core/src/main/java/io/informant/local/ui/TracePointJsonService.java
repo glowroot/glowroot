@@ -20,6 +20,7 @@ import io.informant.api.LoggerFactory;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.TraceRegistry;
 import io.informant.core.util.Clock;
+import io.informant.core.util.GsonFactory;
 import io.informant.local.trace.TracePoint;
 import io.informant.local.trace.TraceSinkLocal;
 import io.informant.local.trace.TraceSnapshotDao;
@@ -58,7 +59,7 @@ import com.google.inject.Singleton;
 class TracePointJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonFactory.create();
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
     private final TraceSnapshotDao traceSnapshotDao;

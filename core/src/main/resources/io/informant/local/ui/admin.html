@@ -32,7 +32,7 @@
 <script type="text/javascript" src="js/informant.js"></script>
 <!-- spacing is important in this template since it is embedded inside of a 'pre-' styled div -->
 <script type="text/x-handlebars-template" id="logTemplate"
->{{#each .}}<strong>{{formatTimestamp timestamp}}</strong> {{level}} {{loggerName}} - {{text}}
+>{{#each .}}<strong>{{formatTimestamp timestamp}}</strong> {{{uppercase level}}} {{loggerName}} - {{text}}
 {{#if exception}}{{exception.display}}
 {{#each exception.stackTrace}}        {{.}}
 {{/each}}{{#if exception.cause}}{{>exceptionCause exception.cause}}{{/if}}{{/if}}{{/each}}</script>
@@ -43,6 +43,9 @@
 <script type="text/javascript">
   Handlebars.registerHelper('formatTimestamp', function(timestamp, options) {
     return moment(timestamp).format('MM/DD/YYYY HH:mm:ss.SSS')
+  })
+  Handlebars.registerHelper('uppercase', function(value) {
+    return value.toUpperCase()
   })
   Handlebars.registerPartial("exceptionCause", $('#exceptionCauseTemplate').html())
   $(document).ready(function() {

@@ -22,6 +22,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.GsonFactory;
 import io.informant.core.util.HttpServerBase;
 
 import java.io.IOException;
@@ -68,7 +69,7 @@ import com.google.inject.name.Named;
 public class HttpServer extends HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonFactory.create();
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
 
     private final ImmutableMap<Pattern, Object> uriMappings;

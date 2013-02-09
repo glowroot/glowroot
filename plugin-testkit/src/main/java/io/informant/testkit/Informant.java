@@ -18,6 +18,7 @@ package io.informant.testkit;
 import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.LogMessage.Level;
 import io.informant.testkit.Trace.ExceptionInfo;
+import io.informant.testkit.internal.GsonFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,6 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -51,7 +51,7 @@ import com.ning.http.client.Response;
 @ThreadSafe
 public class Informant {
 
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonFactory.create();
 
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
@@ -99,7 +99,7 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/core", new GsonBuilder().serializeNulls().create().toJson(config));
+        post("/config/core", GsonFactory.newBuilder().serializeNulls().create().toJson(config));
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
@@ -110,7 +110,7 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/coarse-profiling", new GsonBuilder().serializeNulls().create()
+        post("/config/coarse-profiling", GsonFactory.newBuilder().serializeNulls().create()
                 .toJson(config));
     }
 
@@ -122,7 +122,8 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/fine-profiling", new GsonBuilder().serializeNulls().create().toJson(config));
+        post("/config/fine-profiling",
+                GsonFactory.newBuilder().serializeNulls().create().toJson(config));
     }
 
     public UserConfig getUserConfig() throws Exception {
@@ -133,7 +134,7 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/user", new GsonBuilder().serializeNulls().create().toJson(config));
+        post("/config/user", GsonFactory.newBuilder().serializeNulls().create().toJson(config));
     }
 
     @Nullable

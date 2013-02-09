@@ -26,6 +26,7 @@ import io.informant.core.config.PluginDescriptor;
 import io.informant.core.config.Plugins;
 import io.informant.core.config.PointcutConfig;
 import io.informant.core.config.UserConfig;
+import io.informant.core.util.GsonFactory;
 import io.informant.core.util.RollingFile;
 
 import java.io.File;
@@ -51,7 +52,7 @@ import com.google.inject.name.Named;
 class ConfigJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonFactory.create();
 
     private final ConfigService configService;
     private final RollingFile rollingFile;

@@ -15,6 +15,8 @@
  */
 package io.informant.testkit;
 
+import io.informant.testkit.internal.GsonFactory;
+
 import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
@@ -22,7 +24,6 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 /**
  * @author Trask Stalnaker
@@ -30,11 +31,12 @@ import com.google.gson.GsonBuilder;
  */
 public class PluginConfig {
 
+    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
+
     private boolean enabled;
     private final Map<String, /*@Nullable*/Object> properties = Maps.newHashMap();
 
     String toJson() {
-        Gson gson = new GsonBuilder().serializeNulls().create();
         return gson.toJson(this);
     }
 
