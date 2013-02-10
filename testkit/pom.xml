@@ -9,10 +9,10 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>informant-plugin-testkit</artifactId>
+  <artifactId>informant-testkit</artifactId>
 
-  <name>Informant Plugin Test Kit</name>
-  <description>Informant Plugin Test Kit</description>
+  <name>Informant Test Kit</name>
+  <description>Informant Test Kit</description>
 
   <dependencies>
     <dependency>

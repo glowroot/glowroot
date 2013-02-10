@@ -41,7 +41,7 @@
     },
     {
       "groupId": "io.informant",
-      "artifactId": "informant-plugin-testkit",
+      "artifactId": "informant-testkit",
       "enabled": true,
       "properties": {}
     }

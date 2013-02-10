@@ -33,7 +33,7 @@
     <module>plugin-api</module>
     <module>shaded-slf4j-impl</module>
     <module>core</module>
-    <module>plugin-testkit</module>
+    <module>testkit</module>
     <module>packager-maven-plugin</module>
     <module>integration-tests</module>
     <module>ui-testing</module>

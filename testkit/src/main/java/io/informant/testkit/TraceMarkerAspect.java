@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import io.informant.api.weaving.Pointcut;
 public class TraceMarkerAspect {
 
     private static final PluginServices pluginServices = PluginServices
-            .get("io.informant:informant-plugin-testkit");
+            .get("io.informant:informant-testkit");
 
     @Pointcut(typeName = "io.informant.testkit.TraceMarker", methodName = "traceMarker",
             metricName = "mock trace marker")

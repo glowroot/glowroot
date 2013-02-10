@@ -120,7 +120,7 @@ class InformantModule extends AbstractModule {
     @Provides
     @Singleton
     DataSource providesDataSource(@Named("data.dir") File dataDir) {
-        // mem db is for internal use (by plugin-testkit)
+        // mem db is only used for testing (by informant-testkit)
         String h2MemDb = properties.get("internal.h2.memdb");
         if (Boolean.parseBoolean(h2MemDb)) {
             return new DataSource();

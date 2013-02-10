@@ -57,53 +57,63 @@ public class GsonFactory {
         return new GsonBuilder().registerTypeAdapterFactory(new LowercaseEnumTypeAdapterFactory());
     }
 
-    // mostly copied from http://google-gson.googlecode.com/
+    // modified from http://google-gson.googlecode.com/
     // svn/trunk/gson/docs/javadocs/com/google/gson/TypeAdapterFactory.html
     private static class LowercaseEnumTypeAdapterFactory implements TypeAdapterFactory {
-
         @Nullable
         public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
             @SuppressWarnings("unchecked")
-            final Class<T> rawType = (Class<T>) type.getRawType();
+            Class<T> rawType = (Class<T>) type.getRawType();
             if (!rawType.isEnum()) {
                 return null;
             }
-            final Map<String, T> lowercaseNameToEnumConstant = Maps.newHashMap();
             T[] enumConstants = rawType.getEnumConstants();
             if (enumConstants == null) {
                 // this really shouldn't happen since isEnum() returns true above
                 return null;
             }
+            return new EnumTypeAdapter<T>(rawType, enumConstants);
+        }
+    }
+
+    private static final class EnumTypeAdapter<T> extends TypeAdapter<T> {
+
+        private final Class<T> rawType;
+        private final Map<String, T> lowercaseNameToEnumConstant;
+
+        private EnumTypeAdapter(Class<T> rawType, T[] enumConstants) {
+            this.rawType = rawType;
+            lowercaseNameToEnumConstant = Maps.newHashMap();
             for (T enumConstant : enumConstants) {
                 lowercaseNameToEnumConstant.put(
                         ((Enum<?>) enumConstant).name().toLowerCase(Locale.ENGLISH), enumConstant);
             }
-            return new TypeAdapter<T>() {
-                @Override
-                public void write(JsonWriter out, @Nullable T value) throws IOException {
-                    if (value == null) {
-                        out.nullValue();
-                    } else {
-                        out.value(value.toString().toLowerCase(Locale.ENGLISH));
-                    }
-                }
-                @Override
+        }
+
+        @Override
+        public void write(JsonWriter out, @Nullable T value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(value.toString().toLowerCase(Locale.ENGLISH));
+            }
+        }
+
+        @Override
+        @Nullable
+        public T read(JsonReader reader) throws IOException {
+            if (reader.peek() == JsonToken.NULL) {
+                reader.nextNull();
+                return null;
+            } else {
+                String name = reader.nextString();
                 @Nullable
-                public T read(JsonReader reader) throws IOException {
-                    if (reader.peek() == JsonToken.NULL) {
-                        reader.nextNull();
-                        return null;
-                    } else {
-                        String name = reader.nextString();
-                        @Nullable
-                        T enumConstant = lowercaseNameToEnumConstant.get(name);
-                        if (enumConstant == null) {
-                            logger.warn("invalid enum value {} for enum: {}", name, rawType);
-                        }
-                        return enumConstant;
-                    }
+                T enumConstant = lowercaseNameToEnumConstant.get(name);
+                if (enumConstant == null) {
+                    logger.warn("invalid enum value {} for enum: {}", name, rawType);
                 }
-            };
+                return enumConstant;
+            }
         }
     }
 }

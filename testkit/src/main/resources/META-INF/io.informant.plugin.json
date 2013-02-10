@@ -1,7 +1,7 @@
 {
   "name": "Plugin Testkit Plugin",
   "groupId": "io.informant",
-  "artifactId": "informant-plugin-testkit",
+  "artifactId": "informant-testkit",
   "version": "0.5-SNAPSHOT",
   "properties": [],
   "aspects": [

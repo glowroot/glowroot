@@ -44,7 +44,7 @@
     </dependency>
     <dependency>
       <groupId>io.informant</groupId>
-      <artifactId>informant-plugin-testkit</artifactId>
+      <artifactId>informant-testkit</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
