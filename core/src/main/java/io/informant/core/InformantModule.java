@@ -25,7 +25,6 @@ import io.informant.core.trace.FineGrainedProfiler;
 import io.informant.core.trace.StuckTraceCollector;
 import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.core.util.Clock;
-import io.informant.core.util.DaemonExecutors;
 import io.informant.core.util.DataSource;
 import io.informant.core.util.RollingFile;
 import io.informant.core.util.ThreadSafe;
@@ -37,11 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
-import org.fest.reflect.core.Reflection;
-import org.fest.reflect.exception.ReflectionError;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
@@ -55,9 +50,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
  * Primary Guice module.
@@ -69,9 +61,6 @@ import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 class InformantModule extends AbstractModule {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantModule.class);
-
-    // TODO revisit this
-    private static final boolean USE_NETTY_BLOCKING_IO = false;
 
     private final ImmutableMap<String, String> properties;
     private final PluginInfoCache pluginInfoCache;
@@ -152,50 +141,6 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    AsyncHttpClient providesAsyncHttpClient() {
-        ExecutorService executorService = DaemonExecutors
-                .newCachedThreadPool("Informant-AsyncHttpClient");
-        ScheduledExecutorService scheduledExecutor = DaemonExecutors
-                .newSingleThreadScheduledExecutor("Informant-AsyncHttpClient-Reaper");
-        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
-                .setCompressionEnabled(true)
-                .setMaxRequestRetry(0)
-                .setExecutorService(executorService)
-                .setScheduledExecutorService(scheduledExecutor);
-        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
-        if (USE_NETTY_BLOCKING_IO) {
-            providerConfig.addProperty(NettyAsyncHttpProviderConfig.USE_BLOCKING_IO, true);
-        }
-        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
-                executorService);
-        builder.setAsyncHttpClientProviderConfig(providerConfig);
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
-        setIdleConnectionTimerThreadName(asyncHttpClient);
-        return asyncHttpClient;
-    }
-
-    // this is in the name of enforcing the "Informant-" prefix on all thread names
-    // NettyConnectionsPool.idleConnectionDetector is an unexposed java.util.Timer object
-    // which has an internal Thread object
-    // TODO submit patch to netty to expose idleConnectionDetector as a configurable property
-    // (or at least its thread's name)
-    private void setIdleConnectionTimerThreadName(AsyncHttpClient asyncHttpClient) {
-        Thread thread;
-        try {
-            thread = Reflection.field("connectionsPool.idleConnectionDetector.thread")
-                    .ofType(Thread.class).in(asyncHttpClient.getProvider()).get();
-        } catch (ReflectionError e) {
-            logger.warn(e.getMessage(), e);
-            return;
-        }
-        String threadName = thread.getName();
-        if (!threadName.startsWith("Informant-")) {
-            thread.setName("Informant-" + threadName);
-        }
-    }
-
-    @Provides
-    @Singleton
     static Clock providesClock() {
         return Clock.systemClock();
     }
@@ -221,7 +166,6 @@ class InformantModule extends AbstractModule {
         injector.getInstance(FineGrainedProfiler.class).close();
         injector.getInstance(TraceSinkLocal.class).close();
         injector.getInstance(LogMessageSinkLocal.class).close();
-        injector.getInstance(AsyncHttpClient.class).close();
         try {
             injector.getInstance(DataSource.class).close();
         } catch (SQLException e) {

@@ -81,11 +81,6 @@
       <version>0.9.6</version>
     </dependency>
     <dependency>
-      <groupId>io.informant.shaded</groupId>
-      <artifactId>partially-shaded-async-http-client</artifactId>
-      <version>1.7.9-SNAPSHOT</version>
-    </dependency>
-    <dependency>
       <!-- using sisu-guice for now until guice upgrades to guava 10.0
         primarily due to http://code.google.com/p/google-guice/issues/detail?id=288 -->
       <groupId>org.sonatype.sisu</groupId>
