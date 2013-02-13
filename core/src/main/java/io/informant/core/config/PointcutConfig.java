@@ -74,13 +74,13 @@ public class PointcutConfig {
         return gson.toJsonTree(this).getAsJsonObject();
     }
 
-    public JsonObject toJsonWithUniqueHash() {
-        JsonObject configObject = gson.toJsonTree(this).getAsJsonObject();
-        configObject.addProperty("uniqueHash", getUniqueHash());
+    public JsonObject toJsonWithVersionHash() {
+        JsonObject configObject = toJson();
+        configObject.addProperty("versionHash", getVersionHash());
         return configObject;
     }
 
-    public String getUniqueHash() {
+    public String getVersionHash() {
         return Hashing.md5().hashString(toJson().toString()).toString();
     }
 
@@ -121,7 +121,7 @@ public class PointcutConfig {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("uniqueHash", getUniqueHash())
+                .add("versionHash", getVersionHash())
                 .add("captureItems", captureItems)
                 .add("typeName", typeName)
                 .add("methodName", methodName)

@@ -21,6 +21,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -72,6 +73,16 @@ public class UserConfig {
         return gson.toJsonTree(this).getAsJsonObject();
     }
 
+    public JsonObject toJsonWithVersionHash() {
+        JsonObject configObject = toJson();
+        configObject.addProperty("versionHash", getVersionHash());
+        return configObject;
+    }
+
+    public String getVersionHash() {
+        return Hashing.md5().hashString(toJson().toString()).toString();
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -96,6 +107,7 @@ public class UserConfig {
                 .add("userId", userId)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
+                .add("versionHash", getVersionHash())
                 .toString();
     }
 

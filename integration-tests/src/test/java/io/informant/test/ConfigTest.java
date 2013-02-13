@@ -130,7 +130,7 @@ public class ConfigTest {
         // then
         List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
         assertThat(pointcuts).hasSize(1);
-        assertThat(pointcuts.get(0)).isEqualsToByComparingFields(config);
+        assertThat(pointcuts.get(0)).isEqualTo(config);
     }
 
     @Test
@@ -139,12 +139,12 @@ public class ConfigTest {
         PointcutConfig config = createPointcutConfig();
         String uniqueHash = container.getInformant().addPointcutConfig(config);
         // when
-        config = updateAllFieldsExceptId(config);
+        config = updateAllFields(config);
         container.getInformant().updatePointcutConfig(uniqueHash, config);
         // then
         List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
         assertThat(pointcuts).hasSize(1);
-        assertThat(pointcuts.get(0)).isEqualsToByComparingFields(config);
+        assertThat(pointcuts.get(0)).isEqualTo(config);
     }
 
     @Test
@@ -161,6 +161,7 @@ public class ConfigTest {
 
     private static GeneralConfig updateAllFields(GeneralConfig config) {
         GeneralConfig updatedConfig = new GeneralConfig();
+        updatedConfig.setVersionHash(config.getVersionHash());
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         updatedConfig.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
@@ -173,6 +174,7 @@ public class ConfigTest {
 
     private static CoarseProfilingConfig updateAllFields(CoarseProfilingConfig config) {
         CoarseProfilingConfig updatedConfig = new CoarseProfilingConfig();
+        updatedConfig.setVersionHash(config.getVersionHash());
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setInitialDelayMillis(config.getInitialDelayMillis() + 1);
         updatedConfig.setIntervalMillis(config.getIntervalMillis() + 1);
@@ -182,6 +184,7 @@ public class ConfigTest {
 
     private static FineProfilingConfig updateAllFields(FineProfilingConfig config) {
         FineProfilingConfig updatedConfig = new FineProfilingConfig();
+        updatedConfig.setVersionHash(config.getVersionHash());
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setTracePercentage(config.getTracePercentage() + 1);
         updatedConfig.setIntervalMillis(config.getIntervalMillis() + 1);
@@ -191,6 +194,7 @@ public class ConfigTest {
 
     private static UserConfig updateAllFields(UserConfig config) {
         UserConfig updatedConfig = new UserConfig();
+        updatedConfig.setVersionHash(config.getVersionHash());
         updatedConfig.setEnabled(!config.isEnabled());
         updatedConfig.setUserId(config.getUserId() + "x");
         updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
@@ -200,6 +204,7 @@ public class ConfigTest {
 
     private static PluginConfig updateAllFields(PluginConfig config) {
         PluginConfig updatedConfig = new PluginConfig();
+        updatedConfig.setVersionHash(config.getVersionHash());
         updatedConfig.setEnabled(!config.isEnabled());
         boolean starredHeadline = (Boolean) config.getProperty("starredHeadline");
         updatedConfig.setProperty("starredHeadline", !starredHeadline);
@@ -211,43 +216,44 @@ public class ConfigTest {
     }
 
     private static PointcutConfig createPointcutConfig() {
-        PointcutConfig pointcut = new PointcutConfig();
-        pointcut.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
-        pointcut.setTypeName("java.util.Collections");
-        pointcut.setMethodName("yak");
-        pointcut.setMethodArgTypeNames(Lists.newArrayList("java.lang.String", "java.util.List"));
-        pointcut.setMethodReturnTypeName("void");
-        pointcut.setMethodModifiers(Lists
+        PointcutConfig config = new PointcutConfig();
+        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
+        config.setTypeName("java.util.Collections");
+        config.setMethodName("yak");
+        config.setMethodArgTypeNames(Lists.newArrayList("java.lang.String", "java.util.List"));
+        config.setMethodReturnTypeName("void");
+        config.setMethodModifiers(Lists
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
-        pointcut.setMetricName("yako");
-        pointcut.setSpanTemplate("yak(): {{0}}, {{1}} => {{?}}");
-        return pointcut;
+        config.setMetricName("yako");
+        config.setSpanTemplate("yak(): {{0}}, {{1}} => {{?}}");
+        return config;
     }
 
-    private static PointcutConfig updateAllFieldsExceptId(PointcutConfig pointcut) {
-        PointcutConfig updatedPointcut = new PointcutConfig();
-        if (pointcut.getCaptureItems().contains(CaptureItem.TRACE)) {
-            updatedPointcut.setCaptureItems(ImmutableList.of(CaptureItem.METRIC, CaptureItem.SPAN));
+    private static PointcutConfig updateAllFields(PointcutConfig config) {
+        PointcutConfig updatedConfig = new PointcutConfig();
+        updatedConfig.setVersionHash(config.getVersionHash());
+        if (config.getCaptureItems().contains(CaptureItem.TRACE)) {
+            updatedConfig.setCaptureItems(ImmutableList.of(CaptureItem.METRIC, CaptureItem.SPAN));
         } else {
-            updatedPointcut.setCaptureItems(ImmutableList.of(CaptureItem.TRACE));
+            updatedConfig.setCaptureItems(ImmutableList.of(CaptureItem.TRACE));
         }
-        updatedPointcut.setTypeName(pointcut.getTypeName() + "a");
-        updatedPointcut.setMethodName(pointcut.getMethodName() + "b");
-        if (pointcut.getMethodArgTypeNames().size() == 0) {
-            updatedPointcut.setMethodArgTypeNames(ImmutableList.of("java.lang.String"));
+        updatedConfig.setTypeName(config.getTypeName() + "a");
+        updatedConfig.setMethodName(config.getMethodName() + "b");
+        if (config.getMethodArgTypeNames().size() == 0) {
+            updatedConfig.setMethodArgTypeNames(ImmutableList.of("java.lang.String"));
         } else {
-            updatedPointcut.setMethodArgTypeNames(ImmutableList.of(pointcut
+            updatedConfig.setMethodArgTypeNames(ImmutableList.of(config
                     .getMethodArgTypeNames().get(0) + "c"));
         }
-        updatedPointcut.setMethodReturnTypeName(pointcut.getMethodReturnTypeName() + "d");
-        if (pointcut.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
-            updatedPointcut.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
+        updatedConfig.setMethodReturnTypeName(config.getMethodReturnTypeName() + "d");
+        if (config.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
+            updatedConfig.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
         } else {
-            updatedPointcut.setMethodModifiers(ImmutableList.of(MethodModifier.PUBLIC,
+            updatedConfig.setMethodModifiers(ImmutableList.of(MethodModifier.PUBLIC,
                     MethodModifier.STATIC));
         }
-        updatedPointcut.setMetricName(pointcut.getMetricName() + "e");
-        updatedPointcut.setSpanTemplate(pointcut.getSpanTemplate() + "f");
-        return updatedPointcut;
+        updatedConfig.setMetricName(config.getMetricName() + "e");
+        updatedConfig.setSpanTemplate(config.getSpanTemplate() + "f");
+        return updatedConfig;
     }
 }

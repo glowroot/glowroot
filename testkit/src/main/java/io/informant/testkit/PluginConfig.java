@@ -35,6 +35,8 @@ public class PluginConfig {
 
     private boolean enabled;
     private final Map<String, /*@Nullable*/Object> properties = Maps.newHashMap();
+    @Nullable
+    private String versionHash;
 
     String toJson() {
         return gson.toJson(this);
@@ -61,10 +63,22 @@ public class PluginConfig {
         properties.put(name, value);
     }
 
+    @Nullable
+    public String getVersionHash() {
+        return versionHash;
+    }
+
+    public void setVersionHash(String versionHash) {
+        this.versionHash = versionHash;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PluginConfig) {
             PluginConfig that = (PluginConfig) obj;
+            // intentionally leaving off versionHash since it represents the prior version hash when
+            // sending to the server, and represents the current version hash when receiving from
+            // the server
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(properties, that.properties);
         }
@@ -73,6 +87,9 @@ public class PluginConfig {
 
     @Override
     public int hashCode() {
+        // intentionally leaving off versionHash since it represents the prior version hash when
+        // sending to the server, and represents the current version hash when receiving from the
+        // server
         return Objects.hashCode(enabled, properties);
     }
 

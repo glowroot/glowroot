@@ -33,6 +33,8 @@ public class GeneralConfig {
     private int snapshotExpirationHours;
     private int rollingSizeMb;
     private boolean warnOnSpanOutsideTrace;
+    @Nullable
+    private String versionHash;
 
     public boolean isEnabled() {
         return enabled;
@@ -98,10 +100,22 @@ public class GeneralConfig {
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
     }
 
+    @Nullable
+    public String getVersionHash() {
+        return versionHash;
+    }
+
+    public void setVersionHash(String versionHash) {
+        this.versionHash = versionHash;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof GeneralConfig) {
             GeneralConfig that = (GeneralConfig) obj;
+            // intentionally leaving off versionHash since it represents the prior version hash when
+            // sending to the server, and represents the current version hash when receiving from
+            // the server
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
@@ -117,6 +131,9 @@ public class GeneralConfig {
 
     @Override
     public int hashCode() {
+        // intentionally leaving off versionHash since it represents the prior version hash when
+        // sending to the server, and represents the current version hash when receiving from the
+        // server
         return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
                 spanStackTraceThresholdMillis, maxSpans, snapshotExpirationHours,
                 rollingSizeMb, warnOnSpanOutsideTrace);
@@ -133,6 +150,7 @@ public class GeneralConfig {
                 .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
+                .add("versionHash", versionHash)
                 .toString();
     }
 }

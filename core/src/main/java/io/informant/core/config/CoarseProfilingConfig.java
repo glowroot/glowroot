@@ -20,6 +20,7 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -60,7 +61,6 @@ public class CoarseProfilingConfig {
 
     private CoarseProfilingConfig(boolean enabled, int initialDelayMillis, int intervalMillis,
             int totalSeconds) {
-
         this.enabled = enabled;
         this.initialDelayMillis = initialDelayMillis;
         this.intervalMillis = intervalMillis;
@@ -69,6 +69,16 @@ public class CoarseProfilingConfig {
 
     public JsonObject toJson() {
         return gson.toJsonTree(this).getAsJsonObject();
+    }
+
+    public JsonObject toJsonWithVersionHash() {
+        JsonObject configObject = toJson();
+        configObject.addProperty("versionHash", getVersionHash());
+        return configObject;
+    }
+
+    public String getVersionHash() {
+        return Hashing.md5().hashString(toJson().toString()).toString();
     }
 
     public boolean isEnabled() {
@@ -94,6 +104,7 @@ public class CoarseProfilingConfig {
                 .add("initialDelayMillis", initialDelayMillis)
                 .add("intervalMillis", intervalMillis)
                 .add("totalSeconds", totalSeconds)
+                .add("versionHash", getVersionHash())
                 .toString();
     }
 

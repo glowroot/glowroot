@@ -20,6 +20,7 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -97,7 +98,6 @@ public class GeneralConfig {
     private GeneralConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
             int spanStackTraceThresholdMillis, int maxSpans, int snapshotExpirationHours,
             int rollingSizeMb, boolean warnOnSpanOutsideTrace) {
-
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
@@ -110,6 +110,16 @@ public class GeneralConfig {
 
     public JsonObject toJson() {
         return gson.toJsonTree(this).getAsJsonObject();
+    }
+
+    public JsonObject toJsonWithVersionHash() {
+        JsonObject configObject = toJson();
+        configObject.addProperty("versionHash", getVersionHash());
+        return configObject;
+    }
+
+    public String getVersionHash() {
+        return Hashing.md5().hashString(toJson().toString()).toString();
     }
 
     public boolean isEnabled() {
@@ -155,6 +165,7 @@ public class GeneralConfig {
                 .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
+                .add("versionHash", getVersionHash())
                 .toString();
     }
 

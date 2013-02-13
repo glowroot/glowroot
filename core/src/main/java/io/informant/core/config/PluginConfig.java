@@ -29,6 +29,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.hash.Hashing;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -159,6 +160,16 @@ public class PluginConfig {
         return configObject;
     }
 
+    public JsonObject toJsonWithVersionHash() {
+        JsonObject configObject = toJson();
+        configObject.addProperty("versionHash", getVersionHash());
+        return configObject;
+    }
+
+    public String getVersionHash() {
+        return Hashing.md5().hashString(toJson().toString()).toString();
+    }
+
     String getId() {
         return pluginInfo.getGroupId() + ":" + pluginInfo.getArtifactId();
     }
@@ -169,6 +180,7 @@ public class PluginConfig {
                 .add("id", getId())
                 .add("enabled", enabled)
                 .add("properties", properties)
+                .add("versionHash", getVersionHash())
                 .toString();
     }
 

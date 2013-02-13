@@ -43,6 +43,8 @@ public class PointcutConfig {
     private String metricName;
     @Nullable
     private String spanTemplate;
+    @Nullable
+    private String versionHash;
 
     @Nullable
     public List<CaptureItem> getCaptureItems() {
@@ -103,7 +105,7 @@ public class PointcutConfig {
         return metricName;
     }
 
-    public void setMetricName(String metricName) {
+    public void setMetricName(@Nullable String metricName) {
         this.metricName = metricName;
     }
 
@@ -112,14 +114,26 @@ public class PointcutConfig {
         return spanTemplate;
     }
 
-    public void setSpanTemplate(String spanTemplate) {
+    public void setSpanTemplate(@Nullable String spanTemplate) {
         this.spanTemplate = spanTemplate;
+    }
+
+    @Nullable
+    public String getVersionHash() {
+        return versionHash;
+    }
+
+    public void setVersionHash(String versionHash) {
+        this.versionHash = versionHash;
     }
 
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PointcutConfig) {
             PointcutConfig that = (PointcutConfig) obj;
+            // intentionally leaving off versionHash since it represents the prior version hash when
+            // sending to the server, and represents the current version hash when receiving from
+            // the server
             return Objects.equal(captureItems, that.captureItems)
                     && Objects.equal(typeName, that.typeName)
                     && Objects.equal(methodName, that.methodName)
@@ -134,6 +148,9 @@ public class PointcutConfig {
 
     @Override
     public int hashCode() {
+        // intentionally leaving off versionHash since it represents the prior version hash when
+        // sending to the server, and represents the current version hash when receiving from the
+        // server
         return Objects.hashCode(captureItems, typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanTemplate);
     }

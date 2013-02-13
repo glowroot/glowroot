@@ -20,6 +20,7 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -63,7 +64,6 @@ public class FineProfilingConfig {
 
     private FineProfilingConfig(boolean enabled, double tracePercentage, int intervalMillis,
             int totalSeconds, int storeThresholdMillis) {
-
         this.enabled = enabled;
         this.tracePercentage = tracePercentage;
         this.intervalMillis = intervalMillis;
@@ -73,6 +73,16 @@ public class FineProfilingConfig {
 
     public JsonObject toJson() {
         return gson.toJsonTree(this).getAsJsonObject();
+    }
+
+    public JsonObject toJsonWithVersionHash() {
+        JsonObject configObject = toJson();
+        configObject.addProperty("versionHash", getVersionHash());
+        return configObject;
+    }
+
+    public String getVersionHash() {
+        return Hashing.md5().hashString(toJson().toString()).toString();
     }
 
     public boolean isEnabled() {
@@ -103,6 +113,7 @@ public class FineProfilingConfig {
                 .add("intervalMillis", intervalMillis)
                 .add("totalSeconds", totalSeconds)
                 .add("storeThresholdMillis", storeThresholdMillis)
+                .add("versionHash", getVersionHash())
                 .toString();
     }
 

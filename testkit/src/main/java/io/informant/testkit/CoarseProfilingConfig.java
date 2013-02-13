@@ -29,6 +29,8 @@ public class CoarseProfilingConfig {
     private int initialDelayMillis;
     private int intervalMillis;
     private int totalSeconds;
+    @Nullable
+    private String versionHash;
 
     public boolean isEnabled() {
         return enabled;
@@ -62,10 +64,22 @@ public class CoarseProfilingConfig {
         this.totalSeconds = totalSeconds;
     }
 
+    @Nullable
+    public String getVersionHash() {
+        return versionHash;
+    }
+
+    public void setVersionHash(String versionHash) {
+        this.versionHash = versionHash;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof CoarseProfilingConfig) {
             CoarseProfilingConfig that = (CoarseProfilingConfig) obj;
+            // intentionally leaving off versionHash since it represents the prior version hash when
+            // sending to the server, and represents the current version hash when receiving from
+            // the server
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(initialDelayMillis, that.initialDelayMillis)
                     && Objects.equal(intervalMillis, that.intervalMillis)
@@ -76,6 +90,9 @@ public class CoarseProfilingConfig {
 
     @Override
     public int hashCode() {
+        // intentionally leaving off versionHash since it represents the prior version hash when
+        // sending to the server, and represents the current version hash when receiving from the
+        // server
         return Objects.hashCode(enabled, initialDelayMillis, intervalMillis, totalSeconds);
     }
 

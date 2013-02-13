@@ -30,6 +30,8 @@ public class UserConfig {
     private String userId;
     private int storeThresholdMillis;
     private boolean fineProfiling;
+    @Nullable
+    private String versionHash;
 
     public boolean isEnabled() {
         return enabled;
@@ -64,10 +66,22 @@ public class UserConfig {
         this.fineProfiling = fineProfiling;
     }
 
+    @Nullable
+    public String getVersionHash() {
+        return versionHash;
+    }
+
+    public void setVersionHash(String versionHash) {
+        this.versionHash = versionHash;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof UserConfig) {
             UserConfig that = (UserConfig) obj;
+            // intentionally leaving off versionHash since it represents the prior version hash when
+            // sending to the server, and represents the current version hash when receiving from
+            // the server
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(userId, that.userId)
                     && Objects.equal(storeThresholdMillis,
@@ -79,6 +93,9 @@ public class UserConfig {
 
     @Override
     public int hashCode() {
+        // intentionally leaving off versionHash since it represents the prior version hash when
+        // sending to the server, and represents the current version hash when receiving from the
+        // server
         return Objects.hashCode(enabled, userId, storeThresholdMillis, fineProfiling);
     }
 

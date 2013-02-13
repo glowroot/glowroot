@@ -205,14 +205,19 @@
   })
   var pluginTemplate = Handlebars.compile($('#pluginTemplate').html())
   var pointcutTemplate = Handlebars.compile($('#pointcutTemplate').html())
-  var plugins
+  var generalConfigVersionHash
+  var coarseConfigVersionHash
+  var fineConfigVersionHash
+  var userConfigVersionHash
+  var pluginConfigVersionHashes = {}
+  var pluginInfos
   function read() {
     showSpinner('#initialLoadSpinner')
     $.getJSON('config/read', function(config) {
       hideSpinner('#initialLoadSpinner')
       var generalConfig = config.generalConfig
-      setStatus('#coreStatus', generalConfig.enabled, true)
-      $('#coreEnabled').attr('checked', generalConfig.enabled)
+      setStatus('#generalStatus', generalConfig.enabled, true)
+      $('#generalEnabled').attr('checked', generalConfig.enabled)
       $('#storeThresholdMillis').val(generalConfig.storeThresholdMillis)
       addIntegerValidator('#storeThresholdMillis')
       $('#stuckThresholdSeconds').val(generalConfig.stuckThresholdSeconds)
@@ -229,6 +234,7 @@
       $('#dataDir').text(config.dataDir)
       $('#dataDir').css("width", ($('#offscreenMeasure').width() + 50) + "px")
       $('#uiPort').text(config.uiPort)
+      generalConfigVersionHash = generalConfig.versionHash
       var coarseConfig = config.coarseProfilingConfig
       setStatus('#coarseStatus', coarseConfig.enabled)
       $('#coarseEnabled').attr('checked', coarseConfig.enabled)
@@ -238,6 +244,7 @@
       addIntegerValidator('#coarseIntervalMillis')
       $('#coarseTotalSeconds').val(coarseConfig.totalSeconds)
       addIntegerValidator('#coarseTotalSeconds')
+      coarseConfigVersionHash = coarseConfig.versionHash
       var fineConfig = config.fineProfilingConfig
       setStatus('#fineStatus', fineConfig.enabled)
       $('#fineEnabled').attr('checked', fineConfig.enabled)
@@ -254,6 +261,7 @@
         $('#fineStoreThresholdMillis').val(fineConfig.storeThresholdMillis)
       }
       addIntegerOrEmptyValidator('#fineStoreThresholdMillis')
+      fineConfigVersionHash = fineConfig.versionHash
       var userConfig = config.userConfig
       setStatus('#userStatus', userConfig.enabled)
       $('#userEnabled').attr('checked', userConfig.enabled)
@@ -261,26 +269,28 @@
       $('#userStoreThresholdMillis').val(userConfig.storeThresholdMillis)
       addIntegerValidator('#userStoreThresholdMillis')
       $('#userFineProfiling').attr('checked', userConfig.fineProfiling)
-      plugins = config.pluginInfos
-      for (var i = 0; i < plugins.length; i++) {
-        var plugin = plugins[i]
-        plugin.id = plugin.groupId + ':' + plugin.artifactId
+      userConfigVersionHash = userConfig.versionHash
+      pluginInfos = config.pluginInfos
+      for (var i = 0; i < pluginInfos.length; i++) {
+        var pluginInfo = pluginInfos[i]
+        pluginInfo.id = pluginInfo.groupId + ':' + pluginInfo.artifactId
         var propertyDescriptors = []
-        for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
-          if (!plugin.propertyDescriptors[j].hidden) {
-            propertyDescriptors.push(plugin.propertyDescriptors[j])
+        for (var j = 0; j < pluginInfo.propertyDescriptors.length; j++) {
+          if (!pluginInfo.propertyDescriptors[j].hidden) {
+            propertyDescriptors.push(pluginInfo.propertyDescriptors[j])
           }
         }
-        plugin.propertyDescriptors = propertyDescriptors
-        $('#plugins').append(pluginTemplate(plugin))
-        var enabled = config.pluginConfigs[plugin.id].enabled
-        setStatus('#' + escapeForSelector(plugin.id) + '_status', enabled)
-        $('#' + escapeForSelector(plugin.id) + '_enabled').attr('checked', enabled)
-        var pluginConfig = config.pluginConfigs[plugin.id]
-        for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
-          var propertyDescriptors = plugin.propertyDescriptors[j]
+        pluginInfo.propertyDescriptors = propertyDescriptors
+        $('#plugins').append(pluginTemplate(pluginInfo))
+        var pluginConfig = config.pluginConfigs[pluginInfo.id]
+        pluginConfigVersionHashes[pluginInfo.id] = pluginConfig.versionHash
+        var enabled = pluginConfig.enabled
+        setStatus('#' + escapeForSelector(pluginInfo.id) + '_status', enabled)
+        $('#' + escapeForSelector(pluginInfo.id) + '_enabled').attr('checked', enabled)
+        for (var j = 0; j < pluginInfo.propertyDescriptors.length; j++) {
+          var propertyDescriptors = pluginInfo.propertyDescriptors[j]
           var value = pluginConfig.properties[propertyDescriptors.name]
-          var selector = '#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)
+          var selector = '#' + escapeForSelector(pluginInfo.id + '_' + propertyDescriptors.name)
           if (propertyDescriptors.type == 'boolean') {
             $(selector).attr('checked', value)
           } else if (propertyDescriptors.type == 'double') {
@@ -298,12 +308,12 @@
     })
   }
   // updateGeneralConfig can take a while if resizing large rolling database
-  var postingUpdateCore = false
+  var postingUpdateGeneral = false
   function updateGeneralConfig() {
     // handle crazy user clicking on the button because this can take a while if resizing large
     // rolling database
-    if (postingUpdateCore) return
-    var enabled = $('#coreEnabled').is(':checked')
+    if (postingUpdateGeneral) return
+    var enabled = $('#generalEnabled').is(':checked')
     var storeThresholdMillis = $('#storeThresholdMillis').val()
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
     var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
@@ -316,7 +326,7 @@
          || !isInteger(snapshotExpirationDays) || !isInteger(rollingSizeMb)) {
       return
     }
-    postingUpdateCore = true
+    postingUpdateGeneral = true
     var config = {
       'enabled': enabled,
       'storeThresholdMillis': parseInteger(storeThresholdMillis),
@@ -324,17 +334,19 @@
       'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
       'maxSpans': parseInteger(maxSpans),
       'snapshotExpirationHours': parseInteger(snapshotExpirationDays) * 24,
-      'rollingSizeMb': parseInteger(rollingSizeMb)
+      'rollingSizeMb': parseInteger(rollingSizeMb),
+      'versionHash': generalConfigVersionHash
     }
-    $.post('config/core', JSON.stringify(config), function() {
-      postingUpdateCore = false
-      hideSpinner('#saveCoreButtonSpinner')
-      showAndFadeSuccessMessage('#coreSaveComplete')
-      setStatus('#coreStatus', config.enabled, true)
+    $.post('config/general', JSON.stringify(config), function(response) {
+      postingUpdateGeneral = false
+      generalConfigVersionHash = response
+      hideSpinner('#saveGeneralButtonSpinner')
+      showAndFadeSuccessMessage('#generalSaveComplete')
+      setStatus('#generalStatus', config.enabled, true)
     })
     // in case button is clicked again before success message is hidden
-    $('#saveCoreComplete').addClass('hide')
-    showSpinner('#saveCoreButtonSpinner')
+    $('#saveGeneralComplete').addClass('hide')
+    showSpinner('#saveGeneralButtonSpinner')
   }
   function updateCoarseConfig() {
     var enabled = $('#coarseEnabled').is(':checked')
@@ -349,9 +361,11 @@
       'enabled': enabled,
       'initialDelayMillis': parseInteger(initialDelayMillis),
       'intervalMillis': parseInteger(intervalMillis),
-      'totalSeconds': parseInteger(totalSeconds)
+      'totalSeconds': parseInteger(totalSeconds),
+      'versionHash': coarseConfigVersionHash
     }
-    $.post('config/coarse-profiling', JSON.stringify(config), function() {
+    $.post('config/coarse-profiling', JSON.stringify(config), function(response) {
+      coarseConfigVersionHash = response
       showAndFadeSuccessMessage('#coarseSaveComplete')
       setStatus('#coarseStatus', config.enabled)
     })
@@ -375,9 +389,11 @@
       'tracePercentage': parsePercentage(tracePercentage),
       'intervalMillis': parseInteger(intervalMillis),
       'totalSeconds': parseInteger(totalSeconds),
-      'storeThresholdMillis': parseInteger(storeThresholdMillis)
+      'storeThresholdMillis': parseInteger(storeThresholdMillis),
+      'versionHash': fineConfigVersionHash
     }
-    $.post('config/fine-profiling', JSON.stringify(config), function() {
+    $.post('config/fine-profiling', JSON.stringify(config), function(response) {
+      fineConfigVersionHash = response
       showAndFadeSuccessMessage('#fineSaveComplete')
       setStatus('#fineStatus', config.enabled)
     })
@@ -393,25 +409,28 @@
       'enabled': enabled,
       'userId': $('#userUserId').val(),
       'storeThresholdMillis': parseInteger(storeThresholdMillis),
-      'fineProfiling': $('#userFineProfiling').is(':checked')
+      'fineProfiling': $('#userFineProfiling').is(':checked'),
+      'versionHash': userConfigVersionHash
     }
-    $.post('config/user', JSON.stringify(config), function() {
+    $.post('config/user', JSON.stringify(config), function(response) {
+      userConfigVersionHash = response
       showAndFadeSuccessMessage('#userSaveComplete')
       setStatus('#userStatus', config.enabled)
     })
   }
   function updatePluginConfig(pluginId) {
-    var plugin = pluginForId(pluginId)
+    var pluginInfo = pluginInfoForId(pluginId)
     var config = {
       'enabled': $('#' + escapeForSelector(pluginId) + '_enabled').is(':checked'),
-      'properties': {}
+      'properties': {},
+      'versionHash': pluginConfigVersionHashes[pluginId]
     }
     var validationError = false
-    for (var j = 0; j < plugin.propertyDescriptors.length; j++) {
-      var propertyDescriptors = plugin.propertyDescriptors[j]
+    for (var j = 0; j < pluginInfo.propertyDescriptors.length; j++) {
+      var propertyDescriptors = pluginInfo.propertyDescriptors[j]
       if (!propertyDescriptors.hidden) {
         var value
-        var selector = '#' + escapeForSelector(plugin.id + '_' + propertyDescriptors.name)
+        var selector = '#' + escapeForSelector(pluginInfo.id + '_' + propertyDescriptors.name)
         if (propertyDescriptors.type == 'boolean') {
           value = $(selector).is(':checked')
         } else if (propertyDescriptors.type == 'double') {
@@ -430,13 +449,13 @@
     if (validationError) {
       return
     }
-    $.post('config/plugin/' + pluginId, JSON.stringify(config),
-        function() {
-          showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
-          setStatus('#' + escapeForSelector(pluginId) + '_status', config.enabled)
-        })
+    $.post('config/plugin/' + pluginId, JSON.stringify(config), function(response) {
+      pluginConfigVersionHashes[pluginId] = response
+      showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
+      setStatus('#' + escapeForSelector(pluginId) + '_status', config.enabled)
+    })
   }
-  function setStatus(selector, value, core) {
+  function setStatus(selector, value, general) {
     if (value) {
       $(selector).removeClass('configuration-status-off')
       $(selector).addClass('configuration-status-on')
@@ -446,26 +465,26 @@
       $(selector).addClass('configuration-status-off')
       $(selector).text('OFF')
     }
-    if (!core && !$('#coreEnabled').is(':checked')) {
+    if (!general && !$('#generalEnabled').is(':checked')) {
       // this needs to be set the first time through, at least for the plugin nodes which didn't
-      // exist when setStatus was called for core the first time
+      // exist when setStatus was called for general the first time
       $(selector).css('color', '#bbb')
     }
-    if (core) {
+    if (general) {
       // update other status'
       if (value) {
         $('.configuration-status').css('color', '')
       } else {
         $('.configuration-status').css('color', '#bbb')
-        // except for core
+        // except for general
         $(selector).css('color', '')
       }
     }
   }
-  function pluginForId(pluginId) {
-    for (var i = 0; i < plugins.length; i++) {
-      if (plugins[i].id == pluginId) {
-        return plugins[i]
+  function pluginInfoForId(pluginId) {
+    for (var i = 0; i < pluginInfos.length; i++) {
+      if (pluginInfos[i].id == pluginId) {
+        return pluginInfos[i]
       }
     }
     return null
@@ -637,20 +656,20 @@
         'spanTemplate': $('#pointcutSpanTemplate_' + pointcutNum).val()
       }
       var url
-      if (pointcut.uniqueHash) {
-        url = 'config/pointcut/' + pointcut.uniqueHash
+      if (pointcut.versionHash) {
+        url = 'config/pointcut/' + pointcut.versionHash
       } else {
         url = 'config/pointcut/+'
       }
       $.post(url, JSON.stringify(updatedPointcut), function(response) {
         showAndFadeSuccessMessage('#pointcutSaveComplete_' + pointcutNum)
         pointcut = updatedPointcut
-        pointcut.uniqueHash = response
+        pointcut.versionHash = response
         fixLabels()
       })
     }
     function fixLabels() {
-      if (pointcut.uniqueHash) {
+      if (pointcut.versionHash) {
         $('#pointcutHeader_' + pointcutNum).text(pointcut.typeName + '.' + pointcut.methodName
             + '(' + pointcut.methodArgTypeNames.join(', ') + ')')
         $('#pointcutSaveButton_' + pointcutNum).text('Save')
@@ -697,8 +716,8 @@
         savePointcut()
       })
       $('#pointcutDeleteButton_' + pointcutNum).click(function() {
-        if (pointcut.uniqueHash) {
-          $.post('/config/pointcut/-', JSON.stringify(pointcut.uniqueHash), function(response) {
+        if (pointcut.versionHash) {
+          $.post('/config/pointcut/-', JSON.stringify(pointcut.versionHash), function(response) {
             $('#pointcut_' + pointcutNum).remove()
           })
         } else {
@@ -731,7 +750,7 @@
     $(selector).append(pointcutTemplate({ num : pointcutNum }))
     fixLabels()
     addBehavior()
-    if (pointcut.uniqueHash) {
+    if (pointcut.versionHash) {
       addData()
     } else {
       // display form immediately for new pointcut
@@ -772,17 +791,17 @@
     </div>
   </div>
   <br>
-  <button class="section-header realbtn" onclick="$('#coreForm').toggleClass('hide')">
-    General <span class="configuration-status" id="coreStatus"></span>
+  <button class="section-header realbtn" onclick="$('#generalForm').toggleClass('hide')">
+    General <span class="configuration-status" id="generalStatus"></span>
   </button>
   <br>
-  <form class="section-body form-horizontal hide" id="coreForm">
+  <form class="section-body form-horizontal hide" id="generalForm">
     <fieldset>
       <div class="section-body-padding">
         <div class="control-group">
-          <label class="control-label" for="coreEnabled">Enabled</label>
+          <label class="control-label" for="generalEnabled">Enabled</label>
           <div class="controls">
-            <input type="checkbox" id="coreEnabled" value="true">
+            <input type="checkbox" id="generalEnabled" value="true">
           </div>
         </div>
         <div class="control-group">
@@ -893,10 +912,10 @@
       </div>
       <div class="form-actions section-body-save">
         <button type="button" class="btn" onclick="updateGeneralConfig()">Save changes</button>
-        <!-- spinner because updating core config can take a while if resizing rolling file
+        <!-- spinner because updating general config can take a while if resizing rolling file
              or changing trace snapshot expiration -->
-        <span class="button-spinner hide" id="saveCoreButtonSpinner"></span>
-        <span class="button-success-message hide" id="coreSaveComplete">Saved</span>
+        <span class="button-spinner hide" id="saveGeneralButtonSpinner"></span>
+        <span class="button-success-message hide" id="generalSaveComplete">Saved</span>
       </div>
     </fieldset>
   </form>

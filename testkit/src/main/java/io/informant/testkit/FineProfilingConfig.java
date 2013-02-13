@@ -30,6 +30,8 @@ public class FineProfilingConfig {
     private int intervalMillis;
     private int totalSeconds;
     private int storeThresholdMillis;
+    @Nullable
+    private String versionHash;
 
     public boolean isEnabled() {
         return enabled;
@@ -71,10 +73,22 @@ public class FineProfilingConfig {
         this.storeThresholdMillis = storeThresholdMillis;
     }
 
+    @Nullable
+    public String getVersionHash() {
+        return versionHash;
+    }
+
+    public void setVersionHash(String versionHash) {
+        this.versionHash = versionHash;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof FineProfilingConfig) {
             FineProfilingConfig that = (FineProfilingConfig) obj;
+            // intentionally leaving off versionHash since it represents the prior version hash when
+            // sending to the server, and represents the current version hash when receiving from
+            // the server
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(tracePercentage, that.tracePercentage)
                     && Objects.equal(intervalMillis, that.intervalMillis)
@@ -86,6 +100,9 @@ public class FineProfilingConfig {
 
     @Override
     public int hashCode() {
+        // intentionally leaving off versionHash since it represents the prior version hash when
+        // sending to the server, and represents the current version hash when receiving from the
+        // server
         return Objects.hashCode(enabled, tracePercentage, intervalMillis, totalSeconds,
                 storeThresholdMillis);
     }

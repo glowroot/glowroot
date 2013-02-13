@@ -109,9 +109,12 @@ public class ConfigService {
         configListeners.add(listener);
     }
 
-    // TODO pass around config version to avoid possible clobbering
-    public void updateGeneralConfig(GeneralConfig generalConfig) {
+    public String updateGeneralConfig(GeneralConfig generalConfig, String priorVersionHash)
+            throws OptimisticLockException {
         synchronized (writeLock) {
+            if (!config.getGeneralConfig().getVersionHash().equals(priorVersionHash)) {
+                throw new OptimisticLockException();
+            }
             Config updatedConfig = Config.builder(config)
                     .generalConfig(generalConfig)
                     .build();
@@ -119,11 +122,15 @@ public class ConfigService {
             config = updatedConfig;
         }
         notifyConfigListeners();
+        return generalConfig.getVersionHash();
     }
 
-    // TODO pass around config version to avoid possible clobbering
-    public void updateCoarseProfilingConfig(CoarseProfilingConfig coarseProfilingConfig) {
+    public String updateCoarseProfilingConfig(CoarseProfilingConfig coarseProfilingConfig,
+            String priorVersionHash) throws OptimisticLockException {
         synchronized (writeLock) {
+            if (!config.getCoarseProfilingConfig().getVersionHash().equals(priorVersionHash)) {
+                throw new OptimisticLockException();
+            }
             Config updatedConfig = Config.builder(config)
                     .coarseProfilingConfig(coarseProfilingConfig)
                     .build();
@@ -131,11 +138,15 @@ public class ConfigService {
             config = updatedConfig;
         }
         notifyConfigListeners();
+        return coarseProfilingConfig.getVersionHash();
     }
 
-    // TODO pass around config version to avoid possible clobbering
-    public void updateFineProfilingConfig(FineProfilingConfig fineProfilingConfig) {
+    public String updateFineProfilingConfig(FineProfilingConfig fineProfilingConfig,
+            String priorVersionHash) throws OptimisticLockException {
         synchronized (writeLock) {
+            if (!config.getFineProfilingConfig().getVersionHash().equals(priorVersionHash)) {
+                throw new OptimisticLockException();
+            }
             Config updatedConfig = Config.builder(config)
                     .fineProfilingConfig(fineProfilingConfig)
                     .build();
@@ -143,11 +154,15 @@ public class ConfigService {
             config = updatedConfig;
         }
         notifyConfigListeners();
+        return fineProfilingConfig.getVersionHash();
     }
 
-    // TODO pass around config version to avoid possible clobbering
-    public void updateUserConfig(UserConfig userConfig) {
+    public String updateUserConfig(UserConfig userConfig, String priorVersionHash)
+            throws OptimisticLockException {
         synchronized (writeLock) {
+            if (!config.getUserConfig().getVersionHash().equals(priorVersionHash)) {
+                throw new OptimisticLockException();
+            }
             Config updatedConfig = Config.builder(config)
                     .userConfig(userConfig)
                     .build();
@@ -155,14 +170,19 @@ public class ConfigService {
             config = updatedConfig;
         }
         notifyConfigListeners();
+        return userConfig.getVersionHash();
     }
 
-    // TODO pass around config version to avoid possible clobbering
-    public void updatePluginConfig(PluginConfig pluginConfig) {
+    public String updatePluginConfig(PluginConfig pluginConfig, String priorVersionHash)
+            throws OptimisticLockException {
         synchronized (writeLock) {
             List<PluginConfig> pluginConfigs = Lists.newArrayList(config.getPluginConfigs());
             for (ListIterator<PluginConfig> i = pluginConfigs.listIterator(); i.hasNext();) {
-                if (pluginConfig.getId().equals(i.next().getId())) {
+                PluginConfig loopPluginConfig = i.next();
+                if (pluginConfig.getId().equals(loopPluginConfig.getId())) {
+                    if (!loopPluginConfig.getVersionHash().equals(priorVersionHash)) {
+                        throw new OptimisticLockException();
+                    }
                     i.set(pluginConfig);
                 }
             }
@@ -173,6 +193,7 @@ public class ConfigService {
             config = updatedConfig;
         }
         notifyConfigListeners();
+        return pluginConfig.getVersionHash();
     }
 
     public ImmutableList<PointcutConfig> readPointcutConfigs() {
@@ -189,23 +210,23 @@ public class ConfigService {
             updatedConfig.writeToFileIfNeeded(configFile);
             config = updatedConfig;
         }
-        return pointcutConfig.getUniqueHash();
+        return pointcutConfig.getVersionHash();
     }
 
-    public String updatePointcutConfig(String previousUniqueHash, PointcutConfig pointcutConfig) {
+    public String updatePointcutConfig(String priorVersionHash, PointcutConfig pointcutConfig) {
         synchronized (writeLock) {
             List<PointcutConfig> pointcutConfigs = Lists.newArrayList(config.getPointcutConfigs());
             boolean found = false;
             for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
-                if (previousUniqueHash.equals(i.next().getUniqueHash())) {
+                if (priorVersionHash.equals(i.next().getVersionHash())) {
                     i.set(pointcutConfig);
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                logger.warn("pointcut config unique hash '{}' not found", previousUniqueHash);
-                return previousUniqueHash;
+                logger.warn("pointcut config unique hash '{}' not found", priorVersionHash);
+                return priorVersionHash;
             }
             Config updatedConfig = Config.builder(config)
                     .pointcutConfigs(ImmutableList.copyOf(pointcutConfigs))
@@ -213,7 +234,7 @@ public class ConfigService {
             updatedConfig.writeToFileIfNeeded(configFile);
             config = updatedConfig;
         }
-        return pointcutConfig.getUniqueHash();
+        return pointcutConfig.getVersionHash();
     }
 
     public void deletePointcutConfig(String uniqueHash) {
@@ -221,7 +242,7 @@ public class ConfigService {
             List<PointcutConfig> pointcutConfigs = Lists.newArrayList(config.getPointcutConfigs());
             boolean found = false;
             for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
-                if (uniqueHash.equals(i.next().getUniqueHash())) {
+                if (uniqueHash.equals(i.next().getVersionHash())) {
                     i.remove();
                     found = true;
                     break;
@@ -263,4 +284,7 @@ public class ConfigService {
         } catch (IOException f) {
         }
     }
+
+    @SuppressWarnings("serial")
+    public static class OptimisticLockException extends Exception {}
 }

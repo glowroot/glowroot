@@ -99,7 +99,7 @@ public class Informant {
         // need to serialize nulls since the /config service treats absence of attribute different
         // from null attribute (the former doesn't update the attribute, the latter sets the
         // attribute to null)
-        post("/config/core", GsonFactory.newBuilder().serializeNulls().create().toJson(config));
+        post("/config/general", GsonFactory.newBuilder().serializeNulls().create().toJson(config));
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {

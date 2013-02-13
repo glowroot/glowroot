@@ -110,7 +110,7 @@ public class HttpServer extends HttpServerBase {
                 traceSummaryJsonService, "getSummary"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/read$",
                 configJsonService, "getConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/core$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/general$",
                 configJsonService, "updateGeneralConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/coarse-profiling$",
                 configJsonService, "updateCoarseProfilingConfig"));
