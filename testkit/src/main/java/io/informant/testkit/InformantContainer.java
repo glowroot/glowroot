@@ -36,6 +36,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
@@ -109,12 +110,10 @@ public class InformantContainer {
         String threadName = "AppUnderTest-" + threadNameCounter.getAndIncrement();
         String previousThreadName = Thread.currentThread().getName();
         try {
-            informant.resetBaselineTime();
             executionAdapter.executeAppUnderTest(appUnderTestClass, threadName);
             // wait for all traces to be written to the embedded db
-            long startMillis = System.currentTimeMillis();
-            while (informant.getNumPendingTraceWrites() > 0
-                    && System.currentTimeMillis() - startMillis < 5000) {
+            Stopwatch stopwatch = new Stopwatch().start();
+            while (informant.getNumPendingTraceWrites() > 0 && stopwatch.elapsedMillis() < 5000) {
                 Thread.sleep(100);
             }
         } finally {

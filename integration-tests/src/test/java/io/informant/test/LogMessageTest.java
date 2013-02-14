@@ -31,6 +31,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -63,10 +64,10 @@ public class LogMessageTest {
         // when
         container.executeAppUnderTest(GenerateLogMessage.class);
         // then
-        long startAt = System.currentTimeMillis();
+        Stopwatch stopwatch = new Stopwatch().start();
         List<LogMessage> messages = ImmutableList.of();
         // log messages are stored asynchronously, so may need to wait a little
-        while (messages.isEmpty() && System.currentTimeMillis() - startAt < 5000) {
+        while (messages.isEmpty() && stopwatch.elapsedMillis() < 5000) {
             messages = container.getInformant().getLogMessages();
             Thread.sleep(10);
         }

@@ -94,7 +94,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache,
-            FineGrainedProfiler fineGrainedProfiler, Clock clock, Ticker ticker,
+            FineGrainedProfiler fineGrainedProfiler, Ticker ticker, Clock clock,
             Random random, WeavingMetricImpl weavingMetric, PluginInfoCache pluginInfoCache,
             @Assisted String pluginId) {
         this.traceRegistry = traceRegistry;
@@ -210,7 +210,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            trace = new Trace((MetricImpl) metric, messageSupplier, clock, ticker, weavingMetric);
+            trace = new Trace((MetricImpl) metric, messageSupplier, ticker, clock, weavingMetric);
             trace.setBackground(background);
             if (!maybeScheduleFineProfilingUsingUserId(trace, userId)) {
                 maybeScheduleFineProfilingUsingPercentage(trace);

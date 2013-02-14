@@ -26,12 +26,13 @@ import io.informant.local.trace.TraceWriter;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -58,7 +59,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
 
     private final Object warningLock = new Object();
     @GuardedBy("warningLock")
-    private long lastWarningAt;
+    private final Stopwatch lastWarningStopwatch;
     @GuardedBy("warningLock")
     private int countSinceLastWarning;
 
@@ -70,10 +71,10 @@ public class LogMessageSinkLocal implements LogMessageSink {
     };
 
     @Inject
-    LogMessageSinkLocal(LogMessageDao logMessageDao, Clock clock) {
+    LogMessageSinkLocal(LogMessageDao logMessageDao, Ticker ticker, Clock clock) {
         this.logMessageDao = logMessageDao;
         this.clock = clock;
-        lastWarningAt = clock.currentTimeMillis() - TimeUnit.SECONDS.toMillis(60);
+        lastWarningStopwatch = new Stopwatch(ticker);
     }
 
     public void onLogMessage(Level level, String loggerName, @Nullable String message,
@@ -95,8 +96,8 @@ public class LogMessageSinkLocal implements LogMessageSink {
         // synchronized to prevent two threads from logging the warning at the same time (one should
         // log it and the other should increment the count for the next log)
         synchronized (warningLock) {
-            long currentTimeMillis = clock.currentTimeMillis();
-            if (TimeUnit.NANOSECONDS.toSeconds(currentTimeMillis - lastWarningAt) >= 60) {
+            // lastWarningStopwatch is not running the very first time
+            if (!lastWarningStopwatch.isRunning() || lastWarningStopwatch.elapsedMillis() > 60000) {
                 inStoreLogMessage.set(true);
                 try {
                     String message = "not storing a log message in the local h2 database because of"
@@ -113,7 +114,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
                 } finally {
                     inStoreLogMessage.set(false);
                 }
-                lastWarningAt = currentTimeMillis;
+                lastWarningStopwatch.reset().start();
                 countSinceLastWarning = 0;
             } else {
                 countSinceLastWarning++;

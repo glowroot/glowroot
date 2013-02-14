@@ -32,6 +32,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.base.Stopwatch;
+
 import checkers.nullness.quals.Nullable;
 
 /**
@@ -79,12 +81,11 @@ public class StuckTraceTest {
         // then
         // test harness needs to kick off test and stuck trace collector polls and marks stuck
         // traces every 100 milliseconds, so may need to wait a little
-        long startAt = System.currentTimeMillis();
+        Stopwatch stopwatch = new Stopwatch();
         Trace trace = null;
         while (true) {
             trace = container.getInformant().getActiveTrace(0);
-            if ((trace != null && trace.isStuck())
-                    || System.currentTimeMillis() - startAt >= 2000) {
+            if ((trace != null && trace.isStuck()) || stopwatch.elapsedMillis() > 2000) {
                 break;
             }
             Thread.sleep(10);

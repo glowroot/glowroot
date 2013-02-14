@@ -31,6 +31,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -55,8 +56,6 @@ public class Informant {
 
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
-
-    private long baselineTime;
 
     Informant(int uiPort, AsyncHttpClient asyncHttpClient) {
         this.uiPort = uiPort;
@@ -231,13 +230,13 @@ public class Informant {
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
-    public Trace getActiveTrace(int timeout) throws Exception {
-        long startAt = System.currentTimeMillis();
+    public Trace getActiveTrace(int timeoutMillis) throws Exception {
+        Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
-        // try at least once (e.g. in case timeout == 0)
+        // try at least once (e.g. in case timeoutMillis == 0)
         while (true) {
             trace = getActiveTrace();
-            if (trace != null || System.currentTimeMillis() - startAt >= timeout) {
+            if (trace != null || stopwatch.elapsedMillis() > timeoutMillis) {
                 break;
             }
             Thread.sleep(20);
@@ -277,14 +276,6 @@ public class Informant {
     public int getNumPendingTraceWrites() throws Exception {
         String numTraces = get("/admin/num-pending-trace-writes");
         return Integer.parseInt(numTraces);
-    }
-
-    void resetBaselineTime() throws InterruptedException {
-        if (baselineTime != 0) {
-            // guarantee that there is no possible overlap
-            Thread.sleep(1);
-        }
-        this.baselineTime = System.currentTimeMillis();
     }
 
     @Nullable

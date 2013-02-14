@@ -128,9 +128,8 @@ public class Trace {
     @LazyNonNull
     private volatile ImmutableList<Snapshot> finalTraceMetricSnapshots;
 
-    public Trace(MetricImpl metric, MessageSupplier messageSupplier,
-            Clock clock, Ticker ticker, WeavingMetricImpl weavingMetric) {
-
+    public Trace(MetricImpl metric, MessageSupplier messageSupplier, Ticker ticker, Clock clock,
+            WeavingMetricImpl weavingMetric) {
         this.ticker = ticker;
         startAt = clock.currentTimeMillis();
         id = new TraceUniqueId(startAt);

@@ -23,6 +23,7 @@ import checkers.igj.quals.ReadOnly;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
 /**
@@ -55,7 +56,7 @@ public class Threads {
 
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
         // time to shutdown when testing tomcat plugin
-        long startedAt = System.currentTimeMillis();
+        Stopwatch stopwatch = new Stopwatch().start();
         while (true) {
             List<Thread> rogueThreads = Lists.newArrayList();
             for (Thread thread : currentThreads()) {
@@ -67,7 +68,7 @@ public class Threads {
             if (rogueThreads.isEmpty()) {
                 // success
                 return;
-            } else if (System.currentTimeMillis() - startedAt > 5000) {
+            } else if (stopwatch.elapsedMillis() > 5000) {
                 throw new RogueThreadsException(rogueThreads);
             } else {
                 // failure, wait a few milliseconds before trying again
@@ -81,14 +82,14 @@ public class Threads {
             throws InterruptedException {
 
         // give it 5 seconds to shutdown threads
-        long startedAt = System.currentTimeMillis();
+        Stopwatch stopwatch = new Stopwatch().start();
         while (true) {
             List<Thread> rogueThreads = Lists.newArrayList(currentThreads());
             rogueThreads.removeAll(preExistingThreads);
             if (rogueThreads.isEmpty()) {
                 // success
                 return;
-            } else if (System.currentTimeMillis() - startedAt > 5000) {
+            } else if (stopwatch.elapsedMillis() > 5000) {
                 throw new RogueThreadsException(rogueThreads);
             } else {
                 // failure, wait a few milliseconds before trying again
