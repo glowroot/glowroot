@@ -54,9 +54,9 @@ public class WeavingMetricImpl implements WeavingMetric {
         return traceMetric;
     }
 
-    TraceMetric initTraceMetric(Trace trace) {
+    TraceMetric initTraceMetric() {
         TraceMetric traceMetric = metricImpl.get();
-        traceMetric.setCurrentTrace(trace);
+        traceMetric.setLinkedToTrace();
         return traceMetric;
     }
 

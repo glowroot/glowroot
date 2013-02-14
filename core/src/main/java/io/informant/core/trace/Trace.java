@@ -134,20 +134,15 @@ public class Trace {
         startAt = clock.currentTimeMillis();
         id = new TraceUniqueId(startAt);
         long startTick = ticker.read();
-        // 'this' is only being passed to metric.start() to be stored in a ThreadLocal (should not
-        // violate safe publication)
         TraceMetric traceMetric = metric.start(startTick);
-        traceMetric.setCurrentTrace(this);
+        traceMetric.setLinkedToTrace();
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
         traceMetrics.add(traceMetric);
         metrics.add(metric);
         // the weaving metric thread local is initialized to an empty TraceMetric instance so that
         // it can be cached in this class (otherwise it is painful to synchronize properly between
         // clearThreadLocalMetrics() and getTraceMetrics())
-        //
-        // 'this' is only being passed to metric.start() to be stored in a ThreadLocal (should not
-        // violate safe publication)
-        weavingTraceMetric = weavingMetric.initTraceMetric(this);
+        weavingTraceMetric = weavingMetric.initTraceMetric();
         this.weavingMetric = weavingMetric;
     }
 
@@ -337,7 +332,7 @@ public class Trace {
 
     public void linkTraceMetric(MetricImpl metric, TraceMetric traceMetric) {
         traceMetrics.add(traceMetric);
-        traceMetric.setCurrentTrace(this);
+        traceMetric.setLinkedToTrace();
         metrics.add(metric);
     }
 

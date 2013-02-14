@@ -167,8 +167,9 @@ public class HttpServer extends HttpServerBase {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
                 if (uriMappingEntry.getValue() instanceof HttpService) {
-                    return ((HttpService) uriMappingEntry.getValue()).handleRequest(request,
-                            channel);
+                    HttpResponse response = ((HttpService) uriMappingEntry.getValue())
+                            .handleRequest(request, channel);
+                    return response;
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
@@ -190,15 +191,6 @@ public class HttpServer extends HttpServerBase {
         }
         logger.warn("unexpected uri '{}'", request.getUri());
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
-    }
-
-    static void preventCaching(HttpResponse response) {
-        // prevent caching of dynamic json data, using 'definitive' minimum set of headers from
-        // http://stackoverflow.com/questions/49547/
-        // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
-        response.setHeader(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-        response.setHeader(Names.PRAGMA, "no-cache");
-        response.setHeader(Names.EXPIRES, new Date(0));
     }
 
     private static HttpResponse handleStaticRequest(String path) throws IOException {
@@ -285,18 +277,18 @@ public class HttpServer extends HttpServerBase {
         if (responseText == null) {
             response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.EMPTY_BUFFER);
-            preventCaching(response);
+            HttpServices.preventCaching(response);
         } else if (responseText instanceof String) {
             response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-            preventCaching(response);
+            HttpServices.preventCaching(response);
         } else if (responseText instanceof byte[]) {
             response = new DefaultHttpResponse(HTTP_1_1, OK);
             response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-            preventCaching(response);
+            HttpServices.preventCaching(response);
         } else {
             logger.error("unexpected type of json service response '{}'", responseText.getClass()
                     .getName());

@@ -104,7 +104,6 @@ class PreInitializeClasses {
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.Stopwatch");
         types.add("com.google.common.base.Stopwatch$1");
-        types.add("com.google.common.base.Strings");
         types.add("com.google.common.base.Supplier");
         types.add("com.google.common.base.Suppliers");
         types.add("com.google.common.base.Suppliers$SupplierOfInstance");
@@ -293,13 +292,9 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.SettableFuture");
         types.add("com.google.common.util.concurrent.UncheckedExecutionException");
         types.add("com.google.common.util.concurrent.Uninterruptibles");
-        types.add("io.informant.api.ErrorMessage");
-        types.add("io.informant.api.ExceptionInfo");
         types.add("io.informant.api.Logger");
         types.add("io.informant.api.LoggerFactory");
         types.add("io.informant.api.LoggerFactory$LoggerImpl");
-        types.add("io.informant.api.Message");
-        types.add("io.informant.api.MessageSupplier");
         types.add("io.informant.api.Metric");
         types.add("io.informant.api.Timer");
         types.add("io.informant.api.weaving.InjectMethodArg");
@@ -321,13 +316,8 @@ class PreInitializeClasses {
         types.add("io.informant.core.log.LogMessageSink");
         types.add("io.informant.core.log.LoggerFactoryImpl");
         types.add("io.informant.core.log.LoggerFactoryImpl$LoggerImpl");
-        types.add("io.informant.core.trace.MergedStackTree");
         types.add("io.informant.core.trace.MetricImpl");
-        types.add("io.informant.core.trace.RootSpan");
-        types.add("io.informant.core.trace.Span");
-        types.add("io.informant.core.trace.Trace");
         types.add("io.informant.core.trace.TraceMetric");
-        types.add("io.informant.core.trace.TraceUniqueId");
         types.add("io.informant.core.trace.WeavingMetricImpl");
         types.add("io.informant.core.trace.WeavingMetricImpl$NopTimer");
         types.add("io.informant.core.weaving.Advice");

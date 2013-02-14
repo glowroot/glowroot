@@ -72,7 +72,7 @@ class TraceSnapshotHttpService implements HttpService {
             // keep alive is not supported to avoid having to calculate content length
             response.setHeader(Names.CONNECTION, "close");
         }
-        HttpServer.preventCaching(response);
+        HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
         ChannelFuture f = channel.write(byteStream.toChunkedInput());

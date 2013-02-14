@@ -18,7 +18,6 @@ package io.informant.core.trace;
 import io.informant.api.Timer;
 import io.informant.core.util.PartiallyThreadSafe;
 import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
@@ -50,8 +49,10 @@ public class TraceMetric implements Timer {
     // storing Trace here is just an optimization to avoid a second ThreadLocal call in cases where
     // the TraceMetric ThreadLocal already has to be looked up
     // there is no visibility issue for this field as it is only ever accessed by a single thread
-    @Nullable
-    private Trace currentTrace;
+
+    // tracking whether this is linked to a trace is just an optimization to avoid a ThreadLocal
+    // access to look up the trace in PluginServicesImpl.startMetric()
+    private boolean linkedToTrace;
 
     private final Ticker ticker;
 
@@ -89,7 +90,7 @@ public class TraceMetric implements Timer {
     }
 
     public boolean isLinkedToTrace() {
-        return currentTrace != null;
+        return linkedToTrace;
     }
 
     // start() avoids a ticker read in some cases, so don't just implement as start(ticker.read())
@@ -131,11 +132,11 @@ public class TraceMetric implements Timer {
         count = 0;
         startTick = 0;
         selfNestingLevel = 0;
-        currentTrace = null;
+        linkedToTrace = false;
     }
 
-    void setCurrentTrace(Trace currentTrace) {
-        this.currentTrace = currentTrace;
+    void setLinkedToTrace() {
+        linkedToTrace = true;
     }
 
     private void recordData(long time) {
@@ -159,8 +160,7 @@ public class TraceMetric implements Timer {
                 .add("count", count)
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
-                // don't add currentTrace itself since that leads to infinite loop
-                .add("currentTraceId", currentTrace == null ? null : currentTrace.getId())
+                .add("linkedToTrace", linkedToTrace)
                 .toString();
     }
 
