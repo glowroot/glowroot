@@ -138,8 +138,6 @@ class JdbcMessageSupplier extends MessageSupplier {
         return Message.from(sb.toString(), args);
     }
 
-    // TODO put row num and bind parameters in detail map?
-
     void setHasPerformedNext() {
         if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
             numRows = 0;
