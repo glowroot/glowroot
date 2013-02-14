@@ -26,8 +26,6 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
 
-import org.objectweb.asm.Type;
-
 import checkers.nullness.quals.Nullable;
 
 import com.google.gson.Gson;
@@ -101,12 +99,12 @@ class PointcutConfigJsonService implements JsonService {
             JsonObject matchingMethod = new JsonObject();
             matchingMethod.add("name", new JsonPrimitive(parsedMethod.getName()));
             JsonArray argTypeNames = new JsonArray();
-            for (Type argType : parsedMethod.getArgTypes()) {
-                argTypeNames.add(new JsonPrimitive(getSimplifiedClassName(argType)));
+            for (String argTypeName : parsedMethod.getArgTypeNames()) {
+                argTypeNames.add(new JsonPrimitive(getSimplifiedTypeName(argTypeName)));
             }
             matchingMethod.add("argTypeNames", argTypeNames);
             matchingMethod.add("returnTypeName", new JsonPrimitive(
-                    getSimplifiedClassName(parsedMethod.getReturnType())));
+                    getSimplifiedTypeName(parsedMethod.getReturnTypeName())));
             JsonArray modifiers = new JsonArray();
             for (String modifier : Modifier.toString(parsedMethod.getModifiers()).split(" ")) {
                 modifiers.add(new JsonPrimitive(modifier.toUpperCase(Locale.ENGLISH)));
@@ -118,12 +116,11 @@ class PointcutConfigJsonService implements JsonService {
     }
 
     // strip "java.lang." from String, Object, etc
-    private String getSimplifiedClassName(Type type) {
-        String className = type.getClassName();
-        if (className.matches("java\\.lang\\.[^\\.]+")) {
-            return className.substring("java.lang.".length());
+    private String getSimplifiedTypeName(String typeName) {
+        if (typeName.matches("java\\.lang\\.[^\\.]+")) {
+            return typeName.substring("java.lang.".length());
         }
-        return className;
+        return typeName;
     }
 
     class TypeNameRequest {

@@ -85,9 +85,9 @@ class AdviceMatcher {
     private boolean isMethodMatch(ParsedMethod parsedMethod) {
         if (!isMethodNameMatch(parsedMethod.getName())) {
             return false;
-        } else if (!isMethodArgTypesMatch(parsedMethod.getArgTypes())) {
+        } else if (!isMethodArgTypesMatch(parsedMethod.getArgTypeNames())) {
             return false;
-        } else if (!isMethodReturnMatch(parsedMethod.getReturnType())) {
+        } else if (!isMethodReturnMatch(parsedMethod.getReturnTypeName())) {
             return false;
         } else if (!isMethodModifiersMatch(parsedMethod.getModifiers())) {
             return false;
@@ -107,7 +107,7 @@ class AdviceMatcher {
         }
     }
 
-    private boolean isMethodArgTypesMatch(@ReadOnly List<Type> argTypes) {
+    private boolean isMethodArgTypesMatch(@ReadOnly List<String> argTypeNames) {
         String[] pointcutMethodArgs = advice.getPointcut().methodArgs();
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
@@ -119,26 +119,26 @@ class AdviceMatcher {
                     return true;
                 }
             }
-            if (argTypes.size() == i) {
+            if (argTypeNames.size() == i) {
                 // have run out of argument types to match
                 return false;
             }
             // only supporting * at this point
             if (!pointcutMethodArgs[i].equals("*")
-                    && !pointcutMethodArgs[i].equals(argTypes.get(i).getClassName())) {
+                    && !pointcutMethodArgs[i].equals(argTypeNames.get(i))) {
                 return false;
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
-        return argTypes.size() == pointcutMethodArgs.length;
+        return argTypeNames.size() == pointcutMethodArgs.length;
     }
 
-    private boolean isMethodReturnMatch(Type returnType) {
+    private boolean isMethodReturnMatch(String returnTypeName) {
         String pointcutMethodReturn = advice.getPointcut().methodReturn();
         if (pointcutMethodReturn.equals("")) {
             return true;
         } else {
-            return pointcutMethodReturn.equals(returnType.getClassName());
+            return pointcutMethodReturn.equals(returnTypeName);
         }
     }
 

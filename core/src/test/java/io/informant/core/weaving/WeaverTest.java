@@ -660,8 +660,6 @@ public class WeaverTest {
     }
 
     @Test
-    // TODO handle inner classes with io.informant.core.weaving.BasicMisc.Inner instead of
-    // io.informant.core.weaving.BasicMisc$Inner (??) or at least doc clearly
     public void shouldHandleInnerClassArg() throws Exception {
         // given
         BasicWithInnerClassArgAdvice.resetThreadLocals();

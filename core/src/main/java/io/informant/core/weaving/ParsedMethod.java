@@ -31,20 +31,25 @@ import com.google.common.collect.ImmutableList;
 public class ParsedMethod {
 
     private final String name;
-    private final ImmutableList<Type> argTypes;
-    private final Type returnType;
+    private final ImmutableList<String> argTypeNames;
+    private final String returnTypeName;
     private final int modifiers;
 
     static ParsedMethod from(String name, ImmutableList<Type> argTypes, Type returnType,
             int modifiers) {
-        return new ParsedMethod(name, argTypes, returnType, modifiers);
+        ImmutableList.Builder<String> argTypeNames = ImmutableList.builder();
+        for (Type argType : argTypes) {
+            argTypeNames.add(argType.getClassName().replace('$', '.'));
+        }
+        String returnTypeName = returnType.getClassName().replace('$', '.');
+        return new ParsedMethod(name, argTypeNames.build(), returnTypeName, modifiers);
     }
 
-    private ParsedMethod(String name, ImmutableList<Type> argTypes, Type returnType,
+    private ParsedMethod(String name, ImmutableList<String> argTypeNames, String returnTypeName,
             int modifiers) {
         this.name = name;
-        this.argTypes = argTypes;
-        this.returnType = returnType;
+        this.argTypeNames = argTypeNames;
+        this.returnTypeName = returnTypeName;
         this.modifiers = modifiers;
     }
 
@@ -52,19 +57,20 @@ public class ParsedMethod {
         return name;
     }
 
-    public ImmutableList<Type> getArgTypes() {
-        return argTypes;
+    // these are class names, e.g.
+    public ImmutableList<String> getArgTypeNames() {
+        return argTypeNames;
     }
 
-    public Type getReturnType() {
-        return returnType;
+    public String getReturnTypeName() {
+        return returnTypeName;
     }
 
     public int getModifiers() {
         return modifiers;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
     // identify a method within a given class
     @Override
     public boolean equals(@Nullable Object obj) {
@@ -73,24 +79,24 @@ public class ParsedMethod {
         }
         if (obj instanceof ParsedMethod) {
             ParsedMethod that = (ParsedMethod) obj;
-            return Objects.equal(name, that.name) && Objects.equal(argTypes, that.argTypes);
+            return Objects.equal(name, that.name) && Objects.equal(argTypeNames, that.argTypeNames);
         }
         return false;
     }
 
-    // equals and hashCode are only defined in terms of name and argTypes since those uniquely
+    // equals and hashCode are only defined in terms of name and argTypeNames since those uniquely
     // identify a method within a given class
     @Override
     public int hashCode() {
-        return Objects.hashCode(name, argTypes);
+        return Objects.hashCode(name, argTypeNames);
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("name", name)
-                .add("argTypes", argTypes)
-                .add("returnType", returnType)
+                .add("argTypeNames", argTypeNames)
+                .add("returnTypeName", returnTypeName)
                 .add("modifiers", modifiers)
                 .toString();
     }

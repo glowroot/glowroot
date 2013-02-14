@@ -141,7 +141,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.core.weaving.BasicMisc", methodName = "withInnerArg",
-            methodArgs = { "io.informant.core.weaving.BasicMisc$Inner" })
+            methodArgs = { "io.informant.core.weaving.BasicMisc.Inner" })
     public static class BasicWithInnerClassArgAdvice {
         public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
