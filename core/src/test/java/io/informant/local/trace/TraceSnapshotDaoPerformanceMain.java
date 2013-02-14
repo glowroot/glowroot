@@ -23,7 +23,6 @@ import io.informant.core.util.RollingFile;
 import io.informant.core.util.Static;
 
 import java.io.File;
-import java.io.IOException;
 
 import com.google.common.base.Stopwatch;
 
@@ -39,7 +38,7 @@ public class TraceSnapshotDaoPerformanceMain {
 
     private TraceSnapshotDaoPerformanceMain() {}
 
-    public static void main(String... args) throws IOException {
+    public static void main(String... args) throws Exception {
         TraceSnapshotTestData snapshotTestData = new TraceSnapshotTestData();
         DataSource dataSource = new DataSource();
         RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);

@@ -106,14 +106,14 @@ public class InformantContainer {
 
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
-
         String threadName = "AppUnderTest-" + threadNameCounter.getAndIncrement();
         String previousThreadName = Thread.currentThread().getName();
         try {
             executionAdapter.executeAppUnderTest(appUnderTestClass, threadName);
             // wait for all traces to be written to the embedded db
             Stopwatch stopwatch = new Stopwatch().start();
-            while (informant.getNumPendingTraceWrites() > 0 && stopwatch.elapsedMillis() < 5000) {
+            while (informant.getNumPendingCompleteTraces() > 0
+                    && stopwatch.elapsedMillis() < 5000) {
                 Thread.sleep(100);
             }
         } finally {
@@ -132,6 +132,11 @@ public class InformantContainer {
 
     public void killExternalJvm() throws Exception {
         ((ExternalJvmExecutionAdapter) executionAdapter).kill();
+    }
+
+    // currently only reports number of bytes written to console for external jvm app container
+    public long getNumConsoleBytes() {
+        return ((ExternalJvmExecutionAdapter) executionAdapter).getNumConsoleBytes();
     }
 
     public void closeWithoutDeletingDataDir() throws Exception {

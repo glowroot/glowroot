@@ -107,8 +107,7 @@ class RollingOutputStream extends OutputStream {
 
     FileBlock endBlock() {
         fsyncNeeded.set(true);
-        long length = currIndex - blockStartIndex;
-        return FileBlock.from(blockStartIndex, length);
+        return FileBlock.from(blockStartIndex, currIndex - blockStartIndex);
     }
 
     boolean stillExists(FileBlock block) {
@@ -171,14 +170,10 @@ class RollingOutputStream extends OutputStream {
         out.close();
         tmpOut.close();
         if (!rollingFile.delete()) {
-            logger.error("unable to delete existing rolling file during resize");
-            // TODO recover as best as possible
-            return;
+            throw new IOException("Unable to delete existing rolling file during resize");
         }
         if (!tmpRollingFile.renameTo(rollingFile)) {
-            logger.error("unable to rename new rolling file during resize");
-            // TODO recover as best as possible
-            return;
+            throw new IOException("Unable to rename new rolling file during resize");
         }
         rollingSizeKb = newRollingSizeKb;
         rollingSizeBytes = newRollingSizeBytes;
@@ -216,10 +211,16 @@ class RollingOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        if (len > rollingSizeBytes) {
-            logger.error("cannot write more bytes than max file size");
-            return;
+        if (currIndex + len - blockStartIndex > rollingSizeBytes) {
+            throw new IOException("A single block cannot have more bytes than size of the rolling"
+                    + " file");
         }
+        // update header before writing data in case of abnormal shutdown during writing data
+        currIndex += len;
+        out.seek(HEADER_CURR_INDEX_POS);
+        out.writeLong(currIndex);
+        out.seek(HEADER_SKIP_BYTES + currPosition);
+
         long remaining = rollingSizeBytes - currPosition;
         if (len >= remaining) {
             // intentionally handling == case here
@@ -231,11 +232,5 @@ class RollingOutputStream extends OutputStream {
             out.write(b, off, len);
             currPosition += len;
         }
-        currIndex += len;
-        // update header at this point instead of in endBlock() in order to always keep track of
-        // what data has been overwritten (e.g. in case of abnormal shutdown)
-        out.seek(HEADER_CURR_INDEX_POS);
-        out.writeLong(currIndex);
-        out.seek(HEADER_SKIP_BYTES + currPosition);
     }
 }

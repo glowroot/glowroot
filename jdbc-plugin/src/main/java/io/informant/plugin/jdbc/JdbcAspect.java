@@ -73,8 +73,8 @@ public class JdbcAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcAspect.class);
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant.plugins:jdbc-plugin");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant.plugins:jdbc-plugin");
 
     private static final AtomicBoolean noSqlTextAvailableLoggedOnce = new AtomicBoolean();
 
@@ -403,16 +403,16 @@ public class JdbcAspect {
                     return;
                 }
                 StatementMirror mirror = getStatementMirror(statement);
-                JdbcMessageSupplier lastSpan = mirror.getLastJdbcMessageSupplier();
-                if (lastSpan == null) {
-                    // tracing must be disabled (e.g. exceeded trace limit per operation)
+                JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
+                if (lastJdbcMessageSupplier == null) {
+                    // tracing must be disabled (e.g. exceeded span limit per trace)
                     return;
                 }
                 if (currentRowValid) {
-                    lastSpan.setNumRows(resultSet.getRow());
-                    // TODO also record time spent in next() into JdbcSpan
+                    lastJdbcMessageSupplier.setNumRows(resultSet.getRow());
+                    // TODO also record time spent in next() into JdbcMessageSupplier
                 } else {
-                    lastSpan.setHasPerformedNext();
+                    lastJdbcMessageSupplier.setHasPerformedNext();
                 }
             } catch (SQLException e) {
                 logger.error(e.getMessage(), e);
@@ -522,7 +522,11 @@ public class JdbcAspect {
                     && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
-        public static Timer onBefore() {
+        public static Timer onBefore(@InjectTarget Statement statement) {
+            // help out gc a little by clearing the weak reference, don't want to solely rely on
+            // this (and use strong reference) in case a jdbc driver implementation closes
+            // statements in finalize by calling an internal method and not calling public close()
+            getStatementMirror(statement).setLastJdbcMessageSupplier(null);
             return pluginServices.startTimer(metric);
         }
         @OnAfter

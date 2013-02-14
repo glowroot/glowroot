@@ -60,8 +60,8 @@ import checkers.nullness.quals.Nullable;
 @Aspect
 public class ServletAspect {
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant.plugins:servlet-plugin");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant.plugins:servlet-plugin");
 
     private static final ThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
             new ThreadLocal</*@Nullable*/ServletMessageSupplier>();
@@ -259,9 +259,7 @@ public class ServletAspect {
         }
     }
 
-    // TODO support deprecated HttpSession.putValue()
-
-    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "setAttribute",
+    @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
             methodArgs = { "java.lang.String", "java.lang.Object" })
     public static class SetAttributeAdvice {
         @IsEnabled

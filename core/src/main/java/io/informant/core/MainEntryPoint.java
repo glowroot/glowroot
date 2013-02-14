@@ -34,6 +34,7 @@ import io.informant.core.weaving.WeavingMetric;
 import io.informant.local.ui.HttpServer;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.List;
@@ -141,7 +142,11 @@ public class MainEntryPoint {
             weavingClassFileTransformer.disable();
             return;
         }
-        start(properties);
+        try {
+            start(properties);
+        } catch (Throwable t) {
+            logger.error("disabling Informant due to startup failure: {}", t.getMessage(), t);
+        }
     }
 
     private static boolean isTomcatStop() {
@@ -168,7 +173,8 @@ public class MainEntryPoint {
     }
 
     @VisibleForTesting
-    public static void start(@ReadOnly Map<String, String> properties) {
+    public static void start(@ReadOnly Map<String, String> properties) throws SQLException,
+            IOException {
         logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
         synchronized (lock) {
             if (injector != null) {
@@ -190,7 +196,7 @@ public class MainEntryPoint {
         }
     }
 
-    static void startUsingSystemProperties() {
+    static void startUsingSystemProperties() throws SQLException, IOException {
         start(getInformantProperties());
     }
 

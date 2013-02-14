@@ -35,8 +35,8 @@ import io.informant.api.weaving.Pointcut;
 @Aspect
 public class LogErrorAspect {
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant:informant-integration-tests");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant:informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.test.LogError", methodName = "log",
             methodArgs = { "java.lang.String" }, metricName = "log error")

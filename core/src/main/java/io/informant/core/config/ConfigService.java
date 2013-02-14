@@ -59,7 +59,7 @@ public class ConfigService {
     private volatile Config config;
 
     @Inject
-    ConfigService(@Named("data.dir") File dataDir, PluginInfoCache pluginInfoCache) {
+    public ConfigService(@Named("data.dir") File dataDir, PluginInfoCache pluginInfoCache) {
         logger.debug("<init>()");
         this.pluginInfoCache = pluginInfoCache;
         configFile = new File(dataDir, "config.json");

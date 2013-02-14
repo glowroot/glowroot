@@ -37,7 +37,6 @@ import java.util.concurrent.Executors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 
 /**
  * @author Trask Stalnaker
@@ -52,6 +51,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
     private final ExecutorService consolePipeExecutorService;
     private final SocketCommander socketCommander;
     private final Thread shutdownHook;
+    private volatile long numConsoleBytes;
 
     ExternalJvmExecutionAdapter(final Map<String, String> properties) throws IOException {
         socketCommander = new SocketCommander();
@@ -63,7 +63,15 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         consolePipeExecutorService.submit(new Runnable() {
             public void run() {
                 try {
-                    ByteStreams.copy(process.getInputStream(), System.out);
+                    byte[] buffer = new byte[100];
+                    while (true) {
+                        int n = process.getInputStream().read(buffer);
+                        if (n == -1) {
+                            break;
+                        }
+                        numConsoleBytes += n;
+                        System.out.write(buffer, 0, n);
+                    }
                 } catch (IOException e) {
                     logger.error(e.getMessage(), e);
                 }
@@ -115,6 +123,10 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         process.waitFor();
         consolePipeExecutorService.shutdownNow();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
+    }
+
+    public long getNumConsoleBytes() {
+        return numConsoleBytes;
     }
 
     public static void main(String[] args) {

@@ -46,11 +46,11 @@ public class TraceSnapshotDaoDeletePerformanceMain {
         profilingConfig.setIntervalMillis(10);
         container.getInformant().updateCoarseProfilingConfig(profilingConfig);
         container.executeAppUnderTest(GenerateTraces.class);
-        int pendingWrites = container.getInformant().getNumPendingTraceWrites();
+        int pendingWrites = container.getInformant().getNumPendingCompleteTraces();
         while (pendingWrites > 0) {
             logger.info("pending trace writes: {}", pendingWrites);
             Thread.sleep(1000);
-            pendingWrites = container.getInformant().getNumPendingTraceWrites();
+            pendingWrites = container.getInformant().getNumPendingCompleteTraces();
         }
         File dbFile = new File("informant.h2.db");
         long dbSize = dbFile.length();

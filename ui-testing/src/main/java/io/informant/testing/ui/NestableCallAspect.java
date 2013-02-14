@@ -42,13 +42,13 @@ import com.google.common.collect.ImmutableMap;
 @Aspect
 public class NestableCallAspect {
 
-    private static final ImmutableList<String> USER_IDS = ImmutableList.of("able", "baker",
-            "charlie");
+    private static final ImmutableList<String> USER_IDS =
+            ImmutableList.of("able", "baker", "charlie");
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant:informant-ui-testing");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant:informant-ui-testing");
 
     @Pointcut(typeName = "io.informant.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable", captureNested = false)

@@ -41,8 +41,8 @@ import com.google.common.collect.ImmutableMap;
 @Aspect
 public class LevelOneAspect {
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant:informant-integration-tests");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant:informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.test.LevelOne", methodName = "call",
             methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level one")

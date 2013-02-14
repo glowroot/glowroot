@@ -32,17 +32,15 @@ import checkers.nullness.quals.Nullable;
 // theoretically return null even where it seems to not make sense
 class HttpServletRequest {
 
-    private static final UnresolvedMethod getSessionOneArgMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpServletRequest", "getSession",
-            boolean.class);
-    private static final UnresolvedMethod getMethodMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpServletRequest", "getMethod");
-    private static final UnresolvedMethod getRequestURIMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpServletRequest", "getRequestURI");
-    private static final UnresolvedMethod getParameterMapMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpServletRequest", "getParameterMap");
-    private static final UnresolvedMethod getAttributeMethod = UnresolvedMethod.from(
-            "javax.servlet.ServletRequest", "getAttribute");
+    private static final UnresolvedMethod getSessionOneArgMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getSession",
+                    boolean.class);
+    private static final UnresolvedMethod getMethodMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getMethod");
+    private static final UnresolvedMethod getRequestURIMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getRequestURI");
+    private static final UnresolvedMethod getParameterMapMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpServletRequest", "getParameterMap");
 
     private final Object realRequest;
 
@@ -86,11 +84,5 @@ class HttpServletRequest {
         } else {
             return parameterMap;
         }
-    }
-
-    @Nullable
-    String getAttribute(String name) {
-        return (String) getAttributeMethod.invokeWithDefaultOnError(realRequest, name,
-                "<error calling ServletRequest.getAttribute()>");
     }
 }

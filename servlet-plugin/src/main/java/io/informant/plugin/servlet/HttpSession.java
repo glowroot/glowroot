@@ -32,14 +32,14 @@ import checkers.nullness.quals.Nullable;
 // even where it seems to not make sense
 class HttpSession {
 
-    private static final UnresolvedMethod getIdMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpSession", "getId");
-    private static final UnresolvedMethod isNewMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpSession", "isNew");
-    private static final UnresolvedMethod getAttributeNamesMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpSession", "getAttributeNames");
-    private static final UnresolvedMethod getAttributeMethod = UnresolvedMethod.from(
-            "javax.servlet.http.HttpSession", "getAttribute", String.class);
+    private static final UnresolvedMethod getIdMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpSession", "getId");
+    private static final UnresolvedMethod isNewMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpSession", "isNew");
+    private static final UnresolvedMethod getAttributeNamesMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpSession", "getAttributeNames");
+    private static final UnresolvedMethod getAttributeMethod =
+            UnresolvedMethod.from("javax.servlet.http.HttpSession", "getAttribute", String.class);
 
     private final Object realSession;
 

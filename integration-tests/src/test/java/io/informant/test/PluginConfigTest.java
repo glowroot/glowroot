@@ -111,13 +111,11 @@ public class PluginConfigTest {
     public void shouldReadAlternateHeadline() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
-                "io.informant:informant-integration-tests");
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setEnabled(true);
         pluginConfig.setProperty("alternateHeadline", "Level 1");
         pluginConfig.setProperty("starredHeadline", false);
-        container.getInformant().updatePluginConfig("io.informant:informant-integration-tests",
-                pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
@@ -129,13 +127,11 @@ public class PluginConfigTest {
     public void shouldReadStarredHeadline() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
-                "io.informant:informant-integration-tests");
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
         pluginConfig.setEnabled(true);
         pluginConfig.setProperty("alternateHeadline", "");
         pluginConfig.setProperty("starredHeadline", true);
-        container.getInformant().updatePluginConfig("io.informant:informant-integration-tests",
-                pluginConfig);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then

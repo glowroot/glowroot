@@ -72,29 +72,20 @@ public class DataSource {
             });
 
     // creates an in-memory database
-    public DataSource() {
+    public DataSource() throws SQLException {
         dbFile = null;
-        try {
-            connection = createConnection(null);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        connection = createConnection(null);
         shutdownHookThread = new ShutdownHookThread();
+        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    public DataSource(File dbFile) {
+    public DataSource(File dbFile) throws SQLException {
         if (dbFile.getPath().endsWith(".h2.db")) {
             this.dbFile = dbFile;
         } else {
             this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
         }
-        try {
-            connection = createConnection(dbFile);
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
+        connection = createConnection(dbFile);
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
@@ -317,6 +308,9 @@ public class DataSource {
         T extractData(ResultSet resultSet) throws SQLException;
     }
 
+    // this replaces H2's default shutdown hook (see jdbc connection db_close_on_exit=false above)
+    // in order to prevent exceptions from occurring (and getting logged) during shutdown in the
+    // case that there are still traces being written
     private class ShutdownHookThread extends Thread {
         @Override
         public void run() {

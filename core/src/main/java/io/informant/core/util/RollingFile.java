@@ -47,7 +47,6 @@ public class RollingFile {
     private RandomAccessFile inFile;
     private final Object lock = new Object();
 
-    // TODO handle exceptions better
     public RollingFile(File rollingFile, int requestedRollingSizeKb) throws IOException {
         this.rollingFile = rollingFile;
         rollingOut = new RollingOutputStream(rollingFile, requestedRollingSizeKb);
@@ -55,12 +54,16 @@ public class RollingFile {
         inFile = new RandomAccessFile(rollingFile, "r");
     }
 
-    // TODO handle exceptions better
-    public FileBlock write(ByteStream byteStream) throws IOException {
+    public FileBlock write(ByteStream byteStream) {
         synchronized (lock) {
             rollingOut.startBlock();
-            byteStream.writeTo(compressedOut);
-            compressedOut.flush();
+            try {
+                byteStream.writeTo(compressedOut);
+                compressedOut.flush();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return FileBlock.expired();
+            }
             return rollingOut.endBlock();
         }
     }

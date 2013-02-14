@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,29 @@
  */
 package io.informant.test;
 
+import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.core.util.DaemonExecutors;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.TraceMarker;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+// this is a test of DataSource's jvm shutdown hook, since prior to replacing H2's jvm shutdown
+// hook, the H2 jdbc connection could get closed while there were still traces being written to it,
+// and exceptions would get thrown/logged
 public class DataSourceShutdownTest {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSourceShutdownTest.class);
@@ -42,21 +52,32 @@ public class DataSourceShutdownTest {
             return;
         }
         // given
-        InformantContainer container = InformantContainer.create(0, false);
+        final InformantContainer container = InformantContainer.create(0, false);
         container.getInformant().setStoreThresholdMillis(0);
         // when
-        container.executeAppUnderTest(ForceShutdownWhileStoringTraces.class);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(new Callable<Void>() {
+            @Nullable
+            public Void call() throws Exception {
+                container.executeAppUnderTest(ForceShutdownWhileStoringTraces.class);
+                return null;
+            }
+        });
+        while (container.getInformant().getNumStoredTraceSnapshots()
+                + container.getInformant().getNumPendingCompleteTraces() < 10) {
+            Thread.sleep(10);
+        }
         container.killExternalJvm();
         // then
-        // TODO check that no error messages were logged
-        // problem is (1) the external jvm is terminated so can't query it and (2) any error or
-        // warning messages due to database shutdown wouldn't be stored in the database log_message
-        // table, so would have to find another way to check if any error or warning messages were
-        // logged
+        // check that no error messages were logged, problem is (1) the external jvm is terminated
+        // so can't query it and (2) any error or warning messages due to database shutdown wouldn't
+        // be stored in the database log_message table, so have to resort to screen scraping
+        assertThat(container.getNumConsoleBytes()).isEqualTo(0);
+        // cleanup
+        executorService.shutdown();
     }
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
-
         public void executeApp() throws InterruptedException {
             DaemonExecutors.newSingleThreadExecutor("GenerateTraces").execute(new Runnable() {
                 public void run() {
@@ -67,14 +88,7 @@ public class DataSourceShutdownTest {
                     }
                 }
             });
-            // System.exit() in a thread, so executeApp() can return normally
-            DaemonExecutors.newSingleThreadExecutor("Shutdown").execute(new Runnable() {
-                public void run() {
-                    System.exit(0);
-                }
-            });
         }
-
         public void traceMarker() {
             try {
                 Thread.sleep(1);

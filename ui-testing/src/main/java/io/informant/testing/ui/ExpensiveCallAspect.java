@@ -44,11 +44,11 @@ import com.google.common.collect.ImmutableMap;
 @Aspect
 public class ExpensiveCallAspect {
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant:informant-ui-testing");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant:informant-ui-testing");
 
-    private static final UnresolvedMethod getHeadline = UnresolvedMethod.from(
-            "io.informant.testing.ui.ExpensiveCall", "getHeadline");
+    private static final UnresolvedMethod getHeadline =
+            UnresolvedMethod.from("io.informant.testing.ui.ExpensiveCall", "getHeadline");
 
     private static final Random random = new Random();
     private static final Exception nestedCause = new IllegalArgumentException(

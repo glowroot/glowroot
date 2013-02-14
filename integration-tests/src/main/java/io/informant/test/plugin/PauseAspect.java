@@ -34,8 +34,8 @@ import io.informant.test.plugin.LogErrorAspect.LogErrorAdvice;
 @Aspect
 public class PauseAspect {
 
-    private static final PluginServices pluginServices = PluginServices
-            .get("io.informant:informant-integration-tests");
+    private static final PluginServices pluginServices =
+            PluginServices.get("io.informant:informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.test.Pause", methodName = "pause", methodArgs = { "int" },
             metricName = "pause")

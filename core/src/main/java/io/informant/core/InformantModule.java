@@ -29,8 +29,10 @@ import io.informant.core.util.DataSource;
 import io.informant.core.util.RollingFile;
 import io.informant.core.util.ThreadSafe;
 import io.informant.core.weaving.ParsedTypeCache;
+import io.informant.local.log.LogMessageDao;
 import io.informant.local.log.LogMessageSinkLocal;
 import io.informant.local.trace.TraceSinkLocal;
+import io.informant.local.trace.TraceSnapshotDao;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +49,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
+import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
@@ -67,12 +70,33 @@ class InformantModule extends AbstractModule {
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingMetricImpl weavingMetric;
 
+    private final File dataDir;
+    private final DataSource dataSource;
+    private final ConfigService configService;
+    private final RollingFile rollingFile;
+
+    // singletons that throw checked exceptions in their constructor are initialized here so the
+    // checked exceptions can very explicitly bubble up and be used to disable informant without
+    // harming the monitored app
     InformantModule(@ReadOnly Map<String, String> properties, PluginInfoCache pluginInfoCache,
-            ParsedTypeCache parsedTypeCache, WeavingMetricImpl weavingMetric) {
+            ParsedTypeCache parsedTypeCache, WeavingMetricImpl weavingMetric) throws SQLException,
+            IOException {
         this.properties = ImmutableMap.copyOf(properties);
         this.pluginInfoCache = pluginInfoCache;
         this.parsedTypeCache = parsedTypeCache;
         this.weavingMetric = weavingMetric;
+        dataDir = DataDir.getDataDir(properties);
+        // mem db is only used for testing (by informant-testkit)
+        String h2MemDb = properties.get("internal.h2.memdb");
+        if (Boolean.parseBoolean(h2MemDb)) {
+            dataSource = new DataSource();
+        } else {
+            dataSource = new DataSource(new File(dataDir, "informant.h2.db"));
+        }
+        configService = new ConfigService(dataDir, pluginInfoCache);
+        int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
+        rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
+                rollingSizeMb * 1024);
     }
 
     @Override
@@ -108,35 +132,27 @@ class InformantModule extends AbstractModule {
 
     @Provides
     @Singleton
-    DataSource providesDataSource(@Named("data.dir") File dataDir) {
-        // mem db is only used for testing (by informant-testkit)
-        String h2MemDb = properties.get("internal.h2.memdb");
-        if (Boolean.parseBoolean(h2MemDb)) {
-            return new DataSource();
-        } else {
-            return new DataSource(new File(dataDir, "informant.h2.db"));
-        }
-    }
-
-    @Provides
-    @Singleton
-    RollingFile providesRollingFile(ConfigService configService, @Named("data.dir") File dataDir) {
-        int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
-        try {
-            // 1gb
-            return new RollingFile(new File(dataDir, "informant.rolling.db"),
-                    rollingSizeMb * 1024);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Provides
-    @Singleton
     @Named("data.dir")
     File providesDataDir() {
-        return DataDir.getDataDir(properties);
+        return dataDir;
+    }
+
+    @Provides
+    @Singleton
+    DataSource providesDataSource() {
+        return dataSource;
+    }
+
+    @Provides
+    @Singleton
+    ConfigService providesConfigService() {
+        return configService;
+    }
+
+    @Provides
+    @Singleton
+    RollingFile providesRollingFile() {
+        return rollingFile;
     }
 
     @Provides
@@ -151,8 +167,15 @@ class InformantModule extends AbstractModule {
         return Ticker.systemTicker();
     }
 
-    static void start(Injector injector) {
+    static void start(Injector injector) throws ProvisionException {
         logger.debug("start()");
+        // these three can throw SQLException (wrapped in guice ProvisionException)
+        injector.getInstance(DataSource.class);
+        injector.getInstance(LogMessageDao.class);
+        injector.getInstance(TraceSnapshotDao.class);
+        // this can throw IOException (wrapped in guice ProvisionException)
+        injector.getInstance(RollingFile.class);
+        // these have threads that need to be started
         injector.getInstance(StuckTraceCollector.class);
         injector.getInstance(CoarseGrainedProfiler.class);
         LocalModule.start(injector);

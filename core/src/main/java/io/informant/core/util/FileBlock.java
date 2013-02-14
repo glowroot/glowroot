@@ -47,6 +47,12 @@ public class FileBlock {
         }
     }
 
+    public static FileBlock expired() {
+        // startIndex == -1 is always expired since it is always before
+        // RollingOutputStream.lastCompactionBaseIndex
+        return new FileBlock(-1, 0);
+    }
+
     private FileBlock(long startIndex, long length) {
         this.startIndex = startIndex;
         this.length = length;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public class MainEntryPointTest {
     private Collection<Thread> preExistingThreads;
 
     @Before
-    public void before() {
+    public void before() throws Exception {
         preExistingThreads = Threads.currentThreads();
         MainEntryPoint.start(ImmutableMap.of("ui.port", "0"));
     }

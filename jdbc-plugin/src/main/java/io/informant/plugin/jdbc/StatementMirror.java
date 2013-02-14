@@ -45,9 +45,12 @@ class StatementMirror {
     // advice for ResultSet.next()
     //
     // PreparedStatementMirror objects are cached as long as the application server caches the
-    // PreparedStatement, so a weak reference is used here to allow the JdbcSpan to be collected
-    // once it is out of scope (and no longer strongly referenced via the current trace)
-    // TODO clear this on Statement.close() instead of using weak reference?
+    // PreparedStatement, so a weak reference is used here to allow the JdbcMessageSupplier to be
+    // collected once it is out of scope (and no longer strongly referenced via the current trace)
+    //
+    // to help out gc a little, JdbcAspect clears lastJdbcMessageSupplier on Statement.close(), but
+    // can't solely rely on this (and use strong reference) in case a jdbc driver implementation
+    // closes statements in finalize by calling an internal method and not calling public close()
     //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
@@ -89,6 +92,10 @@ class StatementMirror {
     }
 
     void setLastJdbcMessageSupplier(@Nullable JdbcMessageSupplier jdbcMessageSupplier) {
-        this.lastJdbcMessageSupplier = new WeakReference<JdbcMessageSupplier>(jdbcMessageSupplier);
+        if (jdbcMessageSupplier == null) {
+            lastJdbcMessageSupplier = null;
+        } else {
+            lastJdbcMessageSupplier = new WeakReference<JdbcMessageSupplier>(jdbcMessageSupplier);
+        }
     }
 }

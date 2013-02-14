@@ -54,11 +54,10 @@ class Beans {
         }
     }
 
-    // TODO not sure if there is a retention cycle between Method and its class, so using weak keys
-    // and weak values for now
-    //
     // note, not using nested loading cache since the nested loading cache maintains a strong
     // reference to the class loader
+    //
+    // weak keys in loading cache to prevent Class retention
     private static final LoadingCache<Class<?>, ConcurrentMap<String, Method>> getters =
             CacheBuilder.newBuilder().weakKeys()
                     .build(new CacheLoader<Class<?>, ConcurrentMap<String, Method>>() {

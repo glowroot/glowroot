@@ -89,7 +89,7 @@ class TraceExportHttpService implements HttpService {
             if (include.equals("detailTrace")) {
                 byteStreams.add(traceBuffer);
             } else {
-                // TODO stream resource content as ByteStream
+                // TODO stream resource content as ByteStream (wait for guava 14 and ByteSource)
                 byteStreams.add(ByteStream.of(getResourceContent(include)));
             }
             curr = matcher.end();

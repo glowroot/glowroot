@@ -26,7 +26,7 @@ class Viewer {
 
     private Viewer() {}
 
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) throws Exception {
         MainEntryPoint.startUsingSystemProperties();
         // Informant does not create any non-daemon threads, so need to block jvm from exiting
         Thread.sleep(Long.MAX_VALUE);

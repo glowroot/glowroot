@@ -140,12 +140,14 @@ public class HttpServer extends HttpServerBase {
                 adminJsonService, "truncateData"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/config/truncate$",
                 adminJsonService, "truncateConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-trace-writes$",
-                adminJsonService, "getNumPendingTraceWrites"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/log$",
                 adminJsonService, "getLog"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/log/truncate$",
                 adminJsonService, "truncateLog"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-complete-traces$",
+                adminJsonService, "getNumPendingCompleteTraces"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-stored-trace-snapshots$",
+                adminJsonService, "getNumStoredTraceSnapshots"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
 

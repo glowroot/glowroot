@@ -273,9 +273,14 @@ public class Informant {
         post("/admin/config/truncate", "");
     }
 
-    public int getNumPendingTraceWrites() throws Exception {
-        String numTraces = get("/admin/num-pending-trace-writes");
-        return Integer.parseInt(numTraces);
+    public int getNumPendingCompleteTraces() throws Exception {
+        String numPendingCompleteTraces = get("/admin/num-pending-complete-traces");
+        return Integer.parseInt(numPendingCompleteTraces);
+    }
+
+    public long getNumStoredTraceSnapshots() throws Exception {
+        String numStoredTraceSnapshots = get("/admin/num-stored-trace-snapshots");
+        return Long.parseLong(numStoredTraceSnapshots);
     }
 
     @Nullable

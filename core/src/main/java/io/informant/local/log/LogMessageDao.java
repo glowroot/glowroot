@@ -58,31 +58,19 @@ public class LogMessageDao {
             new Column("exception", Types.VARCHAR)); // json data
 
     private final DataSource dataSource;
-    private final boolean valid;
 
     private final Object counterLock = new Object();
     @GuardedBy("countLock")
     private long counter;
 
     @Inject
-    LogMessageDao(DataSource dataSource) {
+    LogMessageDao(DataSource dataSource) throws SQLException {
         this.dataSource = dataSource;
-        boolean localValid;
-        try {
-            dataSource.syncTable("log_message", columns);
-            localValid = true;
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-            localValid = false;
-        }
-        valid = localValid;
+        dataSource.syncTable("log_message", columns);
     }
 
     @ReadOnly
     public List<LogMessage> readLogMessages() {
-        if (!valid) {
-            return ImmutableList.of();
-        }
         try {
             return dataSource.query("select timestamp, level, logger_name, text, exception from"
                     + " log_message order by timestamp", ImmutableList.of(),
@@ -94,9 +82,6 @@ public class LogMessageDao {
     }
 
     public void deleteAllLogMessages() {
-        if (!valid) {
-            return;
-        }
         try {
             dataSource.execute("truncate table log_message");
         } catch (SQLException e) {
@@ -105,9 +90,6 @@ public class LogMessageDao {
     }
 
     void storeLogMessage(LogMessage logMessage) {
-        if (!valid) {
-            return;
-        }
         try {
             dataSource.update("insert into log_message (timestamp, level, logger_name, text,"
                     + " exception) values (?, ?, ?, ?, ?)", new Object[] {
@@ -134,9 +116,6 @@ public class LogMessageDao {
 
     @VisibleForTesting
     long count() {
-        if (!valid) {
-            return 0;
-        }
         try {
             return dataSource.queryForLong("select count(*) from log_message");
         } catch (SQLException e) {

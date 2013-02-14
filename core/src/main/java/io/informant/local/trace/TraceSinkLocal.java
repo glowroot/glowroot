@@ -130,11 +130,6 @@ public class TraceSinkLocal implements TraceSink {
         return pendingCompleteTraces;
     }
 
-    public int getPendingCount() {
-        // TODO need to include
-        return pendingCompleteTraces.size();
-    }
-
     public void close() {
         logger.debug("close()");
         executorService.shutdownNow();

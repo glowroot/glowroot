@@ -31,7 +31,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO make this Immutable by storing Supplier<ByteStream> for spans and mergedStackTrace
+// TODO make this Immutable by storing ByteSource (guava 14) for spans and mergedStackTrace
 @ThreadSafe
 public class TraceSnapshot {
 

@@ -46,10 +46,6 @@ import checkers.nullness.quals.Nullable;
  */
 class ServletMessageSupplier extends MessageSupplier {
 
-    // TODO allow additional notation for session attributes to capture, e.g.
-    // +currentControllerContext.key which would denote to capture the value of that attribute at
-    // the beginning of the request
-
     // it would be convenient to just store the request object here
     // but it appears that tomcat (at least, maybe others) clears out those
     // objects after the response is complete so that it can reuse the
@@ -66,6 +62,7 @@ class ServletMessageSupplier extends MessageSupplier {
 
     @Nullable
     private final String requestMethod;
+
     @Nullable
     private final String requestURI;
     @LazyNonNull

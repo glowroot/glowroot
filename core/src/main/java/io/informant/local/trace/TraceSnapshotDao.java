@@ -30,7 +30,6 @@ import io.informant.core.util.Schemas.Index;
 import io.informant.core.util.Schemas.PrimaryKeyColumn;
 import io.informant.core.util.ThreadSafe;
 
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -87,58 +86,35 @@ public class TraceSnapshotDao {
     private final RollingFile rollingFile;
     private final Clock clock;
 
-    private final boolean valid;
-
     @Inject
-    TraceSnapshotDao(DataSource dataSource, RollingFile rollingFile, Clock clock) {
+    TraceSnapshotDao(DataSource dataSource, RollingFile rollingFile, Clock clock)
+            throws SQLException {
         this.dataSource = dataSource;
         this.rollingFile = rollingFile;
         this.clock = clock;
-        boolean errorOnInit = false;
-        try {
-            TraceSnapshotSchema.upgradeTraceSnapshotTable(dataSource);
-            dataSource.syncTable("trace_snapshot", columns);
-            dataSource.syncIndexes("trace_snapshot", indexes);
-        } catch (SQLException e) {
-            errorOnInit = true;
-            logger.error(e.getMessage(), e);
-        }
-        this.valid = !errorOnInit;
+        TraceSnapshotSchema.upgradeTraceSnapshotTable(dataSource);
+        dataSource.syncTable("trace_snapshot", columns);
+        dataSource.syncIndexes("trace_snapshot", indexes);
     }
 
     void storeSnapshot(TraceSnapshot snapshot) {
         logger.debug("storeSnapshot(): snapshot={}", snapshot);
-        if (!valid) {
-            return;
-        }
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
         String spansBlockId = null;
         ByteStream spans = snapshot.getSpans();
         if (spans != null) {
-            try {
-                spansBlockId = rollingFile.write(spans).getId();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
+            spansBlockId = rollingFile.write(spans).getId();
         }
         String coarseMergedStackTreeBlockId = null;
         ByteStream coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
         if (coarseMergedStackTree != null) {
-            try {
-                coarseMergedStackTreeBlockId = rollingFile.write(coarseMergedStackTree).getId();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
+            coarseMergedStackTreeBlockId = rollingFile.write(coarseMergedStackTree).getId();
         }
         String fineMergedStackTreeBlockId = null;
         ByteStream fineMergedStackTree = snapshot.getFineMergedStackTree();
         if (fineMergedStackTree != null) {
-            try {
-                fineMergedStackTreeBlockId = rollingFile.write(fineMergedStackTree).getId();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
+            fineMergedStackTreeBlockId = rollingFile.write(fineMergedStackTree).getId();
         }
         try {
             dataSource.update("merge into trace_snapshot (id, captured_at, start_at, duration,"
@@ -172,9 +148,6 @@ public class TraceSnapshotDao {
                     new Object[] { capturedFrom, capturedTo, durationLow, durationHigh, background,
                             errorOnly, fineOnly, headlineComparator, headline, userIdComparator,
                             userId });
-        }
-        if (!valid) {
-            return ImmutableList.of();
         }
         try {
             // all of these columns should be in the same index so h2 can return result set directly
@@ -224,9 +197,6 @@ public class TraceSnapshotDao {
     @Nullable
     public TraceSnapshot readSnapshot(String id) {
         logger.debug("readSnapshot(): id={}", id);
-        if (!valid) {
-            return null;
-        }
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
@@ -250,9 +220,6 @@ public class TraceSnapshotDao {
     @Nullable
     public TraceSnapshot readSnapshotWithoutDetail(String id) {
         logger.debug("readSnapshot(): id={}", id);
-        if (!valid) {
-            return null;
-        }
         List<TraceSnapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
@@ -273,9 +240,6 @@ public class TraceSnapshotDao {
 
     public void deleteAllSnapshots() {
         logger.debug("deleteAllSnapshots()");
-        if (!valid) {
-            return;
-        }
         try {
             dataSource.execute("truncate table trace_snapshot");
         } catch (SQLException e) {
@@ -285,9 +249,6 @@ public class TraceSnapshotDao {
 
     int deleteSnapshotsBefore(long capturedAt) {
         logger.debug("deleteSnapshotsBefore(): capturedAt={}", capturedAt);
-        if (!valid) {
-            return 0;
-        }
         try {
             return dataSource.update("delete from trace_snapshot where captured_at <= ?",
                     capturedAt);
@@ -298,10 +259,7 @@ public class TraceSnapshotDao {
     }
 
     @OnlyUsedByTests
-    long count() {
-        if (!valid) {
-            return 0;
-        }
+    public long count() {
         try {
             return dataSource.queryForLong("select count(*) from trace_snapshot");
         } catch (SQLException e) {

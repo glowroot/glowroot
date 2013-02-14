@@ -214,7 +214,6 @@ public class ProfilingTest {
 
     private static void assertThatTreeDoesNotContainSyntheticMetricMethods(
             MergedStackTreeNode mergedStackTree) {
-
         if (mergedStackTree.getStackTraceElement().contains("$informant$metric$")) {
             throw new AssertionError("Not expecting synthetic metric methods but found: "
                     + mergedStackTree.getStackTraceElement());
@@ -238,9 +237,8 @@ public class ProfilingTest {
 
     public static class ShouldGenerateTraceWithMergedStackTreeForAble implements AppUnderTest,
             TraceMarker {
-        private static final PluginServices pluginServices = PluginServices
-                .get("io.informant:informant-integration-tests");
-
+        private static final PluginServices pluginServices =
+                PluginServices.get("io.informant:informant-integration-tests");
         public void executeApp() throws InterruptedException {
             traceMarker();
         }

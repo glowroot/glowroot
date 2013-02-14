@@ -126,9 +126,17 @@ class AdminJsonService implements JsonService {
         logMessageDao.deleteAllLogMessages();
     }
 
+    @OnlyUsedByTests
     @JsonServiceMethod
-    String getNumPendingTraceWrites() {
-        logger.debug("getNumPendingTraceWrites()");
-        return Integer.toString(traceSinkLocal.getPendingCount());
+    String getNumPendingCompleteTraces() {
+        logger.debug("getNumPendingCompleteTraces()");
+        return Integer.toString(traceSinkLocal.getPendingCompleteTraces().size());
+    }
+
+    @OnlyUsedByTests
+    @JsonServiceMethod
+    String getNumStoredTraceSnapshots() {
+        logger.debug("getNumStoredTraceSnapshots()");
+        return Long.toString(traceSnapshotDao.count());
     }
 }

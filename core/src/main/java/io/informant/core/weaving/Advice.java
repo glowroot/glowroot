@@ -263,7 +263,6 @@ public class Advice {
         private ImmutableList<ParameterKind> onThrowParameterKinds = ImmutableList.of();
         private ImmutableList<ParameterKind> onAfterParameterKinds = ImmutableList.of();
 
-        // TODO use builder to construct, then can use final fields
         private Builder(Pointcut pointcut, Class<?> adviceClass) {
             this.pointcut = pointcut;
             adviceType = Type.getType(adviceClass);
