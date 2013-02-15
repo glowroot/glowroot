@@ -91,7 +91,6 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectReturn PreparedStatement preparedStatement,
                 @InjectMethodArg String sql) {
-
             ((HasStatementMirror) preparedStatement)
                     .setInformantStatementMirror(new PreparedStatementMirror(sql));
         }
@@ -130,7 +129,6 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
                 @InjectMethodArg int parameterIndex, @InjectMethodArg Object x) {
-
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (x instanceof InputStream || x instanceof Reader) {
                 mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
@@ -151,7 +149,6 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
                 @InjectMethodArg int parameterIndex) {
-
             getPreparedStatementMirror(preparedStatement).setParameterValue(parameterIndex,
                     new NullParameterValue());
         }
@@ -165,7 +162,6 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
-
             getStatementMirror(statement).addBatch(sql);
         }
     }
@@ -206,7 +202,6 @@ public class JdbcAspect {
         @Nullable
         public static Span onBefore(@InjectTarget Statement statement,
                 @InjectMethodArg String sql) {
-
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql,
@@ -394,7 +389,6 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectReturn boolean currentRowValid,
                 @InjectTarget ResultSet resultSet) {
-
             try {
                 Statement statement = resultSet.getStatement();
                 if (statement == null) {
@@ -568,7 +562,6 @@ public class JdbcAspect {
         @Nullable
         public static Timer onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
                 @InjectMethodName String methodName) {
-
             inDatabaseMetataDataMethod.set(methodName);
             if (pluginServices.isEnabled()) {
                 if (spanEnabled) {
@@ -604,7 +597,6 @@ public class JdbcAspect {
 
     private static PreparedStatementMirror getPreparedStatementMirror(
             PreparedStatement preparedStatement) {
-
         PreparedStatementMirror mirror = (PreparedStatementMirror)
                 ((HasStatementMirror) preparedStatement).getInformantStatementMirror();
         if (mirror == null) {

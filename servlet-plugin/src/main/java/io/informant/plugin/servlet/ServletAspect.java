@@ -77,7 +77,6 @@ public class ServletAspect {
             metricName = "http request")
     public static class ServletAdvice {
         private static final Metric metric = pluginServices.getMetric(ServletAdvice.class);
-
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
@@ -310,7 +309,6 @@ public class ServletAspect {
     public static class ContextInitializedAdvice {
         private static final Metric metric = pluginServices
                 .getMetric(ContextInitializedAdvice.class);
-
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -335,7 +333,6 @@ public class ServletAspect {
             methodArgs = { "javax.servlet.ServletConfig" }, metricName = "servlet startup")
     public static class ServletInitAdvice {
         private static final Metric metric = pluginServices.getMetric(ServletInitAdvice.class);
-
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -359,7 +356,6 @@ public class ServletAspect {
             methodArgs = { "javax.servlet.FilterConfig" }, metricName = "servlet startup")
     public static class FilterInitAdvice {
         private static final Metric metric = pluginServices.getMetric(FilterInitAdvice.class);
-
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -419,7 +415,6 @@ public class ServletAspect {
 
     private static void updateSessionAttributesIfApplicable(ServletMessageSupplier messageSupplier,
             String name, @Nullable Object value, HttpSession session) {
-
         if (ServletPluginProperties.captureSessionAttributeNames().contains(name)
                 || ServletPluginProperties.captureSessionAttributeNames().contains("*")) {
             // update all session attributes (possibly nested) at or under the set attribute
@@ -445,7 +440,6 @@ public class ServletAspect {
 
     private static void updateNestedSessionAttributes(ServletMessageSupplier messageSupplier,
             String capturePath, @Nullable Object value, HttpSession session) {
-
         if (capturePath.endsWith(".*")) {
             capturePath = capturePath.substring(0, capturePath.length() - 2);
             Object val = getSessionAttribute(session, capturePath);
