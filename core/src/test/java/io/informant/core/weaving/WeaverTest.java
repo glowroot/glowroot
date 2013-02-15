@@ -41,6 +41,7 @@ import io.informant.core.weaving.SomeAspect.MethodArgsDotDotAdvice3;
 import io.informant.core.weaving.SomeAspect.MethodReturnStringAdvice;
 import io.informant.core.weaving.SomeAspect.MethodReturnVoidAdvice;
 import io.informant.core.weaving.SomeAspect.MoreVeryBadAdvice;
+import io.informant.core.weaving.SomeAspect.MoreVeryBadAdvice2;
 import io.informant.core.weaving.SomeAspect.MultipleMethodsAdvice;
 import io.informant.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice;
 import io.informant.core.weaving.SomeAspect.NonMatchingMethodReturnAdvice2;
@@ -754,6 +755,25 @@ public class WeaverTest {
             assertThat(MoreVeryBadAdvice.onReturnCount.get()).isEqualTo(1);
             assertThat(MoreVeryBadAdvice.onThrowCount.get()).isEqualTo(0);
             assertThat(MoreVeryBadAdvice.onAfterCount.get()).isEqualTo(0);
+            return;
+        }
+        throw new AssertionError("Expecting IllegalStateException");
+    }
+
+    // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
+    @Test
+    public void shouldNotCallOnThrowForOnReturnException2() throws Exception {
+        // given
+        MoreVeryBadAdvice2.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, MoreVeryBadAdvice2.class);
+        // when
+        try {
+            test.executeWithReturn();
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("Sorry");
+            assertThat(MoreVeryBadAdvice2.onReturnCount.get()).isEqualTo(1);
+            assertThat(MoreVeryBadAdvice2.onThrowCount.get()).isEqualTo(0);
+            assertThat(MoreVeryBadAdvice2.onAfterCount.get()).isEqualTo(0);
             return;
         }
         throw new AssertionError("Expecting IllegalStateException");

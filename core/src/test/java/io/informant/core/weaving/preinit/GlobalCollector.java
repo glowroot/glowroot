@@ -210,7 +210,6 @@ public class GlobalCollector {
         TypeCollector typeCollector = optional.get();
         for (String methodId : typeCollector.getMethodIds()) {
             if (methodId.startsWith("<clinit>:") || methodId.startsWith("<init>:")) {
-                // TODO also skip private methods
                 continue;
             }
             for (String superType : typeCollector.getAllSuperTypes()) {
@@ -235,7 +234,6 @@ public class GlobalCollector {
         // add overridden bootstrap methods in type, e.g. hashCode(), toString()
         for (String methodId : typeCollector.getMethodIds()) {
             if (methodId.startsWith("<clinit>:") || methodId.startsWith("<init>:")) {
-                // TODO also skip private methods
                 continue;
             }
             for (String superType : typeCollector.getAllSuperTypes()) {

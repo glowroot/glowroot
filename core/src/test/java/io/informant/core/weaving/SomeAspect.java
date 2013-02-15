@@ -639,7 +639,34 @@ public class SomeAspect {
         public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnReturn
         public static void onReturn() {
-            // TODO also test with non-void return
+            onReturnCount.increment();
+            throw new IllegalStateException("Sorry");
+        }
+        @OnThrow
+        public static void onThrow() {
+            // should not get called
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            // should not get called
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+    }
+
+    // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
+    @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "executeWithReturn")
+    public static class MoreVeryBadAdvice2 {
+        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @OnReturn
+        public static void onReturn() {
             onReturnCount.increment();
             throw new IllegalStateException("Sorry");
         }
