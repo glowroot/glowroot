@@ -28,8 +28,11 @@ import java.util.Set;
 
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.gson.JsonSyntaxException;
@@ -55,6 +58,8 @@ public class ConfigService {
     private final Object writeLock = new Object();
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
+    private final Multimap<String, ConfigListener> pluginConfigListeners =
+            Multimaps.synchronizedMultimap(ArrayListMultimap.<String, ConfigListener> create());
 
     private volatile Config config;
 
@@ -109,19 +114,29 @@ public class ConfigService {
         configListeners.add(listener);
     }
 
+    public void addPluginConfigListener(String pluginId, ConfigListener listener) {
+        pluginConfigListeners.put(pluginId, listener);
+    }
+
     public String updateGeneralConfig(GeneralConfig generalConfig, String priorVersionHash)
             throws OptimisticLockException {
+        boolean notifyPluginConfigListeners;
         synchronized (writeLock) {
             if (!config.getGeneralConfig().getVersionHash().equals(priorVersionHash)) {
                 throw new OptimisticLockException();
             }
+            boolean previousEnabled = config.getGeneralConfig().isEnabled();
             Config updatedConfig = Config.builder(config)
                     .generalConfig(generalConfig)
                     .build();
             updatedConfig.writeToFileIfNeeded(configFile);
             config = updatedConfig;
+            notifyPluginConfigListeners = config.getGeneralConfig().isEnabled() != previousEnabled;
         }
         notifyConfigListeners();
+        if (notifyPluginConfigListeners) {
+            notifyAllPluginConfigListeners();
+        }
         return generalConfig.getVersionHash();
     }
 
@@ -192,7 +207,7 @@ public class ConfigService {
             updatedConfig.writeToFileIfNeeded(configFile);
             config = updatedConfig;
         }
-        notifyConfigListeners();
+        notifyPluginConfigListeners(pluginConfig.getId());
         return pluginConfig.getVersionHash();
     }
 
@@ -266,6 +281,18 @@ public class ConfigService {
     // which is ok)
     private void notifyConfigListeners() {
         for (ConfigListener configListener : configListeners) {
+            configListener.onChange();
+        }
+    }
+
+    private void notifyPluginConfigListeners(String pluginId) {
+        for (ConfigListener configListener : pluginConfigListeners.get(pluginId)) {
+            configListener.onChange();
+        }
+    }
+
+    private void notifyAllPluginConfigListeners() {
+        for (ConfigListener configListener : pluginConfigListeners.values()) {
             configListener.onChange();
         }
     }

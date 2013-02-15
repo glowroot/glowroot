@@ -87,7 +87,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final String pluginId;
 
     // cache for fast read access
-    private volatile GeneralConfig generalConfig;
+    private volatile boolean enabled;
+    private volatile int maxSpans;
+    private volatile int spanStackTraceThresholdMillis;
     @Nullable
     private volatile PluginConfig pluginConfig;
 
@@ -110,7 +112,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         // add config listener first before caching config properties to avoid a
         // (remotely) possible race condition
         configService.addConfigListener(this);
-        generalConfig = configService.getGeneralConfig();
+        configService.addPluginConfigListener(pluginId, this);
         pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             List<String> ids = Lists.newArrayList();
@@ -120,6 +122,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId,
                     Joiner.on(", ").join(ids));
         }
+        // call onChange() to initialize the cached configuration property values
+        onChange();
     }
 
     @Override
@@ -129,7 +133,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public boolean isEnabled() {
-        return generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
+        return enabled;
     }
 
     @Override
@@ -178,7 +182,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("registerConfigListener(): argument 'listener' must be non-null");
             return;
         }
-        configService.addConfigListener(listener);
+        configService.addPluginConfigListener(pluginId, listener);
     }
 
     @Override
@@ -199,7 +203,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private Span startTrace(MessageSupplier messageSupplier, Metric metric,
             @Nullable String userId, boolean background) {
-
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
@@ -266,7 +269,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            int maxSpans = generalConfig.getMaxSpans();
             if (trace.getSpanCount() < maxSpans) {
                 // the trace limit has not been exceeded
                 trace.addSpan(messageSupplier, null);
@@ -315,8 +317,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     public void onChange() {
-        generalConfig = configService.getGeneralConfig();
+        GeneralConfig generalConfig = configService.getGeneralConfig();
         pluginConfig = configService.getPluginConfig(pluginId);
+        enabled = generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
+        maxSpans = generalConfig.getMaxSpans();
+        spanStackTraceThresholdMillis = generalConfig.getSpanStackTraceThresholdMillis();
     }
 
     private boolean maybeScheduleFineProfilingUsingUserId(Trace trace, @Nullable String userId) {
@@ -342,7 +347,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
-        int maxSpans = generalConfig.getMaxSpans();
         if (trace.getSpanCount() >= maxSpans) {
             // the trace limit has been exceeded
             return new TimerWrappedInSpan(startTimer(metric), trace, messageSupplier);
@@ -383,8 +387,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         private void endInternal(@Nullable ErrorMessage errorMessage) {
             long endTick = ticker.read();
-            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS.toNanos(generalConfig
-                    .getSpanStackTraceThresholdMillis())) {
+            if (endTick - span.getStartTick() >= TimeUnit.MILLISECONDS
+                    .toNanos(spanStackTraceThresholdMillis)) {
                 span.setStackTrace(captureSpanStackTrace());
             }
             trace.popSpan(span, endTick, errorMessage);
