@@ -700,6 +700,18 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "execute1")
+    public static class InterfaceAppearsTwiceInHierarchyAdvice {
+        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        public static void resetThreadLocals() {
+            onBeforeCount.set(0);
+        }
+    }
+
     static class IntegerThreadLocal extends ThreadLocal<Integer> {
         @Override
         protected Integer initialValue() {

@@ -167,7 +167,9 @@ public class ParsedTypeCache {
         typeNameUppers.put(typeName.toUpperCase(Locale.ENGLISH), typeName);
     }
 
-    // TODO is it worth removing duplicates from resulting type hierarchy list?
+    // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
+    // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
+    // seem worth the (minor) performance hit to de-dup every time
     ImmutableList<ParsedType> getTypeHierarchy(@Nullable String typeName,
             @Nullable ClassLoader loader) {
         return ImmutableList.copyOf(getSuperTypes(typeName, loader));
@@ -188,6 +190,9 @@ public class ParsedTypeCache {
         return parsedTypes;
     }
 
+    // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
+    // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
+    // seem worth the (minor) performance hit to de-dup every time
     @ReadOnly
     private List<ParsedType> getSuperTypes(@Nullable String typeName,
             @Nullable ClassLoader loader) {

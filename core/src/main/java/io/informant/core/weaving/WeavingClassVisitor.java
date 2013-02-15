@@ -221,6 +221,9 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return nothingAtAllToWeave;
     }
 
+    // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
+    // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
+    // seem worth the (minor) performance hit to de-dup every time
     private List<ParsedType> getSuperTypes(@Nullable String superName, String[] interfaceNames) {
         List<ParsedType> superTypes = Lists.newArrayList();
         superTypes.addAll(parsedTypeCache.getTypeHierarchy(TypeNames.fromInternal(superName),

@@ -34,6 +34,7 @@ import io.informant.core.weaving.SomeAspect.InjectTargetAdvice;
 import io.informant.core.weaving.SomeAspect.InjectThrowableAdvice;
 import io.informant.core.weaving.SomeAspect.InjectTravelerAdvice;
 import io.informant.core.weaving.SomeAspect.InnerMethodAdvice;
+import io.informant.core.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
 import io.informant.core.weaving.SomeAspect.InterfaceTargetedMixin;
 import io.informant.core.weaving.SomeAspect.MethodArgsDotDotAdvice1;
 import io.informant.core.weaving.SomeAspect.MethodArgsDotDotAdvice2;
@@ -797,6 +798,20 @@ public class WeaverTest {
         // when
         newWovenObject(BasicMisc.class, Misc.class, CircularClassDependencyAdvice.class);
         // then should not bomb
+    }
+
+    @Test
+    // weaving an interface method that appears twice in a given class hierarchy should only weave
+    // the method once
+    public void shouldHandleInterfaceThatAppearsTwiceInHierarchy() throws Exception {
+        // given
+        InterfaceAppearsTwiceInHierarchyAdvice.resetThreadLocals();
+        // when
+        Misc test = newWovenObject(SubBasicMisc.class, Misc.class,
+                InterfaceAppearsTwiceInHierarchyAdvice.class);
+        test.execute1();
+        // then
+        assertThat(InterfaceAppearsTwiceInHierarchyAdvice.onBeforeCount.get()).isEqualTo(1);
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
