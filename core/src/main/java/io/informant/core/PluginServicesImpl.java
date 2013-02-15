@@ -202,11 +202,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         if (metric == null) {
             logger.warn("startTrace(): argument 'metric' must be non-null");
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
@@ -226,15 +226,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
         if (messageSupplier == null) {
             logger.warn("startSpan(): argument 'messageSupplier' must be non-null");
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         if (metric == null) {
             logger.warn("startSpan(): argument 'metric' must be non-null");
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         } else {
             return startSpan(trace, (MetricImpl) metric, messageSupplier);
         }
@@ -341,7 +341,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    // TODO how to escalate TimerWrappedInSpan afterwards if WARN/ERROR
     private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
         int maxSpans = generalConfig.getMaxSpans();
         if (trace.getSpanCount() >= maxSpans) {
@@ -372,15 +371,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 endInternal(errorMessage);
             }
         }
-        public void updateMessage(MessageUpdater updater) {
-            if (updater == null) {
-                logger.warn("updateMessage(): argument 'updater' must be non-null");
-                return;
-            }
+        public MessageSupplier getMessageSupplier() {
             MessageSupplier messageSupplier = span.getMessageSupplier();
-            if (messageSupplier != null) {
-                updater.update(messageSupplier);
+            if (messageSupplier == null) {
+                // this should be impossible since span.getMessageSupplier() is only null when the
+                // span was created using addErrorSpan(), and that method doesn't return the span
+                // afterwards, so it should be impossible to call getMessageSupplier() on it
+                throw new NullPointerException("Somehow got hold of an error Span??");
             }
+            return messageSupplier;
         }
         private void endInternal(@Nullable ErrorMessage errorMessage) {
             long endTick = ticker.read();
@@ -460,21 +459,21 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             // least the error will get captured
             trace.addSpan(messageSupplier, errorMessage);
         }
-        public void updateMessage(MessageUpdater updater) {
-            if (updater == null) {
-                logger.warn("updateMessage(): argument 'updater' must be non-null");
-                return;
-            }
-            updater.update(messageSupplier);
+        public MessageSupplier getMessageSupplier() {
+            return messageSupplier;
         }
     }
 
-    @ThreadSafe
     private static class NopSpan implements Span {
-        private static final NopSpan INSTANCE = new NopSpan();
+        private final MessageSupplier messageSupplier;
+        private NopSpan(MessageSupplier messageSupplier) {
+            this.messageSupplier = messageSupplier;
+        }
         public void end() {}
         public void endWithError(ErrorMessage errorMessage) {}
-        public void updateMessage(MessageUpdater updater) {}
+        public MessageSupplier getMessageSupplier() {
+            return messageSupplier;
+        }
     }
 
     @ThreadSafe

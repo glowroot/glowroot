@@ -15,7 +15,6 @@
  */
 package io.informant.api;
 
-import io.informant.api.Span.MessageUpdater;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ObjectArrays;
@@ -63,13 +62,5 @@ public class PointcutMessageSupplier extends MessageSupplier {
         } else {
             return Message.from(template, args);
         }
-    }
-
-    public static void updateWithReturnValue(final Object returnValue, Span span) {
-        span.updateMessage(new MessageUpdater() {
-            public void update(MessageSupplier messageSupplier) {
-                ((PointcutMessageSupplier) messageSupplier).setReturnValue(returnValue);
-            }
-        });
     }
 }

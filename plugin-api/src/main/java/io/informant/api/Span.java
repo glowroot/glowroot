@@ -26,10 +26,7 @@ public interface Span extends Timer {
     // only marks trace as error if this is the root span
     void endWithError(ErrorMessage errorMessage);
 
-    // TODO revisit this, what about setMessage(MessageSupplier) instead?
-    void updateMessage(MessageUpdater updater);
-
-    interface MessageUpdater {
-        void update(MessageSupplier messageSupplier);
-    }
+    // sometimes it's convenient to get the MessageSupplier back from the span, e.g. in @OnReturn
+    // to add the return value to the message
+    MessageSupplier getMessageSupplier();
 }

@@ -155,20 +155,20 @@ public abstract class PluginServices {
         public void registerConfigListener(ConfigListener listener) {}
         @Override
         public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         @Override
         public Span startTrace(MessageSupplier messageSupplier, Metric metric,
                 @Nullable String userId) {
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         @Override
         public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         @Override
         public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
-            return NopSpan.INSTANCE;
+            return new NopSpan(messageSupplier);
         }
         @Override
         public Timer startTimer(Metric metric) {
@@ -191,10 +191,15 @@ public abstract class PluginServices {
         }
 
         private static class NopSpan implements Span {
-            private static final NopSpan INSTANCE = new NopSpan();
+            private final MessageSupplier messageSupplier;
+            private NopSpan(MessageSupplier messageSupplier) {
+                this.messageSupplier = messageSupplier;
+            }
             public void end() {}
             public void endWithError(ErrorMessage errorMessage) {}
-            public void updateMessage(MessageUpdater updater) {}
+            public MessageSupplier getMessageSupplier() {
+                return messageSupplier;
+            }
         }
 
         private static class NopTimer implements Timer {
