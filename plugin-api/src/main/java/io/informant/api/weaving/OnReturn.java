@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,34 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotates a method in a {@literal @}{@link Pointcut} class that should be run just after each
+ * method execution picked out by the {@link Pointcut}, but only if the method picked out by the
+ * {@link Pointcut} returns successfully (does not throw an {@code Exception}). Only one method in a
+ * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnReturn}.
+ * 
+ * An {@literal @}{@code OnReturn} method can accept parameters annotated with any of the following:
+ * {@literal @}{@link InjectTarget}, {@literal @}{@link InjectMethodArg},
+ * 
+ * {@literal @}{@link InjectMethodArgArray}, {@literal @}{@link InjectMethodName},
+ * 
+ * {@literal @}{@link InjectTraveler} or {@literal @}{@link InjectReturn}.
+ * 
+ * {@literal @}{@link InjectTraveler} can only be used if there is a corresponding
+ * 
+ * {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the <em>traveler</em>).
+ * {@literal @}{@link InjectReturn} can only be used if each method picked out by the
+ * {@link Pointcut} returns a non-{@code void} type. If {@literal @}{@link InjectReturn} is used, it
+ * must be the first parameter to the {@literal @}{@code OnReturn} method. Any un-annotated
+ * parameters are implicitly annotated with {@literal @}{@link InjectMethodArg}.
+ * 
+ * An {@literal @}{@code OnReturn} method may return {@code void} or a non-{@code void} type. If it
+ * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnReturn} method is
+ * returned from the method execution picked out by the {@link Pointcut} instead of that method's
+ * original return value. This can be used to wrap the original return value by passing the original
+ * return value in to an {@literal @}{@code OnReturn} method (using
+ * 
+ * {@literal @}{@link InjectReturn}) and then returning the wrapped value.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */

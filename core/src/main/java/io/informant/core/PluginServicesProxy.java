@@ -70,33 +70,33 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public String getStringProperty(String propertyName) {
+    public String getStringProperty(String name) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getStringProperty(propertyName);
+            return pluginServices.getStringProperty(name);
         }
     }
 
     @Override
-    public boolean getBooleanProperty(String propertyName) {
+    public boolean getBooleanProperty(String name) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getBooleanProperty(propertyName);
+            return pluginServices.getBooleanProperty(name);
         }
     }
 
     @Override
     @Nullable
-    public Double getDoubleProperty(String propertyName) {
+    public Double getDoubleProperty(String name) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.getDoubleProperty(propertyName);
+            return pluginServices.getDoubleProperty(name);
         }
     }
 

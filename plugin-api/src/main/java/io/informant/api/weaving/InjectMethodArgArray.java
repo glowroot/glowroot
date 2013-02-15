@@ -21,6 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotates a parameter to an {@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore},
+ * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} method
+ * in a {@literal @}{@link Pointcut} class.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */

@@ -136,42 +136,42 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public String getStringProperty(String propertyName) {
-        if (propertyName == null) {
-            logger.warn("getStringProperty(): argument 'propertyName' must be non-null");
+    public String getStringProperty(String name) {
+        if (name == null) {
+            logger.warn("getStringProperty(): argument 'name' must be non-null");
             return "";
         }
         if (pluginConfig == null) {
             return "";
         } else {
-            return pluginConfig.getStringProperty(propertyName);
+            return pluginConfig.getStringProperty(name);
         }
     }
 
     @Override
-    public boolean getBooleanProperty(String propertyName) {
-        if (propertyName == null) {
-            logger.warn("getBooleanProperty(): argument 'propertyName' must be non-null");
+    public boolean getBooleanProperty(String name) {
+        if (name == null) {
+            logger.warn("getBooleanProperty(): argument 'name' must be non-null");
             return false;
         }
         if (pluginConfig == null) {
             return false;
         } else {
-            return pluginConfig.getBooleanProperty(propertyName);
+            return pluginConfig.getBooleanProperty(name);
         }
     }
 
     @Override
     @Nullable
-    public Double getDoubleProperty(String propertyName) {
-        if (propertyName == null) {
-            logger.warn("getDoubleProperty(): argument 'propertyName' must be non-null");
+    public Double getDoubleProperty(String name) {
+        if (name == null) {
+            logger.warn("getDoubleProperty(): argument 'name' must be non-null");
             return null;
         }
         if (pluginConfig == null) {
             return null;
         } else {
-            return pluginConfig.getDoubleProperty(propertyName);
+            return pluginConfig.getDoubleProperty(name);
         }
     }
 

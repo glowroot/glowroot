@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotates a method in a {@literal @}{@link Pointcut} class that should be run just before each
+ * method execution picked out by the {@link Pointcut}. Only one method in a
+ * 
+ * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnBefore}.
+ * 
+ * An {@literal @}{@code OnBefore} method can accept parameters annotated with any of the following:
+ * {@literal @}{@link InjectTarget}, {@literal @}{@link InjectMethodArg},
+ * 
+ * {@literal @}{@link InjectMethodArgArray} or {@literal @}{@link InjectMethodName}. Any
+ * un-annotated parameters are implicitly annotated with {@literal @}{@link InjectMethodArg}.
+ * 
+ * An {@literal @}{@code OnBefore} method may return {@code void} or a non-{@code void} type. If it
+ * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnBefore} method is
+ * called the <em>traveler</em>, and is available as input to subsequent {@literal @}
+ * {@link OnReturn}, {@literal @}{@link OnThrow} and {@literal @}{@link OnAfter} methods by
+ * annotating a parameter on any of these methods with {@literal @}{@link InjectTraveler}.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */

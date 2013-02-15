@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,21 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotates a method in a {@literal @}{@link Pointcut} class that should be run just before each
+ * method execution picked out by the {@link Pointcut}. Only one method in a
+ * 
+ * {@literal @}{@link Pointcut} class may be annotated with {@literal @}{@code IsEnabled}.
+ * 
+ * An {@literal @}{@code IsEnabled} method can accept parameters annotated with any of the
+ * following: {@link InjectTarget}, {@link InjectMethodArg}, {@link InjectMethodArgArray} or
+ * {@link InjectMethodName}. Any un-annotated parameters are implicitly annotated with
+ * {@link InjectMethodArg}.
+ * 
+ * An {@literal @}{@code IsEnabled} method must return a {@code boolean}. If it returns
+ * {@code false} then none of the {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},
+ * {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} methods are called for that execution
+ * of the method picked out by the {@link Pointcut}.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */

@@ -16,10 +16,16 @@
 package io.informant.api;
 
 /**
+ * See {@link PluginServices#startMetricTimer(Metric)} for how to retrieve and use
+ * {@code MetricTimer} instances.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 public interface MetricTimer {
 
+    /**
+     * Stop the {@code MetricTimer}.
+     */
     void stop();
 }

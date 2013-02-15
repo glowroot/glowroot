@@ -31,7 +31,7 @@ import com.google.common.base.Objects;
  * including additional levels of nested maps). The detail map cannot have null keys.
  * 
  * As an extra bonus, detail map can also contain io.informant.api.Optional values which is useful
- * for Maps that do not accept null values, e.g.
+ * for Maps that do not accept null values, e.g. java.util.concurrent.ConcurrentHashMap and
  * io.informant.shaded.google.common.collect.ImmutableMap.
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to

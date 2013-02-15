@@ -343,7 +343,7 @@ public class Advice {
 
         private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
             if (onReturnAdvice != null) {
-                logger.error("@Pointcut '{}' has more than one @OnSucces method",
+                logger.error("@Pointcut '{}' has more than one @OnReturn method",
                         adviceClass.getName());
                 return;
             }
@@ -378,6 +378,8 @@ public class Advice {
             }
             Method asmMethod = Method.getMethod(method);
             if (asmMethod.getReturnType().getSort() != Type.VOID) {
+                // TODO allow @OnThrow methods to suppress the exception or throw a different
+                // exception
                 logger.error("@OnThrow method must return void (for now)");
                 return;
             }

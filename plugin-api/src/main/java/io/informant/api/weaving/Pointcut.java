@@ -32,6 +32,10 @@ import checkers.igj.quals.Immutable;
 public @interface Pointcut {
 
     String typeName();
+    /**
+     * | and * can be used for limited regular expressions. Full regular expressions can be used by
+     * starting and ending methodName with /.
+     */
     String methodName();
     String[] methodArgs() default {};
     String methodReturn() default "";

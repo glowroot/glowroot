@@ -26,8 +26,28 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.MapMaker;
 
 /**
- * Designed to be statically cached. A single UnresolvedMethod instance works across multiple class
- * loaders.
+ * Calling methods on 3rd party libraries from a plugin can be difficult. Plugins are loaded by the
+ * system class loader ({@link ClassLoader#getSystemClassLoader()}). This means plugins don't have
+ * visibility to classes loaded by custom class loaders, which is especially problematic in Java EE
+ * environments where custom class loaders are used to scope each running application.
+ * 
+ * This class is designed to make these calls easy and reasonably efficient. It is designed to be
+ * cached in a static field for the life of the jvm, e.g.
+ * 
+ * <pre>
+ * &#064;Pointcut(typeName = &quot;org.apache.jasper.JspCompilationContext&quot;, methodName = &quot;compile&quot;)
+ * class ServletAdvice {
+ * 
+ *     private static final UnresolvedMethod getJspFileMethod = UnresolvedMethod
+ *             .from(&quot;org.apache.jasper.JspCompilationContext&quot;, &quot;getJspFile&quot;);
+ * 
+ *     &#064;OnBefore
+ *     public static Span onBefore(@InjectTarget final Object context) {
+ *         String jspFile = (String) getJspFileMethod.invoke(context, &quot;&lt;unknown&gt;&quot;);
+ *         ...
+ *     }
+ * }
+ * </pre>
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -72,15 +92,41 @@ public class UnresolvedMethod {
     private final Map<ClassLoader, Method> resolvedMethods = new MapMaker().weakKeys().weakValues()
             .makeMap();
 
+    /**
+     * Create an {@code UnresolvedMethod} for the specified {@code typeName} and {@code methodName}.
+     * 
+     * @param typeName
+     * @param methodName
+     * @return an {@code UnresolvedMethod} for the specified {@code typeName} and {@code methodName}
+     */
     public static UnresolvedMethod from(String typeName, String methodName) {
         return new UnresolvedMethod(typeName, methodName, new Class<?>[0], null);
     }
 
+    /**
+     * Create an {@code UnresolvedMethod} for the specified {@code typeName}, {@code methodName} and
+     * {@code parameterTypes}.
+     * 
+     * @param typeName
+     * @param methodName
+     * @return an {@code UnresolvedMethod} for the specified {@code typeName}, {@code methodName}
+     *         and {@code parameterTypes}.
+     */
     public static UnresolvedMethod from(String typeName, String methodName,
             Class<?>... parameterTypes) {
         return new UnresolvedMethod(typeName, methodName, parameterTypes, null);
     }
 
+    /**
+     * Create an {@code UnresolvedMethod} for the specified {@code typeName}, {@code methodName} and
+     * {@code parameterTypeNames}.
+     * 
+     * @param typeName
+     * @param methodName
+     * @param parameterTypeNames
+     * @return an {@code UnresolvedMethod} for the specified {@code typeName}, {@code methodName}
+     *         and {@code parameterTypeNames}.
+     */
     public static UnresolvedMethod from(String typeName, String methodName,
             String... parameterTypeNames) {
         return new UnresolvedMethod(typeName, methodName, null, parameterTypeNames);
@@ -99,16 +145,59 @@ public class UnresolvedMethod {
         this.parameterTypeNames = parameterTypeNames;
     }
 
+    /**
+     * Invokes the no-arg instance method represented by this {@code UnresolvedMethod} on the
+     * specified {@code target}.
+     * 
+     * If any kind of error is encountered (including but not limited to
+     * {@link ClassNotFoundException}, {@link NoSuchMethodException},
+     * {@link InvocationTargetException}), the supplied {@code returnOnError} is returned.
+     * 
+     * @param target
+     * @param returnOnError
+     * @return the result of dispatching the no-arg instance method represented by this
+     *         {@code UnresolvedMethod} on the specified {@code target}
+     */
     @Nullable
     public Object invoke(Object target, @Nullable Object returnOnError) {
         return invoke(target, new Object[0], returnOnError);
     }
 
+    /**
+     * Invokes the instance method represented by this {@code UnresolvedMethod} on the specified
+     * {@code target} with the single specified {@code parameter}.
+     * 
+     * If any kind of error is encountered (including but not limited to
+     * {@link ClassNotFoundException}, {@link NoSuchMethodException},
+     * {@link InvocationTargetException}), the supplied {@code returnOnError} is returned.
+     * 
+     * @param target
+     * @param parameter
+     * @param returnOnError
+     * @return the result of dispatching the instance method represented by this
+     *         {@code UnresolvedMethod} on the specified {@code target} with the single specified
+     *         {@code parameter}
+     */
     @Nullable
     public Object invoke(Object target, Object parameter, @Nullable Object returnOnError) {
         return invoke(target, new Object[] { parameter }, returnOnError);
     }
 
+    /**
+     * Invokes the instance method represented by this {@code UnresolvedMethod} on the specified
+     * {@code target} with the specified {@code parameters}.
+     * 
+     * If any kind of error is encountered (including but not limited to
+     * {@link ClassNotFoundException}, {@link NoSuchMethodException},
+     * {@link InvocationTargetException}), the supplied {@code returnOnError} is returned.
+     * 
+     * @param target
+     * @param parameters
+     * @param returnOnError
+     * @return the result of dispatching the instance method represented by this
+     *         {@code UnresolvedMethod} on the specified {@code target} with the specified
+     *         {@code parameters}
+     */
     @Nullable
     public Object invoke(Object target, Object[] parameters, @Nullable Object returnOnError) {
         Method method = getResolvedMethod(target.getClass().getClassLoader());
@@ -124,17 +213,58 @@ public class UnresolvedMethod {
         }
     }
 
+    /**
+     * Invokes the no-arg static method represented by this {@code UnresolvedMethod}. The class is
+     * resolved in the specified {@code loader}.
+     * 
+     * If any kind of error is encountered (including but not limited to
+     * {@link ClassNotFoundException}, {@link NoSuchMethodException},
+     * {@link InvocationTargetException}), the supplied {@code returnOnError} is returned.
+     * 
+     * @param loader
+     * @param returnOnError
+     * @return the result of dispatching the no-arg static method represented by this
+     *         {@code UnresolvedMethod}
+     */
     @Nullable
     public Object invokeStatic(@Nullable ClassLoader loader, @Nullable Object returnOnError) {
         return invokeStatic(loader, new Object[0], returnOnError);
     }
 
+    /**
+     * Invokes the static method represented by this {@code UnresolvedMethod} with the single
+     * specified {@code parameter}. The class is resolved in the specified {@code loader}.
+     * 
+     * If any kind of error is encountered (including but not limited to
+     * {@link ClassNotFoundException}, {@link NoSuchMethodException},
+     * {@link InvocationTargetException}), the supplied {@code returnOnError} is returned.
+     * 
+     * @param loader
+     * @param parameters
+     * @param returnOnError
+     * @return the result of dispatching the static method represented by this
+     *         {@code UnresolvedMethod} with the single specified {@code parameter}
+     */
     @Nullable
     public Object invokeStatic(@Nullable ClassLoader loader, Object parameters,
             @Nullable Object returnOnError) {
         return invokeStatic(loader, new Object[] { parameters }, returnOnError);
     }
 
+    /**
+     * Invokes the static method represented by this {@code UnresolvedMethod} with the specified
+     * {@code parameters}. The class is resolved in the specified {@code loader}.
+     * 
+     * If any kind of error is encountered (including but not limited to
+     * {@link ClassNotFoundException}, {@link NoSuchMethodException},
+     * {@link InvocationTargetException}), the supplied {@code returnOnError} is returned.
+     * 
+     * @param loader
+     * @param parameters
+     * @param returnOnError
+     * @return the result of dispatching the static method represented by this
+     *         {@code UnresolvedMethod} with the specified {@code parameters}
+     */
     @Nullable
     public Object invokeStatic(@Nullable ClassLoader loader, Object[] parameters,
             @Nullable Object returnOnError) {
