@@ -18,9 +18,9 @@ package io.informant.core;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
+import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
-import io.informant.api.Timer;
 import io.informant.core.PluginServicesImpl.PluginServicesImplFactory;
 import io.informant.core.config.ConfigService;
 import io.informant.core.util.ThreadSafe;
@@ -148,12 +148,12 @@ class PluginServicesProxy extends PluginServices {
     }
 
     @Override
-    public Timer startTimer(Metric metric) {
+    public MetricTimer startMetricTimer(Metric metric) {
         if (pluginServices == null) {
             throw new IllegalStateException("Informant hasn't finished initializing yet."
                     + "  Plugins should check isEnabled() first.");
         } else {
-            return pluginServices.startTimer(metric);
+            return pluginServices.startMetricTimer(metric);
         }
     }
 

@@ -15,15 +15,16 @@
  */
 package io.informant.plugin.jdbc;
 
+import io.informant.api.Endable;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
+import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
-import io.informant.api.Timer;
 import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectMethodArg;
 import io.informant.api.weaving.InjectMethodName;
@@ -109,12 +110,12 @@ public class JdbcAspect {
                     && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
-        public static Timer onBefore() {
-            return pluginServices.startTimer(metric);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetricTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Timer timer) {
-            timer.end();
+        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+            metricTimer.end();
         }
     }
 
@@ -379,9 +380,9 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Timer onBefore() {
+        public static MetricTimer onBefore() {
             if (metricEnabled) {
-                return pluginServices.startTimer(metric);
+                return pluginServices.startMetricTimer(metric);
             } else {
                 return null;
             }
@@ -413,9 +414,9 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.end();
+        public static void onAfter(@InjectTraveler @Nullable MetricTimer metricTimer) {
+            if (metricTimer != null) {
+                metricTimer.end();
             }
         }
     }
@@ -442,12 +443,12 @@ public class JdbcAspect {
             return metricEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
-        public static Timer onBefore() {
-            return pluginServices.startTimer(metric);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetricTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Timer timer) {
-            timer.end();
+        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+            metricTimer.end();
         }
     }
 
@@ -473,12 +474,12 @@ public class JdbcAspect {
             return metricEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
-        public static Timer onBefore() {
-            return pluginServices.startTimer(metric);
+        public static MetricTimer onBefore() {
+            return pluginServices.startMetricTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Timer timer) {
-            timer.end();
+        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+            metricTimer.end();
         }
     }
 
@@ -516,16 +517,16 @@ public class JdbcAspect {
                     && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
-        public static Timer onBefore(@InjectTarget Statement statement) {
+        public static MetricTimer onBefore(@InjectTarget Statement statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
             getStatementMirror(statement).setLastJdbcMessageSupplier(null);
-            return pluginServices.startTimer(metric);
+            return pluginServices.startMetricTimer(metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Timer timer) {
-            timer.end();
+        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+            metricTimer.end();
         }
     }
 
@@ -560,7 +561,7 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Timer onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
+        public static Endable onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
                 @InjectMethodName String methodName) {
             inDatabaseMetataDataMethod.set(methodName);
             if (pluginServices.isEnabled()) {
@@ -569,19 +570,19 @@ public class JdbcAspect {
                             + " DatabaseMetaData.{}() [connection: {}]", methodName,
                             getConnectionHashCode(databaseMetaData)), metric);
                 } else {
-                    return pluginServices.startTimer(metric);
+                    return pluginServices.startMetricTimer(metric);
                 }
             } else {
                 return null;
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Timer timer) {
+        public static void onAfter(@InjectTraveler @Nullable Endable endable) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.captureNested = false prevents re-entrant calls
             inDatabaseMetataDataMethod.remove();
-            if (timer != null) {
-                timer.end();
+            if (endable != null) {
+                endable.end();
             }
         }
     }

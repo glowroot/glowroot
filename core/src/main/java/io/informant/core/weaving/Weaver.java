@@ -17,7 +17,7 @@ package io.informant.core.weaving;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-import io.informant.api.Timer;
+import io.informant.api.MetricTimer;
 import io.informant.api.weaving.Mixin;
 import io.informant.core.util.ThreadSafe;
 
@@ -81,7 +81,7 @@ class Weaver implements Opcodes {
     private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes,
             @Nullable CodeSource codeSource, String className) {
 
-        Timer timer = metric.start();
+        MetricTimer metricTimer = metric.start();
         try {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             WeavingClassVisitor cv = new WeavingClassVisitor(mixins, advisors, loader,
@@ -108,7 +108,7 @@ class Weaver implements Opcodes {
                 return wovenBytes;
             }
         } finally {
-            timer.end();
+            metricTimer.end();
         }
     }
 

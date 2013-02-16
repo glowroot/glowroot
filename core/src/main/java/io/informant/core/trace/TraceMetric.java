@@ -15,7 +15,7 @@
  */
 package io.informant.core.trace;
 
-import io.informant.api.Timer;
+import io.informant.api.MetricTimer;
 import io.informant.core.util.PartiallyThreadSafe;
 import checkers.igj.quals.Immutable;
 
@@ -31,7 +31,7 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @PartiallyThreadSafe("getSnapshot() can be called from any thread")
-public class TraceMetric implements Timer {
+public class TraceMetric implements MetricTimer {
 
     private final String name;
     // nanosecond rollover (292 years) isn't a concern for total time on a single trace

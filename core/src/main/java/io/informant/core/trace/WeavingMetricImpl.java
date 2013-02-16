@@ -15,7 +15,7 @@
  */
 package io.informant.core.trace;
 
-import io.informant.api.Timer;
+import io.informant.api.MetricTimer;
 import io.informant.core.util.ThreadSafe;
 import io.informant.core.weaving.WeavingMetric;
 
@@ -42,7 +42,7 @@ public class WeavingMetricImpl implements WeavingMetric {
         metricImpl = new MetricImpl("informant weaving", ticker);
     }
 
-    public Timer start() {
+    public MetricTimer start() {
         // initTraceMetric is called at the beginning of every trace, and resetTraceMetric is called
         // at the end of every trace, so isLinkedToTrace() can be used to check if currently in a
         // trace
@@ -65,7 +65,7 @@ public class WeavingMetricImpl implements WeavingMetric {
     }
 
     @ThreadSafe
-    private static class NopTimer implements Timer {
+    private static class NopTimer implements MetricTimer {
         private static final NopTimer INSTANCE = new NopTimer();
         public void end() {}
     }

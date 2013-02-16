@@ -19,7 +19,7 @@ package io.informant.api;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Timer {
+public interface MetricTimer extends Endable {
 
     void end();
 }

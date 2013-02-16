@@ -292,11 +292,12 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.SettableFuture");
         types.add("com.google.common.util.concurrent.UncheckedExecutionException");
         types.add("com.google.common.util.concurrent.Uninterruptibles");
+        types.add("io.informant.api.Endable");
         types.add("io.informant.api.Logger");
         types.add("io.informant.api.LoggerFactory");
         types.add("io.informant.api.LoggerFactory$LoggerImpl");
         types.add("io.informant.api.Metric");
-        types.add("io.informant.api.Timer");
+        types.add("io.informant.api.MetricTimer");
         types.add("io.informant.api.weaving.InjectMethodArg");
         types.add("io.informant.api.weaving.InjectMethodArgArray");
         types.add("io.informant.api.weaving.InjectMethodName");

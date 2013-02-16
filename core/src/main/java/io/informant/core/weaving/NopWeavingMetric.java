@@ -15,7 +15,7 @@
  */
 package io.informant.core.weaving;
 
-import io.informant.api.Timer;
+import io.informant.api.MetricTimer;
 import checkers.igj.quals.Immutable;
 
 /**
@@ -27,11 +27,11 @@ class NopWeavingMetric implements WeavingMetric {
 
     static final NopWeavingMetric INSTANCE = new NopWeavingMetric();
 
-    public Timer start() {
+    public MetricTimer start() {
         return NopTimer.INSTANCE;
     }
 
-    private static class NopTimer implements Timer {
+    private static class NopTimer implements MetricTimer {
         private static final NopTimer INSTANCE = new NopTimer();
         public void end() {}
     }

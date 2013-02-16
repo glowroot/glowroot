@@ -69,7 +69,7 @@ public abstract class PluginServices {
 
     public abstract Span startSpan(MessageSupplier messageSupplier, Metric metric);
 
-    public abstract Timer startTimer(Metric metric);
+    public abstract MetricTimer startMetricTimer(Metric metric);
 
     public abstract void addSpan(MessageSupplier messageSupplier);
 
@@ -171,7 +171,7 @@ public abstract class PluginServices {
             return new NopSpan(messageSupplier);
         }
         @Override
-        public Timer startTimer(Metric metric) {
+        public MetricTimer startMetricTimer(Metric metric) {
             return NopTimer.INSTANCE;
         }
         @Override
@@ -202,7 +202,7 @@ public abstract class PluginServices {
             }
         }
 
-        private static class NopTimer implements Timer {
+        private static class NopTimer implements MetricTimer {
             private static final NopTimer INSTANCE = new NopTimer();
             public void end() {}
         }

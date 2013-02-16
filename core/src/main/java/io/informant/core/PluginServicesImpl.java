@@ -20,10 +20,10 @@ import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
+import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
-import io.informant.api.Timer;
 import io.informant.core.config.ConfigService;
 import io.informant.core.config.FineProfilingConfig;
 import io.informant.core.config.GeneralConfig;
@@ -244,7 +244,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Timer startTimer(Metric metric) {
+    public MetricTimer startMetricTimer(Metric metric) {
         if (metric == null) {
             logger.warn("startTimer(): argument 'metric' must be non-null");
             return NopTimer.INSTANCE;
@@ -349,7 +349,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
         if (trace.getSpanCount() >= maxSpans) {
             // the trace limit has been exceeded
-            return new TimerWrappedInSpan(startTimer(metric), trace, messageSupplier);
+            return new TimerWrappedInSpan(startMetricTimer(metric), trace, messageSupplier);
         } else {
             return new SpanImpl(trace.pushSpan(metric, messageSupplier), trace);
         }
@@ -440,16 +440,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private static class TimerWrappedInSpan implements Span {
-        private final Timer timer;
+        private final MetricTimer metricTimer;
         private final Trace trace;
         private final MessageSupplier messageSupplier;
-        public TimerWrappedInSpan(Timer timer, Trace trace, MessageSupplier messageSupplier) {
-            this.timer = timer;
+        public TimerWrappedInSpan(MetricTimer metricTimer, Trace trace,
+                MessageSupplier messageSupplier) {
+            this.metricTimer = metricTimer;
             this.trace = trace;
             this.messageSupplier = messageSupplier;
         }
         public void end() {
-            timer.end();
+            metricTimer.end();
         }
         public void endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
@@ -458,7 +459,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 end();
                 return;
             }
-            timer.end();
+            metricTimer.end();
             // span won't necessarily be nested properly, and won't have any timing data, but at
             // least the error will get captured
             trace.addSpan(messageSupplier, errorMessage);
@@ -481,7 +482,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @ThreadSafe
-    private static class NopTimer implements Timer {
+    private static class NopTimer implements MetricTimer {
         private static final NopTimer INSTANCE = new NopTimer();
         public void end() {}
     }
