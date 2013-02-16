@@ -201,14 +201,15 @@ class ServletMessageSupplier extends MessageSupplier {
                 detail.put("session attributes", sessionAttributeInitialValueMap);
             } else {
                 // session attributes were updated mid-request
-                Map<String, Object> sessionAttributeInitialValuePlusMap = Maps.newHashMap();
+                Map<String, /*@Nullable*/Object> sessionAttributeInitialValuePlusMap =
+                        Maps.newHashMap();
                 sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
                 // add empty values into initial values for any updated attributes that are not
                 // already present in initial values nested detail map
                 for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
                         .entrySet()) {
                     if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
-                        sessionAttributeInitialValuePlusMap.put(entry.getKey(), Optional.absent());
+                        sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
                     }
                 }
                 detail.put("session attributes (at beginning of this request)",
