@@ -95,7 +95,7 @@ public class TraceMetricDataTest {
             }
         });
         // then
-        Trace trace = container.getInformant().getActiveTrace(5000);
+        Trace trace = container.getInformant().getActiveTraceSummary(5000);
         assertThat(trace).isNotNull();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");

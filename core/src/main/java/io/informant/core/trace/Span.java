@@ -35,6 +35,10 @@ import com.google.common.collect.ImmutableList;
 @ThreadSafe
 public class Span {
 
+    private static final Span limitExceededMarker = new Span(null, 0, 0, 0, 0, 0, null);
+
+    private static final Span limitExtendedMarker = new Span(null, 0, 0, 0, 0, 0, null);
+
     @Nullable
     private final MessageSupplier messageSupplier;
     @Nullable
@@ -59,7 +63,6 @@ public class Span {
 
     Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
             int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
-
         this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
         this.startTick = startTick;
@@ -109,6 +112,14 @@ public class Span {
         return stackTrace;
     }
 
+    public boolean isLimitExceededMarker() {
+        return this == limitExceededMarker;
+    }
+
+    public boolean isLimitExtendedMarker() {
+        return this == limitExtendedMarker;
+    }
+
     @Nullable
     TraceMetric getTraceMetric() {
         return traceMetric;
@@ -140,5 +151,13 @@ public class Span {
                 .add("traceMetric", traceMetric)
                 .add("stackTrace", stackTrace)
                 .toString();
+    }
+
+    public static Span getLimitExceededMarker() {
+        return limitExceededMarker;
+    }
+
+    public static Span getLimitExtendedMarker() {
+        return limitExtendedMarker;
     }
 }

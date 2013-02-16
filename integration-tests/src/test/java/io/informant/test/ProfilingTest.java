@@ -184,7 +184,7 @@ public class ProfilingTest {
             }
         });
         // then
-        Trace trace = container.getInformant().getActiveTrace(5000);
+        Trace trace = container.getInformant().getActiveTraceSummary(5000);
         assertThat(trace).isNotNull();
         // cleanup
         future.get();

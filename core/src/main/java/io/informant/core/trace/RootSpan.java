@@ -57,11 +57,13 @@ class RootSpan {
     // tracking size of spans queue since ConcurrentLinkedQueue.size() is slow
     private volatile int size;
 
+    // this doesn't need to be thread safe as it is only accessed by the trace thread
+    private boolean spanLimitExceeded;
+
     private final Ticker ticker;
 
     RootSpan(MessageSupplier messageSupplier, TraceMetric traceMetric, long startTick,
             Ticker ticker) {
-
         this.startTick = startTick;
         this.ticker = ticker;
         rootSpan = new Span(messageSupplier, startTick, startTick, 0, -1, 0, traceMetric);
@@ -117,7 +119,6 @@ class RootSpan {
 
     Span addSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage) {
-
         Span span = createSpan(startTick, messageSupplier, errorMessage, null);
         spans.add(span);
         size++;
@@ -125,9 +126,26 @@ class RootSpan {
         return span;
     }
 
+    void addSpanLimitExceededMarkerIfNeeded() {
+        if (spanLimitExceeded) {
+            return;
+        }
+        spanLimitExceeded = true;
+        spans.add(Span.getLimitExceededMarker());
+        size++;
+    }
+
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric) {
-
+        if (errorMessage == null && spanLimitExceeded) {
+            // just in case the spanLimit property is changed in the middle of a trace this resets
+            // the flag so that it can be triggered again (and possibly then a second limit marker)
+            spanLimitExceeded = false;
+            // also a different marker ("limit extended") is placed in the spans so that the ui can
+            // display this scenario sensibly
+            spans.add(Span.getLimitExtendedMarker());
+            size++;
+        }
         Span currentSpan = spanStack.get(spanStack.size() - 1);
         Span span = new Span(messageSupplier, this.startTick, startTick, size,
                 currentSpan.getIndex(), currentSpan.getNestingLevel() + 1, traceMetric);

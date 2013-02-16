@@ -40,7 +40,7 @@ import checkers.nullness.quals.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class StuckTraceTest {
+public class MaxSpansLimitTest {
 
     private static InformantContainer container;
 
@@ -67,50 +67,58 @@ public class StuckTraceTest {
         // given
         GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
-        generalConfig.setStuckThresholdSeconds(0);
+        generalConfig.setMaxSpans(100);
         container.getInformant().updateGeneralConfig(generalConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Nullable
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateStuckTrace.class);
+                container.executeAppUnderTest(GenerateLotsOfSpans.class);
                 return null;
             }
         });
         // then
-        // test harness needs to kick off test and stuck trace collector polls and marks stuck
-        // traces every 100 milliseconds, so may need to wait a little
-        Stopwatch stopwatch = new Stopwatch();
+        // test harness needs to kick off test, so may need to wait a little
+        Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
         while (true) {
-            trace = container.getInformant().getActiveTraceSummary(0);
-            if ((trace != null && trace.isStuck()) || stopwatch.elapsedMillis() > 2000) {
+            trace = container.getInformant().getActiveTrace(0);
+            if ((trace != null && trace.getSpans().size() == 101)
+                    || stopwatch.elapsedMillis() > 2000) {
                 break;
             }
-            Thread.sleep(10);
         }
         assertThat(trace).isNotNull();
-        assertThat(trace.isStuck()).isTrue();
-        assertThat(trace.isActive()).isTrue();
-        assertThat(trace.isCompleted()).isFalse();
+        assertThat(trace.getSpans()).hasSize(101);
+        assertThat(trace.getSpans().get(100).isLimitExceededMarker()).isTrue();
+
+        // part 2 of this test
+        generalConfig = container.getInformant().getGeneralConfig();
+        generalConfig.setMaxSpans(200);
+        container.getInformant().updateGeneralConfig(generalConfig);
         future.get();
-        // should now be reported as unstuck
-        trace = container.getInformant().getLastTraceSummary();
-        assertThat(trace.isStuck()).isFalse();
-        assertThat(trace.isCompleted()).isTrue();
+        trace = container.getInformant().getLastTrace();
+        assertThat(trace).isNotNull();
+        assertThat(trace.getSpans()).hasSize(201);
+        assertThat(trace.getSpans().get(100).isLimitExceededMarker()).isTrue();
+        assertThat(trace.getSpans().get(101).isLimitExtendedMarker()).isTrue();
+        assertThat(trace.getSpans().get(200).isLimitExceededMarker()).isTrue();
         // cleanup
         executorService.shutdown();
     }
 
-    public static class ShouldGenerateStuckTrace implements AppUnderTest, TraceMarker {
-        public void executeApp() throws InterruptedException {
+    public static class GenerateLotsOfSpans implements AppUnderTest, TraceMarker {
+        public void executeApp() throws Exception {
             traceMarker();
         }
-        public void traceMarker() throws InterruptedException {
-            // stuck trace collector polls for stuck traces every 100 milliseconds,
-            // and this test polls for active stuck traces every 10 milliseconds
-            Thread.sleep(500);
+        public void traceMarker() throws Exception {
+            Stopwatch stopwatch = new Stopwatch().start();
+            int count = 0;
+            // run for at least 500 milliseconds since there is some timing involved in the test
+            while (stopwatch.elapsedMillis() < 500 || count++ < 500) {
+                new LevelOne().call("a", "b");
+            }
         }
     }
 

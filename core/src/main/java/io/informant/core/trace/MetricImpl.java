@@ -50,7 +50,15 @@ public class MetricImpl implements Metric {
         return traceMetricHolder.get();
     }
 
-    TraceMetric start(long startTick) {
+    // prefer this method when startTick is not already available, since it avoids a ticker.read()
+    // for nested metrics
+    public TraceMetric start() {
+        TraceMetric traceMetric = traceMetricHolder.get();
+        traceMetric.start();
+        return traceMetric;
+    }
+
+    public TraceMetric start(long startTick) {
         TraceMetric traceMetric = traceMetricHolder.get();
         traceMetric.start(startTick);
         return traceMetric;

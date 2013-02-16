@@ -93,7 +93,8 @@ public class TraceMetric implements MetricTimer {
         return linkedToTrace;
     }
 
-    // start() avoids a ticker read in some cases, so don't just implement as start(ticker.read())
+    // prefer this method when startTick is not already available, since it avoids a ticker.read()
+    // for nested metrics
     public void start() {
         if (selfNestingLevel == 0) {
             this.startTick = ticker.read();

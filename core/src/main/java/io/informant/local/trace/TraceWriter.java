@@ -216,6 +216,8 @@ public class TraceWriter {
         private final Writer raw;
         private final JsonWriter jw;
 
+        private boolean limitExceeded;
+
         private SpansByteStream(@ReadOnly Iterator<Span> spans, long captureTick)
                 throws IOException {
             this.spans = spans;
@@ -254,7 +256,27 @@ public class TraceWriter {
                 // this span started after the capture tick
                 return;
             }
+            if (span.isLimitExceededMarker()) {
+                limitExceeded = true;
+                jw.beginObject();
+                jw.name("limitExceededMarker");
+                jw.value(true);
+                jw.endObject();
+                return;
+            }
+            if (span.isLimitExtendedMarker()) {
+                limitExceeded = false;
+                jw.beginObject();
+                jw.name("limitExtendedMarker");
+                jw.value(true);
+                jw.endObject();
+                return;
+            }
             jw.beginObject();
+            if (limitExceeded) {
+                jw.name("extraError");
+                jw.value(true);
+            }
             jw.name("offset");
             jw.value(span.getOffset());
             jw.name("duration");

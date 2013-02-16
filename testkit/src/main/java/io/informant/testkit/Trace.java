@@ -329,6 +329,8 @@ public class Trace {
         private ErrorMessage error;
         @Nullable
         private List<String> stackTrace;
+        private boolean limitExceededMarker;
+        private boolean limitExtendedMarker;
 
         public long getOffset() {
             return offset;
@@ -357,6 +359,12 @@ public class Trace {
         public List<String> getStackTrace() {
             return stackTrace;
         }
+        public boolean isLimitExceededMarker() {
+            return limitExceededMarker;
+        }
+        public boolean isLimitExtendedMarker() {
+            return limitExtendedMarker;
+        }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
@@ -368,6 +376,8 @@ public class Trace {
                     .add("message", message)
                     .add("error", error)
                     .add("stackTrace", stackTrace)
+                    .add("limitExceededMarker", limitExceededMarker)
+                    .add("limitExtendedMarker", limitExtendedMarker)
                     .toString();
         }
     }

@@ -230,12 +230,24 @@ public class Informant {
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
+    public Trace getActiveTraceSummary(int timeoutMillis) throws Exception {
+        return getActiveTrace(timeoutMillis, true);
+    }
+
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
+    @Nullable
     public Trace getActiveTrace(int timeoutMillis) throws Exception {
+        return getActiveTrace(timeoutMillis, false);
+    }
+
+    private Trace getActiveTrace(int timeoutMillis, boolean summary) throws Exception,
+            InterruptedException {
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
         // try at least once (e.g. in case timeoutMillis == 0)
         while (true) {
-            trace = getActiveTrace();
+            trace = getActiveTrace(summary);
             if (trace != null || stopwatch.elapsedMillis() > timeoutMillis) {
                 break;
             }
@@ -284,7 +296,7 @@ public class Informant {
     }
 
     @Nullable
-    private Trace getActiveTrace() throws Exception {
+    private Trace getActiveTrace(boolean summary) throws Exception {
         String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
         JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
@@ -296,8 +308,15 @@ public class Informant {
         } else {
             JsonArray values = points.get(0).getAsJsonArray();
             String traceId = values.get(2).getAsString();
-            String traceDetailJson = get("/explorer/summary/" + traceId);
-            return gson.fromJson(traceDetailJson, Trace.class);
+            if (summary) {
+                String traceJson = get("/explorer/summary/" + traceId);
+                Trace trace = gson.fromJson(traceJson, Trace.class);
+                trace.setSummary(true);
+                return trace;
+            } else {
+                String traceJson = get("/explorer/detail/" + traceId);
+                return gson.fromJson(traceJson, Trace.class);
+            }
         }
     }
 

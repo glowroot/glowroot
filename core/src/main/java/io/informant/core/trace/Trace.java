@@ -349,6 +349,10 @@ public class Trace {
         return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
     }
 
+    public void addSpanLimitExceededMarkerIfNeeded() {
+        rootSpan.addSpanLimitExceededMarkerIfNeeded();
+    }
+
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
