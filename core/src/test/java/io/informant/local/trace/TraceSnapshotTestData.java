@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,15 +39,15 @@ class TraceSnapshotTestData {
                 .headline("test headline")
                 .userId("j")
                 .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
-                        + "\"parentIndex\":-1,\"level\":0,\"message\":{\"text\":\"Level One\","
+                        + "\"level\":0,\"message\":{\"text\":\"Level One\","
                         + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","
                         + "\"nested1\":{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\","
                         + "\"subnestedkey1\":{\"subnestedkey1\":\"a\",\"subnestedkey2\":\"b\"}},"
                         + "\"nested2\":{\"nestedkey21\":\"a\",\"nestedkey22\":\"b\"}}}},"
-                        + "{\"offset\":0,\"duration\":0,\"index\":1,\"parentIndex\":0,\"level\":1,"
+                        + "{\"offset\":0,\"duration\":0,\"index\":1,\"level\":1,"
                         + "\"message\":{\"text\":\"Level Two\",\"detail\":{\"arg1\":\"ax\","
                         + "\"arg2\":\"bx\"}}},{\"offset\":0,\"duration\":0,\"index\":2,"
-                        + "\"parentIndex\":1,\"level\":2,\"message\":{\"text\":\"Level Three\","
+                        + "\"level\":2,\"message\":{\"text\":\"Level Three\","
                         + "\"detail\":{\"arg1\":\"axy\",\"arg2\":\"bxy\"}}}]"))
                 .build();
     }

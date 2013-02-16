@@ -66,7 +66,7 @@ class RootSpan {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootSpan = new Span(messageSupplier, startTick, startTick, 0, -1, 0, traceMetric);
+        rootSpan = new Span(messageSupplier, startTick, startTick, 0, traceMetric);
         pushSpanInternal(rootSpan);
     }
 
@@ -147,8 +147,8 @@ class RootSpan {
             size++;
         }
         Span currentSpan = spanStack.get(spanStack.size() - 1);
-        Span span = new Span(messageSupplier, this.startTick, startTick, size,
-                currentSpan.getIndex(), currentSpan.getNestingLevel() + 1, traceMetric);
+        Span span = new Span(messageSupplier, this.startTick, startTick,
+                currentSpan.getNestingLevel() + 1, traceMetric);
         span.setErrorMessage(errorMessage);
         return span;
     }

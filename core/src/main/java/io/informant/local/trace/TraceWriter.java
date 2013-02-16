@@ -288,10 +288,6 @@ public class TraceWriter {
                 jw.name("active");
                 jw.value(true);
             }
-            jw.name("index");
-            jw.value(span.getIndex());
-            jw.name("parentIndex");
-            jw.value(span.getParentIndex());
             jw.name("nestingLevel");
             jw.value(span.getNestingLevel());
             MessageSupplier messageSupplier = span.getMessageSupplier();

@@ -35,9 +35,9 @@ import com.google.common.collect.ImmutableList;
 @ThreadSafe
 public class Span {
 
-    private static final Span limitExceededMarker = new Span(null, 0, 0, 0, 0, 0, null);
+    private static final Span limitExceededMarker = new Span(null, 0, 0, 0, null);
 
-    private static final Span limitExtendedMarker = new Span(null, 0, 0, 0, 0, 0, null);
+    private static final Span limitExtendedMarker = new Span(null, 0, 0, 0, null);
 
     @Nullable
     private final MessageSupplier messageSupplier;
@@ -48,11 +48,6 @@ public class Span {
     private final long startTick;
     private volatile long endTick;
 
-    // index is per trace and starts at 0
-    private final int index;
-    private final int parentIndex;
-
-    // nesting is just a convenience for output
     private final int nestingLevel;
 
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
@@ -62,12 +57,10 @@ public class Span {
     private volatile ImmutableList<StackTraceElement> stackTrace;
 
     Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
-            int index, int parentIndex, int nesting, @Nullable TraceMetric traceMetric) {
+            int nesting, @Nullable TraceMetric traceMetric) {
         this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
         this.startTick = startTick;
-        this.index = index;
-        this.parentIndex = parentIndex;
         this.nestingLevel = nesting;
         this.traceMetric = traceMetric;
     }
@@ -93,14 +86,6 @@ public class Span {
     // offset in nanoseconds from beginning of trace
     public long getOffset() {
         return startTick - traceStartTick;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public int getParentIndex() {
-        return parentIndex;
     }
 
     public int getNestingLevel() {
@@ -145,11 +130,11 @@ public class Span {
                 .add("traceStartTick", traceStartTick)
                 .add("startTick", startTick)
                 .add("endTick", endTick)
-                .add("index", index)
-                .add("parentIndex", parentIndex)
                 .add("nestingLevel", nestingLevel)
                 .add("traceMetric", traceMetric)
                 .add("stackTrace", stackTrace)
+                .add("limitExceededMarker", isLimitExceededMarker())
+                .add("limitExtendedMarker", isLimitExtendedMarker())
                 .toString();
     }
 

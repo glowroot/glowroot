@@ -320,7 +320,6 @@ public class Trace {
         private long offset;
         private long duration;
         private int index;
-        private int parentIndex;
         private int nesting;
         // message is null for spans created via PluginServices.addErrorSpan()
         @Nullable
@@ -340,9 +339,6 @@ public class Trace {
         }
         public int getIndex() {
             return index;
-        }
-        public int getParentIndex() {
-            return parentIndex;
         }
         public int getNesting() {
             return nesting;
@@ -371,7 +367,6 @@ public class Trace {
                     .add("offset", offset)
                     .add("duration", duration)
                     .add("index", index)
-                    .add("parentIndex", parentIndex)
                     .add("nesting", nesting)
                     .add("message", message)
                     .add("error", error)
