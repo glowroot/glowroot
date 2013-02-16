@@ -312,7 +312,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
-            trace.setAttribute(name, value);
+            trace.setAttribute(pluginId, name, value);
         }
     }
 

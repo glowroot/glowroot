@@ -26,6 +26,7 @@ import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
+import io.informant.core.trace.Trace.TraceAttribute;
 import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.core.util.ByteStream;
 import io.informant.core.util.GsonFactory;
@@ -40,12 +41,10 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
@@ -132,16 +131,16 @@ public class TraceWriter {
 
     @Nullable
     private static String getAttributesJson(Trace trace) throws IOException {
-        Map<String, Optional<String>> attributes = trace.getAttributes();
+        List<TraceAttribute> attributes = trace.getAttributes();
         if (attributes.isEmpty()) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
         jw.beginObject();
-        for (Entry<String, Optional<String>> entry : attributes.entrySet()) {
-            jw.name(entry.getKey());
-            jw.value(entry.getValue().orNull());
+        for (TraceAttribute attribute : attributes) {
+            jw.name(attribute.getName());
+            jw.value(attribute.getValue());
         }
         jw.endObject();
         jw.close();

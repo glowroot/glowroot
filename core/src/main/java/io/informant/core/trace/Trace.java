@@ -27,8 +27,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -40,10 +38,8 @@ import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Optional;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -62,6 +58,10 @@ public class Trace {
 
     private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
+    // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
+    private static final int ATTRIBUTES_LIST_INITIAL_CAPACITY = 16;
+    private static final int TRACE_METRICS_LIST_INITIAL_CAPACITY = 32;
+
     // a unique identifier
     private final TraceUniqueId id;
 
@@ -74,21 +74,18 @@ public class Trace {
 
     private volatile boolean background;
 
-    // attribute name ordering is maintained for consistent display (assumption is order of entry is
-    // order of importance)
-    //
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
     @LazyNonNull
-    private volatile Map<String, Optional<String>> attributes;
+    private volatile List<TraceAttribute> attributes;
 
     @Nullable
     private volatile String userId;
 
-    // this is mostly updated and rarely read, so it seems like synchronized ArrayList is the best
-    // collection
-    private final List<TraceMetric> traceMetrics = Collections
-            .synchronizedList(new ArrayList<TraceMetric>());
+    // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
+    // ThreadSafeCollectionOfTenBenchmark
+    @GuardedBy("traceMetrics")
+    private final List<TraceMetric> traceMetrics;
 
     // the MetricImpls are tracked since they contain thread locals that need to be cleared at the
     // end of the trace
@@ -137,7 +134,11 @@ public class Trace {
         TraceMetric traceMetric = metric.start(startTick);
         traceMetric.setLinkedToTrace();
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
+        List<TraceMetric> traceMetrics =
+                Lists.newArrayListWithCapacity(TRACE_METRICS_LIST_INITIAL_CAPACITY);
         traceMetrics.add(traceMetric);
+        // safe publish of traceMetrics to avoid synchronization
+        this.traceMetrics = traceMetrics;
         metrics.add(metric);
         // the weaving metric thread local is initialized to an empty TraceMetric instance so that
         // it can be cached in this class (otherwise it is painful to synchronize properly between
@@ -181,13 +182,34 @@ public class Trace {
     }
 
     @ReadOnly
-    public Map<String, Optional<String>> getAttributes() {
+    public List<TraceAttribute> getAttributes() {
         if (attributes == null) {
-            return ImmutableMap.of();
+            return ImmutableList.of();
         } else {
-            synchronized (attributes) {
-                return Maps.newLinkedHashMap(attributes);
+            List<TraceAttribute> attributes;
+            synchronized (this.attributes) {
+                attributes = ImmutableList.copyOf(this.attributes);
             }
+            // filter out duplicates (last one wins) and order so that each plugin's attributes
+            // are together (and the plugins are ordered by the order they added their first
+            // attribute to this trace)
+            Map<String, Map<String, TraceAttribute>> attributeMap = Maps.newLinkedHashMap();
+            for (TraceAttribute attribute : attributes) {
+                Map<String, TraceAttribute> pluginAttributeMap =
+                        attributeMap.get(attribute.getPluginId());
+                if (pluginAttributeMap == null) {
+                    pluginAttributeMap = Maps.newLinkedHashMap();
+                    attributeMap.put(attribute.getPluginId(), pluginAttributeMap);
+                }
+                pluginAttributeMap.put(attribute.getName(), attribute);
+            }
+            List<TraceAttribute> orderedAttributes = Lists.newArrayList();
+            for (Map<String, TraceAttribute> pluginAttributeMap : attributeMap.values()) {
+                for (TraceAttribute attribute : pluginAttributeMap.values()) {
+                    orderedAttributes.add(attribute);
+                }
+            }
+            return orderedAttributes;
         }
     }
 
@@ -208,7 +230,13 @@ public class Trace {
         if (finalTraceMetricSnapshots != null) {
             return finalTraceMetricSnapshots;
         }
-        return buildTraceMetricSnapshots();
+        List<TraceMetric> copyOfTraceMetrics;
+        synchronized (traceMetrics) {
+            // getTraceMetricSnapshots() can be called by another thread during the trace, so prefer
+            // smaller synchronized block compared to getTraceMetricSnapshots()
+            copyOfTraceMetrics = ImmutableList.copyOf(traceMetrics);
+        }
+        return buildTraceMetricSnapshots(copyOfTraceMetrics);
     }
 
     public Span getRootSpan() {
@@ -271,14 +299,16 @@ public class Trace {
         this.userId = userId;
     }
 
-    public void setAttribute(String name, @Nullable String value) {
+    public void setAttribute(String pluginId, String name, @Nullable String value) {
         if (attributes == null) {
             // no race condition here since only trace thread calls setAttribute()
-            attributes = Maps.newLinkedHashMap();
+            //
+            // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
+            // ThreadSafeCollectionOfTenBenchmark
+            attributes = Lists.newArrayListWithCapacity(ATTRIBUTES_LIST_INITIAL_CAPACITY);
         }
-        // synchronization is only for visibility guarantee
         synchronized (attributes) {
-            attributes.put(name, Optional.fromNullable(value));
+            attributes.add(new TraceAttribute(pluginId, name, value));
         }
     }
 
@@ -331,13 +361,19 @@ public class Trace {
     }
 
     public void linkTraceMetric(MetricImpl metric, TraceMetric traceMetric) {
-        traceMetrics.add(traceMetric);
+        synchronized (traceMetrics) {
+            traceMetrics.add(traceMetric);
+        }
         traceMetric.setLinkedToTrace();
         metrics.add(metric);
     }
 
     public void promoteTraceMetrics() {
-        finalTraceMetricSnapshots = buildTraceMetricSnapshots();
+        synchronized (traceMetrics) {
+            // promoteTraceMetrics() is called by the trace thread, so prefer larger synchronized
+            // block compared to getTraceMetricSnapshots()
+            finalTraceMetricSnapshots = buildTraceMetricSnapshots(traceMetrics);
+        }
     }
 
     public void resetTraceMetrics() {
@@ -382,7 +418,8 @@ public class Trace {
         }
     }
 
-    private ImmutableList<Snapshot> buildTraceMetricSnapshots() {
+    private ImmutableList<Snapshot> buildTraceMetricSnapshots(
+            @ReadOnly List<TraceMetric> traceMetrics) {
         // since the metrics are bound to the thread, they need to be recorded and reset
         // while still in the trace thread, before the thread is reused for another trace
         ImmutableList.Builder<Snapshot> traceMetricSnapshots = ImmutableList.builder();
@@ -412,5 +449,27 @@ public class Trace {
                 .add("fineProfilingScheduledFuture", fineProfilingScheduledFuture)
                 .add("stuckScheduledFuture", stuckScheduledFuture)
                 .toString();
+    }
+
+    public static class TraceAttribute {
+        private final String pluginId;
+        private final String name;
+        @Nullable
+        private final String value;
+        private TraceAttribute(String pluginId, String name, @Nullable String value) {
+            this.pluginId = pluginId;
+            this.name = name;
+            this.value = value;
+        }
+        public String getPluginId() {
+            return pluginId;
+        }
+        public String getName() {
+            return name;
+        }
+        @Nullable
+        public String getValue() {
+            return value;
+        }
     }
 }
