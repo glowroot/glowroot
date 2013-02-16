@@ -187,22 +187,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
-        return startTrace(messageSupplier, metric, null, false);
-    }
-
-    @Override
-    public Span startTrace(MessageSupplier messageSupplier, Metric metric,
-            @Nullable String userId) {
-        return startTrace(messageSupplier, metric, userId, false);
+        return startTrace(messageSupplier, metric, false);
     }
 
     @Override
     public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
-        return startTrace(messageSupplier, metric, null, true);
+        return startTrace(messageSupplier, metric, true);
     }
 
-    private Span startTrace(MessageSupplier messageSupplier, Metric metric,
-            @Nullable String userId, boolean background) {
+    private Span startTrace(MessageSupplier messageSupplier, Metric metric, boolean background) {
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
@@ -215,9 +208,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (trace == null) {
             trace = new Trace((MetricImpl) metric, messageSupplier, ticker, clock, weavingMetric);
             trace.setBackground(background);
-            if (!maybeScheduleFineProfilingUsingUserId(trace, userId)) {
-                maybeScheduleFineProfilingUsingPercentage(trace);
-            }
+            maybeScheduleFineProfilingUsingPercentage(trace);
             traceRegistry.addTrace(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
         } else {
@@ -289,16 +280,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    // it is better to use startTrace(..., userId) so that fine profiling can be scheduled from the
-    // beginning of the trace in case user tracing with fine profiling is configured for this user,
-    // but if that's not possible or efficient then this method will still schedule fine profiling
-    // from this point forward if applicable
     @Override
     public void setUserId(@Nullable String userId) {
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null) {
             trace.setUserId(userId);
-            if (trace.getFineProfilingScheduledFuture() == null) {
+            if (userId != null && trace.getFineProfilingScheduledFuture() == null) {
                 maybeScheduleFineProfilingUsingUserId(trace, userId);
             }
         }
@@ -324,17 +311,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         spanStackTraceThresholdMillis = generalConfig.getSpanStackTraceThresholdMillis();
     }
 
-    private boolean maybeScheduleFineProfilingUsingUserId(Trace trace, @Nullable String userId) {
-        if (userId == null) {
-            return false;
-        }
+    private void maybeScheduleFineProfilingUsingUserId(Trace trace, String userId) {
         UserConfig userConfig = configService.getUserConfig();
         if (userConfig.isEnabled() && userConfig.isFineProfiling()
                 && userId.equals(userConfig.getUserId())) {
             fineGrainedProfiler.scheduleProfiling(trace);
-            return true;
-        } else {
-            return false;
         }
     }
 
