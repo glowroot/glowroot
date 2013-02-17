@@ -15,6 +15,7 @@
  */
 package io.informant.api;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -43,7 +44,6 @@ public class UnresolvedMethod {
     private static final Method SENTINEL_METHOD;
 
     static {
-
         SENTINEL_CLASS_LOADER = AccessController.doPrivileged(
                 new PrivilegedAction<ClassLoader>() {
                     public ClassLoader run() {
@@ -59,10 +59,10 @@ public class UnresolvedMethod {
         }
     }
 
-    private final String unresolvedClass;
-    private final String name;
+    private final String typeName;
+    private final String methodName;
     private final Class<?>/*@Nullable*/[] parameterTypes;
-    private final String/*@Nullable*/[] unresolvedParameterTypes;
+    private final String/*@Nullable*/[] parameterTypeNames;
 
     // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
     // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
@@ -72,87 +72,82 @@ public class UnresolvedMethod {
     private final Map<ClassLoader, Method> resolvedMethods = new MapMaker().weakKeys().weakValues()
             .makeMap();
 
-    public static UnresolvedMethod from(String unresolvedClass, String name) {
-        return new UnresolvedMethod(unresolvedClass, name, new Class<?>[0], null);
+    public static UnresolvedMethod from(String typeName, String methodName) {
+        return new UnresolvedMethod(typeName, methodName, new Class<?>[0], null);
     }
 
-    public static UnresolvedMethod from(String unresolvedClass, String name,
+    public static UnresolvedMethod from(String typeName, String methodName,
             Class<?>... parameterTypes) {
-        return new UnresolvedMethod(unresolvedClass, name, parameterTypes, null);
+        return new UnresolvedMethod(typeName, methodName, parameterTypes, null);
     }
 
-    public static UnresolvedMethod from(String unresolvedClass, String name,
-            String... unresolvedParameterTypes) {
-        return new UnresolvedMethod(unresolvedClass, name, null, unresolvedParameterTypes);
+    public static UnresolvedMethod from(String typeName, String methodName,
+            String... parameterTypeNames) {
+        return new UnresolvedMethod(typeName, methodName, null, parameterTypeNames);
     }
 
-    private UnresolvedMethod(String unresolvedClass, String name,
-            Class<?>/*@Nullable*/[] parameterTypes,
-            String/*@Nullable*/[] unresolvedParameterTypes) {
-
-        if (parameterTypes == null && unresolvedParameterTypes == null) {
+    private UnresolvedMethod(String typeName, String methodName,
+            Class<?>/*@Nullable*/[] parameterTypes, String/*@Nullable*/[] parameterTypeNames) {
+        if (parameterTypes == null && parameterTypeNames == null) {
             throw new NullPointerException("Constructor args 'parameterTypes' and"
-                    + " 'unresolvedParameterTypes' cannot both be null (enforced by static factory"
+                    + " 'parameterTypeNames' cannot both be null (enforced by static factory"
                     + " methods)");
         }
-        this.unresolvedClass = unresolvedClass;
-        this.name = name;
+        this.typeName = typeName;
+        this.methodName = methodName;
         this.parameterTypes = parameterTypes;
-        this.unresolvedParameterTypes = unresolvedParameterTypes;
+        this.parameterTypeNames = parameterTypeNames;
     }
 
     @Nullable
-    public Object invokeWithDefaultOnError(Object target, @Nullable Object defaultValue) {
-        return invokeWithDefaultOnError(target, new Object[0], defaultValue);
+    public Object invoke(Object target, @Nullable Object returnOnError) {
+        return invoke(target, new Object[0], returnOnError);
     }
 
     @Nullable
-    public Object invokeWithDefaultOnError(Object target, Object parameters,
-            @Nullable Object defaultValue) {
-        return invokeWithDefaultOnError(target, new Object[] { parameters }, defaultValue);
+    public Object invoke(Object target, Object parameter, @Nullable Object returnOnError) {
+        return invoke(target, new Object[] { parameter }, returnOnError);
     }
 
     @Nullable
-    public Object invokeWithDefaultOnError(Object target, Object[] parameters,
-            @Nullable Object defaultValue) {
+    public Object invoke(Object target, Object[] parameters, @Nullable Object returnOnError) {
         Method method = getResolvedMethod(target.getClass().getClassLoader());
         if (method == null) {
             // warning has already been logged in getResolvedMethod()
-            return defaultValue;
+            return returnOnError;
         }
         try {
-            return invoke(method, target, parameters);
+            return invokeInternal(method, target, parameters);
         } catch (Throwable t) {
             logger.warn(t.getMessage(), t);
-            return defaultValue;
+            return returnOnError;
         }
     }
 
     @Nullable
-    public Object invokeStaticWithDefaultOnError(@Nullable ClassLoader loader,
-            @Nullable Object defaultValue) {
-        return invokeStaticWithDefaultOnError(loader, new Object[0], defaultValue);
+    public Object invokeStatic(@Nullable ClassLoader loader, @Nullable Object returnOnError) {
+        return invokeStatic(loader, new Object[0], returnOnError);
     }
 
     @Nullable
-    public Object invokeStaticWithDefaultOnError(@Nullable ClassLoader loader, Object parameters,
-            @Nullable Object defaultValue) {
-        return invokeStaticWithDefaultOnError(loader, new Object[] { parameters }, defaultValue);
+    public Object invokeStatic(@Nullable ClassLoader loader, Object parameters,
+            @Nullable Object returnOnError) {
+        return invokeStatic(loader, new Object[] { parameters }, returnOnError);
     }
 
     @Nullable
-    public Object invokeStaticWithDefaultOnError(@Nullable ClassLoader loader, Object[] parameters,
-            @Nullable Object defaultValue) {
+    public Object invokeStatic(@Nullable ClassLoader loader, Object[] parameters,
+            @Nullable Object returnOnError) {
         Method method = getResolvedMethod(loader);
         if (method == null) {
             // warning has already been logged in getResolvedMethod()
-            return defaultValue;
+            return returnOnError;
         }
         try {
-            return invoke(method, null, parameters);
+            return invokeInternal(method, null, parameters);
         } catch (Throwable t) {
             logger.warn(t.getMessage(), t);
-            return defaultValue;
+            return returnOnError;
         }
     }
 
@@ -165,7 +160,7 @@ public class UnresolvedMethod {
         Method method = resolvedMethods.get(key);
         if (method == null) {
             // just a cache, ok if two threads happen to load and store in parallel
-            method = loadResolvedMethod(loader);
+            method = resolveMethod(loader);
             resolvedMethods.put(key, method);
         }
         if (method == SENTINEL_METHOD) {
@@ -174,22 +169,23 @@ public class UnresolvedMethod {
         return method;
     }
 
-    private Method loadResolvedMethod(@Nullable ClassLoader loader) {
+    private Method resolveMethod(@Nullable ClassLoader loader) {
         try {
-            Class<?> resolvedClass = Class.forName(unresolvedClass, false, loader);
+            Class<?> resolvedClass = Class.forName(typeName, false, loader);
             if (parameterTypes != null) {
-                return resolvedClass.getMethod(name, parameterTypes);
-            } else if (unresolvedParameterTypes == null) {
+                return resolvedClass.getMethod(methodName, parameterTypes);
+            } else if (parameterTypeNames == null) {
                 throw new NullPointerException("Fields 'parameterTypes' and"
-                        + " 'unresolvedParameterTypes' cannot both be null (enforced by static"
-                        + " factory methods)");
+                        + " 'parameterTypeNames' cannot both be null (enforced by static factory"
+                        + " methods)");
             } else {
-                Class<?>[] resolvedParameterTypes = new Class<?>[unresolvedParameterTypes.length];
-                for (int i = 0; i < unresolvedParameterTypes.length; i++) {
-                    resolvedParameterTypes[i] = Class.forName(unresolvedParameterTypes[i], false,
+                Class<?>[] parameterTypes = new Class<?>[parameterTypeNames.length];
+                for (int i = 0; i < parameterTypeNames.length; i++) {
+                    parameterTypes[i] = Class.forName(parameterTypeNames[i],
+                            false,
                             loader);
                 }
-                return resolvedClass.getMethod(name, resolvedParameterTypes);
+                return resolvedClass.getMethod(methodName, parameterTypes);
             }
         } catch (ClassNotFoundException e) {
             // this is only logged once because the sentinel method is returned and cached
@@ -207,8 +203,8 @@ public class UnresolvedMethod {
     }
 
     @Nullable
-    private Object invoke(Method method, @Nullable Object target, Object... parameters)
-            throws Exception {
+    private Object invokeInternal(Method method, @Nullable Object target, Object... parameters)
+            throws IllegalAccessException, InvocationTargetException {
         try {
             return method.invoke(target, parameters);
         } catch (IllegalAccessException e) {

@@ -268,7 +268,7 @@ public class ExpensiveCallAspect {
         }
     }
     private static MessageSupplier getMessageSupplier(Object expensive) {
-        String headline = (String) getHeadline.invokeWithDefaultOnError(expensive,
+        String headline = (String) getHeadline.invoke(expensive,
                 "<error calling ExpensiveCall.getHeadline()>");
         return MessageSupplier.from(headline);
     }
@@ -281,7 +281,7 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                String headline = (String) getHeadline.invokeWithDefaultOnError(expensive,
+                String headline = (String) getHeadline.invoke(expensive,
                         "<error calling ExpensiveCall.getHeadline()>");
                 return Message.withDetail(headline, detail);
             }
