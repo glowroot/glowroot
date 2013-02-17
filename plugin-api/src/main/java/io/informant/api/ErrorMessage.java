@@ -15,6 +15,9 @@
  */
 package io.informant.api;
 
+import io.informant.api.internal.ExceptionInfo;
+import io.informant.api.internal.ReadableErrorMessage;
+
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
@@ -40,28 +43,6 @@ import com.google.common.base.Objects;
  */
 public abstract class ErrorMessage {
 
-    public abstract String getText();
-
-    @ReadOnly
-    @Nullable
-    public abstract Map<String, ? extends /*@Nullable*/Object> getDetail();
-
-    @Nullable
-    public abstract ExceptionInfo getException();
-
-    // keep constructor protected, if plugins could subclass, then extra validation would be
-    // required to ensure the Message contract is maintained
-    protected ErrorMessage() {}
-
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("text", getText())
-                .add("detail", getDetail())
-                .add("exception", getException())
-                .toString();
-    }
-
     public static ErrorMessage from(Throwable t) {
         return new ErrorMessageImpl(getRootCause(t).toString(), null, ExceptionInfo.from(t));
     }
@@ -80,39 +61,47 @@ public abstract class ErrorMessage {
         return root;
     }
 
-    private static class ErrorMessageImpl extends ErrorMessage {
+    // implementing ReadableErrorMessage is just a way to access this class from io.informant.core
+    // package without making it (obviously) accessible to plugin implementations
+    private static class ErrorMessageImpl extends ErrorMessage implements ReadableErrorMessage {
 
         private final String text;
         @ReadOnly
         @Nullable
         private final Map<String, ? extends /*@Nullable*/Object> detail;
         @Nullable
-        private final ExceptionInfo exception;
+        private final ExceptionInfo exceptionInfo;
 
         private ErrorMessageImpl(String text,
                 @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail,
-                @Nullable ExceptionInfo exception) {
+                @Nullable ExceptionInfo exceptionInfo) {
             this.text = text;
             this.detail = detail;
-            this.exception = exception;
+            this.exceptionInfo = exceptionInfo;
         }
 
-        @Override
         public String getText() {
             return text;
         }
 
-        @Override
         @ReadOnly
         @Nullable
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
 
-        @Override
         @Nullable
-        public ExceptionInfo getException() {
-            return exception;
+        public ExceptionInfo getExceptionInfo() {
+            return exceptionInfo;
+        }
+
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("text", text)
+                    .add("detail", detail)
+                    .add("exception", exceptionInfo)
+                    .toString();
         }
     }
 }

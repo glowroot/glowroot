@@ -19,6 +19,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.api.MessageSupplier;
+import io.informant.api.internal.ReadableMessage;
 import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.core.util.Clock;
 import io.informant.core.util.PartiallyThreadSafe;
@@ -249,7 +250,7 @@ public class Trace {
             logger.error("found root span with null message supplier in trace");
             return "";
         }
-        return messageSupplier.get().getText();
+        return ((ReadableMessage) messageSupplier.get()).getText();
     }
 
     public int getSpanCount() {

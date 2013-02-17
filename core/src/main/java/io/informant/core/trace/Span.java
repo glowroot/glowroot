@@ -17,6 +17,7 @@ package io.informant.core.trace;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
+import io.informant.api.internal.ReadableErrorMessage;
 import io.informant.core.util.ThreadSafe;
 import checkers.nullness.quals.Nullable;
 
@@ -71,8 +72,8 @@ public class Span {
     }
 
     @Nullable
-    public ErrorMessage getErrorMessage() {
-        return errorMessage;
+    public ReadableErrorMessage getErrorMessage() {
+        return (ReadableErrorMessage) errorMessage;
     }
 
     public long getStartTick() {

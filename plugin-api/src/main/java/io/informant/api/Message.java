@@ -15,6 +15,8 @@
  */
 package io.informant.api;
 
+import io.informant.api.internal.ReadableMessage;
+
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
@@ -40,40 +42,24 @@ import com.google.common.base.Objects;
  */
 public abstract class Message {
 
-    public abstract String getText();
-
-    @ReadOnly
-    @Nullable
-    public abstract Map<String, ? extends /*@Nullable*/Object> getDetail();
-
-    // keep constructor protected, if plugins could subclass, then extra validation would be
-    // required to ensure the Message contract is maintained
-    protected Message() {}
-
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("text", getText())
-                .add("detail", getDetail())
-                .toString();
-    }
-
     public static Message from(String message) {
-        return new TemplateMessage(message, null, null);
+        return new MessageImpl(message, null, null);
     }
 
     public static Message from(String template, String... args) {
-        return new TemplateMessage(template, args, null);
+        return new MessageImpl(template, args, null);
     }
 
     public static Message withDetail(String message,
             @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
-        return new TemplateMessage(message, null, detail);
+        return new MessageImpl(message, null, detail);
     }
 
-    private static class TemplateMessage extends Message {
+    // implementing ReadableMessage is just a way to access this class from io.informant.core
+    // package without making it (obviously) accessible to plugin implementations
+    private static class MessageImpl extends Message implements ReadableMessage {
 
-        private static final Logger logger = LoggerFactory.getLogger(TemplateMessage.class);
+        private static final Logger logger = LoggerFactory.getLogger(MessageImpl.class);
 
         private final String template;
         private final String/*@Nullable*/[] args;
@@ -81,14 +67,13 @@ public abstract class Message {
         @Nullable
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
-        private TemplateMessage(String template, String/*@Nullable*/[] args,
+        private MessageImpl(String template, String/*@Nullable*/[] args,
                 @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
             this.template = template;
             this.args = args;
             this.detail = detail;
         }
 
-        @Override
         public String getText() {
             // Matcher.appendReplacement() can't be used here since appendReplacement() applies
             // special meaning to slashes '\' and dollar signs '$' in the replacement text.
@@ -113,11 +98,19 @@ public abstract class Message {
             return text.toString();
         }
 
-        @Override
         @ReadOnly
         @Nullable
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
+        }
+
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("template", template)
+                    .add("args", args)
+                    .add("detail", detail)
+                    .toString();
         }
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.api;
+package io.informant.api.internal;
 
 import java.util.Arrays;
 import java.util.List;

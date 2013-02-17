@@ -15,12 +15,12 @@
  */
 package io.informant.local.trace;
 
-import io.informant.api.ErrorMessage;
-import io.informant.api.ExceptionInfo;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
+import io.informant.api.internal.ExceptionInfo;
+import io.informant.api.internal.ReadableErrorMessage;
+import io.informant.api.internal.ReadableMessage;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
@@ -86,11 +86,11 @@ public class TraceWriter {
         }
         builder.background(trace.isBackground());
         builder.headline(trace.getHeadline());
-        ErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
+        ReadableErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
         if (errorMessage != null) {
             builder.errorText(errorMessage.getText());
             builder.errorDetail(getErrorDetailJson(errorMessage.getDetail()));
-            builder.exception(getExceptionJson(errorMessage.getException()));
+            builder.exception(getExceptionJson(errorMessage.getExceptionInfo()));
         }
         builder.attributes(getAttributesJson(trace));
         builder.userId(trace.getUserId());
@@ -293,9 +293,9 @@ public class TraceWriter {
             MessageSupplier messageSupplier = span.getMessageSupplier();
             if (messageSupplier != null) {
                 jw.name("message");
-                writeMessage(messageSupplier.get());
+                writeMessage((ReadableMessage) messageSupplier.get());
             }
-            ErrorMessage errorMessage = span.getErrorMessage();
+            ReadableErrorMessage errorMessage = span.getErrorMessage();
             if (errorMessage != null) {
                 jw.name("error");
                 writeErrorMessage(errorMessage);
@@ -308,7 +308,7 @@ public class TraceWriter {
             jw.endObject();
         }
 
-        private void writeMessage(Message message) throws IOException {
+        private void writeMessage(ReadableMessage message) throws IOException {
             jw.beginObject();
             jw.name("text");
             String text;
@@ -328,7 +328,7 @@ public class TraceWriter {
             jw.endObject();
         }
 
-        private void writeErrorMessage(ErrorMessage errorMessage) throws IOException {
+        private void writeErrorMessage(ReadableErrorMessage errorMessage) throws IOException {
             jw.beginObject();
             jw.name("text");
             jw.value(errorMessage.getText());
@@ -337,7 +337,7 @@ public class TraceWriter {
                 jw.name("detail");
                 new MessageDetailSerializer(jw).write(errorDetail);
             }
-            ExceptionInfo exception = errorMessage.getException();
+            ExceptionInfo exception = errorMessage.getExceptionInfo();
             if (exception != null) {
                 jw.name("exception");
                 writeException(exception, jw);

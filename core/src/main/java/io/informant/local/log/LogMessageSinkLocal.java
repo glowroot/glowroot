@@ -15,9 +15,9 @@
  */
 package io.informant.local.log;
 
-import io.informant.api.ExceptionInfo;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.api.internal.ExceptionInfo;
 import io.informant.core.log.Level;
 import io.informant.core.log.LogMessageSink;
 import io.informant.core.util.Clock;

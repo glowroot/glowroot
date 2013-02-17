@@ -16,6 +16,7 @@
 package io.informant.api;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.api.internal.ReadableMessage;
 
 import org.junit.Test;
 
@@ -27,25 +28,26 @@ public class MessageTest {
 
     @Test
     public void shouldFormatConstant() {
-        Message message = Message.from("constant");
+        ReadableMessage message = (ReadableMessage) Message.from("constant");
         assertThat(message.getText()).isEqualTo("constant");
     }
 
     @Test
     public void shouldFormatSingle() {
-        Message message = Message.from("{}", "test");
+        ReadableMessage message = (ReadableMessage) Message.from("{}", "test");
         assertThat(message.getText()).isEqualTo("test");
     }
 
     @Test
     public void shouldFormatSinglePlus() {
-        Message message = Message.from("one {} two", "test");
+        ReadableMessage message = (ReadableMessage) Message.from("one {} two", "test");
         assertThat(message.getText()).isEqualTo("one test two");
     }
 
     @Test
     public void shouldFormatMultiple() {
-        Message message = Message.from("one {} two {}{}", "test", "2", "3");
+        ReadableMessage message =
+                (ReadableMessage) Message.from("one {} two {}{}", "test", "2", "3");
         assertThat(message.getText()).isEqualTo("one test two 23");
     }
 }
