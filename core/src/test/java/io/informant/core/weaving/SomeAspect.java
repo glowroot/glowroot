@@ -15,7 +15,6 @@
  */
 package io.informant.core.weaving;
 
-import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectMethodArg;
 import io.informant.api.weaving.InjectMethodArgArray;
 import io.informant.api.weaving.InjectMethodName;
@@ -37,7 +36,6 @@ import checkers.nullness.quals.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Aspect
 public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "execute1|execute2")

@@ -25,7 +25,6 @@ import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
-import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectMethodArg;
 import io.informant.api.weaving.InjectMethodName;
 import io.informant.api.weaving.InjectReturn;
@@ -69,7 +68,6 @@ import checkers.nullness.quals.Nullable;
  */
 // many of the pointcuts are not restricted to pluginServices.isEnabled() because StatementMirrors
 // must be tracked for their entire life
-@Aspect
 public class JdbcAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcAspect.class);

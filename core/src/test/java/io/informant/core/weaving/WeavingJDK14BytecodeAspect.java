@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.informant.core.weaving;
 
-import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectTarget;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
@@ -24,7 +23,6 @@ import io.informant.api.weaving.Pointcut;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Aspect
 public class WeavingJDK14BytecodeAspect {
 
     @Pointcut(typeName = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",

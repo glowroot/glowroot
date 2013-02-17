@@ -20,7 +20,6 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
-import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
@@ -31,7 +30,6 @@ import io.informant.api.weaving.Pointcut;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Aspect
 public class LogCauseAspect {
 
     private static final PluginServices pluginServices =

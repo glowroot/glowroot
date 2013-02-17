@@ -21,7 +21,6 @@ import io.informant.api.Metric;
 import io.informant.api.PluginServices;
 import io.informant.api.PointcutStackTrace;
 import io.informant.api.Span;
-import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectMethodArg;
 import io.informant.api.weaving.InjectReturn;
 import io.informant.api.weaving.InjectTarget;
@@ -57,7 +56,6 @@ import checkers.nullness.quals.Nullable;
  * @since 0.5
  */
 // TODO add support for async servlets (servlet 3.0)
-@Aspect
 public class ServletAspect {
 
     private static final PluginServices pluginServices =

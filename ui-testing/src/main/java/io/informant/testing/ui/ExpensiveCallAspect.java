@@ -22,7 +22,6 @@ import io.informant.api.Metric;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.UnresolvedMethod;
-import io.informant.api.weaving.Aspect;
 import io.informant.api.weaving.InjectTarget;
 import io.informant.api.weaving.InjectTraveler;
 import io.informant.api.weaving.IsEnabled;
@@ -41,7 +40,6 @@ import com.google.common.collect.ImmutableMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Aspect
 public class ExpensiveCallAspect {
 
     private static final PluginServices pluginServices =
