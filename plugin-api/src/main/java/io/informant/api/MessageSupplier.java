@@ -15,10 +15,6 @@
  */
 package io.informant.api;
 
-import java.util.Map;
-
-import checkers.igj.quals.ReadOnly;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -43,16 +39,6 @@ public abstract class MessageSupplier {
             @Override
             public Message get() {
                 return Message.from(template, args);
-            }
-        };
-    }
-
-    public static MessageSupplier withDetail(final String message,
-            final @ReadOnly Map<String, String> detail) {
-        return new MessageSupplier() {
-            @Override
-            public Message get() {
-                return Message.withDetail(message, detail);
             }
         };
     }

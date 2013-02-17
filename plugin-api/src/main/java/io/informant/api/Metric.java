@@ -19,6 +19,4 @@ package io.informant.api;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Metric {
-    String getName();
-}
+public interface Metric {}

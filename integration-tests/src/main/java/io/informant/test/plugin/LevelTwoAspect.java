@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.informant.test.plugin;
 
+import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
 import io.informant.api.PluginServices;
@@ -50,9 +51,14 @@ public class LevelTwoAspect {
         }
 
         @OnBefore
-        public static Span onBefore(String arg1, String arg2) {
-            return pluginServices.startSpan(MessageSupplier.withDetail("Level Two",
-                    ImmutableMap.of("arg1", arg1, "arg2", arg2)), metric);
+        public static Span onBefore(final String arg1, final String arg2) {
+            return pluginServices.startSpan(new MessageSupplier() {
+                @Override
+                public Message get() {
+                    return Message.withDetail("Level Two",
+                            ImmutableMap.of("arg1", arg1, "arg2", arg2));
+                }
+            }, metric);
         }
 
         @OnAfter
