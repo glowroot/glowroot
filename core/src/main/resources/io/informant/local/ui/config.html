@@ -222,8 +222,6 @@
       addIntegerValidator('#storeThresholdMillis')
       $('#stuckThresholdSeconds').val(generalConfig.stuckThresholdSeconds)
       addIntegerValidator('#stuckThresholdSeconds')
-      $('#spanStackTraceThresholdMillis').val(generalConfig.spanStackTraceThresholdMillis)
-      addIntegerValidator('#spanStackTraceThresholdMillis')
       $('#maxSpans').val(generalConfig.maxSpans)
       addIntegerValidator('#maxSpans')
       $('#snapshotExpirationDays').val(generalConfig.snapshotExpirationHours / 24)
@@ -316,14 +314,13 @@
     var enabled = $('#generalEnabled').is(':checked')
     var storeThresholdMillis = $('#storeThresholdMillis').val()
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
-    var spanStackTraceThresholdMillis = $('#spanStackTraceThresholdMillis').val()
     var maxSpans = $('#maxSpans').val()
     var snapshotExpirationDays = $('#snapshotExpirationDays').val()
     var rollingSizeMb = $('#rollingSizeMb').val()
     // handle validation
     if (!isInteger(storeThresholdMillis) || !isInteger(stuckThresholdSeconds)
-        || !isInteger(spanStackTraceThresholdMillis) || !isInteger(maxSpans)
-         || !isInteger(snapshotExpirationDays) || !isInteger(rollingSizeMb)) {
+        || !isInteger(maxSpans) || !isInteger(snapshotExpirationDays)
+        || !isInteger(rollingSizeMb)) {
       return
     }
     postingUpdateGeneral = true
@@ -331,7 +328,6 @@
       'enabled': enabled,
       'storeThresholdMillis': parseInteger(storeThresholdMillis),
       'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
-      'spanStackTraceThresholdMillis': parseInteger(spanStackTraceThresholdMillis),
       'maxSpans': parseInteger(maxSpans),
       'snapshotExpirationHours': parseInteger(snapshotExpirationDays) * 24,
       'rollingSizeMb': parseInteger(rollingSizeMb),
@@ -831,17 +827,6 @@
               Any trace that exceeds this amount of time will be stored to disk immediately
               (prior to its completion). This is to guard against threads which get stuck forever
               (or at least long enough and do enough harm to the jvm that it has to be restarted).
-            </div>
-          </div>
-        </div>
-        <div class="control-group hide">
-          <label class="control-label" for="spanStackTraceThresholdMillis">
-            Span stack trace threshold
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="spanStackTraceThresholdMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
             </div>
           </div>
         </div>

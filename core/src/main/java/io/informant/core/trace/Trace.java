@@ -336,18 +336,19 @@ public class Trace {
         this.stuckScheduledFuture = scheduledFuture;
     }
 
-    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier) {
+    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier,
+            boolean spanLimitBypass) {
         long startTick = ticker.read();
         TraceMetric traceMetric = metric.start(startTick);
         if (!traceMetric.isLinkedToTrace()) {
             linkTraceMetric(metric, traceMetric);
         }
-        return rootSpan.pushSpan(startTick, messageSupplier, traceMetric);
+        return rootSpan.pushSpan(startTick, messageSupplier, traceMetric, spanLimitBypass);
     }
 
     public Span addSpan(@Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage) {
-        return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage);
+            @Nullable ErrorMessage errorMessage, boolean spanLimitBypass) {
+        return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage, spanLimitBypass);
     }
 
     public void addSpanLimitExceededMarkerIfNeeded() {

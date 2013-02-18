@@ -26,6 +26,8 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
 import io.informant.test.plugin.LogErrorAspect.LogErrorAdvice;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -54,7 +56,11 @@ public class PauseAspect {
 
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            if (pluginServices.getBooleanProperty("captureSpanStackTraces")) {
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                span.end();
+            }
         }
     }
 

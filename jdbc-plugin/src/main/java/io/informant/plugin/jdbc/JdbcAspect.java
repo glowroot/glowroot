@@ -51,6 +51,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import checkers.nullness.quals.Nullable;
@@ -76,6 +77,19 @@ public class JdbcAspect {
             PluginServices.get("io.informant.plugins:jdbc-plugin");
 
     private static final AtomicBoolean noSqlTextAvailableLoggedOnce = new AtomicBoolean();
+
+    private static volatile int stackTraceThresholdMillis;
+
+    static {
+        pluginServices.registerConfigListener(new ConfigListener() {
+            public void onChange() {
+                Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
+                stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
+            }
+        });
+        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
+        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
+    }
 
     @Mixin(target = "java.sql.Statement", mixin = HasStatementMirror.class,
             mixinImpl = HasStatementMirrorImpl.class)
@@ -228,7 +242,7 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
-                span.end();
+                span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -275,7 +289,7 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
-                span.end();
+                span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -341,7 +355,7 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
-                span.end();
+                span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -498,7 +512,7 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.end();
+            span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
         }
     }
 

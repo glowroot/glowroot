@@ -5,7 +5,7 @@
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
-      "prompt": "Capture timing metrics for ResultSet.next()",
+      "prompt": "ResultSet.next() metrics",
       "name": "captureResultSetNext",
       "type": "boolean",
       "default": true,
@@ -17,7 +17,7 @@
       ]
     },
     {
-      "prompt": "Capture timing metrics for ResultSet.get*()",
+      "prompt": "ResultSet.get*() metrics",
       "name": "captureResultSetGet",
       "type": "boolean",
       "default": false,
@@ -29,9 +29,21 @@
       ]
     },
     {
-      "prompt": "Capture spans for executions of DatabaseMetaData.*()",
+      "prompt": "DatabaseMetaData.*() spans",
       "name": "spanForDatabaseMetaData",
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Capture spans for executions of DatabaseMetaData.*()"
+    },
+    {
+      "prompt": "Stack trace threshold (millis)",
+      "name": "stackTraceThresholdMillis",
+      "type": "double",
+      "default": null,
+      "description": [
+        "Any jdbc call that exceeds this threshold will have a stack trace captured and attached",
+        " to it. An empty value will not collect any stack traces, a zero value will collect a",
+        " stack trace for every jdbc call."
+      ]
     }
   ],
   "aspects": [

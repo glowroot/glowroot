@@ -28,7 +28,6 @@ public class GeneralConfig {
     private boolean enabled;
     private int storeThresholdMillis;
     private int stuckThresholdSeconds;
-    private int spanStackTraceThresholdMillis;
     private int maxSpans;
     private int snapshotExpirationHours;
     private int rollingSizeMb;
@@ -58,14 +57,6 @@ public class GeneralConfig {
 
     public void setStuckThresholdSeconds(int stuckThresholdSeconds) {
         this.stuckThresholdSeconds = stuckThresholdSeconds;
-    }
-
-    public int getSpanStackTraceThresholdMillis() {
-        return spanStackTraceThresholdMillis;
-    }
-
-    public void setSpanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
-        this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
     }
 
     public int getMaxSpans() {
@@ -119,8 +110,6 @@ public class GeneralConfig {
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
-                    && Objects.equal(spanStackTraceThresholdMillis,
-                            that.spanStackTraceThresholdMillis)
                     && Objects.equal(maxSpans, that.maxSpans)
                     && Objects.equal(snapshotExpirationHours, that.snapshotExpirationHours)
                     && Objects.equal(rollingSizeMb, that.rollingSizeMb)
@@ -135,8 +124,7 @@ public class GeneralConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                spanStackTraceThresholdMillis, maxSpans, snapshotExpirationHours,
-                rollingSizeMb, warnOnSpanOutsideTrace);
+                maxSpans, snapshotExpirationHours, rollingSizeMb, warnOnSpanOutsideTrace);
     }
 
     @Override
@@ -145,7 +133,6 @@ public class GeneralConfig {
                 .add("enabled", enabled)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
-                .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxSpans", maxSpans)
                 .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)

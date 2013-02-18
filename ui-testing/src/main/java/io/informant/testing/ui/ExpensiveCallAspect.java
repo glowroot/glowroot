@@ -31,6 +31,7 @@ import io.informant.api.weaving.Pointcut;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
 
@@ -69,7 +70,13 @@ public class ExpensiveCallAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 0);
+            if (random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 0);
+            }
         }
     }
 
@@ -87,8 +94,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 1);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 1);
+            }
         }
     }
 
@@ -106,8 +119,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 2);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 2);
+            }
         }
     }
 
@@ -125,8 +144,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 3);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 3);
+            }
         }
     }
 
@@ -144,8 +169,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 4);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 4);
+            }
         }
     }
 
@@ -163,8 +194,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 5);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 5);
+            }
         }
     }
 
@@ -182,8 +219,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 6);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 6);
+            }
         }
     }
 
@@ -201,8 +244,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 7);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 7);
+            }
         }
     }
 
@@ -220,8 +269,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 8);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 8);
+            }
         }
     }
 
@@ -239,8 +294,14 @@ public class ExpensiveCallAspect {
             return onBeforeInternal(expensive, metric);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
-            onAfterInternal(span, 9);
+        public static void onAfter(@InjectTraveler @Nullable Span span) {
+            if (span != null && random.nextDouble() < 0.05) {
+                // Span.endWithStackTrace() must be called directly from @On.. method so it can
+                // strip back the stack trace to the method picked out by the @Pointcut
+                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+            } else {
+                onAfterInternal(span, 9);
+            }
         }
     }
 
@@ -258,13 +319,15 @@ public class ExpensiveCallAspect {
                     new IllegalStateException("Exception in execute" + num, cause)));
             return;
         }
-        if (random.nextDouble() < 0.95) {
+        double value = random.nextDouble();
+        if (value < 0.95) {
             span.end();
         } else {
             span.endWithError(ErrorMessage.from("randomized error", new IllegalStateException(
                     "Exception in execute" + num, cause)));
         }
     }
+
     private static MessageSupplier getMessageSupplier(Object expensive) {
         String headline = (String) getHeadline.invoke(expensive,
                 "<error calling ExpensiveCall.getHeadline()>");

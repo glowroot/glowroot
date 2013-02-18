@@ -43,7 +43,6 @@ public class UiTestingMain {
         // set thresholds low so there will be lots of data to view
         GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
-        generalConfig.setSpanStackTraceThresholdMillis(100);
         container.getInformant().updateGeneralConfig(generalConfig);
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();

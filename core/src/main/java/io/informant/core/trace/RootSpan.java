@@ -99,8 +99,9 @@ class RootSpan {
         return endTick != 0;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetric traceMetric) {
-        Span span = createSpan(startTick, messageSupplier, null, traceMetric);
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetric traceMetric,
+            boolean spanLimitBypass) {
+        Span span = createSpan(startTick, messageSupplier, null, traceMetric, spanLimitBypass);
         pushSpanInternal(span);
         return span;
     }
@@ -118,8 +119,8 @@ class RootSpan {
     }
 
     Span addSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage) {
-        Span span = createSpan(startTick, messageSupplier, errorMessage, null);
+            @Nullable ErrorMessage errorMessage, boolean spanLimitBypass) {
+        Span span = createSpan(startTick, messageSupplier, errorMessage, null, spanLimitBypass);
         spans.add(span);
         size++;
         span.setEndTick(startTick);
@@ -136,8 +137,9 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric) {
-        if (errorMessage == null && spanLimitExceeded) {
+            @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric,
+            boolean spanLimitBypass) {
+        if (!spanLimitBypass && spanLimitExceeded) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
             spanLimitExceeded = false;

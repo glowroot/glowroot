@@ -113,7 +113,7 @@ public class TraceMetric implements MetricTimer {
         selfNestingLevel++;
     }
 
-    void end(long endTick) {
+    public void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
         }

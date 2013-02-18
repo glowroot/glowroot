@@ -19,6 +19,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
+import io.informant.testkit.PluginConfig;
 import io.informant.testkit.Trace;
 import io.informant.testkit.TraceMarker;
 
@@ -34,6 +35,8 @@ import org.junit.Test;
  * @since 0.5
  */
 public class SpanStackTraceTest {
+
+    private static final String PLUGIN_ID = "io.informant:informant-integration-tests";
 
     private static InformantContainer container;
 
@@ -57,8 +60,10 @@ public class SpanStackTraceTest {
         // given
         GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
-        generalConfig.setSpanStackTraceThresholdMillis(100);
         container.getInformant().updateGeneralConfig(generalConfig);
+        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setProperty("captureSpanStackTraces", true);
+        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithSpanStackTrace.class);
         Trace trace = container.getInformant().getLastTrace();
@@ -79,7 +84,7 @@ public class SpanStackTraceTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            new Pause().pause(150);
+            new Pause().pause(1);
         }
     }
 }

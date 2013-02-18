@@ -65,12 +65,6 @@ public class GeneralConfig {
     // -1 means no stuck messages are gathered, should be minimum 100 milliseconds
     private final int stuckThresholdSeconds;
 
-    // TODO this doesn't really make sense for Filters/servlets? or maybe just not top-level?
-    // though even those might be interesting occasionally
-    // TODO also re-think the name
-    // essentially disabled for now, this needs to be changed to a per-plugin property
-    private final int spanStackTraceThresholdMillis;
-
     // used to limit memory requirement, also used to help limit trace capture size,
     // 0 means don't capture any spans, -1 means no limit
     private final int maxSpans;
@@ -96,12 +90,11 @@ public class GeneralConfig {
     }
 
     private GeneralConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
-            int spanStackTraceThresholdMillis, int maxSpans, int snapshotExpirationHours,
-            int rollingSizeMb, boolean warnOnSpanOutsideTrace) {
+            int maxSpans, int snapshotExpirationHours, int rollingSizeMb,
+            boolean warnOnSpanOutsideTrace) {
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
-        this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
         this.maxSpans = maxSpans;
         this.snapshotExpirationHours = snapshotExpirationHours;
         this.rollingSizeMb = rollingSizeMb;
@@ -134,10 +127,6 @@ public class GeneralConfig {
         return stuckThresholdSeconds;
     }
 
-    public int getSpanStackTraceThresholdMillis() {
-        return spanStackTraceThresholdMillis;
-    }
-
     public int getMaxSpans() {
         return maxSpans;
     }
@@ -160,7 +149,6 @@ public class GeneralConfig {
                 .add("enabed", enabled)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
-                .add("spanStackTraceThresholdMillis", spanStackTraceThresholdMillis)
                 .add("maxSpans", maxSpans)
                 .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
@@ -174,7 +162,6 @@ public class GeneralConfig {
         private boolean enabled = true;
         private int storeThresholdMillis = 3000;
         private int stuckThresholdSeconds = 180;
-        private int spanStackTraceThresholdMillis = Integer.MAX_VALUE;
         private int maxSpans = 5000;
         private int snapshotExpirationHours = 24 * 7;
         private int rollingSizeMb = 1000;
@@ -185,7 +172,6 @@ public class GeneralConfig {
             enabled = base.enabled;
             storeThresholdMillis = base.storeThresholdMillis;
             stuckThresholdSeconds = base.stuckThresholdSeconds;
-            spanStackTraceThresholdMillis = base.spanStackTraceThresholdMillis;
             maxSpans = base.maxSpans;
             snapshotExpirationHours = base.snapshotExpirationHours;
             rollingSizeMb = base.rollingSizeMb;
@@ -201,10 +187,6 @@ public class GeneralConfig {
         }
         public Builder stuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
-            return this;
-        }
-        public Builder spanStackTraceThresholdMillis(int spanStackTraceThresholdMillis) {
-            this.spanStackTraceThresholdMillis = spanStackTraceThresholdMillis;
             return this;
         }
         public Builder maxSpans(int maxSpans) {
@@ -236,11 +218,6 @@ public class GeneralConfig {
             if (stuckThresholdSecondsElement != null) {
                 stuckThresholdSeconds(stuckThresholdSecondsElement.getAsInt());
             }
-            JsonElement spanStackTraceThresholdMillisElement = configObject
-                    .get("spanStackTraceThresholdMillis");
-            if (spanStackTraceThresholdMillisElement != null) {
-                spanStackTraceThresholdMillis(spanStackTraceThresholdMillisElement.getAsInt());
-            }
             JsonElement maxSpansElement = configObject.get("maxSpans");
             if (maxSpansElement != null) {
                 maxSpans(maxSpansElement.getAsInt());
@@ -262,8 +239,7 @@ public class GeneralConfig {
         }
         public GeneralConfig build() {
             return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                    spanStackTraceThresholdMillis, maxSpans, snapshotExpirationHours,
-                    rollingSizeMb, warnOnSpanOutsideTrace);
+                    maxSpans, snapshotExpirationHours, rollingSizeMb, warnOnSpanOutsideTrace);
         }
     }
 }

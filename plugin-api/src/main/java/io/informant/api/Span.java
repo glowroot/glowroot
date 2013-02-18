@@ -15,6 +15,8 @@
  */
 package io.informant.api;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -22,6 +24,8 @@ package io.informant.api;
 public interface Span extends Endable {
 
     void end();
+
+    void endWithStackTrace(long threshold, TimeUnit unit);
 
     // only marks trace as error if this is the root span
     void endWithError(ErrorMessage errorMessage);

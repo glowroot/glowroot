@@ -17,6 +17,7 @@ package io.informant.api;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
 
@@ -186,6 +187,7 @@ public abstract class PluginServices {
                 this.messageSupplier = messageSupplier;
             }
             public void end() {}
+            public void endWithStackTrace(long threshold, TimeUnit unit) {}
             public void endWithError(ErrorMessage errorMessage) {}
             public MessageSupplier getMessageSupplier() {
                 return messageSupplier;

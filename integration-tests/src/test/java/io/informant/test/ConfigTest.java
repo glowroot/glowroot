@@ -212,6 +212,8 @@ public class ConfigTest {
         updatedConfig.setProperty("alternateHeadline", alternateHeadline + "x");
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
         updatedConfig.setProperty("hasDefaultVal", hasDefaultVal + "x");
+        boolean captureSpanStackTraces = (Boolean) config.getProperty("captureSpanStackTraces");
+        updatedConfig.setProperty("captureSpanStackTraces", !captureSpanStackTraces);
         return updatedConfig;
     }
 
