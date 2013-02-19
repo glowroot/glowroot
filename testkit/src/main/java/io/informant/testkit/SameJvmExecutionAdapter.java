@@ -43,7 +43,8 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         loader.setMixins(pluginInfoCache.getMixins());
         loader.setAdvisors(pluginInfoCache.getAdvisors());
         loader.addBridgeClasses(AppUnderTest.class);
-        loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local");
+        loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
+                "io.informant.shaded");
         loader.weavingMetric(MainEntryPoint.getWeavingMetric());
         isolatedWeavingClassLoader = loader.build();
     }

@@ -48,7 +48,7 @@ public class ConfigTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create(0, false);
+        container = InformantContainer.create();
     }
 
     @AfterClass

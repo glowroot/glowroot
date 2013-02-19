@@ -28,10 +28,9 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
+import io.informant.shaded.google.common.collect.ImmutableMap;
 
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker

@@ -25,8 +25,7 @@ import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
-
-import com.google.common.collect.ImmutableMap;
+import io.informant.shaded.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker

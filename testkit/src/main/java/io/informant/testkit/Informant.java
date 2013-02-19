@@ -186,6 +186,10 @@ public class Informant {
         post("/admin/log/truncate", "");
     }
 
+    public void compactData() throws Exception {
+        post("/admin/data/compact", "");
+    }
+
     private Trace getLastTrace(boolean summary) throws Exception {
         String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");

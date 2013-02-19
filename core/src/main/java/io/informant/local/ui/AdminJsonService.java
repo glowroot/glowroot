@@ -77,7 +77,6 @@ class AdminJsonService implements JsonService {
     void truncateData() {
         logger.debug("truncateData()");
         traceSnapshotDao.deleteAllSnapshots();
-        compactData();
     }
 
     @OnlyUsedByTests

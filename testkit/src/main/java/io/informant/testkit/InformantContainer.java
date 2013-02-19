@@ -114,7 +114,7 @@ public class InformantContainer {
             Stopwatch stopwatch = new Stopwatch().start();
             while (informant.getNumPendingCompleteTraces() > 0
                     && stopwatch.elapsedMillis() < 5000) {
-                Thread.sleep(100);
+                Thread.sleep(10);
             }
         } finally {
             Thread.currentThread().setName(previousThreadName);
