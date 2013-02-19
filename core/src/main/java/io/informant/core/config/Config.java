@@ -137,18 +137,18 @@ class Config {
 
     void writeToFileIfNeeded(File configFile) {
         JsonObject rootConfigObject = new JsonObject();
-        rootConfigObject.add(GENERAL, generalConfig.toJson());
-        rootConfigObject.add(COARSE_PROFILING, coarseProfilingConfig.toJson());
-        rootConfigObject.add(FINE_PROFILING, fineProfilingConfig.toJson());
-        rootConfigObject.add(USER, userConfig.toJson());
+        rootConfigObject.add(GENERAL, generalConfig.toJsonWithoutVersionHash());
+        rootConfigObject.add(COARSE_PROFILING, coarseProfilingConfig.toJsonWithoutVersionHash());
+        rootConfigObject.add(FINE_PROFILING, fineProfilingConfig.toJsonWithoutVersionHash());
+        rootConfigObject.add(USER, userConfig.toJsonWithoutVersionHash());
 
         JsonArray pluginsArray = new JsonArray();
         for (PluginConfig pluginConfig : pluginConfigs) {
-            pluginsArray.add(pluginConfig.toJson());
+            pluginsArray.add(pluginConfig.toJsonWithoutVersionHash());
         }
         JsonArray pointcutsArray = new JsonArray();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            pointcutsArray.add(pointcutConfig.toJson());
+            pointcutsArray.add(pointcutConfig.toJsonWithoutVersionHash());
         }
         rootConfigObject.add(PLUGINS, pluginsArray);
         rootConfigObject.add(POINTCUTS, pointcutsArray);

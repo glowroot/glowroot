@@ -132,6 +132,12 @@ public class PluginConfig {
     }
 
     public JsonObject toJson() {
+        JsonObject configObject = toJsonWithoutVersionHash();
+        configObject.addProperty("versionHash", getVersionHash());
+        return configObject;
+    }
+
+    public JsonObject toJsonWithoutVersionHash() {
         JsonObject configObject = new JsonObject();
         configObject.addProperty("groupId", pluginInfo.getGroupId());
         configObject.addProperty("artifactId", pluginInfo.getArtifactId());
@@ -160,14 +166,8 @@ public class PluginConfig {
         return configObject;
     }
 
-    public JsonObject toJsonWithVersionHash() {
-        JsonObject configObject = toJson();
-        configObject.addProperty("versionHash", getVersionHash());
-        return configObject;
-    }
-
     public String getVersionHash() {
-        return Hashing.md5().hashString(toJson().toString()).toString();
+        return Hashing.md5().hashString(toJsonWithoutVersionHash().toString()).toString();
     }
 
     String getId() {

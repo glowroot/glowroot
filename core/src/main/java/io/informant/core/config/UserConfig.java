@@ -70,17 +70,17 @@ public class UserConfig {
     }
 
     public JsonObject toJson() {
-        return gson.toJsonTree(this).getAsJsonObject();
-    }
-
-    public JsonObject toJsonWithVersionHash() {
-        JsonObject configObject = toJson();
+        JsonObject configObject = toJsonWithoutVersionHash();
         configObject.addProperty("versionHash", getVersionHash());
         return configObject;
     }
 
+    public JsonObject toJsonWithoutVersionHash() {
+        return gson.toJsonTree(this).getAsJsonObject();
+    }
+
     public String getVersionHash() {
-        return Hashing.md5().hashString(toJson().toString()).toString();
+        return Hashing.md5().hashString(toJsonWithoutVersionHash().toString()).toString();
     }
 
     public boolean isEnabled() {

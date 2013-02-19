@@ -77,12 +77,10 @@ class ConfigJsonService implements JsonService {
     String getConfig() throws IOException, SQLException {
         logger.debug("getConfig()");
         JsonObject configJson = new JsonObject();
-        configJson.add("generalConfig", configService.getGeneralConfig().toJsonWithVersionHash());
-        configJson.add("coarseProfilingConfig", configService.getCoarseProfilingConfig()
-                .toJsonWithVersionHash());
-        configJson.add("fineProfilingConfig", configService.getFineProfilingConfig()
-                .toJsonWithVersionHash());
-        configJson.add("userConfig", configService.getUserConfig().toJsonWithVersionHash());
+        configJson.add("generalConfig", configService.getGeneralConfig().toJson());
+        configJson.add("coarseProfilingConfig", configService.getCoarseProfilingConfig().toJson());
+        configJson.add("fineProfilingConfig", configService.getFineProfilingConfig().toJson());
+        configJson.add("userConfig", configService.getUserConfig().toJson());
         configJson.add("pluginInfos", gson.toJsonTree(pluginInfoCache.getPluginInfos()));
         configJson.add("pluginConfigs", getPluginConfigMapObject());
         configJson.add("pointcutConfigs", getPoincutConfigArray());
@@ -195,7 +193,7 @@ class ConfigJsonService implements JsonService {
                 throw new IllegalStateException("Plugin config not found for plugin id '"
                         + pluginInfo.getId() + "'");
             }
-            mapObject.add(pluginInfo.getId(), pluginConfig.toJsonWithVersionHash());
+            mapObject.add(pluginInfo.getId(), pluginConfig.toJson());
         }
         return mapObject;
     }
@@ -203,7 +201,7 @@ class ConfigJsonService implements JsonService {
     private JsonArray getPoincutConfigArray() {
         JsonArray jsonArray = new JsonArray();
         for (PointcutConfig pointcutConfig : configService.readPointcutConfigs()) {
-            jsonArray.add(pointcutConfig.toJsonWithVersionHash());
+            jsonArray.add(pointcutConfig.toJson());
         }
         return jsonArray;
     }
