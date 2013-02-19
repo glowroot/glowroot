@@ -72,6 +72,10 @@ public class PluginConfig {
         this.versionHash = versionHash;
     }
 
+    Map<String, /*@Nullable*/Object> getProperties() {
+        return properties;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PluginConfig) {

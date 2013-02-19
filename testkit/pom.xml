@@ -47,6 +47,20 @@
       <version>2.2.2</version>
     </dependency>
     <dependency>
+      <!-- using sisu-guice for now until guice upgrades to guava 10.0
+        primarily due to http://code.google.com/p/google-guice/issues/detail?id=288 -->
+      <groupId>org.sonatype.sisu</groupId>
+      <artifactId>sisu-guice</artifactId>
+      <version>3.1.2</version>
+      <exclusions>
+        <exclusion>
+          <!-- exclude guava artifact so no conflict with differently named guava-jdk5 artifact -->
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
       <version>1.6.0</version>

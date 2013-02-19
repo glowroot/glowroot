@@ -83,7 +83,7 @@ public class TraceSinkLocal implements TraceSink {
                 public void run() {
                     try {
                         traceSnapshotDao.storeSnapshot(TraceWriter.toTraceSnapshot(trace,
-                                Long.MAX_VALUE, true));
+                                Long.MAX_VALUE, false));
                     } catch (IOException e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -117,7 +117,7 @@ public class TraceSinkLocal implements TraceSink {
     // single thread executor in StuckTraceCollector
     public void onStuckTrace(Trace trace) {
         try {
-            TraceSnapshot snaphsot = TraceWriter.toTraceSnapshot(trace, ticker.read(), true);
+            TraceSnapshot snaphsot = TraceWriter.toTraceSnapshot(trace, ticker.read(), false);
             if (!trace.isCompleted()) {
                 traceSnapshotDao.storeSnapshot(snaphsot);
             }

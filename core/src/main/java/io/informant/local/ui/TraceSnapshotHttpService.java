@@ -61,7 +61,7 @@ class TraceSnapshotHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, true);
+        ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, false);
         if (byteStream == null) {
             logger.error("no trace found for id '{}'", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);

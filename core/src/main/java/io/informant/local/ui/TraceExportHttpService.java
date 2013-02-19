@@ -42,6 +42,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -55,7 +56,8 @@ import com.google.inject.Singleton;
  * @since 0.5
  */
 @Singleton
-class TraceExportHttpService implements HttpService {
+@VisibleForTesting
+public class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
 
@@ -71,13 +73,36 @@ class TraceExportHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ByteStream traceBuffer = traceCommon.getSnapshotOrActiveJson(id, true);
         // TODO handle stackTraces
-        if (traceBuffer == null) {
+        ByteStream byteStream = getExportByteStream(id);
+        if (byteStream == null) {
             logger.error("no trace found for id '{}'", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        String filename = "trace-" + id;
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.setHeader(Names.CONTENT_TYPE, "application/zip");
+        if (HttpHeaders.isKeepAlive(request)) {
+            // keep alive is not supported to avoid having to calculate content length
+            response.setHeader(Names.CONNECTION, "close");
+        }
+        response.setHeader("Content-Disposition", "attachment; filename=" + getFilename(id)
+                + ".zip");
+        HttpServices.preventCaching(response);
+        response.setChunked(true);
+        channel.write(response);
+        ChannelFuture f = channel.write(byteStream.toChunkedInput());
+        f.addListener(ChannelFutureListener.CLOSE);
+        // return null to indicate streaming
+        return null;
+    }
+
+    @VisibleForTesting
+    @Nullable
+    public ByteStream getExportByteStream(String id) throws IOException {
+        ByteStream traceByteStream = traceCommon.getSnapshotOrActiveJson(id, false);
+        if (traceByteStream == null) {
+            return null;
+        }
         String templateContent = getResourceContent("io/informant/local/ui/export.html");
         Pattern pattern = Pattern.compile("\\{\\{include ([^}]+)\\}\\}");
         Matcher matcher = pattern.matcher(templateContent);
@@ -87,7 +112,7 @@ class TraceExportHttpService implements HttpService {
             byteStreams.add(ByteStream.of(templateContent.substring(curr, matcher.start())));
             String include = matcher.group(1);
             if (include.equals("detailTrace")) {
-                byteStreams.add(traceBuffer);
+                byteStreams.add(traceByteStream);
             } else {
                 // TODO stream resource content as ByteStream (wait for guava 14 and ByteSource)
                 byteStreams.add(ByteStream.of(getResourceContent(include)));
@@ -95,26 +120,11 @@ class TraceExportHttpService implements HttpService {
             curr = matcher.end();
         }
         byteStreams.add(ByteStream.of(templateContent.substring(curr)));
-
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.setHeader(Names.CONTENT_TYPE, "application/zip");
-        if (HttpHeaders.isKeepAlive(request)) {
-            // keep alive is not supported to avoid having to calculate content length
-            response.setHeader(Names.CONNECTION, "close");
-        }
-        response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".zip");
-        HttpServices.preventCaching(response);
-        response.setChunked(true);
-        channel.write(response);
-        ExportByteStream exportByteStream = new ExportByteStream(ByteStream.of(byteStreams),
-                filename);
-        ChannelFuture f = channel.write(exportByteStream.toChunkedInput());
-        f.addListener(ChannelFutureListener.CLOSE);
-        // return null to indicate streaming
-        return null;
+        ByteStream byteStream = ByteStream.of(byteStreams);
+        return new ExportByteStream(byteStream, getFilename(id));
     }
 
-    private String getResourceContent(String path) throws IOException {
+    private static String getResourceContent(String path) throws IOException {
         URL url;
         try {
             url = Resources.getResource(path);
@@ -123,6 +133,10 @@ class TraceExportHttpService implements HttpService {
             return "";
         }
         return Resources.toString(url, Charsets.UTF_8);
+    }
+
+    private static String getFilename(String id) {
+        return "trace-" + id;
     }
 
     private static class ExportByteStream extends ByteStream {

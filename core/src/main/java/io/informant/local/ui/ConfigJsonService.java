@@ -163,8 +163,8 @@ class ConfigJsonService implements JsonService {
     String addPointcutConfig(String configJson) throws JsonSyntaxException {
         logger.debug("addPointcutConfig(): configJson={}", configJson);
         PointcutConfig pointcut = gson.fromJson(configJson, PointcutConfig.Builder.class).build();
-        String uniqueHash = configService.insertPointcutConfig(pointcut);
-        return gson.toJson(uniqueHash);
+        String versionHash = configService.insertPointcutConfig(pointcut);
+        return gson.toJson(versionHash);
     }
 
     @JsonServiceMethod
@@ -180,9 +180,9 @@ class ConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    void removePointcutConfig(String uniqueHashJson) {
-        logger.debug("removePointcutConfig(): uniqueHashJson={}", uniqueHashJson);
-        configService.deletePointcutConfig(new JsonParser().parse(uniqueHashJson).getAsString());
+    void removePointcutConfig(String versionHashJson) {
+        logger.debug("removePointcutConfig(): versionHashJson={}", versionHashJson);
+        configService.deletePointcutConfig(new JsonParser().parse(versionHashJson).getAsString());
     }
 
     private JsonObject getPluginConfigMapObject() {
@@ -200,7 +200,7 @@ class ConfigJsonService implements JsonService {
 
     private JsonArray getPoincutConfigArray() {
         JsonArray jsonArray = new JsonArray();
-        for (PointcutConfig pointcutConfig : configService.readPointcutConfigs()) {
+        for (PointcutConfig pointcutConfig : configService.getPointcutConfigs()) {
             jsonArray.add(pointcutConfig.toJson());
         }
         return jsonArray;

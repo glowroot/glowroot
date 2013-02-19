@@ -36,18 +36,18 @@ class TraceSummaryJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
 
-    private final TraceCommonService traceCommon;
+    private final TraceCommonService traceCommonService;
 
     @Inject
-    TraceSummaryJsonService(TraceCommonService traceCommon) {
-        this.traceCommon = traceCommon;
+    TraceSummaryJsonService(TraceCommonService traceCommonService) {
+        this.traceCommonService = traceCommonService;
     }
 
     // this method returns byte[] directly to avoid converting to it utf8 string and back again
     @JsonServiceMethod
     byte/*@Nullable*/[] getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
-        ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, false);
+        ByteStream byteStream = traceCommonService.getSnapshotOrActiveJson(id, true);
         if (byteStream == null) {
             logger.error("no trace found for id '{}'", id);
             // TODO 404

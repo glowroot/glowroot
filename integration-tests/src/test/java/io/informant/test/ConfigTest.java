@@ -137,10 +137,10 @@ public class ConfigTest {
     public void shouldUpdatePointcutConfig() throws Exception {
         // given
         PointcutConfig config = createPointcutConfig();
-        String uniqueHash = container.getInformant().addPointcutConfig(config);
+        String versionHash = container.getInformant().addPointcutConfig(config);
         // when
         config = updateAllFields(config);
-        container.getInformant().updatePointcutConfig(uniqueHash, config);
+        container.getInformant().updatePointcutConfig(versionHash, config);
         // then
         List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
         assertThat(pointcuts).hasSize(1);
@@ -151,9 +151,9 @@ public class ConfigTest {
     public void shouldDeletePointcutConfig() throws Exception {
         // given
         PointcutConfig pointcut = createPointcutConfig();
-        String uniqueHash = container.getInformant().addPointcutConfig(pointcut);
+        String versionHash = container.getInformant().addPointcutConfig(pointcut);
         // when
-        container.getInformant().removePointcutConfig(uniqueHash);
+        container.getInformant().removePointcutConfig(versionHash);
         // then
         List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
         assertThat(pointcuts).isEmpty();

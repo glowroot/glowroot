@@ -34,6 +34,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
 
     private final Collection<Thread> preExistingThreads;
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
+    private final SameJvmInformant informant;
 
     SameJvmExecutionAdapter(final Map<String, String> properties) throws Exception {
         preExistingThreads = Threads.currentThreads();
@@ -47,10 +48,11 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
                 "io.informant.shaded");
         loader.weavingMetric(MainEntryPoint.getWeavingMetric());
         isolatedWeavingClassLoader = loader.build();
+        informant = new SameJvmInformant();
     }
 
-    public int getPort() throws Exception {
-        return MainEntryPoint.getPort();
+    public Informant getInformant() {
+        return informant;
     }
 
     public void executeAppUnderTest(final Class<? extends AppUnderTest> appUnderTestClass,

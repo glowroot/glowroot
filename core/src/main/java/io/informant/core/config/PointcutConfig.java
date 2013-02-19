@@ -17,6 +17,7 @@ package io.informant.core.config;
 
 import io.informant.api.weaving.MethodModifier;
 import io.informant.core.util.GsonFactory;
+import io.informant.core.util.OnlyUsedByTests;
 
 import java.util.List;
 
@@ -54,6 +55,11 @@ public class PointcutConfig {
 
     static PointcutConfig fromJson(JsonObject configObject) throws JsonSyntaxException {
         return gson.fromJson(configObject, PointcutConfig.Builder.class).build();
+    }
+
+    @OnlyUsedByTests
+    public static Builder builder() {
+        return new Builder();
     }
 
     private PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,

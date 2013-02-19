@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -211,7 +212,8 @@ public class ConfigService {
         return pluginConfig.getVersionHash();
     }
 
-    public ImmutableList<PointcutConfig> readPointcutConfigs() {
+    @ReadOnly
+    public List<PointcutConfig> getPointcutConfigs() {
         return config.getPointcutConfigs();
     }
 
@@ -252,19 +254,19 @@ public class ConfigService {
         return pointcutConfig.getVersionHash();
     }
 
-    public void deletePointcutConfig(String uniqueHash) {
+    public void deletePointcutConfig(String versionHash) {
         synchronized (writeLock) {
             List<PointcutConfig> pointcutConfigs = Lists.newArrayList(config.getPointcutConfigs());
             boolean found = false;
             for (ListIterator<PointcutConfig> i = pointcutConfigs.listIterator(); i.hasNext();) {
-                if (uniqueHash.equals(i.next().getVersionHash())) {
+                if (versionHash.equals(i.next().getVersionHash())) {
                     i.remove();
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                logger.warn("pointcut config unique hash '{}' not found", uniqueHash);
+                logger.warn("pointcut config unique hash '{}' not found", versionHash);
                 return;
             }
             Config updatedConfig = Config.builder(config)

@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharStreams;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
@@ -42,8 +43,9 @@ import com.google.inject.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@VisibleForTesting
 @Singleton
-class AdminJsonService implements JsonService {
+public class AdminJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
@@ -86,8 +88,9 @@ class AdminJsonService implements JsonService {
         configService.deleteConfig();
     }
 
+    @VisibleForTesting
     @JsonServiceMethod
-    String getLog() {
+    public String getLog() {
         logger.debug("getLog()");
         List<LogMessage> logMessages = logMessageDao.readLogMessages();
         StringBuilder sb = new StringBuilder();

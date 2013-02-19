@@ -224,6 +224,14 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
+    public static <T> T getInstance(Class<T> type) {
+        if (injector == null) {
+            throw new NullPointerException("Call to start() is required");
+        }
+        return injector.getInstance(type);
+    }
+
+    @OnlyUsedByTests
     public static int getPort() {
         if (injector == null) {
             throw new NullPointerException("Call to start() is required");

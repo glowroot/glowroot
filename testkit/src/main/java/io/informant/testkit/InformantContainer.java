@@ -21,26 +21,10 @@ import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.internal.TempDirs;
 
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.fest.reflect.core.Reflection;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpMessage;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
  * {@link AppUnderTest}s are intended to be run serially within a given InformantContainer.
@@ -60,7 +44,6 @@ public class InformantContainer {
 
     private final ExecutionAdapter executionAdapter;
     private final File dataDir;
-    private final AsyncHttpClient asyncHttpClient;
     private final Informant informant;
 
     public static InformantContainer create() throws Exception {
@@ -96,8 +79,7 @@ public class InformantContainer {
     private InformantContainer(ExecutionAdapter executionAdapter, File dataDir) throws Exception {
         this.executionAdapter = executionAdapter;
         this.dataDir = dataDir;
-        asyncHttpClient = createAsyncHttpClient();
-        informant = new Informant(executionAdapter.getPort(), asyncHttpClient);
+        informant = executionAdapter.getInformant();
     }
 
     public Informant getInformant() {
@@ -140,75 +122,18 @@ public class InformantContainer {
     }
 
     public void closeWithoutDeletingDataDir() throws Exception {
-        // asyncHttpClient is not part of the "app under test", so shut it down
-        // first before checking for non-daemon threads
-        asyncHttpClient.close();
         executionAdapter.close();
-    }
-
-    private static AsyncHttpClient createAsyncHttpClient() {
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
-                .setCompressionEnabled(true)
-                .setMaxRequestRetry(0)
-                .setExecutorService(executorService)
-                .setScheduledExecutorService(scheduledExecutor);
-        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
-        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
-                executorService);
-        builder.setAsyncHttpClientProviderConfig(providerConfig);
-        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
-        addSaveTheEncodingHandlerToNettyPipeline(asyncHttpClient);
-        return asyncHttpClient;
     }
 
     private static boolean useExternalJvmAppContainer() {
         return Boolean.valueOf(System.getProperty("externalJvmAppContainer"));
     }
 
-    // Netty's HttpContentDecoder removes the Content-Encoding header during the decompression step
-    // which makes it difficult to verify that the response from Informant was compressed
-    //
-    // this method adds a ChannelHandler to the netty pipeline, before the decompression handler,
-    // and saves the original Content-Encoding header into another http header so it can be used
-    // later to verify that the response was compressed
-    private static void addSaveTheEncodingHandlerToNettyPipeline(AsyncHttpClient asyncHttpClient) {
-        // the next release of AsyncHttpClient will include a hook to modify the pipeline without
-        // having to resort to this reflection hack, see
-        // https://github.com/AsyncHttpClient/async-http-client/pull/205
-        ClientBootstrap plainBootstrap = Reflection.field("plainBootstrap")
-                .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
-        final ChannelPipelineFactory pipelineFactory = plainBootstrap.getPipelineFactory();
-        plainBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            public ChannelPipeline getPipeline() throws Exception {
-                ChannelPipeline pipeline = pipelineFactory.getPipeline();
-                pipeline.addBefore("inflater", "saveTheEncoding", new SaveTheEncodingHandler());
-                return pipeline;
-            }
-        });
-    }
-
     @ThreadSafe
     interface ExecutionAdapter {
-        int getPort() throws Exception;
+        Informant getInformant();
         void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass, String threadName)
                 throws Exception;
         void close() throws Exception;
-    }
-
-    private static class SaveTheEncodingHandler extends SimpleChannelHandler {
-        @Override
-        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-            Object msg = e.getMessage();
-            if (msg instanceof HttpMessage) {
-                HttpMessage m = (HttpMessage) msg;
-                String contentEncoding = m.getHeader(HttpHeaders.Names.CONTENT_ENCODING);
-                if (contentEncoding != null) {
-                    m.setHeader("X-Original-Content-Encoding", contentEncoding);
-                }
-            }
-            ctx.sendUpstream(e);
-        }
     }
 }

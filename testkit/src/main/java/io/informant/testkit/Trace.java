@@ -241,16 +241,28 @@ public class Trace {
         public String getDisplay() {
             return display;
         }
+        public void setDisplay(String display) {
+            this.display = display;
+        }
         @Nullable
         public List<String> getStackTrace() {
             return stackTrace;
         }
+        public void setStackTrace(List<String> stackTrace) {
+            this.stackTrace = stackTrace;
+        }
         public int getFramesInCommonWithCaused() {
             return framesInCommonWithCaused;
+        }
+        public void setFramesInCommonWithCaused(int framesInCommonWithCaused) {
+            this.framesInCommonWithCaused = framesInCommonWithCaused;
         }
         @Nullable
         public ExceptionInfo getCause() {
             return cause;
+        }
+        public void setCause(@Nullable ExceptionInfo cause) {
+            this.cause = cause;
         }
         @Override
         public String toString() {

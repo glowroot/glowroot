@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -35,8 +36,9 @@ import com.google.inject.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@VisibleForTesting
 @Singleton
-class TraceCommonService {
+public class TraceCommonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
@@ -51,21 +53,21 @@ class TraceCommonService {
     }
 
     @Nullable
-    ByteStream getSnapshotOrActiveJson(String id, boolean includeDetail) throws IOException {
+    ByteStream getSnapshotOrActiveJson(String id, boolean summary) throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
                 TraceSnapshot snapshot = TraceWriter.toTraceSnapshot(active, ticker.read(),
-                        includeDetail);
+                        summary);
                 return TraceSnapshotWriter.toByteStream(snapshot, true);
             }
         }
         TraceSnapshot snapshot;
-        if (includeDetail) {
-            snapshot = traceSnapshotDao.readSnapshot(id);
-        } else {
+        if (summary) {
             snapshot = traceSnapshotDao.readSnapshotWithoutDetail(id);
+        } else {
+            snapshot = traceSnapshotDao.readSnapshot(id);
         }
         if (snapshot == null) {
             return null;

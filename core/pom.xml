@@ -335,20 +335,12 @@
                 <option>-dontoptimize</option>
                 <option>-dontnote **</option>
                 <option>-dontwarn **</option>
-                <option>-keep class io.informant.core.MainEntryPoint { *; }</option>
-                <option>-keep class io.informant.core.InformantModule { *; }</option>
-                <option>
-                  -keepclassmembers class * { @io.informant.shaded.google.inject.Inject *; }
-                </option>
-                <option>-keep class io.informant.local.**JsonService { *; }</option>
+                <option>-keep class io.informant.local.** { *; }</option>
                 <option>-keep class io.informant.api.** { *; }</option>
                 <option>-keep class io.informant.core.** { *; }</option>
-                <!-- test classes use DaemonExecutors -->
-                <option>-keep class io.informant.core.util.DaemonExecutors { *; }</option>
-                <option>-keep class io.informant.core.util.Files { *; }</option>
-                <option>-keep class io.informant.core.util.Threads { *; }</option>
+                <!-- need to keep @Inject annotation since it is used by guice at runtime -->
                 <option>
-                  -keep class io.informant.core.weaving.IsolatedWeavingClassLoader { *; }
+                  -keepclassmembers class * { @io.informant.shaded.google.inject.Inject *; }
                 </option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
                 <option>-keep class io.informant.shaded.google.common.** { *; }</option>

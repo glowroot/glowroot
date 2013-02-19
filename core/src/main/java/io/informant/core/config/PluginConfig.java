@@ -17,6 +17,7 @@ package io.informant.core.config;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
+import io.informant.core.util.OnlyUsedByTests;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -184,6 +185,16 @@ public class PluginConfig {
                 .toString();
     }
 
+    @OnlyUsedByTests
+    // can't pass Optional back from this class to testkit, since testkit does not get shaded
+    public Map<String, /*@Nullable*/Object> getProperties() {
+        Map<String, /*@Nullable*/Object> props = Maps.newHashMap();
+        for (Entry<String, Optional<?>> entry : properties.entrySet()) {
+            props.put(entry.getKey(), entry.getValue().orNull());
+        }
+        return props;
+    }
+
     public static class Builder {
 
         private boolean enabled = true;
@@ -211,6 +222,10 @@ public class PluginConfig {
         }
         public PluginConfig build() {
             return new PluginConfig(enabled, ImmutableMap.copyOf(properties), pluginInfo);
+        }
+        @OnlyUsedByTests
+        public Builder setProperty(String name, @Immutable @Nullable Object value) {
+            return setProperty(name, value, false);
         }
         private void overlay(@ReadOnly JsonObject configObject, boolean ignoreWarnings) {
             JsonElement enabledElement = configObject.get("enabled");

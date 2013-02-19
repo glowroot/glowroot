@@ -34,9 +34,23 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.fest.reflect.core.Reflection;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.handler.codec.http.HttpHeaders;
+import org.jboss.netty.handler.codec.http.HttpMessage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 
 /**
  * @author Trask Stalnaker
@@ -47,13 +61,17 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalJvmExecutionAdapter.class);
 
+    private final SocketCommander socketCommander;
     private final Process process;
     private final ExecutorService consolePipeExecutorService;
-    private final SocketCommander socketCommander;
+    private final AsyncHttpClient asyncHttpClient;
+    private final ExternalJvmInformant informant;
     private final Thread shutdownHook;
+
     private volatile long numConsoleBytes;
 
-    ExternalJvmExecutionAdapter(final Map<String, String> properties) throws IOException {
+    ExternalJvmExecutionAdapter(final Map<String, String> properties) throws IOException,
+            InterruptedException {
         socketCommander = new SocketCommander();
         List<String> command = buildCommand(properties, socketCommander.getLocalPort());
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -77,6 +95,9 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                 }
             }
         });
+        int uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
+        asyncHttpClient = createAsyncHttpClient();
+        informant = new ExternalJvmInformant(uiPort, asyncHttpClient);
         shutdownHook = new Thread() {
             @Override
             public void run() {
@@ -96,8 +117,8 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
-    public int getPort() throws IOException, InterruptedException {
-        return (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
+    public Informant getInformant() {
+        return informant;
     }
 
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass,
@@ -115,6 +136,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         process.waitFor();
         consolePipeExecutorService.shutdownNow();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        asyncHttpClient.close();
     }
 
     public void kill() throws IOException, InterruptedException {
@@ -129,7 +151,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         return numConsoleBytes;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         try {
             int port = Integer.parseInt(args[0]);
             Socket socket = new Socket((String) null, port);
@@ -141,6 +163,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
             // log error and exit gracefully
             logger.error(t.getMessage(), t);
         }
+        // do not close socket since program is still running after main returns
     }
 
     private static List<String> buildCommand(Map<String, String> properties, int port)
@@ -180,5 +203,59 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
             }
         }
         return javaAgents;
+    }
+
+    private static AsyncHttpClient createAsyncHttpClient() {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        AsyncHttpClientConfig.Builder builder = new AsyncHttpClientConfig.Builder()
+                .setCompressionEnabled(true)
+                .setMaxRequestRetry(0)
+                .setExecutorService(executorService)
+                .setScheduledExecutorService(scheduledExecutor);
+        NettyAsyncHttpProviderConfig providerConfig = new NettyAsyncHttpProviderConfig();
+        providerConfig.addProperty(NettyAsyncHttpProviderConfig.BOSS_EXECUTOR_SERVICE,
+                executorService);
+        builder.setAsyncHttpClientProviderConfig(providerConfig);
+        AsyncHttpClient asyncHttpClient = new AsyncHttpClient(builder.build());
+        addSaveTheEncodingHandlerToNettyPipeline(asyncHttpClient);
+        return asyncHttpClient;
+    }
+
+    // Netty's HttpContentDecoder removes the Content-Encoding header during the decompression step
+    // which makes it difficult to verify that the response from Informant was compressed
+    //
+    // this method adds a ChannelHandler to the netty pipeline, before the decompression handler,
+    // and saves the original Content-Encoding header into another http header so it can be used
+    // later to verify that the response was compressed
+    private static void addSaveTheEncodingHandlerToNettyPipeline(AsyncHttpClient asyncHttpClient) {
+        // the next release of AsyncHttpClient will include a hook to modify the pipeline without
+        // having to resort to this reflection hack, see
+        // https://github.com/AsyncHttpClient/async-http-client/pull/205
+        ClientBootstrap plainBootstrap = Reflection.field("plainBootstrap")
+                .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
+        final ChannelPipelineFactory pipelineFactory = plainBootstrap.getPipelineFactory();
+        plainBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            public ChannelPipeline getPipeline() throws Exception {
+                ChannelPipeline pipeline = pipelineFactory.getPipeline();
+                pipeline.addBefore("inflater", "saveTheEncoding", new SaveTheEncodingHandler());
+                return pipeline;
+            }
+        });
+    }
+
+    private static class SaveTheEncodingHandler extends SimpleChannelHandler {
+        @Override
+        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+            Object msg = e.getMessage();
+            if (msg instanceof HttpMessage) {
+                HttpMessage m = (HttpMessage) msg;
+                String contentEncoding = m.getHeader(HttpHeaders.Names.CONTENT_ENCODING);
+                if (contentEncoding != null) {
+                    m.setHeader("X-Original-Content-Encoding", contentEncoding);
+                }
+            }
+            ctx.sendUpstream(e);
+        }
     }
 }

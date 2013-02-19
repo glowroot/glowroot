@@ -259,6 +259,27 @@ public class TraceSnapshotDao {
     }
 
     @OnlyUsedByTests
+    @Nullable
+    public TraceSnapshot getLastSnapshot(boolean summary) throws SQLException {
+        List<String> ids = dataSource.query(
+                "select id from trace_snapshot order by captured_at desc limit 1",
+                ImmutableList.of(),
+                new RowMapper<String>() {
+                    public String mapRow(ResultSet resultSet) throws SQLException {
+                        return resultSet.getString(1);
+                    }
+                });
+        if (ids.size() == 0) {
+            return null;
+        }
+        if (summary) {
+            return readSnapshotWithoutDetail(ids.get(0));
+        } else {
+            return readSnapshot(ids.get(0));
+        }
+    }
+
+    @OnlyUsedByTests
     public long count() {
         try {
             return dataSource.queryForLong("select count(*) from trace_snapshot");

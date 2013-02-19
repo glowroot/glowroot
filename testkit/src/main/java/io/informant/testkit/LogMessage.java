@@ -40,9 +40,17 @@ public class LogMessage {
         return timestamp;
     }
 
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @Nullable
     public Level getLevel() {
         return level;
+    }
+
+    public void setLevel(Level level) {
+        this.level = level;
     }
 
     @Nullable
@@ -50,14 +58,26 @@ public class LogMessage {
         return loggerName;
     }
 
+    public void setLoggerName(String loggerName) {
+        this.loggerName = loggerName;
+    }
+
     @Nullable
     public String getText() {
         return text;
     }
 
+    public void setText(@Nullable String text) {
+        this.text = text;
+    }
+
     @Nullable
     public ExceptionInfo getException() {
         return exception;
+    }
+
+    public void setException(@Nullable ExceptionInfo exception) {
+        this.exception = exception;
     }
 
     @Override

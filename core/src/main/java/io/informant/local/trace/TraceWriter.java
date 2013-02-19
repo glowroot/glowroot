@@ -67,8 +67,8 @@ public class TraceWriter {
 
     private TraceWriter() {}
 
-    public static TraceSnapshot toTraceSnapshot(Trace trace, long captureTick,
-            boolean includeDetail) throws IOException {
+    public static TraceSnapshot toTraceSnapshot(Trace trace, long captureTick, boolean summary)
+            throws IOException {
         TraceSnapshot.Builder builder = TraceSnapshot.builder();
         builder.id(trace.getId());
         builder.startAt(trace.getStartAt());
@@ -95,7 +95,7 @@ public class TraceWriter {
         builder.attributes(getAttributesJson(trace));
         builder.userId(trace.getUserId());
         builder.metrics(getMetricsJson(trace));
-        if (includeDetail) {
+        if (!summary) {
             builder.spans(new SpansByteStream(trace.getSpans().iterator(), captureTick));
             builder.coarseMergedStackTree(getMergedStackTree(trace.getCoarseMergedStackTree()));
             builder.fineMergedStackTree(getMergedStackTree(trace.getFineMergedStackTree()));
