@@ -32,8 +32,9 @@ import com.google.inject.Singleton;
 @Singleton
 public class TraceRegistry {
 
-    // collection of active running traces, ordered by start time
-    // TODO precise ordering by start time would require synchronization or some other method
+    // collection of active running traces, "nearly" ordered by start time
+    // ordering is not completely guaranteed since there is no synchronization block around
+    // trace instantiation and placement into the registry
     private final Queue<Trace> traces = Queues.newConcurrentLinkedQueue();
 
     // active running trace being executed by the current thread
@@ -55,7 +56,9 @@ public class TraceRegistry {
         traces.remove(trace);
     }
 
-    // returns list of traces ordered by start time
+    // collection of active running traces, "nearly" ordered by start time
+    // ordering is not completely guaranteed since there is no synchronization block around
+    // trace instantiation and placement into the registry
     public Iterable<Trace> getTraces() {
         return traces;
     }

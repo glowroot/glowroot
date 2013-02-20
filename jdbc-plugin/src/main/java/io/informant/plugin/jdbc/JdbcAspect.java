@@ -329,7 +329,6 @@ public class JdbcAspect {
                 if (pluginServices.isEnabled()) {
                     JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
                             .createWithBatchedSqls(mirror, getConnectionHashCode(statement));
-                    // TODO track all changes to statement mirrors regardless of isEnabled
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metric);
                 } else {

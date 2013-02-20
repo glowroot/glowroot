@@ -73,7 +73,6 @@ public class TraceExportHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        // TODO handle stackTraces
         ByteStream byteStream = getExportByteStream(id);
         if (byteStream == null) {
             logger.error("no trace found for id '{}'", id);

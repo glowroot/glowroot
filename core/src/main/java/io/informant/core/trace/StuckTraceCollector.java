@@ -110,8 +110,11 @@ public class StuckTraceCollector implements Runnable {
                             initialDelayMillis, TimeUnit.MILLISECONDS);
                     trace.setStuckScheduledFuture(scheduledFuture);
                 } else {
-                    // since the list of traces are ordered by start time, if this trace
-                    // didn't meet the threshold then no subsequent trace will meet the threshold
+                    // since the list of traces are "nearly" ordered by start time, if this trace
+                    // didn't meet the threshold then no subsequent trace will exceed the threshold
+                    // (or at least not by much given the "nearly" ordering in trace registry, which
+                    // would at worst lead to a stuck trace being collected a smidge later than
+                    // desired)
                     break;
                 }
             }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2011-2012 the original author or authors.
+ * Copyright 2011-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,8 +103,10 @@ public class CoarseGrainedProfiler implements Runnable {
             // COMMAND_INTERVAL_MILLIS from exceeding the threshold) and the stack trace capture
             // hasn't already been scheduled then schedule it
             if (!Nanoseconds.lessThan(trace.getStartTick(), stackTraceThresholdTime)) {
-                // since the list of traces are ordered by start time, if this trace
-                // didn't meet the threshold then no subsequent trace will meet the threshold
+                // since the list of traces are "nearly" ordered by start time, if this trace didn't
+                // meet the threshold then no subsequent trace will exceed the threshold (or at
+                // least not by much given the "nearly" ordering in trace registry, which would at
+                // worst lead to a trace having its profiling start a smidge later than desired)
                 break;
             }
             if (trace.getCoarseProfilingScheduledFuture() == null) {

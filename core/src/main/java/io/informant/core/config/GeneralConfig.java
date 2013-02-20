@@ -56,7 +56,6 @@ public class GeneralConfig {
     // thresholds
     private final boolean enabled;
 
-    // TODO convert from millis to seconds, support 0.1, etc
     // 0 means log all traces, -1 means log no traces
     // (though stuck threshold can still be used in this case)
     private final int storeThresholdMillis;

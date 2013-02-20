@@ -207,8 +207,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (trace == null) {
             trace = new Trace((MetricImpl) metric, messageSupplier, ticker, clock, weavingMetric);
             trace.setBackground(background);
-            maybeScheduleFineProfilingUsingPercentage(trace);
             traceRegistry.addTrace(trace);
+            maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
         } else {
             return startSpan(trace, (MetricImpl) metric, messageSupplier);

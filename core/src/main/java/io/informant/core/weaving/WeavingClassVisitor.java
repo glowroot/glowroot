@@ -202,10 +202,10 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 for (int j = 0; j < method.getExceptionTypes().length; j++) {
                     exceptions[j] = Type.getType(method.getExceptionTypes()[j]);
                 }
-                // null is passed for signature since generics are not supported at this time
-                // TODO support methods with generics
-                // TODO make it clear that generics are not supported at the class/interface level
                 Method m = Method.getMethod(method);
+                // passing null for signature just means the optional bytecode signature attribute
+                // won't be populated
+                // (see http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.9)
                 GeneratorAdapter mg = new GeneratorAdapter(ACC_PUBLIC, m, null, exceptions, cv);
                 mg.loadThis();
                 mg.getField(type, "informant$mixin$" + i, mixinType);
