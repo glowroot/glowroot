@@ -292,7 +292,6 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.SettableFuture");
         types.add("com.google.common.util.concurrent.UncheckedExecutionException");
         types.add("com.google.common.util.concurrent.Uninterruptibles");
-        types.add("io.informant.api.Endable");
         types.add("io.informant.api.Logger");
         types.add("io.informant.api.LoggerFactory");
         types.add("io.informant.api.LoggerFactory$LoggerImpl");
@@ -320,7 +319,7 @@ class PreInitializeClasses {
         types.add("io.informant.core.trace.MetricImpl");
         types.add("io.informant.core.trace.TraceMetric");
         types.add("io.informant.core.trace.WeavingMetricImpl");
-        types.add("io.informant.core.trace.WeavingMetricImpl$NopTimer");
+        types.add("io.informant.core.trace.WeavingMetricImpl$NopMetricTimer");
         types.add("io.informant.core.weaving.Advice");
         types.add("io.informant.core.weaving.Advice$ParameterKind");
         types.add("io.informant.core.weaving.AdviceFlowOuterHolder");

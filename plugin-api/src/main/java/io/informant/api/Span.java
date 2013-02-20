@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Span extends Endable {
+public interface Span {
 
     void end();
 

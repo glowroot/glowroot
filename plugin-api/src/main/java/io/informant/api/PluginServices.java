@@ -163,7 +163,7 @@ public abstract class PluginServices {
         }
         @Override
         public MetricTimer startMetricTimer(Metric metric) {
-            return NopTimer.INSTANCE;
+            return NopMetricTimer.INSTANCE;
         }
         @Override
         public void addSpan(MessageSupplier messageSupplier) {}
@@ -194,9 +194,9 @@ public abstract class PluginServices {
             }
         }
 
-        private static class NopTimer implements MetricTimer {
-            private static final NopTimer INSTANCE = new NopTimer();
-            public void end() {}
+        private static class NopMetricTimer implements MetricTimer {
+            private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+            public void stop() {}
         }
     }
 }

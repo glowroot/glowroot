@@ -15,7 +15,6 @@
  */
 package io.informant.plugin.jdbc;
 
-import io.informant.api.Endable;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
@@ -127,7 +126,7 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
-            metricTimer.end();
+            metricTimer.stop();
         }
     }
 
@@ -428,7 +427,7 @@ public class JdbcAspect {
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable MetricTimer metricTimer) {
             if (metricTimer != null) {
-                metricTimer.end();
+                metricTimer.stop();
             }
         }
     }
@@ -460,7 +459,7 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
-            metricTimer.end();
+            metricTimer.stop();
         }
     }
 
@@ -491,7 +490,7 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
-            metricTimer.end();
+            metricTimer.stop();
         }
     }
 
@@ -538,7 +537,7 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
-            metricTimer.end();
+            metricTimer.stop();
         }
     }
 
@@ -573,7 +572,7 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Endable onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
+        public static Object onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
                 @InjectMethodName String methodName) {
             inDatabaseMetataDataMethod.set(methodName);
             if (pluginServices.isEnabled()) {
@@ -589,12 +588,17 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Endable endable) {
+        public static void onAfter(@InjectTraveler @Nullable Object spanOrTimer) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.captureNested = false prevents re-entrant calls
             inDatabaseMetataDataMethod.remove();
-            if (endable != null) {
-                endable.end();
+            if (spanOrTimer == null) {
+                return;
+            }
+            if (spanOrTimer instanceof Span) {
+                ((Span) spanOrTimer).end();
+            } else {
+                ((MetricTimer) spanOrTimer).stop();
             }
         }
     }

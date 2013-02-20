@@ -28,11 +28,11 @@ class NopWeavingMetric implements WeavingMetric {
     static final NopWeavingMetric INSTANCE = new NopWeavingMetric();
 
     public MetricTimer start() {
-        return NopTimer.INSTANCE;
+        return NopMetricTimer.INSTANCE;
     }
 
-    private static class NopTimer implements MetricTimer {
-        private static final NopTimer INSTANCE = new NopTimer();
-        public void end() {}
+    private static class NopMetricTimer implements MetricTimer {
+        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        public void stop() {}
     }
 }

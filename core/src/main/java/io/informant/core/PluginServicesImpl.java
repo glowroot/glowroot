@@ -237,7 +237,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public MetricTimer startMetricTimer(Metric metric) {
         if (metric == null) {
             logger.warn("startTimer(): argument 'metric' must be non-null");
-            return NopTimer.INSTANCE;
+            return NopMetricTimer.INSTANCE;
         }
         // don't call MetricImpl.start() in case this method returns NopTimer.INSTANCE below
         TraceMetric traceMetric = ((MetricImpl) metric).get();
@@ -245,7 +245,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             // don't access trace thread local unless necessary
             Trace trace = traceRegistry.getCurrentTrace();
             if (trace == null) {
-                return NopTimer.INSTANCE;
+                return NopMetricTimer.INSTANCE;
             }
             trace.linkTraceMetric((MetricImpl) metric, traceMetric);
         }
@@ -446,7 +446,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.messageSupplier = messageSupplier;
         }
         public void end() {
-            traceMetric.end();
+            traceMetric.stop();
         }
         public void endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
@@ -467,7 +467,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 end();
                 return;
             }
-            traceMetric.end();
+            traceMetric.stop();
             // use higher span limit when adding errors, but still need some kind of cap
             if (trace.getSpanCount() < 2 * maxSpans) {
                 // span won't necessarily be nested properly, and won't have any timing data, but at
@@ -494,9 +494,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @ThreadSafe
-    private static class NopTimer implements MetricTimer {
-        private static final NopTimer INSTANCE = new NopTimer();
-        public void end() {}
+    private static class NopMetricTimer implements MetricTimer {
+        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        public void stop() {}
     }
 
     interface PluginServicesImplFactory {

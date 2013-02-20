@@ -48,7 +48,7 @@ public class WeavingMetricImpl implements WeavingMetric {
         // trace
         TraceMetric traceMetric = metricImpl.get();
         if (!traceMetric.isLinkedToTrace()) {
-            return NopTimer.INSTANCE;
+            return NopMetricTimer.INSTANCE;
         }
         traceMetric.start();
         return traceMetric;
@@ -65,8 +65,8 @@ public class WeavingMetricImpl implements WeavingMetric {
     }
 
     @ThreadSafe
-    private static class NopTimer implements MetricTimer {
-        private static final NopTimer INSTANCE = new NopTimer();
-        public void end() {}
+    private static class NopMetricTimer implements MetricTimer {
+        private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        public void stop() {}
     }
 }

@@ -108,7 +108,7 @@ class Weaver implements Opcodes {
                 return wovenBytes;
             }
         } finally {
-            metricTimer.end();
+            metricTimer.stop();
         }
     }
 

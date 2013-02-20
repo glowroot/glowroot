@@ -85,7 +85,7 @@ public class TraceMetric implements MetricTimer {
         }
     }
 
-    public void end() {
+    public void stop() {
         end(ticker.read());
     }
 
