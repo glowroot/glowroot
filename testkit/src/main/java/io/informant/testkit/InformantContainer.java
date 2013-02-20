@@ -47,21 +47,21 @@ public class InformantContainer {
     private final Informant informant;
 
     public static InformantContainer create() throws Exception {
-        return create(0, true);
+        return create(0, false);
     }
 
-    public static InformantContainer create(int uiPort, boolean useMemDb) throws Exception {
+    public static InformantContainer create(int uiPort, boolean useFileDb) throws Exception {
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        return create(uiPort, useMemDb, dataDir);
+        return create(uiPort, useFileDb, dataDir);
     }
 
-    public static InformantContainer create(int uiPort, boolean useMemDb, File dataDir)
+    public static InformantContainer create(int uiPort, boolean useFileDb, File dataDir)
             throws Exception {
         // capture pre-existing threads before instantiating execution adapters
         ImmutableMap<String, String> properties = ImmutableMap.of(
                 "ui.port", Integer.toString(uiPort),
                 "data.dir", dataDir.getAbsolutePath(),
-                "internal.h2.memdb", Boolean.toString(useMemDb));
+                "internal.h2.memdb", Boolean.toString(!useFileDb));
         ExecutionAdapter executionAdapter;
         if (useExternalJvmAppContainer()) {
             // this is the most realistic way to run tests because it launches an external JVM

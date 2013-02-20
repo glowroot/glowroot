@@ -39,7 +39,7 @@ public class UiTestingMain {
     private UiTestingMain() {}
 
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.create(UI_PORT, false);
+        InformantContainer container = InformantContainer.create(UI_PORT, true);
         // set thresholds low so there will be lots of data to view
         GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);

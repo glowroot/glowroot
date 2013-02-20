@@ -52,7 +52,7 @@ public class DataSourceShutdownTest {
             return;
         }
         // given
-        final InformantContainer container = InformantContainer.create(0, false);
+        final InformantContainer container = InformantContainer.create(0, true);
         container.getInformant().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();

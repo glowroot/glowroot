@@ -33,7 +33,7 @@ public class ConfigFileLastModifiedTest {
     public void shouldNotUpdateFileOnStartupIfNoChanges() throws Exception {
         // given
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        InformantContainer container = InformantContainer.create(0, true, dataDir);
+        InformantContainer container = InformantContainer.create(0, false, dataDir);
         File configFile = new File(dataDir, "config.json");
         long originalLastModified = configFile.lastModified();
         // when

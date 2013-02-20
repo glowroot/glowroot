@@ -49,7 +49,7 @@ public class UpgradeTest {
         Files.copy(Resources.newInputStreamSupplier(Resources
                 .getResource("for-upgrade-test/informant.rolling.db")),
                 new File(dataDir, "informant.rolling.db"));
-        InformantContainer container = InformantContainer.create(0, false, dataDir);
+        InformantContainer container = InformantContainer.create(0, true, dataDir);
         // when
         Trace trace = container.getInformant().getLastTrace();
         // then
@@ -67,7 +67,7 @@ public class UpgradeTest {
 
     // create initial database for upgrade test
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.create(0, false);
+        InformantContainer container = InformantContainer.create(0, true);
         container.getInformant().setStoreThresholdMillis(0);
         GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
         // disable trace snapshot expiration so the test data won't expire
