@@ -47,6 +47,10 @@ public class InformantContainer {
     private final Informant informant;
 
     public static InformantContainer create() throws Exception {
+        InformantContainer sharedContainer = ExternalJvmRunListener.getSharedContainer();
+        if (sharedContainer != null) {
+            return sharedContainer;
+        }
         return create(0, false);
     }
 
@@ -63,7 +67,7 @@ public class InformantContainer {
                 "data.dir", dataDir.getAbsolutePath(),
                 "internal.h2.memdb", Boolean.toString(!useFileDb));
         ExecutionAdapter executionAdapter;
-        if (useExternalJvmAppContainer()) {
+        if (isExternalJvm()) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
@@ -108,6 +112,10 @@ public class InformantContainer {
     }
 
     public void close() throws Exception {
+        if (this == ExternalJvmRunListener.getSharedContainer()) {
+            // this is the shared container and will be closed at the end of the run
+            return;
+        }
         closeWithoutDeletingDataDir();
         TempDirs.deleteRecursively(dataDir);
     }
@@ -125,8 +133,12 @@ public class InformantContainer {
         executionAdapter.close();
     }
 
-    private static boolean useExternalJvmAppContainer() {
-        return Boolean.valueOf(System.getProperty("externalJvmAppContainer"));
+    public static boolean isExternalJvm() {
+        return Boolean.valueOf(System.getProperty("informant.testkit.externaljvm"));
+    }
+
+    public static void setExternalJvm(boolean value) {
+        System.setProperty("informant.testkit.externaljvm", String.valueOf(value));
     }
 
     @ThreadSafe

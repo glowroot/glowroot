@@ -46,7 +46,7 @@ public class JdbcPluginPerformanceMain {
 
     public static void main(String... args) throws Exception {
         setUpTestDatabase();
-        System.setProperty("externalJvmAppContainer", "true");
+        InformantContainer.setExternalJvm(true);
         testWithInformant();
     }
 

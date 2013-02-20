@@ -70,18 +70,11 @@
   <build>
     <plugins>
       <plugin>
-        <!-- the tests in this project depend on the Informant jar so they must be executed during
-          the integration-test phase at which time the Informant jar has been built and is on the
-          surefire test class path -->
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
           <execution>
             <!-- override default test phase goal -->
             <id>default-test</id>
-            <phase>test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
             <configuration>
               <excludes>
                 <!-- JarFileShadingTest requires informant-core.jar to be available on the
@@ -101,8 +94,14 @@
             </goals>
             <configuration>
               <systemPropertyVariables>
-                <externalJvmAppContainer>true</externalJvmAppContainer>
+                <informant.testkit.externaljvm>true</informant.testkit.externaljvm>
               </systemPropertyVariables>
+              <properties>
+                <property>
+                  <name>listener</name>
+                  <value>io.informant.testkit.ExternalJvmRunListener</value>
+                </property>
+              </properties>
             </configuration>
           </execution>
         </executions>

@@ -75,5 +75,11 @@
       <artifactId>fest-reflect</artifactId>
       <version>1.4</version>
     </dependency>
+    <dependency>
+      <!-- using org.junit.runner.notification.RunListener -->
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+    </dependency>
   </dependencies>
 </project>

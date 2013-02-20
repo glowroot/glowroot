@@ -44,7 +44,7 @@ public class DataSourceShutdownTest {
 
     @Test
     public void shouldShutdown() throws Exception {
-        if (!Boolean.valueOf(System.getProperty("externalJvmAppContainer"))) {
+        if (!InformantContainer.isExternalJvm()) {
             // this test is only relevant under javaagent
             // (tests are run under javaagent during mvn integration-test but not during mvn test)
             // not using org.junit.Assume which reports the test as ignored, since ignored tests
@@ -65,7 +65,7 @@ public class DataSourceShutdownTest {
         });
         while (container.getInformant().getNumStoredTraceSnapshots()
                 + container.getInformant().getNumPendingCompleteTraces() < 10) {
-            Thread.sleep(10);
+            Thread.sleep(1);
         }
         container.killExternalJvm();
         // then
