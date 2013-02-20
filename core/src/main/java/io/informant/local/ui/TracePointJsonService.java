@@ -85,13 +85,7 @@ class TracePointJsonService implements JsonService {
     @JsonServiceMethod
     String getPoints(String message) throws IOException, JsonSyntaxException {
         logger.debug("getPoints(): message={}", message);
-        TracePointRequest request;
-        try {
-            request = gson.fromJson(message, TracePointRequest.class);
-        } catch (JsonSyntaxException e) {
-            logger.warn(e.getMessage(), e);
-            throw new IllegalStateException("Invalid request");
-        }
+        TracePointRequest request = gson.fromJson(message, TracePointRequest.class);
         return new Handler(request).handle();
     }
 
@@ -256,8 +250,8 @@ class TracePointJsonService implements JsonService {
             case EQUALS:
                 return traceHeadline.equalsIgnoreCase(headline);
             default:
-                logger.error("unexpected user id comparator '{}'", userIdComparator);
-                return false;
+                throw new IllegalStateException("Unexpected headline comparator: "
+                        + headlineComparator);
             }
         }
 
@@ -280,8 +274,8 @@ class TracePointJsonService implements JsonService {
             case EQUALS:
                 return traceUserId.equalsIgnoreCase(userId);
             default:
-                logger.error("unexpected user id comparator '{}'", userIdComparator);
-                return false;
+                throw new IllegalStateException("Unexpected user id comparator: "
+                        + userIdComparator);
             }
         }
 

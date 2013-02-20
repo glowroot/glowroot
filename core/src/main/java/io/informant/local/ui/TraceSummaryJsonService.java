@@ -22,6 +22,7 @@ import io.informant.core.util.ByteStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import com.google.common.base.Charsets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -49,9 +50,8 @@ class TraceSummaryJsonService implements JsonService {
         logger.debug("getSummary(): id={}", id);
         ByteStream byteStream = traceCommonService.getSnapshotOrActiveJson(id, true);
         if (byteStream == null) {
-            logger.error("no trace found for id '{}'", id);
-            // TODO 404
-            return null;
+            logger.debug("no trace found for id '{}', returning expired=true", id);
+            return "{\"expired\":true}".getBytes(Charsets.UTF_8.name());
         } else {
             // summary is small and doesn't need to be streamed
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -476,15 +476,21 @@
           // too slow, the user has moved on to another summary already
           return
         }
-        summaryTrace = response
-        var html = traceSummaryTemplate(summaryTrace)
-        var showDetailHtml = '<div style="margin-top: 0.5em">'
+        var text
+        if (response.expired) {
+          text = 'expired'
+        } else {
+          summaryTrace = response
+          var html = traceSummaryTemplate(summaryTrace)
+          var showDetailHtml = '<div style="margin-top: 0.5em">'
             + '<button class="realbtn red pad1" id="showDetail"'
             + ' style="font-size: 12px">'
             + 'show detail</button></div>'
+            text = '<div class="indent1">' + html + '</div>' + showDetailHtml
+        }
         $('#chart').qtip({
           content: {
-            text: '<div class="indent1">' + html + '</div>' + showDetailHtml
+            text: text
           },
           position: {
             my: 'left center',
@@ -529,10 +535,15 @@
               return
             }
             loadDetailId = undefined
-            detailTrace = response
-            detailTrace.showExport = true
-            var html = '<div class="indent1">' + traceSummaryTemplate(detailTrace) + '</div><br>'
-                           + traceDetailTemplate(detailTrace)
+            var html
+            if (response.expired) {
+              html = 'expired'
+            } else {
+              detailTrace = response
+              detailTrace.showExport = true
+              html = '<div class="indent1">' + traceSummaryTemplate(detailTrace) + '</div><br>'
+                             + traceDetailTemplate(detailTrace)
+            }
             hideSpinner('#detailSpinner')
             $('#modalContent').html(html)
           })

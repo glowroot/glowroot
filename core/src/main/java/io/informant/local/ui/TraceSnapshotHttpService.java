@@ -15,7 +15,6 @@
  */
 package io.informant.local.ui;
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import io.informant.api.Logger;
@@ -24,6 +23,7 @@ import io.informant.core.util.ByteStream;
 
 import java.io.IOException;
 
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -35,6 +35,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.base.Charsets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -62,12 +63,15 @@ class TraceSnapshotHttpService implements HttpService {
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
         ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, false);
-        if (byteStream == null) {
-            logger.error("no trace found for id '{}'", id);
-            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
-        }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        if (byteStream == null) {
+            logger.debug("no trace found for id '{}', returning expired=true", id);
+            String content = "{\"expired\":true}";
+            response.setContent(ChannelBuffers.copiedBuffer(content, Charsets.UTF_8));
+            response.setHeader(Names.CONTENT_LENGTH, content.length());
+            return response;
+        }
         if (HttpHeaders.isKeepAlive(request)) {
             // keep alive is not supported to avoid having to calculate content length
             response.setHeader(Names.CONNECTION, "close");

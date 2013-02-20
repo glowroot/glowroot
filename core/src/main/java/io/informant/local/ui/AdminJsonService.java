@@ -71,6 +71,7 @@ public class AdminJsonService implements JsonService {
         try {
             dataSource.compact();
         } catch (SQLException e) {
+            // this might be serious, worth logging as error
             logger.error(e.getMessage(), e);
         }
     }
@@ -90,35 +91,29 @@ public class AdminJsonService implements JsonService {
 
     @VisibleForTesting
     @JsonServiceMethod
-    public String getLog() {
+    public String getLog() throws IOException {
         logger.debug("getLog()");
         List<LogMessage> logMessages = logMessageDao.readLogMessages();
         StringBuilder sb = new StringBuilder();
         JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        try {
-            jw.beginArray();
-            for (LogMessage logMessage : logMessages) {
-                jw.beginObject();
-                jw.name("timestamp");
-                jw.value(logMessage.getTimestamp());
-                jw.name("level");
-                jw.value(logMessage.getLevel().name().toLowerCase(Locale.ENGLISH));
-                jw.name("loggerName");
-                jw.value(logMessage.getLoggerName());
-                jw.name("text");
-                jw.value(logMessage.getText());
-                jw.flush();
-                sb.append(",\"exception\":");
-                sb.append(logMessage.getException());
-                jw.endObject();
-            }
-            jw.endArray();
-            jw.close();
-        } catch (IOException e) {
-            // this isn't really possible since writing to StringBuilder
-            logger.error(e.getMessage(), e);
-            return "[]";
+        jw.beginArray();
+        for (LogMessage logMessage : logMessages) {
+            jw.beginObject();
+            jw.name("timestamp");
+            jw.value(logMessage.getTimestamp());
+            jw.name("level");
+            jw.value(logMessage.getLevel().name().toLowerCase(Locale.ENGLISH));
+            jw.name("loggerName");
+            jw.value(logMessage.getLoggerName());
+            jw.name("text");
+            jw.value(logMessage.getText());
+            jw.flush();
+            sb.append(",\"exception\":");
+            sb.append(logMessage.getException());
+            jw.endObject();
         }
+        jw.endArray();
+        jw.close();
         return sb.toString();
     }
 

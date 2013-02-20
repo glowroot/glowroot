@@ -270,7 +270,7 @@ public class HttpServer extends HttpServerBase {
             logger.error(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         } catch (InvocationTargetException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getCause().getMessage(), e.getCause());
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
         HttpResponse response;
