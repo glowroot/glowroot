@@ -330,11 +330,93 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "execute1")
+    public static class InjectPrimitiveTravelerAdvice {
+        public static ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
+        public static ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
+        public static ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
+        @OnBefore
+        public static int onBefore() {
+            return 3;
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler int traveler) {
+            onReturnTraveler.set(traveler);
+        }
+        @OnThrow
+        public static void onThrow(@InjectTraveler int traveler) {
+            onThrowTraveler.set(traveler);
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler int traveler) {
+            onAfterTraveler.set(traveler);
+        }
+        public static void resetThreadLocals() {
+            onReturnTraveler.remove();
+            onThrowTraveler.remove();
+            onAfterTraveler.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "execute1")
+    public static class InjectPrimitiveBooleanTravelerAdvice {
+        public static ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
+        public static ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
+        public static ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
+        @OnBefore
+        public static boolean onBefore() {
+            return true;
+        }
+        @OnReturn
+        public static void onReturn(@InjectTraveler boolean traveler) {
+            onReturnTraveler.set(traveler);
+        }
+        @OnThrow
+        public static void onThrow(@InjectTraveler boolean traveler) {
+            onThrowTraveler.set(traveler);
+        }
+        @OnAfter
+        public static void onAfter(@InjectTraveler boolean traveler) {
+            onAfterTraveler.set(traveler);
+        }
+        public static void resetThreadLocals() {
+            onReturnTraveler.remove();
+            onThrowTraveler.remove();
+            onAfterTraveler.remove();
+        }
+    }
+
     @Pointcut(typeName = "io.informant.core.weaving.Misc", methodName = "executeWithReturn")
     public static class InjectReturnAdvice {
         public static ThreadLocal<String> returnValue = new ThreadLocal<String>();
         @OnReturn
         public static void onReturn(@InjectReturn String value) {
+            returnValue.set(value);
+        }
+        public static void resetThreadLocals() {
+            returnValue.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.core.weaving.PrimitiveMisc",
+            methodName = "executeWithIntReturn")
+    public static class InjectPrimitiveReturnAdvice {
+        public static ThreadLocal<Integer> returnValue = new ThreadLocal<Integer>();
+        @OnReturn
+        public static void onReturn(@InjectReturn int value) {
+            returnValue.set(value);
+        }
+        public static void resetThreadLocals() {
+            returnValue.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.core.weaving.PrimitiveMisc",
+            methodName = "executeWithIntReturn")
+    public static class InjectAutoboxedReturnAdvice {
+        public static ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
+        @OnReturn
+        public static void onReturn(@InjectReturn Object value) {
             returnValue.set(value);
         }
         public static void resetThreadLocals() {

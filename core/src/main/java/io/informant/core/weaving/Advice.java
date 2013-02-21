@@ -232,8 +232,8 @@ public class Advice {
 
     @Immutable
     enum ParameterKind {
-        TARGET, METHOD_ARG, METHOD_ARG_ARRAY, PRIMITIVE_METHOD_ARG, METHOD_NAME, RETURN, THROWABLE,
-        TRAVELER;
+        TARGET, METHOD_ARG, PRIMITIVE_METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN,
+        PRIMITIVE_RETURN, THROWABLE, TRAVELER;
     }
 
     private static class Builder {
@@ -337,13 +337,7 @@ public class Advice {
             onBeforeParameterKinds = getParameterKinds(method.getParameterAnnotations(),
                     method.getParameterTypes(), onBeforeValidParameterKinds);
             if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
-                if (onBeforeAdvice.getReturnType().getSort() < Type.ARRAY) {
-                    logger.error("primitive types are not supported (yet) as the"
-                            + " @OnBefore return type (and for subsequent"
-                            + " @InjectTraveler)");
-                } else {
-                    travelerType = onBeforeAdvice.getReturnType();
-                }
+                travelerType = onBeforeAdvice.getReturnType();
             }
         }
 
@@ -444,6 +438,10 @@ public class Advice {
                         && parameterTypes[i].isPrimitive()) {
                     // special case to track primitive method args for possible autoboxing
                     foundParameterKind = ParameterKind.PRIMITIVE_METHOD_ARG;
+                }
+                if (foundParameterKind == ParameterKind.RETURN && parameterTypes[i].isPrimitive()) {
+                    // special case to track primitive return values for possible autoboxing
+                    foundParameterKind = ParameterKind.PRIMITIVE_RETURN;
                 }
                 parameterKinds.add(foundParameterKind);
             }

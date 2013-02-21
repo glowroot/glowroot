@@ -25,6 +25,7 @@ public class PrimitiveMisc implements Misc {
 
     public void execute1() {
         executePrimitive(0, 0, 0, null);
+        executeWithIntReturn();
     }
 
     public String executeWithReturn() {
@@ -35,4 +36,8 @@ public class PrimitiveMisc implements Misc {
 
     @SuppressWarnings("unused")
     private void executePrimitive(int x, double y, long z, @Nullable byte[] b) {}
+
+    private int executeWithIntReturn() {
+        return 4;
+    }
 }

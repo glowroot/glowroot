@@ -33,7 +33,6 @@ import java.util.Map;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
@@ -65,6 +64,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final ImmutableList<Advice> advisors;
     private final ImmutableMap<Advice, Integer> adviceFlowOuterHolderNums;
     private final Type[] argumentTypes;
+    private final Type returnType;
 
     private final Map<Advice, Integer> adviceFlowHolderLocals = Maps.newHashMap();
     // the adviceFlow stores the value in the holder at the beginning of the advice so the holder
@@ -82,13 +82,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
             Type owner, @ReadOnly List<Advice> advisors,
             @ReadOnly Map<Advice, Integer> adviceFlowOuterHolderNums) {
-        super(Opcodes.ASM4, mv, access, name, desc);
+        super(ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
         this.advisors = ImmutableList.copyOf(advisors);
         this.adviceFlowOuterHolderNums = ImmutableMap.copyOf(adviceFlowOuterHolderNums);
         argumentTypes = Type.getArgumentTypes(desc);
+        returnType = Type.getReturnType(desc);
         for (Advice advice : advisors) {
             if (!advice.getPointcut().captureNested() || advice.getOnThrowAdvice() != null
                     || advice.getOnAfterAdvice() != null) {
@@ -264,7 +265,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Label setAdviceFlowBlockEnd = newLabel();
             if (enabledLocal != null) {
                 loadLocal(enabledLocal);
-                visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
+                visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
             } else {
                 enabledLocal = newLocal(Type.BOOLEAN_TYPE);
                 enabledLocals.put(advice, enabledLocal);
@@ -286,7 +287,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Label isTopBlockStart = newLabel();
             dup();
             storeLocal(adviceFlowLocal);
-            visitJumpInsn(Opcodes.IFNE, isTopBlockStart);
+            visitJumpInsn(IFNE, isTopBlockStart);
             // !isTop()
             push(false);
             storeLocal(enabledLocal);
@@ -313,20 +314,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (travelerType == null) {
             return;
         }
-        // have to initialize it with a value, otherwise it won't be defined in the
-        // outer scope
-        // at this time only nullable types are supported (Type.ARRAY, Type.OBJECT,
-        // Type.METHOD) for traveler types, so initialize it with null
-        // (see validation for supported traveler types in Advice)
-        if (travelerType.getSort() >= Type.ARRAY) {
-            int travelerLocal = newLocal(travelerType);
-            visitInsn(Opcodes.ACONST_NULL);
-            storeLocal(travelerLocal);
-            travelerLocals.put(advice, travelerLocal);
-        } else {
-            logger.error("primitive types are not supported (yet) as traveler types");
-            return;
-        }
+        // have to initialize it with a value, otherwise it won't be defined in the outer scope
+        int travelerLocal = newLocal(travelerType);
+        pushDefault(travelerType);
+        storeLocal(travelerLocal);
+        travelerLocals.put(advice, travelerLocal);
     }
 
     private void invokeOnBefore(Advice advice, @Nullable Integer travelerLocal) {
@@ -339,7 +331,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (enabledLocal != null) {
             onBeforeBlockEnd = newLabel();
             loadLocal(enabledLocal);
-            visitJumpInsn(Opcodes.IFEQ, onBeforeBlockEnd);
+            visitJumpInsn(IFEQ, onBeforeBlockEnd);
         }
         loadMethodArgs(advice.getOnBeforeParameterKinds(), 0, -1, advice.getAdviceType(),
                 OnBefore.class);
@@ -363,7 +355,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (enabledLocal != null) {
                 onReturnBlockEnd = newLabel();
                 loadLocal(enabledLocal);
-                visitJumpInsn(Opcodes.IFEQ, onReturnBlockEnd);
+                visitJumpInsn(IFEQ, onReturnBlockEnd);
             }
             weaveOnReturnAdvice(opcode, advice, onReturnAdvice);
             if (onReturnBlockEnd != null) {
@@ -377,7 +369,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
             int startIndex = 0;
             if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.RETURN) {
                 // @InjectReturn must be the first argument to @OnReturn (if present)
-                loadReturnValue(opcode);
+                loadReturnValue(opcode, false);
+                startIndex = 1;
+            }
+            if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.PRIMITIVE_RETURN) {
+                // @InjectReturn must be the first argument to @OnReturn (if present)
+                loadReturnValue(opcode, true);
                 startIndex = 1;
             }
             loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex,
@@ -392,10 +389,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
         invokeStatic(advice.getAdviceType(), onReturnAdvice);
     }
 
-    private void loadReturnValue(int opcode) {
+    private void loadReturnValue(int opcode, boolean primitive) {
         if (opcode == RETURN) {
             logger.error("cannot @InjectReturn on a @Pointcut returning void");
-            // try to pass null (TODO handle primitive types also)
+            // try to pass null, but this will fail anyways if @InjectTraveler is primitive arg
             visitInsn(ACONST_NULL);
         } else if (opcode == ARETURN || opcode == ATHROW) {
             dup();
@@ -404,6 +401,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 dup2();
             } else {
                 dup();
+            }
+            if (!primitive) {
+                box(returnType);
             }
         }
     }
@@ -419,7 +419,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (enabledLocal != null) {
                 onThrowBlockEnd = newLabel();
                 loadLocal(enabledLocal);
-                visitJumpInsn(Opcodes.IFEQ, onThrowBlockEnd);
+                visitJumpInsn(IFEQ, onThrowBlockEnd);
             }
             if (onThrowAdvice.getArgumentTypes().length == 0) {
                 invokeStatic(advice.getAdviceType(), onThrowAdvice);
@@ -451,7 +451,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (enabledLocal != null) {
                 onAfterBlockEnd = newLabel();
                 loadLocal(enabledLocal);
-                visitJumpInsn(Opcodes.IFEQ, onAfterBlockEnd);
+                visitJumpInsn(IFEQ, onAfterBlockEnd);
             }
             loadMethodArgs(advice.getOnAfterParameterKinds(), 0, travelerLocals.get(advice),
                     advice.getAdviceType(), OnAfter.class);
@@ -468,9 +468,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (!advice.getPointcut().captureNested()) {
                 Label setAdviceFlowBlockEnd = newLabel();
                 loadLocal(enabledLocals.get(advice));
-                visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
+                visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
                 loadLocal(adviceFlowLocals.get(advice));
-                visitJumpInsn(Opcodes.IFEQ, setAdviceFlowBlockEnd);
+                visitJumpInsn(IFEQ, setAdviceFlowBlockEnd);
                 // isTop was true at the beginning of the advice, need to reset it now
                 loadLocal(adviceFlowHolderLocals.get(advice));
                 push(true);
@@ -480,24 +480,24 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void loadMethodArgs(@ReadOnly List<ParameterKind> parameterTypes, int startIndex,
+    private void loadMethodArgs(@ReadOnly List<ParameterKind> parameterKinds, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
             Class<? extends Annotation> annotationType) {
 
         int argIndex = 0;
-        for (int i = startIndex; i < parameterTypes.size(); i++) {
-            ParameterKind parameterType = parameterTypes.get(i);
+        for (int i = startIndex; i < parameterKinds.size(); i++) {
+            ParameterKind parameterType = parameterKinds.get(i);
             if (parameterType == ParameterKind.TARGET) {
                 loadTarget();
             } else if (parameterType == ParameterKind.METHOD_ARG) {
                 if (loadMethodArg(adviceType, annotationType, argIndex)) {
                     argIndex++;
                 }
-            } else if (parameterType == ParameterKind.METHOD_ARG_ARRAY) {
-                loadArgArray();
             } else if (parameterType == ParameterKind.PRIMITIVE_METHOD_ARG) {
                 // no autobox
                 loadArg(argIndex++);
+            } else if (parameterType == ParameterKind.METHOD_ARG_ARRAY) {
+                loadArgArray();
             } else if (parameterType == ParameterKind.METHOD_NAME) {
                 loadMethodName();
             } else if (parameterType == ParameterKind.TRAVELER) {
@@ -509,7 +509,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void loadTarget() {
-        if ((access & Opcodes.ACC_STATIC) == 0) {
+        if ((access & ACC_STATIC) == 0) {
             loadThis();
         } else {
             // cannot use push(Type) since .class constants are not supported in classes
@@ -551,10 +551,42 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     + adviceType.getClassName() + " requested @"
                     + InjectTraveler.class.getSimpleName() + " but @"
                     + OnBefore.class.getSimpleName() + " returns void");
-            // try to pass null (TODO handle primitive types also)
+            // try to pass null, but this will fail anyways if @InjectTraveler is primitive arg
             visitInsn(ACONST_NULL);
         } else {
             loadLocal(travelerLocal);
+        }
+    }
+
+    private void pushDefault(Type travelerType) {
+        switch (travelerType.getSort()) {
+        case Type.BOOLEAN:
+            push(false);
+            return;
+        case Type.CHAR:
+            push(0);
+            return;
+        case Type.BYTE:
+            push(0);
+            return;
+        case Type.SHORT:
+            push(0);
+            return;
+        case Type.INT:
+            push(0);
+            return;
+        case Type.FLOAT:
+            push(0f);
+            return;
+        case Type.LONG:
+            push(0L);
+            return;
+        case Type.DOUBLE:
+            push(0.0);
+            return;
+        default:
+            visitInsn(ACONST_NULL);
+            return;
         }
     }
 

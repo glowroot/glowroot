@@ -26,9 +26,13 @@ import io.informant.core.weaving.SomeAspect.ChangeReturnAdvice;
 import io.informant.core.weaving.SomeAspect.CircularClassDependencyAdvice;
 import io.informant.core.weaving.SomeAspect.ClassTargetedMixin;
 import io.informant.core.weaving.SomeAspect.HasString;
+import io.informant.core.weaving.SomeAspect.InjectAutoboxedReturnAdvice;
 import io.informant.core.weaving.SomeAspect.InjectMethodArgAdvice;
 import io.informant.core.weaving.SomeAspect.InjectMethodArgArrayAdvice;
 import io.informant.core.weaving.SomeAspect.InjectMethodNameAdvice;
+import io.informant.core.weaving.SomeAspect.InjectPrimitiveBooleanTravelerAdvice;
+import io.informant.core.weaving.SomeAspect.InjectPrimitiveReturnAdvice;
+import io.informant.core.weaving.SomeAspect.InjectPrimitiveTravelerAdvice;
 import io.informant.core.weaving.SomeAspect.InjectReturnAdvice;
 import io.informant.core.weaving.SomeAspect.InjectTargetAdvice;
 import io.informant.core.weaving.SomeAspect.InjectThrowableAdvice;
@@ -261,6 +265,34 @@ public class WeaverTest {
     }
 
     @Test
+    public void shouldInjectPrimitiveTraveler() throws Exception {
+        // given
+        InjectPrimitiveTravelerAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                InjectPrimitiveTravelerAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(InjectPrimitiveTravelerAdvice.onReturnTraveler.get()).isEqualTo(3);
+        assertThat(InjectPrimitiveTravelerAdvice.onThrowTraveler.get()).isNull();
+        assertThat(InjectPrimitiveTravelerAdvice.onAfterTraveler.get()).isEqualTo(3);
+    }
+
+    @Test
+    public void shouldInjectPrimitiveBooleanTraveler() throws Exception {
+        // given
+        InjectPrimitiveBooleanTravelerAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                InjectPrimitiveBooleanTravelerAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(InjectPrimitiveBooleanTravelerAdvice.onReturnTraveler.get()).isEqualTo(true);
+        assertThat(InjectPrimitiveBooleanTravelerAdvice.onThrowTraveler.get()).isNull();
+        assertThat(InjectPrimitiveBooleanTravelerAdvice.onAfterTraveler.get()).isEqualTo(true);
+    }
+
+    @Test
     public void shouldInjectTravelerOnThrow() throws Exception {
         // given
         InjectTravelerAdvice.resetThreadLocals();
@@ -287,6 +319,30 @@ public class WeaverTest {
         test.executeWithReturn();
         // then
         assertThat(InjectReturnAdvice.returnValue.get()).isEqualTo("xyz");
+    }
+
+    @Test
+    public void shouldInjectPrimitiveReturn() throws Exception {
+        // given
+        InjectPrimitiveReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
+                InjectPrimitiveReturnAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(InjectPrimitiveReturnAdvice.returnValue.get()).isEqualTo(4);
+    }
+
+    @Test
+    public void shouldInjectAutoboxedReturn() throws Exception {
+        // given
+        InjectAutoboxedReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
+                InjectAutoboxedReturnAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(InjectAutoboxedReturnAdvice.returnValue.get()).isEqualTo(4);
     }
 
     // ===================== @InjectThrowable =====================
