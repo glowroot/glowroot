@@ -34,10 +34,10 @@ import io.informant.core.util.Static;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.Thread.State;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -168,17 +168,25 @@ public class TraceWriter {
         if (mergedStackTree == null) {
             return null;
         }
-        MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
-        if (rootNode == null) {
-            return null;
+        synchronized (mergedStackTree.getLock()) {
+            MergedStackTreeNode rootNode = mergedStackTree.getRootNode();
+            if (rootNode == null) {
+                return null;
+            }
+            // need to convert merged stack tree into bytes entirely inside of the above lock
+            // (no lazy ByteStream)
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(32768);
+            try {
+                new MergedStackTreeWriter(mergedStackTree, baos).write();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return null;
+            }
+            return ByteStream.of(baos.toByteArray());
         }
-        List<Object> toVisit = Lists.newArrayList();
-        toVisit.add(rootNode);
-        return new MergedStackTreeByteStream(toVisit);
     }
 
-    private static void writeException(ExceptionInfo exception, JsonWriter jw)
-            throws IOException {
+    private static void writeException(ExceptionInfo exception, JsonWriter jw) throws IOException {
         jw.beginObject();
         jw.name("display");
         jw.value(exception.getDisplay());
@@ -346,38 +354,24 @@ public class TraceWriter {
         }
     }
 
-    private static class MergedStackTreeByteStream extends ByteStream {
-
-        private static final int TARGET_CHUNK_SIZE = 8192;
+    private static class MergedStackTreeWriter {
 
         private final List<Object> toVisit;
-        private final ByteArrayOutputStream baos;
         private final JsonWriter jw;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private MergedStackTreeByteStream(List<Object> toVisit) {
+        private MergedStackTreeWriter(MergedStackTree mergedStackTree, OutputStream out) {
+            List<Object> toVisit = Lists.newArrayList();
+            toVisit.add(mergedStackTree.getRootNode());
             this.toVisit = toVisit;
-            baos = new ByteArrayOutputStream(2 * TARGET_CHUNK_SIZE);
-            jw = new JsonWriter(new OutputStreamWriter(baos, Charsets.UTF_8));
+            jw = new JsonWriter(new OutputStreamWriter(out, Charsets.UTF_8));
         }
 
-        @Override
-        public boolean hasNext() {
-            return !toVisit.isEmpty();
-        }
-
-        @Override
-        public byte[] next() throws IOException {
-            while (baos.size() < TARGET_CHUNK_SIZE && hasNext()) {
+        private void write() throws IOException {
+            while (!toVisit.isEmpty()) {
                 writeNext();
-                jw.flush();
             }
-            if (!hasNext()) {
-                jw.close();
-            }
-            byte[] chunk = baos.toByteArray();
-            baos.reset();
-            return chunk;
+            jw.close();
         }
 
         private void writeNext() throws IOException {
@@ -392,7 +386,7 @@ public class TraceWriter {
                 } else {
                     writeStackTraceElement(stackTraceElement, currNode);
                 }
-                List<MergedStackTreeNode> childNodes = Lists.newArrayList(currNode.getChildNodes());
+                List<MergedStackTreeNode> childNodes = currNode.getChildNodes();
                 if (!childNodes.isEmpty()) {
                     jw.name("childNodes").beginArray();
                     toVisit.add(JsonWriterOp.END_ARRAY);
@@ -410,7 +404,7 @@ public class TraceWriter {
         private void writeStackTraceElement(StackTraceElement stackTraceElement,
                 MergedStackTreeNode currNode) throws IOException {
             jw.name("stackTraceElement").value(stackTraceElement.toString());
-            Collection<String> currMetricNames = currNode.getMetricNames();
+            List<String> currMetricNames = currNode.getMetricNames();
             for (String currMetricName : currMetricNames) {
                 if (metricNameStack.isEmpty() || !currMetricName.equals(
                         metricNameStack.get(metricNameStack.size() - 1))) {

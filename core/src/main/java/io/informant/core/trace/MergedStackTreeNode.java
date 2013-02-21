@@ -18,9 +18,7 @@ package io.informant.core.trace;
 import io.informant.core.util.ThreadSafe;
 
 import java.lang.Thread.State;
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
@@ -39,24 +37,12 @@ public class MergedStackTreeNode {
 
     @Nullable
     private final StackTraceElement stackTraceElement;
-    private final Collection<MergedStackTreeNode> childNodes = Lists.newCopyOnWriteArrayList();
+    private final List<MergedStackTreeNode> childNodes = Lists.newArrayList();
     // using List over Set in order to preserve ordering
-    private final CopyOnWriteArrayList<String> metricNames;
-
-    // these must be volatile since they are updated by one thread (the stack trace sampling
-    // thread) and can be read by another thread (e.g. the executing thread, the stuck trace
-    // alerting thread and real-time monitoring threads)
-    //
-    // since the stack traces are performed under a synchronized lock (see MergedStackTree)
-    // there's no need to worry about concurrent updates which avoids the (slight) overhead
-    // of using AtomicInteger
-    //
-    // TODO maybe reads should be performed under the same synchronized lock as the writes
-    // (see MergedStackTree) in order to avoid volatile and ensure consistent state of read
-    //
-    private volatile int sampleCount;
+    private List<String> metricNames;
+    private int sampleCount;
     @Nullable
-    private volatile State leafThreadState;
+    private State leafThreadState;
 
     // this is for creating a single synthetic root node above other root nodes when there are
     // multiple root nodes
@@ -90,9 +76,9 @@ public class MergedStackTreeNode {
 
         this.stackTraceElement = stackTraceElement;
         if (metricNames == null) {
-            this.metricNames = Lists.newCopyOnWriteArrayList();
+            this.metricNames = Lists.newArrayList();
         } else {
-            this.metricNames = Lists.newCopyOnWriteArrayList(metricNames);
+            this.metricNames = Lists.newArrayList(metricNames);
         }
         this.sampleCount = sampleCount;
     }
@@ -101,8 +87,9 @@ public class MergedStackTreeNode {
         childNodes.add(methodTreeElement);
     }
 
-    void addAllAbsentMetricNames(@ReadOnly List<String> metricNames) {
-        this.metricNames.addAllAbsent(metricNames);
+    // may introduce contain duplicates
+    void setMetricNames(@ReadOnly List<String> metricNames) {
+        this.metricNames = metricNames;
     }
 
     void setLeafThreadState(State leafThreadState) {
@@ -115,11 +102,11 @@ public class MergedStackTreeNode {
         sampleCount++;
     }
 
-    public Collection<MergedStackTreeNode> getChildNodes() {
+    public List<MergedStackTreeNode> getChildNodes() {
         return childNodes;
     }
 
-    public Collection<String> getMetricNames() {
+    public List<String> getMetricNames() {
         return metricNames;
     }
 

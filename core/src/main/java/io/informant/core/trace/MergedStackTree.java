@@ -21,20 +21,18 @@ import io.informant.core.util.ThreadSafe;
 import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.Holding;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 
 /**
  * Merged stack tree built from sampled stack traces captured by periodic calls to
@@ -56,13 +54,20 @@ public class MergedStackTree {
     private static final Pattern metricMarkerMethodPattern = Pattern
             .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
-    private final Collection<MergedStackTreeNode> rootNodes = Queues.newConcurrentLinkedQueue();
+    private final List<MergedStackTreeNode> rootNodes = Lists.newArrayList();
 
     private final Object lock = new Object();
 
+    public Object getLock() {
+        return lock;
+    }
+
+    // must be holding lock to call and can only use resulting node tree inside the same
+    // synchronized block
+    @Holding("lock")
     @Nullable
     public MergedStackTreeNode getRootNode() {
-        return MergedStackTreeNode.createSyntheticRoot(ImmutableList.copyOf(rootNodes));
+        return MergedStackTreeNode.createSyntheticRoot(rootNodes);
     }
 
     void addStackTrace(ThreadInfo threadInfo) {
@@ -77,7 +82,7 @@ public class MergedStackTree {
     public void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
             State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
-        Iterable<MergedStackTreeNode> nextChildNodes = rootNodes;
+        List<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
@@ -88,11 +93,18 @@ public class MergedStackTree {
             for (MergedStackTreeNode childNode : nextChildNodes) {
                 if (matches(element.getStackTraceElement(), childNode, nextIndex == 0,
                         threadState)) {
-                    // match found, update lastMatchedNode and continue
+                    // match found, update lastMatchedNode and break out of the inner loop
                     childNode.incrementSampleCount();
+                    // the metric names for a given stack element should always match, unless
+                    // the line numbers aren't available and overloaded methods are matched up, or
+                    // the stack trace was captured while one of the synthetic $metric$ methods was
+                    // executing in which case one of the metric names may be a subset of the other
+                    // TODO handle the first case better? (overloaded methods with no line numbers)
+                    // for the second case, the superset wins:
                     List<String> metricNames = element.getMetricNames();
-                    if (metricNames != null) {
-                        childNode.addAllAbsentMetricNames(metricNames);
+                    if (metricNames != null
+                            && metricNames.size() > childNode.getMetricNames().size()) {
+                        childNode.setMetricNames(metricNames);
                     }
                     lastMatchedNode = childNode;
                     nextChildNodes = lastMatchedNode.getChildNodes();
