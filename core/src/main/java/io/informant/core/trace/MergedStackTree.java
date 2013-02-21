@@ -27,6 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import checkers.igj.quals.ReadOnly;
+import checkers.lock.quals.GuardedBy;
 import checkers.lock.quals.Holding;
 import checkers.nullness.quals.Nullable;
 
@@ -44,16 +45,18 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO it would be more efficient to store stack traces unmerged up until some point
-// (e.g. to optimize for trace captures which are never stored)
-// in this case, it should be configurable how many stack traces to store unmerged
-// after which the existing stack traces are merged as well as future stack traces
 @ThreadSafe
 public class MergedStackTree {
 
     private static final Pattern metricMarkerMethodPattern = Pattern
             .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
+    // optimized for trace captures which are never read
+    @GuardedBy("lock")
+    private final List<List<StackTraceElement>> unmergedStackTraces = Lists.newArrayList();
+    @GuardedBy("lock")
+    private final List<State> unmergedStackTraceStates = Lists.newArrayList();
+    @GuardedBy("lock")
     private final List<MergedStackTreeNode> rootNodes = Lists.newArrayList();
 
     private final Object lock = new Object();
@@ -67,17 +70,34 @@ public class MergedStackTree {
     @Holding("lock")
     @Nullable
     public MergedStackTreeNode getRootNode() {
+        mergeTheUnmergedStackTraces();
         return MergedStackTreeNode.createSyntheticRoot(rootNodes);
     }
 
     void addStackTrace(ThreadInfo threadInfo) {
         synchronized (lock) {
-            // TODO put into list, then merge every 100, or whenever merge is requested
             List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
-            addToStackTree(stripSyntheticMetricMethods(stackTrace), threadInfo.getThreadState());
+            unmergedStackTraces.add(stackTrace);
+            unmergedStackTraceStates.add(threadInfo.getThreadState());
+            if (unmergedStackTraces.size() >= 10) {
+                // merged stack tree takes up less memory, so merge from time to time
+                mergeTheUnmergedStackTraces();
+            }
         }
     }
 
+    @Holding("lock")
+    private void mergeTheUnmergedStackTraces() {
+        for (int i = 0; i < unmergedStackTraces.size(); i++) {
+            List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
+            State threadState = unmergedStackTraceStates.get(i);
+            addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
+        }
+        unmergedStackTraces.clear();
+        unmergedStackTraceStates.clear();
+    }
+
+    @Holding("lock")
     @VisibleForTesting
     public void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
             State threadState) {
