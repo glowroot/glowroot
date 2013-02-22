@@ -18,6 +18,7 @@ package io.informant.core.weaving;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.util.Static;
+import io.informant.shaded.slf4j.impl.Configuration;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -87,6 +88,9 @@ class PreInitializeClasses {
     @VisibleForTesting
     static ImmutableList<String> usedTypes() {
         ImmutableList.Builder<String> types = ImmutableList.builder();
+        if (Configuration.useUnshadedSlf4j()) {
+            addLogback("ch.qos", types);
+        }
         types.add("com.google.common.base.Ascii");
         types.add("com.google.common.base.Equivalence");
         types.add("com.google.common.base.Equivalence$Equals");
@@ -345,7 +349,145 @@ class PreInitializeClasses {
         types.add("io.informant.core.weaving.WeavingMethodVisitor");
         types.add("io.informant.core.weaving.WeavingMethodVisitor$MarkerException");
         types.add("io.informant.core.weaving.WeavingMetric");
-        final String qos = "io.informant.shaded.qos";
+        addLogback("io.informant.shaded.qos", types);
+        types.add("io.informant.shaded.slf4j.ILoggerFactory");
+        types.add("io.informant.shaded.slf4j.Logger");
+        types.add("io.informant.shaded.slf4j.LoggerFactory");
+        types.add("io.informant.shaded.slf4j.helpers.FormattingTuple");
+        types.add("io.informant.shaded.slf4j.helpers.MarkerIgnoringBase");
+        types.add("io.informant.shaded.slf4j.helpers.MessageFormatter");
+        types.add("io.informant.shaded.slf4j.helpers.NOPLogger");
+        types.add("io.informant.shaded.slf4j.helpers.NOPLoggerFactory");
+        types.add("io.informant.shaded.slf4j.helpers.NamedLoggerBase");
+        types.add("io.informant.shaded.slf4j.helpers.SubstituteLoggerFactory");
+        types.add("io.informant.shaded.slf4j.helpers.Util");
+        types.add("io.informant.shaded.slf4j.impl.Configuration");
+        types.add("io.informant.shaded.slf4j.impl.ExtraShadedLoggerAdapter");
+        types.add("io.informant.shaded.slf4j.impl.ExtraShadedLoggerFactoryAdapter");
+        types.add("io.informant.shaded.slf4j.impl.StaticLoggerBinder");
+        types.add("io.informant.shaded.slf4j.impl.UnshadedLoggerAdapter");
+        types.add("io.informant.shaded.slf4j.impl.UnshadedLoggerFactoryAdapter");
+        // LoggerFactoryBinder interface stripped by proguard, see method comment
+        if (exists("io.informant.shaded.slf4j.spi.LoggerFactoryBinder")) {
+            types.add("io.informant.shaded.slf4j.spi.LoggerFactoryBinder");
+        }
+        types.add("io.informant.shaded.slf4jx.ILoggerFactory");
+        types.add("io.informant.shaded.slf4jx.Logger");
+        types.add("io.informant.shaded.slf4jx.MDC");
+        types.add("io.informant.shaded.slf4jx.Marker");
+        types.add("io.informant.shaded.slf4jx.helpers.FormattingTuple");
+        types.add("io.informant.shaded.slf4jx.helpers.MessageFormatter");
+        types.add("io.informant.shaded.slf4jx.helpers.NOPMDCAdapter");
+        types.add("io.informant.shaded.slf4jx.helpers.Util");
+        types.add("io.informant.shaded.slf4jx.impl.StaticLoggerBinder");
+        types.add("io.informant.shaded.slf4jx.impl.StaticMDCBinder");
+        types.add("io.informant.shaded.slf4jx.spi.LocationAwareLogger");
+        // LoggerFactoryBinder interface stripped by proguard, see method comment
+        if (exists("io.informant.shaded.slf4jx.spi.LoggerFactoryBinder")) {
+            types.add("io.informant.shaded.slf4jx.spi.LoggerFactoryBinder");
+        }
+        types.add("io.informant.shaded.slf4jx.spi.MDCAdapter");
+        types.add("org.objectweb.asm.AnnotationVisitor");
+        types.add("org.objectweb.asm.AnnotationWriter");
+        types.add("org.objectweb.asm.Attribute");
+        types.add("org.objectweb.asm.ByteVector");
+        types.add("org.objectweb.asm.ClassReader");
+        types.add("org.objectweb.asm.ClassVisitor");
+        types.add("org.objectweb.asm.ClassWriter");
+        types.add("org.objectweb.asm.Context");
+        types.add("org.objectweb.asm.Edge");
+        types.add("org.objectweb.asm.FieldVisitor");
+        types.add("org.objectweb.asm.FieldWriter");
+        types.add("org.objectweb.asm.Frame");
+        types.add("org.objectweb.asm.Handle");
+        types.add("org.objectweb.asm.Handler");
+        types.add("org.objectweb.asm.Item");
+        types.add("org.objectweb.asm.Label");
+        types.add("org.objectweb.asm.MethodVisitor");
+        types.add("org.objectweb.asm.MethodWriter");
+        types.add("org.objectweb.asm.Opcodes");
+        types.add("org.objectweb.asm.Type");
+        types.add("org.objectweb.asm.commons.AdviceAdapter");
+        types.add("org.objectweb.asm.commons.GeneratorAdapter");
+        types.add("org.objectweb.asm.commons.LocalVariablesSorter");
+        types.add("org.objectweb.asm.commons.Method");
+        types.add("org.objectweb.asm.signature.SignatureReader");
+        types.add("org.objectweb.asm.signature.SignatureVisitor");
+        types.add("org.objectweb.asm.tree.AbstractInsnNode");
+        types.add("org.objectweb.asm.tree.AnnotationNode");
+        types.add("org.objectweb.asm.tree.ClassNode");
+        types.add("org.objectweb.asm.tree.FieldInsnNode");
+        types.add("org.objectweb.asm.tree.FieldNode");
+        types.add("org.objectweb.asm.tree.FrameNode");
+        types.add("org.objectweb.asm.tree.IincInsnNode");
+        types.add("org.objectweb.asm.tree.InnerClassNode");
+        types.add("org.objectweb.asm.tree.InsnList");
+        types.add("org.objectweb.asm.tree.InsnNode");
+        types.add("org.objectweb.asm.tree.IntInsnNode");
+        types.add("org.objectweb.asm.tree.InvokeDynamicInsnNode");
+        types.add("org.objectweb.asm.tree.JumpInsnNode");
+        types.add("org.objectweb.asm.tree.LabelNode");
+        types.add("org.objectweb.asm.tree.LdcInsnNode");
+        types.add("org.objectweb.asm.tree.LineNumberNode");
+        types.add("org.objectweb.asm.tree.LocalVariableNode");
+        types.add("org.objectweb.asm.tree.LookupSwitchInsnNode");
+        types.add("org.objectweb.asm.tree.MethodInsnNode");
+        types.add("org.objectweb.asm.tree.MethodNode");
+        types.add("org.objectweb.asm.tree.MethodNode$1");
+        types.add("org.objectweb.asm.tree.MultiANewArrayInsnNode");
+        types.add("org.objectweb.asm.tree.TableSwitchInsnNode");
+        types.add("org.objectweb.asm.tree.TryCatchBlockNode");
+        types.add("org.objectweb.asm.tree.TypeInsnNode");
+        types.add("org.objectweb.asm.tree.VarInsnNode");
+        types.add("org.objectweb.asm.tree.analysis.Analyzer");
+        types.add("org.objectweb.asm.tree.analysis.AnalyzerException");
+        types.add("org.objectweb.asm.tree.analysis.BasicInterpreter");
+        types.add("org.objectweb.asm.tree.analysis.BasicValue");
+        types.add("org.objectweb.asm.tree.analysis.BasicVerifier");
+        types.add("org.objectweb.asm.tree.analysis.Frame");
+        types.add("org.objectweb.asm.tree.analysis.Interpreter");
+        types.add("org.objectweb.asm.tree.analysis.SimpleVerifier");
+        types.add("org.objectweb.asm.tree.analysis.Subroutine");
+        types.add("org.objectweb.asm.tree.analysis.Value");
+        types.add("org.objectweb.asm.util.CheckAnnotationAdapter");
+        types.add("org.objectweb.asm.util.CheckClassAdapter");
+        types.add("org.objectweb.asm.util.CheckFieldAdapter");
+        types.add("org.objectweb.asm.util.CheckMethodAdapter");
+        types.add("org.objectweb.asm.util.CheckMethodAdapter$1");
+        types.add("org.objectweb.asm.util.Printer");
+        types.add("org.objectweb.asm.util.Textifiable");
+        types.add("org.objectweb.asm.util.Textifier");
+        types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
+        types.add("org.objectweb.asm.util.TraceMethodVisitor");
+        types.add("org.objectweb.asm.util.TraceSignatureVisitor");
+        if (Configuration.useUnshadedSlf4j()) {
+            types.add("org.slf4j.ILoggerFactory");
+            types.add("org.slf4j.Logger");
+            types.add("org.slf4j.LoggerFactory");
+            types.add("org.slf4j.MDC");
+            types.add("org.slf4j.Marker");
+            types.add("org.slf4j.helpers.FormattingTuple");
+            types.add("org.slf4j.helpers.MarkerIgnoringBase");
+            types.add("org.slf4j.helpers.MessageFormatter");
+            types.add("org.slf4j.helpers.NOPLogger");
+            types.add("org.slf4j.helpers.NOPLoggerFactory");
+            types.add("org.slf4j.helpers.NOPMDCAdapter");
+            types.add("org.slf4j.helpers.NamedLoggerBase");
+            types.add("org.slf4j.helpers.SubstituteLoggerFactory");
+            types.add("org.slf4j.helpers.Util");
+            types.add("org.slf4j.impl.StaticLoggerBinder");
+            types.add("org.slf4j.impl.StaticMDCBinder");
+            types.add("org.slf4j.spi.LocationAwareLogger");
+            // LoggerFactoryBinder interface stripped by proguard, see method comment
+            if (exists("org.slf4j.spi.LoggerFactoryBinder")) {
+                types.add("org.slf4j.spi.LoggerFactoryBinder");
+            }
+            types.add("org.slf4j.spi.MDCAdapter");
+        }
+        return types.build();
+    }
+
+    private static void addLogback(String qos, ImmutableList.Builder<String> types) {
         types.add(qos + ".logback.classic.BasicConfigurator");
         types.add(qos + ".logback.classic.Level");
         types.add(qos + ".logback.classic.Logger");
@@ -631,117 +773,6 @@ class PreInitializeClasses {
         types.add(qos + ".logback.core.util.OptionHelper");
         types.add(qos + ".logback.core.util.PropertySetterException");
         types.add(qos + ".logback.core.util.StatusPrinter");
-        types.add("io.informant.shaded.slf4j.ILoggerFactory");
-        types.add("io.informant.shaded.slf4j.Logger");
-        types.add("io.informant.shaded.slf4j.LoggerFactory");
-        types.add("io.informant.shaded.slf4j.helpers.FormattingTuple");
-        types.add("io.informant.shaded.slf4j.helpers.MarkerIgnoringBase");
-        types.add("io.informant.shaded.slf4j.helpers.MessageFormatter");
-        types.add("io.informant.shaded.slf4j.helpers.NOPLogger");
-        types.add("io.informant.shaded.slf4j.helpers.NOPLoggerFactory");
-        types.add("io.informant.shaded.slf4j.helpers.NamedLoggerBase");
-        types.add("io.informant.shaded.slf4j.helpers.SubstituteLoggerFactory");
-        types.add("io.informant.shaded.slf4j.helpers.Util");
-        types.add("io.informant.shaded.slf4j.impl.Configuration");
-        types.add("io.informant.shaded.slf4j.impl.ExtraShadedLoggerAdapter");
-        types.add("io.informant.shaded.slf4j.impl.ExtraShadedLoggerFactoryAdapter");
-        types.add("io.informant.shaded.slf4j.impl.StaticLoggerBinder");
-        types.add("io.informant.shaded.slf4j.impl.UnshadedLoggerAdapter");
-        types.add("io.informant.shaded.slf4j.impl.UnshadedLoggerFactoryAdapter");
-        // LoggerFactoryBinder interface stripped by proguard, see method comment
-        if (exists("io.informant.shaded.slf4j.spi.LoggerFactoryBinder")) {
-            types.add("io.informant.shaded.slf4j.spi.LoggerFactoryBinder");
-        }
-        types.add("io.informant.shaded.slf4jx.ILoggerFactory");
-        types.add("io.informant.shaded.slf4jx.Logger");
-        types.add("io.informant.shaded.slf4jx.MDC");
-        types.add("io.informant.shaded.slf4jx.Marker");
-        types.add("io.informant.shaded.slf4jx.helpers.FormattingTuple");
-        types.add("io.informant.shaded.slf4jx.helpers.MessageFormatter");
-        types.add("io.informant.shaded.slf4jx.helpers.NOPMDCAdapter");
-        types.add("io.informant.shaded.slf4jx.helpers.Util");
-        types.add("io.informant.shaded.slf4jx.impl.StaticLoggerBinder");
-        types.add("io.informant.shaded.slf4jx.impl.StaticMDCBinder");
-        types.add("io.informant.shaded.slf4jx.spi.LocationAwareLogger");
-        // LoggerFactoryBinder interface stripped by proguard, see method comment
-        if (exists("io.informant.shaded.slf4jx.spi.LoggerFactoryBinder")) {
-            types.add("io.informant.shaded.slf4jx.spi.LoggerFactoryBinder");
-        }
-        types.add("io.informant.shaded.slf4jx.spi.MDCAdapter");
-        types.add("org.objectweb.asm.AnnotationVisitor");
-        types.add("org.objectweb.asm.AnnotationWriter");
-        types.add("org.objectweb.asm.Attribute");
-        types.add("org.objectweb.asm.ByteVector");
-        types.add("org.objectweb.asm.ClassReader");
-        types.add("org.objectweb.asm.ClassVisitor");
-        types.add("org.objectweb.asm.ClassWriter");
-        types.add("org.objectweb.asm.Context");
-        types.add("org.objectweb.asm.Edge");
-        types.add("org.objectweb.asm.FieldVisitor");
-        types.add("org.objectweb.asm.FieldWriter");
-        types.add("org.objectweb.asm.Frame");
-        types.add("org.objectweb.asm.Handle");
-        types.add("org.objectweb.asm.Handler");
-        types.add("org.objectweb.asm.Item");
-        types.add("org.objectweb.asm.Label");
-        types.add("org.objectweb.asm.MethodVisitor");
-        types.add("org.objectweb.asm.MethodWriter");
-        types.add("org.objectweb.asm.Opcodes");
-        types.add("org.objectweb.asm.Type");
-        types.add("org.objectweb.asm.commons.AdviceAdapter");
-        types.add("org.objectweb.asm.commons.GeneratorAdapter");
-        types.add("org.objectweb.asm.commons.LocalVariablesSorter");
-        types.add("org.objectweb.asm.commons.Method");
-        types.add("org.objectweb.asm.signature.SignatureReader");
-        types.add("org.objectweb.asm.signature.SignatureVisitor");
-        types.add("org.objectweb.asm.tree.AbstractInsnNode");
-        types.add("org.objectweb.asm.tree.AnnotationNode");
-        types.add("org.objectweb.asm.tree.ClassNode");
-        types.add("org.objectweb.asm.tree.FieldInsnNode");
-        types.add("org.objectweb.asm.tree.FieldNode");
-        types.add("org.objectweb.asm.tree.FrameNode");
-        types.add("org.objectweb.asm.tree.IincInsnNode");
-        types.add("org.objectweb.asm.tree.InnerClassNode");
-        types.add("org.objectweb.asm.tree.InsnList");
-        types.add("org.objectweb.asm.tree.InsnNode");
-        types.add("org.objectweb.asm.tree.IntInsnNode");
-        types.add("org.objectweb.asm.tree.InvokeDynamicInsnNode");
-        types.add("org.objectweb.asm.tree.JumpInsnNode");
-        types.add("org.objectweb.asm.tree.LabelNode");
-        types.add("org.objectweb.asm.tree.LdcInsnNode");
-        types.add("org.objectweb.asm.tree.LineNumberNode");
-        types.add("org.objectweb.asm.tree.LocalVariableNode");
-        types.add("org.objectweb.asm.tree.LookupSwitchInsnNode");
-        types.add("org.objectweb.asm.tree.MethodInsnNode");
-        types.add("org.objectweb.asm.tree.MethodNode");
-        types.add("org.objectweb.asm.tree.MethodNode$1");
-        types.add("org.objectweb.asm.tree.MultiANewArrayInsnNode");
-        types.add("org.objectweb.asm.tree.TableSwitchInsnNode");
-        types.add("org.objectweb.asm.tree.TryCatchBlockNode");
-        types.add("org.objectweb.asm.tree.TypeInsnNode");
-        types.add("org.objectweb.asm.tree.VarInsnNode");
-        types.add("org.objectweb.asm.tree.analysis.Analyzer");
-        types.add("org.objectweb.asm.tree.analysis.AnalyzerException");
-        types.add("org.objectweb.asm.tree.analysis.BasicInterpreter");
-        types.add("org.objectweb.asm.tree.analysis.BasicValue");
-        types.add("org.objectweb.asm.tree.analysis.BasicVerifier");
-        types.add("org.objectweb.asm.tree.analysis.Frame");
-        types.add("org.objectweb.asm.tree.analysis.Interpreter");
-        types.add("org.objectweb.asm.tree.analysis.SimpleVerifier");
-        types.add("org.objectweb.asm.tree.analysis.Subroutine");
-        types.add("org.objectweb.asm.tree.analysis.Value");
-        types.add("org.objectweb.asm.util.CheckAnnotationAdapter");
-        types.add("org.objectweb.asm.util.CheckClassAdapter");
-        types.add("org.objectweb.asm.util.CheckFieldAdapter");
-        types.add("org.objectweb.asm.util.CheckMethodAdapter");
-        types.add("org.objectweb.asm.util.CheckMethodAdapter$1");
-        types.add("org.objectweb.asm.util.Printer");
-        types.add("org.objectweb.asm.util.Textifiable");
-        types.add("org.objectweb.asm.util.Textifier");
-        types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
-        types.add("org.objectweb.asm.util.TraceMethodVisitor");
-        types.add("org.objectweb.asm.util.TraceSignatureVisitor");
-        return types.build();
     }
 
     @VisibleForTesting

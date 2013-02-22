@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class Configuration {
+public class Configuration {
 
     private static final boolean useUnshadedSlf4j;
 
@@ -31,7 +31,7 @@ class Configuration {
 
     private Configuration() {}
 
-    static boolean useUnshadedSlf4j() {
+    public static boolean useUnshadedSlf4j() {
         return useUnshadedSlf4j;
     }
 

@@ -178,9 +178,12 @@ public class GlobalCollector {
         }
         typeCollector.setAllSuperTypes(allSuperTypes.build());
         // add static initializer (if it exists)
+        String prevIndent = indent;
+        indent = indent + "  ";
         processMethod(ReferencedMethod.from(typeName, "<clinit>", "()V"));
         // always add default constructor (if it exists)
         processMethod(ReferencedMethod.from(typeName, "<init>", "()V"));
+        indent = prevIndent;
         return Optional.of(typeCollector);
     }
 
