@@ -15,6 +15,7 @@
  */
 package io.informant.testing.ui;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.CoarseProfilingConfig;
 import io.informant.testkit.InformantContainer;
@@ -57,7 +58,7 @@ public class TraceSnapshotDaoDeletePerformanceMain {
         logger.info("informant.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = new Stopwatch().start();
         container.getInformant().cleanUpAfterEachTest();
-        logger.info("all traces deleted in: {} millis", stopwatch.elapsedMillis());
+        logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
         logger.info("informant.h2.db: {} bytes", dbFile.length());
         container.close();
         logger.info("informant.h2.db: {} bytes", dbFile.length());

@@ -15,6 +15,7 @@
  */
 package io.informant.testkit;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.testkit.internal.GsonFactory;
 import io.informant.util.ThreadSafe;
 
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
@@ -174,15 +176,15 @@ class ExternalJvmInformant implements Informant {
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
-    public Trace getActiveTraceSummary(int timeoutMillis) throws Exception {
-        return getActiveTrace(timeoutMillis, true);
+    public Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception {
+        return getActiveTrace(timeout, unit, true);
     }
 
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to get stuck
     @Nullable
-    public Trace getActiveTrace(int timeoutMillis) throws Exception {
-        return getActiveTrace(timeoutMillis, false);
+    public Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
+        return getActiveTrace(timeout, unit, false);
     }
 
     public void cleanUpAfterEachTest() throws Exception {
@@ -202,16 +204,18 @@ class ExternalJvmInformant implements Informant {
         return Long.parseLong(numStoredTraceSnapshots);
     }
 
-    private Trace getActiveTrace(int timeoutMillis, boolean summary) throws Exception {
+    private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
         // try at least once (e.g. in case timeoutMillis == 0)
-        while (true) {
+        boolean first = true;
+        while (first || stopwatch.elapsed(unit) < timeout) {
             trace = getActiveTrace(summary);
-            if (trace != null || stopwatch.elapsedMillis() > timeoutMillis) {
+            if (trace != null) {
                 break;
             }
             Thread.sleep(20);
+            first = false;
         }
         return trace;
     }
@@ -291,7 +295,7 @@ class ExternalJvmInformant implements Informant {
         Stopwatch stopwatch = new Stopwatch().start();
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
         // milliseconds to interrupt the thread and end the active trace
-        while (stopwatch.elapsedMillis() < 2000) {
+        while (stopwatch.elapsed(SECONDS) < 2) {
             int numActiveTraces = Integer.parseInt(get("/admin/num-active-traces"));
             if (numActiveTraces == 0) {
                 return;

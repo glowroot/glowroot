@@ -15,6 +15,8 @@
  */
 package io.informant.test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.GeneralConfig;
@@ -82,9 +84,9 @@ public class StuckTraceTest {
         // wait for trace to be marked stuck
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
-        while (true) {
-            trace = container.getInformant().getActiveTraceSummary(0);
-            if ((trace != null && trace.isStuck()) || stopwatch.elapsedMillis() > 2000) {
+        while (stopwatch.elapsed(SECONDS) < 2) {
+            trace = container.getInformant().getActiveTraceSummary(0, MILLISECONDS);
+            if (trace != null && trace.isStuck()) {
                 break;
             }
             Thread.sleep(10);

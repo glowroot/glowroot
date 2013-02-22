@@ -15,6 +15,9 @@
  */
 package io.informant.util;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
@@ -68,11 +71,11 @@ public class Threads {
             if (rogueThreads.isEmpty()) {
                 // success
                 return;
-            } else if (stopwatch.elapsedMillis() > 5000) {
-                throw new RogueThreadsException(rogueThreads);
-            } else {
+            } else if (stopwatch.elapsed(SECONDS) < 5) {
                 // failure, wait a few milliseconds before trying again
                 Thread.sleep(10);
+            } else {
+                throw new RogueThreadsException(rogueThreads);
             }
         }
     }
@@ -92,11 +95,11 @@ public class Threads {
             if (rogueThreads.isEmpty()) {
                 // success
                 return;
-            } else if (stopwatch.elapsedMillis() > 5000) {
-                throw new RogueThreadsException(rogueThreads);
-            } else {
+            } else if (stopwatch.elapsed(SECONDS) < 5) {
                 // failure, wait a few milliseconds before trying again
                 Thread.sleep(10);
+            } else {
+                throw new RogueThreadsException(rogueThreads);
             }
         }
     }
@@ -107,7 +110,7 @@ public class Threads {
         if (millis > 10) {
             Thread.sleep(millis - 10);
         }
-        while (stopwatch.elapsedMillis() < millis) {
+        while (stopwatch.elapsed(MILLISECONDS) < millis) {
             Thread.sleep(1);
         }
     }

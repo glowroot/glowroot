@@ -15,6 +15,7 @@
  */
 package io.informant.local.store;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.util.Clock;
 import io.informant.util.Static;
 
@@ -48,7 +49,7 @@ public class TraceSnapshotDaoPerformanceMain {
         for (int i = 0; i < 1000; i++) {
             snapshotDao.storeSnapshot(snapshotTestData.createSnapshot());
         }
-        logger.info("elapsed time: {}", stopwatch.elapsedMillis());
+        logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
         logger.info("num traces: {}", snapshotDao.count());
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.informant.test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.api.PluginServices;
 import io.informant.testkit.AppUnderTest;
@@ -185,7 +186,7 @@ public class ProfilingTest {
             }
         });
         // then
-        Trace trace = container.getInformant().getActiveTraceSummary(5000);
+        Trace trace = container.getInformant().getActiveTraceSummary(5, SECONDS);
         assertThat(trace).isNotNull();
         // cleanup
         future.get();

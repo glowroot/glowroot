@@ -15,6 +15,7 @@
  */
 package io.informant.test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
@@ -63,7 +64,7 @@ public class DataSourceShutdownTest {
         });
         Stopwatch stopwatch = new Stopwatch().start();
         boolean foundEnoughTraces = false;
-        while (stopwatch.elapsedMillis() < 5000) {
+        while (stopwatch.elapsed(SECONDS) < 5) {
             if (getNumCompletedTraces(container) > 10) {
                 foundEnoughTraces = true;
                 break;

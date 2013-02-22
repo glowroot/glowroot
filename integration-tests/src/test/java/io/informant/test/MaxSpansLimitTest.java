@@ -15,6 +15,8 @@
  */
 package io.informant.test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.GeneralConfig;
@@ -81,10 +83,9 @@ public class MaxSpansLimitTest {
         // test harness needs to kick off test, so may need to wait a little
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
-        while (true) {
-            trace = container.getInformant().getActiveTrace(0);
-            if ((trace != null && trace.getSpans().size() == 101)
-                    || stopwatch.elapsedMillis() > 2000) {
+        while (stopwatch.elapsed(SECONDS) < 2) {
+            trace = container.getInformant().getActiveTrace(0, MILLISECONDS);
+            if (trace != null && trace.getSpans().size() == 101) {
                 break;
             }
         }
@@ -97,8 +98,8 @@ public class MaxSpansLimitTest {
         generalConfig.setMaxSpans(200);
         container.getInformant().updateGeneralConfig(generalConfig);
         stopwatch.stop().reset().start();
-        while (stopwatch.elapsedMillis() < 2000) {
-            trace = container.getInformant().getActiveTrace(0);
+        while (stopwatch.elapsed(SECONDS) < 2) {
+            trace = container.getInformant().getActiveTrace(0, MILLISECONDS);
             if (trace != null && trace.getSpans().size() == 201) {
                 break;
             }

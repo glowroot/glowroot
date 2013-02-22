@@ -17,6 +17,7 @@ package io.informant.testkit;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
 
@@ -64,10 +65,10 @@ public interface Informant {
     void compactData() throws Exception;
 
     @Nullable
-    Trace getActiveTraceSummary(int timeoutMillis) throws Exception;
+    Trace getActiveTraceSummary(int timeout, TimeUnit unit) throws Exception;
 
     @Nullable
-    Trace getActiveTrace(int timeoutMillis) throws Exception;
+    Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception;
 
     void cleanUpAfterEachTest() throws Exception;
 

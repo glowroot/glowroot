@@ -15,6 +15,7 @@
  */
 package io.informant.test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
@@ -95,7 +96,7 @@ public class TraceMetricDataTest {
             }
         });
         // then
-        Trace trace = container.getInformant().getActiveTraceSummary(5000);
+        Trace trace = container.getInformant().getActiveTraceSummary(5, SECONDS);
         assertThat(trace).isNotNull();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");

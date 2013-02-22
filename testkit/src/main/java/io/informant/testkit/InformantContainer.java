@@ -15,6 +15,7 @@
  */
 package io.informant.testkit;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.testkit.internal.TempDirs;
 import io.informant.util.ThreadSafe;
 
@@ -91,8 +92,7 @@ public class InformantContainer {
         executionAdapter.executeAppUnderTest(appUnderTestClass);
         // wait for all traces to be written to the embedded db
         Stopwatch stopwatch = new Stopwatch().start();
-        while (informant.getNumPendingCompleteTraces() > 0
-                && stopwatch.elapsedMillis() < 5000) {
+        while (informant.getNumPendingCompleteTraces() > 0 && stopwatch.elapsed(SECONDS) < 5) {
             Thread.sleep(10);
         }
     }
