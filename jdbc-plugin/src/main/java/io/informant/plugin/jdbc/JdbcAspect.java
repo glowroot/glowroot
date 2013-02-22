@@ -554,7 +554,7 @@ public class JdbcAspect {
         // Connection.prepareStatement())
         private static final ThreadLocal</*@Nullable*/String> inDatabaseMetataDataMethod =
                 new ThreadLocal</*@Nullable*/String>();
-        // plugin configuration property spanForDatabaseMetaData is cached to limit map lookups
+        // plugin configuration property captureDatabaseMetaDataSpans is cached to limit map lookups
         private static volatile boolean pluginEnabled;
         private static volatile boolean spanEnabled;
         static {
@@ -562,12 +562,12 @@ public class JdbcAspect {
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
                     spanEnabled = pluginEnabled
-                            && pluginServices.getBooleanProperty("spanForDatabaseMetaData");
+                            && pluginServices.getBooleanProperty("captureDatabaseMetaDataSpans");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
             spanEnabled = pluginEnabled
-                    && pluginServices.getBooleanProperty("spanForDatabaseMetaData");
+                    && pluginServices.getBooleanProperty("captureDatabaseMetaDataSpans");
         }
         @OnBefore
         @Nullable

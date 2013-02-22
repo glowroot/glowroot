@@ -123,7 +123,7 @@ public class LogMessageSinkLocal implements LogMessageSink {
     }
 
     private void logMessageAsync(final Level level, final String loggerName,
-            final @Nullable String message, final @Nullable Throwable t) {
+            @Nullable final String message, @Nullable final Throwable t) {
 
         synchronized (executorService) {
             if (executorService.isShutdown()) {

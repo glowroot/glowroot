@@ -155,13 +155,15 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         } else if (mv == null) {
             String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
+            String methodName = name;
+            int methodAccess = access;
             if (innerWrappedName != null) {
-                name = innerWrappedName;
-                access = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (access & ACC_STATIC);
+                methodName = innerWrappedName;
+                methodAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (access & ACC_STATIC);
             }
-            mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
-                    adviceFlowOuterHolderNums);
+            mv = cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
+            return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
+                    matchingAdvisors, adviceFlowOuterHolderNums);
         } else {
             logger.error("cannot add metrics to <clinit> or <init> methods at this time");
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,

@@ -26,14 +26,14 @@ import com.google.common.base.Ticker;
 @ThreadSafe
 public abstract class Clock {
 
-    public abstract long currentTimeMillis();
-
     private static final Clock SYSTEM_CLOCK = new Clock() {
         @Override
         public long currentTimeMillis() {
             return System.currentTimeMillis();
         }
     };
+
+    public abstract long currentTimeMillis();
 
     public static Clock systemClock() {
         return SYSTEM_CLOCK;

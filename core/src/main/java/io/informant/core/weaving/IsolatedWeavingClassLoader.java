@@ -28,12 +28,12 @@ import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
 
+import checkers.igj.quals.ReadOnly;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
-
-import checkers.igj.quals.ReadOnly;
 
 /**
  * @author Trask Stalnaker

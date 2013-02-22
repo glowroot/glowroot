@@ -24,6 +24,7 @@ package com.google.common.collect;
 @Immutable
 public class ImmutableList<E> {
     public static <E> ImmutableList<E> copyOf(@ReadOnly Collection<? extends E> elements);
+    public static <E> ImmutableList<E> copyOf(@ReadOnly Iterable<? extends E> elements);
 }
 
 public class ImmutableList$Builder<E> {
@@ -48,6 +49,7 @@ public class Iterables {
     public static <T> Iterable<T> concat(@ReadOnly Iterable<? extends T> a,
         @ReadOnly Iterable<? extends T> b);
     public static <T> Iterable<T> filter(@ReadOnly Iterable<?> unfiltered, Class<T> type);
+    public static <T> T[] toArray(@ReadOnly Iterable<? extends T> iterable, Class<T> type);
 }
 
 public class Lists {
@@ -59,6 +61,15 @@ public class Lists {
     public static <T> List<T> reverse(@ReadOnly List<T> list);
     public static <E> CopyOnWriteArrayList<E> newCopyOnWriteArrayList(
             @ReadOnly Iterable<? extends E> elements);
+}
+
+public class Maps {
+    public static <K extends @Nullable Object, V extends @Nullable Object>
+            HashMap<K, V> newHashMap();
+}
+
+public class ObjectArrays {
+     public static <T extends @Nullable Object> T[] concat(T[] array, T element);
 }
 
 public class Ordering<T> {

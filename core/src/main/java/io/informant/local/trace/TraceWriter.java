@@ -42,6 +42,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
@@ -50,10 +54,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
-
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
@@ -177,7 +177,7 @@ public class TraceWriter {
             // (no lazy ByteStream)
             ByteArrayOutputStream baos = new ByteArrayOutputStream(32768);
             try {
-                new MergedStackTreeWriter(mergedStackTree, baos).write();
+                new MergedStackTreeWriter(rootNode, baos).write();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return null;
@@ -319,17 +319,9 @@ public class TraceWriter {
         private void writeMessage(ReadableMessage message) throws IOException {
             jw.beginObject();
             jw.name("text");
-            String text;
-            try {
-                text = message.getText();
-            } catch (Throwable t) {
-                // getText() could be plugin provided, e.g. if not using TemplateMessage
-                text = "an error occurred calling getText() on " + message.getClass().getName();
-                logger.warn(text, t);
-            }
-            jw.value(text);
+            jw.value(message.getText());
             Map<String, ? extends /*@Nullable*/Object> detail = message.getDetail();
-            if (detail != null && !detail.isEmpty()) {
+            if (!detail.isEmpty()) {
                 jw.name("detail");
                 new MessageDetailSerializer(jw).write(detail);
             }
@@ -360,10 +352,8 @@ public class TraceWriter {
         private final JsonWriter jw;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private MergedStackTreeWriter(MergedStackTree mergedStackTree, OutputStream out) {
-            List<Object> toVisit = Lists.newArrayList();
-            toVisit.add(mergedStackTree.getRootNode());
-            this.toVisit = toVisit;
+        private MergedStackTreeWriter(MergedStackTreeNode rootNode, OutputStream out) {
+            this.toVisit = Lists.newArrayList((Object) rootNode);
             jw = new JsonWriter(new OutputStreamWriter(out, Charsets.UTF_8));
         }
 

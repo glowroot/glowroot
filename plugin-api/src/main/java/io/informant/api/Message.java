@@ -23,6 +23,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value
@@ -42,17 +43,19 @@ import com.google.common.base.Objects;
  */
 public abstract class Message {
 
+    private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
+
     public static Message from(String message) {
-        return new MessageImpl(message, null, null);
+        return new MessageImpl(message, new String[0], EMPTY_DETAIL);
     }
 
-    public static Message from(String template, String... args) {
-        return new MessageImpl(template, args, null);
+    public static Message from(String template, @Nullable String... args) {
+        return new MessageImpl(template, args, EMPTY_DETAIL);
     }
 
     public static Message withDetail(String message,
             @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
-        return new MessageImpl(message, null, detail);
+        return new MessageImpl(message, new String[0], detail);
     }
 
     // implementing ReadableMessage is just a way to access this class from io.informant.core
@@ -62,13 +65,12 @@ public abstract class Message {
         private static final Logger logger = LoggerFactory.getLogger(MessageImpl.class);
 
         private final String template;
-        private final String/*@Nullable*/[] args;
+        private final/*@Nullable*/String[] args;
         @ReadOnly
-        @Nullable
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
-        private MessageImpl(String template, String/*@Nullable*/[] args,
-                @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
+        private MessageImpl(String template, @Nullable String[] args,
+                @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
             this.template = template;
             this.args = args;
             this.detail = detail;
@@ -86,11 +88,12 @@ public abstract class Message {
             int argIndex = 0;
             while ((next = template.indexOf("{}", curr)) != -1) {
                 text.append(template.substring(curr, next));
-                if (args == null || argIndex >= args.length) {
+                if (argIndex >= args.length) {
                     text.append("-- not enough args provided for template --");
                     logger.warn("not enough args provided for template: {}", template);
                     break;
                 }
+                // arg may be null but that is ok, StringBuilder will append "null"
                 text.append(args[argIndex++]);
                 curr = next + 2; // +2 to skip over "{}"
             }
@@ -99,7 +102,6 @@ public abstract class Message {
         }
 
         @ReadOnly
-        @Nullable
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }

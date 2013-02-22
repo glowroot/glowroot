@@ -32,7 +32,7 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
 
 /**
- * Plugins may get instantiated by aspectj and request their PluginServices before Informant has
+ * Plugins may get instantiated by pointcuts and request their PluginServices before Informant has
  * finished starting up, in which case they are given this proxy which will point to the real
  * PluginServices as soon as possible.
  * 

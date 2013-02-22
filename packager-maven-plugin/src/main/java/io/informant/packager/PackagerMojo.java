@@ -160,8 +160,14 @@ public class PackagerMojo extends AbstractMojo {
     private void createArtifactJar(List<Artifact> artifacts, File outputJarFile)
             throws MojoExecutionException, IOException, JsonSyntaxException {
         Files.createParentDirs(outputJarFile);
-        JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(outputJarFile),
-                createManifest(artifacts));
+        FileOutputStream fileOut = new FileOutputStream(outputJarFile);
+        JarOutputStream jarOut;
+        try {
+            jarOut = new JarOutputStream(fileOut, createManifest(artifacts));
+        } catch (IOException e) {
+            fileOut.close();
+            throw e;
+        }
         try {
             Set<String> seenDirectories = Sets.newHashSet();
             List<PluginInfo> pluginInfos = Lists.newArrayList();
@@ -408,7 +414,10 @@ public class PackagerMojo extends AbstractMojo {
         File dependencyReducedPomLocation = new File(project.getBuild().getDirectory(),
                 "dependency-reduced-pom.xml");
         if (dependencyReducedPomLocation.exists()) {
-            dependencyReducedPomLocation.delete();
+            if (!dependencyReducedPomLocation.delete()) {
+                throw new IOException("Could not delete file '"
+                        + dependencyReducedPomLocation.getCanonicalPath() + "'");
+            }
         }
         Writer w = WriterFactory.newXmlWriter(dependencyReducedPomLocation);
         PomWriter.write(w, model, true);

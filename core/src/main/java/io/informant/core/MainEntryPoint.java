@@ -65,8 +65,7 @@ import com.google.inject.Injector;
  * 
  * Premain-Class: io.informant.core.MainEntryPoint
  * 
- * This defines the entry point when the JVM is launched via -javaagent:informant-core.jar. This
- * class starts various background threads and then starts the AspectJ load-time weaving agent.
+ * This defines the entry point when the JVM is launched via -javaagent:informant-core.jar.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -86,10 +85,10 @@ public class MainEntryPoint {
     private static final Object lock = new Object();
 
     // when running unit tests under IsolatedWeavingClassLoader, plugins may get instantiated by
-    // aspectj and request their PluginServices instance before Informant has finished starting up,
-    // in which case they are given a proxy which will point to the real PluginServices as soon as
-    // possible. this is not an issue when running under javaagent, since in that case Informant is
-    // started up before adding the aspectj weaving agent (InformantClassFileTransformer).
+    // pointcuts and request their PluginServices instance before Informant has finished starting
+    // up, in which case they are given a proxy which will point to the real PluginServices as soon
+    // as possible. this is not an issue when running under javaagent, since in that case Informant
+    // is started up before adding the weaving agent (InformantClassFileTransformer).
     @GuardedBy("returnPluginServicesProxy")
     private static final List<PluginServicesProxy> pluginServicesProxies = Lists.newArrayList();
     private static final AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);

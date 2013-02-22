@@ -26,7 +26,7 @@ import checkers.nullness.quals.AssertNonNullIfTrue;
 import checkers.nullness.quals.Nullable;
 
 /**
- * Jdbc span captured by AspectJ pointcut.
+ * Jdbc message supplier created by pointcut.
  * 
  * Objects in the parameter array, batchedParameters collections and batchedSqls collection aren't
  * necessarily thread safe so users of this class must adhere to the following contract:

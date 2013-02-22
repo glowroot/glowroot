@@ -58,43 +58,47 @@ class NestableCall {
         // the expensive calls are spread out over different line numbers (as opposed to using a
         // single loop) so that stack trace captures across the different expensive calls will not
         // be identical
-        for (int i = 0; i < numExpensiveCalls; i++) {
+        int i = 0;
+        while (true) {
             new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
-            if (i < numExpensiveCalls) {
-                new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
-                i++;
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
+            }
+            new ExpensiveCall(maxTimeMillis, maxHeadlineLength).execute();
+            if (++i == numExpensiveCalls) {
+                return;
             }
         }
     }

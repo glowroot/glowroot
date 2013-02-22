@@ -51,7 +51,7 @@ public class Threads {
     }
 
     // ensure the test didn't create any non-daemon threads
-    public static void preShutdownCheck(final @ReadOnly Collection<Thread> preExistingThreads)
+    public static void preShutdownCheck(@ReadOnly final Collection<Thread> preExistingThreads)
             throws InterruptedException {
 
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat

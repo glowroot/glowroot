@@ -32,7 +32,7 @@ import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
 /**
- * Servlet span captured by AspectJ pointcut.
+ * Servlet message supplier created by pointcut.
  * 
  * Similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
  * more info.

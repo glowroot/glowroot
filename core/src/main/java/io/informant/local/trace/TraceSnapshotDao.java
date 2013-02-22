@@ -269,7 +269,7 @@ public class TraceSnapshotDao {
                         return resultSet.getString(1);
                     }
                 });
-        if (ids.size() == 0) {
+        if (ids.isEmpty()) {
             return null;
         }
         if (summary) {

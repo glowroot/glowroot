@@ -26,6 +26,9 @@ import java.util.Map;
 
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
@@ -38,9 +41,6 @@ import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
@@ -253,8 +253,7 @@ class ExternalJvmInformant implements Informant {
         return getActiveTrace(timeoutMillis, false);
     }
 
-    private Trace getActiveTrace(int timeoutMillis, boolean summary) throws Exception,
-            InterruptedException {
+    private Trace getActiveTrace(int timeoutMillis, boolean summary) throws Exception {
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
         // try at least once (e.g. in case timeoutMillis == 0)

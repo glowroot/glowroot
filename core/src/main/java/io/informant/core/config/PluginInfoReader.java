@@ -24,16 +24,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
@@ -92,7 +92,7 @@ public class PluginInfoReader {
         try {
             return PropertyType.valueOf(type.toUpperCase(Locale.ENGLISH));
         } catch (IllegalArgumentException e) {
-            throw new JsonSyntaxException("Invalid type attribute: " + type);
+            throw new JsonSyntaxException("Invalid type attribute: " + type, e);
         }
     }
 

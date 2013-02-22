@@ -26,25 +26,24 @@ import com.google.common.collect.ObjectArrays;
 public class PointcutMessageSupplier extends MessageSupplier {
 
     private final String template;
-    private final String[] args;
+    private final/*@Nullable*/String[] args;
     private volatile boolean hasReturnValue;
     @Nullable
     private volatile Object returnValue;
 
-    public static PointcutMessageSupplier create(String template, String... args) {
+    // supplier creation needs to be as efficient as possible
+    public static PointcutMessageSupplier create(String template, @Nullable String... args) {
         return new PointcutMessageSupplier(template, args);
     }
 
-    public static PointcutMessageSupplier create(String template, Object... args) {
-        // it is safer to convert args to strings immediately in case the object's string can change
-        String[] convertedArgs = new String[args.length];
-        for (int i = 0; i < args.length; i++) {
-            convertedArgs[i] = String.valueOf(args[i]);
-        }
-        return new PointcutMessageSupplier(template, convertedArgs);
+    // supplier creation needs to be as efficient as possible
+    public static PointcutMessageSupplier create(String template, @Nullable Object... args) {
+        // it is safer however to convert args to strings immediately in case any of the object's
+        // string representations can change
+        return new PointcutMessageSupplier(template, convert(args));
     }
 
-    private PointcutMessageSupplier(String template, String[] args) {
+    private PointcutMessageSupplier(String template, @Nullable String[] args) {
         this.template = template;
         this.args = args;
     }
@@ -57,10 +56,30 @@ public class PointcutMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         if (hasReturnValue) {
-            String[] messageArgs = ObjectArrays.concat(args, String.valueOf(returnValue));
+            /*@Nullable*/String[] messageArgs =
+                    ObjectArrays.concat(args, String.valueOf(returnValue));
             return Message.from(template + " => {}", messageArgs);
         } else {
             return Message.from(template, args);
         }
+    }
+
+    @Nullable
+    private static String[] convert(@Nullable Object... args) {
+        /*@Nullable*/String[] convertedArgs = new String[args.length];
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+            if (arg == null) {
+                convertedArgs[i] = null;
+            } else {
+                try {
+                    convertedArgs[i] = arg.toString();
+                } catch (Throwable t) {
+                    // just in case an exception is thrown in toString()
+                    convertedArgs[i] = "<an error occurred calling toString() on " + arg + ">";
+                }
+            }
+        }
+        return convertedArgs;
     }
 }

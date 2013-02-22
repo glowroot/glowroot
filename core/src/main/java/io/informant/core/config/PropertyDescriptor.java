@@ -17,11 +17,10 @@ package io.informant.core.config;
 
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
-
-import com.google.common.base.Objects;
-
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
+
+import com.google.common.base.Objects;
 
 /**
  * @author Trask Stalnaker

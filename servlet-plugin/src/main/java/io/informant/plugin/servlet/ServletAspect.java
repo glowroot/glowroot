@@ -439,15 +439,15 @@ public class ServletAspect {
     private static void updateNestedSessionAttributes(ServletMessageSupplier messageSupplier,
             String capturePath, @Nullable Object value, HttpSession session) {
         if (capturePath.endsWith(".*")) {
-            capturePath = capturePath.substring(0, capturePath.length() - 2);
-            Object val = getSessionAttribute(session, capturePath);
+            String capturePathBase = capturePath.substring(0, capturePath.length() - 2);
+            Object val = getSessionAttribute(session, capturePathBase);
             if (val == null) {
-                messageSupplier.putSessionAttributeChangedValue(capturePath, null);
+                messageSupplier.putSessionAttributeChangedValue(capturePathBase, null);
             } else {
                 for (Entry<String, String> entry : Beans.propertiesAsText(val)
                         .entrySet()) {
                     messageSupplier.putSessionAttributeChangedValue(
-                            capturePath + "." + entry.getKey(), entry.getValue());
+                            capturePathBase + "." + entry.getKey(), entry.getValue());
                 }
             }
         } else if (value == null) {

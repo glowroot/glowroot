@@ -30,7 +30,7 @@
     },
     {
       "prompt": "DatabaseMetaData.*() spans",
-      "name": "spanForDatabaseMetaData",
+      "name": "captureDatabaseMetaDataSpans",
       "type": "boolean",
       "description": "Capture spans for executions of DatabaseMetaData.*()"
     },

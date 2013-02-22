@@ -15,13 +15,13 @@
  */
 package io.informant.core.util;
 
+import checkers.igj.quals.ReadOnly;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-
-import checkers.igj.quals.ReadOnly;
 
 /**
  * Convenience methods for working with {@link JsonElement}s.

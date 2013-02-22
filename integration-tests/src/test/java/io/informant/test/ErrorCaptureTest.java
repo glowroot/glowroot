@@ -102,7 +102,7 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
         ExceptionInfo exception = trace.getSpans().get(1).getError().getException();
         assertThat(exception.getDisplay()).isEqualTo(
-                "java.lang.Exception: java.lang.IllegalArgumentException: Cause 3");
+                "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
         assertThat(exception.getStackTrace().get(0)).startsWith(
                 LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(exception.getFramesInCommonWithCaused()).isZero();

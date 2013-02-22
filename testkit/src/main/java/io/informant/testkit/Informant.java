@@ -20,7 +20,6 @@ import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 
-
 /**
  * @author Trask Stalnaker
  * @since 0.5

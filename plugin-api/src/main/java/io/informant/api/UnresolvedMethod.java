@@ -23,6 +23,8 @@ import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.MapMaker;
 
 /**
@@ -81,8 +83,10 @@ public class UnresolvedMethod {
 
     private final String typeName;
     private final String methodName;
-    private final Class<?>/*@Nullable*/[] parameterTypes;
-    private final String/*@Nullable*/[] parameterTypeNames;
+    @Nullable
+    private final ImmutableList<Class<?>> parameterTypes;
+    @Nullable
+    private final ImmutableList<String> parameterTypeNames;
 
     // for performance sensitive areas do not use guava's LoadingCache due to volatile write (via
     // incrementing an AtomicInteger) at the end of get() in LocalCache$Segment.postReadCleanup()
@@ -100,7 +104,7 @@ public class UnresolvedMethod {
      * @return an {@code UnresolvedMethod} for the specified {@code typeName} and {@code methodName}
      */
     public static UnresolvedMethod from(String typeName, String methodName) {
-        return new UnresolvedMethod(typeName, methodName, new Class<?>[0], null);
+        return new UnresolvedMethod(typeName, methodName, ImmutableList.<Class<?>> of(), null);
     }
 
     /**
@@ -114,7 +118,8 @@ public class UnresolvedMethod {
      */
     public static UnresolvedMethod from(String typeName, String methodName,
             Class<?>... parameterTypes) {
-        return new UnresolvedMethod(typeName, methodName, parameterTypes, null);
+        return new UnresolvedMethod(typeName, methodName, ImmutableList.copyOf(parameterTypes),
+                null);
     }
 
     /**
@@ -129,11 +134,13 @@ public class UnresolvedMethod {
      */
     public static UnresolvedMethod from(String typeName, String methodName,
             String... parameterTypeNames) {
-        return new UnresolvedMethod(typeName, methodName, null, parameterTypeNames);
+        return new UnresolvedMethod(typeName, methodName, null,
+                ImmutableList.copyOf(parameterTypeNames));
     }
 
     private UnresolvedMethod(String typeName, String methodName,
-            Class<?>/*@Nullable*/[] parameterTypes, String/*@Nullable*/[] parameterTypeNames) {
+            @Nullable ImmutableList<Class<?>> parameterTypes,
+            @Nullable ImmutableList<String> parameterTypeNames) {
         if (parameterTypes == null && parameterTypeNames == null) {
             throw new NullPointerException("Constructor args 'parameterTypes' and"
                     + " 'parameterTypeNames' cannot both be null (enforced by static factory"
@@ -293,7 +300,7 @@ public class UnresolvedMethod {
             method = resolveMethod(loader);
             resolvedMethods.put(key, method);
         }
-        if (method == SENTINEL_METHOD) {
+        if (method.equals(SENTINEL_METHOD)) {
             return null;
         }
         return method;
@@ -303,19 +310,19 @@ public class UnresolvedMethod {
         try {
             Class<?> resolvedClass = Class.forName(typeName, false, loader);
             if (parameterTypes != null) {
-                return resolvedClass.getMethod(methodName, parameterTypes);
+                return resolvedClass.getMethod(methodName,
+                        Iterables.toArray(parameterTypes, Class.class));
             } else if (parameterTypeNames == null) {
                 throw new NullPointerException("Fields 'parameterTypes' and"
                         + " 'parameterTypeNames' cannot both be null (enforced by static factory"
                         + " methods)");
             } else {
-                Class<?>[] parameterTypes = new Class<?>[parameterTypeNames.length];
-                for (int i = 0; i < parameterTypeNames.length; i++) {
-                    parameterTypes[i] = Class.forName(parameterTypeNames[i],
-                            false,
-                            loader);
+                Class<?>[] resolvedParameterTypes = new Class<?>[parameterTypeNames.size()];
+                for (int i = 0; i < parameterTypeNames.size(); i++) {
+                    resolvedParameterTypes[i] = Class.forName(parameterTypeNames.get(i),
+                            false, loader);
                 }
-                return resolvedClass.getMethod(methodName, parameterTypes);
+                return resolvedClass.getMethod(methodName, resolvedParameterTypes);
             }
         } catch (ClassNotFoundException e) {
             // this is only logged once because the sentinel method is returned and cached

@@ -22,11 +22,11 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.gson.stream.JsonWriter;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

@@ -58,7 +58,7 @@ public class LogCauseAspect {
 
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.endWithError(ErrorMessage.from(new Exception(cause3)));
+            span.endWithError(ErrorMessage.from(new IllegalStateException(cause3)));
         }
     }
 }

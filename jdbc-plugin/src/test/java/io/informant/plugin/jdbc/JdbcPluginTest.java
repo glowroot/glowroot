@@ -167,7 +167,7 @@ public class JdbcPluginTest {
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant.plugins:jdbc-plugin");
-        pluginConfig.setProperty("spanForDatabaseMetaData", false);
+        pluginConfig.setProperty("captureDatabaseMetaDataSpans", false);
         container.getInformant().updatePluginConfig("io.informant.plugins:jdbc-plugin",
                 pluginConfig);
         // when
@@ -186,7 +186,7 @@ public class JdbcPluginTest {
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(
                 "io.informant.plugins:jdbc-plugin");
-        pluginConfig.setProperty("spanForDatabaseMetaData", true);
+        pluginConfig.setProperty("captureDatabaseMetaDataSpans", true);
         container.getInformant().updatePluginConfig("io.informant.plugins:jdbc-plugin",
                 pluginConfig);
         // when

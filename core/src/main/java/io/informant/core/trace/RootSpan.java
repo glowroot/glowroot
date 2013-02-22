@@ -40,7 +40,6 @@ import com.google.common.collect.Queues;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO make it work with spawned threads
 @PartiallyThreadSafe("pushSpan(), addSpan(), popSpan() can only be called from constructing thread")
 class RootSpan {
 

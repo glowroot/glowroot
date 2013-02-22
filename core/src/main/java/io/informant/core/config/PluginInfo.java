@@ -17,11 +17,11 @@ package io.informant.core.config;
 
 import java.util.List;
 
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
-
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
+
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 
 /**
  * @author Trask Stalnaker

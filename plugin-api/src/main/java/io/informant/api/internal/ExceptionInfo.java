@@ -19,10 +19,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
-import com.google.common.collect.ImmutableList;
-
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * This class primarily exists because Exceptions are not thread safe.
@@ -90,7 +90,6 @@ public class ExceptionInfo {
         return display;
     }
 
-    // don't expose ImmutableList (or any guava types) from plugin api methods
     @Immutable
     public List<StackTraceElement> getStackTrace() {
         return stackTrace;

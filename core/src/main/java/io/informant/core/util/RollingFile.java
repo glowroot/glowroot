@@ -105,8 +105,7 @@ public class RollingFile {
             if (block.getLength() > Integer.MAX_VALUE) {
                 // TODO read and lzf decode bytes in chunks to avoid having to allocate a single
                 // large byte array
-                logger.error("cannot currently read more than Integer.MAX_VALUE bytes",
-                        new Throwable());
+                logger.error("cannot currently read more than Integer.MAX_VALUE bytes");
                 return false;
             }
             return !end;

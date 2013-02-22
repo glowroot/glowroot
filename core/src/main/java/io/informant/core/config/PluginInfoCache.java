@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 
+import checkers.igj.quals.ReadOnly;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -39,8 +41,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.inject.Singleton;
-
-import checkers.igj.quals.ReadOnly;
 
 /**
  * @author Trask Stalnaker

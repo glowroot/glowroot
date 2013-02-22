@@ -93,7 +93,7 @@ class Beans {
         } else {
             try {
                 Method getter = getGetter(obj.getClass(), path[currIndex]);
-                if (getter == SENTINEL_METHOD) {
+                if (getter.equals(SENTINEL_METHOD)) {
                     // no appropriate method found, dynamic paths that may or may not resolve
                     // correctly are ok, just return null
                     return null;

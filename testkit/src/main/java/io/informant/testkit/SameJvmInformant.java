@@ -43,14 +43,14 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map.Entry;
 
+import checkers.nullness.quals.Nullable;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker
@@ -346,7 +346,7 @@ class SameJvmInformant implements Informant {
     @Nullable
     private Trace getActiveTrace(boolean summary) throws IOException {
         List<io.informant.core.trace.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
-        if (traces.size() == 0) {
+        if (traces.isEmpty()) {
             return null;
         } else if (traces.size() > 1) {
             throw new IllegalStateException("Unexpected number of active traces");

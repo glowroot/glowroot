@@ -26,13 +26,13 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import checkers.lock.quals.GuardedBy;
+
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
-import checkers.lock.quals.GuardedBy;
 
 /**
  * Implementation of TraceSink for local storage in embedded H2 database. Some day there may be

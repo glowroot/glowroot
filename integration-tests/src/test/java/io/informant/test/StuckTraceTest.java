@@ -32,9 +32,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.base.Stopwatch;
-
 import checkers.nullness.quals.Nullable;
+
+import com.google.common.base.Stopwatch;
 
 /**
  * @author Trask Stalnaker

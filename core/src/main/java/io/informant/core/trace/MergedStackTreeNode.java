@@ -39,6 +39,7 @@ public class MergedStackTreeNode {
     private final StackTraceElement stackTraceElement;
     private final List<MergedStackTreeNode> childNodes = Lists.newArrayList();
     // using List over Set in order to preserve ordering
+    @ReadOnly
     private List<String> metricNames;
     private int sampleCount;
     @Nullable
@@ -102,10 +103,12 @@ public class MergedStackTreeNode {
         sampleCount++;
     }
 
+    @ReadOnly
     public List<MergedStackTreeNode> getChildNodes() {
         return childNodes;
     }
 
+    @ReadOnly
     public List<String> getMetricNames() {
         return metricNames;
     }

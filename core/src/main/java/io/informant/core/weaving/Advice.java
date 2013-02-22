@@ -411,43 +411,51 @@ public class Advice {
         }
 
         private static ImmutableList<ParameterKind> getParameterKinds(
-                Annotation[][] parameterAnnotations,
-                Class<?>[] parameterTypes, @ReadOnly List<ParameterKind> validArgTypes) {
+                Annotation[][] parameterAnnotations, Class<?>[] parameterTypes,
+                @ReadOnly List<ParameterKind> validParameterKinds) {
 
             ImmutableList.Builder<ParameterKind> parameterKinds = ImmutableList.builder();
             for (int i = 0; i < parameterAnnotations.length; i++) {
-                ParameterKind foundParameterKind = null;
-                for (Annotation annotation : parameterAnnotations[i]) {
-                    ParameterKind parameterKind = parameterKindMap.get(annotation.annotationType());
-                    if (parameterKind == null) {
-                        continue;
-                    }
-                    if (foundParameterKind != null) {
-                        logger.error("multiple annotations found on a single parameter");
-                    }
-                    if (validArgTypes.contains(parameterKind)) {
-                        foundParameterKind = parameterKind;
-                    } else {
-                        logger.error("annotation '" + annotation.annotationType().getName()
-                                + "' found in an invalid location");
-                    }
-                }
-                if (foundParameterKind == null) {
+                ParameterKind parameterKind = findParam(parameterAnnotations[i],
+                        validParameterKinds);
+                if (parameterKind == null) {
                     // no applicable annotations found
-                    foundParameterKind = ParameterKind.METHOD_ARG;
+                    parameterKind = ParameterKind.METHOD_ARG;
                 }
-                if (foundParameterKind == ParameterKind.METHOD_ARG
+                if (parameterKind == ParameterKind.METHOD_ARG
                         && parameterTypes[i].isPrimitive()) {
                     // special case to track primitive method args for possible autoboxing
-                    foundParameterKind = ParameterKind.PRIMITIVE_METHOD_ARG;
+                    parameterKind = ParameterKind.PRIMITIVE_METHOD_ARG;
                 }
-                if (foundParameterKind == ParameterKind.RETURN && parameterTypes[i].isPrimitive()) {
+                if (parameterKind == ParameterKind.RETURN && parameterTypes[i].isPrimitive()) {
                     // special case to track primitive return values for possible autoboxing
-                    foundParameterKind = ParameterKind.PRIMITIVE_RETURN;
+                    parameterKind = ParameterKind.PRIMITIVE_RETURN;
                 }
-                parameterKinds.add(foundParameterKind);
+                parameterKinds.add(parameterKind);
             }
             return parameterKinds.build();
+        }
+
+        @Nullable
+        private static ParameterKind findParam(Annotation[] parameterAnnotations,
+                @ReadOnly List<ParameterKind> validArgTypes) {
+            ParameterKind foundParameterKind = null;
+            for (Annotation annotation : parameterAnnotations) {
+                ParameterKind parameterKind = parameterKindMap.get(annotation.annotationType());
+                if (parameterKind == null) {
+                    continue;
+                }
+                if (foundParameterKind != null) {
+                    logger.error("multiple annotations found on a single parameter");
+                }
+                if (validArgTypes.contains(parameterKind)) {
+                    foundParameterKind = parameterKind;
+                } else {
+                    logger.error("annotation '" + annotation.annotationType().getName()
+                            + "' found in an invalid location");
+                }
+            }
+            return foundParameterKind;
         }
     }
 }
