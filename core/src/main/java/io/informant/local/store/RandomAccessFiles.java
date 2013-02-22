@@ -51,7 +51,6 @@ class RandomAccessFiles {
 
     static void copyFully(RandomAccessFile in, RandomAccessFile out, long numBytes)
             throws IOException {
-
         byte[] block = new byte[1024];
         long total = 0;
         while (total < numBytes) {

@@ -15,14 +15,18 @@
  */
 package io.informant.local.store;
 
-import io.informant.util.ByteStream;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ThreadSafe;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
+import java.io.Reader;
+import java.io.Writer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +34,10 @@ import org.slf4j.LoggerFactory;
 import checkers.lock.quals.GuardedBy;
 
 import com.google.common.base.Charsets;
-import com.ning.compress.lzf.LZFDecoder;
+import com.google.common.io.CharSource;
+import com.google.common.io.CharStreams;
+import com.google.common.primitives.Longs;
+import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
 
 /**
@@ -46,7 +53,7 @@ public class RollingFile {
     @GuardedBy("lock")
     private final RollingOutputStream out;
     @GuardedBy("lock")
-    private final OutputStream compressedOut;
+    private final Writer compressedWriter;
     @GuardedBy("lock")
     private RandomAccessFile inFile;
     private final Object lock = new Object();
@@ -55,19 +62,19 @@ public class RollingFile {
     RollingFile(File file, int requestedRollingSizeKb) throws IOException {
         this.file = file;
         out = new RollingOutputStream(file, requestedRollingSizeKb);
-        compressedOut = new LZFOutputStream(out);
+        compressedWriter = new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
         inFile = new RandomAccessFile(file, "r");
     }
 
-    FileBlock write(ByteStream byteStream) {
+    FileBlock write(CharSource charSource) {
         synchronized (lock) {
             if (closing) {
                 return FileBlock.expired();
             }
             out.startBlock();
             try {
-                byteStream.writeTo(compressedOut);
-                compressedOut.flush();
+                charSource.copyTo(compressedWriter);
+                compressedWriter.flush();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return FileBlock.expired();
@@ -76,8 +83,8 @@ public class RollingFile {
         }
     }
 
-    ByteStream read(FileBlock block, String rolledOverResponse) {
-        return new FileBlockByteStream(block, rolledOverResponse);
+    CharSource read(FileBlock block, String rolledOverResponse) {
+        return new FileBlockCharSource(block, rolledOverResponse);
     }
 
     public void resize(int newRollingSizeKb) throws IOException {
@@ -100,50 +107,76 @@ public class RollingFile {
         }
     }
 
-    @NotThreadSafe
-    private class FileBlockByteStream extends ByteStream {
+    @ThreadSafe
+    private class FileBlockCharSource extends CharSource {
 
         private final FileBlock block;
         private final String rolledOverResponse;
-        private boolean end;
 
-        private FileBlockByteStream(FileBlock block, String rolledOverResponse) {
+        private FileBlockCharSource(FileBlock block, String rolledOverResponse) {
             this.block = block;
             this.rolledOverResponse = rolledOverResponse;
         }
 
         @Override
-        public boolean hasNext() {
-            if (block.getLength() > Integer.MAX_VALUE) {
-                // TODO read and lzf decode bytes in chunks to avoid having to allocate a single
-                // large byte array
-                logger.error("cannot currently read more than Integer.MAX_VALUE bytes");
-                return false;
+        public Reader openStream() throws IOException {
+            if (!out.stillExists(block)) {
+                return CharStreams.asCharSource(rolledOverResponse).openStream();
             }
-            return !end;
+            // it's important to wrap FileBlockInputStream in a BufferedInputStream to prevent lots
+            // of small reads from the underlying RandomAccessFile
+            final int bufferSize = 32768;
+            return new InputStreamReader(new LZFInputStream(new BufferedInputStream(
+                    new FileBlockInputStream(block), bufferSize)));
+        }
+    }
+
+    @NotThreadSafe
+    private class FileBlockInputStream extends InputStream {
+
+        private final FileBlock block;
+        private long blockIndex;
+
+        private FileBlockInputStream(FileBlock block) {
+            this.block = block;
         }
 
         @Override
-        public byte[] next() throws IOException {
+        public int read(byte bytes[], int off, int len) throws IOException {
+            long blockRemaining = block.getLength() - blockIndex;
+            if (blockRemaining == 0) {
+                return -1;
+            }
             synchronized (lock) {
                 if (!out.stillExists(block)) {
-                    end = true;
-                    return rolledOverResponse.getBytes(Charsets.UTF_8.name());
+                    throw new IOException("Block rolled out mid-read");
                 }
-                long filePosition = out.convertToFilePosition(block.getStartIndex());
+                long filePosition = out.convertToFilePosition(block.getStartIndex() + blockIndex);
                 inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
-                byte[] bytes = new byte[(int) block.getLength()];
-                long remaining = out.getRollingSizeKb() * 1024 - filePosition;
-                if (block.getLength() > remaining) {
-                    RandomAccessFiles.readFully(inFile, bytes, 0, (int) remaining);
-                    inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES);
-                    RandomAccessFiles.readFully(inFile, bytes, (int) remaining,
-                            (int) (block.getLength() - remaining));
-                } else {
-                    RandomAccessFiles.readFully(inFile, bytes);
-                }
-                end = true;
-                return LZFDecoder.decode(bytes);
+                long fileRemaining = out.getRollingSizeKb() * 1024 - filePosition;
+                int numToRead = (int) Longs.min(len, blockRemaining, fileRemaining);
+                RandomAccessFiles.readFully(inFile, bytes, off, numToRead);
+                blockIndex += numToRead;
+                return numToRead;
+            }
+        }
+        // delegate to read(...) above
+        @Override
+        public int read(byte bytes[]) throws IOException {
+            return read(bytes, 0, bytes.length);
+        }
+
+        // delegate to read(...) above, though this should never get called since
+        // FileBlockInputStream is wrapped in BufferedInputStream
+        @Override
+        public int read() throws IOException {
+            logger.warn("read() performs very poorly, FileBlockInputStream should always be"
+                    + " wrapped in BufferedInputStream");
+            byte[] bytes = new byte[1];
+            if (read(bytes, 0, 1) == -1) {
+                return -1;
+            } else {
+                return bytes[0];
             }
         }
     }

@@ -15,16 +15,14 @@
  */
 package io.informant.local.ui;
 
-import io.informant.util.ByteStream;
 import io.informant.util.Singleton;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Charsets;
+import com.google.common.io.CharSource;
 
 /**
  * Json service to read trace data.
@@ -43,19 +41,16 @@ class TraceSummaryJsonService implements JsonService {
         this.traceCommonService = traceCommonService;
     }
 
-    // this method returns byte[] directly to avoid converting to it utf8 string and back again
     @JsonServiceMethod
-    byte/*@Nullable*/[] getSummary(String id) throws IOException {
+    String getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
-        ByteStream byteStream = traceCommonService.getSnapshotOrActiveJson(id, true);
-        if (byteStream == null) {
+        CharSource charSource = traceCommonService.getSnapshotOrActiveJson(id, true);
+        if (charSource == null) {
             logger.debug("no trace found for id '{}', returning expired=true", id);
-            return "{\"expired\":true}".getBytes(Charsets.UTF_8.name());
+            return "{\"expired\":true}";
         } else {
             // summary is small and doesn't need to be streamed
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byteStream.writeTo(baos);
-            return baos.toByteArray();
+            return charSource.read();
         }
     }
 }

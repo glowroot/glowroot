@@ -21,7 +21,6 @@ import io.informant.local.store.TraceSnapshot;
 import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotWriter;
 import io.informant.local.store.TraceWriter;
-import io.informant.util.ByteStream;
 import io.informant.util.Singleton;
 
 import java.io.IOException;
@@ -29,6 +28,7 @@ import java.io.IOException;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
+import com.google.common.io.CharSource;
 
 /**
  * @author Trask Stalnaker
@@ -49,14 +49,14 @@ class TraceCommonService {
     }
 
     @Nullable
-    ByteStream getSnapshotOrActiveJson(String id, boolean summary) throws IOException {
+    CharSource getSnapshotOrActiveJson(String id, boolean summary) throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
                 TraceSnapshot snapshot = TraceWriter.toTraceSnapshot(active, ticker.read(),
                         summary);
-                return TraceSnapshotWriter.toByteStream(snapshot, true);
+                return TraceSnapshotWriter.toCharSource(snapshot, true);
             }
         }
         TraceSnapshot snapshot;
@@ -68,7 +68,7 @@ class TraceCommonService {
         if (snapshot == null) {
             return null;
         } else {
-            return TraceSnapshotWriter.toByteStream(snapshot, false);
+            return TraceSnapshotWriter.toCharSource(snapshot, false);
         }
     }
 }

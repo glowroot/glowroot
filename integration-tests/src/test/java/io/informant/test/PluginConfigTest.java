@@ -112,7 +112,6 @@ public class PluginConfigTest {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setEnabled(true);
         pluginConfig.setProperty("alternateHeadline", "Level 1");
         pluginConfig.setProperty("starredHeadline", false);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
@@ -128,7 +127,6 @@ public class PluginConfigTest {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setEnabled(true);
         pluginConfig.setProperty("alternateHeadline", "");
         pluginConfig.setProperty("starredHeadline", true);
         container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);

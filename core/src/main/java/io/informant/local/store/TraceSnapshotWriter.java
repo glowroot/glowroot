@@ -15,7 +15,8 @@
  */
 package io.informant.local.store;
 
-import io.informant.util.ByteStream;
+import io.informant.util.CharStreams2;
+import io.informant.util.OnlyUsedByTests;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -24,8 +25,9 @@ import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
+import com.google.common.io.CharStreams;
 import com.google.gson.stream.JsonWriter;
 
 /**
@@ -35,16 +37,16 @@ import com.google.gson.stream.JsonWriter;
 public class TraceSnapshotWriter {
 
     private final StringBuilder sb = new StringBuilder();
-    private final List<ByteStream> byteStreams = Lists.newArrayList();
+    private final List<CharSource> charSources = Lists.newArrayList();
 
-    public static ByteStream toByteStream(TraceSnapshot snapshot, boolean active)
+    public static CharSource toCharSource(TraceSnapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
-        return new TraceSnapshotWriter().toByteStreamInternal(snapshot, active);
+        return new TraceSnapshotWriter().toCharSourceInternal(snapshot, active);
     }
 
     private TraceSnapshotWriter() {}
 
-    private ByteStream toByteStreamInternal(TraceSnapshot snapshot, boolean active)
+    private CharSource toCharSourceInternal(TraceSnapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
         sb.append("{\"id\":\"");
         sb.append(snapshot.getId());
@@ -66,12 +68,12 @@ public class TraceSnapshotWriter {
         writeUserId(snapshot);
         writeError(snapshot);
         writeMetrics(snapshot);
-        writeByteStream("spans", snapshot.getSpans());
-        writeByteStream("coarseMergedStackTree", snapshot.getCoarseMergedStackTree());
-        writeByteStream("fineMergedStackTree", snapshot.getFineMergedStackTree());
+        writeCharSource("spans", snapshot.getSpans());
+        writeCharSource("coarseMergedStackTree", snapshot.getCoarseMergedStackTree());
+        writeCharSource("fineMergedStackTree", snapshot.getFineMergedStackTree());
         sb.append("}");
         flushStringBuilder();
-        return ByteStream.of(byteStreams);
+        return CharStreams2.join(charSources);
     }
 
     private void writeAttributes(TraceSnapshot snapshot) {
@@ -115,20 +117,20 @@ public class TraceSnapshotWriter {
         }
     }
 
-    private void writeByteStream(String attributeName, @Nullable ByteStream byteStream)
+    private void writeCharSource(String attributeName, @Nullable CharSource charSource)
             throws UnsupportedEncodingException {
-        if (byteStream != null) {
+        if (charSource != null) {
             sb.append(",\"");
             sb.append(attributeName);
             sb.append("\":");
             flushStringBuilder();
-            byteStreams.add(byteStream);
+            charSources.add(charSource);
         }
     }
 
     // flush current StringBuilder as its own chunk and reset StringBuilder
     private void flushStringBuilder() throws UnsupportedEncodingException {
-        byteStreams.add(ByteStream.of(sb.toString().getBytes(Charsets.UTF_8.name())));
+        charSources.add(CharStreams.asCharSource(sb.toString()));
         sb.setLength(0);
     }
 
@@ -145,5 +147,11 @@ public class TraceSnapshotWriter {
             // this can't really happen since StringWriter doesn't throw IOException
             return "error (" + e.getClass().getName() + ") occurred escaping json string";
         }
+    }
+
+    // this method exists because tests cannot use (sometimes) shaded guava CharSource
+    @OnlyUsedByTests
+    public static String toString(TraceSnapshot snapshot, boolean active) throws IOException {
+        return toCharSource(snapshot, active).read();
     }
 }

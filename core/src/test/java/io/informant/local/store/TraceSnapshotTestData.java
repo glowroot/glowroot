@@ -15,10 +15,10 @@
  */
 package io.informant.local.store;
 
-import io.informant.util.ByteStream;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.io.CharStreams;
 
 /**
  * @author Trask Stalnaker
@@ -38,7 +38,7 @@ class TraceSnapshotTestData {
                 .background(false)
                 .headline("test headline")
                 .userId("j")
-                .spans(ByteStream.of("[{\"offset\":0,\"duration\":0,\"index\":0,"
+                .spans(CharStreams.asCharSource("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"level\":0,\"message\":{\"text\":\"Level One\","
                         + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","
                         + "\"nested1\":{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\","

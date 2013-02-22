@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.informant.local.store;
 
 import io.informant.local.store.DataSource.RowMapper;
@@ -20,7 +21,6 @@ import io.informant.local.store.FileBlock.InvalidBlockIdFormatException;
 import io.informant.local.store.Schemas.Column;
 import io.informant.local.store.Schemas.Index;
 import io.informant.local.store.Schemas.PrimaryKeyColumn;
-import io.informant.util.ByteStream;
 import io.informant.util.Clock;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.Singleton;
@@ -40,6 +40,7 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
 
 /**
  * Data access object for storing and reading trace snapshot data from the embedded H2 database.
@@ -98,17 +99,17 @@ public class TraceSnapshotDao {
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
         String spansBlockId = null;
-        ByteStream spans = snapshot.getSpans();
+        CharSource spans = snapshot.getSpans();
         if (spans != null) {
             spansBlockId = rollingFile.write(spans).getId();
         }
         String coarseMergedStackTreeBlockId = null;
-        ByteStream coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
+        CharSource coarseMergedStackTree = snapshot.getCoarseMergedStackTree();
         if (coarseMergedStackTree != null) {
             coarseMergedStackTreeBlockId = rollingFile.write(coarseMergedStackTree).getId();
         }
         String fineMergedStackTreeBlockId = null;
-        ByteStream fineMergedStackTree = snapshot.getFineMergedStackTree();
+        CharSource fineMergedStackTree = snapshot.getFineMergedStackTree();
         if (fineMergedStackTree != null) {
             fineMergedStackTreeBlockId = rollingFile.write(fineMergedStackTree).getId();
         }
@@ -344,7 +345,7 @@ public class TraceSnapshotDao {
                 FileBlock block;
                 try {
                     block = FileBlock.from(spansFileBlockId);
-                    builder.spans(rollingFile.read(block, "\"rolled over\""));
+                    builder.spans(rollingFile.read(block, "{\"rolledOver\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -353,7 +354,7 @@ public class TraceSnapshotDao {
                 FileBlock block;
                 try {
                     block = FileBlock.from(coarseMergedStackTreeFileBlockId);
-                    builder.coarseMergedStackTree(rollingFile.read(block, "\"rolled over\""));
+                    builder.coarseMergedStackTree(rollingFile.read(block, "{\"rolledOver\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }
@@ -362,7 +363,7 @@ public class TraceSnapshotDao {
                 FileBlock block;
                 try {
                     block = FileBlock.from(fineMergedStackTreeFileBlockId);
-                    builder.fineMergedStackTree(rollingFile.read(block, "\"rolled over\""));
+                    builder.fineMergedStackTree(rollingFile.read(block, "{\"rolledOver\":true}"));
                 } catch (InvalidBlockIdFormatException e) {
                     logger.warn(e.getMessage(), e);
                 }

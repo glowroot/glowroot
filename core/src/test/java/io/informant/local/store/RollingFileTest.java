@@ -16,9 +16,7 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.util.ByteStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
@@ -27,7 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
 
 /**
  * @author Trask Stalnaker
@@ -55,9 +53,9 @@ public class RollingFileTest {
         // given
         String text = "0123456789";
         // when
-        FileBlock block = rollingFile.write(ByteStream.of(text));
+        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
         // then
-        String text2 = toString(rollingFile.read(block, ""));
+        String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -71,11 +69,11 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(ByteStream.of(text));
+        rollingFile.write(CharStreams.asCharSource(text));
         // when
-        FileBlock block = rollingFile.write(ByteStream.of(text));
+        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
         // then
-        String text2 = toString(rollingFile.read(block, ""));
+        String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -89,12 +87,12 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(ByteStream.of(text));
-        rollingFile.write(ByteStream.of(text));
+        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharStreams.asCharSource(text));
         // when
-        FileBlock block = rollingFile.write(ByteStream.of(text));
+        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
         // then
-        String text2 = toString(rollingFile.read(block, ""));
+        String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -108,19 +106,13 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        FileBlock block = rollingFile.write(ByteStream.of(text));
-        rollingFile.write(ByteStream.of(text));
+        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharStreams.asCharSource(text));
         // when
-        rollingFile.write(ByteStream.of(text));
+        rollingFile.write(CharStreams.asCharSource(text));
         // then
         // for now, overwritten blocks return empty byte array when read
-        String text2 = toString(rollingFile.read(block, ""));
+        String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo("");
-    }
-
-    static String toString(ByteStream byteStream) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byteStream.writeTo(baos);
-        return new String(baos.toByteArray(), Charsets.UTF_8.name());
     }
 }

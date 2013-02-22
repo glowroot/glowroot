@@ -35,11 +35,9 @@ import io.informant.local.ui.TraceExportHttpService;
 import io.informant.testkit.PointcutConfig.CaptureItem;
 import io.informant.testkit.PointcutConfig.MethodModifier;
 import io.informant.testkit.internal.GsonFactory;
-import io.informant.util.ByteStream;
 import io.informant.util.ThreadSafe;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
@@ -49,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
@@ -281,7 +278,6 @@ class SameJvmInformant implements Informant {
         assertNoActiveTraces();
         // TODO assert no warn or error log messages
         configService.resetAllConfig();
-
     }
 
     public int getNumPendingCompleteTraces() {
@@ -293,10 +289,7 @@ class SameJvmInformant implements Informant {
     }
 
     public InputStream getTraceExport(String id) throws Exception {
-        ByteStream byteStream = traceExportHttpService.getExportByteStream(id);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byteStream.writeTo(baos);
-        return new ByteArrayInputStream(baos.toByteArray());
+        return new ByteArrayInputStream(traceExportHttpService.getExportBytes(id));
     }
 
     @Nullable
@@ -305,8 +298,7 @@ class SameJvmInformant implements Informant {
         if (snapshot == null) {
             return null;
         }
-        ByteStream byteStream = TraceSnapshotWriter.toByteStream(snapshot, false);
-        Trace trace = getTrace(byteStream);
+        Trace trace = gson.fromJson(TraceSnapshotWriter.toString(snapshot, false), Trace.class);
         trace.setSummary(summary);
         return trace;
     }
@@ -337,8 +329,7 @@ class SameJvmInformant implements Informant {
         } else {
             TraceSnapshot snapshot =
                     TraceWriter.toTraceSnapshot(traces.get(0), ticker.read(), summary);
-            ByteStream byteStream = TraceSnapshotWriter.toByteStream(snapshot, true);
-            Trace trace = getTrace(byteStream);
+            Trace trace = gson.fromJson(TraceSnapshotWriter.toString(snapshot, true), Trace.class);
             trace.setSummary(summary);
             return trace;
         }
@@ -355,14 +346,6 @@ class SameJvmInformant implements Informant {
             }
         }
         throw new AssertionError("There are still active traces");
-    }
-
-    private static Trace getTrace(ByteStream byteStream) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byteStream.writeTo(baos);
-        Trace trace =
-                gson.fromJson(new String(baos.toByteArray(), Charsets.UTF_8.name()), Trace.class);
-        return trace;
     }
 
     private static PointcutConfig convertToCore(

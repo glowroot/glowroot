@@ -16,7 +16,6 @@
 package io.informant.local.store;
 
 import io.informant.core.TraceUniqueId;
-import io.informant.util.ByteStream;
 import io.informant.util.ThreadSafe;
 
 import org.slf4j.Logger;
@@ -26,6 +25,7 @@ import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.io.CharSource;
 
 /**
  * Structure used as part of the response to "/explorer/detail".
@@ -33,7 +33,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO make this Immutable by storing ByteSource (guava 14) for spans and mergedStackTrace
+// TODO make this Immutable by storing CharSource (guava 14) for spans and mergedStackTrace
 @ThreadSafe
 public class TraceSnapshot {
 
@@ -56,20 +56,20 @@ public class TraceSnapshot {
     private final String exception; // json data
     @Nullable
     private final String metrics; // json data
-    // using ByteStream so these potentially very large strings can be streamed without consuming
+    // using CharSource so these potentially very large strings can be streamed without consuming
     // large amounts of memory
     @Nullable
-    private final ByteStream spans; // json data
+    private final CharSource spans; // json data
     @Nullable
-    private final ByteStream coarseMergedStackTree; // json data
+    private final CharSource coarseMergedStackTree; // json data
     @Nullable
-    private final ByteStream fineMergedStackTree; // json data
+    private final CharSource fineMergedStackTree; // json data
 
     private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
             boolean background, String headline, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
-            @Nullable String exception, @Nullable String metrics, @Nullable ByteStream spans,
-            @Nullable ByteStream coarseMergedStackTree, @Nullable ByteStream fineMergedStackTree) {
+            @Nullable String exception, @Nullable String metrics, @Nullable CharSource spans,
+            @Nullable CharSource coarseMergedStackTree, @Nullable CharSource fineMergedStackTree) {
 
         this.id = id;
         this.startAt = startAt;
@@ -148,17 +148,17 @@ public class TraceSnapshot {
     }
 
     @Nullable
-    ByteStream getSpans() {
+    CharSource getSpans() {
         return spans;
     }
 
     @Nullable
-    ByteStream getCoarseMergedStackTree() {
+    CharSource getCoarseMergedStackTree() {
         return coarseMergedStackTree;
     }
 
     @Nullable
-    ByteStream getFineMergedStackTree() {
+    CharSource getFineMergedStackTree() {
         return fineMergedStackTree;
     }
 
@@ -211,11 +211,11 @@ public class TraceSnapshot {
         @Nullable
         private String metrics;
         @Nullable
-        private ByteStream spans;
+        private CharSource spans;
         @Nullable
-        private ByteStream coarseMergedStackTree;
+        private CharSource coarseMergedStackTree;
         @Nullable
-        private ByteStream fineMergedStackTree;
+        private CharSource fineMergedStackTree;
 
         private Builder() {}
 
@@ -284,17 +284,17 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder spans(@Nullable ByteStream spans) {
+        Builder spans(@Nullable CharSource spans) {
             this.spans = spans;
             return this;
         }
 
-        Builder coarseMergedStackTree(@Nullable ByteStream coarseMergedStackTree) {
+        Builder coarseMergedStackTree(@Nullable CharSource coarseMergedStackTree) {
             this.coarseMergedStackTree = coarseMergedStackTree;
             return this;
         }
 
-        Builder fineMergedStackTree(@Nullable ByteStream fineMergedStackTree) {
+        Builder fineMergedStackTree(@Nullable CharSource fineMergedStackTree) {
             this.fineMergedStackTree = fineMergedStackTree;
             return this;
         }

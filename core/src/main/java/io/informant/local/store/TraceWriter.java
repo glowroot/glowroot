@@ -26,14 +26,15 @@ import io.informant.core.Span;
 import io.informant.core.Trace;
 import io.informant.core.Trace.TraceAttribute;
 import io.informant.core.TraceMetric.Snapshot;
-import io.informant.util.ByteStream;
+import io.informant.util.CharArrayWriter;
 import io.informant.util.GsonFactory;
+import io.informant.util.NotThreadSafe;
 import io.informant.util.Static;
+import io.informant.util.ThreadSafe;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.Thread.State;
 import java.util.Iterator;
@@ -48,10 +49,10 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
@@ -97,7 +98,7 @@ public class TraceWriter {
         builder.userId(trace.getUserId());
         builder.metrics(getMetricsJson(trace));
         if (!summary) {
-            builder.spans(new SpansByteStream(trace.getSpans().iterator(), captureTick));
+            builder.spans(new SpansCharSource(trace.getSpans().iterator(), captureTick));
             builder.coarseMergedStackTree(getMergedStackTree(trace.getCoarseMergedStackTree()));
             builder.fineMergedStackTree(getMergedStackTree(trace.getFineMergedStackTree()));
         }
@@ -165,7 +166,7 @@ public class TraceWriter {
 
     @VisibleForTesting
     @Nullable
-    static ByteStream getMergedStackTree(@Nullable MergedStackTree mergedStackTree) {
+    static CharSource getMergedStackTree(@Nullable MergedStackTree mergedStackTree) {
         if (mergedStackTree == null) {
             return null;
         }
@@ -175,15 +176,15 @@ public class TraceWriter {
                 return null;
             }
             // need to convert merged stack tree into bytes entirely inside of the above lock
-            // (no lazy ByteStream)
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(32768);
+            // (no lazy CharSource)
+            StringWriter sw = new StringWriter(32768);
             try {
-                new MergedStackTreeWriter(rootNode, baos).write();
+                new MergedStackTreeWriter(rootNode, sw).write();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 return null;
             }
-            return ByteStream.of(baos.toByteArray());
+            return CharStreams.asCharSource(sw.toString());
         }
     }
 
@@ -214,48 +215,71 @@ public class TraceWriter {
         jw.endArray();
     }
 
-    private static class SpansByteStream extends ByteStream {
-
-        private static final int TARGET_CHUNK_SIZE = 8192;
+    @ThreadSafe
+    private static class SpansCharSource extends CharSource {
 
         @ReadOnly
         private final Iterator<Span> spans;
         private final long captureTick;
-        private final ByteArrayOutputStream baos;
-        private final Writer raw;
-        private final JsonWriter jw;
 
-        private boolean limitExceeded;
-
-        private SpansByteStream(@ReadOnly Iterator<Span> spans, long captureTick)
-                throws IOException {
+        private SpansCharSource(Iterator<Span> spans, long captureTick) {
             this.spans = spans;
             this.captureTick = captureTick;
-            baos = new ByteArrayOutputStream(2 * TARGET_CHUNK_SIZE);
-            raw = new OutputStreamWriter(baos, Charsets.UTF_8);
-            jw = new JsonWriter(raw);
+        }
+
+        @Override
+        public Reader openStream() throws IOException {
+            return new SpansReader(spans, captureTick);
+        }
+    }
+
+    @NotThreadSafe
+    private static class SpansReader extends Reader {
+
+        @ReadOnly
+        private final Iterator<Span> spans;
+        private final long captureTick;
+        private final CharArrayWriter writer;
+        private final JsonWriter jw;
+
+        private int writerIndex;
+        private boolean limitExceeded;
+
+        private SpansReader(@ReadOnly Iterator<Span> spans, long captureTick) throws IOException {
+            this.spans = spans;
+            this.captureTick = captureTick;
+            writer = new CharArrayWriter();
+            jw = new JsonWriter(writer);
             jw.beginArray();
         }
 
         @Override
-        public boolean hasNext() {
-            return spans.hasNext();
-        }
-
-        @Override
-        public byte[] next() throws IOException {
-            while (baos.size() < TARGET_CHUNK_SIZE && hasNext()) {
-                writeSpan(spans.next());
-                jw.flush();
+        public int read(char[] cbuf, int off, int len) throws IOException {
+            int writerRemaining = writer.size() - writerIndex;
+            if (writerRemaining > 0) {
+                int nChars = Math.min(len, writerRemaining);
+                writer.arraycopy(writerIndex, cbuf, off, nChars);
+                writerIndex += nChars;
+                return nChars;
             }
-            if (!hasNext()) {
+            // need to add another span to writer
+            if (!spans.hasNext()) {
+                return -1;
+            }
+            writer.reset();
+            writerIndex = 0;
+            // note it is possible for writeSpan() to not write anything
+            writeSpan(spans.next());
+            if (!spans.hasNext()) {
                 jw.endArray();
                 jw.close();
             }
-            byte[] chunk = baos.toByteArray();
-            baos.reset();
-            return chunk;
+            // now go back and read the new data
+            return read(cbuf, off, len);
         }
+
+        @Override
+        public void close() {}
 
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
@@ -353,9 +377,9 @@ public class TraceWriter {
         private final JsonWriter jw;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private MergedStackTreeWriter(MergedStackTreeNode rootNode, OutputStream out) {
+        private MergedStackTreeWriter(MergedStackTreeNode rootNode, Writer writer) {
             this.toVisit = Lists.newArrayList((Object) rootNode);
-            jw = new JsonWriter(new OutputStreamWriter(out, Charsets.UTF_8));
+            jw = new JsonWriter(writer);
         }
 
         private void write() throws IOException {

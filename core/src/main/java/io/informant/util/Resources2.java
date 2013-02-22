@@ -20,6 +20,8 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
 
 /**
@@ -41,5 +43,20 @@ public class Resources2 {
             return Collections.list(ClassLoader.getSystemResources(resourceName));
         }
         return Collections.list(loader.getResources(resourceName));
+    }
+
+    public static CharSource asCharStream(String path) throws ResourceNotFound {
+        URL url = Resources.getResource(path);
+        if (url == null) {
+            throw new ResourceNotFound("Resource not found: " + path);
+        }
+        return Resources.asCharSource(url, Charsets.UTF_8);
+    }
+
+    @SuppressWarnings("serial")
+    public static class ResourceNotFound extends IOException {
+        public ResourceNotFound(String message) {
+            super(message);
+        }
     }
 }

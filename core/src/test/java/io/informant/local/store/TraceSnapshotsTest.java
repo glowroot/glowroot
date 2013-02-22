@@ -20,14 +20,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import io.informant.core.MergedStackTree;
 import io.informant.core.Trace;
-import io.informant.util.ByteStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Arrays;
 
 import org.junit.Test;
+
+import com.google.common.io.CharSource;
 
 /**
  * @author Trask Stalnaker
@@ -52,13 +52,11 @@ public class TraceSnapshotsTest {
                 MergedStackTree.stripSyntheticMetricMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE);
         // when
-        ByteStream mergedStackTreeByteStream = TraceWriter.getMergedStackTree(trace
+        CharSource mergedStackTreeCharSource = TraceWriter.getMergedStackTree(trace
                 .getCoarseMergedStackTree());
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        assertThat(mergedStackTreeByteStream).isNotNull();
-        mergedStackTreeByteStream.writeTo(baos);
+        assertThat(mergedStackTreeCharSource).isNotNull();
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)
-        assertThat(baos.size()).isGreaterThan(1000000);
+        assertThat(mergedStackTreeCharSource.read().length()).isGreaterThan(1000000);
     }
 }
