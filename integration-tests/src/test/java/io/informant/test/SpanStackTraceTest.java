@@ -70,8 +70,8 @@ public class SpanStackTraceTest {
         assertThat(trace.getSpans()).hasSize(2);
         List<String> stackTrace = trace.getSpans().get(1).getStackTrace();
         assertThat(stackTrace).isNotEmpty();
-        assertThat(stackTrace.get(0)).startsWith(
-                Pause.class.getName() + ".pause(" + Pause.class.getSimpleName() + ".java:");
+        assertThat(stackTrace.get(0)).startsWith(Pause.class.getName()
+                + ".pauseOneMillisecond(" + Pause.class.getSimpleName() + ".java:");
         for (String element : stackTrace) {
             assertThat(element).doesNotContain("$informant$");
             // assert that element contains line number (or is a native method
@@ -84,7 +84,7 @@ public class SpanStackTraceTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            new Pause().pause(1);
+            new Pause().pauseOneMillisecond();
         }
     }
 }

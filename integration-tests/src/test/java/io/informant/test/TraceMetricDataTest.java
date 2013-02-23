@@ -138,6 +138,7 @@ public class TraceMetricDataTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
+            // need to sleep long enough for active trace request to find this trace
             Thread.sleep(100);
         }
     }

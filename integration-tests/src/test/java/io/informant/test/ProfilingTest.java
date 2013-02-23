@@ -17,6 +17,7 @@ package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.api.PluginServices;
+import io.informant.core.util.Threads;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.CoarseProfilingConfig;
 import io.informant.testkit.FineProfilingConfig;
@@ -231,7 +232,7 @@ public class ProfilingTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            Thread.sleep(145);
+            Threads.moreAccurateSleep(145);
         }
     }
 
@@ -245,7 +246,7 @@ public class ProfilingTest {
         public void traceMarker() throws InterruptedException {
             // normally the plugin/aspect should set the user id, this is just a shortcut for test
             pluginServices.setUserId("able");
-            Thread.sleep(150);
+            Threads.moreAccurateSleep(150);
         }
     }
 }

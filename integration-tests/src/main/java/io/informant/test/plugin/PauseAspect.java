@@ -37,8 +37,8 @@ public class PauseAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("io.informant:informant-integration-tests");
 
-    @Pointcut(typeName = "io.informant.test.Pause", methodName = "pause", methodArgs = { "int" },
-            metricName = "pause")
+    @Pointcut(typeName = "io.informant.test.Pause", methodName = "pauseOneMillisecond",
+            methodArgs = {}, metricName = "pause")
     public static class PauseAdvice {
 
         private static final Metric metric = pluginServices.getMetric(LogErrorAdvice.class);
@@ -49,9 +49,9 @@ public class PauseAspect {
         }
 
         @OnBefore
-        public static Span onBefore(int millis) {
+        public static Span onBefore() {
             return pluginServices.startSpan(
-                    MessageSupplier.from("Pause.pause({})", Integer.toString(millis)), metric);
+                    MessageSupplier.from("Pause.pauseOneMillisecond()"), metric);
         }
 
         @OnAfter

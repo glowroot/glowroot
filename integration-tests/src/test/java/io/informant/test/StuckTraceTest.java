@@ -16,6 +16,7 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.core.util.Threads;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
@@ -110,7 +111,7 @@ public class StuckTraceTest {
         public void traceMarker() throws InterruptedException {
             // stuck trace collector polls for stuck traces every 100 milliseconds,
             // and this test polls for active stuck traces every 10 milliseconds
-            Thread.sleep(500);
+            Threads.moreAccurateSleep(500);
         }
     }
 

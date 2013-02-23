@@ -98,6 +98,17 @@ public class Threads {
         }
     }
 
+    // try to handle under- and over- sleeping for tests that depend on more accurate sleep timing
+    public static void moreAccurateSleep(int millis) throws InterruptedException {
+        Stopwatch stopwatch = new Stopwatch().start();
+        if (millis > 10) {
+            Thread.sleep(millis - 10);
+        }
+        while (stopwatch.elapsedMillis() < millis) {
+            Thread.sleep(1);
+        }
+    }
+
     private static boolean isRogueThread(Thread thread) {
         if (!thread.isDaemon()) {
             return true;
