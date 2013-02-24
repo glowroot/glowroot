@@ -16,7 +16,6 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.core.util.Threads;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.GeneralConfig;
 import io.informant.testkit.InformantContainer;
@@ -80,8 +79,7 @@ public class StuckTraceTest {
             }
         });
         // then
-        // test harness needs to kick off test and stuck trace collector polls and marks stuck
-        // traces every 100 milliseconds, so may need to wait a little
+        // wait for trace to be marked stuck
         Stopwatch stopwatch = new Stopwatch();
         Trace trace = null;
         while (true) {
@@ -95,6 +93,8 @@ public class StuckTraceTest {
         assertThat(trace.isStuck()).isTrue();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isCompleted()).isFalse();
+        // interrupt trace
+        container.interruptAppUnderTest();
         future.get();
         // should now be reported as unstuck
         trace = container.getInformant().getLastTraceSummary();
@@ -109,9 +109,13 @@ public class StuckTraceTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            // stuck trace collector polls for stuck traces every 100 milliseconds,
-            // and this test polls for active stuck traces every 10 milliseconds
-            Threads.moreAccurateSleep(500);
+            while (true) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
         }
     }
 

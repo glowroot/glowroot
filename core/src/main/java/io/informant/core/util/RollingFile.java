@@ -46,6 +46,7 @@ public class RollingFile {
     @GuardedBy("lock")
     private RandomAccessFile inFile;
     private final Object lock = new Object();
+    private volatile boolean closing = false;
 
     public RollingFile(File rollingFile, int requestedRollingSizeKb) throws IOException {
         this.rollingFile = rollingFile;
@@ -56,6 +57,9 @@ public class RollingFile {
 
     public FileBlock write(ByteStream byteStream) {
         synchronized (lock) {
+            if (closing) {
+                return FileBlock.expired();
+            }
             rollingOut.startBlock();
             try {
                 byteStream.writeTo(compressedOut);
@@ -74,6 +78,9 @@ public class RollingFile {
 
     public void resize(int newRollingSizeKb) throws IOException {
         synchronized (lock) {
+            if (closing) {
+                return;
+            }
             inFile.close();
             rollingOut.resize(newRollingSizeKb);
             inFile = new RandomAccessFile(rollingFile, "r");
@@ -83,6 +90,7 @@ public class RollingFile {
     public void close() throws IOException {
         logger.debug("close()");
         synchronized (lock) {
+            closing = true;
             rollingOut.close();
             inFile.close();
         }

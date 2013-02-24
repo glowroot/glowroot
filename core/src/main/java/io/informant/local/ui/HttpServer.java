@@ -148,6 +148,8 @@ public class HttpServer extends HttpServerBase {
                 adminJsonService, "getNumPendingCompleteTraces"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-stored-trace-snapshots$",
                 adminJsonService, "getNumStoredTraceSnapshots"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-active-traces",
+                adminJsonService, "getNumActiveTraces"));
         this.jsonServiceMappings = jsonServiceMappings.build();
     }
 

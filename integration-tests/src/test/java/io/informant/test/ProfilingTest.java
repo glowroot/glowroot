@@ -54,7 +54,7 @@ public class ProfilingTest {
         // loading and the profiler captures too many or too few samples
         container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
-        profilingConfig.setInitialDelayMillis(100);
+        profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         container.getInformant().updateCoarseProfilingConfig(profilingConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
@@ -75,7 +75,7 @@ public class ProfilingTest {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
-        profilingConfig.setInitialDelayMillis(100);
+        profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         container.getInformant().updateCoarseProfilingConfig(profilingConfig);
         // when
@@ -94,7 +94,7 @@ public class ProfilingTest {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
-        profilingConfig.setInitialDelayMillis(100);
+        profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         profilingConfig.setTotalSeconds(0);
         container.getInformant().updateCoarseProfilingConfig(profilingConfig);
@@ -130,9 +130,9 @@ public class ProfilingTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNotNull();
-        // fine profiler should have captured about 15 stack traces
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThan(10);
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(20);
+        // fine profiler should have captured about 10 stack traces
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThan(9);
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(11);
     }
 
     @Test
@@ -160,9 +160,9 @@ public class ProfilingTest {
         Trace trace = container.getInformant().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNotNull();
-        // fine profiler should have captured about 15 stack traces
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThan(10);
-        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(20);
+        // fine profiler should have captured about 10 stack traces
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isGreaterThan(9);
+        assertThat(trace.getFineMergedStackTree().getSampleCount()).isLessThan(11);
     }
 
     // set fine store threshold to 0, and see if trace shows up in active list right away
@@ -199,7 +199,7 @@ public class ProfilingTest {
         CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setEnabled(false);
-        coarseProfilingConfig.setInitialDelayMillis(100);
+        coarseProfilingConfig.setInitialDelayMillis(60);
         coarseProfilingConfig.setIntervalMillis(10);
         container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
         FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
@@ -232,7 +232,7 @@ public class ProfilingTest {
             traceMarker();
         }
         public void traceMarker() throws InterruptedException {
-            Threads.moreAccurateSleep(145);
+            Threads.moreAccurateSleep(105);
         }
     }
 
@@ -246,7 +246,7 @@ public class ProfilingTest {
         public void traceMarker() throws InterruptedException {
             // normally the plugin/aspect should set the user id, this is just a shortcut for test
             pluginServices.setUserId("able");
-            Threads.moreAccurateSleep(150);
+            Threads.moreAccurateSleep(105);
         }
     }
 }

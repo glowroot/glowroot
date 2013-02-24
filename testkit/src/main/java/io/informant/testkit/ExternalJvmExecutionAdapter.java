@@ -127,11 +127,12 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                 appUnderTestClass.getName()));
     }
 
+    public void interruptAppUnderTest() throws IOException, InterruptedException {
+        socketCommander.sendCommand(SocketCommandProcessor.INTERRUPT);
+    }
+
     public void close() throws IOException, InterruptedException {
-        Object response = socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN_COMMAND);
-        if (response.equals(SocketCommandProcessor.EXCEPTION_RESPONSE)) {
-            throw new IllegalStateException("Exception occurred inside external JVM");
-        }
+        socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN_COMMAND);
         socketCommander.close();
         process.waitFor();
         consolePipeExecutorService.shutdownNow();

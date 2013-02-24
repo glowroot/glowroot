@@ -92,6 +92,10 @@ public class InformantContainer {
         }
     }
 
+    public void interruptAppUnderTest() throws Exception {
+        executionAdapter.interruptAppUnderTest();
+    }
+
     public File getDataDir() {
         return dataDir;
     }
@@ -130,6 +134,7 @@ public class InformantContainer {
     interface ExecutionAdapter {
         Informant getInformant();
         void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
+        void interruptAppUnderTest() throws Exception;
         void close() throws Exception;
     }
 }

@@ -18,6 +18,7 @@ package io.informant.local.ui;
 import io.informant.api.Logger;
 import io.informant.api.LoggerFactory;
 import io.informant.core.config.ConfigService;
+import io.informant.core.trace.TraceRegistry;
 import io.informant.core.util.DataSource;
 import io.informant.core.util.OnlyUsedByTests;
 import io.informant.local.log.LogMessage;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Iterables;
 import com.google.common.io.CharStreams;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
@@ -54,15 +56,18 @@ public class AdminJsonService implements JsonService {
     private final ConfigService configService;
     private final TraceSinkLocal traceSinkLocal;
     private final DataSource dataSource;
+    private final TraceRegistry traceRegistry;
 
     @Inject
     AdminJsonService(LogMessageDao logMessageDao, TraceSnapshotDao traceSnapshotDao,
-            ConfigService configService, TraceSinkLocal traceSinkLocal, DataSource dataSource) {
+            ConfigService configService, TraceSinkLocal traceSinkLocal, DataSource dataSource,
+            TraceRegistry traceRegistry) {
         this.logMessageDao = logMessageDao;
         this.traceSnapshotDao = traceSnapshotDao;
         this.configService = configService;
         this.traceSinkLocal = traceSinkLocal;
         this.dataSource = dataSource;
+        this.traceRegistry = traceRegistry;
     }
 
     @JsonServiceMethod
@@ -135,5 +140,12 @@ public class AdminJsonService implements JsonService {
     String getNumStoredTraceSnapshots() {
         logger.debug("getNumStoredTraceSnapshots()");
         return Long.toString(traceSnapshotDao.count());
+    }
+
+    @OnlyUsedByTests
+    @JsonServiceMethod
+    String getNumActiveTraces() {
+        logger.debug("getNumActiveTraces()");
+        return Integer.toString(Iterables.size(traceRegistry.getTraces()));
     }
 }

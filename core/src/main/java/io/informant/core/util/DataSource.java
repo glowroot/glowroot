@@ -61,7 +61,7 @@ public class DataSource {
     @GuardedBy("lock")
     private Connection connection;
     private final Object lock = new Object();
-    private volatile boolean jvmShutdownInProgress = false;
+    private volatile boolean closing = false;
 
     private final LoadingCache<String, PreparedStatement> preparedStatementCache = CacheBuilder
             .newBuilder().weakKeys().build(new CacheLoader<String, PreparedStatement>() {
@@ -95,7 +95,7 @@ public class DataSource {
             return;
         }
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return;
             }
             execute("shutdown compact");
@@ -106,7 +106,7 @@ public class DataSource {
 
     public void execute(String sql) throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return;
             }
             Statement statement = connection.createStatement();
@@ -120,7 +120,7 @@ public class DataSource {
 
     public long queryForLong(final String sql, Object... args) throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return 0;
             }
             return queryUnderLock(sql, args, new ResultSetExtractor<Long>() {
@@ -146,7 +146,7 @@ public class DataSource {
     public <T> List<T> query(String sql, @ReadOnly List<?> args, RowMapper<T> rowMapper)
             throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return ImmutableList.of();
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
@@ -171,14 +171,14 @@ public class DataSource {
     }
 
     public int update(String sql, @Nullable Object... args) throws SQLException {
-        if (jvmShutdownInProgress) {
+        if (closing) {
             // this can get called a lot inserting trace snapshots, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
             // ends up generating warning messages from TraceSinkLocal.logPendingLimitWarning())
             return 0;
         }
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return 0;
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
@@ -195,7 +195,7 @@ public class DataSource {
 
     public void syncTable(String tableName, ImmutableList<Column> columns) throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return;
             }
             Schemas.syncTable(tableName, columns, connection);
@@ -204,7 +204,7 @@ public class DataSource {
 
     public void syncIndexes(String tableName, ImmutableList<Index> indexes) throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return;
             }
             Schemas.syncIndexes(tableName, indexes, connection);
@@ -213,7 +213,7 @@ public class DataSource {
 
     public ImmutableList<Column> getColumns(String tableName) throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return ImmutableList.of();
             }
             return Schemas.getColumns(tableName, connection);
@@ -223,7 +223,7 @@ public class DataSource {
     @OnlyUsedByTests
     public boolean tableExists(String tableName) throws SQLException {
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return false;
             }
             return Schemas.tableExists(tableName, connection);
@@ -234,9 +234,10 @@ public class DataSource {
     public void close() throws SQLException {
         logger.debug("close()");
         synchronized (lock) {
-            if (jvmShutdownInProgress) {
+            if (closing) {
                 return;
             }
+            closing = true;
             connection.close();
         }
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
@@ -318,7 +319,7 @@ public class DataSource {
                 // update flag outside of lock in case there is a backlog of threads already
                 // waiting on the lock (once the flag is set, any threads in the backlog that
                 // haven't acquired the lock will abort quickly once they do obtain the lock)
-                jvmShutdownInProgress = true;
+                closing = true;
                 synchronized (lock) {
                     connection.close();
                 }

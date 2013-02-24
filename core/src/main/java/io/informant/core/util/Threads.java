@@ -86,6 +86,9 @@ public class Threads {
         while (true) {
             List<Thread> rogueThreads = Lists.newArrayList(currentThreads());
             rogueThreads.removeAll(preExistingThreads);
+            // remove current thread in case it is newly created by the tests
+            // (e.g. SocketCommandProcessor)
+            rogueThreads.remove(Thread.currentThread());
             if (rogueThreads.isEmpty()) {
                 // success
                 return;

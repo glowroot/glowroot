@@ -97,8 +97,14 @@ public class MaxSpansLimitTest {
         generalConfig = container.getInformant().getGeneralConfig();
         generalConfig.setMaxSpans(200);
         container.getInformant().updateGeneralConfig(generalConfig);
-        future.get();
-        trace = container.getInformant().getLastTrace();
+        stopwatch.stop().reset().start();
+        while (stopwatch.elapsedMillis() < 2000) {
+            trace = container.getInformant().getActiveTrace(0);
+            if (trace != null && trace.getSpans().size() == 201) {
+                break;
+            }
+        }
+        container.interruptAppUnderTest();
         assertThat(trace).isNotNull();
         assertThat(trace.getSpans()).hasSize(201);
         assertThat(trace.getSpans().get(100).isLimitExceededMarker()).isTrue();
@@ -113,11 +119,11 @@ public class MaxSpansLimitTest {
             traceMarker();
         }
         public void traceMarker() throws Exception {
-            Stopwatch stopwatch = new Stopwatch().start();
-            int count = 0;
-            // run for at least 500 milliseconds since there is some timing involved in the test
-            while (stopwatch.elapsedMillis() < 500 || count++ < 500) {
+            while (true) {
                 new LevelOne().call("a", "b");
+                if (Thread.interrupted()) {
+                    return;
+                }
             }
         }
     }

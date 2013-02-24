@@ -22,8 +22,12 @@ import io.informant.core.util.Threads;
 import io.informant.core.weaving.IsolatedWeavingClassLoader;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -35,6 +39,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     private final Collection<Thread> preExistingThreads;
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final SameJvmInformant informant;
+    private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
 
     SameJvmExecutionAdapter(final Map<String, String> properties) throws Exception {
         preExistingThreads = Threads.currentThreads();
@@ -59,11 +64,19 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
             throws Exception {
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
+        executingAppThreads.add(Thread.currentThread());
         try {
             isolatedWeavingClassLoader.newInstance(appUnderTestClass, AppUnderTest.class)
                     .executeApp();
         } finally {
+            executingAppThreads.remove(Thread.currentThread());
             Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+        }
+    }
+
+    public void interruptAppUnderTest() throws IOException, InterruptedException {
+        for (Thread thread : executingAppThreads) {
+            thread.interrupt();
         }
     }
 

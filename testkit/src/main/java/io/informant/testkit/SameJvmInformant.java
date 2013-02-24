@@ -49,6 +49,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 
@@ -290,6 +291,7 @@ class SameJvmInformant implements Informant {
 
     public void cleanUpAfterEachTest() throws Exception {
         traceSnapshotDao.deleteAllSnapshots();
+        assertNoActiveTraces();
         List<LogMessage> warningMessages = Lists.newArrayList();
         for (LogMessage message : getLogMessages()) {
             if (message.getLevel() == Level.WARN || message.getLevel() == Level.ERROR) {
@@ -321,8 +323,12 @@ class SameJvmInformant implements Informant {
         return new ByteArrayInputStream(baos.toByteArray());
     }
 
+    @Nullable
     private Trace getLastTrace(boolean summary) throws Exception {
         TraceSnapshot snapshot = traceSnapshotDao.getLastSnapshot(summary);
+        if (snapshot == null) {
+            return null;
+        }
         ByteStream byteStream = TraceSnapshotWriter.toByteStream(snapshot, false);
         Trace trace = getTrace(byteStream);
         trace.setSummary(summary);
@@ -358,6 +364,19 @@ class SameJvmInformant implements Informant {
             trace.setSummary(summary);
             return trace;
         }
+    }
+
+    private void assertNoActiveTraces() throws Exception {
+        Stopwatch stopwatch = new Stopwatch().start();
+        // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
+        // milliseconds to interrupt the thread and end the active trace
+        while (stopwatch.elapsedMillis() < 2000) {
+            int numActiveTraces = Iterables.size(traceRegistry.getTraces());
+            if (numActiveTraces == 0) {
+                return;
+            }
+        }
+        throw new AssertionError("There are still active traces");
     }
 
     private static Trace getTrace(ByteStream byteStream) throws IOException {

@@ -269,6 +269,7 @@ class ExternalJvmInformant implements Informant {
 
     public void cleanUpAfterEachTest() throws Exception {
         post("/admin/data/truncate", "");
+        assertNoActiveTraces();
         List<LogMessage> warningMessages = Lists.newArrayList();
         for (LogMessage message : getLogMessages()) {
             if (message.getLevel() == Level.WARN || message.getLevel() == Level.ERROR) {
@@ -322,6 +323,19 @@ class ExternalJvmInformant implements Informant {
     private Config getConfig() throws Exception {
         String json = get("/config/read");
         return gson.fromJson(json, Config.class);
+    }
+
+    private void assertNoActiveTraces() throws Exception {
+        Stopwatch stopwatch = new Stopwatch().start();
+        // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
+        // milliseconds to interrupt the thread and end the active trace
+        while (stopwatch.elapsedMillis() < 2000) {
+            int numActiveTraces = Integer.parseInt(get("/admin/num-active-traces"));
+            if (numActiveTraces == 0) {
+                return;
+            }
+        }
+        throw new AssertionError("There are still active traces");
     }
 
     private static JsonArray asJsonArrayOrEmpty(@ReadOnly @Nullable JsonElement jsonElement) {
