@@ -15,6 +15,9 @@
  */
 package io.informant.core;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
 import io.informant.util.DaemonExecutors;
@@ -22,7 +25,6 @@ import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +55,6 @@ class CoarseGrainedProfiler implements Runnable {
         this.traceRegistry = traceRegistry;
         this.configService = configService;
         this.ticker = ticker;
-
         // the main repeating Runnable (this) only runs every CHECK_INTERVAL_MILLIS at which time it
         // checks to see if there are any traces that may need stack traces scheduled before the
         // main repeating Runnable runs again (in another CHECK_INTERVAL_MILLIS).
@@ -62,8 +63,7 @@ class CoarseGrainedProfiler implements Runnable {
         // since the majority of traces never end up needing stack traces this is much more
         // efficient than scheduling a repeating CollectStackCommand for every trace (this was
         // learned the hard way).
-        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS,
-                TimeUnit.MILLISECONDS);
+        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS, MILLISECONDS);
     }
 
     public void run() {
@@ -94,8 +94,8 @@ class CoarseGrainedProfiler implements Runnable {
         if (!config.isEnabled()) {
             return;
         }
-        long stackTraceThresholdTime = currentTick - TimeUnit.MILLISECONDS.toNanos(
-                config.getInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
+        long stackTraceThresholdTime = currentTick
+                - MILLISECONDS.toNanos(config.getInitialDelayMillis() - CHECK_INTERVAL_MILLIS);
         for (Trace trace : traceRegistry.getTraces()) {
             // if the trace will exceed the stack trace initial delay threshold before the next
             // scheduled execution of this repeating Runnable (in other words, it is within
@@ -121,25 +121,24 @@ class CoarseGrainedProfiler implements Runnable {
         long initialDelayRemainingMillis = getInitialDelayForCommand(trace.getStartTick(),
                 currentTick, config);
         ScheduledFuture<?> scheduledFuture = scheduledExecutor.scheduleAtFixedRate(command,
-                initialDelayRemainingMillis, config.getIntervalMillis(), TimeUnit.MILLISECONDS);
+                initialDelayRemainingMillis, config.getIntervalMillis(), MILLISECONDS);
         trace.setCoarseProfilingScheduledFuture(scheduledFuture);
     }
 
     private static long getEndTickForCommand(long startTick, CoarseProfilingConfig config) {
         // need to take max in case total is smaller than interval
-        long durationMillis = Math.max(TimeUnit.SECONDS.toMillis(config.getTotalSeconds())
+        long durationMillis = Math.max(SECONDS.toMillis(config.getTotalSeconds())
                 - config.getIntervalMillis() / 2, config.getIntervalMillis() / 2);
         // extra half interval is to make sure the final stack trace is grabbed if it aligns on
         // total (e.g. 1s initial delay, 1s interval, 10 second total should result in exactly 10
         // stack traces)
-        return startTick + TimeUnit.MILLISECONDS.toNanos(config.getInitialDelayMillis())
-                + TimeUnit.MILLISECONDS.toNanos(durationMillis);
+        return startTick + MILLISECONDS.toNanos(config.getInitialDelayMillis())
+                + MILLISECONDS.toNanos(durationMillis);
     }
 
     private static long getInitialDelayForCommand(long startTick, long currentTick,
             CoarseProfilingConfig config) {
-
-        long traceDurationMillis = TimeUnit.NANOSECONDS.toMillis(currentTick - startTick);
+        long traceDurationMillis = NANOSECONDS.toMillis(currentTick - startTick);
         long initialDelayRemainingMillis = Math.max(0, config.getInitialDelayMillis()
                 - traceDurationMillis);
         return initialDelayRemainingMillis;

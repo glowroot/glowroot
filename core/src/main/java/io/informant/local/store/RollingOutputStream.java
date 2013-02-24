@@ -15,6 +15,7 @@
  */
 package io.informant.local.store;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.OnlyUsedByTests;
 
@@ -24,7 +25,6 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.io.SyncFailedException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -101,7 +101,7 @@ class RollingOutputStream extends OutputStream {
                     }
                 }
             }
-        }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+        }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, MILLISECONDS);
     }
 
     void startBlock() {

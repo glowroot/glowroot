@@ -15,7 +15,8 @@
  */
 package io.informant.local.store;
 
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.io.CharStreams;
@@ -33,7 +34,7 @@ class TraceSnapshotTestData {
                 .id("abc" + counter.getAndIncrement())
                 .startAt(System.currentTimeMillis() - 10)
                 .stuck(false)
-                .duration(TimeUnit.MILLISECONDS.toNanos(10))
+                .duration(MILLISECONDS.toNanos(10))
                 .completed(true)
                 .background(false)
                 .headline("test headline")

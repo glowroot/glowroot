@@ -15,6 +15,9 @@
  */
 package io.informant.util;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -27,7 +30,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,14 +56,14 @@ public class DaemonExecutors {
     public static ExecutorService newCachedThreadPool(String name) {
         // returns a proxy, see see comment below on ExecutorInvocationHandler for details
         return newExecutorServiceProxy(new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L,
-                TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), newThreadFactory(name)));
+                SECONDS, new SynchronousQueue<Runnable>(), newThreadFactory(name)));
     }
 
     // same as Executors.newSingleThreadExecutor(), but with custom thread factory to name and
     // daemonize its threads
     public static ExecutorService newSingleThreadExecutor(String name) {
         // returns a proxy, see see comment below on ExecutorInvocationHandler for details
-        return newExecutorServiceProxy(new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+        return newExecutorServiceProxy(new ThreadPoolExecutor(1, 1, 0L, MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), newThreadFactory(name)));
     }
 

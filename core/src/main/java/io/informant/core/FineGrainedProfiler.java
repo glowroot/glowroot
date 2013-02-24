@@ -15,6 +15,9 @@
  */
 package io.informant.core;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
 import io.informant.util.DaemonExecutors;
@@ -22,7 +25,6 @@ import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,14 +65,13 @@ class FineGrainedProfiler {
         FineProfilingConfig config = configService.getFineProfilingConfig();
         // extra half interval at the end to make sure the final stack trace is grabbed if it aligns
         // on total (e.g. 100ms interval, 1 second total should result in exactly 10 stack traces)
-        long endTick = trace.getStartTick() + TimeUnit.SECONDS.toNanos(config.getTotalSeconds())
-                + TimeUnit.MILLISECONDS.toNanos(config.getIntervalMillis()) / 2;
+        long endTick = trace.getStartTick() + SECONDS.toNanos(config.getTotalSeconds())
+                + MILLISECONDS.toNanos(config.getIntervalMillis()) / 2;
         CollectStackCommand command = new CollectStackCommand(trace, endTick, true, ticker);
-        long initialDelay = Math.max(0, config.getIntervalMillis()
-                - TimeUnit.NANOSECONDS.toMillis(trace.getDuration()));
-        ScheduledFuture<?> scheduledFuture = scheduledExecutor
-                .scheduleAtFixedRate(command, initialDelay, config.getIntervalMillis(),
-                        TimeUnit.MILLISECONDS);
+        long initialDelay = Math.max(0,
+                config.getIntervalMillis() - NANOSECONDS.toMillis(trace.getDuration()));
+        ScheduledFuture<?> scheduledFuture = scheduledExecutor.scheduleAtFixedRate(command,
+                initialDelay, config.getIntervalMillis(), MILLISECONDS);
         trace.setFineProfilingScheduledFuture(scheduledFuture);
     }
 }

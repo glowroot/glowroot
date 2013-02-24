@@ -15,6 +15,7 @@
  */
 package io.informant.local.store;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.util.Clock;
@@ -22,7 +23,6 @@ import io.informant.util.DaemonExecutors;
 import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +50,7 @@ class TraceSnapshotReaper implements Runnable {
         this.configService = configService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.clock = clock;
-        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MINUTES * 60,
-                TimeUnit.SECONDS);
+        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MINUTES * 60, SECONDS);
     }
 
     public void run() {

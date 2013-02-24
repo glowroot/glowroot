@@ -15,6 +15,7 @@
  */
 package io.informant.plugin.jdbc;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
@@ -50,7 +51,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import checkers.nullness.quals.Nullable;
@@ -241,7 +241,7 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
+                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
     }
@@ -288,7 +288,7 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
+                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
     }
@@ -353,7 +353,7 @@ public class JdbcAspect {
         @OnReturn
         public static void onReturn(@InjectTraveler @Nullable Span span) {
             if (span != null) {
-                span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
+                span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
     }
@@ -510,7 +510,7 @@ public class JdbcAspect {
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.endWithStackTrace(stackTraceThresholdMillis, TimeUnit.MILLISECONDS);
+            span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
         }
     }
 

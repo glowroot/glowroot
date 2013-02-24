@@ -15,6 +15,7 @@
  */
 package io.informant.testing.ui;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
@@ -31,7 +32,6 @@ import io.informant.api.weaving.Pointcut;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
 
@@ -73,7 +73,7 @@ public class ExpensiveCallAspect {
             if (random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 0);
             }
@@ -98,7 +98,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 1);
             }
@@ -123,7 +123,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 2);
             }
@@ -148,7 +148,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 3);
             }
@@ -173,7 +173,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 4);
             }
@@ -198,7 +198,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 5);
             }
@@ -223,7 +223,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 6);
             }
@@ -248,7 +248,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 7);
             }
@@ -273,7 +273,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 8);
             }
@@ -298,7 +298,7 @@ public class ExpensiveCallAspect {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                span.endWithStackTrace(0, TimeUnit.NANOSECONDS);
+                span.endWithStackTrace(0, NANOSECONDS);
             } else {
                 onAfterInternal(span, 9);
             }

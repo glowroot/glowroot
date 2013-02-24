@@ -15,6 +15,7 @@
  */
 package io.informant.local.ui;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -35,7 +36,6 @@ import io.informant.util.Clock;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
@@ -233,21 +233,21 @@ public class TracePointJsonServiceTest {
         Trace trace = mock(Trace.class);
         when(trace.getId()).thenReturn(id);
         when(trace.getStartTick()).thenReturn(
-                DEFAULT_CURRENT_TICK - TimeUnit.MILLISECONDS.toNanos(durationMillis));
+                DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
         return trace;
     }
 
     private static Trace mockPendingTrace(String id, long durationMillis, boolean completed) {
         Trace trace = mock(Trace.class);
         when(trace.getId()).thenReturn(id);
-        when(trace.getDuration()).thenReturn(TimeUnit.MILLISECONDS.toNanos(durationMillis));
+        when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
         when(trace.isCompleted()).thenReturn(completed);
         return trace;
     }
 
     private TracePoint mockPoint(String id, long capturedAt, long durationMillis,
             boolean completed) {
-        return TracePoint.from(id, capturedAt, TimeUnit.MILLISECONDS.toNanos(durationMillis),
-                completed, false);
+        return TracePoint.from(id, capturedAt, MILLISECONDS.toNanos(durationMillis), completed,
+                false);
     }
 }

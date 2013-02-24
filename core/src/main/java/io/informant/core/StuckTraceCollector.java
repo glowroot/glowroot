@@ -15,6 +15,9 @@
  */
 package io.informant.core;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.util.DaemonExecutors;
@@ -22,7 +25,6 @@ import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +62,7 @@ class StuckTraceCollector implements Runnable {
         this.ticker = ticker;
         // wait to schedule the real stuck thread command until it is within CHECK_INTERVAL_MILLIS
         // from needing to start
-        scheduledExecutor
-                .scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS, MILLISECONDS);
     }
 
     public void run() {
@@ -90,8 +91,8 @@ class StuckTraceCollector implements Runnable {
         if (config.getStuckThresholdSeconds() != GeneralConfig.STORE_THRESHOLD_DISABLED) {
             // stuck threshold is not disabled
             long stuckThresholdTick = ticker.read()
-                    - TimeUnit.SECONDS.toNanos(config.getStuckThresholdSeconds())
-                    + TimeUnit.MILLISECONDS.toNanos(CHECK_INTERVAL_MILLIS);
+                    - SECONDS.toNanos(config.getStuckThresholdSeconds())
+                    + MILLISECONDS.toNanos(CHECK_INTERVAL_MILLIS);
             for (Trace trace : traceRegistry.getTraces()) {
                 // if the trace is within CHECK_INTERVAL_MILLIS from hitting the stuck
                 // thread threshold and the stuck thread messaging hasn't already been scheduled
@@ -100,12 +101,12 @@ class StuckTraceCollector implements Runnable {
                         && trace.getStuckScheduledFuture() == null) {
                     // schedule stuck thread
                     long initialDelayMillis = Math.max(0,
-                            TimeUnit.SECONDS.toMillis(config.getStuckThresholdSeconds()
-                                    - TimeUnit.NANOSECONDS.toMillis(trace.getDuration())));
+                            SECONDS.toMillis(config.getStuckThresholdSeconds()
+                                    - NANOSECONDS.toMillis(trace.getDuration())));
                     CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
                             traceSink);
                     ScheduledFuture<?> scheduledFuture = scheduledExecutor.schedule(command,
-                            initialDelayMillis, TimeUnit.MILLISECONDS);
+                            initialDelayMillis, MILLISECONDS);
                     trace.setStuckScheduledFuture(scheduledFuture);
                 } else {
                     // since the list of traces are "nearly" ordered by start time, if this trace

@@ -15,12 +15,11 @@
  */
 package io.informant.local.store;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.core.Trace;
 import io.informant.util.Singleton;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Trask Stalnaker
@@ -42,9 +41,8 @@ public class TraceSnapshotService {
         long duration = trace.getDuration();
         // check if should store for user tracing
         String userId = trace.getUserId();
-        if (userId != null
-                && userId.equals(configService.getUserConfig().getUserId())
-                && duration >= TimeUnit.MILLISECONDS.toNanos(configService.getUserConfig()
+        if (userId != null && userId.equals(configService.getUserConfig().getUserId())
+                && duration >= MILLISECONDS.toNanos(configService.getUserConfig()
                         .getStoreThresholdMillis())) {
             return true;
         }
@@ -53,8 +51,7 @@ public class TraceSnapshotService {
             int fineStoreThresholdMillis = configService.getFineProfilingConfig()
                     .getStoreThresholdMillis();
             if (fineStoreThresholdMillis != GeneralConfig.STORE_THRESHOLD_DISABLED) {
-                return trace.getDuration() >= TimeUnit.MILLISECONDS
-                        .toNanos(fineStoreThresholdMillis);
+                return trace.getDuration() >= MILLISECONDS.toNanos(fineStoreThresholdMillis);
             }
         }
         // fall back to core store threshold
@@ -64,6 +61,6 @@ public class TraceSnapshotService {
     private boolean shouldStoreBasedOnCoreStoreThreshold(Trace trace) {
         int storeThresholdMillis = configService.getGeneralConfig().getStoreThresholdMillis();
         return storeThresholdMillis != GeneralConfig.STORE_THRESHOLD_DISABLED
-                && trace.getDuration() >= TimeUnit.MILLISECONDS.toNanos(storeThresholdMillis);
+                && trace.getDuration() >= MILLISECONDS.toNanos(storeThresholdMillis);
     }
 }
