@@ -121,10 +121,10 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         return informant;
     }
 
-    public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass,
-            String threadName) throws IOException, InterruptedException {
+    public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
+            throws IOException, InterruptedException {
         socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP_COMMAND,
-                appUnderTestClass.getName(), threadName));
+                appUnderTestClass.getName()));
     }
 
     public void close() throws IOException, InterruptedException {

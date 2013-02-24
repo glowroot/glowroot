@@ -129,10 +129,7 @@ class SocketCommandProcessor implements Runnable {
             preExistingThreads = Threads.currentThreads();
         }
         String appClassName = (String) argList.get(1);
-        String threadName = (String) argList.get(2);
         Class<?> appClass = Class.forName(appClassName);
-        String previousThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(threadName);
         try {
             AppUnderTest app = (AppUnderTest) appClass.newInstance();
             app.executeApp();
@@ -142,8 +139,6 @@ class SocketCommandProcessor implements Runnable {
             // circumstances like OutOfMemoryError
             logger.error(t.getMessage(), t);
             respond(EXCEPTION_RESPONSE, commandNum);
-        } finally {
-            Thread.currentThread().setName(previousThreadName);
         }
     }
 

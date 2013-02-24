@@ -21,26 +21,17 @@ import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.internal.TempDirs;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * {@link AppUnderTest}s are intended to be run serially within a given InformantContainer.
- * {@link AppUnderTest}s can be run in parallel using multiple InformantContainers.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// even though this is thread safe, it is not useful for running tests in parallel since
-// getLastTrace() and others are not scoped to a particular test
-@ThreadSafe
 public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
-
-    private static final AtomicInteger threadNameCounter = new AtomicInteger();
 
     private final ExecutionAdapter executionAdapter;
     private final File dataDir;
@@ -92,18 +83,12 @@ public class InformantContainer {
 
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
-        String threadName = "AppUnderTest-" + threadNameCounter.getAndIncrement();
-        String previousThreadName = Thread.currentThread().getName();
-        try {
-            executionAdapter.executeAppUnderTest(appUnderTestClass, threadName);
-            // wait for all traces to be written to the embedded db
-            Stopwatch stopwatch = new Stopwatch().start();
-            while (informant.getNumPendingCompleteTraces() > 0
-                    && stopwatch.elapsedMillis() < 5000) {
-                Thread.sleep(10);
-            }
-        } finally {
-            Thread.currentThread().setName(previousThreadName);
+        executionAdapter.executeAppUnderTest(appUnderTestClass);
+        // wait for all traces to be written to the embedded db
+        Stopwatch stopwatch = new Stopwatch().start();
+        while (informant.getNumPendingCompleteTraces() > 0
+                && stopwatch.elapsedMillis() < 5000) {
+            Thread.sleep(10);
         }
     }
 
@@ -144,8 +129,7 @@ public class InformantContainer {
     @ThreadSafe
     interface ExecutionAdapter {
         Informant getInformant();
-        void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass, String threadName)
-                throws Exception;
+        void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
         void close() throws Exception;
     }
 }

@@ -55,18 +55,14 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         return informant;
     }
 
-    public void executeAppUnderTest(final Class<? extends AppUnderTest> appUnderTestClass,
-            String threadName) throws Exception {
-
-        String previousThreadName = Thread.currentThread().getName();
+    public void executeAppUnderTest(final Class<? extends AppUnderTest> appUnderTestClass)
+            throws Exception {
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setName(threadName);
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         try {
             isolatedWeavingClassLoader.newInstance(appUnderTestClass, AppUnderTest.class)
                     .executeApp();
         } finally {
-            Thread.currentThread().setName(previousThreadName);
             Thread.currentThread().setContextClassLoader(previousContextClassLoader);
         }
     }
