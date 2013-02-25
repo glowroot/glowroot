@@ -20,11 +20,9 @@ import io.informant.api.LoggerFactory;
 import io.informant.api.PluginServices;
 import io.informant.api.weaving.Mixin;
 import io.informant.core.PluginServicesImpl.PluginServicesImplFactory;
-import io.informant.core.config.ConfigService;
 import io.informant.core.config.PluginInfoCache;
 import io.informant.core.log.LogMessageSink;
 import io.informant.core.log.LoggerFactoryImpl;
-import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.core.util.OnlyUsedByTests;
 import io.informant.core.util.Static;
 import io.informant.core.weaving.Advice;
@@ -34,23 +32,18 @@ import io.informant.core.weaving.WeavingMetric;
 import io.informant.local.ui.HttpServer;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.h2.store.FileLister;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -75,23 +68,8 @@ public class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
-    private static final PluginInfoCache pluginInfoCache = new PluginInfoCache();
-    private static final ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
-    private static final WeavingMetricImpl weavingMetric = new WeavingMetricImpl(
-            Ticker.systemTicker());
-
     @Nullable
     private static volatile Injector injector;
-    private static final Object lock = new Object();
-
-    // when running unit tests under IsolatedWeavingClassLoader, plugins may get instantiated by
-    // pointcuts and request their PluginServices instance before Informant has finished starting
-    // up, in which case they are given a proxy which will point to the real PluginServices as soon
-    // as possible. this is not an issue when running under javaagent, since in that case Informant
-    // is started up before adding the weaving agent (InformantClassFileTransformer).
-    @GuardedBy("returnPluginServicesProxy")
-    private static final List<PluginServicesProxy> pluginServicesProxies = Lists.newArrayList();
-    private static final AtomicBoolean returnPluginServicesProxy = new AtomicBoolean(true);
 
     private static final LoadingCache<String, PluginServices> pluginServices =
             CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
@@ -109,14 +87,6 @@ public class MainEntryPoint {
     // javaagent entry point
     public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
         logger.debug("premain(): agentArgs={}", agentArgs);
-        WeavingClassFileTransformer weavingClassFileTransformer = newWeavingClassFileTransformer();
-        // add weaving agent as early as possible to avoid missing some classes that are loaded
-        // indirectly by the Informant startup process, e.g. the H2 FileLister.tryUnlockDatabase()
-        // call below triggers java.sql.DriverManager which looks on the classpath for
-        // META-INF/services/java.sql.Driver files and loads their respective drivers which, at
-        // least in the case of the Oracle driver, loads the driver's Connection and
-        // PreparedStatement classes which need to be woven
-        instrumentation.addTransformer(weavingClassFileTransformer);
         ImmutableMap<String, String> properties = getInformantProperties();
         // ...WithNoWarning since warning is displayed during start so no need for it twice
         File dataDir = DataDir.getDataDirWithNoWarning(properties);
@@ -135,74 +105,29 @@ public class MainEntryPoint {
             // inevitable at least in this case
             if (!isTomcatStop()) {
                 // no need for logging in the special (but common) case described above
-                logger.error("disabling Informant, embedded database '" + dataDir.getAbsolutePath()
-                        + "' is locked by another process.");
+                logger.error("informant failed to start: embedded database '"
+                        + dataDir.getAbsolutePath() + "' is locked by another process.");
             }
-            weavingClassFileTransformer.disable();
             return;
         }
         try {
             start(properties);
+            WeavingClassFileTransformer weavingClassFileTransformer =
+                    createWeavingClassFileTransformer();
+            instrumentation.addTransformer(weavingClassFileTransformer);
         } catch (Throwable t) {
-            logger.error("disabling Informant due to startup failure: {}", t.getMessage(), t);
+            logger.error("informant failed to start: {}", t.getMessage(), t);
         }
-    }
-
-    private static boolean isTomcatStop() {
-        return Objects.equal(System.getProperty("sun.java.command"),
-                "org.apache.catalina.startup.Bootstrap stop");
     }
 
     // called via reflection from io.informant.api.PluginServices
     public static PluginServices getPluginServices(String pluginId) {
-        if (injector == null) {
-            throw new NullPointerException("Call to start() is required");
-        }
-        if (returnPluginServicesProxy.get()) {
-            synchronized (returnPluginServicesProxy) {
-                if (returnPluginServicesProxy.get()) {
-                    MetricCache metricCache = injector.getInstance(MetricCache.class);
-                    PluginServicesProxy proxy = new PluginServicesProxy(pluginId, metricCache);
-                    pluginServicesProxies.add(proxy);
-                    return proxy;
-                }
-            }
-        }
         return pluginServices.getUnchecked(pluginId);
     }
 
-    @VisibleForTesting
-    public static void start(@ReadOnly Map<String, String> properties) throws SQLException,
-            IOException {
-        logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
-        synchronized (lock) {
-            if (injector != null) {
-                throw new IllegalStateException("Informant is already started");
-            }
-            injector = Guice.createInjector(new InformantModule(properties, pluginInfoCache,
-                    parsedTypeCache, weavingMetric));
-            InformantModule.start(injector);
-        }
-        LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
-        returnPluginServicesProxy.set(false);
-        synchronized (returnPluginServicesProxy) {
-            for (PluginServicesProxy proxy : pluginServicesProxies) {
-                proxy.start(injector.getInstance(PluginServicesImplFactory.class),
-                        injector.getInstance(ConfigService.class));
-            }
-            // don't need reference to these proxies anymore, may as well clean up
-            pluginServicesProxies.clear();
-        }
-    }
-
-    static void startUsingSystemProperties() throws SQLException, IOException {
+    // used by Viewer
+    static void startUsingSystemProperties() throws Exception {
         start(getInformantProperties());
-    }
-
-    private static WeavingClassFileTransformer newWeavingClassFileTransformer() {
-        Mixin[] mixins = Iterables.toArray(pluginInfoCache.getMixins(), Mixin.class);
-        Advice[] advisors = Iterables.toArray(pluginInfoCache.getAdvisors(), Advice.class);
-        return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache, weavingMetric);
     }
 
     private static ImmutableMap<String, String> getInformantProperties() {
@@ -217,12 +142,32 @@ public class MainEntryPoint {
         return builder.build();
     }
 
-    @OnlyUsedByTests
-    public static WeavingMetric getWeavingMetric() {
-        return weavingMetric;
+    private static boolean isTomcatStop() {
+        return Objects.equal(System.getProperty("sun.java.command"),
+                "org.apache.catalina.startup.Bootstrap stop");
     }
 
-    @OnlyUsedByTests
+    @VisibleForTesting
+    public static void start(@ReadOnly Map<String, String> properties) throws Exception {
+        logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
+        if (injector != null) {
+            throw new IllegalStateException("Informant is already started");
+        }
+        injector = Guice.createInjector(new InformantModule(properties));
+        InformantModule.start(injector);
+        LoggerFactoryImpl.setLogMessageSink(injector.getInstance(LogMessageSink.class));
+    }
+
+    private static WeavingClassFileTransformer createWeavingClassFileTransformer() {
+        PluginInfoCache pluginInfoCache = getInstance(PluginInfoCache.class);
+        ParsedTypeCache parsedTypeCache = getInstance(ParsedTypeCache.class);
+        WeavingMetric weavingMetric = getInstance(WeavingMetric.class);
+        Mixin[] mixins = Iterables.toArray(pluginInfoCache.getMixins(), Mixin.class);
+        Advice[] advisors = Iterables.toArray(pluginInfoCache.getAdvisors(), Advice.class);
+        return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache, weavingMetric);
+    }
+
+    @VisibleForTesting
     public static <T> T getInstance(Class<T> type) {
         if (injector == null) {
             throw new NullPointerException("Call to start() is required");
@@ -232,23 +177,17 @@ public class MainEntryPoint {
 
     @OnlyUsedByTests
     public static int getPort() {
-        if (injector == null) {
-            throw new NullPointerException("Call to start() is required");
-        }
-        return injector.getInstance(HttpServer.class).getPort();
+        return getInstance(HttpServer.class).getPort();
     }
 
     @OnlyUsedByTests
     public static void shutdown() {
         logger.debug("shutdown()");
-        synchronized (lock) {
-            if (injector == null) {
-                throw new IllegalStateException("Informant is not started");
-            }
-            InformantModule.close(injector);
-            injector = null;
-            pluginServicesProxies.clear();
-            pluginServices.invalidateAll();
+        if (injector == null) {
+            throw new IllegalStateException("Informant is not started");
         }
+        InformantModule.close(injector);
+        injector = null;
+        pluginServices.invalidateAll();
     }
 }

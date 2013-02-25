@@ -50,6 +50,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
@@ -107,6 +108,9 @@ public class ParsedTypeCache {
             new ConcurrentHashMap<String, ParsedType>();
 
     private final SortedMap<String, String> typeNameUppers = Maps.newTreeMap();
+
+    @Inject
+    ParsedTypeCache() {}
 
     // returns the first <limit> matching type names, ordered alphabetically (case-insensitive)
     public List<String> getMatchingTypeNames(String partialTypeName, int limit) {

@@ -72,8 +72,12 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <!-- this is the last version of h2 that supports jdk 5 -->
-      <version>1.3.168</version>
+      <!-- 1.3.168 is the last version of h2 that supports jdk 5
+           but that version introduced a change where using h2's native api triggers java.sql.Driver
+           to load, which finds and loads other drivers via META-INF/services/java.sql.Driver
+           the problem is that this all happens during Informant initialization before it is ready
+           for plugins (e.g. jdbc-plugin) -->
+      <version>1.3.167</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>

@@ -20,6 +20,7 @@ import io.informant.core.config.PluginInfoCache;
 import io.informant.core.util.ThreadSafe;
 import io.informant.core.util.Threads;
 import io.informant.core.weaving.IsolatedWeavingClassLoader;
+import io.informant.core.weaving.WeavingMetric;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 
 import java.io.IOException;
@@ -51,7 +52,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
                 "io.informant.shaded");
-        loader.weavingMetric(MainEntryPoint.getWeavingMetric());
+        loader.weavingMetric(MainEntryPoint.getInstance(WeavingMetric.class));
         isolatedWeavingClassLoader = loader.build();
         informant = new SameJvmInformant();
     }

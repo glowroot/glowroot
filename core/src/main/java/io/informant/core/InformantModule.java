@@ -28,7 +28,7 @@ import io.informant.core.util.Clock;
 import io.informant.core.util.DataSource;
 import io.informant.core.util.RollingFile;
 import io.informant.core.util.ThreadSafe;
-import io.informant.core.weaving.ParsedTypeCache;
+import io.informant.core.weaving.WeavingMetric;
 import io.informant.local.log.LogMessageDao;
 import io.informant.local.log.LogMessageSinkLocal;
 import io.informant.local.trace.TraceSinkLocal;
@@ -48,11 +48,10 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
-import com.google.inject.Provides;
 import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-import com.google.inject.name.Named;
+import com.google.inject.name.Names;
 
 /**
  * Primary Guice module.
@@ -66,25 +65,18 @@ class InformantModule extends AbstractModule {
     private static final Logger logger = LoggerFactory.getLogger(InformantModule.class);
 
     private final ImmutableMap<String, String> properties;
-    private final PluginInfoCache pluginInfoCache;
-    private final ParsedTypeCache parsedTypeCache;
-    private final WeavingMetricImpl weavingMetric;
 
     private final File dataDir;
     private final DataSource dataSource;
+    private final PluginInfoCache pluginInfoCache;
     private final ConfigService configService;
     private final RollingFile rollingFile;
 
     // singletons that throw checked exceptions in their constructor are initialized here so the
     // checked exceptions can very explicitly bubble up and be used to disable informant without
     // harming the monitored app
-    InformantModule(@ReadOnly Map<String, String> properties, PluginInfoCache pluginInfoCache,
-            ParsedTypeCache parsedTypeCache, WeavingMetricImpl weavingMetric) throws SQLException,
-            IOException {
+    InformantModule(@ReadOnly Map<String, String> properties) throws SQLException, IOException {
         this.properties = ImmutableMap.copyOf(properties);
-        this.pluginInfoCache = pluginInfoCache;
-        this.parsedTypeCache = parsedTypeCache;
-        this.weavingMetric = weavingMetric;
         dataDir = DataDir.getDataDir(properties);
         // mem db is only used for testing (by informant-testkit)
         String h2MemDb = properties.get("internal.h2.memdb");
@@ -93,6 +85,7 @@ class InformantModule extends AbstractModule {
         } else {
             dataSource = new DataSource(new File(dataDir, "informant.h2.db"));
         }
+        pluginInfoCache = new PluginInfoCache();
         configService = new ConfigService(dataDir, pluginInfoCache);
         int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
@@ -102,6 +95,14 @@ class InformantModule extends AbstractModule {
     @Override
     protected void configure() {
         logger.debug("configure()");
+        bind(File.class).annotatedWith(Names.named("data.dir")).toInstance(dataDir);
+        bind(DataSource.class).toInstance(dataSource);
+        bind(PluginInfoCache.class).toInstance(pluginInfoCache);
+        bind(ConfigService.class).toInstance(configService);
+        bind(RollingFile.class).toInstance(rollingFile);
+        bind(WeavingMetric.class).to(WeavingMetricImpl.class).in(Singleton.class);
+        bind(Clock.class).toInstance(Clock.systemClock());
+        bind(Ticker.class).toInstance(Ticker.systemTicker());
         install(new LocalModule(properties));
         install(new FactoryModuleBuilder().build(PluginServicesImplFactory.class));
         // this needs to be set early since both async-http-client and netty depend on it
@@ -110,61 +111,6 @@ class InformantModule extends AbstractModule {
                 return "Informant-" + proposedThreadName;
             }
         });
-    }
-
-    @Provides
-    @Singleton
-    PluginInfoCache providesPluginInfoCache() {
-        return pluginInfoCache;
-    }
-
-    @Provides
-    @Singleton
-    ParsedTypeCache providesParsedTypeCache() {
-        return parsedTypeCache;
-    }
-
-    @Provides
-    @Singleton
-    WeavingMetricImpl providesWeavingMetricImpl() {
-        return weavingMetric;
-    }
-
-    @Provides
-    @Singleton
-    @Named("data.dir")
-    File providesDataDir() {
-        return dataDir;
-    }
-
-    @Provides
-    @Singleton
-    DataSource providesDataSource() {
-        return dataSource;
-    }
-
-    @Provides
-    @Singleton
-    ConfigService providesConfigService() {
-        return configService;
-    }
-
-    @Provides
-    @Singleton
-    RollingFile providesRollingFile() {
-        return rollingFile;
-    }
-
-    @Provides
-    @Singleton
-    static Clock providesClock() {
-        return Clock.systemClock();
-    }
-
-    @Provides
-    @Singleton
-    static Ticker providesTicker() {
-        return Ticker.systemTicker();
     }
 
     static void start(Injector injector) throws ProvisionException {
