@@ -15,54 +15,42 @@
  */
 package io.informant.local.ui;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.config.ConfigService;
-import io.informant.core.trace.TraceRegistry;
-import io.informant.core.util.DataSource;
-import io.informant.core.util.OnlyUsedByTests;
-import io.informant.local.log.LogMessage;
-import io.informant.local.log.LogMessageDao;
-import io.informant.local.trace.TraceSinkLocal;
-import io.informant.local.trace.TraceSnapshotDao;
+import io.informant.config.ConfigService;
+import io.informant.core.TraceRegistry;
+import io.informant.local.store.DataSource;
+import io.informant.local.store.LocalTraceSink;
+import io.informant.local.store.TraceSnapshotDao;
+import io.informant.util.OnlyUsedByTests;
+import io.informant.util.Singleton;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Locale;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Iterables;
-import com.google.common.io.CharStreams;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.JsonWriter;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
- * Json service to clear captured data.
+ * Json service for various admin tasks.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-@VisibleForTesting
 @Singleton
-public class AdminJsonService implements JsonService {
+class AdminJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
-    private final LogMessageDao logMessageDao;
     private final TraceSnapshotDao traceSnapshotDao;
     private final ConfigService configService;
-    private final TraceSinkLocal traceSinkLocal;
+    private final LocalTraceSink traceSinkLocal;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
-    @Inject
-    AdminJsonService(LogMessageDao logMessageDao, TraceSnapshotDao traceSnapshotDao,
-            ConfigService configService, TraceSinkLocal traceSinkLocal, DataSource dataSource,
-            TraceRegistry traceRegistry) {
-        this.logMessageDao = logMessageDao;
+    AdminJsonService(TraceSnapshotDao traceSnapshotDao, ConfigService configService,
+            LocalTraceSink traceSinkLocal, DataSource dataSource, TraceRegistry traceRegistry) {
         this.traceSnapshotDao = traceSnapshotDao;
         this.configService = configService;
         this.traceSinkLocal = traceSinkLocal;
@@ -82,50 +70,16 @@ public class AdminJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    void truncateData() {
-        logger.debug("truncateData()");
+    void deleteAllData() {
+        logger.debug("deleteAllData()");
         traceSnapshotDao.deleteAllSnapshots();
     }
 
     @OnlyUsedByTests
     @JsonServiceMethod
-    void truncateConfig() throws IOException, JsonSyntaxException {
-        logger.debug("truncateConfig()");
-        configService.deleteConfig();
-    }
-
-    @VisibleForTesting
-    @JsonServiceMethod
-    public String getLog() throws IOException {
-        logger.debug("getLog()");
-        List<LogMessage> logMessages = logMessageDao.readLogMessages();
-        StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        jw.beginArray();
-        for (LogMessage logMessage : logMessages) {
-            jw.beginObject();
-            jw.name("timestamp");
-            jw.value(logMessage.getTimestamp());
-            jw.name("level");
-            jw.value(logMessage.getLevel().name().toLowerCase(Locale.ENGLISH));
-            jw.name("loggerName");
-            jw.value(logMessage.getLoggerName());
-            jw.name("text");
-            jw.value(logMessage.getText());
-            jw.flush();
-            sb.append(",\"exception\":");
-            sb.append(logMessage.getException());
-            jw.endObject();
-        }
-        jw.endArray();
-        jw.close();
-        return sb.toString();
-    }
-
-    @JsonServiceMethod
-    void truncateLog() {
-        logger.debug("truncateLog()");
-        logMessageDao.deleteAllLogMessages();
+    void resetAllConfig() throws IOException, JsonSyntaxException {
+        logger.debug("resetAllConfig()");
+        configService.resetAllConfig();
     }
 
     @OnlyUsedByTests

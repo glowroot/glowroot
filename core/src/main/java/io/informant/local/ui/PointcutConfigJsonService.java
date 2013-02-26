@@ -15,16 +15,18 @@
  */
 package io.informant.local.ui;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.util.GsonFactory;
-import io.informant.core.weaving.ParsedMethod;
-import io.informant.core.weaving.ParsedTypeCache;
+import io.informant.util.GsonFactory;
+import io.informant.util.Singleton;
+import io.informant.weaving.ParsedMethod;
+import io.informant.weaving.ParsedTypeCache;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 
@@ -33,8 +35,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Json service to read pointcut data.
@@ -50,7 +50,6 @@ class PointcutConfigJsonService implements JsonService {
 
     private final ParsedTypeCache parsedTypeCache;
 
-    @Inject
     PointcutConfigJsonService(ParsedTypeCache parsedTypeCache) {
         this.parsedTypeCache = parsedTypeCache;
     }

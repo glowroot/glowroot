@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,17 @@
  */
 package io.informant.core;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
 import io.informant.api.Metric;
 import io.informant.api.weaving.Pointcut;
-import io.informant.core.trace.MetricImpl;
+import io.informant.util.Singleton;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * @author Trask Stalnaker
@@ -47,7 +46,6 @@ class MetricCache {
                 }
             });
 
-    @Inject
     MetricCache(Ticker ticker) {
         this.ticker = ticker;
     }

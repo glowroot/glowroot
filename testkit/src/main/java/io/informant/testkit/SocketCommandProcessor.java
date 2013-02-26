@@ -15,14 +15,13 @@
  */
 package io.informant.testkit;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.MainEntryPoint;
-import io.informant.core.util.DaemonExecutors;
-import io.informant.core.util.Threads;
-import io.informant.core.util.Threads.RogueThreadsException;
+import io.informant.MainEntryPoint;
+import io.informant.local.ui.LocalUiModule;
 import io.informant.testkit.SocketCommander.CommandWrapper;
 import io.informant.testkit.SocketCommander.ResponseWrapper;
+import io.informant.util.DaemonExecutors;
+import io.informant.util.Threads;
+import io.informant.util.Threads.RogueThreadsException;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -30,6 +29,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -47,6 +49,7 @@ class SocketCommandProcessor implements Runnable {
     public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
     public static final String KILL_COMMAND = "KILL";
     public static final String INTERRUPT = "INTERRUPT";
+    public static final int NO_PORT = -1;
 
     private static final Logger logger = LoggerFactory.getLogger(SocketCommandProcessor.class);
 
@@ -101,7 +104,13 @@ class SocketCommandProcessor implements Runnable {
         int commandNum = commandWrapper.getCommandNum();
         if (command instanceof String) {
             if (command.equals(GET_PORT_COMMAND)) {
-                respond(MainEntryPoint.getPort(), commandNum);
+                LocalUiModule uiModule = MainEntryPoint.getUiModule();
+                if (uiModule == null) {
+                    // informant failed to start
+                    respond(NO_PORT, commandNum);
+                } else {
+                    respond(uiModule.getHttpServer().getPort(), commandNum);
+                }
             } else if (command.equals(KILL_COMMAND)) {
                 System.exit(0);
             } else if (command.equals(SHUTDOWN_COMMAND)) {

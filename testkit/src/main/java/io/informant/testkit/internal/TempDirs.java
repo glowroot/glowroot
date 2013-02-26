@@ -15,7 +15,7 @@
  */
 package io.informant.testkit.internal;
 
-import io.informant.core.util.Static;
+import io.informant.util.Static;
 
 import java.io.File;
 import java.io.IOException;

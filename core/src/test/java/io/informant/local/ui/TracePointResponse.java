@@ -15,7 +15,7 @@
  */
 package io.informant.local.ui;
 
-import io.informant.core.util.GsonFactory;
+import io.informant.util.GsonFactory;
 
 import java.util.List;
 

@@ -16,8 +16,6 @@
 package io.informant.plugin.jdbc;
 
 import io.informant.api.ErrorMessage;
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
 import io.informant.api.MetricTimer;
@@ -40,6 +38,8 @@ import io.informant.api.weaving.Pointcut;
 import io.informant.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
 import io.informant.plugin.jdbc.PreparedStatementMirror.NullParameterValue;
 import io.informant.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
+import io.informant.shaded.slf4j.Logger;
+import io.informant.shaded.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.Reader;

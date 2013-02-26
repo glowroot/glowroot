@@ -15,34 +15,33 @@
  */
 package io.informant.local.ui;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.config.CoarseProfilingConfig;
-import io.informant.core.config.ConfigService;
-import io.informant.core.config.ConfigService.OptimisticLockException;
-import io.informant.core.config.FineProfilingConfig;
-import io.informant.core.config.GeneralConfig;
-import io.informant.core.config.PluginConfig;
-import io.informant.core.config.PluginInfo;
-import io.informant.core.config.PluginInfoCache;
-import io.informant.core.config.PointcutConfig;
-import io.informant.core.config.UserConfig;
-import io.informant.core.util.GsonFactory;
-import io.informant.core.util.JsonElements;
-import io.informant.core.util.RollingFile;
+import io.informant.config.CoarseProfilingConfig;
+import io.informant.config.ConfigService;
+import io.informant.config.ConfigService.OptimisticLockException;
+import io.informant.config.FineProfilingConfig;
+import io.informant.config.GeneralConfig;
+import io.informant.config.PluginConfig;
+import io.informant.config.PluginInfo;
+import io.informant.config.PluginInfoCache;
+import io.informant.config.PointcutConfig;
+import io.informant.config.UserConfig;
+import io.informant.local.store.RollingFile;
+import io.informant.util.GsonFactory;
+import io.informant.util.JsonElements;
+import io.informant.util.Singleton;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 
 /**
  * Json service to read config data.
@@ -62,10 +61,8 @@ class ConfigJsonService implements JsonService {
     private final File dataDir;
     private final int uiPort;
 
-    @Inject
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
-            PluginInfoCache pluginInfoCache, @Named("data.dir") File dataDir,
-            @Named("ui.port") int uiPort) {
+            PluginInfoCache pluginInfoCache, File dataDir, int uiPort) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginInfoCache = pluginInfoCache;

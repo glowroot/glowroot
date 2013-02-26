@@ -16,7 +16,7 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.core.MainEntryPoint;
+import io.informant.MainEntryPoint;
 import io.informant.testkit.internal.ClassPath;
 
 import java.io.File;

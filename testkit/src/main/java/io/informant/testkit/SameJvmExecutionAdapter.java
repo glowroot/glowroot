@@ -15,13 +15,12 @@
  */
 package io.informant.testkit;
 
-import io.informant.core.MainEntryPoint;
-import io.informant.core.config.PluginInfoCache;
-import io.informant.core.util.ThreadSafe;
-import io.informant.core.util.Threads;
-import io.informant.core.weaving.IsolatedWeavingClassLoader;
-import io.informant.core.weaving.WeavingMetric;
+import io.informant.MainEntryPoint;
+import io.informant.config.PluginInfoCache;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
+import io.informant.util.ThreadSafe;
+import io.informant.util.Threads;
+import io.informant.weaving.IsolatedWeavingClassLoader;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -52,7 +51,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
                 "io.informant.shaded");
-        loader.weavingMetric(MainEntryPoint.getInstance(WeavingMetric.class));
+        loader.weavingMetric(MainEntryPoint.getCoreModule().getWeavingMetric());
         isolatedWeavingClassLoader = loader.build();
         informant = new SameJvmInformant();
     }
@@ -85,5 +84,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         Threads.preShutdownCheck(preExistingThreads);
         MainEntryPoint.shutdown();
         Threads.postShutdownCheck(preExistingThreads);
+    }
+
+    public int getUiPort() {
+        return MainEntryPoint.getUiModule().getHttpServer().getPort();
     }
 }

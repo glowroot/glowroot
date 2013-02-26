@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
  */
 package io.informant.local.ui;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
+import io.informant.util.Singleton;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -25,11 +24,12 @@ import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.gson.stream.JsonWriter;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Json service to clear captured data.
@@ -41,9 +41,6 @@ import com.google.inject.Singleton;
 class ThreadDumpJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadDumpJsonService.class);
-
-    @Inject
-    ThreadDumpJsonService() {}
 
     @JsonServiceMethod
     String getThreadDump() throws IOException {

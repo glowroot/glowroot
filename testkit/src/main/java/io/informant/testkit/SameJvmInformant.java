@@ -15,25 +15,27 @@
  */
 package io.informant.testkit;
 
-import io.informant.core.MainEntryPoint;
-import io.informant.core.config.ConfigService;
-import io.informant.core.config.ConfigService.OptimisticLockException;
-import io.informant.core.trace.TraceRegistry;
-import io.informant.core.util.ByteStream;
-import io.informant.core.util.DataSource;
-import io.informant.core.util.ThreadSafe;
-import io.informant.local.log.LogMessageDao;
-import io.informant.local.trace.TraceSinkLocal;
-import io.informant.local.trace.TraceSnapshot;
-import io.informant.local.trace.TraceSnapshotDao;
-import io.informant.local.trace.TraceSnapshotWriter;
-import io.informant.local.trace.TraceWriter;
+import io.informant.MainEntryPoint;
+import io.informant.config.ConfigModule;
+import io.informant.config.ConfigService;
+import io.informant.config.ConfigService.OptimisticLockException;
+import io.informant.core.TraceModule;
+import io.informant.core.TraceRegistry;
+import io.informant.local.store.DataSource;
+import io.informant.local.store.DataSourceModule;
+import io.informant.local.store.LocalTraceSink;
+import io.informant.local.store.TraceSinkModule;
+import io.informant.local.store.TraceSnapshot;
+import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.TraceSnapshotWriter;
+import io.informant.local.store.TraceWriter;
+import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
-import io.informant.testkit.LogMessage.Level;
 import io.informant.testkit.PointcutConfig.CaptureItem;
 import io.informant.testkit.PointcutConfig.MethodModifier;
-import io.informant.testkit.Trace.ExceptionInfo;
 import io.informant.testkit.internal.GsonFactory;
+import io.informant.util.ByteStream;
+import io.informant.util.ThreadSafe;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,7 +48,6 @@ import java.util.Map.Entry;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
@@ -65,37 +66,40 @@ class SameJvmInformant implements Informant {
     private static final Gson gson = GsonFactory.create();
 
     private final ConfigService configService;
-    private final LogMessageDao logMessageDao;
     private final DataSource dataSource;
-    private final TraceSinkLocal traceSinkLocal;
+    private final LocalTraceSink traceSinkLocal;
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceExportHttpService traceExportHttpService;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
     SameJvmInformant() {
-        configService = MainEntryPoint.getInstance(ConfigService.class);
-        logMessageDao = MainEntryPoint.getInstance(LogMessageDao.class);
-        dataSource = MainEntryPoint.getInstance(DataSource.class);
-        traceSinkLocal = MainEntryPoint.getInstance(TraceSinkLocal.class);
-        traceSnapshotDao = MainEntryPoint.getInstance(TraceSnapshotDao.class);
-        traceExportHttpService = MainEntryPoint.getInstance(TraceExportHttpService.class);
-        traceRegistry = MainEntryPoint.getInstance(TraceRegistry.class);
+        ConfigModule configModule = MainEntryPoint.getConfigModule();
+        DataSourceModule dataSourceModule = MainEntryPoint.getDataSourceModule();
+        TraceSinkModule traceSinkModule = MainEntryPoint.getTraceSinkModule();
+        TraceModule coreModule = MainEntryPoint.getCoreModule();
+        LocalUiModule uiModule = MainEntryPoint.getUiModule();
+        configService = configModule.getConfigService();
+        dataSource = dataSourceModule.getDataSource();
+        traceSinkLocal = traceSinkModule.getTraceSink();
+        traceSnapshotDao = traceSinkModule.getTraceSnapshotDao();
+        traceExportHttpService = uiModule.getTraceExportHttpService();
+        traceRegistry = coreModule.getTraceRegistry();
         // can't use ticker from Informant since it is shaded when run in mvn and unshaded in ide
         ticker = Ticker.systemTicker();
     }
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws OptimisticLockException {
-        io.informant.core.config.GeneralConfig config = configService.getGeneralConfig();
-        io.informant.core.config.GeneralConfig updatedConfig =
-                io.informant.core.config.GeneralConfig.builder(config)
+        io.informant.config.GeneralConfig config = configService.getGeneralConfig();
+        io.informant.config.GeneralConfig updatedConfig =
+                io.informant.config.GeneralConfig.builder(config)
                         .storeThresholdMillis(storeThresholdMillis)
                         .build();
         configService.updateGeneralConfig(updatedConfig, config.getVersionHash());
     }
 
     public GeneralConfig getGeneralConfig() {
-        io.informant.core.config.GeneralConfig coreConfig = configService.getGeneralConfig();
+        io.informant.config.GeneralConfig coreConfig = configService.getGeneralConfig();
         GeneralConfig config = new GeneralConfig();
         config.setEnabled(coreConfig.isEnabled());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
@@ -109,8 +113,8 @@ class SameJvmInformant implements Informant {
     }
 
     public String updateGeneralConfig(GeneralConfig config) throws OptimisticLockException {
-        io.informant.core.config.GeneralConfig updatedConfig =
-                io.informant.core.config.GeneralConfig.builder(configService.getGeneralConfig())
+        io.informant.config.GeneralConfig updatedConfig =
+                io.informant.config.GeneralConfig.builder(configService.getGeneralConfig())
                         .enabled(config.isEnabled())
                         .storeThresholdMillis(config.getStoreThresholdMillis())
                         .stuckThresholdSeconds(config.getStuckThresholdSeconds())
@@ -123,7 +127,7 @@ class SameJvmInformant implements Informant {
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() {
-        io.informant.core.config.CoarseProfilingConfig coreConfig =
+        io.informant.config.CoarseProfilingConfig coreConfig =
                 configService.getCoarseProfilingConfig();
         CoarseProfilingConfig config = new CoarseProfilingConfig();
         config.setEnabled(coreConfig.isEnabled());
@@ -136,8 +140,8 @@ class SameJvmInformant implements Informant {
 
     public String updateCoarseProfilingConfig(CoarseProfilingConfig config)
             throws OptimisticLockException {
-        io.informant.core.config.CoarseProfilingConfig updatedConfig =
-                io.informant.core.config.CoarseProfilingConfig
+        io.informant.config.CoarseProfilingConfig updatedConfig =
+                io.informant.config.CoarseProfilingConfig
                         .builder(configService.getCoarseProfilingConfig())
                         .enabled(config.isEnabled())
                         .initialDelayMillis(config.getInitialDelayMillis())
@@ -148,7 +152,7 @@ class SameJvmInformant implements Informant {
     }
 
     public FineProfilingConfig getFineProfilingConfig() {
-        io.informant.core.config.FineProfilingConfig coreConfig =
+        io.informant.config.FineProfilingConfig coreConfig =
                 configService.getFineProfilingConfig();
         FineProfilingConfig config = new FineProfilingConfig();
         config.setEnabled(coreConfig.isEnabled());
@@ -162,8 +166,8 @@ class SameJvmInformant implements Informant {
 
     public String updateFineProfilingConfig(FineProfilingConfig config)
             throws OptimisticLockException {
-        io.informant.core.config.FineProfilingConfig updatedConfig =
-                io.informant.core.config.FineProfilingConfig
+        io.informant.config.FineProfilingConfig updatedConfig =
+                io.informant.config.FineProfilingConfig
                         .builder(configService.getFineProfilingConfig())
                         .enabled(config.isEnabled())
                         .tracePercentage(config.getTracePercentage())
@@ -175,7 +179,7 @@ class SameJvmInformant implements Informant {
     }
 
     public UserConfig getUserConfig() {
-        io.informant.core.config.UserConfig coreConfig = configService.getUserConfig();
+        io.informant.config.UserConfig coreConfig = configService.getUserConfig();
         UserConfig config = new UserConfig();
         config.setEnabled(coreConfig.isEnabled());
         config.setUserId(coreConfig.getUserId());
@@ -186,7 +190,7 @@ class SameJvmInformant implements Informant {
     }
 
     public String updateUserConfig(UserConfig config) throws OptimisticLockException {
-        io.informant.core.config.UserConfig updatedConfig = io.informant.core.config.UserConfig
+        io.informant.config.UserConfig updatedConfig = io.informant.config.UserConfig
                 .builder(configService.getUserConfig())
                 .enabled(config.isEnabled())
                 .userId(config.getUserId())
@@ -198,7 +202,7 @@ class SameJvmInformant implements Informant {
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) {
-        io.informant.core.config.PluginConfig coreConfig = configService.getPluginConfig(pluginId);
+        io.informant.config.PluginConfig coreConfig = configService.getPluginConfig(pluginId);
         if (coreConfig == null) {
             return null;
         }
@@ -213,8 +217,8 @@ class SameJvmInformant implements Informant {
 
     public String updatePluginConfig(String pluginId, PluginConfig config)
             throws OptimisticLockException {
-        io.informant.core.config.PluginConfig.Builder updatedConfig =
-                io.informant.core.config.PluginConfig
+        io.informant.config.PluginConfig.Builder updatedConfig =
+                io.informant.config.PluginConfig
                         .builder(configService.getPluginConfig(pluginId));
         updatedConfig.enabled(config.isEnabled());
         for (Entry<String, /*@Nullable*/Object> entry : config.getProperties().entrySet()) {
@@ -225,7 +229,7 @@ class SameJvmInformant implements Informant {
 
     public List<PointcutConfig> getPointcutConfigs() {
         List<PointcutConfig> configs = Lists.newArrayList();
-        for (io.informant.core.config.PointcutConfig coreConfig : configService
+        for (io.informant.config.PointcutConfig coreConfig : configService
                 .getPointcutConfigs()) {
             configs.add(convertToCore(coreConfig));
         }
@@ -252,25 +256,6 @@ class SameJvmInformant implements Informant {
         return getLastTrace(true);
     }
 
-    public List<LogMessage> getLogMessages() {
-        List<LogMessage> logMessages = Lists.newArrayList();
-        for (io.informant.local.log.LogMessage coreLogMessage : logMessageDao.readLogMessages()) {
-            LogMessage logMessage = new LogMessage();
-            logMessage.setTimestamp(coreLogMessage.getTimestamp());
-            logMessage.setLevel(Level.valueOf(coreLogMessage.getLevel().name()));
-            logMessage.setLoggerName(coreLogMessage.getLoggerName());
-            logMessage.setText(coreLogMessage.getText());
-            logMessage.setException(gson.fromJson(coreLogMessage.getException(),
-                    ExceptionInfo.class));
-            logMessages.add(logMessage);
-        }
-        return logMessages;
-    }
-
-    public void deleteAllLogMessages() {
-        logMessageDao.deleteAllLogMessages();
-    }
-
     public void compactData() throws SQLException {
         dataSource.compact();
     }
@@ -292,19 +277,8 @@ class SameJvmInformant implements Informant {
     public void cleanUpAfterEachTest() throws Exception {
         traceSnapshotDao.deleteAllSnapshots();
         assertNoActiveTraces();
-        List<LogMessage> warningMessages = Lists.newArrayList();
-        for (LogMessage message : getLogMessages()) {
-            if (message.getLevel() == Level.WARN || message.getLevel() == Level.ERROR) {
-                warningMessages.add(message);
-            }
-        }
-        if (!warningMessages.isEmpty()) {
-            // clear warnings for next test before throwing assertion error
-            deleteAllLogMessages();
-            throw new AssertionError("There were warnings and/or errors: "
-                    + Joiner.on(", ").join(warningMessages));
-        }
-        configService.deleteConfig();
+        // TODO assert no warn or error log messages
+        configService.resetAllConfig();
 
     }
 
@@ -351,7 +325,7 @@ class SameJvmInformant implements Informant {
 
     @Nullable
     private Trace getActiveTrace(boolean summary) throws IOException {
-        List<io.informant.core.trace.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
+        List<io.informant.core.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
         if (traces.isEmpty()) {
             return null;
         } else if (traces.size() > 1) {
@@ -388,9 +362,9 @@ class SameJvmInformant implements Informant {
     }
 
     private static PointcutConfig convertToCore(
-            io.informant.core.config.PointcutConfig coreConfig) {
+            io.informant.config.PointcutConfig coreConfig) {
         List<CaptureItem> captureItems = Lists.newArrayList();
-        for (io.informant.core.config.PointcutConfig.CaptureItem captureItem : coreConfig
+        for (io.informant.config.PointcutConfig.CaptureItem captureItem : coreConfig
                 .getCaptureItems()) {
             captureItems.add(CaptureItem.valueOf(captureItem.name()));
         }
@@ -413,11 +387,11 @@ class SameJvmInformant implements Informant {
         return config;
     }
 
-    private static io.informant.core.config.PointcutConfig convertToCore(PointcutConfig config) {
-        List<io.informant.core.config.PointcutConfig.CaptureItem> captureItems =
+    private static io.informant.config.PointcutConfig convertToCore(PointcutConfig config) {
+        List<io.informant.config.PointcutConfig.CaptureItem> captureItems =
                 Lists.newArrayList();
         for (CaptureItem captureItem : config.getCaptureItems()) {
-            captureItems.add(io.informant.core.config.PointcutConfig.CaptureItem
+            captureItems.add(io.informant.config.PointcutConfig.CaptureItem
                     .valueOf(captureItem.name()));
         }
         List<io.informant.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
@@ -425,7 +399,7 @@ class SameJvmInformant implements Informant {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
                     .name()));
         }
-        return io.informant.core.config.PointcutConfig.builder()
+        return io.informant.config.PointcutConfig.builder()
                 .captureItems(captureItems)
                 .typeName(config.getTypeName())
                 .methodName(config.getMethodName())

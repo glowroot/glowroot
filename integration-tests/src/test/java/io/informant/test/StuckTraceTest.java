@@ -80,7 +80,7 @@ public class StuckTraceTest {
         });
         // then
         // wait for trace to be marked stuck
-        Stopwatch stopwatch = new Stopwatch();
+        Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
         while (true) {
             trace = container.getInformant().getActiveTraceSummary(0);

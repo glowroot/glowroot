@@ -82,10 +82,6 @@ class ServletPluginProperties {
         return captureStartup;
     }
 
-    public static void setCaptureStartup(boolean captureStartup) {
-        ServletPluginProperties.captureStartup = captureStartup;
-    }
-
     private static void updateCache() {
         sessionUserIdAttributePath = pluginServices
                 .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME);

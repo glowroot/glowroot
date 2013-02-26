@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
 public class UiTestingMain {
 
     private static final int UI_PORT = 4000;
-    // this is off by default because it is annoying to have these messages in the console
-    private static final boolean TEST_LOG_MESSAGES = false;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
@@ -55,18 +53,12 @@ public class UiTestingMain {
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setTotalSeconds(1);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
-        logger.info("view ui at http://localhost:" + UI_PORT);
+        logger.info("view ui at http://localhost:" + container.getUiPort());
         container.executeAppUnderTest(GenerateTraces.class);
     }
 
     public static class GenerateTraces implements AppUnderTest {
-        private static final io.informant.api.Logger logger =
-                io.informant.api.LoggerFactory.getLogger(GenerateTraces.class);
         public void executeApp() throws InterruptedException {
-            int count = 0;
-            Exception cause1 = new NullPointerException("Cause 1");
-            Exception cause2 = new IllegalStateException("Cause 2", cause1);
-            Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
             while (true) {
                 // one very short trace that will have an empty merged stack tree
                 new NestableCall(1, 10, 100).execute();
@@ -75,14 +67,6 @@ public class UiTestingMain {
                 new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
                 new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
                 new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
-                if (TEST_LOG_MESSAGES) {
-                    if (count++ % 2 == 0) {
-                        logger.warn("everything is actually ok");
-                    } else {
-                        logger.warn("everything is actually ok", new IllegalStateException(
-                                "just testing", cause3));
-                    }
-                }
                 Thread.sleep(1000);
             }
         }

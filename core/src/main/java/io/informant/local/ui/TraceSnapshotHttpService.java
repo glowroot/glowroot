@@ -17,9 +17,8 @@ package io.informant.local.ui;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.util.ByteStream;
+import io.informant.util.ByteStream;
+import io.informant.util.Singleton;
 
 import java.io.IOException;
 
@@ -32,12 +31,12 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Charsets;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Http service to read trace snapshot data.
@@ -50,11 +49,10 @@ class TraceSnapshotHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotHttpService.class);
 
-    private final TraceCommonService traceCommon;
+    private final TraceCommonService traceCommonService;
 
-    @Inject
-    TraceSnapshotHttpService(TraceCommonService traceCommon) {
-        this.traceCommon = traceCommon;
+    TraceSnapshotHttpService(TraceCommonService traceCommonService) {
+        this.traceCommonService = traceCommonService;
     }
 
     @Nullable
@@ -62,7 +60,7 @@ class TraceSnapshotHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        ByteStream byteStream = traceCommon.getSnapshotOrActiveJson(id, false);
+        ByteStream byteStream = traceCommonService.getSnapshotOrActiveJson(id, false);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         if (byteStream == null) {

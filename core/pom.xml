@@ -50,14 +50,9 @@
       <version>3.6.2.Final</version>
     </dependency>
     <dependency>
-      <groupId>io.informant.shaded</groupId>
-      <artifactId>shaded-slf4j-api</artifactId>
-      <version>1.7.2-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>io.informant</groupId>
-      <artifactId>informant-shaded-slf4j-impl</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -73,36 +68,16 @@
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <!-- 1.3.168 is the last version of h2 that supports jdk 5
-           but that version introduced a change where using h2's native api triggers java.sql.Driver
-           to load, which finds and loads other drivers via META-INF/services/java.sql.Driver
-           the problem is that this all happens during Informant initialization before it is ready
-           for plugins (e.g. jdbc-plugin) -->
+        but that version introduced a change where using h2's native api triggers java.sql.Driver
+        to load, which finds and loads other drivers via META-INF/services/java.sql.Driver
+        the problem is that this all happens during Informant initialization before it is ready
+        for plugins (e.g. jdbc-plugin) -->
       <version>1.3.167</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>compress-lzf</artifactId>
       <version>0.9.6</version>
-    </dependency>
-    <dependency>
-      <!-- using sisu-guice for now until guice upgrades to guava 10.0
-        primarily due to http://code.google.com/p/google-guice/issues/detail?id=288 -->
-      <groupId>org.sonatype.sisu</groupId>
-      <artifactId>sisu-guice</artifactId>
-      <version>3.1.2</version>
-      <exclusions>
-        <exclusion>
-          <!-- exclude guava artifact so no conflict with differently named guava-jdk5 artifact -->
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <!-- using sisu-guice for now until guice upgrades to guava 10.0 -->
-      <groupId>org.sonatype.sisu.inject</groupId>
-      <artifactId>guice-assistedinject</artifactId>
-      <version>3.1.2</version>
     </dependency>
     <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
@@ -122,6 +97,11 @@
         and now, waiting for bug fix in new fest-assert, see
         https://groups.google.com/forum/?fromgroups=#!topic/easytesting/wgf3ahj21o4 -->
       <version>1.2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.informant.shaded</groupId>
+      <artifactId>shaded-logback</artifactId>
+      <version>1.0.9-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -149,6 +129,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.0.9</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.google.caliper</groupId>
       <artifactId>caliper</artifactId>
       <version>0.5-rc1</version>
@@ -170,10 +156,10 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>io.informant.core.Viewer</mainClass>
+              <mainClass>io.informant.Viewer</mainClass>
             </manifest>
             <manifestEntries>
-              <Premain-Class>io.informant.core.MainEntryPoint</Premain-Class>
+              <Premain-Class>io.informant.MainEntryPoint</Premain-Class>
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
             </manifestEntries>
           </archive>
@@ -184,6 +170,8 @@
         <version>2.0</version>
         <executions>
           <execution>
+            <!-- this is overridden by the (usually active) shade-and-proguard profile below -->
+            <id>default</id>
             <goals>
               <goal>shade</goal>
             </goals>
@@ -194,39 +182,6 @@
             ${project.build.directory}/dependency-reduced-pom.xml
           </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
-          <filters>
-            <filter>
-              <artifact>org.sonatype.sisu:sisu-guice</artifact>
-              <excludes>
-                <exclude>META-INF/DEPENDENCIES</exclude>
-                <exclude>META-INF/LICENSE</exclude>
-                <exclude>META-INF/NOTICE</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>org.sonatype.sisu.inject:guice-assistedinject</artifact>
-              <excludes>
-                <exclude>META-INF/DEPENDENCIES</exclude>
-                <exclude>META-INF/LICENSE</exclude>
-                <exclude>META-INF/NOTICE</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>com.h2database:h2</artifact>
-              <excludes>
-                <exclude>META-INF/**</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>io.netty:netty</artifact>
-              <excludes>
-                <exclude>META-INF/jboss-beans.xml</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
-                <exclude>META-INF/NOTICE.txt</exclude>
-                <exclude>META-INF/license/**</exclude>
-              </excludes>
-            </filter>
-          </filters>
         </configuration>
       </plugin>
     </plugins>
@@ -246,75 +201,107 @@
         <plugins>
           <plugin>
             <artifactId>maven-shade-plugin</artifactId>
-            <configuration>
-              <shadeSourcesContent>true</shadeSourcesContent>
-              <relocations>
-                <relocation>
-                  <pattern>org.objectweb.asm</pattern>
-                  <shadedPattern>io.informant.shaded.objectweb.asm</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.h2</pattern>
-                  <shadedPattern>io.informant.shaded.h2</shadedPattern>
-                </relocation>
-                <relocation>
-                  <!-- shade thread names as well to make it easy to identify informant threads -->
-                  <rawString>true</rawString>
-                  <pattern>H2 File Lock Watchdog</pattern>
-                  <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
-                </relocation>
-                <relocation>
-                  <!-- shade thread names as well to make it easy to identify informant threads -->
-                  <rawString>true</rawString>
-                  <pattern>H2 Log Writer</pattern>
-                  <shadedPattern>Informant-H2 Log Writer</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.ning.compress</pattern>
-                  <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.ning.http</pattern>
-                  <shadedPattern>io.informant.shaded.ning.http</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.common</pattern>
-                  <shadedPattern>io.informant.shaded.google.common</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>javax.annotation</pattern>
-                  <shadedPattern>io.informant.shaded.javax.annotation</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>checkers</pattern>
-                  <shadedPattern>io.informant.shaded.checkers</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.gson</pattern>
-                  <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.jboss.netty</pattern>
-                  <shadedPattern>io.informant.shaded.jboss.netty</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google.inject</pattern>
-                  <shadedPattern>io.informant.shaded.google.inject</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>javax.inject</pattern>
-                  <shadedPattern>io.informant.shaded.javax.inject</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.aopalliance</pattern>
-                  <shadedPattern>io.informant.shaded.aopalliance</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.fest</pattern>
-                  <shadedPattern>io.informant.shaded.fest</shadedPattern>
-                </relocation>
-              </relocations>
-            </configuration>
+            <executions>
+              <execution>
+                <id>default</id>
+                <configuration>
+                  <shadeSourcesContent>true</shadeSourcesContent>
+                  <filters>
+                    <filter>
+                      <artifact>com.h2database:h2</artifact>
+                      <excludes>
+                        <exclude>META-INF/**</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
+                      <artifact>io.netty:netty</artifact>
+                      <excludes>
+                        <exclude>META-INF/jboss-beans.xml</exclude>
+                        <exclude>META-INF/LICENSE.txt</exclude>
+                        <exclude>META-INF/NOTICE.txt</exclude>
+                        <exclude>META-INF/license/**</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
+                      <!-- this is not excluded via artifactSet so that it will still be removed
+                        from the dependency reduced pom, the classes will be added (without shading)
+                        below in a second maven-shade-plugin execution -->
+                      <artifact>io.informant.shaded:shaded-logback</artifact>
+                      <excludes>
+                        <exclude>**</exclude>
+                      </excludes>
+                    </filter>
+                  </filters>
+                  <relocations>
+                    <relocation>
+                      <pattern>org.objectweb.asm</pattern>
+                      <shadedPattern>io.informant.shaded.objectweb.asm</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>org.h2</pattern>
+                      <shadedPattern>io.informant.shaded.h2</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!-- shade thread names to make it easy to identify informant threads -->
+                      <rawString>true</rawString>
+                      <pattern>H2 File Lock Watchdog</pattern>
+                      <shadedPattern>Informant-H2 File Lock Watchdog</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!-- shade thread names to make it easy to identify informant threads -->
+                      <rawString>true</rawString>
+                      <pattern>H2 Log Writer</pattern>
+                      <shadedPattern>Informant-H2 Log Writer</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>com.ning.compress</pattern>
+                      <shadedPattern>io.informant.shaded.ning.compress</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>com.google.common</pattern>
+                      <shadedPattern>io.informant.shaded.google.common</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>checkers</pattern>
+                      <shadedPattern>io.informant.shaded.checkers</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>com.google.gson</pattern>
+                      <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>org.jboss.netty</pattern>
+                      <shadedPattern>io.informant.shaded.jboss.netty</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>org.slf4j</pattern>
+                      <shadedPattern>io.informant.shaded.slf4j</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>org.fest</pattern>
+                      <shadedPattern>io.informant.shaded.fest</shadedPattern>
+                    </relocation>
+                  </relocations>
+                </configuration>
+              </execution>
+              <execution>
+                <!-- shaded-logback can't be included above since its (intentionally) unshaded slf4j
+                  references would then get shaded -->
+                <id>shade-with-logback</id>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <configuration>
+                  <createDependencyReducedPom>false</createDependencyReducedPom>
+                  <artifactSet>
+                    <includes>
+                      <include>io.informant:informant-core</include>
+                      <include>io.informant.shaded:shaded-logback</include>
+                    </includes>
+                  </artifactSet>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
           <plugin>
             <groupId>com.github.wvengen</groupId>
@@ -339,28 +326,25 @@
                 <option>-dontoptimize</option>
                 <option>-dontnote **</option>
                 <option>-dontwarn **</option>
-                <option>-keep class io.informant.local.** { *; }</option>
+                <option>-keep class io.informant.* { *; }</option>
                 <option>-keep class io.informant.api.** { *; }</option>
+                <option>-keep class io.informant.config.** { *; }</option>
                 <option>-keep class io.informant.core.** { *; }</option>
-                <!-- need to keep @Inject annotation since it is used by guice at runtime -->
-                <option>
-                  -keepclassmembers class * { @io.informant.shaded.google.inject.Inject *; }
-                </option>
+                <option>-keep class io.informant.local.** { *; }</option>
+                <option>-keep class io.informant.util.** { *; }</option>
+                <option>-keep class io.informant.weaving.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->
                 <option>-keep class io.informant.shaded.google.common.** { *; }</option>
                 <!-- keep all logback appenders -->
                 <option>
                   -keep class * extends io.informant.shaded.qos.logback.core.Appender { *; }
                 </option>
-                <option>
-                  -keep class
-                  io.informant.shaded.ning.http.client.providers.netty.NettyAsyncHttpProvider { *; }
-                </option>
                 <!-- keep special enumeration methods (see "Processing enumeration classes" section
                   at http://proguard.sourceforge.net/manual/examples.html) -->
                 <option>
                   -keepclassmembers enum *
-                  { public static **[] values(); public static ** valueOf(java.lang.String); }
+                  { public static **[] values(); public static **
+                  valueOf(java.lang.String); }
                 </option>
               </options>
             </configuration>

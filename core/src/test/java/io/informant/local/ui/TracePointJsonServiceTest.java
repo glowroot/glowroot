@@ -23,14 +23,14 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import io.informant.core.trace.Trace;
-import io.informant.core.trace.TraceRegistry;
-import io.informant.core.util.Clock;
-import io.informant.local.trace.TracePoint;
-import io.informant.local.trace.TraceSinkLocal;
-import io.informant.local.trace.TraceSnapshotDao;
-import io.informant.local.trace.TraceSnapshotDao.StringComparator;
-import io.informant.local.trace.TraceSnapshotService;
+import io.informant.core.Trace;
+import io.informant.core.TraceRegistry;
+import io.informant.local.store.LocalTraceSink;
+import io.informant.local.store.TracePoint;
+import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.TraceSnapshotDao.StringComparator;
+import io.informant.local.store.TraceSnapshotService;
+import io.informant.util.Clock;
 
 import java.io.IOException;
 import java.util.List;
@@ -210,7 +210,7 @@ public class TracePointJsonServiceTest {
 
         TraceSnapshotDao traceSnapshotDao = mock(TraceSnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
-        TraceSinkLocal traceSinkLocal = mock(TraceSinkLocal.class);
+        LocalTraceSink traceSinkLocal = mock(LocalTraceSink.class);
         TraceSnapshotService traceSnapshotService = mock(TraceSnapshotService.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);

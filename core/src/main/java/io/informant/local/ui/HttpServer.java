@@ -20,10 +20,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SER
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.util.GsonFactory;
-import io.informant.core.util.HttpServerBase;
+import io.informant.util.GsonFactory;
+import io.informant.util.Singleton;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -45,9 +43,12 @@ import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -55,9 +56,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 
 /**
  * Handles all http requests for the embedded UI (by default http://localhost:4000).
@@ -65,6 +63,7 @@ import com.google.inject.name.Named;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@VisibleForTesting
 @Singleton
 public class HttpServer extends HttpServerBase {
 
@@ -75,10 +74,9 @@ public class HttpServer extends HttpServerBase {
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
 
-    @Inject
-    HttpServer(@Named("ui.port") int port, TracePointJsonService tracePointJsonService,
+    HttpServer(int port, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            TraceSnapshotHttpService traceDetailHttpService,
+            TraceSnapshotHttpService traceSnapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
             ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
@@ -97,7 +95,7 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/libs/(.*)$"), "io/informant/local/ui/libs/$1");
         // services
         uriMappings.put(Pattern.compile("^/explorer/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/explorer/detail/.*$"), traceDetailHttpService);
+        uriMappings.put(Pattern.compile("^/explorer/detail/.*$"), traceSnapshotHttpService);
         this.uriMappings = uriMappings.build();
 
         // the parentheses define the part of the match that is used to construct the args for
@@ -136,14 +134,10 @@ public class HttpServer extends HttpServerBase {
                 threadDumpJsonService, "getThreadDump"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/compact$",
                 adminJsonService, "compactData"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/truncate$",
-                adminJsonService, "truncateData"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/config/truncate$",
-                adminJsonService, "truncateConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/log$",
-                adminJsonService, "getLog"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/log/truncate$",
-                adminJsonService, "truncateLog"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/delete-all$",
+                adminJsonService, "deleteAllData"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/config/reset-all$",
+                adminJsonService, "resetAllConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-complete-traces$",
                 adminJsonService, "getNumPendingCompleteTraces"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-stored-trace-snapshots$",

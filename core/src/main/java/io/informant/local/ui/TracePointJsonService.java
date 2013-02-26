@@ -15,17 +15,16 @@
  */
 package io.informant.local.ui;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.trace.Trace;
-import io.informant.core.trace.TraceRegistry;
-import io.informant.core.util.Clock;
-import io.informant.core.util.GsonFactory;
-import io.informant.local.trace.TracePoint;
-import io.informant.local.trace.TraceSinkLocal;
-import io.informant.local.trace.TraceSnapshotDao;
-import io.informant.local.trace.TraceSnapshotDao.StringComparator;
-import io.informant.local.trace.TraceSnapshotService;
+import io.informant.core.Trace;
+import io.informant.core.TraceRegistry;
+import io.informant.local.store.LocalTraceSink;
+import io.informant.local.store.TracePoint;
+import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.TraceSnapshotDao.StringComparator;
+import io.informant.local.store.TraceSnapshotService;
+import io.informant.util.Clock;
+import io.informant.util.GsonFactory;
+import io.informant.util.Singleton;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -33,6 +32,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.LazyNonNull;
@@ -46,8 +48,6 @@ import com.google.common.collect.Ordering;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonWriter;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Json service to read trace data.
@@ -64,16 +64,14 @@ class TracePointJsonService implements JsonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
-    private final TraceSinkLocal traceSinkLocal;
+    private final LocalTraceSink traceSinkLocal;
     private final TraceSnapshotService traceSnapshotService;
     private final Ticker ticker;
     private final Clock clock;
 
-    @Inject
     TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
-            TraceSinkLocal traceSinkLocal, TraceSnapshotService traceSnapshotService,
+            LocalTraceSink traceSinkLocal, TraceSnapshotService traceSnapshotService,
             Ticker ticker, Clock clock) {
-
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
         this.traceSinkLocal = traceSinkLocal;

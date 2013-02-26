@@ -15,38 +15,34 @@
  */
 package io.informant.local.ui;
 
-import io.informant.core.trace.Trace;
-import io.informant.core.trace.TraceRegistry;
-import io.informant.core.util.ByteStream;
-import io.informant.local.trace.TraceSnapshot;
-import io.informant.local.trace.TraceSnapshotDao;
-import io.informant.local.trace.TraceSnapshotWriter;
-import io.informant.local.trace.TraceWriter;
+import io.informant.core.Trace;
+import io.informant.core.TraceRegistry;
+import io.informant.local.store.TraceSnapshot;
+import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.TraceSnapshotWriter;
+import io.informant.local.store.TraceWriter;
+import io.informant.util.ByteStream;
+import io.informant.util.Singleton;
 
 import java.io.IOException;
 
 import checkers.nullness.quals.Nullable;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@VisibleForTesting
 @Singleton
-public class TraceCommonService {
+class TraceCommonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
-    @Inject
-    TraceCommonService(TraceSnapshotDao traceSnapshotDao,
-            TraceRegistry traceRegistry, Ticker ticker) {
+    TraceCommonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
+            Ticker ticker) {
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
         this.ticker = ticker;

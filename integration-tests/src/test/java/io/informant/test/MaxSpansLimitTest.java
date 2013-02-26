@@ -25,7 +25,6 @@ import io.informant.testkit.TraceMarker;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -71,7 +70,7 @@ public class MaxSpansLimitTest {
         container.getInformant().updateGeneralConfig(generalConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(new Callable<Void>() {
+        executorService.submit(new Callable<Void>() {
             @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(GenerateLotsOfSpans.class);

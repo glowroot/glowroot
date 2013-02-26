@@ -16,20 +16,20 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.core.util.DaemonExecutors;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.TraceMarker;
+import io.informant.util.DaemonExecutors;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
+
+import com.google.common.base.Stopwatch;
 
 /**
  * @author Trask Stalnaker
@@ -39,8 +39,6 @@ import checkers.nullness.quals.Nullable;
 // hook, the H2 jdbc connection could get closed while there were still traces being written to it,
 // and exceptions would get thrown/logged
 public class DataSourceShutdownTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(DataSourceShutdownTest.class);
 
     @Test
     public void shouldShutdown() throws Exception {
@@ -63,18 +61,29 @@ public class DataSourceShutdownTest {
                 return null;
             }
         });
-        while (container.getInformant().getNumStoredTraceSnapshots()
-                + container.getInformant().getNumPendingCompleteTraces() < 10) {
+        Stopwatch stopwatch = new Stopwatch().start();
+        boolean foundEnoughTraces = false;
+        while (stopwatch.elapsedMillis() < 5000) {
+            if (getNumCompletedTraces(container) > 10) {
+                foundEnoughTraces = true;
+                break;
+            }
             Thread.sleep(1);
         }
         container.killExternalJvm();
         // then
+        assertThat(foundEnoughTraces).isTrue();
         // check that no error messages were logged, problem is (1) the external jvm is terminated
         // so can't query it and (2) any error or warning messages due to database shutdown wouldn't
         // be stored in the database log_message table, so have to resort to screen scraping
         assertThat(container.getNumConsoleBytes()).isEqualTo(0);
         // cleanup
         executorService.shutdown();
+    }
+
+    private long getNumCompletedTraces(final InformantContainer container) throws Exception {
+        return container.getInformant().getNumStoredTraceSnapshots()
+                + container.getInformant().getNumPendingCompleteTraces();
     }
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
@@ -84,17 +93,16 @@ public class DataSourceShutdownTest {
                     // generate traces during the shutdown process to test there are no error caused
                     // by trying to write a trace to the database during/after shutdown
                     while (true) {
-                        traceMarker();
+                        try {
+                            traceMarker();
+                        } catch (InterruptedException e) {
+                        }
                     }
                 }
             });
         }
-        public void traceMarker() {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                logger.warn(e.getMessage(), e);
-            }
+        public void traceMarker() throws InterruptedException {
+            Thread.sleep(1);
         }
     }
 }

@@ -21,6 +21,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import checkers.nullness.quals.Nullable;
 
 /**
@@ -66,7 +69,7 @@ public abstract class PluginServices {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
 
-    private static final String MAIN_ENTRY_POINT_CLASS_NAME = "io.informant.core.MainEntryPoint";
+    private static final String MAIN_ENTRY_POINT_CLASS_NAME = "io.informant.MainEntryPoint";
     private static final String GET_PLUGIN_SERVICES_METHOD_NAME = "getPluginServices";
 
     /**
@@ -390,9 +393,6 @@ public abstract class PluginServices {
 
         private static class NopMetric implements Metric {
             private static final NopMetric INSTANCE = new NopMetric();
-            public String getName() {
-                return "NopMetric";
-            }
         }
 
         private static class NopSpan implements Span {

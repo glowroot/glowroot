@@ -15,12 +15,12 @@
  */
 package io.informant.testkit.internal;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 

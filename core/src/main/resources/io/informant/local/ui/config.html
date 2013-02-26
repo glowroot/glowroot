@@ -768,6 +768,36 @@
     $('#pointcutNewButton button').click(function() {
       applyPointcutEditTemplate({}, '#pointcutNew')
     })
+    var postingCompact = false
+    var postingDeleteAll = false
+    $('#compactButton').click(function() {
+      // handle crazy user clicking on the button
+      if (postingCompact || postingDeleteAll) return
+      postingCompact = true
+      $.post('admin/data/compact', function() {
+        postingCompact = false
+        hideSpinner('#compactDeleteAllSpinner')
+        showAndFadeSuccessMessage('#compactSuccessMessage')
+      })
+      // in case button is clicked again before success message is hidden
+      $('#compactSuccessMessage').addClass('hide')
+      $('#deleteAllSuccessMessage').addClass('hide')
+      showSpinner('#compactDeleteAllSpinner')
+    })
+    $('#deleteAllButton').click(function() {
+      // handle crazy user clicking on the button
+      if (postingCompact || postingDeleteAll) return
+      postingDeleteAll = true
+      $.post('admin/data/delete-all', function() {
+        postingDeleteAll = false
+        hideSpinner('#compactDeleteAllSpinner')
+        showAndFadeSuccessMessage('#deleteAllSuccessMessage')
+      })
+      // in case button is clicked again before success message is hidden
+      $('#compactSuccessMessage').addClass('hide')
+      $('#deleteAllSuccessMessage').addClass('hide')
+      showSpinner('#compactDeleteAllSpinner')
+    })
   })
 </script>
 </head>
@@ -781,7 +811,6 @@
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0">
         <li role="menuitem"><a tabindex="-1" href="explorer.html">explorer</a></li>
-        <li role="menuitem"><a tabindex="-1" href="admin.html">administration</a></li>
         <li role="menuitem"><a tabindex="-1" href="threads.html">thread dump</a></li>
       </ul>
     </div>
@@ -851,7 +880,22 @@
               <input type="text" id="snapshotExpirationDays" style="width: 5em">
               <span class="add-on">days</span>
             </div>
-            <div class="help-block">
+            <span>
+              <button type="button" class="btn" id="compactButton" style="margin-left: 20px">
+                Compact
+              </button>
+              <button type="button" class="btn" id="deleteAllButton" style="margin-left: 20px">
+                Delete All
+              </button>
+              <span class="button-spinner hide" id="compactDeleteAllSpinner"></span>
+              <span class="button-success-message hide" id="compactSuccessMessage">Compacted</span>
+              <span class="button-success-message hide" id="deleteAllSuccessMessage">Deleted</span>
+            </span>
+            <div class="help-block" style="margin-top: 10px">
+              Defines how long the trace snapshots should be retained in the H2 data file.
+              <em>Compact</em> will compact the H2 data file (this could take several seconds or
+              more depending on the data file size). <em>Delete All</em> will clear all trace
+              snapshots from the H2 data file.
             </div>
           </div>
         </div>

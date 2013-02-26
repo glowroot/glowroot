@@ -15,9 +15,8 @@
  */
 package io.informant.testkit;
 
-import io.informant.core.util.ThreadSafe;
-import io.informant.testkit.LogMessage.Level;
 import io.informant.testkit.internal.GsonFactory;
+import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,15 +28,12 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
@@ -67,26 +63,11 @@ class ExternalJvmInformant implements Informant {
         updateGeneralConfig(generalConfig);
     }
 
-    public String get(String path) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
-                + path);
-        Response response = request.execute().get();
-        return validateAndReturnBody(response);
-    }
-
     public InputStream getTraceExport(String traceId) throws Exception {
         BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
                 + "/explorer/export/" + traceId);
         Response response = request.execute().get();
         return validateAndReturnBodyAsStream(response);
-    }
-
-    private String post(String path, String data) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + uiPort
-                + path);
-        request.setBody(data);
-        Response response = request.execute().get();
-        return validateAndReturnBody(response);
     }
 
     public GeneralConfig getGeneralConfig() throws Exception {
@@ -186,16 +167,53 @@ class ExternalJvmInformant implements Informant {
         return getLastTrace(true);
     }
 
-    public List<LogMessage> getLogMessages() throws Exception {
-        return gson.fromJson(get("/admin/log"), new TypeToken<List<LogMessage>>() {}.getType());
-    }
-
-    public void deleteAllLogMessages() throws Exception {
-        post("/admin/log/truncate", "");
-    }
-
     public void compactData() throws Exception {
         post("/admin/data/compact", "");
+    }
+
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
+    @Nullable
+    public Trace getActiveTraceSummary(int timeoutMillis) throws Exception {
+        return getActiveTrace(timeoutMillis, true);
+    }
+
+    // this method blocks for an active trace to be available because
+    // sometimes need to give container enough time to start up and for the trace to get stuck
+    @Nullable
+    public Trace getActiveTrace(int timeoutMillis) throws Exception {
+        return getActiveTrace(timeoutMillis, false);
+    }
+
+    public void cleanUpAfterEachTest() throws Exception {
+        post("/admin/data/delete-all", "");
+        assertNoActiveTraces();
+        // TODO assert no warn or error log messages
+        post("/admin/config/reset-all", "");
+    }
+
+    public int getNumPendingCompleteTraces() throws Exception {
+        String numPendingCompleteTraces = get("/admin/num-pending-complete-traces");
+        return Integer.parseInt(numPendingCompleteTraces);
+    }
+
+    public long getNumStoredTraceSnapshots() throws Exception {
+        String numStoredTraceSnapshots = get("/admin/num-stored-trace-snapshots");
+        return Long.parseLong(numStoredTraceSnapshots);
+    }
+
+    private Trace getActiveTrace(int timeoutMillis, boolean summary) throws Exception {
+        Stopwatch stopwatch = new Stopwatch().start();
+        Trace trace = null;
+        // try at least once (e.g. in case timeoutMillis == 0)
+        while (true) {
+            trace = getActiveTrace(summary);
+            if (trace != null || stopwatch.elapsedMillis() > timeoutMillis) {
+                break;
+            }
+            Thread.sleep(20);
+        }
+        return trace;
     }
 
     private Trace getLastTrace(boolean summary) throws Exception {
@@ -239,62 +257,6 @@ class ExternalJvmInformant implements Informant {
         return maxPoint;
     }
 
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTraceSummary(int timeoutMillis) throws Exception {
-        return getActiveTrace(timeoutMillis, true);
-    }
-
-    // this method blocks for an active trace to be available because
-    // sometimes need to give container enough time to start up and for the trace to get stuck
-    @Nullable
-    public Trace getActiveTrace(int timeoutMillis) throws Exception {
-        return getActiveTrace(timeoutMillis, false);
-    }
-
-    private Trace getActiveTrace(int timeoutMillis, boolean summary) throws Exception {
-        Stopwatch stopwatch = new Stopwatch().start();
-        Trace trace = null;
-        // try at least once (e.g. in case timeoutMillis == 0)
-        while (true) {
-            trace = getActiveTrace(summary);
-            if (trace != null || stopwatch.elapsedMillis() > timeoutMillis) {
-                break;
-            }
-            Thread.sleep(20);
-        }
-        return trace;
-    }
-
-    public void cleanUpAfterEachTest() throws Exception {
-        post("/admin/data/truncate", "");
-        assertNoActiveTraces();
-        List<LogMessage> warningMessages = Lists.newArrayList();
-        for (LogMessage message : getLogMessages()) {
-            if (message.getLevel() == Level.WARN || message.getLevel() == Level.ERROR) {
-                warningMessages.add(message);
-            }
-        }
-        if (!warningMessages.isEmpty()) {
-            // clear warnings for next test before throwing assertion error
-            post("/admin/log/truncate", "");
-            throw new AssertionError("There were warnings and/or errors: "
-                    + Joiner.on(", ").join(warningMessages));
-        }
-        post("/admin/config/truncate", "");
-    }
-
-    public int getNumPendingCompleteTraces() throws Exception {
-        String numPendingCompleteTraces = get("/admin/num-pending-complete-traces");
-        return Integer.parseInt(numPendingCompleteTraces);
-    }
-
-    public long getNumStoredTraceSnapshots() throws Exception {
-        String numStoredTraceSnapshots = get("/admin/num-stored-trace-snapshots");
-        return Long.parseLong(numStoredTraceSnapshots);
-    }
-
     @Nullable
     private Trace getActiveTrace(boolean summary) throws Exception {
         String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
@@ -336,6 +298,21 @@ class ExternalJvmInformant implements Informant {
             }
         }
         throw new AssertionError("There are still active traces");
+    }
+
+    private String get(String path) throws Exception {
+        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + uiPort
+                + path);
+        Response response = request.execute().get();
+        return validateAndReturnBody(response);
+    }
+
+    private String post(String path, String data) throws Exception {
+        BoundRequestBuilder request = asyncHttpClient.preparePost("http://localhost:" + uiPort
+                + path);
+        request.setBody(data);
+        Response response = request.execute().get();
+        return validateAndReturnBody(response);
     }
 
     private static JsonArray asJsonArrayOrEmpty(@ReadOnly @Nullable JsonElement jsonElement) {

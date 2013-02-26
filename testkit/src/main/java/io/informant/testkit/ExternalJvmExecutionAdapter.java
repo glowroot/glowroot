@@ -15,12 +15,10 @@
  */
 package io.informant.testkit;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.MainEntryPoint;
-import io.informant.core.util.ThreadSafe;
+import io.informant.MainEntryPoint;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 import io.informant.testkit.internal.ClassPath;
+import io.informant.util.ThreadSafe;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +43,8 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -67,6 +67,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
     private final AsyncHttpClient asyncHttpClient;
     private final ExternalJvmInformant informant;
     private final Thread shutdownHook;
+    private final int uiPort;
 
     private volatile long numConsoleBytes;
 
@@ -95,7 +96,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                 }
             }
         });
-        int uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
+        uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
         asyncHttpClient = createAsyncHttpClient();
         informant = new ExternalJvmInformant(uiPort, asyncHttpClient);
         shutdownHook = new Thread() {
@@ -146,6 +147,10 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         process.waitFor();
         consolePipeExecutorService.shutdownNow();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
+    }
+
+    public int getUiPort() {
+        return uiPort;
     }
 
     public long getNumConsoleBytes() {

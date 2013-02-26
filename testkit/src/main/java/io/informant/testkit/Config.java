@@ -40,6 +40,9 @@ public class Config {
     private Map<String, PluginConfig> pluginConfigs;
     @Nullable
     private List<PointcutConfig> pointcutConfigs;
+    @Nullable
+    private String dataDir;
+    private int uiPort;
 
     @Nullable
     public GeneralConfig getGeneralConfig() {
@@ -71,6 +74,14 @@ public class Config {
         return pointcutConfigs;
     }
 
+    public String getDataDir() {
+        return dataDir;
+    }
+
+    public int getUiPort() {
+        return uiPort;
+    }
+
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof Config) {
@@ -80,8 +91,9 @@ public class Config {
                     && Objects.equal(fineProfilingConfig, that.fineProfilingConfig)
                     && Objects.equal(userConfig, that.userConfig)
                     && Objects.equal(pluginConfigs, that.pluginConfigs)
-                    && Objects.equal(pointcutConfigs, that.pointcutConfigs);
-
+                    && Objects.equal(pointcutConfigs, that.pointcutConfigs)
+                    && Objects.equal(dataDir, that.dataDir)
+                    && uiPort == that.uiPort;
         }
         return false;
     }
@@ -89,7 +101,7 @@ public class Config {
     @Override
     public int hashCode() {
         return Objects.hashCode(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userConfig, pluginConfigs, pointcutConfigs);
+                userConfig, pluginConfigs, pointcutConfigs, dataDir, uiPort);
     }
 
     @Override
@@ -101,6 +113,8 @@ public class Config {
                 .add("userConfig", userConfig)
                 .add("pluginConfigs", pluginConfigs)
                 .add("pointcutConfigs", pointcutConfigs)
+                .add("dataDir", dataDir)
+                .add("uiPort", uiPort)
                 .toString();
     }
 }

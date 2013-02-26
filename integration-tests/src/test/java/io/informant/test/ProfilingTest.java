@@ -17,7 +17,6 @@ package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.api.PluginServices;
-import io.informant.core.util.Threads;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.CoarseProfilingConfig;
 import io.informant.testkit.FineProfilingConfig;
@@ -26,6 +25,7 @@ import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.MergedStackTreeNode;
 import io.informant.testkit.TraceMarker;
 import io.informant.testkit.UserConfig;
+import io.informant.util.Threads;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;

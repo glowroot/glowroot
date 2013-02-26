@@ -15,12 +15,13 @@
  */
 package io.informant.testkit;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.util.ThreadSafe;
 import io.informant.testkit.internal.TempDirs;
+import io.informant.util.ThreadSafe;
 
 import java.io.File;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
@@ -63,6 +64,10 @@ public class InformantContainer {
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
             executionAdapter = new ExternalJvmExecutionAdapter(properties);
+            if (executionAdapter.getUiPort() == SocketCommandProcessor.NO_PORT) {
+                executionAdapter.close();
+                throw new StartupFailedException();
+            }
         } else {
             // this is the easiest way to run/debug tests inside of Eclipse
             logger.debug("create(): using same JVM app container");
@@ -122,6 +127,10 @@ public class InformantContainer {
         executionAdapter.close();
     }
 
+    public int getUiPort() {
+        return executionAdapter.getUiPort();
+    }
+
     public static boolean isExternalJvm() {
         return Boolean.valueOf(System.getProperty("informant.testkit.externaljvm"));
     }
@@ -136,5 +145,9 @@ public class InformantContainer {
         void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
         void interruptAppUnderTest() throws Exception;
         void close() throws Exception;
+        int getUiPort();
     }
+
+    @SuppressWarnings("serial")
+    public static class StartupFailedException extends Exception {}
 }

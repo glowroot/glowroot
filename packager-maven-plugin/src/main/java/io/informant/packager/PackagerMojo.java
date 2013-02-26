@@ -15,9 +15,9 @@
  */
 package io.informant.packager;
 
-import io.informant.core.config.PluginInfo;
-import io.informant.core.config.PluginInfoReader;
-import io.informant.core.config.PropertyDescriptor;
+import io.informant.config.PluginInfo;
+import io.informant.config.PluginInfoReader;
+import io.informant.config.PropertyDescriptor;
 import io.informant.packager.PluginConfig.PropertyConfig;
 
 import java.io.File;

@@ -61,10 +61,6 @@ public interface Informant {
 
     Trace getLastTraceSummary() throws Exception;
 
-    List<LogMessage> getLogMessages() throws Exception;
-
-    void deleteAllLogMessages() throws Exception;
-
     void compactData() throws Exception;
 
     @Nullable

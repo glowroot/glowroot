@@ -16,32 +16,22 @@
 package io.informant.core;
 
 import io.informant.api.ErrorMessage;
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Metric;
 import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
-import io.informant.core.config.ConfigService;
-import io.informant.core.config.FineProfilingConfig;
-import io.informant.core.config.GeneralConfig;
-import io.informant.core.config.PluginConfig;
-import io.informant.core.config.PluginInfo;
-import io.informant.core.config.PluginInfoCache;
-import io.informant.core.config.UserConfig;
-import io.informant.core.trace.FineGrainedProfiler;
-import io.informant.core.trace.MetricImpl;
-import io.informant.core.trace.TerminateScheduledActionException;
-import io.informant.core.trace.Trace;
-import io.informant.core.trace.TraceMetric;
-import io.informant.core.trace.TraceRegistry;
-import io.informant.core.trace.TraceSink;
-import io.informant.core.trace.WeavingMetricImpl;
-import io.informant.core.util.Clock;
-import io.informant.core.util.NotThreadSafe;
-import io.informant.core.util.ThreadSafe;
+import io.informant.config.ConfigService;
+import io.informant.config.FineProfilingConfig;
+import io.informant.config.GeneralConfig;
+import io.informant.config.PluginConfig;
+import io.informant.config.PluginInfo;
+import io.informant.config.PluginInfoCache;
+import io.informant.config.UserConfig;
+import io.informant.util.Clock;
+import io.informant.util.NotThreadSafe;
+import io.informant.util.ThreadSafe;
 
 import java.util.List;
 import java.util.Random;
@@ -49,14 +39,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
 
 /**
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that
@@ -92,12 +83,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Nullable
     private volatile PluginConfig pluginConfig;
 
-    @Inject
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache,
             FineGrainedProfiler fineGrainedProfiler, Ticker ticker, Clock clock,
             Random random, WeavingMetricImpl weavingMetric, PluginInfoCache pluginInfoCache,
-            @Assisted String pluginId) {
+            String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configService = configService;
@@ -360,9 +350,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private class SpanImpl implements Span {
-        private final io.informant.core.trace.Span span;
+        private final io.informant.core.Span span;
         private final Trace trace;
-        private SpanImpl(io.informant.core.trace.Span span, Trace trace) {
+        private SpanImpl(io.informant.core.Span span, Trace trace) {
             this.span = span;
             this.trace = trace;
         }
@@ -456,7 +446,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     && trace.getSpanCount() < 2 * maxSpans) {
                 // span won't necessarily be nested properly, and won't have any timing data, but at
                 // least the long span and stack trace will get captured
-                io.informant.core.trace.Span span = trace.addSpan(messageSupplier, null, true);
+                io.informant.core.Span span = trace.addSpan(messageSupplier, null, true);
                 span.setStackTrace(captureSpanStackTrace());
             }
         }
@@ -497,9 +487,5 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private static class NopMetricTimer implements MetricTimer {
         private static final NopMetricTimer INSTANCE = new NopMetricTimer();
         public void stop() {}
-    }
-
-    interface PluginServicesImplFactory {
-        PluginServicesImpl create(String pluginId);
     }
 }

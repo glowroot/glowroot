@@ -23,6 +23,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>io.informant.shaded</groupId>
+      <artifactId>shaded-slf4j-api</artifactId>
+      <version>1.7.2-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <!-- using shaded-guava dependency to take advantage of the shaded guava library that is
         already provided in the informant jar -->
       <groupId>io.informant.shaded</groupId>

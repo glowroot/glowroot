@@ -18,9 +18,8 @@ package io.informant.local.ui;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.util.ByteStream;
+import io.informant.util.ByteStream;
+import io.informant.util.Singleton;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,6 +38,8 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 
@@ -46,8 +47,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Http service to export full trace html page.
@@ -55,17 +54,16 @@ import com.google.inject.Singleton;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Singleton
 @VisibleForTesting
+@Singleton
 public class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
 
-    private final TraceCommonService traceCommon;
+    private final TraceCommonService traceCommonService;
 
-    @Inject
-    TraceExportHttpService(TraceCommonService traceCommon) {
-        this.traceCommon = traceCommon;
+    TraceExportHttpService(TraceCommonService traceCommonService) {
+        this.traceCommonService = traceCommonService;
     }
 
     @Nullable
@@ -98,7 +96,7 @@ public class TraceExportHttpService implements HttpService {
     @VisibleForTesting
     @Nullable
     public ByteStream getExportByteStream(String id) throws IOException {
-        ByteStream traceByteStream = traceCommon.getSnapshotOrActiveJson(id, false);
+        ByteStream traceByteStream = traceCommonService.getSnapshotOrActiveJson(id, false);
         if (traceByteStream == null) {
             return null;
         }

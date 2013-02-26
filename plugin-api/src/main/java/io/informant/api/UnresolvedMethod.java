@@ -21,6 +21,9 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;

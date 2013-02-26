@@ -15,16 +15,16 @@
  */
 package io.informant.local.ui;
 
-import io.informant.api.Logger;
-import io.informant.api.LoggerFactory;
-import io.informant.core.util.ByteStream;
+import io.informant.util.ByteStream;
+import io.informant.util.Singleton;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Charsets;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * Json service to read trace data.
@@ -39,7 +39,6 @@ class TraceSummaryJsonService implements JsonService {
 
     private final TraceCommonService traceCommonService;
 
-    @Inject
     TraceSummaryJsonService(TraceCommonService traceCommonService) {
         this.traceCommonService = traceCommonService;
     }
