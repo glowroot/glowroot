@@ -391,8 +391,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void loadReturnValue(int opcode, boolean primitive) {
         if (opcode == RETURN) {
-            logger.error("cannot @InjectReturn on a @Pointcut returning void");
-            // try to pass null, but this will fail anyways if @InjectTraveler is primitive arg
+            logger.error("cannot use @InjectReturn on a @Pointcut returning void");
+            // try to pass null, but this will fail anyways if @InjectReturn is primitive arg
+            // TODO handle primitive args, then reduce logger from error to warn
             visitInsn(ACONST_NULL);
         } else if (opcode == ARETURN || opcode == ATHROW) {
             dup();
@@ -490,9 +491,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (parameterType == ParameterKind.TARGET) {
                 loadTarget();
             } else if (parameterType == ParameterKind.METHOD_ARG) {
-                if (loadMethodArg(adviceType, annotationType, argIndex)) {
-                    argIndex++;
-                }
+                loadNonPrimitiveMethodArg(adviceType, annotationType, argIndex++);
             } else if (parameterType == ParameterKind.PRIMITIVE_METHOD_ARG) {
                 // no autobox
                 loadArg(argIndex++);
@@ -503,7 +502,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             } else if (parameterType == ParameterKind.TRAVELER) {
                 loadTraveler(travelerLocal, adviceType, annotationType);
             } else {
-                logger.error("unexpected parameter type {} at index {}", parameterType, i);
+                // TODO better warning message
+                logger.warn("unexpected parameter type {} at index {}", parameterType, i);
             }
         }
     }
@@ -520,19 +520,19 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private boolean loadMethodArg(Type adviceType, Class<? extends Annotation> annotationType,
-            int argIndex) {
+    private void loadNonPrimitiveMethodArg(Type adviceType,
+            Class<? extends Annotation> annotationType, int argIndex) {
         if (argIndex >= argumentTypes.length) {
-            logger.error("the @" + annotationType.getSimpleName() + " method in "
+            logger.warn("the @" + annotationType.getSimpleName() + " method in "
                     + adviceType.getClassName() + " has more @"
                     + InjectMethodArg.class.getSimpleName() + " arguments than the number of args"
                     + " in the target method");
-            return false;
+            visitInsn(ACONST_NULL);
+            return;
         }
         loadArg(argIndex);
         // autobox
         box(argumentTypes[argIndex]);
-        return true;
     }
 
     private void loadMethodName() {
@@ -552,6 +552,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     + InjectTraveler.class.getSimpleName() + " but @"
                     + OnBefore.class.getSimpleName() + " returns void");
             // try to pass null, but this will fail anyways if @InjectTraveler is primitive arg
+            // TODO handle primitive args, then reduce logger from error to warn
             visitInsn(ACONST_NULL);
         } else {
             loadLocal(travelerLocal);

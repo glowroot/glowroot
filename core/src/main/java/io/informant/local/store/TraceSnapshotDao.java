@@ -346,7 +346,7 @@ public class TraceSnapshotDao {
                     block = FileBlock.from(spansFileBlockId);
                     builder.spans(rollingFile.read(block, "\"rolled over\""));
                 } catch (InvalidBlockIdFormatException e) {
-                    logger.error(e.getMessage(), e);
+                    logger.warn(e.getMessage(), e);
                 }
             }
             if (coarseMergedStackTreeFileBlockId != null) {
@@ -355,7 +355,7 @@ public class TraceSnapshotDao {
                     block = FileBlock.from(coarseMergedStackTreeFileBlockId);
                     builder.coarseMergedStackTree(rollingFile.read(block, "\"rolled over\""));
                 } catch (InvalidBlockIdFormatException e) {
-                    logger.error(e.getMessage(), e);
+                    logger.warn(e.getMessage(), e);
                 }
             }
             if (fineMergedStackTreeFileBlockId != null) {
@@ -364,7 +364,7 @@ public class TraceSnapshotDao {
                     block = FileBlock.from(fineMergedStackTreeFileBlockId);
                     builder.fineMergedStackTree(rollingFile.read(block, "\"rolled over\""));
                 } catch (InvalidBlockIdFormatException e) {
-                    logger.error(e.getMessage(), e);
+                    logger.warn(e.getMessage(), e);
                 }
             }
             return builder.build();

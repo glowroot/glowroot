@@ -39,6 +39,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
 
+import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -131,13 +132,13 @@ public class DataSource {
                     if (resultSet.next()) {
                         Long value = resultSet.getLong(1);
                         if (value == null) {
-                            logger.error("query '" + sql + "' returned a null sql value");
+                            logger.warn("query '" + sql + "' returned a null sql value");
                             return 0L;
                         } else {
                             return value;
                         }
                     } else {
-                        logger.error("query '" + sql + "' didn't return any results");
+                        logger.warn("query '" + sql + "' didn't return any results");
                         return 0L;
                     }
                 }
@@ -269,14 +270,13 @@ public class DataSource {
             return preparedStatementCache.get(sql);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof SQLException) {
-                throw (SQLException) cause;
-            } else {
-                logger.error(e.getMessage(), e);
-                SQLException f = new SQLException("Unexpected not-really-a-sql-exception");
-                f.initCause(e);
-                throw f;
-            }
+            Throwables.propagateIfPossible(cause, SQLException.class);
+            // it should not really be possible to get here since the only checked exception that
+            // preparedStatementCache's CacheLoader throws is SQLException
+            logger.error(e.getMessage(), e);
+            SQLException f = new SQLException(e.getMessage());
+            f.initCause(e);
+            throw f;
         }
     }
 

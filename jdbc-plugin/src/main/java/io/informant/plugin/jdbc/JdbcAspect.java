@@ -420,7 +420,7 @@ public class JdbcAspect {
                     lastJdbcMessageSupplier.setHasPerformedNext();
                 }
             } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
+                logger.warn(e.getMessage(), e);
             }
         }
         @OnAfter
@@ -646,7 +646,7 @@ public class JdbcAspect {
         try {
             return statement.getConnection().hashCode();
         } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return null;
         }
     }
@@ -655,7 +655,7 @@ public class JdbcAspect {
         try {
             return Integer.toHexString(databaseMetaData.getConnection().hashCode());
         } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return "???";
         }
     }

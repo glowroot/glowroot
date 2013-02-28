@@ -301,12 +301,12 @@ public class TraceSnapshot {
 
         TraceSnapshot build() {
             if (id == null) {
-                logger.error("setId() must be called before build()");
+                logger.warn("setId() must be called before build()");
                 id = new TraceUniqueId(System.currentTimeMillis()).get();
                 headline = "<error: no id provided>";
             }
             if (headline == null) {
-                logger.error("setHeadline() must be called before build()");
+                logger.warn("setHeadline() must be called before build()");
                 headline = "<error: no headline provided>";
             }
             return new TraceSnapshot(id, startAt, duration, stuck, completed, background,

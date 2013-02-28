@@ -108,7 +108,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             for (PluginInfo pluginInfo : pluginInfoCache.getPluginInfos()) {
                 ids.add(pluginInfo.getId());
             }
-            logger.error("unexpected plugin id '{}', available plugin ids: {}", pluginId,
+            logger.warn("unexpected plugin id '{}', available plugin ids: {}", pluginId,
                     Joiner.on(", ").join(ids));
         }
         // call onChange() to initialize the cached configuration property values

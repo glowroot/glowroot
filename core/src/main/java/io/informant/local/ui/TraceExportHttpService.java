@@ -73,7 +73,7 @@ public class TraceExportHttpService implements HttpService {
         logger.debug("handleRequest(): id={}", id);
         ByteStream byteStream = getExportByteStream(id);
         if (byteStream == null) {
-            logger.error("no trace found for id '{}'", id);
+            logger.warn("no trace found for id '{}'", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -126,7 +126,7 @@ public class TraceExportHttpService implements HttpService {
         try {
             url = Resources.getResource(path);
         } catch (IllegalArgumentException e) {
-            logger.error("could not find resource '{}'", path);
+            logger.warn("could not find resource '{}'", path);
             return "";
         }
         return Resources.toString(url, Charsets.UTF_8);

@@ -53,10 +53,10 @@ class MetricCache {
     Metric getMetric(Class<?> adviceClass) {
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut == null) {
-            logger.error("advice class '{}' has no @Pointcut", adviceClass.getName());
+            logger.warn("advice class '{}' has no @Pointcut", adviceClass.getName());
             return metrics.getUnchecked("unknown");
         } else if (pointcut.metricName().equals("")) {
-            logger.error("@Pointcut on advice class '{}' has no metricName() attribute",
+            logger.warn("@Pointcut on advice class '{}' has no metricName() attribute",
                     adviceClass.getName());
             return metrics.getUnchecked("unknown");
         } else {

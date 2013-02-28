@@ -87,7 +87,7 @@ public class PropertyDescriptor {
         } else if (type == PropertyType.DOUBLE) {
             return Double.class;
         } else {
-            logger.error("unexpected type: {}", type);
+            logger.warn("unexpected type: {}", type);
             return String.class;
         }
     }

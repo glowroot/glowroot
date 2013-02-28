@@ -99,7 +99,7 @@ public class DaemonExecutors {
     private static class ExceptionHandler implements UncaughtExceptionHandler {
         private static final Logger logger = LoggerFactory.getLogger(ExceptionHandler.class);
         public void uncaughtException(Thread t, Throwable e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
         }
     }
 

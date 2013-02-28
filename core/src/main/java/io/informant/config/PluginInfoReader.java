@@ -112,7 +112,7 @@ public class PluginInfoReader {
             } else if (defaultValueText.equalsIgnoreCase("false")) {
                 return false;
             } else {
-                logger.error("unexpected boolean value '" + defaultValueText + "', must be either"
+                logger.warn("unexpected boolean value '" + defaultValueText + "', must be either"
                         + " 'true' or 'false', defaulting to 'false'");
                 return false;
             }
@@ -120,12 +120,12 @@ public class PluginInfoReader {
             try {
                 return Double.parseDouble(defaultValueText);
             } catch (NumberFormatException e) {
-                logger.error("unable to parse default value '" + defaultValueText
+                logger.warn("unable to parse default value '" + defaultValueText
                         + "' as a double");
                 return null;
             }
         } else {
-            logger.error("unexpected type: {}", type);
+            logger.warn("unexpected type: {}", type);
             return null;
         }
     }
@@ -140,7 +140,7 @@ public class PluginInfoReader {
         case DOUBLE:
             return null;
         default:
-            logger.error("unexpected property type '{}'", type);
+            logger.warn("unexpected property type '{}'", type);
             return null;
         }
     }

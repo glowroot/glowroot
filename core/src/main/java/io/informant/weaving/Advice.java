@@ -313,7 +313,7 @@ public class Advice {
 
         private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
             if (isEnabledAdvice != null) {
-                logger.error("@Pointcut '{}' has more than one @IsEnabled method",
+                logger.warn("@Pointcut '{}' has more than one @IsEnabled method",
                         adviceClass.getName());
                 return;
             }
@@ -323,13 +323,13 @@ public class Advice {
                 this.isEnabledParameterKinds = getParameterKinds(method.getParameterAnnotations(),
                         method.getParameterTypes(), isEnabledValidParameterKinds);
             } else {
-                logger.error("@IsEnabled method must return boolean");
+                logger.warn("@IsEnabled method must return boolean");
             }
         }
 
         private void initOnBeforeAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
             if (onBeforeAdvice != null) {
-                logger.error("@Pointcut '{}' has more than one @OnBefore method",
+                logger.warn("@Pointcut '{}' has more than one @OnBefore method",
                         adviceClass.getName());
                 return;
             }
@@ -343,7 +343,7 @@ public class Advice {
 
         private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
             if (onReturnAdvice != null) {
-                logger.error("@Pointcut '{}' has more than one @OnReturn method",
+                logger.warn("@Pointcut '{}' has more than one @OnReturn method",
                         adviceClass.getName());
                 return;
             }
@@ -352,7 +352,7 @@ public class Advice {
                     onReturnValidParameterKinds);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.RETURN) {
-                    logger.error("@InjectReturn must be the first argument to @OnReturn");
+                    logger.warn("@InjectReturn must be the first argument to @OnReturn");
                     return;
                 }
             }
@@ -362,7 +362,7 @@ public class Advice {
 
         private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
             if (onThrowAdvice != null) {
-                logger.error("@Pointcut '{}' has more than one @OnThrow method",
+                logger.warn("@Pointcut '{}' has more than one @OnThrow method",
                         adviceClass.getName());
                 return;
             }
@@ -371,7 +371,7 @@ public class Advice {
                     onThrowValidParameterKinds);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.THROWABLE) {
-                    logger.error("@InjectThrowable must be the first argument to"
+                    logger.warn("@InjectThrowable must be the first argument to"
                             + " @OnThrow");
                     return;
                 }
@@ -380,7 +380,7 @@ public class Advice {
             if (asmMethod.getReturnType().getSort() != Type.VOID) {
                 // TODO allow @OnThrow methods to suppress the exception or throw a different
                 // exception
-                logger.error("@OnThrow method must return void (for now)");
+                logger.warn("@OnThrow method must return void (for now)");
                 return;
             }
             this.onThrowAdvice = asmMethod;
@@ -389,13 +389,13 @@ public class Advice {
 
         private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
             if (onAfterAdvice != null) {
-                logger.error("@Pointcut '{}' has more than one @OnAfter method",
+                logger.warn("@Pointcut '{}' has more than one @OnAfter method",
                         adviceClass.getName());
                 return;
             }
             Method asmMethod = Method.getMethod(method);
             if (asmMethod.getReturnType().getSort() != Type.VOID) {
-                logger.error("@OnAfter method must return void");
+                logger.warn("@OnAfter method must return void");
                 return;
             }
             this.onAfterAdvice = asmMethod;
@@ -446,12 +446,13 @@ public class Advice {
                     continue;
                 }
                 if (foundParameterKind != null) {
-                    logger.error("multiple annotations found on a single parameter");
+                    logger.warn("multiple annotations found on a single parameter");
+                    break;
                 }
                 if (validArgTypes.contains(parameterKind)) {
                     foundParameterKind = parameterKind;
                 } else {
-                    logger.error("annotation '" + annotation.annotationType().getName()
+                    logger.warn("annotation '" + annotation.annotationType().getName()
                             + "' found in an invalid location");
                 }
             }

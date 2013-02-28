@@ -81,7 +81,7 @@ public class PluginConfig {
     public String getStringProperty(String name) {
         Optional<?> optional = properties.get(name);
         if (optional == null) {
-            logger.error("unexpected property name '{}'", name);
+            logger.warn("unexpected property name '{}'", name);
             return "";
         }
         Object value = optional.orNull();
@@ -90,7 +90,7 @@ public class PluginConfig {
         } else if (value instanceof String) {
             return (String) value;
         } else {
-            logger.error("expecting string value type, but found value type '"
+            logger.warn("expecting string value type, but found value type '"
                     + value.getClass() + "' for property name '" + name + "'");
             return "";
         }
@@ -99,7 +99,7 @@ public class PluginConfig {
     public boolean getBooleanProperty(String name) {
         Optional<?> optional = properties.get(name);
         if (optional == null) {
-            logger.error("unexpected property name '{}'", name);
+            logger.warn("unexpected property name '{}'", name);
             return false;
         }
         Object value = optional.orNull();
@@ -108,7 +108,7 @@ public class PluginConfig {
         } else if (value instanceof Boolean) {
             return (Boolean) value;
         } else {
-            logger.error("expecting boolean value type, but found value type '"
+            logger.warn("expecting boolean value type, but found value type '"
                     + value.getClass() + "' for property name '" + name + "'");
             return false;
         }
@@ -118,7 +118,7 @@ public class PluginConfig {
     public Double getDoubleProperty(String name) {
         Optional<?> optional = properties.get(name);
         if (optional == null) {
-            logger.error("unexpected property name '{}'", name);
+            logger.warn("unexpected property name '{}'", name);
             return null;
         }
         Object value = optional.orNull();
@@ -127,7 +127,7 @@ public class PluginConfig {
         } else if (value instanceof Double) {
             return (Double) value;
         } else {
-            logger.error("expecting double value type, but found value type '" + value.getClass()
+            logger.warn("expecting double value type, but found value type '" + value.getClass()
                     + "' for property name '" + name + "'");
             return null;
         }

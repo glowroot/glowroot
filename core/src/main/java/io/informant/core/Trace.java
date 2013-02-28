@@ -248,6 +248,7 @@ public class Trace {
     public String getHeadline() {
         MessageSupplier messageSupplier = rootSpan.getRootSpan().getMessageSupplier();
         if (messageSupplier == null) {
+            // this should be impossible for root span
             logger.error("found root span with null message supplier in trace");
             return "";
         }

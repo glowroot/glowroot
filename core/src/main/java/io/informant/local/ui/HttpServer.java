@@ -254,16 +254,16 @@ public class HttpServer extends HttpServerBase {
         try {
             responseText = callMethod(jsonService, serviceMethodName, args, requestText);
         } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         } catch (NoSuchMethodException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         } catch (InvocationTargetException e) {
             logger.warn(e.getCause().getMessage(), e.getCause());
@@ -286,7 +286,7 @@ public class HttpServer extends HttpServerBase {
             response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
             HttpServices.preventCaching(response);
         } else {
-            logger.error("unexpected type of json service response '{}'", responseText.getClass()
+            logger.warn("unexpected type of json service response '{}'", responseText.getClass()
                     .getName());
             response = new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }

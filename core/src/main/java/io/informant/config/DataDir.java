@@ -58,7 +58,7 @@ public class DataDir {
                 baseDir = new File(agentJarLocation.toURI()).getParentFile();
             }
         } catch (URISyntaxException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             baseDir = new File(".");
         }
         BASE_DIR = baseDir;

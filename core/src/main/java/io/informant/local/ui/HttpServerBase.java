@@ -166,7 +166,7 @@ abstract class HttpServerBase {
                 } else if (e.getCause() instanceof ClosedChannelException) {
                     // ignore, just a browser disconnect
                 } else {
-                    logger.error(e.getCause().getMessage(), e.getCause());
+                    logger.warn(e.getCause().getMessage(), e.getCause());
                 }
             }
             e.getChannel().close();

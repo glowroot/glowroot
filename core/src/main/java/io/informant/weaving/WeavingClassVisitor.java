@@ -165,7 +165,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
                     matchingAdvisors, adviceFlowOuterHolderNums);
         } else {
-            logger.error("cannot add metrics to <clinit> or <init> methods at this time");
+            logger.warn("cannot add metrics to <clinit> or <init> methods at this time");
             return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors,
                     adviceFlowOuterHolderNums);
         }

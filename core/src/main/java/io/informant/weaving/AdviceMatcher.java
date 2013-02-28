@@ -112,7 +112,7 @@ class AdviceMatcher {
         for (int i = 0; i < pointcutMethodArgs.length; i++) {
             if (pointcutMethodArgs[i].equals("..")) {
                 if (i != pointcutMethodArgs.length - 1) {
-                    logger.error("'..' can only be used at the end of methodArgs");
+                    logger.warn("'..' can only be used at the end of methodArgs");
                     return false;
                 } else {
                     // ".." matches everything after this
