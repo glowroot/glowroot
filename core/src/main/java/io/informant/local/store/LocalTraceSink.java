@@ -15,6 +15,7 @@
  */
 package io.informant.local.store;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.core.Trace;
 import io.informant.core.TraceSink;
 import io.informant.util.DaemonExecutors;
@@ -30,9 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import checkers.lock.quals.GuardedBy;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.RateLimiter;
 
 /**
  * Implementation of TraceSink for local storage in embedded H2 database. Some day there may be
@@ -56,9 +57,7 @@ public class LocalTraceSink implements TraceSink {
     private final Ticker ticker;
     private final Set<Trace> pendingCompleteTraces = Sets.newCopyOnWriteArraySet();
 
-    private final Object warningLock = new Object();
-    @GuardedBy("warningLock")
-    private final Stopwatch lastWarningStopwatch;
+    private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
     @GuardedBy("warningLock")
     private int countSinceLastWarning;
 
@@ -67,7 +66,6 @@ public class LocalTraceSink implements TraceSink {
         this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
-        lastWarningStopwatch = new Stopwatch(ticker);
     }
 
     public void onCompletedTrace(final Trace trace) {
@@ -76,6 +74,7 @@ public class LocalTraceSink implements TraceSink {
             trace.promoteTraceMetrics();
             if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
                 logPendingLimitWarning();
+                return;
             }
             pendingCompleteTraces.add(trace);
             executorService.execute(new Runnable() {
@@ -93,18 +92,13 @@ public class LocalTraceSink implements TraceSink {
     }
 
     private void logPendingLimitWarning() {
-        // synchronized to prevent two threads from logging the warning at the same time (one should
-        // log it and the other should increment the count for the next log)
-        synchronized (warningLock) {
-            // lastWarningStopwatch is not running the very first time
-            if (!lastWarningStopwatch.isRunning() || lastWarningStopwatch.elapsedMillis() > 60000) {
+        synchronized (warningRateLimiter) {
+            if (warningRateLimiter.tryAcquire(0, MILLISECONDS)) {
                 logger.warn("not storing a trace in the local h2 database because of an excessive"
                         + " backlog of {} traces already waiting to be stored (this warning will"
                         + " appear at most once a minute, there were {} additional traces not"
                         + " stored in the local h2 database since the last warning)",
-                        PENDING_LIMIT,
-                        countSinceLastWarning);
-                lastWarningStopwatch.reset().start();
+                        PENDING_LIMIT, countSinceLastWarning);
                 countSinceLastWarning = 0;
             } else {
                 countSinceLastWarning++;
