@@ -62,9 +62,9 @@ public class DataSource {
     @Nullable
     private final File dbFile;
     private final Thread shutdownHookThread;
+    private final Object lock = new Object();
     @GuardedBy("lock")
     private Connection connection;
-    private final Object lock = new Object();
     private volatile boolean closing = false;
 
     private final LoadingCache<String, PreparedStatement> preparedStatementCache = CacheBuilder

@@ -34,8 +34,6 @@ import io.informant.weaving.ParsedTypeCache;
 import java.io.File;
 import java.util.Map;
 
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,10 +96,12 @@ public class LocalUiModule {
         AdminJsonService adminJsonService = new AdminJsonService(traceSnapshotDao, configService,
                 traceSinkLocal, dataSource, traceRegistry);
 
-        setNettyThreadNameDeterminer();
-        httpServer = new HttpServer(port, tracePointJsonService, traceSummaryJsonService,
-                traceSnapshotHttpService, traceExportHttpService, configJsonService,
-                pointcutConfigJsonService, threadDumpJsonService, adminJsonService);
+        // for now only a single http worker thread to keep # of threads down
+        final int numWorkerThreads = 1;
+        httpServer = new HttpServer(port, numWorkerThreads, tracePointJsonService,
+                traceSummaryJsonService, traceSnapshotHttpService, traceExportHttpService,
+                configJsonService, pointcutConfigJsonService, threadDumpJsonService,
+                adminJsonService);
     }
 
     private int getHttpServerPort(@ReadOnly Map<String, String> properties) {
@@ -129,14 +129,5 @@ public class LocalUiModule {
 
     public TraceExportHttpService getTraceExportHttpService() {
         return traceExportHttpService;
-    }
-
-    // this needs to be called before netty creates any threads
-    private static void setNettyThreadNameDeterminer() {
-        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
-            public String determineThreadName(String currentThreadName, String proposedThreadName) {
-                return "Informant-" + proposedThreadName;
-            }
-        });
     }
 }

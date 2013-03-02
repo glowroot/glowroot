@@ -21,7 +21,7 @@ import io.informant.testkit.SocketCommander.CommandWrapper;
 import io.informant.testkit.SocketCommander.ResponseWrapper;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.Threads;
-import io.informant.util.Threads.RogueThreadsException;
+import io.informant.util.Threads.ThreadsException;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -153,7 +153,7 @@ class SocketCommandProcessor implements Runnable {
                 MainEntryPoint.shutdown();
                 Threads.postShutdownCheck(preExistingThreads);
                 respond(SHUTDOWN_RESPONSE, commandNum);
-            } catch (RogueThreadsException e) {
+            } catch (ThreadsException e) {
                 logger.error(e.getMessage(), e);
                 respond(EXCEPTION_RESPONSE, commandNum);
             }

@@ -20,14 +20,10 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
-import io.informant.util.DaemonExecutors;
 import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
 
@@ -41,22 +37,15 @@ import com.google.common.base.Ticker;
 @Singleton
 class FineGrainedProfiler {
 
-    private static final Logger logger = LoggerFactory.getLogger(FineGrainedProfiler.class);
-
-    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-FineGrainedProfiler");
-
+    private final ScheduledExecutorService scheduledExecutor;
     private final ConfigService configService;
     private final Ticker ticker;
 
-    FineGrainedProfiler(ConfigService configService, Ticker ticker) {
+    FineGrainedProfiler(ScheduledExecutorService scheduledExecutor, ConfigService configService,
+            Ticker ticker) {
+        this.scheduledExecutor = scheduledExecutor;
         this.configService = configService;
         this.ticker = ticker;
-    }
-
-    void close() {
-        logger.debug("close()");
-        scheduledExecutor.shutdownNow();
     }
 
     // schedules the first stack collection for configured interval after trace start (or

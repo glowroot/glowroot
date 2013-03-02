@@ -16,7 +16,7 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import io.informant.util.DaemonExecutors;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.util.OnlyUsedByTests;
 
 import java.io.File;
@@ -24,11 +24,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.io.SyncFailedException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Ticker;
 
 /**
  * Needs to be externally synchronized around startBlock()/write()/endBlock().
@@ -45,10 +49,8 @@ class RollingOutputStream extends OutputStream {
     private static final int FSYNC_INTERVAL_MILLIS = 2000;
     private static final int HEADER_CURR_INDEX_POS = 0;
 
-    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-RollingOutputFsync");
-
     private final File file;
+    private final Ticker ticker;
     private RandomAccessFile out;
 
     // currIndex is ever-increasing even over rolling boundary
@@ -65,10 +67,14 @@ class RollingOutputStream extends OutputStream {
 
     private long blockStartIndex;
 
+    private final Future<?> fsyncFuture;
     private final AtomicBoolean fsyncNeeded = new AtomicBoolean();
+    private final AtomicLong lastFsyncTick = new AtomicLong();
 
-    RollingOutputStream(File file, int requestedRollingSizeKb) throws IOException {
+    RollingOutputStream(File file, int requestedRollingSizeKb,
+            ScheduledExecutorService scheduledExecutor, Ticker ticker) throws IOException {
         this.file = file;
+        this.ticker = ticker;
         boolean newFile = !file.exists() || file.length() == 0;
         out = new RandomAccessFile(file, "rw");
         if (newFile) {
@@ -89,19 +95,12 @@ class RollingOutputStream extends OutputStream {
             currPosition = (currIndex - lastCompactionBaseIndex) % rollingSizeBytes;
             out.seek(HEADER_SKIP_BYTES + currPosition);
         }
-        scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
+        fsyncFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                if (fsyncNeeded.getAndSet(false)) {
-                    try {
-                        out.getFD().sync();
-                    } catch (SyncFailedException e) {
-                        logger.error(e.getMessage(), e);
-                    } catch (IOException e) {
-                        logger.error(e.getMessage(), e);
-                    }
-                }
+                fsyncIfNeeded();
             }
         }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, MILLISECONDS);
+        lastFsyncTick.set(ticker.read());
     }
 
     void startBlock() {
@@ -110,6 +109,11 @@ class RollingOutputStream extends OutputStream {
 
     FileBlock endBlock() {
         fsyncNeeded.set(true);
+        if (ticker.read() - lastFsyncTick.get() > SECONDS.toNanos(5)) {
+            // scheduled fsyncs must have fallen behind (since they share a single thread with other
+            // tasks in order to keep number of threads down), so force an fsync now
+            fsyncIfNeeded();
+        }
         return FileBlock.from(blockStartIndex, currIndex - blockStartIndex);
     }
 
@@ -190,15 +194,9 @@ class RollingOutputStream extends OutputStream {
         out.seek(HEADER_SKIP_BYTES + currPosition);
     }
 
-    @OnlyUsedByTests
-    void sync() throws IOException {
-        out.getFD().sync();
-    }
-
     @Override
     public void close() throws IOException {
-        super.close();
-        scheduledExecutor.shutdownNow();
+        fsyncFuture.cancel(false);
         out.close();
     }
 
@@ -235,5 +233,23 @@ class RollingOutputStream extends OutputStream {
             out.write(b, off, len);
             currPosition += len;
         }
+    }
+
+    private void fsyncIfNeeded() {
+        if (fsyncNeeded.getAndSet(false)) {
+            try {
+                out.getFD().sync();
+                lastFsyncTick.set(ticker.read());
+            } catch (SyncFailedException e) {
+                logger.error(e.getMessage(), e);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    @OnlyUsedByTests
+    void sync() throws IOException {
+        out.getFD().sync();
     }
 }

@@ -75,14 +75,14 @@ public class HttpServer extends HttpServerBase {
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
 
-    HttpServer(int port, TracePointJsonService tracePointJsonService,
+    HttpServer(int port, int numWorkerThreads, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             TraceSnapshotHttpService traceSnapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
             ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
 
-        super(port);
+        super(port, numWorkerThreads);
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/explorer.html$"), "io/informant/local/ui/explorer.html");

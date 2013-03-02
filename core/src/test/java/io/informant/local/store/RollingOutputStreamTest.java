@@ -16,16 +16,20 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.util.DaemonExecutors;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.base.Ticker;
 
 /**
  * @author Trask Stalnaker
@@ -34,18 +38,21 @@ import org.junit.Test;
 public class RollingOutputStreamTest {
 
     private File tempFile;
+    private ScheduledExecutorService scheduledExecutor;
     private RollingOutputStream rollingOut;
     private RandomAccessFile in;
 
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("informant-test-", ".rolling.txt");
-        rollingOut = new RollingOutputStream(tempFile, 1);
+        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        rollingOut = new RollingOutputStream(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
         in = new RandomAccessFile(tempFile, "r");
     }
 
     @After
     public void onAfter() throws IOException {
+        scheduledExecutor.shutdownNow();
         rollingOut.close();
         in.close();
         tempFile.delete();

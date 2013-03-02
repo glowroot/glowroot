@@ -17,14 +17,17 @@ package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.util.Clock;
+import io.informant.util.DaemonExecutors;
 import io.informant.util.Static;
 
 import java.io.File;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 
 /**
  * @author Trask Stalnaker
@@ -41,7 +44,10 @@ public class TraceSnapshotDaoPerformanceMain {
     public static void main(String... args) throws Exception {
         TraceSnapshotTestData snapshotTestData = new TraceSnapshotTestData();
         DataSource dataSource = new DataSource();
-        RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000);
+        ScheduledExecutorService scheduledExecutor =
+                DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000,
+                scheduledExecutor, Ticker.systemTicker());
         TraceSnapshotDao snapshotDao = new TraceSnapshotDao(dataSource, rollingFile,
                 Clock.systemClock());
 

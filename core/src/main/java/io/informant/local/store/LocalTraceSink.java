@@ -18,7 +18,6 @@ package io.informant.local.store;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.core.Trace;
 import io.informant.core.TraceSink;
-import io.informant.util.DaemonExecutors;
 import io.informant.util.Singleton;
 
 import java.io.IOException;
@@ -49,9 +48,7 @@ public class LocalTraceSink implements TraceSink {
 
     private static final int PENDING_LIMIT = 100;
 
-    private final ExecutorService executorService = DaemonExecutors
-            .newSingleThreadExecutor("Informant-TraceSink");
-
+    private final ExecutorService executorService;
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Ticker ticker;
@@ -61,8 +58,9 @@ public class LocalTraceSink implements TraceSink {
     @GuardedBy("warningLock")
     private int countSinceLastWarning;
 
-    LocalTraceSink(TraceSnapshotService traceSnapshotService,
+    LocalTraceSink(ExecutorService executorService, TraceSnapshotService traceSnapshotService,
             TraceSnapshotDao traceSnapshotDao, Ticker ticker) {
+        this.executorService = executorService;
         this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
@@ -121,10 +119,5 @@ public class LocalTraceSink implements TraceSink {
 
     public Collection<Trace> getPendingCompleteTraces() {
         return pendingCompleteTraces;
-    }
-
-    void close() {
-        logger.debug("close()");
-        executorService.shutdownNow();
     }
 }

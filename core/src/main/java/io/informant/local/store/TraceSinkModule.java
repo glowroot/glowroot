@@ -18,10 +18,13 @@ package io.informant.local.store;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.util.Clock;
+import io.informant.util.DaemonExecutors;
+import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,8 @@ public class TraceSinkModule {
     private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final LocalTraceSink traceSink;
-    private final TraceSnapshotReaper traceSnapshotReaper;
+
+    private final ScheduledExecutorService scheduledExecutor;
 
     public TraceSinkModule(ConfigModule configModule, DataSourceModule dataSourceModule)
             throws Exception {
@@ -51,24 +55,16 @@ public class TraceSinkModule {
         ConfigService configService = configModule.getConfigService();
         int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
         DataSource dataSource = dataSourceModule.getDataSource();
+
+        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Storage");
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
-                rollingSizeMb * 1024);
+                rollingSizeMb * 1024, scheduledExecutor, ticker);
         traceSnapshotService = new TraceSnapshotService(configService);
         traceSnapshotDao = new TraceSnapshotDao(dataSource, rollingFile, clock);
-        traceSink = new LocalTraceSink(traceSnapshotService, traceSnapshotDao, ticker);
-        traceSnapshotReaper = new TraceSnapshotReaper(configService, traceSnapshotDao, clock);
-    }
+        traceSink = new LocalTraceSink(scheduledExecutor, traceSnapshotService, traceSnapshotDao,
+                ticker);
 
-    public void close() {
-        logger.debug("close()");
-        traceSnapshotReaper.close();
-        traceSink.close();
-        try {
-            rollingFile.close();
-        } catch (IOException e) {
-            // warning only since it occurs during shutdown anyways
-            logger.warn(e.getMessage(), e);
-        }
+        new TraceSnapshotReaper(configService, traceSnapshotDao, clock).start(scheduledExecutor);
     }
 
     public RollingFile getRollingFile() {
@@ -85,5 +81,17 @@ public class TraceSinkModule {
 
     public LocalTraceSink getTraceSink() {
         return traceSink;
+    }
+
+    @OnlyUsedByTests
+    public void close() {
+        logger.debug("close()");
+        scheduledExecutor.shutdownNow();
+        try {
+            rollingFile.close();
+        } catch (IOException e) {
+            // warning only since it occurs during shutdown anyways
+            logger.warn(e.getMessage(), e);
+        }
     }
 }

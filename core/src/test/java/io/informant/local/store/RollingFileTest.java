@@ -16,15 +16,18 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.util.DaemonExecutors;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Ticker;
 import com.google.common.io.CharStreams;
 
 /**
@@ -34,16 +37,19 @@ import com.google.common.io.CharStreams;
 public class RollingFileTest {
 
     private File tempFile;
+    private ScheduledExecutorService scheduledExecutor;
     private RollingFile rollingFile;
 
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("informant-test-", ".rolling.db");
-        rollingFile = new RollingFile(tempFile, 1);
+        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        rollingFile = new RollingFile(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
     }
 
     @After
     public void onAfter() throws IOException {
+        scheduledExecutor.shutdownNow();
         rollingFile.close();
         tempFile.delete();
     }

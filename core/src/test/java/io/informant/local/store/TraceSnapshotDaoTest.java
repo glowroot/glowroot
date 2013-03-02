@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.util.DaemonExecutors;
 import io.informant.util.MockClock;
 import io.informant.util.Threads;
 
@@ -24,10 +25,13 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.base.Ticker;
 
 /**
  * @author Trask Stalnaker
@@ -38,6 +42,7 @@ public class TraceSnapshotDaoTest {
     private Collection<Thread> preExistingThreads;
     private DataSource dataSource;
     private File rollingDbFile;
+    private ScheduledExecutorService scheduledExecutor;
     private RollingFile rollingFile;
     private TraceSnapshotDao snapshotDao;
 
@@ -49,7 +54,9 @@ public class TraceSnapshotDaoTest {
             dataSource.execute("drop table trace_snapshot");
         }
         rollingDbFile = new File("informant.rolling.db");
-        rollingFile = new RollingFile(rollingDbFile, 1000000);
+        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        rollingFile = new RollingFile(rollingDbFile, 1000000, scheduledExecutor,
+                Ticker.systemTicker());
         snapshotDao = new TraceSnapshotDao(dataSource, rollingFile, new MockClock());
     }
 
@@ -57,6 +64,7 @@ public class TraceSnapshotDaoTest {
     public void after() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
         dataSource.close();
+        scheduledExecutor.shutdownNow();
         rollingFile.close();
         rollingDbFile.delete();
         Threads.postShutdownCheck(preExistingThreads);

@@ -20,12 +20,15 @@ import io.informant.api.weaving.Mixin;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginInfoCache;
+import io.informant.util.DaemonExecutors;
+import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
 import io.informant.weaving.Advice;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.WeavingClassFileTransformer;
 
 import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +57,7 @@ public class TraceModule {
     private final MetricCache metricCache;
     private final Random random;
 
+    private final ScheduledExecutorService scheduledExecutor;
     private final StuckTraceCollector stuckTraceCollector;
     private final CoarseGrainedProfiler coarseGrainedProfiler;
     private final FineGrainedProfiler fineGrainedProfiler;
@@ -82,10 +86,12 @@ public class TraceModule {
         metricCache = new MetricCache(ticker);
         random = new Random();
 
-        stuckTraceCollector = new StuckTraceCollector(traceRegistry, traceSink, configService,
-                ticker);
-        coarseGrainedProfiler = new CoarseGrainedProfiler(traceRegistry, configService, ticker);
-        fineGrainedProfiler = new FineGrainedProfiler(configService, ticker);
+        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Core");
+        stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
+                configService, ticker);
+        coarseGrainedProfiler = new CoarseGrainedProfiler(scheduledExecutor, traceRegistry,
+                configService, ticker);
+        fineGrainedProfiler = new FineGrainedProfiler(scheduledExecutor, configService, ticker);
     }
 
     public WeavingClassFileTransformer createWeavingClassFileTransformer() {
@@ -97,13 +103,6 @@ public class TraceModule {
 
     public PluginServices getPluginServices(String pluginId) {
         return pluginServices.getUnchecked(pluginId);
-    }
-
-    public void close() {
-        logger.debug("close()");
-        stuckTraceCollector.close();
-        coarseGrainedProfiler.close();
-        fineGrainedProfiler.close();
     }
 
     public ParsedTypeCache getParsedTypeCache() {
@@ -128,5 +127,11 @@ public class TraceModule {
 
     public FineGrainedProfiler getFineGrainedProfiler() {
         return fineGrainedProfiler;
+    }
+
+    @OnlyUsedByTests
+    public void close() {
+        logger.debug("close()");
+        scheduledExecutor.shutdownNow();
     }
 }

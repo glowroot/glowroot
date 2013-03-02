@@ -20,7 +20,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
-import io.informant.util.DaemonExecutors;
 import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,14 +43,14 @@ class CoarseGrainedProfiler implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(CoarseGrainedProfiler.class);
     private static final int CHECK_INTERVAL_MILLIS = 50;
 
-    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-CoarseGrainedProfiler");
-
+    private final ScheduledExecutorService scheduledExecutor;
     private final TraceRegistry traceRegistry;
     private final ConfigService configService;
     private final Ticker ticker;
 
-    CoarseGrainedProfiler(TraceRegistry traceRegistry, ConfigService configService, Ticker ticker) {
+    CoarseGrainedProfiler(ScheduledExecutorService scheduledExecutor, TraceRegistry traceRegistry,
+            ConfigService configService, Ticker ticker) {
+        this.scheduledExecutor = scheduledExecutor;
         this.traceRegistry = traceRegistry;
         this.configService = configService;
         this.ticker = ticker;
@@ -78,11 +77,6 @@ class CoarseGrainedProfiler implements Runnable {
             // log and terminate successfully
             logger.error(t.getMessage(), t);
         }
-    }
-
-    void close() {
-        logger.debug("close()");
-        scheduledExecutor.shutdownNow();
     }
 
     // look for traces that will exceed the stack trace initial delay threshold within the next

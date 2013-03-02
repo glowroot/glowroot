@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import io.informant.util.NotThreadSafe;
+import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
 
 import java.io.BufferedInputStream;
@@ -27,6 +28,7 @@ import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import checkers.lock.quals.GuardedBy;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Longs;
@@ -50,20 +53,24 @@ public class RollingFile {
     private static final Logger logger = LoggerFactory.getLogger(RollingFile.class);
 
     private final File file;
+    private final Object lock = new Object();
     @GuardedBy("lock")
     private final RollingOutputStream out;
     @GuardedBy("lock")
     private final Writer compressedWriter;
+    private final Thread shutdownHookThread;
     @GuardedBy("lock")
     private RandomAccessFile inFile;
-    private final Object lock = new Object();
     private volatile boolean closing = false;
 
-    RollingFile(File file, int requestedRollingSizeKb) throws IOException {
+    RollingFile(File file, int requestedRollingSizeKb, ScheduledExecutorService scheduledExecutor,
+            Ticker ticker) throws IOException {
         this.file = file;
-        out = new RollingOutputStream(file, requestedRollingSizeKb);
+        out = new RollingOutputStream(file, requestedRollingSizeKb, scheduledExecutor, ticker);
         compressedWriter = new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
         inFile = new RandomAccessFile(file, "r");
+        shutdownHookThread = new ShutdownHookThread();
+        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
     FileBlock write(CharSource charSource) {
@@ -98,6 +105,7 @@ public class RollingFile {
         }
     }
 
+    @OnlyUsedByTests
     void close() throws IOException {
         logger.debug("close()");
         synchronized (lock) {
@@ -105,6 +113,7 @@ public class RollingFile {
             out.close();
             inFile.close();
         }
+        Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
     @ThreadSafe
@@ -177,6 +186,24 @@ public class RollingFile {
                 return -1;
             } else {
                 return bytes[0];
+            }
+        }
+    }
+
+    private class ShutdownHookThread extends Thread {
+        @Override
+        public void run() {
+            try {
+                // update flag outside of lock in case there is a backlog of threads already
+                // waiting on the lock (once the flag is set, any threads in the backlog that
+                // haven't acquired the lock will abort quickly once they do obtain the lock)
+                closing = true;
+                synchronized (lock) {
+                    out.close();
+                    inFile.close();
+                }
+            } catch (IOException e) {
+                logger.warn(e.getMessage(), e);
             }
         }
     }

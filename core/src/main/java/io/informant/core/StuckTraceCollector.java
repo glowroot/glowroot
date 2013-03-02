@@ -20,7 +20,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
-import io.informant.util.DaemonExecutors;
 import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,16 +45,15 @@ class StuckTraceCollector implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(StuckTraceCollector.class);
     private static final int CHECK_INTERVAL_MILLIS = 100;
 
-    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-StuckTraceCollector");
-
+    private final ScheduledExecutorService scheduledExecutor;
     private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
     private final ConfigService configService;
     private final Ticker ticker;
 
-    StuckTraceCollector(TraceRegistry traceRegistry, TraceSink traceSink,
-            ConfigService configService, Ticker ticker) {
+    StuckTraceCollector(ScheduledExecutorService scheduledExecutor, TraceRegistry traceRegistry,
+            TraceSink traceSink, ConfigService configService, Ticker ticker) {
+        this.scheduledExecutor = scheduledExecutor;
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configService = configService;
@@ -77,11 +75,6 @@ class StuckTraceCollector implements Runnable {
             // log and terminate successfully
             logger.error(t.getMessage(), t);
         }
-    }
-
-    void close() {
-        logger.debug("close()");
-        scheduledExecutor.shutdownNow();
     }
 
     // look for traces that will exceed the stuck threshold within the next polling interval and

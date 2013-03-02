@@ -51,6 +51,7 @@ public class MergedStackTree {
     private static final Pattern metricMarkerMethodPattern = Pattern
             .compile("^.*\\$informant\\$metric\\$(.*)\\$[0-9]+$");
 
+    private final Object lock = new Object();
     // optimized for trace captures which are never read
     @GuardedBy("lock")
     private final List<List<StackTraceElement>> unmergedStackTraces = Lists.newArrayList();
@@ -58,8 +59,6 @@ public class MergedStackTree {
     private final List<State> unmergedStackTraceStates = Lists.newArrayList();
     @GuardedBy("lock")
     private final List<MergedStackTreeNode> rootNodes = Lists.newArrayList();
-
-    private final Object lock = new Object();
 
     public Object getLock() {
         return lock;

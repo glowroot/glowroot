@@ -19,7 +19,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.util.Clock;
-import io.informant.util.DaemonExecutors;
 import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,9 +37,6 @@ class TraceSnapshotReaper implements Runnable {
     private static final int CHECK_INTERVAL_MINUTES = 10;
     private static final long MILLISECONDS_PER_HOUR = 60L * 60L * 1000L;
 
-    private final ScheduledExecutorService scheduledExecutor = DaemonExecutors
-            .newSingleThreadScheduledExecutor("Informant-TraceSnapshotReaper");
-
     private final ConfigService configService;
     private final TraceSnapshotDao traceSnapshotDao;
     private final Clock clock;
@@ -50,28 +46,23 @@ class TraceSnapshotReaper implements Runnable {
         this.configService = configService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.clock = clock;
+    }
+
+    void start(ScheduledExecutorService scheduledExecutor) {
         scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MINUTES * 60, SECONDS);
     }
 
     public void run() {
         try {
-            runInternal();
+            int snapshotExpirationHours = configService.getGeneralConfig()
+                    .getSnapshotExpirationHours();
+            if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
+                traceSnapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
+                        - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
+            }
         } catch (Throwable t) {
             // log and terminate successfully
             logger.error(t.getMessage(), t);
-        }
-    }
-
-    void close() {
-        logger.debug("close()");
-        scheduledExecutor.shutdownNow();
-    }
-
-    private void runInternal() {
-        int snapshotExpirationHours = configService.getGeneralConfig().getSnapshotExpirationHours();
-        if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
-            traceSnapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
-                    - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
         }
     }
 }

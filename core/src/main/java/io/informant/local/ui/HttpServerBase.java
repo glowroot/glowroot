@@ -15,13 +15,13 @@
  */
 package io.informant.local.ui;
 
-import static org.jboss.netty.channel.Channels.pipeline;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -32,6 +32,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
@@ -47,6 +48,8 @@ import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import org.jboss.netty.util.ThreadNameDeterminer;
+import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,14 +78,14 @@ abstract class HttpServerBase {
 
     private final int port;
 
-    HttpServerBase(int port) {
-        // thread names will be overridden by ThreadNameDeterminer above
+    HttpServerBase(int port, int numWorkerThreads) {
+        setThreadNameDeterminer(numWorkerThreads);
         bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
-                DaemonExecutors.newCachedThreadPool("Informant-HttpServer-Boss"),
-                DaemonExecutors.newCachedThreadPool("Informant-HttpServer-Executor")));
+                DaemonExecutors.newCachedThreadPool("Informant-Netty-Boss"), 1,
+                DaemonExecutors.newCachedThreadPool("Informant-Netty-Worker"), 1));
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
-                ChannelPipeline pipeline = pipeline();
+                ChannelPipeline pipeline = Channels.pipeline();
                 pipeline.addLast("decoder", new HttpRequestDecoder());
                 pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
                 pipeline.addLast("encoder", new HttpResponseEncoder());
@@ -125,6 +128,26 @@ abstract class HttpServerBase {
     @Nullable
     protected abstract HttpResponse handleRequest(HttpRequest request, Channel channel)
             throws IOException, InterruptedException;
+
+    private static void setThreadNameDeterminer(final int numWorkerThreads) {
+        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
+            private final AtomicInteger workerCount = new AtomicInteger();
+            public String determineThreadName(String currentThreadName, String proposedThreadName) {
+                if (proposedThreadName.matches("New I/O server boss #[0-9]+")) {
+                    // leave off the # since there is always a single boss thread
+                    return "Informant-Http-Boss";
+                }
+                if (proposedThreadName.matches("New I/O worker #[0-9]+")) {
+                    // use separate worker specific counter since netty # is shared between bosses
+                    // and workers (and netty # starts at 1 while other informant thread pools start
+                    // numbering at 0)
+                    return "Informant-Http-Worker-" + workerCount.getAndIncrement();
+                }
+                logger.warn("unexpected thread name: '{}'", proposedThreadName);
+                return proposedThreadName;
+            }
+        });
+    }
 
     private class SimpleHttpHandlerWrapper extends SimpleChannelUpstreamHandler {
         @Override

@@ -56,52 +56,61 @@ public class Threads {
     // ensure the test didn't create any non-daemon threads
     public static void preShutdownCheck(@ReadOnly final Collection<Thread> preExistingThreads)
             throws InterruptedException {
-
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
         // time to shutdown when testing tomcat plugin
         Stopwatch stopwatch = new Stopwatch().start();
-        while (true) {
-            List<Thread> rogueThreads = Lists.newArrayList();
-            for (Thread thread : currentThreads()) {
-                if (thread != Thread.currentThread() && !preExistingThreads.contains(thread)
-                        && isRogueThread(thread)) {
+        List<Thread> nonPreExistingThreads;
+        List<Thread> rogueThreads;
+        do {
+            nonPreExistingThreads = getNonPreExistingThreads(preExistingThreads);
+            rogueThreads = Lists.newArrayList();
+            for (Thread thread : nonPreExistingThreads) {
+                if (isRogueThread(thread)) {
                     rogueThreads.add(thread);
                 }
             }
-            if (rogueThreads.isEmpty()) {
+            // check total number of threads to make sure Informant is not creating too many
+            //
+            // currently, the six threads are:
+            //
+            // Informant-Core-0
+            // Informant-Storage-0
+            // H2 Log Writer INFORMANT
+            // H2 File Lock Watchdog <lock db file>
+            // Informant-Http-Boss
+            // Informant-Http-Worker-0
+            if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 6) {
                 // success
                 return;
-            } else if (stopwatch.elapsed(SECONDS) < 5) {
-                // failure, wait a few milliseconds before trying again
-                Thread.sleep(10);
-            } else {
-                throw new RogueThreadsException(rogueThreads);
             }
+            // wait a few milliseconds before trying again
+            Thread.sleep(10);
+        } while (stopwatch.elapsed(SECONDS) < 5);
+        // failure
+        if (!rogueThreads.isEmpty()) {
+            throw new RogueThreadsException(rogueThreads);
+        } else {
+            throw new TooManyThreadsException(nonPreExistingThreads);
         }
     }
 
     // ensure the test shutdown all threads that it created
     public static void postShutdownCheck(@ReadOnly Collection<Thread> preExistingThreads)
             throws InterruptedException {
-
         // give it 5 seconds to shutdown threads
         Stopwatch stopwatch = new Stopwatch().start();
-        while (true) {
-            List<Thread> rogueThreads = Lists.newArrayList(currentThreads());
-            rogueThreads.removeAll(preExistingThreads);
-            // remove current thread in case it is newly created by the tests
-            // (e.g. SocketCommandProcessor)
-            rogueThreads.remove(Thread.currentThread());
+        List<Thread> rogueThreads;
+        do {
+            rogueThreads = getNonPreExistingThreads(preExistingThreads);
             if (rogueThreads.isEmpty()) {
                 // success
                 return;
-            } else if (stopwatch.elapsed(SECONDS) < 5) {
-                // failure, wait a few milliseconds before trying again
-                Thread.sleep(10);
-            } else {
-                throw new RogueThreadsException(rogueThreads);
             }
-        }
+            // wait a few milliseconds before trying again
+            Thread.sleep(10);
+        } while (stopwatch.elapsed(SECONDS) < 5);
+        // failure
+        throw new RogueThreadsException(rogueThreads);
     }
 
     // try to handle under- and over- sleeping for tests that depend on more accurate sleep timing
@@ -113,6 +122,16 @@ public class Threads {
         while (stopwatch.elapsed(MILLISECONDS) < millis) {
             Thread.sleep(1);
         }
+    }
+
+    private static List<Thread> getNonPreExistingThreads(
+            @ReadOnly Collection<Thread> preExistingThreads) {
+        List<Thread> currentThreads = currentThreads();
+        currentThreads.removeAll(preExistingThreads);
+        // remove current thread in case it is newly created by the tests
+        // (e.g. SocketCommandProcessor)
+        currentThreads.remove(Thread.currentThread());
+        return currentThreads;
     }
 
     private static boolean isRogueThread(Thread thread) {
@@ -138,16 +157,30 @@ public class Threads {
     }
 
     @SuppressWarnings("serial")
-    public static class RogueThreadsException extends RuntimeException {
-        private final Collection<Thread> rogueThreads;
-        private RogueThreadsException(Collection<Thread> rogueThreads) {
-            this.rogueThreads = rogueThreads;
+    public static class RogueThreadsException extends ThreadsException {
+        protected RogueThreadsException(Collection<Thread> threads) {
+            super(threads);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class TooManyThreadsException extends ThreadsException {
+        protected TooManyThreadsException(Collection<Thread> threads) {
+            super(threads);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ThreadsException extends RuntimeException {
+        private final Collection<Thread> threads;
+        private ThreadsException(Collection<Thread> threads) {
+            this.threads = threads;
         }
         @Override
         public String getMessage() {
             StringBuilder sb = new StringBuilder();
-            for (Thread rogueThread : rogueThreads) {
-                sb.append(threadToString(rogueThread));
+            for (Thread thread : threads) {
+                sb.append(threadToString(thread));
                 sb.append("\n");
             }
             return sb.toString();
