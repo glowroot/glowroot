@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
@@ -76,6 +77,7 @@ class SocketCommander {
         return localPort;
     }
 
+    @Nullable
     Object sendCommand(Object command) throws IOException, InterruptedException {
         ensureInit();
         int commandNum = commandCounter.getAndIncrement();
@@ -160,14 +162,16 @@ class SocketCommander {
     @SuppressWarnings("serial")
     static class ResponseWrapper implements Serializable {
         private final int commandNum;
+        @Nullable
         private final Object response;
-        ResponseWrapper(int commandNum, Object response) {
+        ResponseWrapper(int commandNum, @Nullable Object response) {
             this.commandNum = commandNum;
             this.response = response;
         }
         private int getCommandNum() {
             return commandNum;
         }
+        @Nullable
         private Object getResponse() {
             return response;
         }
@@ -181,6 +185,7 @@ class SocketCommander {
     }
 
     private static class ResponseHolder {
+        @Nullable
         private volatile Object response;
     }
 

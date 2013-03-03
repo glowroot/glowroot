@@ -16,16 +16,16 @@
 package io.informant.testkit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import io.informant.MainEntryPoint;
+import io.informant.InformantModule;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.ConfigService.OptimisticLockException;
-import io.informant.core.TraceModule;
+import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.LocalTraceSink;
-import io.informant.local.store.TraceSinkModule;
+import io.informant.local.store.StorageModule;
 import io.informant.local.store.TraceSnapshot;
 import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotWriter;
@@ -72,16 +72,16 @@ class SameJvmInformant implements Informant {
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
-    SameJvmInformant() {
-        ConfigModule configModule = MainEntryPoint.getConfigModule();
-        DataSourceModule dataSourceModule = MainEntryPoint.getDataSourceModule();
-        TraceSinkModule traceSinkModule = MainEntryPoint.getTraceSinkModule();
-        TraceModule coreModule = MainEntryPoint.getCoreModule();
-        LocalUiModule uiModule = MainEntryPoint.getUiModule();
+    SameJvmInformant(InformantModule informantModule) {
+        ConfigModule configModule = informantModule.getConfigModule();
+        DataSourceModule dataSourceModule = informantModule.getDataSourceModule();
+        StorageModule storageModule = informantModule.getStorageModule();
+        CoreModule coreModule = informantModule.getCoreModule();
+        LocalUiModule uiModule = informantModule.getUiModule();
         configService = configModule.getConfigService();
         dataSource = dataSourceModule.getDataSource();
-        traceSinkLocal = traceSinkModule.getTraceSink();
-        traceSnapshotDao = traceSinkModule.getTraceSnapshotDao();
+        traceSinkLocal = storageModule.getTraceSink();
+        traceSnapshotDao = storageModule.getTraceSnapshotDao();
         traceExportHttpService = uiModule.getTraceExportHttpService();
         traceRegistry = coreModule.getTraceRegistry();
         // can't use ticker from Informant since it is shaded when run in mvn and unshaded in ide

@@ -1,6 +1,13 @@
 import checkers.nullness.quals.*;
 
 /* ========================================================================== */
+package org.jboss.netty.handler.codec.http;
+
+public interface HttpMessage {
+    @Nullable String getHeader(String name);
+}
+
+/* ========================================================================== */
 package org.jboss.netty.handler.stream;
 
 public interface ChunkedInput {

@@ -15,8 +15,8 @@
  */
 package io.informant.testkit;
 
+import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
-import io.informant.local.ui.LocalUiModule;
 import io.informant.testkit.SocketCommander.CommandWrapper;
 import io.informant.testkit.SocketCommander.ResponseWrapper;
 import io.informant.util.DaemonExecutors;
@@ -32,6 +32,8 @@ import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -58,6 +60,8 @@ class SocketCommandProcessor implements Runnable {
     private final ExecutorService executorService =
             DaemonExecutors.newCachedThreadPool("Informant-SocketCommandProcessor");
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
+
+    @Nullable
     private ImmutableList<Thread> preExistingThreads;
 
     SocketCommandProcessor(ObjectInputStream objectIn, ObjectOutputStream objectOut) {
@@ -104,12 +108,12 @@ class SocketCommandProcessor implements Runnable {
         int commandNum = commandWrapper.getCommandNum();
         if (command instanceof String) {
             if (command.equals(GET_PORT_COMMAND)) {
-                LocalUiModule uiModule = MainEntryPoint.getUiModule();
-                if (uiModule == null) {
+                InformantModule informantModule = MainEntryPoint.getInformantModule();
+                if (informantModule == null) {
                     // informant failed to start
                     respond(NO_PORT, commandNum);
                 } else {
-                    respond(uiModule.getHttpServer().getPort(), commandNum);
+                    respond(informantModule.getUiModule().getHttpServer().getPort(), commandNum);
                 }
             } else if (command.equals(KILL_COMMAND)) {
                 System.exit(0);
@@ -144,13 +148,17 @@ class SocketCommandProcessor implements Runnable {
 
     private void shutdown(int commandNum) throws IOException, InterruptedException {
         executorService.shutdown();
-        if (preExistingThreads == null) {
+        InformantModule informantModule = MainEntryPoint.getInformantModule();
+        if (informantModule == null) {
+            // informant failed to start
+            respond(SHUTDOWN_RESPONSE, commandNum);
+        } else if (preExistingThreads == null) {
             // EXECUTE_APP was never run
             respond(SHUTDOWN_RESPONSE, commandNum);
         } else {
             try {
                 Threads.preShutdownCheck(preExistingThreads);
-                MainEntryPoint.shutdown();
+                informantModule.close();
                 Threads.postShutdownCheck(preExistingThreads);
                 respond(SHUTDOWN_RESPONSE, commandNum);
             } catch (ThreadsException e) {
@@ -172,7 +180,7 @@ class SocketCommandProcessor implements Runnable {
             executingAppThreads.add(Thread.currentThread());
             AppUnderTest app = (AppUnderTest) appClass.newInstance();
             app.executeApp();
-            respond("", commandNum);
+            respond(null, commandNum);
         } catch (Throwable t) {
             // catch Throwable so response can (hopefully) be sent even under extreme
             // circumstances like OutOfMemoryError
@@ -188,7 +196,7 @@ class SocketCommandProcessor implements Runnable {
             for (Thread thread : executingAppThreads) {
                 thread.interrupt();
             }
-            respond("", commandNum);
+            respond(null, commandNum);
         } catch (Throwable t) {
             // catch Throwable so response can (hopefully) be sent even under extreme
             // circumstances like OutOfMemoryError
@@ -197,7 +205,7 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void respond(Object response, int commandNum) throws IOException {
+    private void respond(@Nullable Object response, int commandNum) throws IOException {
         ResponseWrapper responseWrapper = new ResponseWrapper(commandNum, response);
         logger.debug("sending response to unit test jvm: {}", responseWrapper);
         // sychronizing with SocketHeartbeat

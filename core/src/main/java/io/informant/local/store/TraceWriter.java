@@ -222,7 +222,7 @@ public class TraceWriter {
         private final Iterator<Span> spans;
         private final long captureTick;
 
-        private SpansCharSource(Iterator<Span> spans, long captureTick) {
+        private SpansCharSource(@ReadOnly Iterator<Span> spans, long captureTick) {
             this.spans = spans;
             this.captureTick = captureTick;
         }

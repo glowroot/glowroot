@@ -44,9 +44,9 @@ import com.google.common.collect.Iterables;
  * @since 0.5
  */
 @ThreadSafe
-public class TraceModule {
+public class CoreModule {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(CoreModule.class);
 
     private final ConfigModule configModule;
     private final TraceSink traceSink;
@@ -73,7 +73,7 @@ public class TraceModule {
                 }
             });
 
-    public TraceModule(ConfigModule configModule, TraceSink traceSink) throws Exception {
+    public CoreModule(ConfigModule configModule, TraceSink traceSink) throws Exception {
         this.configModule = configModule;
         this.traceSink = traceSink;
 

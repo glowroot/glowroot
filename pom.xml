@@ -220,7 +220,7 @@
             <!-- running checker framework check requires jdk7 -->
             <groupId>edu.washington.cs.types.checker</groupId>
             <artifactId>checker-maven-plugin</artifactId>
-            <version>1.6.0</version>
+            <version>1.6.1</version>
             <executions>
               <execution>
                 <phase>process-classes</phase>
@@ -234,6 +234,7 @@
                 <processor>checkers.nullness.NullnessChecker</processor>
                 <processor>checkers.igj.IGJChecker</processor>
               </processors>
+              <procOnly>false</procOnly>
               <failOnError>false</failOnError>
               <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
               <javaParams>-Djsr308_imports=checkers.nullness.quals.*</javaParams>

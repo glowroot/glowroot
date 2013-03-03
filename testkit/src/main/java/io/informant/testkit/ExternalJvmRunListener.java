@@ -19,14 +19,18 @@ import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
+import checkers.nullness.quals.Nullable;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 public class ExternalJvmRunListener extends RunListener {
 
+    @Nullable
     private static volatile InformantContainer sharedContainer;
 
+    @Nullable
     public static InformantContainer getSharedContainer() {
         return sharedContainer;
     }
@@ -38,6 +42,9 @@ public class ExternalJvmRunListener extends RunListener {
 
     @Override
     public void testRunFinished(Result result) throws Exception {
-        sharedContainer.close();
+        if (sharedContainer != null) {
+            sharedContainer.close();
+            sharedContainer = null;
+        }
     }
 }

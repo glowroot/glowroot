@@ -5,12 +5,17 @@ import checkers.nullness.quals.*;
 package com.google.common.base;
 
 public class Objects {
-    public static <T> T firstNonNull(@Nullable T first, T second);
+    public static <T extends @Nullable Object> @NonNull T firstNonNull(T first, @NonNull T second);
 }
 
 public class Optional<T> {
     public static <T extends @Nullable Object> Optional<@NonNull T> fromNullable(
             T nullableReference);
+}
+
+public class Preconditions {
+    @AssertNonNullAfter("#1")
+    public static <T extends @Nullable Object> @NonNull T checkNotNull(T reference);
 }
 
 public class Strings {

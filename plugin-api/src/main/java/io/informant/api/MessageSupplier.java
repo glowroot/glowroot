@@ -15,6 +15,8 @@
  */
 package io.informant.api;
 
+import checkers.nullness.quals.Nullable;
+
 /**
  * A (lazy) supplier of {@link Message} instances.
  * 
@@ -41,7 +43,7 @@ public abstract class MessageSupplier {
      * @param message
      * @return a {@code MessageSupplier} created for the specified {@code message}
      */
-    public static MessageSupplier from(final String message) {
+    public static MessageSupplier from(final @Nullable String message) {
         return new MessageSupplier() {
             @Override
             public Message get() {

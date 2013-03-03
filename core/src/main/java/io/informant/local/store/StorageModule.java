@@ -36,9 +36,9 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @ThreadSafe
-public class TraceSinkModule {
+public class StorageModule {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSinkModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
     private final RollingFile rollingFile;
     private final TraceSnapshotService traceSnapshotService;
@@ -47,7 +47,7 @@ public class TraceSinkModule {
 
     private final ScheduledExecutorService scheduledExecutor;
 
-    public TraceSinkModule(ConfigModule configModule, DataSourceModule dataSourceModule)
+    public StorageModule(ConfigModule configModule, DataSourceModule dataSourceModule)
             throws Exception {
         Ticker ticker = configModule.getTicker();
         Clock clock = configModule.getClock();

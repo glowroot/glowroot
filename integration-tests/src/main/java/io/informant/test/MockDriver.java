@@ -31,7 +31,7 @@ public class MockDriver implements Driver {
     }
 
     public Connection connect(String url, Properties info) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     public boolean acceptsURL(String url) {
@@ -39,7 +39,7 @@ public class MockDriver implements Driver {
     }
 
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     public int getMajorVersion() {
@@ -56,6 +56,6 @@ public class MockDriver implements Driver {
 
     // new java.sql.Driver method in jdk7
     public java.util.logging.Logger getParentLogger() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

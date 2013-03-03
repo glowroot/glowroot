@@ -21,7 +21,6 @@ import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 
-import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
@@ -121,11 +120,15 @@ public class Trace {
         if (stableMetrics == null) {
             return null;
         }
-        return Lists.transform(stableMetrics, new Function<Metric, String>() {
-            public String apply(Metric metric) {
-                return metric.getName();
+        List<String> stableMetricNames = Lists.newArrayList();
+        for (Metric stableMetric : stableMetrics) {
+            String name = stableMetric.getName();
+            if (name == null) {
+                throw new NullPointerException("Found metric with null name");
             }
-        });
+            stableMetricNames.add(name);
+        }
+        return stableMetricNames;
     }
 
     @Nullable
@@ -170,7 +173,7 @@ public class Trace {
         }
         List<Metric> stableMetrics = Lists.newArrayList(metrics);
         for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
-            if (i.next().getName().equals("informant weaving")) {
+            if ("informant weaving".equals(i.next().getName())) {
                 i.remove();
             }
         }
@@ -199,13 +202,14 @@ public class Trace {
     }
 
     public static class TraceError {
-
+        @Nullable
         private String text;
         @Nullable
         private Map<String, Object> detail;
         @Nullable
         private ExceptionInfo exception;
 
+        @Nullable
         public String getText() {
             return text;
         }

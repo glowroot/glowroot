@@ -26,6 +26,7 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
@@ -50,7 +51,9 @@ public class PointcutConfig {
     private final ImmutableList<String> methodArgTypeNames;
     private final String methodReturnTypeName;
     private final ImmutableList<MethodModifier> methodModifiers;
+    @Nullable
     private final String metricName;
+    @Nullable
     private final String spanTemplate;
 
     static PointcutConfig fromJson(JsonObject configObject) throws JsonSyntaxException {
@@ -65,7 +68,7 @@ public class PointcutConfig {
     private PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
             String methodName, @ReadOnly List<String> methodArgTypeNames,
             String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
-            String metricName, String spanTemplate) {
+            @Nullable String metricName, @Nullable String spanTemplate) {
         this.captureItems = ImmutableList.copyOf(captureItems);
         this.typeName = typeName;
         this.methodName = methodName;
@@ -189,30 +192,18 @@ public class PointcutConfig {
             this.methodModifiers = methodModifiers;
             return this;
         }
-        public Builder metricName(String metricName) {
+        public Builder metricName(@Nullable String metricName) {
             this.metricName = metricName;
             return this;
         }
-        public Builder spanTemplate(String spanTemplate) {
+        public Builder spanTemplate(@Nullable String spanTemplate) {
             this.spanTemplate = spanTemplate;
             return this;
         }
         public PointcutConfig build() {
-            if (typeName == null) {
-                throw new NullPointerException("Call to typeName() is required");
-            }
-            if (methodName == null) {
-                throw new NullPointerException("Call to methodName() is required");
-            }
-            if (methodReturnTypeName == null) {
-                throw new NullPointerException("Call to methodReturnTypeName() is required");
-            }
-            if (metricName == null) {
-                throw new NullPointerException("Call to metricName() is required");
-            }
-            if (spanTemplate == null) {
-                throw new NullPointerException("Call to spanTemplate() is required");
-            }
+            Preconditions.checkNotNull(typeName);
+            Preconditions.checkNotNull(methodName);
+            Preconditions.checkNotNull(methodReturnTypeName);
             return new PointcutConfig(captureItems, typeName, methodName, methodArgTypeNames,
                     methodReturnTypeName, methodModifiers, metricName, spanTemplate);
         }

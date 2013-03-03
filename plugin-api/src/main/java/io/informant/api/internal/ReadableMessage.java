@@ -18,7 +18,6 @@ package io.informant.api.internal;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
 
 /**
  * This interface exists to provide access to MessageImpl from io.informant.core package without
@@ -33,6 +32,5 @@ public interface ReadableMessage {
     String getText();
 
     @ReadOnly
-    @Nullable
     Map<String, ? extends /*@Nullable*/Object> getDetail();
 }

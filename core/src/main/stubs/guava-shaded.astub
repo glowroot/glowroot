@@ -5,7 +5,7 @@ import checkers.nullness.quals.*;
 package io.informant.shaded.google.common.base;
 
 public class Objects {
-    public static <T> T firstNonNull(@Nullable T first, T second);
+    public static <T extends @Nullable Object> @NonNull T firstNonNull(T first, @NonNull T second);
 }
 
 public class Optional<T> {

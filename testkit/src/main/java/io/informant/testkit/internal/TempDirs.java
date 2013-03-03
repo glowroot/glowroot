@@ -50,7 +50,12 @@ public class TempDirs {
             throw new IOException("Could not find file to delete '" + file.getCanonicalPath()
                     + "'");
         } else if (file.isDirectory()) {
-            for (File f : file.listFiles()) {
+            File[] files = file.listFiles();
+            if (files == null) {
+                // strangely, listFiles() returns null if an I/O error occurs
+                throw new IOException();
+            }
+            for (File f : files) {
                 deleteRecursively(f);
             }
             if (!file.delete()) {

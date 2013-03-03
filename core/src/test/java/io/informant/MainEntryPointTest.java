@@ -32,17 +32,18 @@ import com.google.common.collect.ImmutableMap;
 public class MainEntryPointTest {
 
     private Collection<Thread> preExistingThreads;
+    private InformantModule informantModule;
 
     @Before
     public void before() throws Exception {
         preExistingThreads = Threads.currentThreads();
-        MainEntryPoint.start(ImmutableMap.of("ui.port", "0"));
+        informantModule = MainEntryPoint.start(ImmutableMap.of("ui.port", "0"));
     }
 
     @After
     public void after() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
-        MainEntryPoint.shutdown();
+        informantModule.close();
         Threads.postShutdownCheck(preExistingThreads);
     }
 

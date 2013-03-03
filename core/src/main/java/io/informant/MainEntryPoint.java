@@ -16,13 +16,8 @@
 package io.informant;
 
 import io.informant.api.PluginServices;
-import io.informant.config.ConfigModule;
 import io.informant.config.DataDir;
-import io.informant.core.TraceModule;
 import io.informant.local.store.DataSource;
-import io.informant.local.store.DataSourceModule;
-import io.informant.local.store.TraceSinkModule;
-import io.informant.local.ui.LocalUiModule;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.Static;
 
@@ -55,16 +50,7 @@ public class MainEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(MainEntryPoint.class);
 
-    @Nullable
-    private static volatile ConfigModule configModule;
-    @Nullable
-    private static volatile DataSourceModule dataSourceModule;
-    @Nullable
-    private static volatile TraceSinkModule traceSinkModule;
-    @Nullable
-    private static volatile TraceModule traceModule;
-    @Nullable
-    private static volatile LocalUiModule uiModule;
+    private static volatile InformantModule informantModule;
 
     private MainEntryPoint() {}
 
@@ -101,7 +87,11 @@ public class MainEntryPoint {
 
     // called via reflection from io.informant.api.PluginServices
     public static PluginServices getPluginServices(String pluginId) {
-        return traceModule.getPluginServices(pluginId);
+        if (informantModule == null) {
+            // this really shouldn't happen
+            throw new NullPointerException("InformantModule is null");
+        }
+        return informantModule.getCoreModule().getPluginServices(pluginId);
     }
 
     // used by Viewer
@@ -109,18 +99,14 @@ public class MainEntryPoint {
         start(getInformantProperties(), null);
     }
 
-    private static void start(@ReadOnly Map<String, String> properties,
+    private static InformantModule start(@ReadOnly Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws Exception {
-        logger.debug("start(): classLoader={}", MainEntryPoint.class.getClassLoader());
-        configModule = new ConfigModule(properties);
-        dataSourceModule = new DataSourceModule(configModule, properties);
-        traceSinkModule = new TraceSinkModule(configModule, dataSourceModule);
-        traceModule = new TraceModule(configModule, traceSinkModule.getTraceSink());
-        uiModule = new LocalUiModule(configModule, dataSourceModule, traceSinkModule, traceModule,
-                properties);
+        informantModule = new InformantModule(properties);
         if (instrumentation != null) {
-            instrumentation.addTransformer(traceModule.createWeavingClassFileTransformer());
+            instrumentation.addTransformer(
+                    informantModule.getCoreModule().createWeavingClassFileTransformer());
         }
+        return informantModule;
     }
 
     private static ImmutableMap<String, String> getInformantProperties() {
@@ -141,50 +127,13 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    public static void start(@ReadOnly Map<String, String> properties) throws Exception {
-        start(properties, null);
+    public static InformantModule start(@ReadOnly Map<String, String> properties) throws Exception {
+        return start(properties, null);
     }
 
     @OnlyUsedByTests
     @Nullable
-    public static ConfigModule getConfigModule() {
-        return configModule;
-    }
-
-    @OnlyUsedByTests
-    @Nullable
-    public static DataSourceModule getDataSourceModule() {
-        return dataSourceModule;
-    }
-
-    @OnlyUsedByTests
-    @Nullable
-    public static TraceSinkModule getTraceSinkModule() {
-        return traceSinkModule;
-    }
-
-    @OnlyUsedByTests
-    @Nullable
-    public static TraceModule getCoreModule() {
-        return traceModule;
-    }
-
-    @OnlyUsedByTests
-    @Nullable
-    public static LocalUiModule getUiModule() {
-        return uiModule;
-    }
-
-    @OnlyUsedByTests
-    public static void shutdown() {
-        logger.debug("shutdown()");
-        uiModule.close();
-        traceModule.close();
-        traceSinkModule.close();
-        dataSourceModule.close();
-        configModule = null;
-        traceSinkModule = null;
-        traceModule = null;
-        uiModule = null;
+    public static InformantModule getInformantModule() {
+        return informantModule;
     }
 }

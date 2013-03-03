@@ -46,6 +46,8 @@ import org.jboss.netty.handler.codec.http.HttpMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.ReadOnly;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.ning.http.client.AsyncHttpClient;
@@ -71,8 +73,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private volatile long numConsoleBytes;
 
-    ExternalJvmExecutionAdapter(final Map<String, String> properties) throws IOException,
-            InterruptedException {
+    ExternalJvmExecutionAdapter(final @ReadOnly Map<String, String> properties) throws Exception {
         socketCommander = new SocketCommander();
         List<String> command = buildCommand(properties, socketCommander.getLocalPort());
         ProcessBuilder processBuilder = new ProcessBuilder(command);

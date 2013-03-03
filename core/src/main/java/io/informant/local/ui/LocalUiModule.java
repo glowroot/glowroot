@@ -18,13 +18,13 @@ package io.informant.local.ui;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginInfoCache;
-import io.informant.core.TraceModule;
+import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.RollingFile;
-import io.informant.local.store.TraceSinkModule;
+import io.informant.local.store.StorageModule;
 import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotService;
 import io.informant.util.Clock;
@@ -56,7 +56,7 @@ public class LocalUiModule {
     private final HttpServer httpServer;
 
     public LocalUiModule(ConfigModule configModule, DataSourceModule dataSourceModule,
-            TraceSinkModule traceSinkModule, TraceModule coreModule,
+            StorageModule traceSinkModule, CoreModule coreModule,
             @ReadOnly Map<String, String> properties) throws Exception {
 
         Clock clock = configModule.getClock();
@@ -104,20 +104,6 @@ public class LocalUiModule {
                 adminJsonService);
     }
 
-    private int getHttpServerPort(@ReadOnly Map<String, String> properties) {
-        String uiPort = properties.get("ui.port");
-        if (uiPort == null) {
-            return DEFAULT_UI_PORT;
-        }
-        try {
-            return Integer.parseInt(uiPort);
-        } catch (NumberFormatException e) {
-            logger.warn("invalid -Dinformant.ui.port value '{}', proceeding with default value"
-                    + " '{}'", uiPort, DEFAULT_UI_PORT);
-            return DEFAULT_UI_PORT;
-        }
-    }
-
     public void close() {
         logger.debug("close()");
         httpServer.close();
@@ -129,5 +115,19 @@ public class LocalUiModule {
 
     public TraceExportHttpService getTraceExportHttpService() {
         return traceExportHttpService;
+    }
+
+    private static int getHttpServerPort(@ReadOnly Map<String, String> properties) {
+        String uiPort = properties.get("ui.port");
+        if (uiPort == null) {
+            return DEFAULT_UI_PORT;
+        }
+        try {
+            return Integer.parseInt(uiPort);
+        } catch (NumberFormatException e) {
+            logger.warn("invalid -Dinformant.ui.port value '{}', proceeding with default value"
+                    + " '{}'", uiPort, DEFAULT_UI_PORT);
+            return DEFAULT_UI_PORT;
+        }
     }
 }

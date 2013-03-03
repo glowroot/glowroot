@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import io.informant.config.ConfigModule;
+import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
 
 import java.io.File;
@@ -50,6 +51,11 @@ public class DataSourceModule {
         }
     }
 
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    @OnlyUsedByTests
     public void close() {
         logger.debug("close()");
         try {
@@ -58,9 +64,5 @@ public class DataSourceModule {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
         }
-    }
-
-    public DataSource getDataSource() {
-        return dataSource;
     }
 }

@@ -128,12 +128,18 @@ public class TraceExportHttpService implements HttpService {
     @OnlyUsedByTests
     public byte[] getExportBytes(String id) throws Exception {
         ChunkedInput chunkedInput = getExportChunkedInput(id);
+        if (chunkedInput == null) {
+            throw new IllegalStateException("No trace found for id '" + id + "'");
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream(65536);
         while (chunkedInput.hasNextChunk()) {
-            ChannelBuffer content = ((DefaultHttpChunk) chunkedInput.nextChunk()).getContent();
-            byte[] bytes = new byte[content.readableBytes()];
-            content.readBytes(bytes);
-            baos.write(bytes);
+            DefaultHttpChunk chunk = (DefaultHttpChunk) chunkedInput.nextChunk();
+            if (chunk != null) {
+                ChannelBuffer content = chunk.getContent();
+                byte[] bytes = new byte[content.readableBytes()];
+                content.readBytes(bytes);
+                baos.write(bytes);
+            }
         }
         return baos.toByteArray();
     }

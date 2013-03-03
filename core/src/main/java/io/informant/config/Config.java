@@ -225,7 +225,7 @@ class Config {
     }
 
     private static ImmutableList<PluginConfig> createPluginConfigs(
-            Map<String, JsonObject> pluginConfigJsonObjects,
+            @ReadOnly Map<String, JsonObject> pluginConfigJsonObjects,
             @ReadOnly List<PluginInfo> pluginInfos) {
         ImmutableList.Builder<PluginConfig> pluginConfigs = ImmutableList.builder();
         for (PluginInfo pluginInfo : pluginInfos) {

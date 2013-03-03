@@ -15,6 +15,7 @@
  */
 package io.informant.testkit;
 
+import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
 import io.informant.config.PluginInfoCache;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
@@ -26,6 +27,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import checkers.igj.quals.ReadOnly;
 
 import com.google.common.collect.Lists;
 
@@ -40,10 +43,11 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final SameJvmInformant informant;
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
+    private final InformantModule informantModule;
 
-    SameJvmExecutionAdapter(final Map<String, String> properties) throws Exception {
+    SameJvmExecutionAdapter(final @ReadOnly Map<String, String> properties) throws Exception {
         preExistingThreads = Threads.currentThreads();
-        MainEntryPoint.start(properties);
+        informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginInfoCache pluginInfoCache = new PluginInfoCache();
         loader.setMixins(pluginInfoCache.getMixins());
@@ -51,9 +55,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
                 "io.informant.shaded");
-        loader.weavingMetric(MainEntryPoint.getCoreModule().getWeavingMetric());
+        loader.weavingMetric(informantModule.getCoreModule().getWeavingMetric());
         isolatedWeavingClassLoader = loader.build();
-        informant = new SameJvmInformant();
+        informant = new SameJvmInformant(informantModule);
     }
 
     public Informant getInformant() {
@@ -82,11 +86,11 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
 
     public void close() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
-        MainEntryPoint.shutdown();
+        informantModule.close();
         Threads.postShutdownCheck(preExistingThreads);
     }
 
     public int getUiPort() {
-        return MainEntryPoint.getUiModule().getHttpServer().getPort();
+        return informantModule.getUiModule().getHttpServer().getPort();
     }
 }

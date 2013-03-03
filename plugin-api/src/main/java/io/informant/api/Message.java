@@ -48,7 +48,7 @@ public abstract class Message {
 
     private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
 
-    public static Message from(String message) {
+    public static Message from(@Nullable String message) {
         return new MessageImpl(message, new String[0], EMPTY_DETAIL);
     }
 
@@ -56,7 +56,7 @@ public abstract class Message {
         return new MessageImpl(template, args, EMPTY_DETAIL);
     }
 
-    public static Message withDetail(String message,
+    public static Message withDetail(@Nullable String message,
             @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
         return new MessageImpl(message, new String[0], detail);
     }
@@ -67,12 +67,13 @@ public abstract class Message {
 
         private static final Logger logger = LoggerFactory.getLogger(MessageImpl.class);
 
+        @Nullable
         private final String template;
         private final/*@Nullable*/String[] args;
         @ReadOnly
         private final Map<String, ? extends /*@Nullable*/Object> detail;
 
-        private MessageImpl(String template, @Nullable String[] args,
+        private MessageImpl(@Nullable String template, @Nullable String[] args,
                 @ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) {
             this.template = template;
             this.args = args;
@@ -80,6 +81,9 @@ public abstract class Message {
         }
 
         public String getText() {
+            if (template == null) {
+                return "";
+            }
             // Matcher.appendReplacement() can't be used here since appendReplacement() applies
             // special meaning to slashes '\' and dollar signs '$' in the replacement text.
             // These special characters can be escaped in the replacement text via

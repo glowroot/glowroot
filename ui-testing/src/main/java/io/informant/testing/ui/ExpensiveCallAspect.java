@@ -313,7 +313,7 @@ public class ExpensiveCallAspect {
         return pluginServices.startSpan(getMessageSupplier(expensive), metric);
     }
 
-    private static void onAfterInternal(Span span, int num) {
+    private static void onAfterInternal(@Nullable Span span, int num) {
         if (span == null) {
             pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span message",
                     new IllegalStateException("Exception in execute" + num, cause)));
