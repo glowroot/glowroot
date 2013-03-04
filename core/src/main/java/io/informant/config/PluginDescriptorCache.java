@@ -17,60 +17,61 @@ package io.informant.config;
 
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
-import io.informant.util.JsonElements;
+import io.informant.util.ObjectMappers;
 import io.informant.util.Resources2;
 import io.informant.util.Singleton;
 import io.informant.weaving.Advice;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
-public class PluginInfoCache {
+public class PluginDescriptorCache {
 
-    private static final Logger logger = LoggerFactory.getLogger(PluginInfoCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(PluginDescriptorCache.class);
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private final ImmutableList<PluginInfo> pluginInfos;
+    private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
 
-    public PluginInfoCache() {
-        ImmutableList.Builder<PluginInfo> pluginInfos = ImmutableList.builder();
-        pluginInfos.addAll(readPackagedPlugins());
-        pluginInfos.addAll(readInstalledPlugins());
-        this.pluginInfos = pluginInfos.build();
+    public PluginDescriptorCache() {
+        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        try {
+            pluginDescriptors.addAll(readPackagedPlugins());
+            pluginDescriptors.addAll(readInstalledPlugins());
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+        this.pluginDescriptors = pluginDescriptors.build();
 
         ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
         ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
-        for (PluginInfo pluginInfo : this.pluginInfos) {
-            for (String aspect : pluginInfo.getAspects()) {
+        for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
+            for (String aspect : pluginDescriptor.getAspects()) {
                 try {
                     // don't initialize the aspect since that will trigger static initializers which
                     // will probably call PluginServices.get()
                     Class<?> aspectClass = Class.forName(aspect, false,
-                            PluginInfo.class.getClassLoader());
+                            PluginDescriptor.class.getClassLoader());
                     advisors.addAll(getAdvisors(aspectClass));
                     mixins.addAll(getMixins(aspectClass));
                 } catch (ClassNotFoundException e) {
@@ -85,83 +86,56 @@ public class PluginInfoCache {
     // don't return ImmutableList since this method is used by UiTestingMain and when UiTestingMain
     // is compiled by maven, it is compiled against shaded informant, but then if it is run inside
     // an IDE without rebuilding UiTestingMain it will fail since informant is then unshaded
-    @ReadOnly
-    public List<PluginInfo> getPluginInfos() {
-        return pluginInfos;
+    @Immutable
+    public List<PluginDescriptor> getPluginDescriptors() {
+        return pluginDescriptors;
     }
 
     // don't return ImmutableList since this method is used by SameJvmExecutionAdapter and when
     // SameJvmExecutionAdapter is compiled by maven, it is compiled against shaded informant,
     // but then if a unit test is run inside an IDE without rebuilding SameJvmExecutionAdapter it
     // will fail since informant is then unshaded
-    @ReadOnly
+    @Immutable
     public List<Mixin> getMixins() {
         return mixins;
     }
 
     // don't return ImmutableList, see comment above
-    @ReadOnly
+    @Immutable
     public List<Advice> getAdvisors() {
         return advisors;
     }
 
-    @ReadOnly
-    private static List<PluginInfo> readInstalledPlugins() {
-        try {
-            List<PluginInfo> plugins = Lists.newArrayList();
-            for (URL url : Resources2.getResources("META-INF/io.informant.plugin.json")) {
-                String json = Resources.toString(url, Charsets.UTF_8);
-                PluginInfo pluginInfo;
-                try {
-                    pluginInfo = PluginInfoReader.createPluginInfo(json);
-                } catch (JsonSyntaxException e) {
-                    // no need to log stack trace
-                    logger.error("error in file {}: {}", url.toExternalForm(), e.getMessage());
-                    continue;
-                }
-                plugins.add(pluginInfo);
+    private static List<PluginDescriptor> readInstalledPlugins() throws IOException {
+        List<PluginDescriptor> plugins = Lists.newArrayList();
+        List<URL> urls = Resources2.getResources("META-INF/io.informant.plugin.json");
+        for (URL url : urls) {
+            try {
+                String content = Resources.toString(url, Charsets.UTF_8);
+                PluginDescriptor pluginDescriptor =
+                        mapper.readValue(content, PluginDescriptor.class);
+                plugins.add(pluginDescriptor);
+            } catch (JsonProcessingException e) {
+                // no need to log stack trace
+                logger.error("syntax error in file {}: {}", url.toExternalForm(), e.getMessage());
+                continue;
             }
-            return plugins;
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return ImmutableList.of();
         }
+        return plugins;
     }
 
     @ReadOnly
-    private static List<PluginInfo> readPackagedPlugins() {
+    private static List<PluginDescriptor> readPackagedPlugins() throws IOException {
+        URL url = Resources2.getResource("META-INF/io.informant.package.json");
+        if (url == null) {
+            return ImmutableList.of();
+        }
+        String content = Resources.toString(url, Charsets.UTF_8);
         try {
-            List<URL> urls = Resources2.getResources("META-INF/io.informant.package.json");
-            if (urls.isEmpty()) {
-                return ImmutableList.of();
-            }
-            if (urls.size() > 1) {
-                List<String> resourcePaths = Lists.newArrayList();
-                for (URL url : urls) {
-                    resourcePaths.add("'" + url.getPath() + "'");
-                }
-                logger.error("more than one resource found with name 'META-INF"
-                        + "/io.informant.package.json'. This file is only supported inside of an"
-                        + " informant packaged jar so there should be only one. Only using the"
-                        + " first one of " + Joiner.on(", ").join(resourcePaths) + ".");
-            }
-            URL url = urls.get(0);
-            String json = Resources.toString(url, Charsets.UTF_8);
-            try {
-                JsonObject rootElement = (JsonObject) new JsonParser().parse(json);
-                JsonArray pluginElements = JsonElements.getRequiredArray(rootElement, "plugins");
-                List<PluginInfo> plugins = Lists.newArrayList();
-                for (Iterator<JsonElement> i = pluginElements.iterator(); i.hasNext();) {
-                    plugins.add(PluginInfoReader.createPluginInfo(i.next().getAsJsonObject()));
-                }
-                return plugins;
-            } catch (JsonSyntaxException e) {
-                // no need to log stack trace
-                logger.error("error in file {}: {}", url.toExternalForm(), e.getMessage());
-                return ImmutableList.of();
-            }
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            return mapper.readValue(content, PackageDescriptor.class).getPlugins();
+        } catch (JsonProcessingException e) {
+            // no need to log stack trace
+            logger.error("error in file {}: {}", url.toExternalForm(), e.getMessage());
             return ImmutableList.of();
         }
     }

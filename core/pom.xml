@@ -60,9 +60,14 @@
       <version>14.0</version>
     </dependency>
     <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.2.2</version>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.1.4</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
@@ -223,6 +228,18 @@
                       </excludes>
                     </filter>
                     <filter>
+                      <artifact>com.fasterxml.jackson.core:jackson-core</artifact>
+                      <excludes>
+                        <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
+                      <artifact>com.fasterxml.jackson.core:jackson-databind</artifact>
+                      <excludes>
+                        <exclude>META-INF/services/com.fasterxml.jackson.core.ObjectCodec</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
                       <!-- this is not excluded via artifactSet so that it will still be removed
                         from the dependency reduced pom, the classes will be added (without shading)
                         below in a second maven-shade-plugin execution -->
@@ -266,8 +283,8 @@
                       <shadedPattern>io.informant.shaded.checkers</shadedPattern>
                     </relocation>
                     <relocation>
-                      <pattern>com.google.gson</pattern>
-                      <shadedPattern>io.informant.shaded.google.gson</shadedPattern>
+                      <pattern>com.fasterxml.jackson</pattern>
+                      <shadedPattern>io.informant.shaded.fasterxml.jackson</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.jboss.netty</pattern>

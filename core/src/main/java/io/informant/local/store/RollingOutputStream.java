@@ -97,7 +97,12 @@ class RollingOutputStream extends OutputStream {
         }
         fsyncFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                fsyncIfNeeded();
+                try {
+                    fsyncIfNeeded();
+                } catch (Throwable t) {
+                    // log and terminate successfully
+                    logger.error(t.getMessage(), t);
+                }
             }
         }, FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, MILLISECONDS);
         lastFsyncTick.set(ticker.read());

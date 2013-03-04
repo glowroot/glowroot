@@ -27,9 +27,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
-import com.google.gson.stream.JsonWriter;
 
 /**
  * Json service to clear captured data.
@@ -41,6 +42,7 @@ import com.google.gson.stream.JsonWriter;
 class ThreadDumpJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ThreadDumpJsonService.class);
+    private static final JsonFactory jsonFactory = new JsonFactory();
 
     @JsonServiceMethod
     String getThreadDump() throws IOException {
@@ -57,26 +59,22 @@ class ThreadDumpJsonService implements JsonService {
             }
         }
         StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        jw.beginArray();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartArray();
         for (ThreadInfo threadInfo : threadInfos) {
-            jw.beginObject();
-            jw.name("name");
-            jw.value(threadInfo.getThreadName());
-            jw.name("state");
-            jw.value(threadInfo.getThreadState().name());
-            jw.name("lockName");
-            jw.value(threadInfo.getLockName());
-            jw.name("stackTrace");
-            jw.beginArray();
+            jg.writeStartObject();
+            jg.writeStringField("name", threadInfo.getThreadName());
+            jg.writeStringField("state", threadInfo.getThreadName());
+            jg.writeStringField("lockName", threadInfo.getLockName());
+            jg.writeArrayFieldStart("stackTrace");
             for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-                jw.value(stackTraceElement.toString());
+                jg.writeString(stackTraceElement.toString());
             }
-            jw.endArray();
-            jw.endObject();
+            jg.writeEndArray();
+            jg.writeEndObject();
         }
-        jw.endArray();
-        jw.close();
+        jg.writeEndArray();
+        jg.close();
         return sb.toString();
     }
 }

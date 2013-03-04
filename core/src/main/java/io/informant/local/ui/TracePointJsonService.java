@@ -23,11 +23,10 @@ import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotDao.StringComparator;
 import io.informant.local.store.TraceSnapshotService;
 import io.informant.util.Clock;
-import io.informant.util.GsonFactory;
+import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -40,14 +39,14 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.JsonWriter;
+import com.google.common.io.CharStreams;
 
 /**
  * Json service to read trace data.
@@ -59,7 +58,7 @@ import com.google.gson.stream.JsonWriter;
 class TracePointJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
     private final TraceSnapshotDao traceSnapshotDao;
@@ -81,9 +80,9 @@ class TracePointJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String getPoints(String message) throws IOException, JsonSyntaxException {
+    String getPoints(String message) throws IOException {
         logger.debug("getPoints(): message={}", message);
-        TracePointRequest request = gson.fromJson(message, TracePointRequest.class);
+        TracePointRequest request = mapper.readValue(message, TracePointRequest.class);
         return new Handler(request).handle();
     }
 
@@ -326,47 +325,46 @@ class TracePointJsonService implements JsonService {
         private String writeResponse(@ReadOnly List<TracePoint> points,
                 @ReadOnly List<Trace> activeTraces, long capturedAt, long captureTick,
                 boolean limitExceeded) throws IOException {
-            StringWriter sw = new StringWriter();
-            JsonWriter jw = new JsonWriter(sw);
-            jw.beginObject();
-            jw.name("normalPoints").beginArray();
+            StringBuilder sb = new StringBuilder();
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+            jg.writeStartObject();
+            jg.writeArrayFieldStart("normalPoints");
             for (TracePoint point : points) {
                 if (!point.isError()) {
-                    jw.beginArray();
-                    jw.value(point.getCapturedAt());
-                    jw.value(point.getDuration() / 1000000000.0);
-                    jw.value(point.getId());
-                    jw.endArray();
+                    jg.writeStartArray();
+                    jg.writeNumber(point.getCapturedAt());
+                    jg.writeNumber(point.getDuration() / 1000000000.0);
+                    jg.writeString(point.getId());
+                    jg.writeEndArray();
                 }
             }
-            jw.endArray();
-            jw.name("errorPoints").beginArray();
+            jg.writeEndArray();
+            jg.writeArrayFieldStart("errorPoints");
             for (TracePoint point : points) {
                 if (point.isError()) {
-                    jw.beginArray();
-                    jw.value(point.getCapturedAt());
-                    jw.value(point.getDuration() / 1000000000.0);
-                    jw.value(point.getId());
-                    jw.endArray();
+                    jg.writeStartArray();
+                    jg.writeNumber(point.getCapturedAt());
+                    jg.writeNumber(point.getDuration() / 1000000000.0);
+                    jg.writeString(point.getId());
+                    jg.writeEndArray();
                 }
             }
-            jw.endArray();
-            jw.name("activePoints").beginArray();
+            jg.writeEndArray();
+            jg.writeArrayFieldStart("activePoints");
             for (Trace activeTrace : activeTraces) {
-                jw.beginArray();
-                jw.value(capturedAt);
-                jw.value((captureTick - activeTrace.getStartTick()) / 1000000000.0);
-                jw.value(activeTrace.getId());
-                jw.endArray();
+                jg.writeStartArray();
+                jg.writeNumber(capturedAt);
+                jg.writeNumber((captureTick - activeTrace.getStartTick()) / 1000000000.0);
+                jg.writeString(activeTrace.getId());
+                jg.writeEndArray();
             }
-            jw.endArray();
+            jg.writeEndArray();
             if (limitExceeded) {
-                jw.name("limitExceeded");
-                jw.value(true);
+                jg.writeBooleanField("limitExceeded", true);
             }
-            jw.endObject();
-            jw.close();
-            return sw.toString();
+            jg.writeEndObject();
+            jg.close();
+            return sb.toString();
         }
     }
 }

@@ -52,7 +52,7 @@ public class TraceSnapshotsTest {
                 MergedStackTree.stripSyntheticMetricMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE);
         // when
-        CharSource mergedStackTreeCharSource = TraceWriter.getMergedStackTree(trace
+        CharSource mergedStackTreeCharSource = TraceWriter.createCharSource(trace
                 .getCoarseMergedStackTree());
         assertThat(mergedStackTreeCharSource).isNotNull();
         // then don't blow up with StackOverflowError

@@ -32,7 +32,7 @@ class TraceSnapshotTestData {
     TraceSnapshot createSnapshot() {
         return TraceSnapshot.builder()
                 .id("abc" + counter.getAndIncrement())
-                .startAt(System.currentTimeMillis() - 10)
+                .start(System.currentTimeMillis() - 10)
                 .stuck(false)
                 .duration(MILLISECONDS.toNanos(10))
                 .completed(true)

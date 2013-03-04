@@ -15,16 +15,14 @@
  */
 package io.informant.config;
 
-import io.informant.util.GsonFactory;
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Objects;
 import com.google.common.hash.Hashing;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the general config.
@@ -35,15 +33,13 @@ import com.google.gson.JsonSyntaxException;
  * @since 0.5
  */
 @Immutable
+@JsonDeserialize(builder = GeneralConfig.Builder.class)
 public class GeneralConfig {
 
     // don't store anything, essentially store threshold is infinite
     public static final int STORE_THRESHOLD_DISABLED = -1;
     // don't expire anything, essentially snapshot expiration is infinite
     public static final int SNAPSHOT_EXPIRATION_DISABLED = -1;
-
-    // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
 
     // if tracing is disabled mid-trace there should be no issue
     // active traces will not accumulate additional spans
@@ -76,9 +72,7 @@ public class GeneralConfig {
 
     private final boolean warnOnSpanOutsideTrace;
 
-    static GeneralConfig fromJson(@ReadOnly JsonObject configObject) throws JsonSyntaxException {
-        return gson.fromJson(configObject, GeneralConfig.Builder.class).build();
-    }
+    private final String version;
 
     static GeneralConfig getDefault() {
         return new Builder().build();
@@ -90,7 +84,7 @@ public class GeneralConfig {
 
     private GeneralConfig(boolean enabled, int storeThresholdMillis, int stuckThresholdSeconds,
             int maxSpans, int snapshotExpirationHours, int rollingSizeMb,
-            boolean warnOnSpanOutsideTrace) {
+            boolean warnOnSpanOutsideTrace, String version) {
         this.enabled = enabled;
         this.storeThresholdMillis = storeThresholdMillis;
         this.stuckThresholdSeconds = stuckThresholdSeconds;
@@ -98,16 +92,7 @@ public class GeneralConfig {
         this.snapshotExpirationHours = snapshotExpirationHours;
         this.rollingSizeMb = rollingSizeMb;
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-    }
-
-    public JsonObject toJson() {
-        JsonObject configObject = toJsonWithoutVersionHash();
-        configObject.addProperty("versionHash", getVersionHash());
-        return configObject;
-    }
-
-    public String getVersionHash() {
-        return Hashing.md5().hashString(toJsonWithoutVersionHash().toString()).toString();
+        this.version = version;
     }
 
     public boolean isEnabled() {
@@ -138,8 +123,9 @@ public class GeneralConfig {
         return warnOnSpanOutsideTrace;
     }
 
-    JsonObject toJsonWithoutVersionHash() {
-        return gson.toJsonTree(this).getAsJsonObject();
+    @JsonView(WithVersionJsonView.class)
+    public String getVersion() {
+        return version;
     }
 
     @Override
@@ -152,10 +138,11 @@ public class GeneralConfig {
                 .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                .add("versionHash", getVersionHash())
+                .add("version", version)
                 .toString();
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         private boolean enabled = true;
@@ -167,6 +154,7 @@ public class GeneralConfig {
         private boolean warnOnSpanOutsideTrace = false;
 
         private Builder() {}
+
         private Builder(GeneralConfig base) {
             enabled = base.enabled;
             storeThresholdMillis = base.storeThresholdMillis;
@@ -176,69 +164,68 @@ public class GeneralConfig {
             rollingSizeMb = base.rollingSizeMb;
             warnOnSpanOutsideTrace = base.warnOnSpanOutsideTrace;
         }
+
+        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
+        // for overlaying values on top of a base config
+        @JsonProperty
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
+
+        @JsonProperty
         public Builder storeThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
+
+        @JsonProperty
         public Builder stuckThresholdSeconds(int stuckThresholdSeconds) {
             this.stuckThresholdSeconds = stuckThresholdSeconds;
             return this;
         }
+
+        @JsonProperty
         public Builder maxSpans(int maxSpans) {
             this.maxSpans = maxSpans;
             return this;
         }
+
+        @JsonProperty
         public Builder snapshotExpirationHours(int snapshotExpirationHours) {
             this.snapshotExpirationHours = snapshotExpirationHours;
             return this;
         }
+
+        @JsonProperty
         public Builder rollingSizeMb(int rollingSizeMb) {
             this.rollingSizeMb = rollingSizeMb;
             return this;
         }
+
+        @JsonProperty
         public Builder warnOnSpanOutsideTrace(boolean warnOnSpanOutsideTrace) {
             this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject configObject) {
-            JsonElement enabledElement = configObject.get("enabled");
-            if (enabledElement != null) {
-                enabled(enabledElement.getAsBoolean());
-            }
-            JsonElement storeThresholdMillisElement = configObject.get("storeThresholdMillis");
-            if (storeThresholdMillisElement != null) {
-                storeThresholdMillis(storeThresholdMillisElement.getAsInt());
-            }
-            JsonElement stuckThresholdSecondsElement = configObject.get("stuckThresholdSeconds");
-            if (stuckThresholdSecondsElement != null) {
-                stuckThresholdSeconds(stuckThresholdSecondsElement.getAsInt());
-            }
-            JsonElement maxSpansElement = configObject.get("maxSpans");
-            if (maxSpansElement != null) {
-                maxSpans(maxSpansElement.getAsInt());
-            }
-            JsonElement snapshotExpirationHoursElement = configObject
-                    .get("snapshotExpirationHours");
-            if (snapshotExpirationHoursElement != null) {
-                snapshotExpirationHours(snapshotExpirationHoursElement.getAsInt());
-            }
-            JsonElement rollingSizeMbElement = configObject.get("rollingSizeMb");
-            if (rollingSizeMbElement != null) {
-                rollingSizeMb(rollingSizeMbElement.getAsInt());
-            }
-            JsonElement warnOnSpanOutsideTraceElement = configObject.get("warnOnSpanOutsideTrace");
-            if (warnOnSpanOutsideTraceElement != null) {
-                warnOnSpanOutsideTrace(warnOnSpanOutsideTraceElement.getAsBoolean());
-            }
-            return this;
-        }
+
         public GeneralConfig build() {
+            String version = buildVersion();
             return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                    maxSpans, snapshotExpirationHours, rollingSizeMb, warnOnSpanOutsideTrace);
+                    maxSpans, snapshotExpirationHours, rollingSizeMb, warnOnSpanOutsideTrace,
+                    version);
+        }
+
+        private String buildVersion() {
+            return Hashing.sha1().newHasher()
+                    .putBoolean(enabled)
+                    .putInt(storeThresholdMillis)
+                    .putInt(stuckThresholdSeconds)
+                    .putInt(maxSpans)
+                    .putInt(snapshotExpirationHours)
+                    .putInt(rollingSizeMb)
+                    .putBoolean(warnOnSpanOutsideTrace)
+                    .hash().toString();
         }
     }
 }

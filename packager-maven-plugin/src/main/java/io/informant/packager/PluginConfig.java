@@ -63,22 +63,15 @@ public class PluginConfig {
 
     public static class PropertyConfig {
         @Nullable
-        private String prompt;
-        @Nullable
         private String name;
         @Nullable
         private String defaultValue;
         @Nullable
         private String hidden;
         @Nullable
-        private String description;
+        private String prompt;
         @Nullable
-        public String getPrompt() {
-            return prompt;
-        }
-        public void setPrompt(String prompt) {
-            this.prompt = prompt;
-        }
+        private String description;
         @Nullable
         public String getName() {
             return name;
@@ -99,6 +92,13 @@ public class PluginConfig {
         }
         public void setHidden(String hidden) {
             this.hidden = hidden;
+        }
+        @Nullable
+        public String getPrompt() {
+            return prompt;
+        }
+        public void setPrompt(String prompt) {
+            this.prompt = prompt;
         }
         @Nullable
         public String getDescription() {

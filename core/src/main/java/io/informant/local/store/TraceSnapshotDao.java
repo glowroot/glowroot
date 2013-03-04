@@ -119,7 +119,7 @@ public class TraceSnapshotDao {
                     + " user_id, error_text, error_detail, exception, metrics, spans,"
                     + " coarse_merged_stack_tree, fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
                     + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), capturedAt,
-                    snapshot.getStartAt(), snapshot.getDuration(), snapshot.isStuck(),
+                    snapshot.getStart(), snapshot.getDuration(), snapshot.isStuck(),
                     snapshot.isCompleted(), snapshot.isBackground(),
                     snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
                     snapshot.getHeadline(), snapshot.getAttributes(), snapshot.getUserId(),
@@ -289,7 +289,7 @@ public class TraceSnapshotDao {
     private static TraceSnapshot.Builder createBuilder(ResultSet resultSet) throws SQLException {
         return TraceSnapshot.builder()
                 .id(resultSet.getString(1))
-                .startAt(resultSet.getLong(2))
+                .start(resultSet.getLong(2))
                 .duration(resultSet.getLong(3))
                 .stuck(resultSet.getBoolean(4))
                 .completed(resultSet.getBoolean(5))

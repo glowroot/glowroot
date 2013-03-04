@@ -58,7 +58,8 @@ class TraceSnapshotHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        CharSource charSource = traceCommonService.getSnapshotOrActiveJson(id, false);
+        CharSource charSource =
+                traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         if (charSource == null) {

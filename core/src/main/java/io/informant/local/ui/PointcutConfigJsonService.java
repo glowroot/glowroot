@@ -15,7 +15,7 @@
  */
 package io.informant.local.ui;
 
-import io.informant.util.GsonFactory;
+import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
 import io.informant.weaving.ParsedMethod;
 import io.informant.weaving.ParsedTypeCache;
@@ -30,11 +30,9 @@ import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSyntaxException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Json service to read pointcut data.
@@ -46,7 +44,7 @@ import com.google.gson.JsonSyntaxException;
 class PointcutConfigJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ParsedTypeCache parsedTypeCache;
 
@@ -55,21 +53,21 @@ class PointcutConfigJsonService implements JsonService {
     }
 
     @JsonServiceMethod
-    String getMatchingTypeNames(String requestJson) throws IOException, JsonSyntaxException {
-        logger.debug("getMatchingTypeNames(): requestJson={}", requestJson);
-        TypeNameRequest request = gson.fromJson(requestJson, TypeNameRequest.class);
+    String getMatchingTypeNames(String content) throws IOException {
+        logger.debug("getMatchingTypeNames(): content={}", content);
+        TypeNameRequest request = mapper.readValue(content, TypeNameRequest.class);
         if (request.partialTypeName == null) {
             throw new IllegalStateException("Request missing partialTypeName attribute");
         }
         List<String> matchingTypeNames = parsedTypeCache.getMatchingTypeNames(
                 request.partialTypeName, request.limit);
-        return gson.toJson(matchingTypeNames);
+        return mapper.writeValueAsString(matchingTypeNames);
     }
 
     @JsonServiceMethod
-    String getMatchingMethodNames(String requestJson) throws IOException, JsonSyntaxException {
-        logger.debug("getMatchingMethodNames(): requestJson={}", requestJson);
-        MethodNameRequest request = gson.fromJson(requestJson, MethodNameRequest.class);
+    String getMatchingMethodNames(String content) throws IOException {
+        logger.debug("getMatchingMethodNames(): content={}", content);
+        MethodNameRequest request = mapper.readValue(content, MethodNameRequest.class);
         if (request.typeName == null) {
             throw new IllegalStateException("Request missing typeName attribute");
         }
@@ -78,13 +76,13 @@ class PointcutConfigJsonService implements JsonService {
         }
         List<String> matchingMethodNames = parsedTypeCache.getMatchingMethodNames(
                 request.typeName, request.partialMethodName, request.limit);
-        return gson.toJson(matchingMethodNames);
+        return mapper.writeValueAsString(matchingMethodNames);
     }
 
     @JsonServiceMethod
-    String getMatchingMethods(String requestJson) throws IOException, JsonSyntaxException {
-        logger.debug("getMatchingMethods(): requestJson={}", requestJson);
-        MethodRequest request = gson.fromJson(requestJson, MethodRequest.class);
+    String getMatchingMethods(String content) throws IOException {
+        logger.debug("getMatchingMethods(): content={}", content);
+        MethodRequest request = mapper.readValue(content, MethodRequest.class);
         if (request.typeName == null) {
             throw new IllegalStateException("Request missing typeName attribute");
         }
@@ -93,25 +91,25 @@ class PointcutConfigJsonService implements JsonService {
         }
         List<ParsedMethod> parsedMethods = parsedTypeCache.getMatchingParsedMethods(
                 request.typeName, request.methodName);
-        JsonArray matchingMethods = new JsonArray();
+        ArrayNode matchingMethods = mapper.createArrayNode();
         for (ParsedMethod parsedMethod : parsedMethods) {
-            JsonObject matchingMethod = new JsonObject();
-            matchingMethod.add("name", new JsonPrimitive(parsedMethod.getName()));
-            JsonArray argTypeNames = new JsonArray();
+            ObjectNode matchingMethod = mapper.createObjectNode();
+            matchingMethod.put("name", parsedMethod.getName());
+            ArrayNode argTypeNames = mapper.createArrayNode();
             for (String argTypeName : parsedMethod.getArgTypeNames()) {
-                argTypeNames.add(new JsonPrimitive(getSimplifiedTypeName(argTypeName)));
+                argTypeNames.add(getSimplifiedTypeName(argTypeName));
             }
-            matchingMethod.add("argTypeNames", argTypeNames);
-            matchingMethod.add("returnTypeName", new JsonPrimitive(
-                    getSimplifiedTypeName(parsedMethod.getReturnTypeName())));
-            JsonArray modifiers = new JsonArray();
+            matchingMethod.put("argTypeNames", argTypeNames);
+            matchingMethod.put("returnTypeName",
+                    getSimplifiedTypeName(parsedMethod.getReturnTypeName()));
+            ArrayNode modifiers = mapper.createArrayNode();
             for (String modifier : Modifier.toString(parsedMethod.getModifiers()).split(" ")) {
-                modifiers.add(new JsonPrimitive(modifier.toUpperCase(Locale.ENGLISH)));
+                modifiers.add(modifier.toUpperCase(Locale.ENGLISH));
             }
-            matchingMethod.add("modifiers", modifiers);
+            matchingMethod.put("modifiers", modifiers);
             matchingMethods.add(matchingMethod);
         }
-        return gson.toJson(matchingMethods);
+        return mapper.writeValueAsString(matchingMethods);
     }
 
     // strip "java.lang." from String, Object, etc

@@ -34,7 +34,6 @@ import org.apache.maven.project.MavenProjectHelper;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * @author Trask Stalnaker
@@ -93,8 +92,6 @@ public class PackagerMojo extends AbstractMojo {
         try {
             packager.execute();
         } catch (IOException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        } catch (JsonSyntaxException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
     }

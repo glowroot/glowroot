@@ -15,16 +15,14 @@
  */
 package io.informant.config;
 
-import io.informant.util.GsonFactory;
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Objects;
 import com.google.common.hash.Hashing;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the fine-grained profiling config.
@@ -33,10 +31,8 @@ import com.google.gson.JsonSyntaxException;
  * @since 0.5
  */
 @Immutable
+@JsonDeserialize(builder = FineProfilingConfig.Builder.class)
 public class FineProfilingConfig {
-
-    // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
 
     private final boolean enabled;
 
@@ -48,11 +44,7 @@ public class FineProfilingConfig {
     // for fine-grained profiled traces, the real threshold is the minimum of this and the core
     // threshold
     private final int storeThresholdMillis;
-
-    static FineProfilingConfig fromJson(@ReadOnly JsonObject configObject)
-            throws JsonSyntaxException {
-        return gson.fromJson(configObject, FineProfilingConfig.Builder.class).build();
-    }
+    private final String version;
 
     static FineProfilingConfig getDefault() {
         return new Builder().build();
@@ -63,22 +55,13 @@ public class FineProfilingConfig {
     }
 
     private FineProfilingConfig(boolean enabled, double tracePercentage, int intervalMillis,
-            int totalSeconds, int storeThresholdMillis) {
+            int totalSeconds, int storeThresholdMillis, String version) {
         this.enabled = enabled;
         this.tracePercentage = tracePercentage;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
         this.storeThresholdMillis = storeThresholdMillis;
-    }
-
-    public JsonObject toJson() {
-        JsonObject configObject = toJsonWithoutVersionHash();
-        configObject.addProperty("versionHash", getVersionHash());
-        return configObject;
-    }
-
-    public String getVersionHash() {
-        return Hashing.md5().hashString(toJsonWithoutVersionHash().toString()).toString();
+        this.version = version;
     }
 
     public boolean isEnabled() {
@@ -101,8 +84,9 @@ public class FineProfilingConfig {
         return storeThresholdMillis;
     }
 
-    JsonObject toJsonWithoutVersionHash() {
-        return gson.toJsonTree(this).getAsJsonObject();
+    @JsonView(WithVersionJsonView.class)
+    public String getVersion() {
+        return version;
     }
 
     @Override
@@ -113,10 +97,11 @@ public class FineProfilingConfig {
                 .add("intervalMillis", intervalMillis)
                 .add("totalSeconds", totalSeconds)
                 .add("storeThresholdMillis", storeThresholdMillis)
-                .add("versionHash", getVersionHash())
+                .add("version", version)
                 .toString();
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         private boolean enabled = true;
@@ -126,6 +111,7 @@ public class FineProfilingConfig {
         private int storeThresholdMillis = -1;
 
         private Builder() {}
+
         private Builder(FineProfilingConfig base) {
             enabled = base.enabled;
             tracePercentage = base.tracePercentage;
@@ -133,52 +119,53 @@ public class FineProfilingConfig {
             totalSeconds = base.totalSeconds;
             storeThresholdMillis = base.storeThresholdMillis;
         }
+
+        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
+        // for overlaying values on top of a base config
+        @JsonProperty
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
+
+        @JsonProperty
         public Builder tracePercentage(double tracePercentage) {
             this.tracePercentage = tracePercentage;
             return this;
         }
+
+        @JsonProperty
         public Builder intervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
             return this;
         }
+
+        @JsonProperty
         public Builder totalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
             return this;
         }
+
+        @JsonProperty
         public Builder storeThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject configObject) {
-            JsonElement enabledElement = configObject.get("enabled");
-            if (enabledElement != null) {
-                enabled(enabledElement.getAsBoolean());
-            }
-            JsonElement tracePercentageElement = configObject.get("tracePercentage");
-            if (tracePercentageElement != null) {
-                tracePercentage(tracePercentageElement.getAsDouble());
-            }
-            JsonElement intervalMillisElement = configObject.get("intervalMillis");
-            if (intervalMillisElement != null) {
-                intervalMillis(intervalMillisElement.getAsInt());
-            }
-            JsonElement totalSecondsElement = configObject.get("totalSeconds");
-            if (totalSecondsElement != null) {
-                totalSeconds(totalSecondsElement.getAsInt());
-            }
-            JsonElement storeThresholdMillisElement = configObject.get("storeThresholdMillis");
-            if (storeThresholdMillisElement != null) {
-                storeThresholdMillis(storeThresholdMillisElement.getAsInt());
-            }
-            return this;
-        }
+
         public FineProfilingConfig build() {
+            String version = buildVersion();
             return new FineProfilingConfig(enabled, tracePercentage, intervalMillis, totalSeconds,
-                    storeThresholdMillis);
+                    storeThresholdMillis, version);
+        }
+
+        private String buildVersion() {
+            return Hashing.sha1().newHasher()
+                    .putBoolean(enabled)
+                    .putDouble(tracePercentage)
+                    .putInt(intervalMillis)
+                    .putInt(totalSeconds)
+                    .putInt(storeThresholdMillis)
+                    .hash().toString();
         }
     }
 }

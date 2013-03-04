@@ -1,0 +1,30 @@
+import checkers.igj.quals.*;
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package com.fasterxml.jackson.core;
+
+public class JsonGenerator {
+    public void writeString(@Nullable String text);
+    public void writeStringField(String fieldName, @Nullable String value);
+}
+
+/* ========================================================================== */
+package com.fasterxml.jackson.databind;
+
+public class JsonDeserializer<T> {
+    public @Nullable T deserialize(JsonParser jp, DeserializationContext ctxt);
+}
+
+public class ObjectMapper {
+    public JsonNode readTree(String content) @Immutable;
+    public <T> T treeToValue(TreeNode n, Class<T> valueType) @Immutable;
+}
+
+/* ========================================================================== */
+package com.fasterxml.jackson.databind.node;
+
+public class ObjectNode {
+    public @I @Nullable JsonNode get(String fieldName) @I;
+    public ObjectNode put(String fieldName, @Nullable Double value);
+}

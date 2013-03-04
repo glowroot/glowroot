@@ -80,7 +80,7 @@ public class TraceSnapshotDaoTest {
                 false, false, null, null, null, null, 1);
         TraceSnapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
-        assertThat(snapshot2.getStartAt()).isEqualTo(snapshot.getStartAt());
+        assertThat(snapshot2.getStart()).isEqualTo(snapshot.getStart());
         assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
         assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
         assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());

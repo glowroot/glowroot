@@ -17,7 +17,7 @@ package io.informant.testkit;
 
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
-import io.informant.config.PluginInfoCache;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 import io.informant.util.ThreadSafe;
 import io.informant.util.Threads;
@@ -49,9 +49,9 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         preExistingThreads = Threads.currentThreads();
         informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        PluginInfoCache pluginInfoCache = new PluginInfoCache();
-        loader.setMixins(pluginInfoCache.getMixins());
-        loader.setAdvisors(pluginInfoCache.getAdvisors());
+        PluginDescriptorCache pluginDescriptorCache = new PluginDescriptorCache();
+        loader.setMixins(pluginDescriptorCache.getMixins());
+        loader.setAdvisors(pluginDescriptorCache.getAdvisors());
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
                 "io.informant.shaded");

@@ -20,75 +20,86 @@ import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class Config {
+class Config {
 
+    @JsonProperty
     @Nullable
     private GeneralConfig generalConfig;
+    @JsonProperty
     @Nullable
     private CoarseProfilingConfig coarseProfilingConfig;
+    @JsonProperty
     @Nullable
     private FineProfilingConfig fineProfilingConfig;
+    @JsonProperty
     @Nullable
     private UserConfig userConfig;
+    @JsonProperty
     @Nullable
     private Map<String, PluginConfig> pluginConfigs;
+    @JsonProperty
     @Nullable
     private List<PointcutConfig> pointcutConfigs;
+    @JsonProperty
+    @Nullable
+    private List<PluginDescriptor> pluginDescriptors;
+    @JsonProperty
+    @Nullable
+    private String dataDir;
+    @JsonProperty
+    @Nullable
+    private Integer uiPort;
 
     @Nullable
-    public GeneralConfig getGeneralConfig() {
+    GeneralConfig getGeneralConfig() {
         return generalConfig;
     }
 
     @Nullable
-    public CoarseProfilingConfig getCoarseProfilingConfig() {
+    CoarseProfilingConfig getCoarseProfilingConfig() {
         return coarseProfilingConfig;
     }
 
     @Nullable
-    public FineProfilingConfig getFineProfilingConfig() {
+    FineProfilingConfig getFineProfilingConfig() {
         return fineProfilingConfig;
     }
 
     @Nullable
-    public UserConfig getUserConfig() {
+    UserConfig getUserConfig() {
         return userConfig;
     }
 
     @Nullable
-    public Map<String, PluginConfig> getPluginConfigs() {
+    Map<String, PluginConfig> getPluginConfigs() {
         return pluginConfigs;
     }
 
     @Nullable
-    public List<PointcutConfig> getPointcutConfigs() {
+    List<PointcutConfig> getPointcutConfigs() {
         return pointcutConfigs;
     }
 
-    @Override
-    public boolean equals(@Nullable Object obj) {
-        if (obj instanceof Config) {
-            Config that = (Config) obj;
-            return Objects.equal(generalConfig, that.generalConfig)
-                    && Objects.equal(coarseProfilingConfig, that.coarseProfilingConfig)
-                    && Objects.equal(fineProfilingConfig, that.fineProfilingConfig)
-                    && Objects.equal(userConfig, that.userConfig)
-                    && Objects.equal(pluginConfigs, that.pluginConfigs)
-                    && Objects.equal(pointcutConfigs, that.pointcutConfigs);
-        }
-        return false;
+    @Nullable
+    List<PluginDescriptor> getPluginDescriptors() {
+        return pluginDescriptors;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                userConfig, pluginConfigs, pointcutConfigs);
+    @Nullable
+    String getDataDir() {
+        return dataDir;
+    }
+
+    @Nullable
+    public Integer getUiPort() {
+        return uiPort;
     }
 
     @Override
@@ -100,6 +111,9 @@ public class Config {
                 .add("userConfig", userConfig)
                 .add("pluginConfigs", pluginConfigs)
                 .add("pointcutConfigs", pointcutConfigs)
+                .add("pluginDescriptors", pluginDescriptors)
+                .add("dataDir", dataDir)
+                .add("uiPort", uiPort)
                 .toString();
     }
 }

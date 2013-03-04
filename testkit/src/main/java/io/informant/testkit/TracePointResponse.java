@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.local.ui;
+package io.informant.testkit;
 
 import java.util.List;
 
@@ -32,7 +32,7 @@ class TracePointResponse {
     private final List<RawPoint> activePoints;
 
     @JsonCreator
-    private TracePointResponse(@JsonProperty("normalPoints") List<RawPoint> normalPoints,
+    TracePointResponse(@JsonProperty("normalPoints") List<RawPoint> normalPoints,
             @JsonProperty("errorPoints") List<RawPoint> errorPoints,
             @JsonProperty("activePoints") List<RawPoint> activePoints) {
         this.normalPoints = normalPoints;
@@ -57,7 +57,7 @@ class TracePointResponse {
         private final double durationSeconds;
         private final String id;
         @JsonCreator
-        private static RawPoint from(ArrayNode point) {
+        static RawPoint from(ArrayNode point) {
             long capturedAt = point.get(0).asLong();
             double durationSeconds = point.get(1).asDouble();
             String id = point.get(2).asText();

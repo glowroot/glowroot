@@ -15,15 +15,17 @@
  */
 package io.informant.testkit;
 
-import io.informant.testkit.internal.GsonFactory;
+import io.informant.testkit.internal.ObjectMappers;
 
 import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
 
 /**
  * @author Trask Stalnaker
@@ -31,15 +33,28 @@ import com.google.gson.Gson;
  */
 public class PluginConfig {
 
-    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
+    @JsonProperty
+    @Nullable
+    private String groupId;
+    @JsonProperty
+    @Nullable
+    private String artifactId;
     private boolean enabled;
+    @JsonProperty
     private final Map<String, /*@Nullable*/Object> properties = Maps.newHashMap();
     @Nullable
-    private String versionHash;
+    private String version;
 
-    String toJson() {
-        return gson.toJson(this);
+    @Nullable
+    public String getGroupId() {
+        return groupId;
+    }
+
+    @Nullable
+    public String getArtifactId() {
+        return artifactId;
     }
 
     public boolean isEnabled() {
@@ -64,12 +79,12 @@ public class PluginConfig {
     }
 
     @Nullable
-    public String getVersionHash() {
-        return versionHash;
+    public String getVersion() {
+        return version;
     }
 
-    public void setVersionHash(String versionHash) {
-        this.versionHash = versionHash;
+    void setVersion(@Nullable String version) {
+        this.version = version;
     }
 
     Map<String, /*@Nullable*/Object> getProperties() {
@@ -80,7 +95,7 @@ public class PluginConfig {
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PluginConfig) {
             PluginConfig that = (PluginConfig) obj;
-            // intentionally leaving off versionHash since it represents the prior version hash when
+            // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(enabled, that.enabled)
@@ -91,7 +106,7 @@ public class PluginConfig {
 
     @Override
     public int hashCode() {
-        // intentionally leaving off versionHash since it represents the prior version hash when
+        // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, properties);
@@ -102,6 +117,7 @@ public class PluginConfig {
         return Objects.toStringHelper(this)
                 .add("enabled", enabled)
                 .add("properties", properties)
+                .add("version", version)
                 .toString();
     }
 }

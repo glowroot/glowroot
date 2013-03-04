@@ -54,9 +54,9 @@ public interface Informant {
 
     String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception;
 
-    String updatePointcutConfig(String versionHash, PointcutConfig pointcutConfig) throws Exception;
+    String updatePointcutConfig(String version, PointcutConfig pointcutConfig) throws Exception;
 
-    void removePointcutConfig(String versionHash) throws Exception;
+    void removePointcutConfig(String version) throws Exception;
 
     Trace getLastTrace() throws Exception;
 

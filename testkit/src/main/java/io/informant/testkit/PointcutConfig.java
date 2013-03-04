@@ -19,6 +19,7 @@ import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 
 /**
@@ -44,7 +45,7 @@ public class PointcutConfig {
     @Nullable
     private String spanTemplate;
     @Nullable
-    private String versionHash;
+    private String version;
 
     @Nullable
     public List<CaptureItem> getCaptureItems() {
@@ -118,20 +119,22 @@ public class PointcutConfig {
         this.spanTemplate = spanTemplate;
     }
 
+    // JsonIgnore so it won't get sent to the server
+    @JsonIgnore
     @Nullable
-    public String getVersionHash() {
-        return versionHash;
+    public String getVersion() {
+        return version;
     }
 
-    public void setVersionHash(String versionHash) {
-        this.versionHash = versionHash;
+    void setVersion(@Nullable String version) {
+        this.version = version;
     }
 
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof PointcutConfig) {
             PointcutConfig that = (PointcutConfig) obj;
-            // intentionally leaving off versionHash since it represents the prior version hash when
+            // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(captureItems, that.captureItems)
@@ -148,7 +151,7 @@ public class PointcutConfig {
 
     @Override
     public int hashCode() {
-        // intentionally leaving off versionHash since it represents the prior version hash when
+        // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(captureItems, typeName, methodName, methodArgTypeNames,
@@ -166,6 +169,7 @@ public class PointcutConfig {
                 .add("methodModifiers", methodModifiers)
                 .add("metricName", metricName)
                 .add("spanTemplate", spanTemplate)
+                .add("version", version)
                 .toString();
     }
 

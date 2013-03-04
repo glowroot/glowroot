@@ -33,7 +33,7 @@ public class GeneralConfig {
     private int rollingSizeMb;
     private boolean warnOnSpanOutsideTrace;
     @Nullable
-    private String versionHash;
+    private String version;
 
     public boolean isEnabled() {
         return enabled;
@@ -92,19 +92,19 @@ public class GeneralConfig {
     }
 
     @Nullable
-    public String getVersionHash() {
-        return versionHash;
+    public String getVersion() {
+        return version;
     }
 
-    public void setVersionHash(String versionHash) {
-        this.versionHash = versionHash;
+    void setVersion(@Nullable String version) {
+        this.version = version;
     }
 
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof GeneralConfig) {
             GeneralConfig that = (GeneralConfig) obj;
-            // intentionally leaving off versionHash since it represents the prior version hash when
+            // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(enabled, that.enabled)
@@ -120,7 +120,7 @@ public class GeneralConfig {
 
     @Override
     public int hashCode() {
-        // intentionally leaving off versionHash since it represents the prior version hash when
+        // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
@@ -137,7 +137,7 @@ public class GeneralConfig {
                 .add("snapshotExpirationHours", snapshotExpirationHours)
                 .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
-                .add("versionHash", versionHash)
+                .add("version", version)
                 .toString();
     }
 }

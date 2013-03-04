@@ -32,8 +32,7 @@ public class Trace {
 
     @Nullable
     private String id;
-    private long from;
-    private long to;
+    private long start;
     private long duration;
     // active is slightly different from !completed because a trace is stored at the stuck threshold
     // and the jvm may terminate before that trace completes, in which case the trace is
@@ -41,6 +40,7 @@ public class Trace {
     private boolean active;
     private boolean stuck;
     private boolean completed;
+    private boolean background;
     @Nullable
     private String headline;
     @Nullable
@@ -65,12 +65,8 @@ public class Trace {
         return id;
     }
 
-    public long getFrom() {
-        return from;
-    }
-
-    public long getTo() {
-        return to;
+    public long getStart() {
+        return start;
     }
 
     public long getDuration() {
@@ -87,6 +83,10 @@ public class Trace {
 
     public boolean isCompleted() {
         return completed;
+    }
+
+    public boolean isBackground() {
+        return background;
     }
 
     @Nullable
@@ -184,12 +184,12 @@ public class Trace {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("from", from)
-                .add("to", to)
+                .add("start", start)
                 .add("duration", duration)
                 .add("active", active)
                 .add("stuck", stuck)
                 .add("completed", completed)
+                .add("background", background)
                 .add("headline", headline)
                 .add("attributes", attributes)
                 .add("userId", userId)
@@ -335,8 +335,9 @@ public class Trace {
 
         private long offset;
         private long duration;
+        private boolean active;
         private int index;
-        private int nesting;
+        private int nestingLevel;
         // message is null for spans created via PluginServices.addErrorSpan()
         @Nullable
         private Message message;
@@ -353,11 +354,14 @@ public class Trace {
         public long getDuration() {
             return duration;
         }
+        public boolean isActive() {
+            return active;
+        }
         public int getIndex() {
             return index;
         }
-        public int getNesting() {
-            return nesting;
+        public int getNestingLevel() {
+            return nestingLevel;
         }
         @Nullable
         public Message getMessage() {
@@ -382,8 +386,9 @@ public class Trace {
             return Objects.toStringHelper(this)
                     .add("offset", offset)
                     .add("duration", duration)
+                    .add("active", active)
                     .add("index", index)
-                    .add("nesting", nesting)
+                    .add("nestingLevel", nestingLevel)
                     .add("message", message)
                     .add("error", error)
                     .add("stackTrace", stackTrace)
@@ -442,11 +447,11 @@ public class Trace {
         private String stackTraceElement;
         @Nullable
         private List<MergedStackTreeNode> childNodes;
+        @Nullable
+        private List<String> metricNames;
         private int sampleCount;
         @Nullable
-        private Map<String, Integer> leafThreadStateSampleCounts;
-        @Nullable
-        private String singleLeafState;
+        private String leafThreadState;
 
         // null for synthetic root only
         @Nullable
@@ -457,25 +462,25 @@ public class Trace {
         public List<MergedStackTreeNode> getChildNodes() {
             return childNodes;
         }
+        @Nullable
+        public List<String> getMetricNames() {
+            return metricNames;
+        }
         public int getSampleCount() {
             return sampleCount;
         }
         @Nullable
-        public Map<String, Integer> getLeafThreadStateSampleCounts() {
-            return leafThreadStateSampleCounts;
-        }
-        @Nullable
-        public String getSingleLeafState() {
-            return singleLeafState;
+        public String getLeafThreadState() {
+            return leafThreadState;
         }
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
                     .add("stackTraceElement", stackTraceElement)
                     .add("childNodes", childNodes)
+                    .add("metricNames", metricNames)
                     .add("sampleCount", sampleCount)
-                    .add("leafThreadStateSampleCounts", leafThreadStateSampleCounts)
-                    .add("singleLeafState", singleLeafState)
+                    .add("leafThreadState", leafThreadState)
                     .toString();
         }
     }

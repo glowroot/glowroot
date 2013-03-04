@@ -46,9 +46,8 @@ class Weaver implements Opcodes {
 
     // this is an internal property sometimes useful for debugging errors in the weaver,
     // especially exceptions of type java.lang.VerifyError
-    // the weaver is started before the guice module so this property cannot be injected from guice
-    private static final boolean verifyWeaving = Boolean.valueOf(System
-            .getProperty("informant.internal.weaving.verify"));
+    private static final boolean verifyWeaving =
+            Boolean.valueOf(System.getProperty("informant.internal.weaving.verify"));
 
     private final ImmutableList<Mixin> mixins;
     private final ImmutableList<Advice> advisors;
@@ -60,7 +59,6 @@ class Weaver implements Opcodes {
 
     Weaver(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
-
         this.mixins = mixins;
         this.advisors = advisors;
         this.loader = loader;

@@ -66,7 +66,7 @@ public class ConfigTest {
         // given
         GeneralConfig config = container.getInformant().getGeneralConfig();
         // when
-        config = updateAllFields(config);
+        updateAllFields(config);
         container.getInformant().updateGeneralConfig(config);
         // then
         GeneralConfig updatedConfig = container.getInformant().getGeneralConfig();
@@ -78,7 +78,7 @@ public class ConfigTest {
         // given
         CoarseProfilingConfig config = container.getInformant().getCoarseProfilingConfig();
         // when
-        config = updateAllFields(config);
+        updateAllFields(config);
         container.getInformant().updateCoarseProfilingConfig(config);
         // then
         CoarseProfilingConfig updatedConfig = container.getInformant().getCoarseProfilingConfig();
@@ -90,7 +90,7 @@ public class ConfigTest {
         // given
         FineProfilingConfig config = container.getInformant().getFineProfilingConfig();
         // when
-        config = updateAllFields(config);
+        updateAllFields(config);
         container.getInformant().updateFineProfilingConfig(config);
         // then
         FineProfilingConfig updatedConfig = container.getInformant().getFineProfilingConfig();
@@ -102,7 +102,7 @@ public class ConfigTest {
         // given
         UserConfig config = container.getInformant().getUserConfig();
         // when
-        config = updateAllFields(config);
+        updateAllFields(config);
         container.getInformant().updateUserConfig(config);
         // then
         UserConfig updatedConfig = container.getInformant().getUserConfig();
@@ -114,7 +114,7 @@ public class ConfigTest {
         // given
         PluginConfig config = container.getInformant().getPluginConfig(PLUGIN_ID);
         // when
-        config = updateAllFields(config);
+        updateAllFields(config);
         container.getInformant().updatePluginConfig(PLUGIN_ID, config);
         // then
         PluginConfig updatedConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
@@ -137,10 +137,10 @@ public class ConfigTest {
     public void shouldUpdatePointcutConfig() throws Exception {
         // given
         PointcutConfig config = createPointcutConfig();
-        String versionHash = container.getInformant().addPointcutConfig(config);
+        String version = container.getInformant().addPointcutConfig(config);
         // when
-        config = updateAllFields(config);
-        container.getInformant().updatePointcutConfig(versionHash, config);
+        updateAllFields(config);
+        container.getInformant().updatePointcutConfig(version, config);
         // then
         List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
         assertThat(pointcuts).hasSize(1);
@@ -151,70 +151,55 @@ public class ConfigTest {
     public void shouldDeletePointcutConfig() throws Exception {
         // given
         PointcutConfig pointcut = createPointcutConfig();
-        String versionHash = container.getInformant().addPointcutConfig(pointcut);
+        String version = container.getInformant().addPointcutConfig(pointcut);
         // when
-        container.getInformant().removePointcutConfig(versionHash);
+        container.getInformant().removePointcutConfig(version);
         // then
         List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
         assertThat(pointcuts).isEmpty();
     }
 
-    private static GeneralConfig updateAllFields(GeneralConfig config) {
-        GeneralConfig updatedConfig = new GeneralConfig();
-        updatedConfig.setVersionHash(config.getVersionHash());
-        updatedConfig.setEnabled(!config.isEnabled());
-        updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-        updatedConfig.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
-        updatedConfig.setMaxSpans(config.getMaxSpans() + 1);
-        updatedConfig.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
-        updatedConfig.setRollingSizeMb(config.getRollingSizeMb() + 1);
-        updatedConfig.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
-        return updatedConfig;
+    private static void updateAllFields(GeneralConfig config) {
+        config.setEnabled(!config.isEnabled());
+        config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
+        config.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
+        config.setMaxSpans(config.getMaxSpans() + 1);
+        config.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
+        config.setRollingSizeMb(config.getRollingSizeMb() + 1);
+        config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
     }
 
-    private static CoarseProfilingConfig updateAllFields(CoarseProfilingConfig config) {
-        CoarseProfilingConfig updatedConfig = new CoarseProfilingConfig();
-        updatedConfig.setVersionHash(config.getVersionHash());
-        updatedConfig.setEnabled(!config.isEnabled());
-        updatedConfig.setInitialDelayMillis(config.getInitialDelayMillis() + 1);
-        updatedConfig.setIntervalMillis(config.getIntervalMillis() + 1);
-        updatedConfig.setTotalSeconds(config.getTotalSeconds() + 1);
-        return updatedConfig;
+    private static void updateAllFields(CoarseProfilingConfig config) {
+        config.setEnabled(!config.isEnabled());
+        config.setInitialDelayMillis(config.getInitialDelayMillis() + 1);
+        config.setIntervalMillis(config.getIntervalMillis() + 1);
+        config.setTotalSeconds(config.getTotalSeconds() + 1);
     }
 
-    private static FineProfilingConfig updateAllFields(FineProfilingConfig config) {
-        FineProfilingConfig updatedConfig = new FineProfilingConfig();
-        updatedConfig.setVersionHash(config.getVersionHash());
-        updatedConfig.setEnabled(!config.isEnabled());
-        updatedConfig.setTracePercentage(config.getTracePercentage() + 1);
-        updatedConfig.setIntervalMillis(config.getIntervalMillis() + 1);
-        updatedConfig.setTotalSeconds(config.getTotalSeconds() + 1);
-        return updatedConfig;
+    private static void updateAllFields(FineProfilingConfig config) {
+        config.setEnabled(!config.isEnabled());
+        config.setTracePercentage(config.getTracePercentage() + 1);
+        config.setIntervalMillis(config.getIntervalMillis() + 1);
+        config.setTotalSeconds(config.getTotalSeconds() + 1);
     }
 
-    private static UserConfig updateAllFields(UserConfig config) {
-        UserConfig updatedConfig = new UserConfig();
-        updatedConfig.setVersionHash(config.getVersionHash());
-        updatedConfig.setEnabled(!config.isEnabled());
-        updatedConfig.setUserId(config.getUserId() + "x");
-        updatedConfig.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-        updatedConfig.setFineProfiling(!config.isFineProfiling());
-        return updatedConfig;
+    private static void updateAllFields(UserConfig config) {
+        config.setEnabled(!config.isEnabled());
+        config.setUserId(config.getUserId() + "x");
+        config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
+        config.setFineProfiling(!config.isFineProfiling());
     }
 
-    private static PluginConfig updateAllFields(PluginConfig config) {
-        PluginConfig updatedConfig = new PluginConfig();
-        updatedConfig.setVersionHash(config.getVersionHash());
-        updatedConfig.setEnabled(!config.isEnabled());
+    private static void updateAllFields(PluginConfig config) {
+        config.setEnabled(!config.isEnabled());
         boolean starredHeadline = (Boolean) config.getProperty("starredHeadline");
-        updatedConfig.setProperty("starredHeadline", !starredHeadline);
+        config.setProperty("starredHeadline", !starredHeadline);
         String alternateHeadline = (String) config.getProperty("alternateHeadline");
-        updatedConfig.setProperty("alternateHeadline", alternateHeadline + "x");
+        config.setProperty("alternateHeadline", alternateHeadline + "x");
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
-        updatedConfig.setProperty("hasDefaultVal", hasDefaultVal + "x");
+        config.setProperty("hasDefaultVal", hasDefaultVal + "x");
         boolean captureSpanStackTraces = (Boolean) config.getProperty("captureSpanStackTraces");
-        updatedConfig.setProperty("captureSpanStackTraces", !captureSpanStackTraces);
-        return updatedConfig;
+        config.setProperty("captureSpanStackTraces", !captureSpanStackTraces);
     }
 
     private static PointcutConfig createPointcutConfig() {
@@ -231,31 +216,28 @@ public class ConfigTest {
         return config;
     }
 
-    private static PointcutConfig updateAllFields(PointcutConfig config) {
-        PointcutConfig updatedConfig = new PointcutConfig();
-        updatedConfig.setVersionHash(config.getVersionHash());
+    private static void updateAllFields(PointcutConfig config) {
         if (config.getCaptureItems().contains(CaptureItem.TRACE)) {
-            updatedConfig.setCaptureItems(ImmutableList.of(CaptureItem.METRIC, CaptureItem.SPAN));
+            config.setCaptureItems(ImmutableList.of(CaptureItem.METRIC, CaptureItem.SPAN));
         } else {
-            updatedConfig.setCaptureItems(ImmutableList.of(CaptureItem.TRACE));
+            config.setCaptureItems(ImmutableList.of(CaptureItem.TRACE));
         }
-        updatedConfig.setTypeName(config.getTypeName() + "a");
-        updatedConfig.setMethodName(config.getMethodName() + "b");
+        config.setTypeName(config.getTypeName() + "a");
+        config.setMethodName(config.getMethodName() + "b");
         if (config.getMethodArgTypeNames().size() == 0) {
-            updatedConfig.setMethodArgTypeNames(ImmutableList.of("java.lang.String"));
+            config.setMethodArgTypeNames(ImmutableList.of("java.lang.String"));
         } else {
-            updatedConfig.setMethodArgTypeNames(ImmutableList.of(config
-                    .getMethodArgTypeNames().get(0) + "c"));
+            config.setMethodArgTypeNames(ImmutableList.of(config.getMethodArgTypeNames().get(0)
+                    + "c"));
         }
-        updatedConfig.setMethodReturnTypeName(config.getMethodReturnTypeName() + "d");
+        config.setMethodReturnTypeName(config.getMethodReturnTypeName() + "d");
         if (config.getMethodModifiers().contains(MethodModifier.PUBLIC)) {
-            updatedConfig.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
+            config.setMethodModifiers(ImmutableList.of(MethodModifier.PRIVATE));
         } else {
-            updatedConfig.setMethodModifiers(ImmutableList.of(MethodModifier.PUBLIC,
-                    MethodModifier.STATIC));
+            config.setMethodModifiers(ImmutableList
+                    .of(MethodModifier.PUBLIC, MethodModifier.STATIC));
         }
-        updatedConfig.setMetricName(config.getMetricName() + "e");
-        updatedConfig.setSpanTemplate(config.getSpanTemplate() + "f");
-        return updatedConfig;
+        config.setMetricName(config.getMetricName() + "e");
+        config.setSpanTemplate(config.getSpanTemplate() + "f");
     }
 }

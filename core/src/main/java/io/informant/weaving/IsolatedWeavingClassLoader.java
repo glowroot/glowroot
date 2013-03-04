@@ -176,27 +176,35 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     public static class Builder {
+
         private ImmutableList<Mixin> mixins = ImmutableList.of();
         private ImmutableList<Advice> advisors = ImmutableList.of();
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
         private WeavingMetric weavingMetric = NopWeavingMetric.INSTANCE;
+
         private Builder() {}
+
         public void setMixins(@ReadOnly List<Mixin> mixins) {
             this.mixins = ImmutableList.copyOf(mixins);
         }
+
         public void setAdvisors(@ReadOnly List<Advice> advisors) {
             this.advisors = ImmutableList.copyOf(advisors);
         }
+
         public void addBridgeClasses(Class<?>... bridgeClasses) {
             this.bridgeClasses.add(bridgeClasses);
         }
+
         public void addExcludePackages(String... excludePackages) {
             this.excludePackages.add(excludePackages);
         }
+
         public void weavingMetric(WeavingMetric weavingMetric) {
             this.weavingMetric = weavingMetric;
         }
+
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {

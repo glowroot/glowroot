@@ -49,7 +49,8 @@ class TraceCommonService {
     }
 
     @Nullable
-    CharSource getSnapshotOrActiveJson(String id, boolean summary) throws IOException {
+    CharSource createCharSourceForSnapshotOrActiveTrace(String id, boolean summary)
+            throws IOException {
         // check active traces first to make sure that the trace is not missed if it should complete
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {

@@ -32,6 +32,7 @@ import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotDao.StringComparator;
 import io.informant.local.store.TraceSnapshotService;
 import io.informant.util.Clock;
+import io.informant.util.ObjectMappers;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
@@ -50,6 +52,7 @@ import com.google.common.collect.Ordering;
  */
 public class TracePointJsonServiceTest {
 
+    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Random random = new Random();
     private static final long DEFAULT_CURRENT_TICK = random.nextLong();
     private static final long DEFAULT_CURRENT_TIME_MILLIS = Math.abs(random.nextLong());
@@ -67,10 +70,9 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
-        String responseJson = tracePointJsonService
-                .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
-        TracePointResponse response = TracePointResponse.from(responseJson);
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(1);
         assertThat(response.getNormalPoints().size()).isEqualTo(0);
     }
@@ -86,10 +88,9 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
-        String responseJson = tracePointJsonService
-                .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
-        TracePointResponse response = TracePointResponse.from(responseJson);
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(0);
         assertThat(response.getNormalPoints().size()).isEqualTo(1);
     }
@@ -105,10 +106,9 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
-        String responseJson = tracePointJsonService
-                .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
-        TracePointResponse response = TracePointResponse.from(responseJson);
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(0);
         assertThat(response.getNormalPoints().size()).isEqualTo(1);
     }
@@ -126,10 +126,9 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points, 10000, DEFAULT_CURRENT_TICK);
         // when
-        String responseJson = tracePointJsonService
-                .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
-        TracePointResponse response = TracePointResponse.from(responseJson);
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(0);
         assertThat(response.getNormalPoints().size()).isEqualTo(1);
         assertThat(response.getNormalPoints().get(0).getCapturedAt()).isEqualTo(10001);
@@ -153,10 +152,9 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
-        String responseJson = tracePointJsonService
-                .getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
+        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":1000}");
         // then
-        TracePointResponse response = TracePointResponse.from(responseJson);
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(100);
         assertThat(response.getNormalPoints().size()).isEqualTo(200);
         assertThat(response.getActivePoints()).isSorted();
@@ -180,10 +178,9 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
-        String responseJson = tracePointJsonService
-                .getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
+        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
         // then
-        TracePointResponse response = TracePointResponse.from(responseJson);
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(100);
         assertThat(response.getNormalPoints().size()).isEqualTo(0);
     }

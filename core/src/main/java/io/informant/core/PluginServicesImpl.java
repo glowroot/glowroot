@@ -26,8 +26,8 @@ import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
 import io.informant.config.GeneralConfig;
 import io.informant.config.PluginConfig;
-import io.informant.config.PluginInfo;
-import io.informant.config.PluginInfoCache;
+import io.informant.config.PluginDescriptor;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.config.UserConfig;
 import io.informant.util.Clock;
 import io.informant.util.NotThreadSafe;
@@ -85,8 +85,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache,
-            FineGrainedProfiler fineGrainedProfiler, Ticker ticker, Clock clock,
-            Random random, WeavingMetricImpl weavingMetric, PluginInfoCache pluginInfoCache,
+            FineGrainedProfiler fineGrainedProfiler, Ticker ticker, Clock clock, Random random,
+            WeavingMetricImpl weavingMetric, PluginDescriptorCache pluginDescriptorCache,
             String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
@@ -105,8 +105,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
             List<String> ids = Lists.newArrayList();
-            for (PluginInfo pluginInfo : pluginInfoCache.getPluginInfos()) {
-                ids.add(pluginInfo.getId());
+            for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+                ids.add(pluginDescriptor.getId());
             }
             logger.warn("unexpected plugin id '{}', available plugin ids: {}", pluginId,
                     Joiner.on(", ").join(ids));

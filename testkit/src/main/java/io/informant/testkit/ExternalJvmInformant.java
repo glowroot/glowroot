@@ -16,26 +16,26 @@
 package io.informant.testkit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import io.informant.testkit.internal.GsonFactory;
+import io.informant.testkit.TracePointResponse.RawPoint;
+import io.informant.testkit.internal.ObjectMappers;
 import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Longs;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
@@ -49,7 +49,7 @@ import com.ning.http.client.Response;
 @ThreadSafe
 class ExternalJvmInformant implements Informant {
 
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
@@ -76,52 +76,40 @@ class ExternalJvmInformant implements Informant {
         return getConfig().getGeneralConfig();
     }
 
+    // returns new version
     public String updateGeneralConfig(GeneralConfig config) throws Exception {
-        // need to serialize nulls since the /config service treats absence of attribute different
-        // from null attribute (the former doesn't update the attribute, the latter sets the
-        // attribute to null)
-        String versionHashJson = post("/config/general", GsonFactory.newBuilder().serializeNulls()
-                .create().toJson(config));
-        return new JsonParser().parse(versionHashJson).getAsString();
+        String content = post("/config/general", mapper.writeValueAsString(config));
+        return mapper.readValue(content, String.class);
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
         return getConfig().getCoarseProfilingConfig();
     }
 
+    // returns new version
     public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
-        // need to serialize nulls since the /config service treats absence of attribute different
-        // from null attribute (the former doesn't update the attribute, the latter sets the
-        // attribute to null)
-        String versionHashJson = post("/config/coarse-profiling", GsonFactory.newBuilder()
-                .serializeNulls().create().toJson(config));
-        return new JsonParser().parse(versionHashJson).getAsString();
+        String content = post("/config/coarse-profiling", mapper.writeValueAsString(config));
+        return mapper.readValue(content, String.class);
     }
 
     public FineProfilingConfig getFineProfilingConfig() throws Exception {
         return getConfig().getFineProfilingConfig();
     }
 
+    // returns new version
     public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
-        // need to serialize nulls since the /config service treats absence of attribute different
-        // from null attribute (the former doesn't update the attribute, the latter sets the
-        // attribute to null)
-        String versionHashJson = post("/config/fine-profiling",
-                GsonFactory.newBuilder().serializeNulls().create().toJson(config));
-        return new JsonParser().parse(versionHashJson).getAsString();
+        String content = post("/config/fine-profiling", mapper.writeValueAsString(config));
+        return mapper.readValue(content, String.class);
     }
 
     public UserConfig getUserConfig() throws Exception {
         return getConfig().getUserConfig();
     }
 
+    // returns new version
     public String updateUserConfig(UserConfig config) throws Exception {
-        // need to serialize nulls since the /config service treats absence of attribute different
-        // from null attribute (the former doesn't update the attribute, the latter sets the
-        // attribute to null)
-        String versionHashJson = post("/config/user", GsonFactory.newBuilder().serializeNulls()
-                .create().toJson(config));
-        return new JsonParser().parse(versionHashJson).getAsString();
+        String content = post("/config/user", mapper.writeValueAsString(config));
+        return mapper.readValue(content, String.class);
     }
 
     @Nullable
@@ -133,32 +121,32 @@ class ExternalJvmInformant implements Informant {
         return pluginConfigs.get(pluginId);
     }
 
+    // returns new version
     public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
-        // need to serialize nulls since the /config service treats absence of attribute different
-        // from null attribute (the former doesn't update the attribute, the latter sets the
-        // attribute to null)
-        String versionHashJson = post("/config/plugin/" + pluginId, config.toJson());
-        return new JsonParser().parse(versionHashJson).getAsString();
+        String content = post("/config/plugin/" + pluginId, mapper.writeValueAsString(config));
+        return mapper.readValue(content, String.class);
     }
 
     public List<PointcutConfig> getPointcutConfigs() throws Exception {
         return getConfig().getPointcutConfigs();
     }
 
+    // returns new version
     public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
-        String response = post("/config/pointcut/+", gson.toJson(pointcutConfig));
-        return new JsonParser().parse(response).getAsString();
+        String content = post("/config/pointcut/+", mapper.writeValueAsString(pointcutConfig));
+        return mapper.readValue(content, String.class);
     }
 
-    public String updatePointcutConfig(String versionHash, PointcutConfig pointcutConfig)
+    // returns new version
+    public String updatePointcutConfig(String version, PointcutConfig pointcutConfig)
             throws Exception {
-        String versionHashJson = post("/config/pointcut/" + versionHash,
-                gson.toJson(pointcutConfig));
-        return new JsonParser().parse(versionHashJson).getAsString();
+        String content =
+                post("/config/pointcut/" + version, mapper.writeValueAsString(pointcutConfig));
+        return mapper.readValue(content, String.class);
     }
 
-    public void removePointcutConfig(String versionHash) throws Exception {
-        post("/config/pointcut/-", gson.toJson(versionHash));
+    public void removePointcutConfig(String version) throws Exception {
+        post("/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
     public Trace getLastTrace() throws Exception {
@@ -221,74 +209,56 @@ class ExternalJvmInformant implements Informant {
     }
 
     private Trace getLastTrace(boolean summary) throws Exception {
-        String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
+        String content = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
-        JsonObject response = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject();
-        JsonArray normalPoints = asJsonArrayOrEmpty(response.get("normalPoints"));
-        JsonArray errorPoints = asJsonArrayOrEmpty(response.get("errorPoints"));
-        JsonArray points = new JsonArray();
-        points.addAll(normalPoints);
-        points.addAll(errorPoints);
-        JsonArray lastTracePoint = getMaxPointByCapturedAt(points);
-        if (lastTracePoint == null) {
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
+        List<RawPoint> points = Lists.newArrayList();
+        points.addAll(response.getNormalPoints());
+        points.addAll(response.getErrorPoints());
+        if (points.isEmpty()) {
             throw new AssertionError("no trace found");
+        }
+        RawPoint mostRecentCapturedPoint = Collections.max(points, new Comparator<RawPoint>() {
+            public int compare(RawPoint point1, RawPoint point2) {
+                return Longs.compare(point1.getCapturedAt(), point2.getCapturedAt());
+            }
+        });
+        if (summary) {
+            String traceContent = get("/explorer/summary/" + mostRecentCapturedPoint.getId());
+            Trace trace = mapper.readValue(traceContent, Trace.class);
+            trace.setSummary(true);
+            return trace;
         } else {
-            String traceId = lastTracePoint.get(2).getAsString();
-            if (summary) {
-                String traceJson = get("/explorer/summary/" + traceId);
-                Trace trace = gson.fromJson(traceJson, Trace.class);
-                trace.setSummary(true);
-                return trace;
-            } else {
-                String traceJson = get("/explorer/detail/" + traceId);
-                return gson.fromJson(traceJson, Trace.class);
-            }
+            String traceContent = get("/explorer/detail/" + mostRecentCapturedPoint.getId());
+            return mapper.readValue(traceContent, Trace.class);
         }
-    }
-
-    @Nullable
-    private JsonArray getMaxPointByCapturedAt(JsonArray points) {
-        long maxCapturedAt = 0;
-        JsonArray maxPoint = null;
-        for (int i = 0; i < points.size(); i++) {
-            JsonArray point = points.get(i).getAsJsonArray();
-            long time = point.get(0).getAsLong();
-            if (time > maxCapturedAt) {
-                maxCapturedAt = time;
-                maxPoint = point;
-            }
-        }
-        return maxPoint;
     }
 
     @Nullable
     private Trace getActiveTrace(boolean summary) throws Exception {
-        String pointsJson = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
+        String content = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
-        JsonArray points = gson.fromJson(pointsJson, JsonElement.class).getAsJsonObject()
-                .get("activePoints").getAsJsonArray();
-        if (points.size() == 0) {
+        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
+        if (response.getActivePoints().isEmpty()) {
             return null;
-        } else if (points.size() > 1) {
+        } else if (response.getActivePoints().size() > 1) {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
-            JsonArray values = points.get(0).getAsJsonArray();
-            String traceId = values.get(2).getAsString();
+            RawPoint point = response.getActivePoints().get(0);
             if (summary) {
-                String traceJson = get("/explorer/summary/" + traceId);
-                Trace trace = gson.fromJson(traceJson, Trace.class);
+                String traceContent = get("/explorer/summary/" + point.getId());
+                Trace trace = mapper.readValue(traceContent, Trace.class);
                 trace.setSummary(true);
                 return trace;
             } else {
-                String traceJson = get("/explorer/detail/" + traceId);
-                return gson.fromJson(traceJson, Trace.class);
+                String traceContent = get("/explorer/detail/" + point.getId());
+                return mapper.readValue(traceContent, Trace.class);
             }
         }
     }
 
     private Config getConfig() throws Exception {
-        String json = get("/config/read");
-        return gson.fromJson(json, Config.class);
+        return mapper.readValue(get("/config/read"), Config.class);
     }
 
     private void assertNoActiveTraces() throws Exception {
@@ -317,13 +287,6 @@ class ExternalJvmInformant implements Informant {
         request.setBody(data);
         Response response = request.execute().get();
         return validateAndReturnBody(response);
-    }
-
-    private static JsonArray asJsonArrayOrEmpty(@ReadOnly @Nullable JsonElement jsonElement) {
-        if (jsonElement == null || !jsonElement.isJsonArray()) {
-            return new JsonArray();
-        }
-        return jsonElement.getAsJsonArray();
     }
 
     private static String validateAndReturnBody(Response response) throws IOException {

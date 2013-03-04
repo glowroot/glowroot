@@ -19,7 +19,7 @@ import io.informant.api.PluginServices;
 import io.informant.api.weaving.Mixin;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
-import io.informant.config.PluginInfoCache;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
@@ -69,7 +69,7 @@ public class CoreModule {
                     return new PluginServicesImpl(traceRegistry, traceSink,
                             configModule.getConfigService(), metricCache, fineGrainedProfiler,
                             configModule.getTicker(), configModule.getClock(), random,
-                            weavingMetric, configModule.getPluginInfoCache(), pluginId);
+                            weavingMetric, configModule.getPluginDescriptorCache(), pluginId);
                 }
             });
 
@@ -95,9 +95,9 @@ public class CoreModule {
     }
 
     public WeavingClassFileTransformer createWeavingClassFileTransformer() {
-        PluginInfoCache pluginInfoCache = configModule.getPluginInfoCache();
-        Mixin[] mixins = Iterables.toArray(pluginInfoCache.getMixins(), Mixin.class);
-        Advice[] advisors = Iterables.toArray(pluginInfoCache.getAdvisors(), Advice.class);
+        PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
+        Mixin[] mixins = Iterables.toArray(pluginDescriptorCache.getMixins(), Mixin.class);
+        Advice[] advisors = Iterables.toArray(pluginDescriptorCache.getAdvisors(), Advice.class);
         return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache, weavingMetric);
     }
 

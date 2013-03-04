@@ -35,15 +35,15 @@ public class ConfigModule {
     private final Ticker ticker;
     private final Clock clock;
     private final File dataDir;
-    private final PluginInfoCache pluginInfoCache;
+    private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
 
     public ConfigModule(@ReadOnly Map<String, String> properties) {
         ticker = Ticker.systemTicker();
         clock = Clock.systemClock();
         dataDir = DataDir.getDataDir(properties);
-        pluginInfoCache = new PluginInfoCache();
-        configService = new ConfigService(dataDir, pluginInfoCache);
+        pluginDescriptorCache = new PluginDescriptorCache();
+        configService = new ConfigService(dataDir, pluginDescriptorCache);
     }
 
     public Ticker getTicker() {
@@ -58,8 +58,8 @@ public class ConfigModule {
         return dataDir;
     }
 
-    public PluginInfoCache getPluginInfoCache() {
-        return pluginInfoCache;
+    public PluginDescriptorCache getPluginDescriptorCache() {
+        return pluginDescriptorCache;
     }
 
     public ConfigService getConfigService() {

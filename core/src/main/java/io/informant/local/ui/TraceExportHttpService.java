@@ -81,7 +81,7 @@ public class TraceExportHttpService implements HttpService {
         logger.debug("handleRequest(): id={}", id);
         ChunkedInput in = getExportChunkedInput(id);
         if (in == null) {
-            logger.error("no trace found for id '{}'", id);
+            logger.warn("no trace found for id: {}", id);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -98,7 +98,8 @@ public class TraceExportHttpService implements HttpService {
 
     @Nullable
     private ChunkedInput getExportChunkedInput(String id) throws IOException, ResourceNotFound {
-        CharSource traceCharSource = traceCommonService.getSnapshotOrActiveJson(id, false);
+        CharSource traceCharSource =
+                traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
         if (traceCharSource == null) {
             return null;
         }

@@ -27,7 +27,8 @@ import org.slf4j.LoggerFactory;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
-import com.google.gson.stream.JsonWriter;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 /**
  * @author Trask Stalnaker
@@ -37,52 +38,58 @@ class MessageDetailSerializer {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageDetailSerializer.class);
 
-    private final JsonWriter jw;
+    private final JsonGenerator jg;
 
-    MessageDetailSerializer(JsonWriter jw) {
-        this.jw = jw;
+    MessageDetailSerializer(JsonGenerator jg) {
+        this.jg = jg;
     }
 
-    void write(@ReadOnly Map<?, ? extends /*@Nullable*/Object> detail) throws IOException {
-        jw.beginObject();
+    void write(@ReadOnly Map<String, ? extends /*@Nullable*/Object> detail) throws IOException {
+        writeMap(detail);
+    }
+
+    private void writeMap(@ReadOnly Map<?, ? extends Object> detail) throws IOException,
+            JsonGenerationException {
+        jg.writeStartObject();
         for (Entry<?, ?> entry : detail.entrySet()) {
             Object key = entry.getKey();
             if (key instanceof String) {
-                jw.name((String) key);
+                jg.writeFieldName((String) key);
             } else if (key == null) {
-                // this map comes from plugin, so need to defensively check against null key
+                // this map comes from plugin, so need extra defensive check
                 logger.warn("detail map has null key");
-                jw.name("");
+                jg.writeFieldName("");
             } else {
+                // this map comes from plugin, so need extra defensive check
                 logger.warn("detail map has unexpected key type '{}'", key.getClass().getName());
-                jw.name(key.toString());
+                jg.writeFieldName(key.toString());
             }
-            write(entry.getValue());
+            writeValue(entry.getValue());
         }
-        jw.endObject();
+        jg.writeEndObject();
     }
 
-    private void write(@Nullable Object value) throws IOException {
+    private void writeValue(@Nullable Object value) throws IOException {
         if (value == null) {
-            jw.nullValue();
+            jg.writeNull();
         } else if (value instanceof String) {
-            jw.value((String) value);
+            jg.writeString((String) value);
         } else if (value instanceof Boolean) {
-            jw.value((Boolean) value);
+            jg.writeBoolean((Boolean) value);
         } else if (value instanceof Double) {
-            jw.value((Double) value);
+            jg.writeNumber((Double) value);
         } else if (value instanceof Optional) {
             Optional<?> val = (Optional<?>) value;
             if (val.isPresent()) {
-                write(val.get());
+                writeValue(val.get());
             } else {
-                jw.nullValue();
+                jg.writeNull();
             }
         } else if (value instanceof Map) {
-            write((Map<?, ?>) value);
+            writeMap((Map<?, ?>) value);
         } else {
             logger.warn("detail map has unexpected value type '{}'", value.getClass().getName());
-            jw.value(value.toString());
+            jg.writeString(value.toString());
         }
     }
 }

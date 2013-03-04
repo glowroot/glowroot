@@ -61,6 +61,15 @@ public abstract class Optional<T> {
     public abstract T or(@Nullable T defaultValue);
 
     /**
+     * Returns the contained instance if it is present; {@code null} otherwise. If the instance is
+     * known to be present, use {@link #get()} instead.
+     * 
+     * @return
+     */
+    @Nullable
+    public abstract T orNull();
+
+    /**
      * Returns an {@code Optional} instance with no contained reference.
      * 
      * @return an {@code Optional} instance with no contained reference
@@ -128,6 +137,11 @@ public abstract class Optional<T> {
         public Object or(@Nullable Object defaultValue) {
             return defaultValue;
         }
+        @Override
+        @Nullable
+        public Object orNull() {
+            return null;
+        }
     }
 
     private static class Present<T> extends Optional<T> {
@@ -157,6 +171,11 @@ public abstract class Optional<T> {
         }
         @Override
         public T or(@Nullable T defaultValue) {
+            return reference;
+        }
+        @Override
+        @Nullable
+        public T orNull() {
             return reference;
         }
     }

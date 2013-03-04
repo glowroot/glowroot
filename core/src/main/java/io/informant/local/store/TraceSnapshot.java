@@ -16,11 +16,11 @@
 package io.informant.local.store;
 
 import io.informant.core.TraceUniqueId;
-import io.informant.util.ThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
@@ -33,12 +33,11 @@ import com.google.common.io.CharSource;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO make this Immutable by storing CharSource (guava 14) for spans and mergedStackTrace
-@ThreadSafe
+@Immutable
 public class TraceSnapshot {
 
     private final String id;
-    private final long startAt;
+    private final long start; // milliseconds since 01/01/1970, 00:00:00 GMT
     private final long duration; // nanoseconds
     private final boolean stuck;
     private final boolean completed;
@@ -65,14 +64,13 @@ public class TraceSnapshot {
     @Nullable
     private final CharSource fineMergedStackTree; // json data
 
-    private TraceSnapshot(String id, long startAt, long duration, boolean stuck, boolean completed,
+    private TraceSnapshot(String id, long start, long duration, boolean stuck, boolean completed,
             boolean background, String headline, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String exception, @Nullable String metrics, @Nullable CharSource spans,
             @Nullable CharSource coarseMergedStackTree, @Nullable CharSource fineMergedStackTree) {
-
         this.id = id;
-        this.startAt = startAt;
+        this.start = start;
         this.duration = duration;
         this.stuck = stuck;
         this.completed = completed;
@@ -93,8 +91,8 @@ public class TraceSnapshot {
         return id;
     }
 
-    long getStartAt() {
-        return startAt;
+    long getStart() {
+        return start;
     }
 
     long getDuration() {
@@ -166,7 +164,7 @@ public class TraceSnapshot {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("startAt", startAt)
+                .add("start", start)
                 .add("duration", duration)
                 .add("stuck", stuck)
                 .add("completed", completed)
@@ -191,7 +189,7 @@ public class TraceSnapshot {
 
         @LazyNonNull
         private String id;
-        private long startAt;
+        private long start;
         private long duration;
         private boolean stuck;
         private boolean completed;
@@ -224,8 +222,8 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder startAt(long startAt) {
-            this.startAt = startAt;
+        Builder start(long start) {
+            this.start = start;
             return this;
         }
 
@@ -309,7 +307,7 @@ public class TraceSnapshot {
                 logger.warn("setHeadline() must be called before build()");
                 headline = "<error: no headline provided>";
             }
-            return new TraceSnapshot(id, startAt, duration, stuck, completed, background,
+            return new TraceSnapshot(id, start, duration, stuck, completed, background,
                     headline, attributes, userId, errorText, errorDetail, exception,
                     metrics, spans, coarseMergedStackTree, fineMergedStackTree);
         }

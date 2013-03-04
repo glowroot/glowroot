@@ -19,7 +19,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.InformantModule;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
-import io.informant.config.ConfigService.OptimisticLockException;
 import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
 import io.informant.local.store.DataSource;
@@ -34,7 +33,7 @@ import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
 import io.informant.testkit.PointcutConfig.CaptureItem;
 import io.informant.testkit.PointcutConfig.MethodModifier;
-import io.informant.testkit.internal.GsonFactory;
+import io.informant.testkit.internal.ObjectMappers;
 import io.informant.util.ThreadSafe;
 
 import java.io.ByteArrayInputStream;
@@ -47,11 +46,11 @@ import java.util.concurrent.TimeUnit;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 
 /**
  * @author Trask Stalnaker
@@ -62,7 +61,7 @@ import com.google.gson.Gson;
 @ThreadSafe
 class SameJvmInformant implements Informant {
 
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
     private final DataSource dataSource;
@@ -88,13 +87,13 @@ class SameJvmInformant implements Informant {
         ticker = Ticker.systemTicker();
     }
 
-    public void setStoreThresholdMillis(int storeThresholdMillis) throws OptimisticLockException {
+    public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
         io.informant.config.GeneralConfig config = configService.getGeneralConfig();
         io.informant.config.GeneralConfig updatedConfig =
                 io.informant.config.GeneralConfig.builder(config)
                         .storeThresholdMillis(storeThresholdMillis)
                         .build();
-        configService.updateGeneralConfig(updatedConfig, config.getVersionHash());
+        configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
     public GeneralConfig getGeneralConfig() {
@@ -107,11 +106,11 @@ class SameJvmInformant implements Informant {
         config.setSnapshotExpirationHours(coreConfig.getSnapshotExpirationHours());
         config.setRollingSizeMb(coreConfig.getRollingSizeMb());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
-        config.setVersionHash(coreConfig.getVersionHash());
+        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
-    public String updateGeneralConfig(GeneralConfig config) throws OptimisticLockException {
+    public String updateGeneralConfig(GeneralConfig config) throws Exception {
         io.informant.config.GeneralConfig updatedConfig =
                 io.informant.config.GeneralConfig.builder(configService.getGeneralConfig())
                         .enabled(config.isEnabled())
@@ -122,7 +121,7 @@ class SameJvmInformant implements Informant {
                         .rollingSizeMb(config.getRollingSizeMb())
                         .warnOnSpanOutsideTrace(config.isWarnOnSpanOutsideTrace())
                         .build();
-        return configService.updateGeneralConfig(updatedConfig, config.getVersionHash());
+        return configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() {
@@ -133,12 +132,11 @@ class SameJvmInformant implements Informant {
         config.setInitialDelayMillis(coreConfig.getInitialDelayMillis());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
         config.setTotalSeconds(coreConfig.getTotalSeconds());
-        config.setVersionHash(coreConfig.getVersionHash());
+        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
-    public String updateCoarseProfilingConfig(CoarseProfilingConfig config)
-            throws OptimisticLockException {
+    public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
         io.informant.config.CoarseProfilingConfig updatedConfig =
                 io.informant.config.CoarseProfilingConfig
                         .builder(configService.getCoarseProfilingConfig())
@@ -147,7 +145,7 @@ class SameJvmInformant implements Informant {
                         .intervalMillis(config.getIntervalMillis())
                         .totalSeconds(config.getTotalSeconds())
                         .build();
-        return configService.updateCoarseProfilingConfig(updatedConfig, config.getVersionHash());
+        return configService.updateCoarseProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public FineProfilingConfig getFineProfilingConfig() {
@@ -159,12 +157,11 @@ class SameJvmInformant implements Informant {
         config.setIntervalMillis(coreConfig.getIntervalMillis());
         config.setTotalSeconds(coreConfig.getTotalSeconds());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
-        config.setVersionHash(coreConfig.getVersionHash());
+        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
-    public String updateFineProfilingConfig(FineProfilingConfig config)
-            throws OptimisticLockException {
+    public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         io.informant.config.FineProfilingConfig updatedConfig =
                 io.informant.config.FineProfilingConfig
                         .builder(configService.getFineProfilingConfig())
@@ -174,7 +171,7 @@ class SameJvmInformant implements Informant {
                         .totalSeconds(config.getTotalSeconds())
                         .storeThresholdMillis(config.getStoreThresholdMillis())
                         .build();
-        return configService.updateFineProfilingConfig(updatedConfig, config.getVersionHash());
+        return configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public UserConfig getUserConfig() {
@@ -184,11 +181,11 @@ class SameJvmInformant implements Informant {
         config.setUserId(coreConfig.getUserId());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setFineProfiling(coreConfig.isFineProfiling());
-        config.setVersionHash(coreConfig.getVersionHash());
+        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
-    public String updateUserConfig(UserConfig config) throws OptimisticLockException {
+    public String updateUserConfig(UserConfig config) throws Exception {
         io.informant.config.UserConfig updatedConfig = io.informant.config.UserConfig
                 .builder(configService.getUserConfig())
                 .enabled(config.isEnabled())
@@ -196,7 +193,7 @@ class SameJvmInformant implements Informant {
                 .storeThresholdMillis(config.getStoreThresholdMillis())
                 .fineProfiling(config.isFineProfiling())
                 .build();
-        return configService.updateUserConfig(updatedConfig, config.getVersionHash());
+        return configService.updateUserConfig(updatedConfig, config.getVersion());
     }
 
     @Nullable
@@ -210,12 +207,11 @@ class SameJvmInformant implements Informant {
         for (Entry<String, /*@Nullable*/Object> entry : coreConfig.getProperties().entrySet()) {
             config.setProperty(entry.getKey(), entry.getValue());
         }
-        config.setVersionHash(coreConfig.getVersionHash());
+        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
-    public String updatePluginConfig(String pluginId, PluginConfig config)
-            throws OptimisticLockException {
+    public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         io.informant.config.PluginConfig.Builder updatedConfig =
                 io.informant.config.PluginConfig
                         .builder(configService.getPluginConfig(pluginId));
@@ -223,7 +219,7 @@ class SameJvmInformant implements Informant {
         for (Entry<String, /*@Nullable*/Object> entry : config.getProperties().entrySet()) {
             updatedConfig.setProperty(entry.getKey(), entry.getValue());
         }
-        return configService.updatePluginConfig(updatedConfig.build(), config.getVersionHash());
+        return configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
     }
 
     public List<PointcutConfig> getPointcutConfigs() {
@@ -235,16 +231,16 @@ class SameJvmInformant implements Informant {
         return configs;
     }
 
-    public String addPointcutConfig(PointcutConfig config) {
+    public String addPointcutConfig(PointcutConfig config) throws Exception {
         return configService.insertPointcutConfig(convertToCore(config));
     }
 
-    public String updatePointcutConfig(String versionHash, PointcutConfig config) {
-        return configService.updatePointcutConfig(versionHash, convertToCore(config));
+    public String updatePointcutConfig(String version, PointcutConfig config) throws Exception {
+        return configService.updatePointcutConfig(version, convertToCore(config));
     }
 
-    public void removePointcutConfig(String versionHash) {
-        configService.deletePointcutConfig(versionHash);
+    public void removePointcutConfig(String version) throws Exception {
+        configService.deletePointcutConfig(version);
     }
 
     public Trace getLastTrace() throws Exception {
@@ -298,7 +294,7 @@ class SameJvmInformant implements Informant {
         if (snapshot == null) {
             return null;
         }
-        Trace trace = gson.fromJson(TraceSnapshotWriter.toString(snapshot, false), Trace.class);
+        Trace trace = mapper.readValue(TraceSnapshotWriter.toString(snapshot, false), Trace.class);
         trace.setSummary(summary);
         return trace;
     }
@@ -329,7 +325,8 @@ class SameJvmInformant implements Informant {
         } else {
             TraceSnapshot snapshot =
                     TraceWriter.toTraceSnapshot(traces.get(0), ticker.read(), summary);
-            Trace trace = gson.fromJson(TraceSnapshotWriter.toString(snapshot, true), Trace.class);
+            Trace trace =
+                    mapper.readValue(TraceSnapshotWriter.toString(snapshot, true), Trace.class);
             trace.setSummary(summary);
             return trace;
         }
@@ -370,7 +367,7 @@ class SameJvmInformant implements Informant {
         config.setMethodModifiers(methodModifiers);
         config.setMetricName(coreConfig.getMetricName());
         config.setSpanTemplate(coreConfig.getSpanTemplate());
-        config.setVersionHash(coreConfig.getVersionHash());
+        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
@@ -386,7 +383,7 @@ class SameJvmInformant implements Informant {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
                     .name()));
         }
-        return io.informant.config.PointcutConfig.builder()
+        return new io.informant.config.PointcutConfig.Builder()
                 .captureItems(captureItems)
                 .typeName(config.getTypeName())
                 .methodName(config.getMethodName())

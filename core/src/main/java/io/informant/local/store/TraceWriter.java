@@ -27,8 +27,8 @@ import io.informant.core.Trace;
 import io.informant.core.Trace.TraceAttribute;
 import io.informant.core.TraceMetric.Snapshot;
 import io.informant.util.CharArrayWriter;
-import io.informant.util.GsonFactory;
 import io.informant.util.NotThreadSafe;
+import io.informant.util.ObjectMappers;
 import io.informant.util.Static;
 import io.informant.util.ThreadSafe;
 
@@ -48,14 +48,15 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonWriter;
 
 /**
  * @author Trask Stalnaker
@@ -65,7 +66,7 @@ import com.google.gson.stream.JsonWriter;
 public class TraceWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceWriter.class);
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private TraceWriter() {}
 
@@ -73,7 +74,7 @@ public class TraceWriter {
             throws IOException {
         TraceSnapshot.Builder builder = TraceSnapshot.builder();
         builder.id(trace.getId());
-        builder.startAt(trace.getStartAt());
+        builder.start(trace.getStart());
         builder.stuck(trace.isStuck() && !trace.isCompleted());
         // timings for traces that are still active are normalized to the capture tick in order to
         // *attempt* to present a picture of the trace at that exact tick
@@ -91,67 +92,67 @@ public class TraceWriter {
         ReadableErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
         if (errorMessage != null) {
             builder.errorText(errorMessage.getText());
-            builder.errorDetail(getErrorDetailJson(errorMessage.getDetail()));
-            builder.exception(getExceptionJson(errorMessage.getExceptionInfo()));
+            builder.errorDetail(writeErrorDetailAsString(errorMessage.getDetail()));
+            builder.exception(writeExceptionInfoAsString(errorMessage.getExceptionInfo()));
         }
-        builder.attributes(getAttributesJson(trace));
+        builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.userId(trace.getUserId());
-        builder.metrics(getMetricsJson(trace));
+        builder.metrics(writeMetricsAsString(trace.getTraceMetricSnapshots()));
         if (!summary) {
-            builder.spans(new SpansCharSource(trace.getSpans().iterator(), captureTick));
-            builder.coarseMergedStackTree(getMergedStackTree(trace.getCoarseMergedStackTree()));
-            builder.fineMergedStackTree(getMergedStackTree(trace.getFineMergedStackTree()));
+            builder.spans(new SpansCharSource(trace.getSpans(), captureTick));
+            builder.coarseMergedStackTree(createCharSource(trace.getCoarseMergedStackTree()));
+            builder.fineMergedStackTree(createCharSource(trace.getFineMergedStackTree()));
         }
         return builder.build();
     }
 
     @Nullable
-    private static String getErrorDetailJson(
-            @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail)
+    private static String writeErrorDetailAsString(
+            @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> errorDetail)
             throws IOException {
-        if (detail == null) {
+        if (errorDetail == null) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        new MessageDetailSerializer(jw).write(detail);
-        jw.close();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        new MessageDetailSerializer(jg).write(errorDetail);
+        jg.close();
         return sb.toString();
     }
 
     @Nullable
-    private static String getExceptionJson(@Nullable ExceptionInfo exception) throws IOException {
-        if (exception == null) {
+    private static String writeExceptionInfoAsString(@Nullable ExceptionInfo exceptionInfo)
+            throws IOException {
+        if (exceptionInfo == null) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        writeException(exception, jw);
-        jw.close();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        writeException(exceptionInfo, jg);
+        jg.close();
         return sb.toString();
     }
 
     @Nullable
-    private static String getAttributesJson(Trace trace) throws IOException {
-        List<TraceAttribute> attributes = trace.getAttributes();
+    private static String writeAttributesAsString(List<TraceAttribute> attributes)
+            throws IOException {
         if (attributes.isEmpty()) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
-        JsonWriter jw = new JsonWriter(CharStreams.asWriter(sb));
-        jw.beginObject();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
         for (TraceAttribute attribute : attributes) {
-            jw.name(attribute.getName());
-            jw.value(attribute.getValue());
+            jg.writeStringField(attribute.getName(), attribute.getValue());
         }
-        jw.endObject();
-        jw.close();
+        jg.writeEndObject();
+        jg.close();
         return sb.toString();
     }
 
     @Nullable
-    private static String getMetricsJson(Trace trace) {
-        List<Snapshot> items = trace.getTraceMetricSnapshots();
+    private static String writeMetricsAsString(List<Snapshot> items)
+            throws JsonProcessingException {
         Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
                 new Function<Snapshot, Long>() {
                     public Long apply(@Nullable Snapshot snapshot) {
@@ -161,12 +162,12 @@ public class TraceWriter {
                         return snapshot.getTotal();
                     }
                 });
-        return gson.toJson(byTotalOrdering.reverse().sortedCopy(items));
+        return mapper.writeValueAsString(byTotalOrdering.reverse().sortedCopy(items));
     }
 
     @VisibleForTesting
     @Nullable
-    static CharSource getMergedStackTree(@Nullable MergedStackTree mergedStackTree) {
+    static CharSource createCharSource(@Nullable MergedStackTree mergedStackTree) {
         if (mergedStackTree == null) {
             return null;
         }
@@ -188,48 +189,48 @@ public class TraceWriter {
         }
     }
 
-    private static void writeException(ExceptionInfo exception, JsonWriter jw) throws IOException {
-        jw.beginObject();
-        jw.name("display");
-        jw.value(exception.getDisplay());
-        jw.name("stackTrace");
-        writeStackTrace(exception.getStackTrace(), jw);
-        jw.name("framesInCommonWithCaused");
-        jw.value(exception.getFramesInCommonWithCaused());
+    private static void writeException(ExceptionInfo exception, JsonGenerator jg)
+            throws IOException {
+        jg.writeStartObject();
+        jg.writeStringField("display", exception.getDisplay());
+        jg.writeFieldName("stackTrace");
+        writeStackTrace(exception.getStackTrace(), jg);
+        jg.writeNumberField("framesInCommonWithCaused", exception.getFramesInCommonWithCaused());
         ExceptionInfo cause = exception.getCause();
         if (cause != null) {
-            jw.name("cause");
-            writeException(cause, jw);
+            jg.writeFieldName("cause");
+            writeException(cause, jg);
         }
-        jw.endObject();
+        jg.writeEndObject();
     }
 
-    private static void writeStackTrace(@ReadOnly List<StackTraceElement> stackTrace, JsonWriter jw)
+    private static void writeStackTrace(@ReadOnly List<StackTraceElement> stackTrace,
+            JsonGenerator jw)
             throws IOException {
-        jw.beginArray();
-        List<StackTraceElementPlus> elements = MergedStackTree
-                .stripSyntheticMetricMethods(stackTrace);
+        jw.writeStartArray();
+        List<StackTraceElementPlus> elements =
+                MergedStackTree.stripSyntheticMetricMethods(stackTrace);
         for (StackTraceElementPlus element : elements) {
-            jw.value(element.getStackTraceElement().toString());
+            jw.writeString(element.getStackTraceElement().toString());
         }
-        jw.endArray();
+        jw.writeEndArray();
     }
 
     @ThreadSafe
     private static class SpansCharSource extends CharSource {
 
         @ReadOnly
-        private final Iterator<Span> spans;
+        private final Iterable<Span> spans;
         private final long captureTick;
 
-        private SpansCharSource(@ReadOnly Iterator<Span> spans, long captureTick) {
+        private SpansCharSource(@ReadOnly Iterable<Span> spans, long captureTick) {
             this.spans = spans;
             this.captureTick = captureTick;
         }
 
         @Override
         public Reader openStream() throws IOException {
-            return new SpansReader(spans, captureTick);
+            return new SpansReader(spans.iterator(), captureTick);
         }
     }
 
@@ -240,7 +241,7 @@ public class TraceWriter {
         private final Iterator<Span> spans;
         private final long captureTick;
         private final CharArrayWriter writer;
-        private final JsonWriter jw;
+        private final JsonGenerator jg;
 
         private int writerIndex;
         private boolean limitExceeded;
@@ -249,8 +250,8 @@ public class TraceWriter {
             this.spans = spans;
             this.captureTick = captureTick;
             writer = new CharArrayWriter();
-            jw = new JsonWriter(writer);
-            jw.beginArray();
+            jg = mapper.getFactory().createGenerator(writer);
+            jg.writeStartArray();
         }
 
         @Override
@@ -271,8 +272,8 @@ public class TraceWriter {
             // note it is possible for writeSpan() to not write anything
             writeSpan(spans.next());
             if (!spans.hasNext()) {
-                jw.endArray();
-                jw.close();
+                jg.writeEndArray();
+                jg.close();
             }
             // now go back and read the new data
             return read(cbuf, off, len);
@@ -291,134 +292,127 @@ public class TraceWriter {
             }
             if (span.isLimitExceededMarker()) {
                 limitExceeded = true;
-                jw.beginObject();
-                jw.name("limitExceededMarker");
-                jw.value(true);
-                jw.endObject();
+                jg.writeStartObject();
+                jg.writeBooleanField("limitExceededMarker", true);
+                jg.writeEndObject();
                 return;
             }
             if (span.isLimitExtendedMarker()) {
                 limitExceeded = false;
-                jw.beginObject();
-                jw.name("limitExtendedMarker");
-                jw.value(true);
-                jw.endObject();
+                jg.writeStartObject();
+                jg.writeBooleanField("limitExtendedMarker", true);
+                jg.writeEndObject();
                 return;
             }
-            jw.beginObject();
+            jg.writeStartObject();
             if (limitExceeded) {
-                jw.name("extraError");
-                jw.value(true);
+                jg.writeBooleanField("extraError", true);
             }
-            jw.name("offset");
-            jw.value(span.getOffset());
-            jw.name("duration");
+            jg.writeNumberField("offset", span.getOffset());
+            jg.writeFieldName("duration");
             long endTick = span.getEndTick();
             if (endTick != 0 && endTick <= captureTick) {
-                jw.value(span.getEndTick() - span.getStartTick());
+                jg.writeNumber(span.getEndTick() - span.getStartTick());
             } else {
-                jw.value(captureTick - span.getStartTick());
-                jw.name("active");
-                jw.value(true);
+                jg.writeNumber(captureTick - span.getStartTick());
+                jg.writeBooleanField("active", true);
             }
-            jw.name("nestingLevel");
-            jw.value(span.getNestingLevel());
+            jg.writeNumberField("nestingLevel", span.getNestingLevel());
             MessageSupplier messageSupplier = span.getMessageSupplier();
             if (messageSupplier != null) {
-                jw.name("message");
+                jg.writeFieldName("message");
                 writeMessage((ReadableMessage) messageSupplier.get());
             }
             ReadableErrorMessage errorMessage = span.getErrorMessage();
             if (errorMessage != null) {
-                jw.name("error");
+                jg.writeFieldName("error");
                 writeErrorMessage(errorMessage);
             }
             List<StackTraceElement> stackTrace = span.getStackTrace();
             if (stackTrace != null) {
-                jw.name("stackTrace");
-                writeStackTrace(stackTrace, jw);
+                jg.writeFieldName("stackTrace");
+                writeStackTrace(stackTrace, jg);
             }
-            jw.endObject();
+            jg.writeEndObject();
         }
 
         private void writeMessage(ReadableMessage message) throws IOException {
-            jw.beginObject();
-            jw.name("text");
-            jw.value(message.getText());
+            jg.writeStartObject();
+            jg.writeStringField("text", message.getText());
             Map<String, ? extends /*@Nullable*/Object> detail = message.getDetail();
             if (!detail.isEmpty()) {
-                jw.name("detail");
-                new MessageDetailSerializer(jw).write(detail);
+                jg.writeFieldName("detail");
+                new MessageDetailSerializer(jg).write(detail);
             }
-            jw.endObject();
+            jg.writeEndObject();
         }
 
         private void writeErrorMessage(ReadableErrorMessage errorMessage) throws IOException {
-            jw.beginObject();
-            jw.name("text");
-            jw.value(errorMessage.getText());
+            jg.writeStartObject();
+            jg.writeStringField("text", errorMessage.getText());
             Map<String, ? extends /*@Nullable*/Object> errorDetail = errorMessage.getDetail();
             if (errorDetail != null) {
-                jw.name("detail");
-                new MessageDetailSerializer(jw).write(errorDetail);
+                jg.writeFieldName("detail");
+                new MessageDetailSerializer(jg).write(errorDetail);
             }
             ExceptionInfo exception = errorMessage.getExceptionInfo();
             if (exception != null) {
-                jw.name("exception");
-                writeException(exception, jw);
+                jg.writeFieldName("exception");
+                writeException(exception, jg);
             }
-            jw.endObject();
+            jg.writeEndObject();
         }
     }
 
     private static class MergedStackTreeWriter {
 
         private final List<Object> toVisit;
-        private final JsonWriter jw;
+        private final JsonGenerator jg;
         private final List<String> metricNameStack = Lists.newArrayList();
 
-        private MergedStackTreeWriter(MergedStackTreeNode rootNode, Writer writer) {
+        private MergedStackTreeWriter(MergedStackTreeNode rootNode, Writer writer)
+                throws IOException {
             this.toVisit = Lists.newArrayList((Object) rootNode);
-            jw = new JsonWriter(writer);
+            jg = mapper.getFactory().createGenerator(writer);
         }
 
         private void write() throws IOException {
             while (!toVisit.isEmpty()) {
                 writeNext();
             }
-            jw.close();
+            jg.close();
         }
 
         private void writeNext() throws IOException {
             Object curr = toVisit.remove(toVisit.size() - 1);
             if (curr instanceof MergedStackTreeNode) {
                 MergedStackTreeNode currNode = (MergedStackTreeNode) curr;
-                jw.beginObject();
-                toVisit.add(JsonWriterOp.END_OBJECT);
+                jg.writeStartObject();
+                toVisit.add(JsonGeneratorOp.END_OBJECT);
                 StackTraceElement stackTraceElement = currNode.getStackTraceElement();
                 if (stackTraceElement == null) {
-                    jw.name("stackTraceElement").value("<multiple root nodes>");
+                    jg.writeStringField("stackTraceElement", "<multiple root nodes>");
                 } else {
                     writeStackTraceElement(stackTraceElement, currNode);
                 }
                 List<MergedStackTreeNode> childNodes = currNode.getChildNodes();
                 if (!childNodes.isEmpty()) {
-                    jw.name("childNodes").beginArray();
-                    toVisit.add(JsonWriterOp.END_ARRAY);
+                    jg.writeArrayFieldStart("childNodes");
+                    toVisit.add(JsonGeneratorOp.END_ARRAY);
                     toVisit.addAll(Lists.reverse(childNodes));
                 }
-            } else if (curr == JsonWriterOp.END_ARRAY) {
-                jw.endArray();
-            } else if (curr == JsonWriterOp.END_OBJECT) {
-                jw.endObject();
-            } else if (curr == JsonWriterOp.POP_METRIC_NAME) {
+            } else if (curr == JsonGeneratorOp.END_ARRAY) {
+                jg.writeEndArray();
+            } else if (curr == JsonGeneratorOp.END_OBJECT) {
+                jg.writeEndObject();
+            } else if (curr == JsonGeneratorOp.POP_METRIC_NAME) {
                 metricNameStack.remove(metricNameStack.size() - 1);
             }
         }
 
         private void writeStackTraceElement(StackTraceElement stackTraceElement,
                 MergedStackTreeNode currNode) throws IOException {
-            jw.name("stackTraceElement").value(stackTraceElement.toString());
+            jg.writeStringField("stackTraceElement", stackTraceElement.toString());
             List<String> currMetricNames = currNode.getMetricNames();
             for (String currMetricName : currMetricNames) {
                 if (metricNameStack.isEmpty() || !currMetricName.equals(
@@ -426,10 +420,10 @@ public class TraceWriter {
                     // filter out successive duplicates which are common from weaving groups
                     // of overloaded methods
                     metricNameStack.add(currMetricName);
-                    toVisit.add(JsonWriterOp.POP_METRIC_NAME);
+                    toVisit.add(JsonGeneratorOp.POP_METRIC_NAME);
                 }
             }
-            jw.name("sampleCount").value(currNode.getSampleCount());
+            jg.writeNumberField("sampleCount", currNode.getSampleCount());
             State leafThreadState = currNode.getLeafThreadState();
             if (leafThreadState != null) {
                 writeLeaf(leafThreadState);
@@ -437,17 +431,16 @@ public class TraceWriter {
         }
 
         private void writeLeaf(State leafThreadState) throws IOException {
-            jw.name("leafThreadState").value(leafThreadState.name());
-            jw.name("metricNames");
-            jw.beginArray();
+            jg.writeStringField("leafThreadState", leafThreadState.name());
+            jg.writeArrayFieldStart("metricNames");
             for (String metricName : metricNameStack) {
-                jw.value(metricName);
+                jg.writeString(metricName);
             }
-            jw.endArray();
+            jg.writeEndArray();
         }
 
         @Immutable
-        private static enum JsonWriterOp {
+        private static enum JsonGeneratorOp {
             END_OBJECT, END_ARRAY, POP_METRIC_NAME;
         }
     }

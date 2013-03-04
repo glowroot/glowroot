@@ -1,9 +1,0 @@
-import checkers.igj.quals.*;
-import checkers.nullness.quals.*;
-
-/* ========================================================================== */
-package com.google.inject.name;
-
-public class Names {
-   public static @Immutable Named named(String name);
-}

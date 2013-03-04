@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * Json service for various admin tasks.
@@ -77,7 +76,7 @@ class AdminJsonService implements JsonService {
 
     @OnlyUsedByTests
     @JsonServiceMethod
-    void resetAllConfig() throws IOException, JsonSyntaxException {
+    void resetAllConfig() throws IOException {
         logger.debug("resetAllConfig()");
         configService.resetAllConfig();
     }

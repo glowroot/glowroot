@@ -15,29 +15,26 @@
  */
 package io.informant.config;
 
-import io.informant.util.GsonFactory;
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Objects;
+import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 
 /**
- * Immutable structure to hold the session tracing config.
+ * Immutable structure to hold the user tracing config.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
+@JsonDeserialize(builder = UserConfig.Builder.class)
 public class UserConfig {
-
-    // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
 
     private final boolean enabled;
     @Nullable
@@ -47,13 +44,10 @@ public class UserConfig {
     // threshold
     private final int storeThresholdMillis;
     private final boolean fineProfiling;
+    private final String version;
 
     public static Builder builder(UserConfig base) {
         return new Builder(base);
-    }
-
-    static UserConfig fromJson(@ReadOnly JsonObject configObject) throws JsonSyntaxException {
-        return gson.fromJson(configObject, UserConfig.Builder.class).build();
     }
 
     static UserConfig getDefault() {
@@ -61,22 +55,12 @@ public class UserConfig {
     }
 
     private UserConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
-            boolean fineProfiling) {
-
+            boolean fineProfiling, String version) {
         this.enabled = enabled;
         this.userId = userId;
         this.storeThresholdMillis = storeThresholdMillis;
         this.fineProfiling = fineProfiling;
-    }
-
-    public JsonObject toJson() {
-        JsonObject configObject = toJsonWithoutVersionHash();
-        configObject.addProperty("versionHash", getVersionHash());
-        return configObject;
-    }
-
-    public String getVersionHash() {
-        return Hashing.md5().hashString(toJsonWithoutVersionHash().toString()).toString();
+        this.version = version;
     }
 
     public boolean isEnabled() {
@@ -96,8 +80,9 @@ public class UserConfig {
         return fineProfiling;
     }
 
-    JsonObject toJsonWithoutVersionHash() {
-        return gson.toJsonTree(this).getAsJsonObject();
+    @JsonView(WithVersionJsonView.class)
+    public String getVersion() {
+        return version;
     }
 
     @Override
@@ -107,10 +92,11 @@ public class UserConfig {
                 .add("userId", userId)
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("fineProfiling", fineProfiling)
-                .add("versionHash", getVersionHash())
+                .add("version", version)
                 .toString();
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         private boolean enabled = true;
@@ -120,53 +106,54 @@ public class UserConfig {
         private boolean fineProfiling = true;
 
         private Builder() {}
+
         private Builder(UserConfig base) {
             enabled = base.enabled;
             userId = base.userId;
             storeThresholdMillis = base.storeThresholdMillis;
             fineProfiling = base.fineProfiling;
         }
+
+        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
+        // for overlaying values on top of a base config
+        @JsonProperty
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
+
+        @JsonProperty
         public Builder userId(String userId) {
             this.userId = userId;
             return this;
         }
+
+        @JsonProperty
         public Builder storeThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
             return this;
         }
+
+        @JsonProperty
         public Builder fineProfiling(boolean fineProfiling) {
             this.fineProfiling = fineProfiling;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject configObject) {
-            JsonElement enabledElement = configObject.get("enabled");
-            if (enabledElement != null) {
-                enabled(enabledElement.getAsBoolean());
-            }
-            JsonElement userIdElement = configObject.get("userId");
-            if (userIdElement != null) {
-                if (userIdElement.isJsonNull()) {
-                    userId("");
-                } else {
-                    userId(userIdElement.getAsString());
-                }
-            }
-            JsonElement storeThresholdMillisElement = configObject.get("storeThresholdMillis");
-            if (storeThresholdMillisElement != null) {
-                storeThresholdMillis(storeThresholdMillisElement.getAsInt());
-            }
-            JsonElement fineProfilingElement = configObject.get("fineProfiling");
-            if (fineProfilingElement != null) {
-                fineProfiling(fineProfilingElement.getAsBoolean());
-            }
-            return this;
-        }
+
         public UserConfig build() {
-            return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling);
+            String version = buildVersion();
+            return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling, version);
+        }
+
+        private String buildVersion() {
+            Hasher hasher = Hashing.sha1().newHasher();
+            hasher.putBoolean(enabled);
+            if (userId != null) {
+                hasher.putString(userId);
+            }
+            hasher.putInt(storeThresholdMillis);
+            hasher.putBoolean(fineProfiling);
+            return hasher.hash().toString();
         }
     }
 }

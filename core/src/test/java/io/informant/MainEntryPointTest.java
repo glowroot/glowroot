@@ -48,7 +48,7 @@ public class MainEntryPointTest {
     }
 
     @Test
-    public void testNoGuiceBindingErrorsEtc() {
+    public void testNoStartupShutdownErrors() {
         // all the work is done in before() and after()
     }
 }

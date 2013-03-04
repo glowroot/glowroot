@@ -17,7 +17,7 @@ package io.informant.local.ui;
 
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
-import io.informant.config.PluginInfoCache;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
 import io.informant.local.store.DataSource;
@@ -63,7 +63,7 @@ public class LocalUiModule {
         Ticker ticker = configModule.getTicker();
         File dataDir = configModule.getDataDir();
         ConfigService configService = configModule.getConfigService();
-        PluginInfoCache pluginInfoCache = configModule.getPluginInfoCache();
+        PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
 
         DataSource dataSource = dataSourceModule.getDataSource();
         RollingFile rollingFile = traceSinkModule.getRollingFile();
@@ -89,7 +89,7 @@ public class LocalUiModule {
         // useful to know it was set to 0 than to display its value (which is needed to view the
         // page anyways)
         ConfigJsonService configJsonService = new ConfigJsonService(configService, rollingFile,
-                pluginInfoCache, dataDir, port);
+                pluginDescriptorCache, dataDir, port);
         PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
                 parsedTypeCache);
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();

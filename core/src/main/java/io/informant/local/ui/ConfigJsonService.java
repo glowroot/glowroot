@@ -21,27 +21,31 @@ import io.informant.config.ConfigService.OptimisticLockException;
 import io.informant.config.FineProfilingConfig;
 import io.informant.config.GeneralConfig;
 import io.informant.config.PluginConfig;
-import io.informant.config.PluginInfo;
-import io.informant.config.PluginInfoCache;
+import io.informant.config.PluginDescriptor;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.config.PointcutConfig;
 import io.informant.config.UserConfig;
+import io.informant.config.WithVersionJsonView;
 import io.informant.local.store.RollingFile;
-import io.informant.util.GsonFactory;
-import io.informant.util.JsonElements;
+import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Maps;
+import com.google.common.io.CharStreams;
 
 /**
  * Json service to read config data.
@@ -53,19 +57,19 @@ import com.google.gson.JsonSyntaxException;
 class ConfigJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
     private final RollingFile rollingFile;
-    private final PluginInfoCache pluginInfoCache;
+    private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
     private final int uiPort;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
-            PluginInfoCache pluginInfoCache, File dataDir, int uiPort) {
+            PluginDescriptorCache pluginDescriptorCache, File dataDir, int uiPort) {
         this.configService = configService;
         this.rollingFile = rollingFile;
-        this.pluginInfoCache = pluginInfoCache;
+        this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
         this.uiPort = uiPort;
     }
@@ -73,133 +77,166 @@ class ConfigJsonService implements JsonService {
     @JsonServiceMethod
     String getConfig() throws IOException, SQLException {
         logger.debug("getConfig()");
-        JsonObject configJson = new JsonObject();
-        configJson.add("generalConfig", configService.getGeneralConfig().toJson());
-        configJson.add("coarseProfilingConfig", configService.getCoarseProfilingConfig().toJson());
-        configJson.add("fineProfilingConfig", configService.getFineProfilingConfig().toJson());
-        configJson.add("userConfig", configService.getUserConfig().toJson());
-        configJson.add("pluginInfos", gson.toJsonTree(pluginInfoCache.getPluginInfos()));
-        configJson.add("pluginConfigs", getPluginConfigMapObject());
-        configJson.add("pointcutConfigs", getPoincutConfigArray());
-        configJson.addProperty("dataDir", dataDir.getCanonicalPath());
-        configJson.addProperty("uiPort", uiPort);
-        return configJson.toString();
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        ObjectWriter writer = mapper.writerWithView(WithVersionJsonView.class);
+        jg.writeStartObject();
+        jg.writeFieldName("generalConfig");
+        writer.writeValue(jg, configService.getGeneralConfig());
+        jg.writeFieldName("coarseProfilingConfig");
+        writer.writeValue(jg, configService.getCoarseProfilingConfig());
+        jg.writeFieldName("fineProfilingConfig");
+        writer.writeValue(jg, configService.getFineProfilingConfig());
+        jg.writeFieldName("userConfig");
+        writer.writeValue(jg, configService.getUserConfig());
+        jg.writeFieldName("pluginDescriptors");
+        writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptors());
+        jg.writeFieldName("pluginConfigs");
+        writer.writeValue(jg, getPluginConfigMap());
+        jg.writeFieldName("pointcutConfigs");
+        writer.writeValue(jg, configService.getPointcutConfigs());
+        jg.writeStringField("dataDir", dataDir.getCanonicalPath());
+        jg.writeNumberField("uiPort", uiPort);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @JsonServiceMethod
-    String updateGeneralConfig(String configJson) throws IOException, OptimisticLockException {
-        logger.debug("updateGeneralConfig(): configJson={}", configJson);
-        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
+    String updateGeneralConfig(String content) throws OptimisticLockException, IOException {
+        logger.debug("updateGeneralConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
         GeneralConfig config = configService.getGeneralConfig();
         GeneralConfig.Builder builder = GeneralConfig.builder(config);
-        builder.overlay(configObject);
-        String priorVersionHash = JsonElements.getRequiredString(configObject, "versionHash");
-        String updatedVersionHash = configService.updateGeneralConfig(builder.build(),
-                priorVersionHash);
+        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+        String updatedVersion = configService.updateGeneralConfig(builder.build(), priorVersion);
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getGeneralConfig().getRollingSizeMb() * 1024);
-        return gson.toJson(updatedVersionHash);
+        return "\"" + updatedVersion + "\"";
     }
 
     @JsonServiceMethod
-    String updateCoarseProfilingConfig(String configJson) throws OptimisticLockException {
-        logger.debug("updateCoarseProfilingConfig(): configJson={}", configJson);
-        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
-        CoarseProfilingConfig config = configService.getCoarseProfilingConfig();
-        CoarseProfilingConfig.Builder builder = CoarseProfilingConfig.builder(config);
-        builder.overlay(configObject);
-        String priorVersionHash = JsonElements.getRequiredString(configObject, "versionHash");
-        String updatedVersionHash = configService.updateCoarseProfilingConfig(builder.build(),
-                priorVersionHash);
-        return gson.toJson(updatedVersionHash);
+    String updateCoarseProfilingConfig(String content) throws OptimisticLockException,
+            IOException {
+        logger.debug("updateCoarseProfilingConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
+        CoarseProfilingConfig.Builder builder =
+                CoarseProfilingConfig.builder(configService.getCoarseProfilingConfig());
+        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+
+        String updatedVersion = configService.updateCoarseProfilingConfig(builder.build(),
+                priorVersion);
+        return "\"" + updatedVersion + "\"";
     }
 
     @JsonServiceMethod
-    String updateFineProfilingConfig(String configJson) throws OptimisticLockException {
-        logger.debug("updateFineProfilingConfig(): configJson={}", configJson);
-        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
-        FineProfilingConfig config = configService.getFineProfilingConfig();
-        FineProfilingConfig.Builder builder = FineProfilingConfig.builder(config);
-        builder.overlay(configObject);
-        String priorVersionHash = JsonElements.getRequiredString(configObject, "versionHash");
-        String updatedVersionHash = configService.updateFineProfilingConfig(builder.build(),
-                priorVersionHash);
-        return gson.toJson(updatedVersionHash);
+    String updateFineProfilingConfig(String content) throws OptimisticLockException,
+            IOException {
+        logger.debug("updateFineProfilingConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
+        FineProfilingConfig.Builder builder =
+                FineProfilingConfig.builder(configService.getFineProfilingConfig());
+        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+
+        String updatedVersion = configService.updateFineProfilingConfig(builder.build(),
+                priorVersion);
+        return "\"" + updatedVersion + "\"";
     }
 
     @JsonServiceMethod
-    String updateUserConfig(String configJson) throws OptimisticLockException {
-        logger.debug("updateUserConfig(): configJson={}", configJson);
-        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
-        UserConfig config = configService.getUserConfig();
-        UserConfig.Builder builder = UserConfig.builder(config);
-        builder.overlay(configObject);
-        String priorVersionHash = JsonElements.getRequiredString(configObject, "versionHash");
-        String updatedVersionHash = configService.updateUserConfig(builder.build(),
-                priorVersionHash);
-        return gson.toJson(updatedVersionHash);
+    String updateUserConfig(String content) throws OptimisticLockException, IOException {
+        logger.debug("updateUserConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
+        UserConfig.Builder builder = UserConfig.builder(configService.getUserConfig());
+        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+
+        String updatedVersion = configService.updateUserConfig(builder.build(), priorVersion);
+        return "\"" + updatedVersion + "\"";
     }
 
     @JsonServiceMethod
-    String updatePluginConfig(String pluginId, String configJson) throws OptimisticLockException {
-        logger.debug("updatePluginConfig(): pluginId={}, configJson={}", pluginId, configJson);
-        JsonObject configObject = new JsonParser().parse(configJson).getAsJsonObject();
+    String updatePluginConfig(String pluginId, String content) throws OptimisticLockException,
+            IOException {
+        logger.debug("updatePluginConfig(): pluginId={}, content={}", pluginId, content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
         PluginConfig config = configService.getPluginConfig(pluginId);
         if (config == null) {
             throw new IllegalArgumentException("Plugin id '" + pluginId + "' not found");
         }
         PluginConfig.Builder builder = PluginConfig.builder(config);
-        builder.overlay(configObject);
-        String priorVersionHash = JsonElements.getRequiredString(configObject, "versionHash");
-        String updatedVersionHash = configService.updatePluginConfig(builder.build(),
-                priorVersionHash);
-        return gson.toJson(updatedVersionHash);
+        builder.overlay(configNode);
+        String updatedVersion = configService.updatePluginConfig(builder.build(), priorVersion);
+        return "\"" + updatedVersion + "\"";
     }
 
     @JsonServiceMethod
-    String addPointcutConfig(String configJson) throws JsonSyntaxException {
-        logger.debug("addPointcutConfig(): configJson={}", configJson);
-        PointcutConfig pointcut = gson.fromJson(configJson, PointcutConfig.Builder.class).build();
-        String versionHash = configService.insertPointcutConfig(pointcut);
-        return gson.toJson(versionHash);
+    String addPointcutConfig(String content) throws JsonProcessingException, IOException {
+        logger.debug("addPointcutConfig(): content={}", content);
+        PointcutConfig pointcutConfig = mapper.readValue(content, PointcutConfig.class);
+        String version = configService.insertPointcutConfig(pointcutConfig);
+        return "\"" + version + "\"";
     }
 
     @JsonServiceMethod
-    String updatePointcutConfig(String priorVersionHash, String configJson)
-            throws JsonSyntaxException {
-        logger.debug("updatePointcutConfig(): priorVersionHash={}, configJson={}",
-                priorVersionHash, configJson);
-        PointcutConfig pointcutConfig = gson.fromJson(configJson, PointcutConfig.Builder.class)
-                .build();
-        String updatedVersionHash = configService.updatePointcutConfig(priorVersionHash,
-                pointcutConfig);
-        return gson.toJson(updatedVersionHash);
+    String updatePointcutConfig(String priorVersion, String content)
+            throws JsonProcessingException, IOException {
+        logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
+                content);
+        PointcutConfig pointcutConfig = mapper.readValue(content, PointcutConfig.class);
+        String updatedVersion = configService.updatePointcutConfig(priorVersion, pointcutConfig);
+        return "\"" + updatedVersion + "\"";
     }
 
     @JsonServiceMethod
-    void removePointcutConfig(String versionHashJson) {
-        logger.debug("removePointcutConfig(): versionHashJson={}", versionHashJson);
-        configService.deletePointcutConfig(new JsonParser().parse(versionHashJson).getAsString());
+    void removePointcutConfig(String content) throws IOException {
+        logger.debug("removePointcutConfig(): content={}", content);
+        String version = mapper.readValue(content, String.class);
+        configService.deletePointcutConfig(version);
     }
 
-    private JsonObject getPluginConfigMapObject() {
-        JsonObject mapObject = new JsonObject();
-        for (PluginInfo pluginInfo : pluginInfoCache.getPluginInfos()) {
-            PluginConfig pluginConfig = configService.getPluginConfig(pluginInfo.getId());
+    private Map<String, PluginConfig> getPluginConfigMap() {
+        Map<String, PluginConfig> pluginConfigMap = Maps.newHashMap();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptorCache.getPluginDescriptors()) {
+            PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.getId());
             if (pluginConfig == null) {
                 throw new IllegalStateException("Plugin config not found for plugin id '"
-                        + pluginInfo.getId() + "'");
+                        + pluginDescriptor.getId() + "'");
             }
-            mapObject.add(pluginInfo.getId(), pluginConfig.toJson());
+            pluginConfigMap.put(pluginDescriptor.getId(), pluginConfig);
         }
-        return mapObject;
-    }
-
-    private JsonArray getPoincutConfigArray() {
-        JsonArray jsonArray = new JsonArray();
-        for (PointcutConfig pointcutConfig : configService.getPointcutConfigs()) {
-            jsonArray.add(pointcutConfig.toJson());
-        }
-        return jsonArray;
+        return pluginConfigMap;
     }
 }

@@ -60,7 +60,7 @@ public class LocalTraceSink implements TraceSink {
 
     LocalTraceSink(ExecutorService executorService, TraceSnapshotService traceSnapshotService,
             TraceSnapshotDao traceSnapshotDao, Ticker ticker) {
-        this.executorService = executorService;
+        this.executorService = executorService;// DaemonExecutors.newSingleThreadExecutor("test");
         this.traceSnapshotService = traceSnapshotService;
         this.traceSnapshotDao = traceSnapshotDao;
         this.ticker = ticker;
@@ -80,10 +80,11 @@ public class LocalTraceSink implements TraceSink {
                     try {
                         traceSnapshotDao.storeSnapshot(TraceWriter.toTraceSnapshot(trace,
                                 Long.MAX_VALUE, false));
-                    } catch (IOException e) {
-                        logger.error(e.getMessage(), e);
+                        pendingCompleteTraces.remove(trace);
+                    } catch (Throwable t) {
+                        // log and terminate successfully
+                        logger.error(t.getMessage(), t);
                     }
-                    pendingCompleteTraces.remove(trace);
                 }
             });
         }

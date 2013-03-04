@@ -15,9 +15,10 @@
  */
 package io.informant.packager;
 
-import io.informant.config.PluginInfo;
-import io.informant.config.PluginInfoReader;
+import io.informant.config.PackageDescriptor;
+import io.informant.config.PluginDescriptor;
 import io.informant.config.PropertyDescriptor;
+import io.informant.config.PropertyDescriptor.PropertyType;
 import io.informant.packager.PluginConfig.PropertyConfig;
 
 import java.io.File;
@@ -25,10 +26,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -58,20 +58,12 @@ import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.JsonWriter;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 public class Packager {
-
-    private static final Gson gson = new Gson();
 
     private final MavenProject project;
     private final MavenProjectHelper projectHelper;
@@ -80,13 +72,14 @@ public class Packager {
     private final List<ArtifactRepository> remoteArtifactRepositories;
     private final ArtifactRepository localRepository;
     private final String finalName;
-    private final PluginConfig[] plugins;
+    private final PluginConfig[] pluginConfigs;
     private final Log log;
 
     public Packager(MavenProject project, MavenProjectHelper projectHelper,
             ArtifactFactory artifactFactory, ArtifactResolver artifactResolver,
             List<ArtifactRepository> remoteArtifactRepositories,
-            ArtifactRepository localRepository, String finalName, PluginConfig[] plugins, Log log) {
+            ArtifactRepository localRepository, String finalName, PluginConfig[] pluginConfigs,
+            Log log) {
         this.project = project;
         this.projectHelper = projectHelper;
         this.artifactFactory = artifactFactory;
@@ -94,11 +87,11 @@ public class Packager {
         this.remoteArtifactRepositories = remoteArtifactRepositories;
         this.localRepository = localRepository;
         this.finalName = finalName;
-        this.plugins = plugins;
+        this.pluginConfigs = pluginConfigs;
         this.log = log;
     }
 
-    public void execute() throws MojoExecutionException, IOException, JsonSyntaxException {
+    public void execute() throws MojoExecutionException, IOException {
         @SuppressWarnings("unchecked")
         List<Artifact> artifacts = project.getCompileArtifacts();
         createArtifactJar(artifacts, getArtifactJarFile());
@@ -138,7 +131,7 @@ public class Packager {
     }
 
     private void createArtifactJar(List<Artifact> artifacts, File outputJarFile)
-            throws MojoExecutionException, IOException, JsonSyntaxException {
+            throws MojoExecutionException, IOException {
         Files.createParentDirs(outputJarFile);
         FileOutputStream fileOut = new FileOutputStream(outputJarFile);
         JarOutputStream jarOut;
@@ -150,16 +143,19 @@ public class Packager {
         }
         try {
             Set<String> seenDirectories = Sets.newHashSet();
-            List<PluginInfo> pluginInfos = Lists.newArrayList();
+            List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
             for (Artifact artifact : artifacts) {
-                explode(artifact.getFile(), jarOut, seenDirectories, pluginInfos);
+                explode(artifact.getFile(), jarOut, seenDirectories, pluginDescriptors);
             }
             validateConfigForDuplicates();
-            for (PluginConfig pluginConfig : plugins) {
-                validateConfigItem(pluginInfos, pluginConfig);
+            for (PluginConfig pluginConfig : pluginConfigs) {
+                validateConfigItem(pluginDescriptors, pluginConfig);
             }
-            if (!pluginInfos.isEmpty()) {
-                writePackageJson(pluginInfos, jarOut);
+            if (!pluginDescriptors.isEmpty()) {
+                JarEntry jarEntry = new JarEntry("META-INF/io.informant.package.json");
+                jarOut.putNextEntry(jarEntry);
+                writePlugins(pluginDescriptors, jarOut);
+                jarOut.closeEntry();
             }
         } finally {
             jarOut.close();
@@ -181,8 +177,7 @@ public class Packager {
     }
 
     private void explode(File jarFile, JarOutputStream jarOut, Set<String> seenDirectories,
-            List<PluginInfo> pluginInfos) throws IOException, JsonSyntaxException {
-
+            List<PluginDescriptor> pluginDescriptors) throws IOException {
         JarInputStream jarIn = new JarInputStream(new FileInputStream(jarFile));
         JarEntry jarEntry;
         while ((jarEntry = jarIn.getNextJarEntry()) != null) {
@@ -190,9 +185,8 @@ public class Packager {
                 continue;
             }
             if (jarEntry.getName().equals("META-INF/io.informant.plugin.json")) {
-                String pluginJson = CharStreams.toString(new InputStreamReader(jarIn,
-                        Charsets.UTF_8));
-                pluginInfos.add(PluginInfoReader.createPluginInfo(pluginJson));
+                String content = CharStreams.toString(new InputStreamReader(jarIn, Charsets.UTF_8));
+                pluginDescriptors.add(PluginDescriptor.readValue(content));
             } else {
                 JarEntry jarOutEntry = new JarEntry(jarEntry.getName());
                 jarOut.putNextEntry(jarOutEntry);
@@ -202,8 +196,8 @@ public class Packager {
     }
 
     private void validateConfigForDuplicates() throws MojoExecutionException {
-        for (PluginConfig pluginConfig : plugins) {
-            for (PluginConfig pluginConfig2 : plugins) {
+        for (PluginConfig pluginConfig : pluginConfigs) {
+            for (PluginConfig pluginConfig2 : pluginConfigs) {
                 if (pluginConfig != pluginConfig2
                         && pluginConfig.getId().equals(pluginConfig2.getId())) {
                     throw new MojoExecutionException("Found duplicate <plugin> tags (same groupId"
@@ -213,28 +207,29 @@ public class Packager {
         }
     }
 
-    private void validateConfigItem(List<PluginInfo> pluginInfos, PluginConfig pluginConfig)
-            throws MojoExecutionException {
-        PluginInfo pluginInfo = getPluginInfo(pluginConfig, pluginInfos);
-        if (pluginInfo == null) {
+    private void validateConfigItem(List<PluginDescriptor> pluginDescriptors,
+            PluginConfig pluginConfig) throws MojoExecutionException {
+        PluginDescriptor pluginDescriptor = getPlugin(pluginConfig, pluginDescriptors);
+        if (pluginDescriptor == null) {
             throw new MojoExecutionException("Found <plugin> tag under <configuration> that"
                     + " doesn't have a corresponding dependency in the pom file");
         }
         // check for property names with missing corresponding property name in property descriptor
-        validateProperties(pluginConfig, pluginInfo);
+        validateProperties(pluginConfig, pluginDescriptor);
     }
 
     @Nullable
-    private PluginInfo getPluginInfo(PluginConfig pluginConfig, List<PluginInfo> pluginInfos) {
-        for (PluginInfo pluginInfo : pluginInfos) {
-            if (pluginInfo.getId().equals(pluginConfig.getId())) {
-                return pluginInfo;
+    private PluginDescriptor getPlugin(PluginConfig pluginConfig,
+            List<PluginDescriptor> pluginDescriptors) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            if (pluginDescriptor.getId().equals(pluginConfig.getId())) {
+                return pluginDescriptor;
             }
         }
         return null;
     }
 
-    private void validateProperties(PluginConfig pluginConfig, PluginInfo pluginInfo)
+    private void validateProperties(PluginConfig pluginConfig, PluginDescriptor pluginDescriptor)
             throws MojoExecutionException {
         for (PropertyConfig propertyConfig : pluginConfig.getProperties()) {
             String propertyName = propertyConfig.getName();
@@ -243,7 +238,7 @@ public class Packager {
                         + " <configuration>/<plugins>/<plugin>/<properties>/<property>");
             }
             boolean found = false;
-            for (PropertyDescriptor propertyDescriptor : pluginInfo.getPropertyDescriptors()) {
+            for (PropertyDescriptor propertyDescriptor : pluginDescriptor.getProperties()) {
                 if (propertyDescriptor.getName().equals(propertyName)) {
                     found = true;
                     break;
@@ -253,37 +248,26 @@ public class Packager {
                 throw new MojoExecutionException("Found <property> tag with name '" + propertyName
                         + "' under <configuration>/<plugins>/<plugin>/<properties> that doesn't"
                         + " have a corresponding property defined in the plugin '"
-                        + pluginInfo.getId() + "'");
+                        + pluginDescriptor.getId() + "'");
             }
         }
     }
 
-    private void writePackageJson(List<PluginInfo> pluginInfos, JarOutputStream jarOut)
+    private void writePlugins(List<PluginDescriptor> pluginDescriptors, OutputStream out)
             throws IOException, MojoExecutionException {
-        JarEntry jarEntry = new JarEntry("META-INF/io.informant.package.json");
-        jarOut.putNextEntry(jarEntry);
-        JsonObject rootElement = new JsonObject();
-        JsonArray pluginElements = new JsonArray();
-        for (PluginInfo pluginInfo : pluginInfos) {
-            JsonObject pluginElement = new JsonObject();
-            pluginElement.addProperty("name", pluginInfo.getName());
-            pluginElement.addProperty("groupId", pluginInfo.getGroupId());
-            pluginElement.addProperty("artifactId", pluginInfo.getArtifactId());
-            pluginElement.addProperty("version", pluginInfo.getVersion());
-            pluginElement.add("properties", getPropertyElements(pluginInfo));
-            pluginElement.add("aspects", getAspectElements(pluginInfo));
-            pluginElements.add(pluginElement);
+        List<PluginDescriptor> updatedPlugins = Lists.newArrayList();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            PluginDescriptor.Builder updatedPlugin = PluginDescriptor.builder(pluginDescriptor);
+            updatedPlugin.properties(getPropertiesWithOverrides(pluginDescriptor));
+            updatedPlugins.add(updatedPlugin.build());
         }
-        rootElement.add("plugins", pluginElements);
-        JsonWriter jw = new JsonWriter(new OutputStreamWriter(jarOut, Charsets.UTF_8));
-        gson.toJson(rootElement, jw);
-        jw.flush();
-        jarOut.closeEntry();
+        // because of jackson shading, must perform serialization inside core "shaded" code
+        new PackageDescriptor(updatedPlugins).writeValue(out);
     }
 
     @Nullable
     private PluginConfig getPluginConfig(String id) {
-        for (PluginConfig pluginConfig : plugins) {
+        for (PluginConfig pluginConfig : pluginConfigs) {
             if (pluginConfig.getId().equals(id)) {
                 return pluginConfig;
             }
@@ -291,93 +275,51 @@ public class Packager {
         return null;
     }
 
-    private JsonArray getPropertyElements(PluginInfo pluginInfo) throws MojoExecutionException {
-        JsonArray propertyElements = new JsonArray();
-        PluginConfig pluginConfig = getPluginConfig(pluginInfo.getId());
-        for (PropertyDescriptor propertyDescriptor : pluginInfo.getPropertyDescriptors()) {
-            PropertyConfig override = getPropertyConfig(pluginConfig, propertyDescriptor.getName());
-            JsonObject propertyObject = new JsonObject();
-            propertyObject.addProperty("prompt", getPrompt(propertyDescriptor, override));
-            propertyObject.addProperty("name", propertyDescriptor.getName());
-            propertyObject.addProperty("type",
-                    propertyDescriptor.getType().name().toLowerCase(Locale.ENGLISH));
-            propertyObject.add("default", getDefault(propertyDescriptor, override));
-            propertyObject.addProperty("hidden", getHidden(propertyDescriptor, override));
-            propertyObject.addProperty("description", getDescription(propertyDescriptor, override));
-            propertyElements.add(propertyObject);
+    private List<PropertyDescriptor> getPropertiesWithOverrides(PluginDescriptor pluginDescriptor)
+            throws MojoExecutionException {
+        List<PropertyDescriptor> properties = Lists.newArrayList();
+        PluginConfig pluginConfig = getPluginConfig(pluginDescriptor.getId());
+        for (PropertyDescriptor property : pluginDescriptor.getProperties()) {
+            PropertyConfig override = getPropertyConfig(pluginConfig, property.getName());
+            if (override == null) {
+                properties.add(property);
+                continue;
+            }
+            PropertyDescriptor.Builder propertyWithOverrides = PropertyDescriptor.builder(property);
+            String overrideDefault = override.getDefault();
+            String overrideHidden = override.getHidden();
+            String overridePrompt = override.getPrompt();
+            String overrideDescription = override.getDescription();
+            if (overrideDefault != null) {
+                propertyWithOverrides.defaultValue(getDefaultFromText(overrideDefault,
+                        property.getType()));
+            }
+            if (overrideHidden != null) {
+                propertyWithOverrides.hidden(Boolean.valueOf(overrideHidden));
+            }
+            if (overridePrompt != null) {
+                propertyWithOverrides.prompt(overridePrompt);
+            }
+            if (overrideDescription != null) {
+                propertyWithOverrides.description(overrideDescription);
+            }
+            properties.add(propertyWithOverrides.build());
         }
-        return propertyElements;
-    }
-
-    private JsonArray getAspectElements(PluginInfo pluginInfo) {
-        JsonArray aspectElements = new JsonArray();
-        for (String aspect : pluginInfo.getAspects()) {
-            aspectElements.add(new JsonPrimitive(aspect));
-        }
-        return aspectElements;
-    }
-
-    private String getPrompt(PropertyDescriptor propertyDescriptor,
-            @Nullable PropertyConfig override) {
-        String overridePrompt = override == null ? null : override.getPrompt();
-        if (overridePrompt != null) {
-            return overridePrompt;
-        } else {
-            return propertyDescriptor.getPrompt();
-        }
+        return properties;
     }
 
     @Nullable
-    private JsonPrimitive getDefault(PropertyDescriptor propertyDescriptor,
-            @Nullable PropertyConfig override) throws MojoExecutionException {
-        String overrideDefaultText = override == null ? null : override.getDefault();
-        if (overrideDefaultText != null) {
-            switch (propertyDescriptor.getType()) {
-            case STRING:
-                return new JsonPrimitive(overrideDefaultText);
-            case BOOLEAN:
-                return new JsonPrimitive(Boolean.valueOf(overrideDefaultText));
-            case DOUBLE:
-                return new JsonPrimitive(Double.valueOf(overrideDefaultText));
-            default:
-                throw new MojoExecutionException("Unexpected property type: "
-                        + propertyDescriptor.getType());
-            }
-        } else {
-            Object defaultValue = propertyDescriptor.getDefault();
-            if (defaultValue == null) {
-                return null;
-            } else if (defaultValue instanceof String) {
-                return new JsonPrimitive((String) defaultValue);
-            } else if (defaultValue instanceof Boolean) {
-                return new JsonPrimitive((Boolean) defaultValue);
-            } else if (defaultValue instanceof Double) {
-                return new JsonPrimitive((Double) defaultValue);
-            } else {
-                throw new MojoExecutionException("Unexpected default value type: "
-                        + defaultValue.getClass().getName());
-            }
-        }
-    }
-
-    private boolean getHidden(PropertyDescriptor propertyDescriptor,
-            @Nullable PropertyConfig override) {
-        String overrideHiddenText = override == null ? null : override.getHidden();
-        if (overrideHiddenText != null) {
-            return Boolean.valueOf(overrideHiddenText);
-        } else {
-            return propertyDescriptor.isHidden();
-        }
-    }
-
-    @Nullable
-    private String getDescription(PropertyDescriptor propertyDescriptor,
-            @Nullable PropertyConfig override) {
-        String overrideDescription = override == null ? null : override.getDescription();
-        if (overrideDescription != null) {
-            return overrideDescription;
-        } else {
-            return propertyDescriptor.getDescription();
+    private Object getDefaultFromText(String text, PropertyType type)
+            throws MojoExecutionException {
+        switch (type) {
+        case STRING:
+            return text;
+        case BOOLEAN:
+            return Boolean.valueOf(text);
+        case DOUBLE:
+            return Double.valueOf(text);
+        default:
+            throw new MojoExecutionException("Unexpected property type: " + type);
         }
     }
 

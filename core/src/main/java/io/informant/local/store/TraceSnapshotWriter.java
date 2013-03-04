@@ -19,16 +19,15 @@ import io.informant.util.CharStreams2;
 import io.informant.util.OnlyUsedByTests;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.core.io.JsonStringEncoder;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
-import com.google.gson.stream.JsonWriter;
 
 /**
  * @author Trask Stalnaker
@@ -51,7 +50,7 @@ public class TraceSnapshotWriter {
         sb.append("{\"id\":\"");
         sb.append(snapshot.getId());
         sb.append("\",\"start\":");
-        sb.append(snapshot.getStartAt());
+        sb.append(snapshot.getStart());
         sb.append(",\"duration\":");
         sb.append(snapshot.getDuration());
         sb.append(",\"active\":");
@@ -62,8 +61,9 @@ public class TraceSnapshotWriter {
         sb.append(snapshot.isCompleted());
         sb.append(",\"background\":");
         sb.append(snapshot.isBackground());
-        sb.append(",\"headline\":");
-        sb.append(escapeJson(snapshot.getHeadline()));
+        sb.append(",\"headline\":\"");
+        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getHeadline()));
+        sb.append("\"");
         writeAttributes(snapshot);
         writeUserId(snapshot);
         writeError(snapshot);
@@ -87,16 +87,18 @@ public class TraceSnapshotWriter {
     private void writeUserId(TraceSnapshot snapshot) {
         String userId = snapshot.getUserId();
         if (userId != null) {
-            sb.append(",\"userId\":");
-            sb.append(escapeJson(userId));
+            sb.append(",\"userId\":\"");
+            sb.append(JsonStringEncoder.getInstance().quoteAsString(userId));
+            sb.append("\"");
         }
     }
 
     private void writeError(TraceSnapshot snapshot) {
         String errorText = snapshot.getErrorText();
         if (errorText != null) {
-            sb.append(",\"error\":{\"text\":");
-            sb.append(escapeJson(errorText));
+            sb.append(",\"error\":{\"text\":\"");
+            sb.append(JsonStringEncoder.getInstance().quoteAsString(errorText));
+            sb.append("\"");
             if (snapshot.getErrorDetail() != null) {
                 sb.append(",\"detail\":");
                 sb.append(snapshot.getErrorDetail());
@@ -132,21 +134,6 @@ public class TraceSnapshotWriter {
     private void flushStringBuilder() throws UnsupportedEncodingException {
         charSources.add(CharStreams.asCharSource(sb.toString()));
         sb.setLength(0);
-    }
-
-    // this feels more performant than gson.toJson(s)
-    private static String escapeJson(@Nullable String s) {
-        StringWriter sw = new StringWriter();
-        JsonWriter jw = new JsonWriter(sw);
-        jw.setLenient(true);
-        try {
-            jw.value(s);
-            jw.close();
-            return sw.toString();
-        } catch (IOException e) {
-            // this can't really happen since StringWriter doesn't throw IOException
-            return "error (" + e.getClass().getName() + ") occurred escaping json string";
-        }
     }
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource

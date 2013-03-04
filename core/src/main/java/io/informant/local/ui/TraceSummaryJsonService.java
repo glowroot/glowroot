@@ -44,7 +44,8 @@ class TraceSummaryJsonService implements JsonService {
     @JsonServiceMethod
     String getSummary(String id) throws IOException {
         logger.debug("getSummary(): id={}", id);
-        CharSource charSource = traceCommonService.getSnapshotOrActiveJson(id, true);
+        CharSource charSource =
+                traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, true);
         if (charSource == null) {
             logger.debug("no trace found for id '{}', returning expired=true", id);
             return "{\"expired\":true}";

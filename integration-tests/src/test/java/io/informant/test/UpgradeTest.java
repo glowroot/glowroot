@@ -61,6 +61,7 @@ public class UpgradeTest {
         // cleanup
         container.close();
     }
+
     // create initial database for upgrade test
     public static void main(String... args) throws Exception {
         InformantContainer container = InformantContainer.create(0, true);

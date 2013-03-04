@@ -15,16 +15,14 @@
  */
 package io.informant.config;
 
-import io.informant.util.GsonFactory;
 import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Objects;
 import com.google.common.hash.Hashing;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * Immutable structure to hold the coarse-grained profiling config.
@@ -33,10 +31,8 @@ import com.google.gson.JsonSyntaxException;
  * @since 0.5
  */
 @Immutable
+@JsonDeserialize(builder = CoarseProfilingConfig.Builder.class)
 public class CoarseProfilingConfig {
-
-    // serialize nulls so that all properties will be listed in config.json (for humans)
-    private static final Gson gson = GsonFactory.newBuilder().serializeNulls().create();
 
     private final boolean enabled;
 
@@ -45,11 +41,7 @@ public class CoarseProfilingConfig {
     private final int initialDelayMillis;
     private final int intervalMillis;
     private final int totalSeconds;
-
-    static CoarseProfilingConfig fromJson(@ReadOnly JsonObject configObject)
-            throws JsonSyntaxException {
-        return gson.fromJson(configObject, CoarseProfilingConfig.Builder.class).build();
-    }
+    private final String version;
 
     static CoarseProfilingConfig getDefault() {
         return new Builder().build();
@@ -60,21 +52,12 @@ public class CoarseProfilingConfig {
     }
 
     private CoarseProfilingConfig(boolean enabled, int initialDelayMillis, int intervalMillis,
-            int totalSeconds) {
+            int totalSeconds, String version) {
         this.enabled = enabled;
         this.initialDelayMillis = initialDelayMillis;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
-    }
-
-    public JsonObject toJson() {
-        JsonObject configObject = toJsonWithoutVersionHash();
-        configObject.addProperty("versionHash", getVersionHash());
-        return configObject;
-    }
-
-    public String getVersionHash() {
-        return Hashing.md5().hashString(toJsonWithoutVersionHash().toString()).toString();
+        this.version = version;
     }
 
     public boolean isEnabled() {
@@ -93,8 +76,9 @@ public class CoarseProfilingConfig {
         return totalSeconds;
     }
 
-    JsonObject toJsonWithoutVersionHash() {
-        return gson.toJsonTree(this).getAsJsonObject();
+    @JsonView(WithVersionJsonView.class)
+    public String getVersion() {
+        return version;
     }
 
     @Override
@@ -104,10 +88,11 @@ public class CoarseProfilingConfig {
                 .add("initialDelayMillis", initialDelayMillis)
                 .add("intervalMillis", intervalMillis)
                 .add("totalSeconds", totalSeconds)
-                .add("versionHash", getVersionHash())
+                .add("version", version)
                 .toString();
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         private boolean enabled = true;
@@ -116,50 +101,53 @@ public class CoarseProfilingConfig {
         private int totalSeconds = 300;
 
         private Builder() {}
+
         private Builder(CoarseProfilingConfig base) {
             enabled = base.enabled;
             initialDelayMillis = base.initialDelayMillis;
             intervalMillis = base.intervalMillis;
             totalSeconds = base.totalSeconds;
         }
+
+        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
+        // for overlaying values on top of a base config
+        @JsonProperty
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;
         }
+
+        @JsonProperty
         public Builder initialDelayMillis(int initialDelayMillis) {
             this.initialDelayMillis = initialDelayMillis;
             return this;
         }
+
+        @JsonProperty
         public Builder intervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
             return this;
         }
+
+        @JsonProperty
         public Builder totalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
             return this;
         }
-        public Builder overlay(@ReadOnly JsonObject configObject) {
-            JsonElement enabledElement = configObject.get("enabled");
-            if (enabledElement != null) {
-                enabled(enabledElement.getAsBoolean());
-            }
-            JsonElement initialDelayMillisElement = configObject.get("initialDelayMillis");
-            if (initialDelayMillisElement != null) {
-                initialDelayMillis(initialDelayMillisElement.getAsInt());
-            }
-            JsonElement intervalMillisElement = configObject.get("intervalMillis");
-            if (intervalMillisElement != null) {
-                intervalMillis(intervalMillisElement.getAsInt());
-            }
-            JsonElement totalSecondsElement = configObject.get("totalSeconds");
-            if (totalSecondsElement != null) {
-                totalSeconds(totalSecondsElement.getAsInt());
-            }
-            return this;
-        }
+
         public CoarseProfilingConfig build() {
-            return new CoarseProfilingConfig(enabled, initialDelayMillis,
-                    intervalMillis, totalSeconds);
+            String version = buildVersion();
+            return new CoarseProfilingConfig(enabled, initialDelayMillis, intervalMillis,
+                    totalSeconds, version);
+        }
+
+        private String buildVersion() {
+            return Hashing.sha1().newHasher()
+                    .putBoolean(enabled)
+                    .putInt(initialDelayMillis)
+                    .putInt(intervalMillis)
+                    .putInt(totalSeconds)
+                    .hash().toString();
         }
     }
 }

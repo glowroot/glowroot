@@ -20,7 +20,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SER
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.informant.util.GsonFactory;
+import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
 
 import java.io.IOException;
@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Charsets;
@@ -56,7 +58,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.io.Resources;
-import com.google.gson.Gson;
 
 /**
  * Handles all http requests for the embedded UI (by default http://localhost:4000).
@@ -69,7 +70,7 @@ import com.google.gson.Gson;
 public class HttpServer extends HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
-    private static final Gson gson = GsonFactory.create();
+    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
 
     private final ImmutableMap<Pattern, Object> uriMappings;
@@ -323,7 +324,8 @@ public class HttpServer extends HttpServerBase {
         return parameterTypes;
     }
 
-    private String getRequestText(HttpRequest request, QueryStringDecoder decoder) {
+    private String getRequestText(HttpRequest request, QueryStringDecoder decoder)
+            throws JsonProcessingException {
         if (decoder.getParameters().isEmpty()) {
             return request.getContent().toString(Charsets.ISO_8859_1);
         } else {
@@ -339,7 +341,7 @@ public class HttpServer extends HttpServerBase {
                     parameters.put(key, entry.getValue());
                 }
             }
-            return gson.toJson(parameters);
+            return mapper.writeValueAsString(parameters);
         }
     }
 
