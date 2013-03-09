@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -61,7 +63,7 @@ class SocketCommandProcessor implements Runnable {
             DaemonExecutors.newCachedThreadPool("Informant-SocketCommandProcessor");
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
 
-    @Nullable
+    @LazyNonNull
     private ImmutableList<Thread> preExistingThreads;
 
     SocketCommandProcessor(ObjectInputStream objectIn, ObjectOutputStream objectOut) {
@@ -119,6 +121,7 @@ class SocketCommandProcessor implements Runnable {
                 System.exit(0);
             } else if (command.equals(SHUTDOWN_COMMAND)) {
                 shutdown(commandNum);
+                System.exit(0);
             } else if (command.equals(INTERRUPT)) {
                 interruptAppAndRespond(commandNum);
             } else {
@@ -168,7 +171,7 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void executeAppAndRespond(int commandNum, List<?> argList) throws Exception {
+    private void executeAppAndRespond(int commandNum, @ReadOnly List<?> argList) throws Exception {
         if (preExistingThreads == null) {
             // wait until the first execute app command to capture pre-existing
             // threads, otherwise may pick up DestroyJavaVM thread

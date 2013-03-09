@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.core.io.JsonStringEncoder;
@@ -36,8 +37,9 @@ import com.google.common.io.CharStreams;
 public class TraceSnapshotWriter {
 
     private final StringBuilder sb = new StringBuilder();
-    private final List<CharSource> charSources = Lists.newArrayList();
+    private final List</*@ReadOnly*/CharSource> charSources = Lists.newArrayList();
 
+    @ReadOnly
     public static CharSource toCharSource(TraceSnapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
         return new TraceSnapshotWriter().toCharSourceInternal(snapshot, active);
@@ -45,6 +47,7 @@ public class TraceSnapshotWriter {
 
     private TraceSnapshotWriter() {}
 
+    @ReadOnly
     private CharSource toCharSourceInternal(TraceSnapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
         sb.append("{\"id\":\"");
@@ -119,7 +122,7 @@ public class TraceSnapshotWriter {
         }
     }
 
-    private void writeCharSource(String attributeName, @Nullable CharSource charSource)
+    private void writeCharSource(String attributeName, @ReadOnly @Nullable CharSource charSource)
             throws UnsupportedEncodingException {
         if (charSource != null) {
             sb.append(",\"");

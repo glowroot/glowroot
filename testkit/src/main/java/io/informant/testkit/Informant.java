@@ -58,8 +58,10 @@ public interface Informant {
 
     void removePointcutConfig(String version) throws Exception;
 
+    @Nullable
     Trace getLastTrace() throws Exception;
 
+    @Nullable
     Trace getLastTraceSummary() throws Exception;
 
     void compactData() throws Exception;

@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.LazyNonNull;
@@ -458,6 +459,7 @@ public class Trace {
                 .toString();
     }
 
+    @Immutable
     public static class TraceAttribute {
         private final String pluginId;
         private final String name;

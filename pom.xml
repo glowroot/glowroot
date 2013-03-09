@@ -237,7 +237,9 @@
               <procOnly>false</procOnly>
               <failOnError>false</failOnError>
               <!-- implicit imports for commented out uses of /*@Nullable*/, etc -->
-              <javaParams>-Djsr308_imports=checkers.nullness.quals.*</javaParams>
+              <javaParams>
+                -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
+              </javaParams>
               <javacParams>-Astubs=${basedir}/../core/src/main/stubs -Alint=nulltest</javacParams>
             </configuration>
           </plugin>

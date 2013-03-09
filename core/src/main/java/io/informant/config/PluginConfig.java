@@ -53,6 +53,7 @@ import com.google.common.hash.Hashing;
 @Immutable
 public class PluginConfig {
 
+    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
 
     private final PluginDescriptor pluginDescriptor;

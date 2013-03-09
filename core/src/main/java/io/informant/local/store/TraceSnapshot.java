@@ -67,8 +67,10 @@ public class TraceSnapshot {
     private TraceSnapshot(String id, long start, long duration, boolean stuck, boolean completed,
             boolean background, String headline, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
-            @Nullable String exception, @Nullable String metrics, @Nullable CharSource spans,
-            @Nullable CharSource coarseMergedStackTree, @Nullable CharSource fineMergedStackTree) {
+            @Nullable String exception, @Nullable String metrics,
+            @Immutable @Nullable CharSource spans,
+            @Immutable @Nullable CharSource coarseMergedStackTree,
+            @Immutable @Nullable CharSource fineMergedStackTree) {
         this.id = id;
         this.start = start;
         this.duration = duration;
@@ -145,16 +147,19 @@ public class TraceSnapshot {
         return metrics;
     }
 
+    @Immutable
     @Nullable
     CharSource getSpans() {
         return spans;
     }
 
+    @Immutable
     @Nullable
     CharSource getCoarseMergedStackTree() {
         return coarseMergedStackTree;
     }
 
+    @Immutable
     @Nullable
     CharSource getFineMergedStackTree() {
         return fineMergedStackTree;
@@ -208,10 +213,13 @@ public class TraceSnapshot {
         private String exception;
         @Nullable
         private String metrics;
+        @Immutable
         @Nullable
         private CharSource spans;
+        @Immutable
         @Nullable
         private CharSource coarseMergedStackTree;
+        @Immutable
         @Nullable
         private CharSource fineMergedStackTree;
 
@@ -282,17 +290,17 @@ public class TraceSnapshot {
             return this;
         }
 
-        Builder spans(@Nullable CharSource spans) {
+        Builder spans(@Immutable @Nullable CharSource spans) {
             this.spans = spans;
             return this;
         }
 
-        Builder coarseMergedStackTree(@Nullable CharSource coarseMergedStackTree) {
+        Builder coarseMergedStackTree(@Immutable @Nullable CharSource coarseMergedStackTree) {
             this.coarseMergedStackTree = coarseMergedStackTree;
             return this;
         }
 
-        Builder fineMergedStackTree(@Nullable CharSource fineMergedStackTree) {
+        Builder fineMergedStackTree(@Immutable @Nullable CharSource fineMergedStackTree) {
             this.fineMergedStackTree = fineMergedStackTree;
             return this;
         }

@@ -15,6 +15,7 @@
  */
 package io.informant;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.PluginServices;
 import io.informant.config.DataDir;
 import io.informant.local.store.DataSource;
@@ -87,10 +88,7 @@ public class MainEntryPoint {
 
     // called via reflection from io.informant.api.PluginServices
     public static PluginServices getPluginServices(String pluginId) {
-        if (informantModule == null) {
-            // this really shouldn't happen
-            throw new NullPointerException("InformantModule is null");
-        }
+        checkNotNull(informantModule, "Informant has not been started");
         return informantModule.getCoreModule().getPluginServices(pluginId);
     }
 

@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,6 +62,7 @@ import com.google.common.collect.Lists;
 @ThreadSafe
 class SameJvmInformant implements Informant {
 
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
@@ -89,16 +91,15 @@ class SameJvmInformant implements Informant {
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
         io.informant.config.GeneralConfig config = configService.getGeneralConfig();
-        io.informant.config.GeneralConfig updatedConfig =
-                io.informant.config.GeneralConfig.builder(config)
-                        .storeThresholdMillis(storeThresholdMillis)
-                        .build();
-        configService.updateGeneralConfig(updatedConfig, config.getVersion());
+        io.informant.config.GeneralConfig.Overlay overlay =
+                io.informant.config.GeneralConfig.overlay(config);
+        overlay.setStoreThresholdMillis(storeThresholdMillis);
+        configService.updateGeneralConfig(overlay.build(), config.getVersion());
     }
 
     public GeneralConfig getGeneralConfig() {
         io.informant.config.GeneralConfig coreConfig = configService.getGeneralConfig();
-        GeneralConfig config = new GeneralConfig();
+        GeneralConfig config = new GeneralConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setStuckThresholdSeconds(coreConfig.getStuckThresholdSeconds());
@@ -106,93 +107,74 @@ class SameJvmInformant implements Informant {
         config.setSnapshotExpirationHours(coreConfig.getSnapshotExpirationHours());
         config.setRollingSizeMb(coreConfig.getRollingSizeMb());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
-        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
     public String updateGeneralConfig(GeneralConfig config) throws Exception {
         io.informant.config.GeneralConfig updatedConfig =
-                io.informant.config.GeneralConfig.builder(configService.getGeneralConfig())
-                        .enabled(config.isEnabled())
-                        .storeThresholdMillis(config.getStoreThresholdMillis())
-                        .stuckThresholdSeconds(config.getStuckThresholdSeconds())
-                        .maxSpans(config.getMaxSpans())
-                        .snapshotExpirationHours(config.getSnapshotExpirationHours())
-                        .rollingSizeMb(config.getRollingSizeMb())
-                        .warnOnSpanOutsideTrace(config.isWarnOnSpanOutsideTrace())
-                        .build();
+                new io.informant.config.GeneralConfig(config.isEnabled(),
+                        config.getStoreThresholdMillis(),
+                        config.getStuckThresholdSeconds(),
+                        config.getMaxSpans(),
+                        config.getSnapshotExpirationHours(),
+                        config.getRollingSizeMb(),
+                        config.isWarnOnSpanOutsideTrace());
         return configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() {
         io.informant.config.CoarseProfilingConfig coreConfig =
                 configService.getCoarseProfilingConfig();
-        CoarseProfilingConfig config = new CoarseProfilingConfig();
+        CoarseProfilingConfig config = new CoarseProfilingConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setInitialDelayMillis(coreConfig.getInitialDelayMillis());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
         config.setTotalSeconds(coreConfig.getTotalSeconds());
-        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
     public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
         io.informant.config.CoarseProfilingConfig updatedConfig =
-                io.informant.config.CoarseProfilingConfig
-                        .builder(configService.getCoarseProfilingConfig())
-                        .enabled(config.isEnabled())
-                        .initialDelayMillis(config.getInitialDelayMillis())
-                        .intervalMillis(config.getIntervalMillis())
-                        .totalSeconds(config.getTotalSeconds())
-                        .build();
+                new io.informant.config.CoarseProfilingConfig(config.isEnabled(),
+                        config.getInitialDelayMillis(), config.getIntervalMillis(),
+                        config.getTotalSeconds());
         return configService.updateCoarseProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public FineProfilingConfig getFineProfilingConfig() {
         io.informant.config.FineProfilingConfig coreConfig =
                 configService.getFineProfilingConfig();
-        FineProfilingConfig config = new FineProfilingConfig();
+        FineProfilingConfig config = new FineProfilingConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setTracePercentage(coreConfig.getTracePercentage());
         config.setIntervalMillis(coreConfig.getIntervalMillis());
         config.setTotalSeconds(coreConfig.getTotalSeconds());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
-        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
     public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         io.informant.config.FineProfilingConfig updatedConfig =
-                io.informant.config.FineProfilingConfig
-                        .builder(configService.getFineProfilingConfig())
-                        .enabled(config.isEnabled())
-                        .tracePercentage(config.getTracePercentage())
-                        .intervalMillis(config.getIntervalMillis())
-                        .totalSeconds(config.getTotalSeconds())
-                        .storeThresholdMillis(config.getStoreThresholdMillis())
-                        .build();
+                new io.informant.config.FineProfilingConfig(config.isEnabled(),
+                        config.getTracePercentage(), config.getIntervalMillis(),
+                        config.getTotalSeconds(), config.getStoreThresholdMillis());
         return configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
     }
 
     public UserConfig getUserConfig() {
         io.informant.config.UserConfig coreConfig = configService.getUserConfig();
-        UserConfig config = new UserConfig();
+        UserConfig config = new UserConfig(coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         config.setUserId(coreConfig.getUserId());
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setFineProfiling(coreConfig.isFineProfiling());
-        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
     public String updateUserConfig(UserConfig config) throws Exception {
-        io.informant.config.UserConfig updatedConfig = io.informant.config.UserConfig
-                .builder(configService.getUserConfig())
-                .enabled(config.isEnabled())
-                .userId(config.getUserId())
-                .storeThresholdMillis(config.getStoreThresholdMillis())
-                .fineProfiling(config.isFineProfiling())
-                .build();
+        io.informant.config.UserConfig updatedConfig = new io.informant.config.UserConfig(
+                config.isEnabled(), config.getUserId(), config.getStoreThresholdMillis(),
+                config.isFineProfiling());
         return configService.updateUserConfig(updatedConfig, config.getVersion());
     }
 
@@ -202,19 +184,22 @@ class SameJvmInformant implements Informant {
         if (coreConfig == null) {
             return null;
         }
-        PluginConfig config = new PluginConfig();
+        PluginConfig config = new PluginConfig(coreConfig.getGroupId(), coreConfig.getArtifactId(),
+                coreConfig.getVersion());
         config.setEnabled(coreConfig.isEnabled());
         for (Entry<String, /*@Nullable*/Object> entry : coreConfig.getProperties().entrySet()) {
             config.setProperty(entry.getKey(), entry.getValue());
         }
-        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
     public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
+        io.informant.config.PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
+        if (pluginConfig == null) {
+            throw new IllegalArgumentException("Plugin for id not found: " + pluginId);
+        }
         io.informant.config.PluginConfig.Builder updatedConfig =
-                io.informant.config.PluginConfig
-                        .builder(configService.getPluginConfig(pluginId));
+                io.informant.config.PluginConfig.builder(pluginConfig);
         updatedConfig.enabled(config.isEnabled());
         for (Entry<String, /*@Nullable*/Object> entry : config.getProperties().entrySet()) {
             updatedConfig.setProperty(entry.getKey(), entry.getValue());
@@ -243,10 +228,12 @@ class SameJvmInformant implements Informant {
         configService.deletePointcutConfig(version);
     }
 
+    @Nullable
     public Trace getLastTrace() throws Exception {
         return getLastTrace(false);
     }
 
+    @Nullable
     public Trace getLastTraceSummary() throws Exception {
         return getLastTrace(true);
     }
@@ -294,11 +281,13 @@ class SameJvmInformant implements Informant {
         if (snapshot == null) {
             return null;
         }
-        Trace trace = mapper.readValue(TraceSnapshotWriter.toString(snapshot, false), Trace.class);
+        Trace trace = ObjectMappers.readRequiredValue(mapper,
+                TraceSnapshotWriter.toString(snapshot, false), Trace.class);
         trace.setSummary(summary);
         return trace;
     }
 
+    @Nullable
     private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
@@ -325,8 +314,8 @@ class SameJvmInformant implements Informant {
         } else {
             TraceSnapshot snapshot =
                     TraceWriter.toTraceSnapshot(traces.get(0), ticker.read(), summary);
-            Trace trace =
-                    mapper.readValue(TraceSnapshotWriter.toString(snapshot, true), Trace.class);
+            Trace trace = ObjectMappers.readRequiredValue(mapper,
+                    TraceSnapshotWriter.toString(snapshot, true), Trace.class);
             trace.setSummary(summary);
             return trace;
         }
@@ -358,7 +347,7 @@ class SameJvmInformant implements Informant {
             methodModifiers.add(MethodModifier.valueOf(methodModifier.name()));
         }
 
-        PointcutConfig config = new PointcutConfig();
+        PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
         config.setCaptureItems(captureItems);
         config.setTypeName(coreConfig.getTypeName());
         config.setMethodName(coreConfig.getMethodName());
@@ -367,7 +356,6 @@ class SameJvmInformant implements Informant {
         config.setMethodModifiers(methodModifiers);
         config.setMetricName(coreConfig.getMetricName());
         config.setSpanTemplate(coreConfig.getSpanTemplate());
-        config.setVersion(coreConfig.getVersion());
         return config;
     }
 
@@ -383,15 +371,9 @@ class SameJvmInformant implements Informant {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
                     .name()));
         }
-        return new io.informant.config.PointcutConfig.Builder()
-                .captureItems(captureItems)
-                .typeName(config.getTypeName())
-                .methodName(config.getMethodName())
-                .methodArgTypeNames(config.getMethodArgTypeNames())
-                .methodReturnTypeName(config.getMethodReturnTypeName())
-                .methodModifiers(methodModifiers)
-                .metricName(config.getMetricName())
-                .spanTemplate(config.getSpanTemplate())
-                .build();
+        return new io.informant.config.PointcutConfig(captureItems, config.getTypeName(),
+                config.getMethodName(), config.getMethodArgTypeNames(),
+                config.getMethodReturnTypeName(), methodModifiers, config.getMetricName(),
+                config.getSpanTemplate());
     }
 }

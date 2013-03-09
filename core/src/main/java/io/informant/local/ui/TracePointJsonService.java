@@ -15,6 +15,7 @@
  */
 package io.informant.local.ui;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.core.Trace;
 import io.informant.core.TraceRegistry;
 import io.informant.local.store.LocalTraceSink;
@@ -58,6 +59,7 @@ import com.google.common.io.CharStreams;
 class TracePointJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
@@ -82,7 +84,8 @@ class TracePointJsonService implements JsonService {
     @JsonServiceMethod
     String getPoints(String message) throws IOException {
         logger.debug("getPoints(): message={}", message);
-        TracePointRequest request = mapper.readValue(message, TracePointRequest.class);
+        TracePointRequest request =
+                ObjectMappers.readRequiredValue(mapper, message, TracePointRequest.class);
         return new Handler(request).handle();
     }
 
@@ -189,10 +192,7 @@ class TracePointJsonService implements JsonService {
             Collections.sort(activeTraces,
                     Ordering.natural().onResultOf(new Function<Trace, Long>() {
                         public Long apply(@Nullable Trace trace) {
-                            if (trace == null) {
-                                throw new NullPointerException(
-                                        "Ordering of non-null elements only");
-                            }
+                            checkNotNull(trace, "Ordering of non-null elements only");
                             return trace.getStartTick();
                         }
                     }));

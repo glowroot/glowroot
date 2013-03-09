@@ -15,8 +15,12 @@
  */
 package io.informant.testkit;
 
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 
 /**
@@ -30,8 +34,12 @@ public class UserConfig {
     private String userId;
     private int storeThresholdMillis;
     private boolean fineProfiling;
-    @Nullable
-    private String version;
+
+    private final String version;
+
+    UserConfig(String version) {
+        this.version = version;
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -66,13 +74,8 @@ public class UserConfig {
         this.fineProfiling = fineProfiling;
     }
 
-    @Nullable
     public String getVersion() {
         return version;
-    }
-
-    void setVersion(@Nullable String version) {
-        this.version = version;
     }
 
     @Override
@@ -108,5 +111,23 @@ public class UserConfig {
                 .add("fineProfiling", fineProfiling)
                 .add("version", version)
                 .toString();
+    }
+
+    @JsonCreator
+    static UserConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+            @JsonProperty("userId") @Nullable String userId,
+            @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
+            @JsonProperty("fineProfiling") @Nullable Boolean fineProfiling,
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(enabled, "enabled");
+        checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
+        checkRequiredProperty(fineProfiling, "fineProfiling");
+        checkRequiredProperty(version, "version");
+        UserConfig config = new UserConfig(version);
+        config.setEnabled(enabled);
+        config.setUserId(userId);
+        config.setStoreThresholdMillis(storeThresholdMillis);
+        config.setFineProfiling(fineProfiling);
+        return config;
     }
 }

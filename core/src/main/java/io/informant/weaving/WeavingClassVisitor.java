@@ -15,6 +15,7 @@
  */
 package io.informant.weaving;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.weaving.Mixin;
 import io.informant.weaving.ParsedType.Builder;
 
@@ -116,9 +117,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
 
-        if (parsedType == null) {
-            throw new NullPointerException("Call to visit() is required");
-        }
+        checkNotNull(parsedType, "Call to visit() is required");
         ParsedMethod parsedMethod = ParsedMethod.from(name,
                 ImmutableList.copyOf(Type.getArgumentTypes(desc)),
                 Type.getReturnType(desc), access);
@@ -128,9 +127,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             return null;
         }
         // type can be null, but not if nothingAtAllToWeave is false
-        if (type == null) {
-            throw new NullPointerException("Call to visit() is required");
-        }
+        checkNotNull(type, "Call to visit() is required");
         if ((access & ACC_ABSTRACT) != 0) {
             // abstract methods never get woven
             return cv.visitMethod(access, name, desc, signature, exceptions);
@@ -173,17 +170,13 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     @Override
     public void visitEnd() {
-        if (parsedType == null) {
-            throw new NullPointerException("Call to visit() is required");
-        }
+        checkNotNull(parsedType, "Call to visit() is required");
         parsedTypeCache.add(parsedType.build(), loader);
         if (nothingAtAllToWeave) {
             return;
         }
         // type can be null, but not if nothingAtAllToWeave is false
-        if (type == null) {
-            throw new NullPointerException("Call to visit() is required");
-        }
+        checkNotNull(type, "Call to visit() is required");
         if (!writtenAdviceFlowThreadLocals) {
             writeThreadLocalFields();
             MethodVisitor mv = super.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
@@ -316,9 +309,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
 
-        if (type == null) {
-            throw new NullPointerException("Call to visit() is required");
-        }
+        checkNotNull(type, "Call to visit() is required");
         int innerAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (outerAccess & ACC_STATIC);
         boolean first = true;
         String currMethodName = outerName;
@@ -358,9 +349,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     private void writeThreadLocalInitialization(MethodVisitor mv) {
-        if (type == null) {
-            throw new NullPointerException("Call to visit() is required");
-        }
+        checkNotNull(type, "Call to visit() is required");
         for (int i = 0; i < adviceMatchers.size(); i++) {
             if (!adviceMatchers.get(i).getAdvice().getPointcut().captureNested()) {
                 // cannot use visitLdcInsn(Type) since .class constants are not supported in classes

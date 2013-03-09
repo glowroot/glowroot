@@ -15,12 +15,18 @@
  */
 package io.informant.testkit;
 
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
+
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -28,26 +34,39 @@ import com.google.common.base.Objects;
  */
 public class PointcutConfig {
 
-    @Nullable
     private List<CaptureItem> captureItems;
     @Nullable
     private String typeName;
     @Nullable
     private String methodName;
-    @Nullable
     private List<String> methodArgTypeNames;
     @Nullable
     private String methodReturnTypeName;
-    @Nullable
     private List<MethodModifier> methodModifiers;
     @Nullable
     private String metricName;
     @Nullable
     private String spanTemplate;
-    @Nullable
-    private String version;
 
+    // null for new PointcutConfig records that haven't been sent to server yet
     @Nullable
+    private final String version;
+
+    // used to create new PointcutConfig records that haven't been sent to server yet
+    public PointcutConfig() {
+        captureItems = Lists.newArrayList();
+        methodArgTypeNames = Lists.newArrayList();
+        methodModifiers = Lists.newArrayList();
+        version = null;
+    }
+
+    PointcutConfig(String version) {
+        captureItems = Lists.newArrayList();
+        methodArgTypeNames = Lists.newArrayList();
+        methodModifiers = Lists.newArrayList();
+        this.version = version;
+    }
+
     public List<CaptureItem> getCaptureItems() {
         return captureItems;
     }
@@ -74,7 +93,6 @@ public class PointcutConfig {
         this.methodName = methodName;
     }
 
-    @Nullable
     public List<String> getMethodArgTypeNames() {
         return methodArgTypeNames;
     }
@@ -92,7 +110,6 @@ public class PointcutConfig {
         this.methodReturnTypeName = methodReturnTypeName;
     }
 
-    @Nullable
     public List<MethodModifier> getMethodModifiers() {
         return methodModifiers;
     }
@@ -124,10 +141,6 @@ public class PointcutConfig {
     @Nullable
     public String getVersion() {
         return version;
-    }
-
-    void setVersion(@Nullable String version) {
-        this.version = version;
     }
 
     @Override
@@ -171,6 +184,36 @@ public class PointcutConfig {
                 .add("spanTemplate", spanTemplate)
                 .add("version", version)
                 .toString();
+    }
+
+    @JsonCreator
+    static PointcutConfig readValue(
+            @JsonProperty("captureItems") @Nullable List<CaptureItem> captureItems,
+            @JsonProperty("typeName") @Nullable String typeName,
+            @JsonProperty("methodName") @Nullable String methodName,
+            @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
+            @JsonProperty("methodReturnTypeName") @Nullable String methodReturnTypeName,
+            @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
+            @JsonProperty("metricName") @Nullable String metricName,
+            @JsonProperty("spanTemplate") @Nullable String spanTemplate,
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(captureItems, "captureItems");
+        checkRequiredProperty(typeName, "typeName");
+        checkRequiredProperty(methodName, "methodName");
+        checkRequiredProperty(methodArgTypeNames, "methodArgTypeNames");
+        checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
+        checkRequiredProperty(methodModifiers, "methodModifiers");
+        checkRequiredProperty(version, "version");
+        PointcutConfig config = new PointcutConfig(version);
+        config.setCaptureItems(captureItems);
+        config.setTypeName(typeName);
+        config.setMethodName(methodName);
+        config.setMethodArgTypeNames(methodArgTypeNames);
+        config.setMethodReturnTypeName(methodReturnTypeName);
+        config.setMethodModifiers(methodModifiers);
+        config.setMetricName(metricName);
+        config.setSpanTemplate(spanTemplate);
+        return config;
     }
 
     public enum CaptureItem {

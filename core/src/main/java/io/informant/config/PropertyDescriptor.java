@@ -15,28 +15,29 @@
  */
 package io.informant.config;
 
-import io.informant.util.MultilineDeserializer;
+import static io.informant.util.ObjectMappers.checkRequiredProperty;
+import io.informant.util.Multiline;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Immutable
-@JsonDeserialize(builder = PropertyDescriptor.Builder.class)
 public abstract class PropertyDescriptor {
 
+    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PropertyDescriptor.class);
 
     private final String name;
@@ -45,14 +46,6 @@ public abstract class PropertyDescriptor {
     private final String prompt;
     @Nullable
     private final String description;
-
-    public static PropertyDescriptor.Builder builder() {
-        return new Builder();
-    }
-
-    public static PropertyDescriptor.Builder builder(PropertyDescriptor base) {
-        return new Builder(base);
-    }
 
     private PropertyDescriptor(String name, boolean hidden, @Nullable String prompt,
             @Nullable String description) {
@@ -98,6 +91,41 @@ public abstract class PropertyDescriptor {
                 .toString();
     }
 
+    // visible for packager-maven-plugin
+    public static PropertyDescriptor create(String name, boolean hidden,
+            @Nullable String prompt, @Nullable String description, PropertyType type,
+            @Nullable Object defaultValue) {
+        if (type == PropertyType.STRING) {
+            return new StringPropertyDescriptor(name, defaultValue, hidden, prompt,
+                    description);
+        }
+        if (type == PropertyType.BOOLEAN) {
+            return new BooleanPropertyDescriptor(name, defaultValue, hidden, prompt,
+                    description);
+        }
+        if (type == PropertyType.DOUBLE) {
+            return new DoublePropertyDescriptor(name, defaultValue, hidden, prompt,
+                    description);
+        }
+        throw new IllegalStateException("Unexpected PropertyType: " + type);
+    }
+
+    @JsonCreator
+    static PropertyDescriptor readValue(@JsonProperty("name") @Nullable String name,
+            @JsonProperty("type") @Nullable PropertyType type,
+            @JsonProperty("default") @Nullable Object defaultValue,
+            @JsonProperty("hidden") @Nullable Boolean hidden,
+            @JsonProperty("prompt") @Nullable String prompt,
+            @JsonProperty("description") @Nullable Multiline description)
+            throws JsonMappingException {
+        checkRequiredProperty(name, "name");
+        checkRequiredProperty(type, "type");
+        checkRequiredProperty(prompt, "prompt");
+        return create(name, hidden != null && hidden, prompt,
+                description == null ? null : description.getJoined(),
+                type, defaultValue);
+    }
+
     @Immutable
     public enum PropertyType {
         STRING, BOOLEAN, DOUBLE;
@@ -105,16 +133,27 @@ public abstract class PropertyDescriptor {
 
     @Immutable
     static class StringPropertyDescriptor extends PropertyDescriptor {
+
         private final String defaultValue;
-        private StringPropertyDescriptor(String name, String defaultValue, boolean hidden,
-                @Nullable String prompt, @Nullable String description) {
+
+        private StringPropertyDescriptor(String name, @Nullable Object defaultValue,
+                boolean hidden, @Nullable String prompt, @Nullable String description) {
             super(name, hidden, prompt, description);
-            this.defaultValue = defaultValue;
+            if (defaultValue instanceof String) {
+                this.defaultValue = (String) defaultValue;
+            } else if (defaultValue == null) {
+                this.defaultValue = "";
+            } else {
+                logger.error("unexpected value for property {}: {}", name, defaultValue);
+                this.defaultValue = "";
+            }
         }
+
         @Override
         public PropertyType getType() {
             return PropertyType.STRING;
         }
+
         @Override
         public String getDefault() {
             return defaultValue;
@@ -123,16 +162,27 @@ public abstract class PropertyDescriptor {
 
     @Immutable
     static class BooleanPropertyDescriptor extends PropertyDescriptor {
+
         private final boolean defaultValue;
-        private BooleanPropertyDescriptor(String name, boolean defaultValue, boolean hidden,
-                @Nullable String prompt, @Nullable String description) {
+
+        private BooleanPropertyDescriptor(String name, @Nullable Object defaultValue,
+                boolean hidden, @Nullable String prompt, @Nullable String description) {
             super(name, hidden, prompt, description);
-            this.defaultValue = defaultValue;
+            if (defaultValue instanceof Boolean) {
+                this.defaultValue = (Boolean) defaultValue;
+            } else if (defaultValue == null) {
+                this.defaultValue = false;
+            } else {
+                logger.error("unexpected value for property {}: {}", name, defaultValue);
+                this.defaultValue = false;
+            }
         }
+
         @Override
         public PropertyType getType() {
             return PropertyType.BOOLEAN;
         }
+
         @Override
         public Boolean getDefault() {
             return defaultValue;
@@ -141,131 +191,30 @@ public abstract class PropertyDescriptor {
 
     @Immutable
     static class DoublePropertyDescriptor extends PropertyDescriptor {
+
         @Nullable
         private final Double defaultValue;
-        private DoublePropertyDescriptor(String name, @Nullable Double defaultValue,
+
+        private DoublePropertyDescriptor(String name, @Nullable Object defaultValue,
                 boolean hidden, @Nullable String prompt, @Nullable String description) {
             super(name, hidden, prompt, description);
-            this.defaultValue = defaultValue;
+            if (defaultValue instanceof Double || defaultValue == null) {
+                this.defaultValue = (Double) defaultValue;
+            } else {
+                logger.error("unexpected value for property {}: {}", name, defaultValue);
+                this.defaultValue = null;
+            }
         }
+
         @Override
         public PropertyType getType() {
             return PropertyType.DOUBLE;
         }
+
         @Override
         @Nullable
         public Double getDefault() {
             return defaultValue;
-        }
-    }
-
-    @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder {
-
-        @Nullable
-        private String name;
-        @Nullable
-        private PropertyType type;
-        @Nullable
-        private Object defaultValue;
-        private boolean hidden;
-        @Nullable
-        private String prompt;
-        @Nullable
-        private String description;
-
-        private Builder() {}
-
-        private Builder(PropertyDescriptor base) {
-            name = base.name;
-            type = base.getType();
-            defaultValue = base.getDefault();
-            hidden = base.hidden;
-            prompt = base.prompt;
-            description = base.description;
-        }
-
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder type(PropertyType type) {
-            this.type = type;
-            return this;
-        }
-
-        // default is java reserved word
-        @JsonProperty("default")
-        public Builder defaultValue(@Nullable Object defaultValue) {
-            this.defaultValue = defaultValue;
-            return this;
-        }
-
-        public Builder hidden(boolean hidden) {
-            this.hidden = hidden;
-            return this;
-        }
-
-        public Builder prompt(@Nullable String prompt) {
-            this.prompt = prompt;
-            return this;
-        }
-
-        @JsonDeserialize(using = MultilineDeserializer.class)
-        public Builder description(@Nullable String description) {
-            this.description = description;
-            return this;
-        }
-
-        public PropertyDescriptor build() {
-            Preconditions.checkNotNull(name);
-            Preconditions.checkNotNull(type);
-            if (type == PropertyType.STRING) {
-                return new StringPropertyDescriptor(name, getDefaultAsString(), hidden, prompt,
-                        description);
-            }
-            if (type == PropertyType.BOOLEAN) {
-                return new BooleanPropertyDescriptor(name, getDefaultAsBoolean(), hidden, prompt,
-                        description);
-            }
-            if (type == PropertyType.DOUBLE) {
-                return new DoublePropertyDescriptor(name, getDefaultAsDouble(), hidden, prompt,
-                        description);
-            }
-            throw new IllegalStateException("Unexpected PropertyType: " + type);
-        }
-
-        private String getDefaultAsString() {
-            if (defaultValue instanceof String) {
-                return (String) defaultValue;
-            } else if (defaultValue == null) {
-                return "";
-            } else {
-                logger.error("unexpected value for property {}: {}", name, defaultValue);
-                return "";
-            }
-        }
-
-        private Boolean getDefaultAsBoolean() {
-            if (defaultValue instanceof Boolean) {
-                return (Boolean) defaultValue;
-            } else if (defaultValue == null) {
-                return false;
-            } else {
-                logger.error("unexpected value for property {}: {}", name, defaultValue);
-                return false;
-            }
-        }
-
-        @Nullable
-        private Double getDefaultAsDouble() {
-            if (defaultValue instanceof Double || defaultValue == null) {
-                return (Double) defaultValue;
-            } else {
-                logger.error("unexpected value for property {}: {}", name, defaultValue);
-                return null;
-            }
         }
     }
 }

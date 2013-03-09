@@ -78,7 +78,8 @@ public class ObjectArrays {
 }
 
 public class Ordering<T> {
-    public <E extends T> List<E> sortedCopy(@ReadOnly Iterable<E> iterable);
+    public <E extends T> List<E> sortedCopy(@ReadOnly Iterable<E> iterable) @ReadOnly;
+    public <E extends T> E max(@ReadOnly Iterable<E> iterable) @ReadOnly;
 }
 
 public class Queues {
@@ -87,4 +88,17 @@ public class Queues {
 
 public class Sets {
     public static <E> SetView<E> difference(@ReadOnly Set<E> set1, @ReadOnly Set<?> set2);
+}
+
+/* ========================================================================== */
+package com.google.common.io;
+
+public class CharSource {
+    public Reader openStream() @ReadOnly;
+    public long copyTo(Appendable appendable) @ReadOnly;
+    public String read() @ReadOnly;
+}
+
+public class CharStreams {
+    public static @Immutable CharSource asCharSource(String string);
 }

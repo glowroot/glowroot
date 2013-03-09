@@ -15,8 +15,12 @@
  */
 package io.informant.testkit;
 
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 
 /**
@@ -29,8 +33,12 @@ public class CoarseProfilingConfig {
     private int initialDelayMillis;
     private int intervalMillis;
     private int totalSeconds;
-    @Nullable
-    private String version;
+
+    private final String version;
+
+    CoarseProfilingConfig(String version) {
+        this.version = version;
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -64,13 +72,8 @@ public class CoarseProfilingConfig {
         this.totalSeconds = totalSeconds;
     }
 
-    @Nullable
     public String getVersion() {
         return version;
-    }
-
-    void setVersion(@Nullable String version) {
-        this.version = version;
     }
 
     @Override
@@ -105,5 +108,24 @@ public class CoarseProfilingConfig {
                 .add("totalSeconds", totalSeconds)
                 .add("version", version)
                 .toString();
+    }
+
+    @JsonCreator
+    static CoarseProfilingConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+            @JsonProperty("initialDelayMillis") @Nullable Integer initialDelayMillis,
+            @JsonProperty("intervalMillis") @Nullable Integer intervalMillis,
+            @JsonProperty("totalSeconds") @Nullable Integer totalSeconds,
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(enabled, "enabled");
+        checkRequiredProperty(initialDelayMillis, "initialDelayMillis");
+        checkRequiredProperty(intervalMillis, "intervalMillis");
+        checkRequiredProperty(totalSeconds, "totalSeconds");
+        checkRequiredProperty(version, "version");
+        CoarseProfilingConfig config = new CoarseProfilingConfig(version);
+        config.setEnabled(enabled);
+        config.setInitialDelayMillis(initialDelayMillis);
+        config.setIntervalMillis(intervalMillis);
+        config.setTotalSeconds(totalSeconds);
+        return config;
     }
 }

@@ -15,6 +15,8 @@
  */
 package io.informant.packager;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -32,8 +34,6 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 
 import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Preconditions;
 
 /**
  * @author Trask Stalnaker
@@ -79,14 +79,14 @@ public class PackagerMojo extends AbstractMojo {
         if (plugins == null) {
             plugins = new PluginConfig[0];
         }
-        Preconditions.checkNotNull(project);
-        Preconditions.checkNotNull(projectHelper);
-        Preconditions.checkNotNull(artifactFactory);
-        Preconditions.checkNotNull(artifactResolver);
-        Preconditions.checkNotNull(remoteArtifactRepositories);
-        Preconditions.checkNotNull(localRepository);
-        Preconditions.checkNotNull(finalName);
-        Preconditions.checkNotNull(plugins);
+        checkNotNull(project);
+        checkNotNull(projectHelper);
+        checkNotNull(artifactFactory);
+        checkNotNull(artifactResolver);
+        checkNotNull(remoteArtifactRepositories);
+        checkNotNull(localRepository);
+        checkNotNull(finalName);
+        checkNotNull(plugins);
         Packager packager = new Packager(project, projectHelper, artifactFactory, artifactResolver,
                 remoteArtifactRepositories, localRepository, finalName, plugins, getLog());
         try {

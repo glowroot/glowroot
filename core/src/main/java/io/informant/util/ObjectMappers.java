@@ -21,11 +21,14 @@ import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.AssertNonNullAfter;
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -53,6 +56,32 @@ public class ObjectMappers {
 
     public static ObjectMapper create() {
         return new ObjectMapper().registerModule(new EnumModule());
+    }
+
+    public static <T> T readRequiredValue(@ReadOnly ObjectMapper mapper, String content,
+            Class<T> type) throws IOException, JsonProcessingException {
+        /*@Nullable*/T value = mapper.readValue(content, type);
+        if (value == null) {
+            throw new JsonMappingException("Content is json null");
+        }
+        return value;
+    }
+
+    public static <T> T treeToRequiredValue(@ReadOnly ObjectMapper mapper, TreeNode n,
+            Class<T> type) throws JsonProcessingException {
+        /*@Nullable*/T value = mapper.treeToValue(n, type);
+        if (value == null) {
+            throw new JsonMappingException("Node is json null");
+        }
+        return value;
+    }
+
+    @AssertNonNullAfter("#1")
+    public static <T extends /*@Nullable*/Object> void checkRequiredProperty(T reference,
+            String fieldName) throws JsonMappingException {
+        if (reference == null) {
+            throw new JsonMappingException("Null value not allowed for field: " + fieldName);
+        }
     }
 
     @SuppressWarnings("serial")

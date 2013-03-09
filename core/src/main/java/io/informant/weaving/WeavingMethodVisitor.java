@@ -15,6 +15,7 @@
  */
 package io.informant.weaving;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.weaving.InjectMethodArg;
 import io.informant.api.weaving.InjectTraveler;
 import io.informant.api.weaving.IsEnabled;
@@ -124,10 +125,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
-
-        if (methodStartLabel == null) {
-            throw new NullPointerException("Call to onMethodEnter() is required");
-        }
+        checkNotNull(methodStartLabel, "Call to onMethodEnter() is required");
         if (name.equals("this")) {
             // this is only so that eclipse debugger will not display <unknown receiving type>
             // inside code when inside of code before the previous method start label
@@ -182,9 +180,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
         if (needsTryCatch) {
-            if (catchStartLabel == null) {
-                throw new NullPointerException("Call to onMethodEnter() is required");
-            }
+            checkNotNull(catchStartLabel, "Call to onMethodEnter() is required");
             Label catchEndLabel = newLabel();
             Label catchHandlerLabel2 = newLabel();
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,

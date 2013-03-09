@@ -37,7 +37,7 @@ public class CharStreams2 {
 
     // hopefully something like this will be in guava at some point
     // see https://code.google.com/p/guava-libraries/issues/detail?id=1310
-    public static CharSource join(List<CharSource> charSources) {
+    public static CharSource join(List</*@ReadOnly*/CharSource> charSources) {
         // wrap CharSources into InputSuppliers in order to use CharStreams.join(InputSuppliers)
         final List<InputSupplier<Reader>> suppliers = Lists.newArrayList();
         for (final CharSource charSource : charSources) {

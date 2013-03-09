@@ -15,11 +15,15 @@
  */
 package io.informant.testkit;
 
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
+
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 
 /**
@@ -28,51 +32,54 @@ import com.google.common.base.Objects;
  */
 class PluginDescriptor {
 
-    @JsonProperty
-    @Nullable
-    private String name;
-    @JsonProperty
-    @Nullable
-    private String groupId;
-    @JsonProperty
-    @Nullable
-    private String artifactId;
-    @JsonProperty
-    @Nullable
-    private String version;
-    @JsonProperty
-    @Nullable
-    private List<PropertyDescriptor> properties;
-    @JsonProperty
-    @Nullable
-    private List<String> aspects;
+    private final String name;
+    private final String groupId;
+    private final String artifactId;
+    private final String version;
+    private final List<PropertyDescriptor> properties;
+    private final List<String> aspects;
 
-    @Nullable
+    @JsonCreator
+    PluginDescriptor(@JsonProperty("name") @Nullable String name,
+            @JsonProperty("groupId") @Nullable String groupId,
+            @JsonProperty("artifactId") @Nullable String artifactId,
+            @JsonProperty("version") @Nullable String version,
+            @JsonProperty("properties") @Nullable List<PropertyDescriptor> properties,
+            @JsonProperty("aspects") @Nullable List<String> aspects) throws JsonMappingException {
+        checkRequiredProperty(name, "name");
+        checkRequiredProperty(groupId, "groupId");
+        checkRequiredProperty(artifactId, "artifactId");
+        checkRequiredProperty(version, "version");
+        checkRequiredProperty(properties, "properties");
+        checkRequiredProperty(aspects, "aspects");
+        this.name = name;
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
+        this.properties = properties;
+        this.aspects = aspects;
+    }
+
     String getName() {
         return name;
     }
 
-    @Nullable
     String getGroupId() {
         return groupId;
     }
 
-    @Nullable
     String getArtifactId() {
         return artifactId;
     }
 
-    @Nullable
     String getVersion() {
         return version;
     }
 
-    @Nullable
     List<PropertyDescriptor> getProperties() {
         return properties;
     }
 
-    @Nullable
     List<String> getAspects() {
         return aspects;
     }

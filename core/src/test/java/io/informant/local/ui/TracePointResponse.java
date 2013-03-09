@@ -53,30 +53,30 @@ class TracePointResponse {
     }
 
     static class RawPoint implements Comparable<RawPoint> {
+
         private final long capturedAt;
         private final double durationSeconds;
         private final String id;
+
         @JsonCreator
-        private static RawPoint from(ArrayNode point) {
-            long capturedAt = point.get(0).asLong();
-            double durationSeconds = point.get(1).asDouble();
-            String id = point.get(2).asText();
-            return new RawPoint(capturedAt, durationSeconds, id);
+        RawPoint(ArrayNode point) {
+            capturedAt = point.get(0).asLong();
+            durationSeconds = point.get(1).asDouble();
+            id = point.get(2).asText();
         }
-        private RawPoint(long capturedAt, double durationSeconds, String id) {
-            this.capturedAt = capturedAt;
-            this.durationSeconds = durationSeconds;
-            this.id = id;
-        }
+
         long getCapturedAt() {
             return capturedAt;
         }
+
         double getDurationSeconds() {
             return durationSeconds;
         }
+
         String getId() {
             return id;
         }
+
         // natural sort order is by duration desc
         public int compareTo(RawPoint o) {
             return Double.compare(o.durationSeconds, durationSeconds);

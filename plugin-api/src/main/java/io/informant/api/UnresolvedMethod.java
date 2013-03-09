@@ -145,7 +145,7 @@ public class UnresolvedMethod {
             @Nullable ImmutableList<Class<?>> parameterTypes,
             @Nullable ImmutableList<String> parameterTypeNames) {
         if (parameterTypes == null && parameterTypeNames == null) {
-            throw new NullPointerException("Constructor args 'parameterTypes' and"
+            throw new IllegalStateException("Constructor args 'parameterTypes' and"
                     + " 'parameterTypeNames' cannot both be null (enforced by static factory"
                     + " methods)");
         }
@@ -316,7 +316,7 @@ public class UnresolvedMethod {
                 return resolvedClass.getMethod(methodName,
                         Iterables.toArray(parameterTypes, Class.class));
             } else if (parameterTypeNames == null) {
-                throw new NullPointerException("Fields 'parameterTypes' and"
+                throw new IllegalStateException("Fields 'parameterTypes' and"
                         + " 'parameterTypeNames' cannot both be null (enforced by static factory"
                         + " methods)");
             } else {

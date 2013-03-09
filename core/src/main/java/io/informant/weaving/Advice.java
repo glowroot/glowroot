@@ -55,6 +55,7 @@ import com.google.common.collect.ImmutableMap;
 @Immutable
 public class Advice {
 
+    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(Advice.class);
 
     private static final ImmutableList<ParameterKind> isEnabledValidParameterKinds =

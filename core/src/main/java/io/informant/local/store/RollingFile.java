@@ -33,6 +33,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 
 import com.google.common.base.Charsets;
@@ -73,7 +75,7 @@ public class RollingFile {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    FileBlock write(CharSource charSource) {
+    FileBlock write(@ReadOnly CharSource charSource) {
         synchronized (lock) {
             if (closing) {
                 return FileBlock.expired();
@@ -90,6 +92,7 @@ public class RollingFile {
         }
     }
 
+    @Immutable
     CharSource read(FileBlock block, String rolledOverResponse) {
         return new FileBlockCharSource(block, rolledOverResponse);
     }
@@ -116,7 +119,7 @@ public class RollingFile {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    @ThreadSafe
+    @Immutable
     private class FileBlockCharSource extends CharSource {
 
         private final FileBlock block;

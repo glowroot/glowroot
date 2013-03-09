@@ -15,16 +15,13 @@
  */
 package io.informant.config;
 
+import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 
 /**
  * Immutable structure to hold the user tracing config.
@@ -33,7 +30,6 @@ import com.google.common.hash.Hashing;
  * @since 0.5
  */
 @Immutable
-@JsonDeserialize(builder = UserConfig.Builder.class)
 public class UserConfig {
 
     private final boolean enabled;
@@ -46,21 +42,26 @@ public class UserConfig {
     private final boolean fineProfiling;
     private final String version;
 
-    public static Builder builder(UserConfig base) {
-        return new Builder(base);
-    }
-
     static UserConfig getDefault() {
-        return new Builder().build();
+        final boolean enabled = true;
+        final String userId = null;
+        final int storeThresholdMillis = 0;
+        final boolean fineProfiling = true;
+        return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling);
     }
 
-    private UserConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
-            boolean fineProfiling, String version) {
+    public static Overlay overlay(UserConfig base) {
+        return new Overlay(base);
+    }
+
+    @VisibleForTesting
+    public UserConfig(boolean enabled, @Nullable String userId, int storeThresholdMillis,
+            boolean fineProfiling) {
         this.enabled = enabled;
         this.userId = userId;
         this.storeThresholdMillis = storeThresholdMillis;
         this.fineProfiling = fineProfiling;
-        this.version = version;
+        version = Hashing2.sha1(enabled, userId, storeThresholdMillis, fineProfiling);
     }
 
     public boolean isEnabled() {
@@ -96,64 +97,35 @@ public class UserConfig {
                 .toString();
     }
 
-    @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder {
+    // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
+    public static class Overlay {
 
-        private boolean enabled = true;
+        private boolean enabled;
         @Nullable
         private String userId;
-        private int storeThresholdMillis = 0;
-        private boolean fineProfiling = true;
+        private int storeThresholdMillis;
+        private boolean fineProfiling;
 
-        private Builder() {}
-
-        private Builder(UserConfig base) {
+        private Overlay(UserConfig base) {
             enabled = base.enabled;
             userId = base.userId;
             storeThresholdMillis = base.storeThresholdMillis;
             fineProfiling = base.fineProfiling;
         }
-
-        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
-        // for overlaying values on top of a base config
-        @JsonProperty
-        public Builder enabled(boolean enabled) {
+        public void setEnabled(boolean enabled) {
             this.enabled = enabled;
-            return this;
         }
-
-        @JsonProperty
-        public Builder userId(String userId) {
+        public void setUserId(@Nullable String userId) {
             this.userId = userId;
-            return this;
         }
-
-        @JsonProperty
-        public Builder storeThresholdMillis(int storeThresholdMillis) {
+        public void setStoreThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
-            return this;
         }
-
-        @JsonProperty
-        public Builder fineProfiling(boolean fineProfiling) {
+        public void setFineProfiling(boolean fineProfiling) {
             this.fineProfiling = fineProfiling;
-            return this;
         }
-
         public UserConfig build() {
-            String version = buildVersion();
-            return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling, version);
-        }
-
-        private String buildVersion() {
-            Hasher hasher = Hashing.sha1().newHasher();
-            hasher.putBoolean(enabled);
-            if (userId != null) {
-                hasher.putString(userId);
-            }
-            hasher.putInt(storeThresholdMillis);
-            hasher.putBoolean(fineProfiling);
-            return hasher.hash().toString();
+            return new UserConfig(enabled, userId, storeThresholdMillis, fineProfiling);
         }
     }
 }

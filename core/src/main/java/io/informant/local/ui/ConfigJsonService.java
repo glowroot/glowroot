@@ -114,8 +114,8 @@ class ConfigJsonService implements JsonService {
         configNode.remove("version");
 
         GeneralConfig config = configService.getGeneralConfig();
-        GeneralConfig.Builder builder = GeneralConfig.builder(config);
-        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+        GeneralConfig.Overlay builder = GeneralConfig.overlay(config);
+        mapper.readerForUpdating(builder).readValue(configNode);
         String updatedVersion = configService.updateGeneralConfig(builder.build(), priorVersion);
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getGeneralConfig().getRollingSizeMb() * 1024);
@@ -134,11 +134,11 @@ class ConfigJsonService implements JsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        CoarseProfilingConfig.Builder builder =
-                CoarseProfilingConfig.builder(configService.getCoarseProfilingConfig());
-        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+        CoarseProfilingConfig.Overlay overlay =
+                CoarseProfilingConfig.overlay(configService.getCoarseProfilingConfig());
+        mapper.readerForUpdating(overlay).readValue(configNode);
 
-        String updatedVersion = configService.updateCoarseProfilingConfig(builder.build(),
+        String updatedVersion = configService.updateCoarseProfilingConfig(overlay.build(),
                 priorVersion);
         return "\"" + updatedVersion + "\"";
     }
@@ -155,11 +155,11 @@ class ConfigJsonService implements JsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        FineProfilingConfig.Builder builder =
-                FineProfilingConfig.builder(configService.getFineProfilingConfig());
-        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+        FineProfilingConfig.Overlay overlay =
+                FineProfilingConfig.overlay(configService.getFineProfilingConfig());
+        mapper.readerForUpdating(overlay).readValue(configNode);
 
-        String updatedVersion = configService.updateFineProfilingConfig(builder.build(),
+        String updatedVersion = configService.updateFineProfilingConfig(overlay.build(),
                 priorVersion);
         return "\"" + updatedVersion + "\"";
     }
@@ -175,10 +175,10 @@ class ConfigJsonService implements JsonService {
         String priorVersion = versionNode.asText();
         configNode.remove("version");
 
-        UserConfig.Builder builder = UserConfig.builder(configService.getUserConfig());
-        mapper.readerForUpdating(builder).readValue(mapper.treeAsTokens(configNode));
+        UserConfig.Overlay overlay = UserConfig.overlay(configService.getUserConfig());
+        mapper.readerForUpdating(overlay).readValue(configNode);
 
-        String updatedVersion = configService.updateUserConfig(builder.build(), priorVersion);
+        String updatedVersion = configService.updateUserConfig(overlay.build(), priorVersion);
         return "\"" + updatedVersion + "\"";
     }
 
@@ -205,7 +205,8 @@ class ConfigJsonService implements JsonService {
     @JsonServiceMethod
     String addPointcutConfig(String content) throws JsonProcessingException, IOException {
         logger.debug("addPointcutConfig(): content={}", content);
-        PointcutConfig pointcutConfig = mapper.readValue(content, PointcutConfig.class);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
         String version = configService.insertPointcutConfig(pointcutConfig);
         return "\"" + version + "\"";
     }
@@ -215,7 +216,8 @@ class ConfigJsonService implements JsonService {
             throws JsonProcessingException, IOException {
         logger.debug("updatePointcutConfig(): priorVersion={}, content={}", priorVersion,
                 content);
-        PointcutConfig pointcutConfig = mapper.readValue(content, PointcutConfig.class);
+        PointcutConfig pointcutConfig =
+                ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
         String updatedVersion = configService.updatePointcutConfig(priorVersion, pointcutConfig);
         return "\"" + updatedVersion + "\"";
     }
@@ -223,7 +225,7 @@ class ConfigJsonService implements JsonService {
     @JsonServiceMethod
     void removePointcutConfig(String content) throws IOException {
         logger.debug("removePointcutConfig(): content={}", content);
-        String version = mapper.readValue(content, String.class);
+        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
         configService.deletePointcutConfig(version);
     }
 

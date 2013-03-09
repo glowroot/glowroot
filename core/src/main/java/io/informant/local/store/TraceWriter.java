@@ -15,6 +15,7 @@
  */
 package io.informant.local.store;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
@@ -30,7 +31,6 @@ import io.informant.util.CharArrayWriter;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ObjectMappers;
 import io.informant.util.Static;
-import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -66,6 +66,7 @@ import com.google.common.io.CharStreams;
 public class TraceWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceWriter.class);
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private TraceWriter() {}
@@ -134,7 +135,7 @@ public class TraceWriter {
     }
 
     @Nullable
-    private static String writeAttributesAsString(List<TraceAttribute> attributes)
+    private static String writeAttributesAsString(@ReadOnly List<TraceAttribute> attributes)
             throws IOException {
         if (attributes.isEmpty()) {
             return null;
@@ -151,14 +152,12 @@ public class TraceWriter {
     }
 
     @Nullable
-    private static String writeMetricsAsString(List<Snapshot> items)
+    private static String writeMetricsAsString(@ReadOnly List<Snapshot> items)
             throws JsonProcessingException {
         Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
                 new Function<Snapshot, Long>() {
                     public Long apply(@Nullable Snapshot snapshot) {
-                        if (snapshot == null) {
-                            throw new NullPointerException("Ordering of non-null elements only");
-                        }
+                        checkNotNull(snapshot, "Ordering of non-null elements only");
                         return snapshot.getTotal();
                     }
                 });
@@ -166,6 +165,7 @@ public class TraceWriter {
     }
 
     @VisibleForTesting
+    @Immutable
     @Nullable
     static CharSource createCharSource(@Nullable MergedStackTree mergedStackTree) {
         if (mergedStackTree == null) {
@@ -216,7 +216,7 @@ public class TraceWriter {
         jw.writeEndArray();
     }
 
-    @ThreadSafe
+    @Immutable
     private static class SpansCharSource extends CharSource {
 
         @ReadOnly

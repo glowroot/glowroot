@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 @Immutable
 class AdviceMatcher {
 
+    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
 
     private final Advice advice;

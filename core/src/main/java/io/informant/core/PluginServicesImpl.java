@@ -381,7 +381,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // this should be impossible since span.getMessageSupplier() is only null when the
                 // span was created using addErrorSpan(), and that method doesn't return the span
                 // afterwards, so it should be impossible to call getMessageSupplier() on it
-                throw new NullPointerException("Somehow got hold of an error Span??");
+                throw new IllegalStateException("Somehow got hold of an error Span??");
             }
             return messageSupplier;
         }

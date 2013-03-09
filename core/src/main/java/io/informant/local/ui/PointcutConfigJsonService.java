@@ -15,6 +15,7 @@
  */
 package io.informant.local.ui;
 
+import static io.informant.util.ObjectMappers.checkRequiredProperty;
 import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
 import io.informant.weaving.ParsedMethod;
@@ -28,8 +29,12 @@ import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -44,6 +49,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 class PointcutConfigJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ParsedTypeCache parsedTypeCache;
@@ -55,10 +61,8 @@ class PointcutConfigJsonService implements JsonService {
     @JsonServiceMethod
     String getMatchingTypeNames(String content) throws IOException {
         logger.debug("getMatchingTypeNames(): content={}", content);
-        TypeNameRequest request = mapper.readValue(content, TypeNameRequest.class);
-        if (request.partialTypeName == null) {
-            throw new IllegalStateException("Request missing partialTypeName attribute");
-        }
+        TypeNameRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, TypeNameRequest.class);
         List<String> matchingTypeNames = parsedTypeCache.getMatchingTypeNames(
                 request.partialTypeName, request.limit);
         return mapper.writeValueAsString(matchingTypeNames);
@@ -67,13 +71,8 @@ class PointcutConfigJsonService implements JsonService {
     @JsonServiceMethod
     String getMatchingMethodNames(String content) throws IOException {
         logger.debug("getMatchingMethodNames(): content={}", content);
-        MethodNameRequest request = mapper.readValue(content, MethodNameRequest.class);
-        if (request.typeName == null) {
-            throw new IllegalStateException("Request missing typeName attribute");
-        }
-        if (request.partialMethodName == null) {
-            throw new IllegalStateException("Request missing partialMethodName attribute");
-        }
+        MethodNameRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, MethodNameRequest.class);
         List<String> matchingMethodNames = parsedTypeCache.getMatchingMethodNames(
                 request.typeName, request.partialMethodName, request.limit);
         return mapper.writeValueAsString(matchingMethodNames);
@@ -82,13 +81,8 @@ class PointcutConfigJsonService implements JsonService {
     @JsonServiceMethod
     String getMatchingMethods(String content) throws IOException {
         logger.debug("getMatchingMethods(): content={}", content);
-        MethodRequest request = mapper.readValue(content, MethodRequest.class);
-        if (request.typeName == null) {
-            throw new IllegalStateException("Request missing typeName attribute");
-        }
-        if (request.methodName == null) {
-            throw new IllegalStateException("Request missing methodName attribute");
-        }
+        MethodRequest request =
+                ObjectMappers.readRequiredValue(mapper, content, MethodRequest.class);
         List<ParsedMethod> parsedMethods = parsedTypeCache.getMatchingParsedMethods(
                 request.typeName, request.methodName);
         ArrayNode matchingMethods = mapper.createArrayNode();
@@ -122,75 +116,79 @@ class PointcutConfigJsonService implements JsonService {
 
     class TypeNameRequest {
 
-        @Nullable
-        private String partialTypeName;
-        private int limit;
+        private final String partialTypeName;
+        private final int limit;
 
-        @Nullable
-        public String getPartialTypeName() {
+        @JsonCreator
+        TypeNameRequest(@JsonProperty("partialTypeName") @Nullable String partialTypeName,
+                @JsonProperty("limit") int limit) throws JsonMappingException {
+            checkRequiredProperty(partialTypeName, "partialTypeName");
+            this.partialTypeName = partialTypeName;
+            this.limit = limit;
+        }
+
+        String getPartialTypeName() {
             return partialTypeName;
         }
-        public void setPartialTypeName(@Nullable String partialTypeName) {
-            this.partialTypeName = partialTypeName;
-        }
-        public int getLimit() {
+
+        int getLimit() {
             return limit;
-        }
-        public void setLimit(int limit) {
-            this.limit = limit;
         }
     }
 
     class MethodNameRequest {
 
-        @Nullable
-        private String typeName;
-        @Nullable
-        private String partialMethodName;
-        private int limit;
+        private final String typeName;
+        private final String partialMethodName;
+        private final int limit;
 
-        @Nullable
-        public String getTypeName() {
+        @JsonCreator
+        MethodNameRequest(@JsonProperty("typeName") @Nullable String typeName,
+                @JsonProperty("partialMethodName") @Nullable String partialMethodName,
+                @JsonProperty("limit") int limit) throws JsonMappingException {
+            checkRequiredProperty(typeName, "typeName");
+            checkRequiredProperty(partialMethodName, "partialMethodName");
+            this.typeName = typeName;
+            this.partialMethodName = partialMethodName;
+            this.limit = limit;
+        }
+
+        String getTypeName() {
             return typeName;
         }
-        public void setTypeName(@Nullable String typeName) {
-            this.typeName = typeName;
-        }
-        @Nullable
-        public String getPartialMethodName() {
+
+        String getPartialMethodName() {
             return partialMethodName;
         }
-        public void setPartialMethodName(@Nullable String partialMethodName) {
-            this.partialMethodName = partialMethodName;
-        }
-        public int getLimit() {
+
+        int getLimit() {
             return limit;
-        }
-        public void setLimit(int limit) {
-            this.limit = limit;
         }
     }
 
     class MethodRequest {
 
-        @Nullable
-        private String typeName;
-        @Nullable
-        private String methodName;
+        private final String typeName;
+        private final String methodName;
+
+        @JsonCreator
+        MethodRequest(@JsonProperty("typeName") @Nullable String typeName,
+                @JsonProperty("methodName") @Nullable String methodName)
+                throws JsonMappingException {
+            checkRequiredProperty(typeName, "typeName");
+            checkRequiredProperty(methodName, "methodName");
+            this.typeName = typeName;
+            this.methodName = methodName;
+        }
 
         @Nullable
-        public String getTypeName() {
+        String getTypeName() {
             return typeName;
         }
-        public void setTypeName(@Nullable String typeName) {
-            this.typeName = typeName;
-        }
+
         @Nullable
-        public String getMethodName() {
+        String getMethodName() {
             return methodName;
-        }
-        public void setMethodName(@Nullable String methodName) {
-            this.methodName = methodName;
         }
     }
 }

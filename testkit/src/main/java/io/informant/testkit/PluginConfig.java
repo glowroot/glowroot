@@ -15,15 +15,15 @@
  */
 package io.informant.testkit;
 
-import io.informant.testkit.internal.ObjectMappers;
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
 
 import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
@@ -33,26 +33,25 @@ import com.google.common.collect.Maps;
  */
 public class PluginConfig {
 
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private final String groupId;
+    private final String artifactId;
 
-    @JsonProperty
-    @Nullable
-    private String groupId;
-    @JsonProperty
-    @Nullable
-    private String artifactId;
     private boolean enabled;
-    @JsonProperty
-    private final Map<String, /*@Nullable*/Object> properties = Maps.newHashMap();
-    @Nullable
-    private String version;
+    private final Map<String, /*@Nullable*/Object> properties;
 
-    @Nullable
+    private final String version;
+
+    PluginConfig(String groupId, String artifactId, String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        properties = Maps.newHashMap();
+        this.version = version;
+    }
+
     public String getGroupId() {
         return groupId;
     }
 
-    @Nullable
     public String getArtifactId() {
         return artifactId;
     }
@@ -78,15 +77,11 @@ public class PluginConfig {
         properties.put(name, value);
     }
 
-    @Nullable
     public String getVersion() {
         return version;
     }
 
-    void setVersion(@Nullable String version) {
-        this.version = version;
-    }
-
+    @JsonProperty
     Map<String, /*@Nullable*/Object> getProperties() {
         return properties;
     }
@@ -98,7 +93,9 @@ public class PluginConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(enabled, that.enabled)
+            return Objects.equal(groupId, that.groupId)
+                    && Objects.equal(artifactId, that.artifactId)
+                    && Objects.equal(enabled, that.enabled)
                     && Objects.equal(properties, that.properties);
         }
         return false;
@@ -109,15 +106,34 @@ public class PluginConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, properties);
+        return Objects.hashCode(groupId, artifactId, enabled, properties);
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
+                .add("groupId", groupId)
+                .add("artifactId", artifactId)
                 .add("enabled", enabled)
                 .add("properties", properties)
                 .add("version", version)
                 .toString();
+    }
+
+    @JsonCreator
+    static PluginConfig readValue(@JsonProperty("groupId") @Nullable String groupId,
+            @JsonProperty("artifactId") @Nullable String artifactId,
+            @JsonProperty("enabled") @Nullable Boolean enabled,
+            @JsonProperty("properties") @Nullable Map<String, /*@Nullable*/Object> properties,
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(groupId, "groupId");
+        checkRequiredProperty(artifactId, "artifactId");
+        checkRequiredProperty(enabled, "enabled");
+        checkRequiredProperty(properties, "properties");
+        checkRequiredProperty(version, "version");
+        PluginConfig config = new PluginConfig(groupId, artifactId, version);
+        config.setEnabled(enabled);
+        config.properties.putAll(properties);
+        return config;
     }
 }

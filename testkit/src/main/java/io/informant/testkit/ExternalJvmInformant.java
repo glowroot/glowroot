@@ -22,20 +22,17 @@ import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Longs;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
@@ -49,6 +46,7 @@ import com.ning.http.client.Response;
 @ThreadSafe
 class ExternalJvmInformant implements Informant {
 
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final int uiPort;
@@ -79,7 +77,7 @@ class ExternalJvmInformant implements Informant {
     // returns new version
     public String updateGeneralConfig(GeneralConfig config) throws Exception {
         String content = post("/config/general", mapper.writeValueAsString(config));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
@@ -89,7 +87,7 @@ class ExternalJvmInformant implements Informant {
     // returns new version
     public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
         String content = post("/config/coarse-profiling", mapper.writeValueAsString(config));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     public FineProfilingConfig getFineProfilingConfig() throws Exception {
@@ -99,7 +97,7 @@ class ExternalJvmInformant implements Informant {
     // returns new version
     public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         String content = post("/config/fine-profiling", mapper.writeValueAsString(config));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     public UserConfig getUserConfig() throws Exception {
@@ -109,22 +107,18 @@ class ExternalJvmInformant implements Informant {
     // returns new version
     public String updateUserConfig(UserConfig config) throws Exception {
         String content = post("/config/user", mapper.writeValueAsString(config));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
-        Map<String, PluginConfig> pluginConfigs = getConfig().getPluginConfigs();
-        if (pluginConfigs == null) {
-            return null;
-        }
-        return pluginConfigs.get(pluginId);
+        return getConfig().getPluginConfigs().get(pluginId);
     }
 
     // returns new version
     public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         String content = post("/config/plugin/" + pluginId, mapper.writeValueAsString(config));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     public List<PointcutConfig> getPointcutConfigs() throws Exception {
@@ -134,7 +128,7 @@ class ExternalJvmInformant implements Informant {
     // returns new version
     public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
         String content = post("/config/pointcut/+", mapper.writeValueAsString(pointcutConfig));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     // returns new version
@@ -142,17 +136,19 @@ class ExternalJvmInformant implements Informant {
             throws Exception {
         String content =
                 post("/config/pointcut/" + version, mapper.writeValueAsString(pointcutConfig));
-        return mapper.readValue(content, String.class);
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     public void removePointcutConfig(String version) throws Exception {
         post("/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
+    @Nullable
     public Trace getLastTrace() throws Exception {
         return getLastTrace(false);
     }
 
+    @Nullable
     public Trace getLastTraceSummary() throws Exception {
         return getLastTrace(true);
     }
@@ -192,6 +188,7 @@ class ExternalJvmInformant implements Informant {
         return Long.parseLong(numStoredTraceSnapshots);
     }
 
+    @Nullable
     private Trace getActiveTrace(int timeout, TimeUnit unit, boolean summary) throws Exception {
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
@@ -208,29 +205,27 @@ class ExternalJvmInformant implements Informant {
         return trace;
     }
 
+    @Nullable
     private Trace getLastTrace(boolean summary) throws Exception {
         String content = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
-        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
+        TracePointResponse response =
+                ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<RawPoint> points = Lists.newArrayList();
         points.addAll(response.getNormalPoints());
         points.addAll(response.getErrorPoints());
         if (points.isEmpty()) {
-            throw new AssertionError("no trace found");
+            return null;
         }
-        RawPoint mostRecentCapturedPoint = Collections.max(points, new Comparator<RawPoint>() {
-            public int compare(RawPoint point1, RawPoint point2) {
-                return Longs.compare(point1.getCapturedAt(), point2.getCapturedAt());
-            }
-        });
+        RawPoint mostRecentCapturedPoint = RawPoint.orderingByCapturedAt.max(points);
         if (summary) {
             String traceContent = get("/explorer/summary/" + mostRecentCapturedPoint.getId());
-            Trace trace = mapper.readValue(traceContent, Trace.class);
+            Trace trace = ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
             trace.setSummary(true);
             return trace;
         } else {
             String traceContent = get("/explorer/detail/" + mostRecentCapturedPoint.getId());
-            return mapper.readValue(traceContent, Trace.class);
+            return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
         }
     }
 
@@ -238,7 +233,8 @@ class ExternalJvmInformant implements Informant {
     private Trace getActiveTrace(boolean summary) throws Exception {
         String content = get("/explorer/points?from=0&to=" + Long.MAX_VALUE + "&low=0&high="
                 + Long.MAX_VALUE + "&limit=1000");
-        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
+        TracePointResponse response =
+                ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         if (response.getActivePoints().isEmpty()) {
             return null;
         } else if (response.getActivePoints().size() > 1) {
@@ -247,18 +243,18 @@ class ExternalJvmInformant implements Informant {
             RawPoint point = response.getActivePoints().get(0);
             if (summary) {
                 String traceContent = get("/explorer/summary/" + point.getId());
-                Trace trace = mapper.readValue(traceContent, Trace.class);
+                Trace trace = ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
                 trace.setSummary(true);
                 return trace;
             } else {
                 String traceContent = get("/explorer/detail/" + point.getId());
-                return mapper.readValue(traceContent, Trace.class);
+                return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
             }
         }
     }
 
     private Config getConfig() throws Exception {
-        return mapper.readValue(get("/config/read"), Config.class);
+        return ObjectMappers.readRequiredValue(mapper, get("/config/read"), Config.class);
     }
 
     private void assertNoActiveTraces() throws Exception {

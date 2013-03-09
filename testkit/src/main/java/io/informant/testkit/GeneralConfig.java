@@ -15,8 +15,12 @@
  */
 package io.informant.testkit;
 
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 
 /**
@@ -32,8 +36,12 @@ public class GeneralConfig {
     private int snapshotExpirationHours;
     private int rollingSizeMb;
     private boolean warnOnSpanOutsideTrace;
-    @Nullable
-    private String version;
+
+    private final String version;
+
+    GeneralConfig(String version) {
+        this.version = version;
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -91,13 +99,8 @@ public class GeneralConfig {
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
     }
 
-    @Nullable
     public String getVersion() {
         return version;
-    }
-
-    void setVersion(@Nullable String version) {
-        this.version = version;
     }
 
     @Override
@@ -139,5 +142,33 @@ public class GeneralConfig {
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("version", version)
                 .toString();
+    }
+
+    @JsonCreator
+    static GeneralConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+            @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
+            @JsonProperty("stuckThresholdSeconds") @Nullable Integer stuckThresholdSeconds,
+            @JsonProperty("maxSpans") @Nullable Integer maxSpans,
+            @JsonProperty("snapshotExpirationHours") @Nullable Integer snapshotExpirationHours,
+            @JsonProperty("rollingSizeMb") @Nullable Integer rollingSizeMb,
+            @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(enabled, "enabled");
+        checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
+        checkRequiredProperty(stuckThresholdSeconds, "stuckThresholdSeconds");
+        checkRequiredProperty(maxSpans, "maxSpans");
+        checkRequiredProperty(snapshotExpirationHours, "snapshotExpirationHours");
+        checkRequiredProperty(rollingSizeMb, "rollingSizeMb");
+        checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
+        checkRequiredProperty(version, "version");
+        GeneralConfig config = new GeneralConfig(version);
+        config.setEnabled(enabled);
+        config.setStoreThresholdMillis(storeThresholdMillis);
+        config.setStuckThresholdSeconds(stuckThresholdSeconds);
+        config.setMaxSpans(maxSpans);
+        config.setSnapshotExpirationHours(snapshotExpirationHours);
+        config.setRollingSizeMb(rollingSizeMb);
+        config.setWarnOnSpanOutsideTrace(warnOnSpanOutsideTrace);
+        return config;
     }
 }

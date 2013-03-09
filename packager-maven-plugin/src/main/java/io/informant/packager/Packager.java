@@ -285,25 +285,25 @@ public class Packager {
                 properties.add(property);
                 continue;
             }
-            PropertyDescriptor.Builder propertyWithOverrides = PropertyDescriptor.builder(property);
+            PropertyDescriptorOverlay overlay = new PropertyDescriptorOverlay(property);
             String overrideDefault = override.getDefault();
             String overrideHidden = override.getHidden();
             String overridePrompt = override.getPrompt();
             String overrideDescription = override.getDescription();
             if (overrideDefault != null) {
-                propertyWithOverrides.defaultValue(getDefaultFromText(overrideDefault,
+                overlay.setDefault(getDefaultFromText(overrideDefault,
                         property.getType()));
             }
             if (overrideHidden != null) {
-                propertyWithOverrides.hidden(Boolean.valueOf(overrideHidden));
+                overlay.setHidden(Boolean.valueOf(overrideHidden));
             }
             if (overridePrompt != null) {
-                propertyWithOverrides.prompt(overridePrompt);
+                overlay.setPrompt(overridePrompt);
             }
             if (overrideDescription != null) {
-                propertyWithOverrides.description(overrideDescription);
+                overlay.setDescription(overrideDescription);
             }
-            properties.add(propertyWithOverrides.build());
+            properties.add(overlay.build());
         }
         return properties;
     }
@@ -350,5 +350,47 @@ public class Packager {
         Writer w = WriterFactory.newXmlWriter(dependencyReducedPomLocation);
         PomWriter.write(w, model, true);
         project.setFile(dependencyReducedPomLocation);
+    }
+
+    private static class PropertyDescriptorOverlay {
+
+        private final String name;
+        private final PropertyType type;
+        @Nullable
+        private Object defaultValue;
+        private boolean hidden;
+        @Nullable
+        private String prompt;
+        @Nullable
+        private String description;
+
+        private PropertyDescriptorOverlay(PropertyDescriptor base) {
+            name = base.getName();
+            type = base.getType();
+            defaultValue = base.getDefault();
+            hidden = base.isHidden();
+            prompt = base.getPrompt();
+            description = base.getDescription();
+        }
+
+        private void setDefault(Object defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        private void setHidden(boolean hidden) {
+            this.hidden = hidden;
+        }
+
+        private void setPrompt(String prompt) {
+            this.prompt = prompt;
+        }
+
+        private void setDescription(String description) {
+            this.description = description;
+        }
+
+        private PropertyDescriptor build() {
+            return PropertyDescriptor.create(name, hidden, prompt, description, type, defaultValue);
+        }
     }
 }

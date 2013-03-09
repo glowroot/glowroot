@@ -19,7 +19,6 @@ import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.util.ObjectMappers;
 import io.informant.util.Resources2;
-import io.informant.util.Singleton;
 import io.informant.weaving.Advice;
 
 import java.io.IOException;
@@ -43,10 +42,12 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Singleton
+@Immutable
 public class PluginDescriptorCache {
 
+    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(PluginDescriptorCache.class);
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
@@ -113,7 +114,7 @@ public class PluginDescriptorCache {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
                 PluginDescriptor pluginDescriptor =
-                        mapper.readValue(content, PluginDescriptor.class);
+                        ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
                 plugins.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 // no need to log stack trace
@@ -132,7 +133,9 @@ public class PluginDescriptorCache {
         }
         String content = Resources.toString(url, Charsets.UTF_8);
         try {
-            return mapper.readValue(content, PackageDescriptor.class).getPlugins();
+            PackageDescriptor packageDescriptor =
+                    ObjectMappers.readRequiredValue(mapper, content, PackageDescriptor.class);
+            return packageDescriptor.getPlugins();
         } catch (JsonProcessingException e) {
             // no need to log stack trace
             logger.error("error in file {}: {}", url.toExternalForm(), e.getMessage());

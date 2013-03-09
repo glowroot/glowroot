@@ -1,0 +1,30 @@
+import checkers.igj.quals.*;
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package io.informant.shaded.slf4j;
+
+@Immutable
+public interface Logger {
+    public String getName();
+    public void trace(String format, @Nullable Object arg);
+    public void trace(String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void trace(String format, @Nullable Object... arguments);
+    public void trace(@Nullable String msg, Throwable t);
+    public void debug(String format, @Nullable Object arg);
+    public void debug(String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void debug(String format, @Nullable Object... arguments);
+    public void debug(@Nullable String msg, Throwable t);
+    public void info(String format, @Nullable Object arg);
+    public void info(String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void info(String format, @Nullable Object... arguments);
+    public void info(@Nullable String msg, Throwable t);
+    public void warn(String format, @Nullable Object arg);
+    public void warn(String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void warn(String format, @Nullable Object... arguments);
+    public void warn(@Nullable String msg, Throwable t);
+    public void error(String format, @Nullable Object arg);
+    public void error(String format, @Nullable Object arg1, @Nullable Object arg2);
+    public void error(String format, @Nullable Object... arguments);
+    public void error(@Nullable String msg, Throwable t);
+}

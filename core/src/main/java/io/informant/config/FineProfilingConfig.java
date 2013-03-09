@@ -15,14 +15,12 @@
  */
 package io.informant.config;
 
+import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.hash.Hashing;
 
 /**
  * Immutable structure to hold the fine-grained profiling config.
@@ -31,11 +29,9 @@ import com.google.common.hash.Hashing;
  * @since 0.5
  */
 @Immutable
-@JsonDeserialize(builder = FineProfilingConfig.Builder.class)
 public class FineProfilingConfig {
 
     private final boolean enabled;
-
     // percentage of traces to apply fine profiling, between 0.0 and 100.0
     private final double tracePercentage;
     private final int intervalMillis;
@@ -44,24 +40,33 @@ public class FineProfilingConfig {
     // for fine-grained profiled traces, the real threshold is the minimum of this and the core
     // threshold
     private final int storeThresholdMillis;
+
     private final String version;
 
     static FineProfilingConfig getDefault() {
-        return new Builder().build();
+        final boolean enabled = true;
+        final double tracePercentage = 0;
+        final int intervalMillis = 50;
+        final int totalSeconds = 10;
+        final int storeThresholdMillis = -1;
+        return new FineProfilingConfig(enabled, tracePercentage, intervalMillis, totalSeconds,
+                storeThresholdMillis);
     }
 
-    public static Builder builder(FineProfilingConfig base) {
-        return new Builder(base);
+    public static Overlay overlay(FineProfilingConfig base) {
+        return new Overlay(base);
     }
 
-    private FineProfilingConfig(boolean enabled, double tracePercentage, int intervalMillis,
-            int totalSeconds, int storeThresholdMillis, String version) {
+    @VisibleForTesting
+    public FineProfilingConfig(boolean enabled, double tracePercentage, int intervalMillis,
+            int totalSeconds, int storeThresholdMillis) {
         this.enabled = enabled;
         this.tracePercentage = tracePercentage;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
         this.storeThresholdMillis = storeThresholdMillis;
-        this.version = version;
+        version = Hashing2.sha1(enabled, tracePercentage, intervalMillis, totalSeconds,
+                storeThresholdMillis);
     }
 
     public boolean isEnabled() {
@@ -101,71 +106,40 @@ public class FineProfilingConfig {
                 .toString();
     }
 
-    @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder {
+    // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
+    public static class Overlay {
 
-        private boolean enabled = true;
-        private double tracePercentage = 0;
-        private int intervalMillis = 50;
-        private int totalSeconds = 10;
-        private int storeThresholdMillis = -1;
+        private boolean enabled;
+        private double tracePercentage;
+        private int intervalMillis;
+        private int totalSeconds;
+        private int storeThresholdMillis;
 
-        private Builder() {}
-
-        private Builder(FineProfilingConfig base) {
+        private Overlay(FineProfilingConfig base) {
             enabled = base.enabled;
             tracePercentage = base.tracePercentage;
             intervalMillis = base.intervalMillis;
             totalSeconds = base.totalSeconds;
             storeThresholdMillis = base.storeThresholdMillis;
         }
-
-        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
-        // for overlaying values on top of a base config
-        @JsonProperty
-        public Builder enabled(boolean enabled) {
+        public void setEnabled(boolean enabled) {
             this.enabled = enabled;
-            return this;
         }
-
-        @JsonProperty
-        public Builder tracePercentage(double tracePercentage) {
+        public void setTracePercentage(double tracePercentage) {
             this.tracePercentage = tracePercentage;
-            return this;
         }
-
-        @JsonProperty
-        public Builder intervalMillis(int intervalMillis) {
+        public void setIntervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
-            return this;
         }
-
-        @JsonProperty
-        public Builder totalSeconds(int totalSeconds) {
+        public void setTotalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
-            return this;
         }
-
-        @JsonProperty
-        public Builder storeThresholdMillis(int storeThresholdMillis) {
+        public void setStoreThresholdMillis(int storeThresholdMillis) {
             this.storeThresholdMillis = storeThresholdMillis;
-            return this;
         }
-
         public FineProfilingConfig build() {
-            String version = buildVersion();
             return new FineProfilingConfig(enabled, tracePercentage, intervalMillis, totalSeconds,
-                    storeThresholdMillis, version);
-        }
-
-        private String buildVersion() {
-            return Hashing.sha1().newHasher()
-                    .putBoolean(enabled)
-                    .putDouble(tracePercentage)
-                    .putInt(intervalMillis)
-                    .putInt(totalSeconds)
-                    .putInt(storeThresholdMillis)
-                    .hash().toString();
+                    storeThresholdMillis);
         }
     }
 }

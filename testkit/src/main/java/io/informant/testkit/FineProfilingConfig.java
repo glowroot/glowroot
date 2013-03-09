@@ -15,8 +15,12 @@
  */
 package io.informant.testkit;
 
+import static io.informant.testkit.internal.ObjectMappers.checkRequiredProperty;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 
 /**
@@ -30,8 +34,12 @@ public class FineProfilingConfig {
     private int intervalMillis;
     private int totalSeconds;
     private int storeThresholdMillis;
-    @Nullable
-    private String version;
+
+    private final String version;
+
+    FineProfilingConfig(String version) {
+        this.version = version;
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -73,13 +81,8 @@ public class FineProfilingConfig {
         this.storeThresholdMillis = storeThresholdMillis;
     }
 
-    @Nullable
     public String getVersion() {
         return version;
-    }
-
-    void setVersion(@Nullable String version) {
-        this.version = version;
     }
 
     @Override
@@ -117,5 +120,27 @@ public class FineProfilingConfig {
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("version", version)
                 .toString();
+    }
+
+    @JsonCreator
+    static FineProfilingConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
+            @JsonProperty("tracePercentage") @Nullable Double tracePercentage,
+            @JsonProperty("intervalMillis") @Nullable Integer intervalMillis,
+            @JsonProperty("totalSeconds") @Nullable Integer totalSeconds,
+            @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
+            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(enabled, "enabled");
+        checkRequiredProperty(tracePercentage, "tracePercentage");
+        checkRequiredProperty(intervalMillis, "intervalMillis");
+        checkRequiredProperty(totalSeconds, "totalSeconds");
+        checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
+        checkRequiredProperty(version, "version");
+        FineProfilingConfig config = new FineProfilingConfig(version);
+        config.setEnabled(enabled);
+        config.setTracePercentage(tracePercentage);
+        config.setIntervalMillis(intervalMillis);
+        config.setTotalSeconds(totalSeconds);
+        config.setStoreThresholdMillis(storeThresholdMillis);
+        return config;
     }
 }

@@ -50,7 +50,9 @@ import com.google.common.io.Files;
 @Immutable
 class ConfigMapper {
 
+    @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapper.class);
+    @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final String GENERAL = "general";
@@ -68,22 +70,10 @@ class ConfigMapper {
 
     Config readValue(String content) throws JsonProcessingException, IOException {
         ObjectNode rootNode = (ObjectNode) mapper.readTree(content);
-        ObjectNode generalNode = (ObjectNode) rootNode.get(GENERAL);
-        GeneralConfig generalConfig = generalNode == null
-                ? GeneralConfig.getDefault()
-                : mapper.treeToValue(generalNode, GeneralConfig.class);
-        ObjectNode coarseProfilingNode = (ObjectNode) rootNode.get(COARSE_PROFILING);
-        CoarseProfilingConfig coarseProfilingConfig = coarseProfilingNode == null
-                ? CoarseProfilingConfig.getDefault()
-                : mapper.treeToValue(coarseProfilingNode, CoarseProfilingConfig.class);
-        ObjectNode fineProfilingNode = (ObjectNode) rootNode.get(FINE_PROFILING);
-        FineProfilingConfig fineProfilingConfig = fineProfilingNode == null
-                ? FineProfilingConfig.getDefault()
-                : mapper.treeToValue(fineProfilingNode, FineProfilingConfig.class);
-        ObjectNode userNode = (ObjectNode) rootNode.get(USER);
-        UserConfig userConfig = userNode == null
-                ? UserConfig.getDefault()
-                : mapper.treeToValue(userNode, UserConfig.class);
+        GeneralConfig generalConfig = readGeneralNode(rootNode);
+        CoarseProfilingConfig coarseProfilingConfig = readCoarseProfilingNode(rootNode);
+        FineProfilingConfig fineProfilingConfig = readFineProfilingNode(rootNode);
+        UserConfig userConfig = readUserNode(rootNode);
         Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
@@ -127,6 +117,58 @@ class ConfigMapper {
         return sb.toString();
     }
 
+    private static GeneralConfig readGeneralNode(ObjectNode rootNode)
+            throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(GENERAL);
+        GeneralConfig defaultConfig = GeneralConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            GeneralConfig.Overlay overlay = GeneralConfig.overlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    private static CoarseProfilingConfig readCoarseProfilingNode(ObjectNode rootNode)
+            throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(COARSE_PROFILING);
+        CoarseProfilingConfig defaultConfig = CoarseProfilingConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            CoarseProfilingConfig.Overlay overlay = CoarseProfilingConfig.overlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    private static FineProfilingConfig readFineProfilingNode(ObjectNode rootNode)
+            throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(FINE_PROFILING);
+        FineProfilingConfig defaultConfig = FineProfilingConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            FineProfilingConfig.Overlay overlay = FineProfilingConfig.overlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    private static UserConfig readUserNode(ObjectNode rootNode) throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(USER);
+        UserConfig defaultConfig = UserConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            UserConfig.Overlay overlay = UserConfig.overlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    @ReadOnly
     private static Map<String, ObjectNode> createPluginNodes(ObjectNode rootNode) {
         ArrayNode pluginsNode = (ArrayNode) rootNode.get(PLUGINS);
         if (pluginsNode == null) {
@@ -183,7 +225,8 @@ class ConfigMapper {
         }
         ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
         for (Iterator<JsonNode> i = pointcutsNode.iterator(); i.hasNext();) {
-            PointcutConfig pointcutConfig = mapper.treeToValue(i.next(), PointcutConfig.class);
+            PointcutConfig pointcutConfig =
+                    ObjectMappers.treeToRequiredValue(mapper, i.next(), PointcutConfig.class);
             pointcutConfigs.add(pointcutConfig);
         }
         return pointcutConfigs.build();

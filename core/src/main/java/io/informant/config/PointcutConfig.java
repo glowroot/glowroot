@@ -15,7 +15,9 @@
  */
 package io.informant.config;
 
+import static io.informant.util.ObjectMappers.checkRequiredProperty;
 import io.informant.api.weaving.MethodModifier;
+import io.informant.util.Hashing2;
 
 import java.util.List;
 
@@ -23,15 +25,13 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 
 /**
  * Immutable structure to hold an adhoc span/metric pointcut.
@@ -40,7 +40,6 @@ import com.google.common.hash.Hashing;
  * @since 0.5
  */
 @Immutable
-@JsonDeserialize(builder = PointcutConfig.Builder.class)
 public class PointcutConfig {
 
     private final ImmutableList<CaptureItem> captureItems;
@@ -55,10 +54,11 @@ public class PointcutConfig {
     private final String spanTemplate;
     private final String version;
 
-    private PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
+    @VisibleForTesting
+    public PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
             String methodName, @ReadOnly List<String> methodArgTypeNames,
             String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
-            @Nullable String metricName, @Nullable String spanTemplate, String version) {
+            @Nullable String metricName, @Nullable String spanTemplate) {
         this.captureItems = ImmutableList.copyOf(captureItems);
         this.typeName = typeName;
         this.methodName = methodName;
@@ -67,7 +67,8 @@ public class PointcutConfig {
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
         this.metricName = metricName;
         this.spanTemplate = spanTemplate;
-        this.version = version;
+        version = Hashing2.sha1(captureItems, typeName, methodName, methodArgTypeNames,
+                methodReturnTypeName, methodModifiers, metricName, spanTemplate);
     }
 
     @Immutable
@@ -112,6 +113,33 @@ public class PointcutConfig {
         return version;
     }
 
+    @JsonCreator
+    static PointcutConfig readValue(
+            @JsonProperty("captureItems") @Nullable List<CaptureItem> captureItems,
+            @JsonProperty("typeName") @Nullable String typeName,
+            @JsonProperty("methodName") @Nullable String methodName,
+            @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
+            @JsonProperty("methodReturnTypeName") @Nullable String methodReturnTypeName,
+            @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
+            @JsonProperty("metricName") @Nullable String metricName,
+            @JsonProperty("spanTemplate") @Nullable String spanTemplate)
+            throws JsonMappingException {
+        checkRequiredProperty(typeName, "typeName");
+        checkRequiredProperty(methodName, "methodName");
+        checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
+        return new PointcutConfig(orEmpty(captureItems), typeName, methodName,
+                orEmpty(methodArgTypeNames), methodReturnTypeName, orEmpty(methodModifiers),
+                metricName, spanTemplate);
+    }
+
+    @ReadOnly
+    private static <T> List<T> orEmpty(@ReadOnly @Nullable List<T> list) {
+        if (list == null) {
+            return ImmutableList.of();
+        }
+        return list;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -130,110 +158,5 @@ public class PointcutConfig {
     @Immutable
     public enum CaptureItem {
         METRIC, SPAN, TRACE;
-    }
-
-    @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder {
-
-        @ReadOnly
-        private List<CaptureItem> captureItems = ImmutableList.of();
-        @Nullable
-        private String typeName;
-        @Nullable
-        private String methodName;
-        @ReadOnly
-        private List<String> methodArgTypeNames = ImmutableList.of();
-        @Nullable
-        private String methodReturnTypeName;
-        @ReadOnly
-        private List<MethodModifier> methodModifiers = ImmutableList.of();
-        @Nullable
-        private String metricName;
-        @Nullable
-        private String spanTemplate;
-
-        @VisibleForTesting
-        public Builder() {}
-
-        public Builder captureItems(@ReadOnly List<CaptureItem> captureItems) {
-            this.captureItems = captureItems;
-            return this;
-        }
-
-        public Builder typeName(String typeName) {
-            this.typeName = typeName;
-            return this;
-        }
-
-        public Builder methodName(String methodName) {
-            this.methodName = methodName;
-            return this;
-        }
-
-        public Builder methodArgTypeNames(@ReadOnly List<String> methodArgTypeNames) {
-            this.methodArgTypeNames = methodArgTypeNames;
-            return this;
-        }
-
-        public Builder methodReturnTypeName(String methodReturnTypeName) {
-            this.methodReturnTypeName = methodReturnTypeName;
-            return this;
-        }
-
-        public Builder methodModifiers(@ReadOnly List<MethodModifier> methodModifiers) {
-            this.methodModifiers = methodModifiers;
-            return this;
-        }
-
-        public Builder metricName(@Nullable String metricName) {
-            this.metricName = metricName;
-            return this;
-        }
-
-        public Builder spanTemplate(@Nullable String spanTemplate) {
-            this.spanTemplate = spanTemplate;
-            return this;
-        }
-
-        public PointcutConfig build() {
-            Preconditions.checkNotNull(typeName);
-            Preconditions.checkNotNull(methodName);
-            Preconditions.checkNotNull(methodReturnTypeName);
-            String version = buildVersion();
-            return new PointcutConfig(captureItems, typeName, methodName, methodArgTypeNames,
-                    methodReturnTypeName, methodModifiers, metricName, spanTemplate, version);
-        }
-
-        private String buildVersion() {
-            Preconditions.checkNotNull(typeName);
-            Preconditions.checkNotNull(methodName);
-            Preconditions.checkNotNull(methodReturnTypeName);
-            Hasher hasher = Hashing.sha1().newHasher();
-            for (CaptureItem captureItem : captureItems) {
-                hasher.putString(captureItem.name());
-            }
-            hasher.putString(typeName);
-            hasher.putString(methodName);
-            for (String methodArgTypeName : methodArgTypeNames) {
-                hasher.putString(methodArgTypeName);
-            }
-            hasher.putString(methodReturnTypeName);
-            for (MethodModifier methodModifier : methodModifiers) {
-                hasher.putString(methodModifier.name());
-            }
-            if (metricName == null) {
-                hasher.putInt(-1);
-            } else {
-                hasher.putString(metricName);
-                hasher.putInt(metricName.length());
-            }
-            if (spanTemplate == null) {
-                hasher.putInt(-1);
-            } else {
-                hasher.putString(spanTemplate);
-                hasher.putInt(spanTemplate.length());
-            }
-            return hasher.hash().toString();
-        }
     }
 }

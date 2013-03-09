@@ -15,11 +15,18 @@
  */
 package io.informant.testkit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
+
+import checkers.igj.quals.Immutable;
+import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Longs;
 
 /**
  * @author Trask Stalnaker
@@ -52,34 +59,39 @@ class TracePointResponse {
         return activePoints;
     }
 
-    static class RawPoint implements Comparable<RawPoint> {
+    @Immutable
+    static class RawPoint {
+
+        static final Ordering<RawPoint> orderingByCapturedAt = new Ordering<RawPoint>() {
+            @Override
+            public int compare(@Nullable RawPoint left, @Nullable RawPoint right) {
+                checkNotNull(left, "Ordering of non-null elements only");
+                checkNotNull(right, "Ordering of non-null elements only");
+                return Longs.compare(left.capturedAt, right.capturedAt);
+            }
+        };
+
         private final long capturedAt;
         private final double durationSeconds;
         private final String id;
+
         @JsonCreator
-        static RawPoint from(ArrayNode point) {
-            long capturedAt = point.get(0).asLong();
-            double durationSeconds = point.get(1).asDouble();
-            String id = point.get(2).asText();
-            return new RawPoint(capturedAt, durationSeconds, id);
+        RawPoint(ArrayNode point) {
+            capturedAt = point.get(0).asLong();
+            durationSeconds = point.get(1).asDouble();
+            id = point.get(2).asText();
         }
-        private RawPoint(long capturedAt, double durationSeconds, String id) {
-            this.capturedAt = capturedAt;
-            this.durationSeconds = durationSeconds;
-            this.id = id;
-        }
+
         long getCapturedAt() {
             return capturedAt;
         }
+
         double getDurationSeconds() {
             return durationSeconds;
         }
+
         String getId() {
             return id;
-        }
-        // natural sort order is by duration desc
-        public int compareTo(RawPoint o) {
-            return Double.compare(o.durationSeconds, durationSeconds);
         }
     }
 }

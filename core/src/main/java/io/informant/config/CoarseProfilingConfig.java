@@ -15,14 +15,12 @@
  */
 package io.informant.config;
 
+import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.hash.Hashing;
 
 /**
  * Immutable structure to hold the coarse-grained profiling config.
@@ -31,33 +29,37 @@ import com.google.common.hash.Hashing;
  * @since 0.5
  */
 @Immutable
-@JsonDeserialize(builder = CoarseProfilingConfig.Builder.class)
 public class CoarseProfilingConfig {
 
     private final boolean enabled;
-
     // minimum is imposed because of StackCollector#CHECK_INTERVAL_MILLIS
     // -1 means no stack traces are gathered, should be minimum 100 milliseconds
     private final int initialDelayMillis;
     private final int intervalMillis;
     private final int totalSeconds;
+
     private final String version;
 
     static CoarseProfilingConfig getDefault() {
-        return new Builder().build();
+        final boolean enabled = true;
+        final int initialDelayMillis = 1000;
+        final int intervalMillis = 500;
+        final int totalSeconds = 300;
+        return new CoarseProfilingConfig(enabled, initialDelayMillis, intervalMillis, totalSeconds);
     }
 
-    public static Builder builder(CoarseProfilingConfig base) {
-        return new Builder(base);
+    public static Overlay overlay(CoarseProfilingConfig base) {
+        return new Overlay(base);
     }
 
-    private CoarseProfilingConfig(boolean enabled, int initialDelayMillis, int intervalMillis,
-            int totalSeconds, String version) {
+    @VisibleForTesting
+    public CoarseProfilingConfig(boolean enabled, int initialDelayMillis, int intervalMillis,
+            int totalSeconds) {
         this.enabled = enabled;
         this.initialDelayMillis = initialDelayMillis;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
-        this.version = version;
+        version = Hashing2.sha1(enabled, initialDelayMillis, intervalMillis, totalSeconds);
     }
 
     public boolean isEnabled() {
@@ -92,62 +94,35 @@ public class CoarseProfilingConfig {
                 .toString();
     }
 
-    @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder {
+    // for overlaying values on top of another config using ObjectMapper.readerForUpdating()
+    public static class Overlay {
 
-        private boolean enabled = true;
-        private int initialDelayMillis = 1000;
-        private int intervalMillis = 500;
-        private int totalSeconds = 300;
+        private boolean enabled;
+        private int initialDelayMillis;
+        private int intervalMillis;
+        private int totalSeconds;
 
-        private Builder() {}
-
-        private Builder(CoarseProfilingConfig base) {
+        private Overlay(CoarseProfilingConfig base) {
             enabled = base.enabled;
             initialDelayMillis = base.initialDelayMillis;
             intervalMillis = base.intervalMillis;
             totalSeconds = base.totalSeconds;
         }
-
-        // JsonProperty annotations are needed in order to use ObjectMapper.readerForUpdating()
-        // for overlaying values on top of a base config
-        @JsonProperty
-        public Builder enabled(boolean enabled) {
+        public void setEnabled(boolean enabled) {
             this.enabled = enabled;
-            return this;
         }
-
-        @JsonProperty
-        public Builder initialDelayMillis(int initialDelayMillis) {
+        public void setInitialDelayMillis(int initialDelayMillis) {
             this.initialDelayMillis = initialDelayMillis;
-            return this;
         }
-
-        @JsonProperty
-        public Builder intervalMillis(int intervalMillis) {
+        public void setIntervalMillis(int intervalMillis) {
             this.intervalMillis = intervalMillis;
-            return this;
         }
-
-        @JsonProperty
-        public Builder totalSeconds(int totalSeconds) {
+        public void setTotalSeconds(int totalSeconds) {
             this.totalSeconds = totalSeconds;
-            return this;
         }
-
         public CoarseProfilingConfig build() {
-            String version = buildVersion();
             return new CoarseProfilingConfig(enabled, initialDelayMillis, intervalMillis,
-                    totalSeconds, version);
-        }
-
-        private String buildVersion() {
-            return Hashing.sha1().newHasher()
-                    .putBoolean(enabled)
-                    .putInt(initialDelayMillis)
-                    .putInt(intervalMillis)
-                    .putInt(totalSeconds)
-                    .hash().toString();
+                    totalSeconds);
         }
     }
 }

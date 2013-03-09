@@ -26,6 +26,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(ExternalJvmExecutionAdapter.class);
 
+    private final ServerSocket serverSocket;
     private final SocketCommander socketCommander;
     private final Process process;
     private final ExecutorService consolePipeExecutorService;
@@ -74,8 +76,9 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
     private volatile long numConsoleBytes;
 
     ExternalJvmExecutionAdapter(final @ReadOnly Map<String, String> properties) throws Exception {
-        socketCommander = new SocketCommander();
-        List<String> command = buildCommand(properties, socketCommander.getLocalPort());
+        // need to start socket listener before spawning process so process can connect to socket
+        serverSocket = new ServerSocket(0);
+        List<String> command = buildCommand(properties, serverSocket.getLocalPort());
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
@@ -97,6 +100,10 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
                 }
             }
         });
+        Socket socket = serverSocket.accept();
+        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
+        ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
+        socketCommander = new SocketCommander(objectOut, objectIn);
         uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
         asyncHttpClient = createAsyncHttpClient();
         informant = new ExternalJvmInformant(uiPort, asyncHttpClient);
@@ -137,6 +144,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN_COMMAND);
         socketCommander.close();
         process.waitFor();
+        serverSocket.close();
         consolePipeExecutorService.shutdownNow();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
         asyncHttpClient.close();

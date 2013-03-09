@@ -17,8 +17,15 @@ public class JsonDeserializer<T> {
 }
 
 public class ObjectMapper {
-    public JsonNode readTree(String content) @Immutable;
-    public <T> T treeToValue(TreeNode n, Class<T> valueType) @Immutable;
+    public JsonNode readTree(String content) @ReadOnly;
+    public <T> @Nullable T treeToValue(TreeNode n, Class<T> valueType) @ReadOnly;
+    public @I JsonFactory getFactory() @I;
+    public ObjectWriter writerWithView(Class<?> serializationView) @ReadOnly;
+    public <T> @Nullable T readValue(String content, Class<T> valueType) @ReadOnly;
+    public String writeValueAsString(@ReadOnly Object value) @ReadOnly;
+    public ObjectNode createObjectNode() @ReadOnly;
+    public ObjectNode createArrayNode() @ReadOnly;
+    public ObjectReader readerForUpdating(Object valueToUpdate) @ReadOnly;
 }
 
 /* ========================================================================== */

@@ -25,6 +25,7 @@ import io.informant.util.Singleton;
 
 import java.io.IOException;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
@@ -48,6 +49,7 @@ class TraceCommonService {
         this.ticker = ticker;
     }
 
+    @ReadOnly
     @Nullable
     CharSource createCharSourceForSnapshotOrActiveTrace(String id, boolean summary)
             throws IOException {

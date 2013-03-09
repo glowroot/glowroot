@@ -15,6 +15,7 @@
  */
 package io.informant.weaving;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.util.Singleton;
 
 import java.io.IOException;
@@ -375,9 +376,7 @@ public class ParsedTypeCache {
         }
 
         private ParsedType build() {
-            if (name == null) {
-                throw new NullPointerException("Call to visit() is required");
-            }
+            checkNotNull(name, "Call to visit() is required");
             return ParsedType.from(TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
                     TypeNames.fromInternal(interfaceNames), methods.build());
         }

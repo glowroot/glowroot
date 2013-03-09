@@ -124,7 +124,7 @@ public class Trace {
         for (Metric stableMetric : stableMetrics) {
             String name = stableMetric.getName();
             if (name == null) {
-                throw new NullPointerException("Found metric with null name");
+                throw new IllegalStateException("Found metric with null name");
             }
             stableMetricNames.add(name);
         }

@@ -15,6 +15,7 @@
  */
 package io.informant.config;
 
+import static io.informant.util.ObjectMappers.checkRequiredProperty;
 import io.informant.util.ObjectMappers;
 
 import java.io.IOException;
@@ -24,13 +25,13 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -38,7 +39,6 @@ import com.google.common.collect.ImmutableList;
  * @since 0.5
  */
 @Immutable
-@JsonDeserialize(builder = PluginDescriptor.Builder.class)
 public class PluginDescriptor {
 
     private final String groupId;
@@ -47,10 +47,6 @@ public class PluginDescriptor {
     private final String name;
     private final ImmutableList<PropertyDescriptor> properties;
     private final ImmutableList<String> aspects;
-
-    public static PluginDescriptor.Builder builder() {
-        return new Builder();
-    }
 
     public static PluginDescriptor.Builder builder(PluginDescriptor base) {
         return new Builder(base);
@@ -107,30 +103,46 @@ public class PluginDescriptor {
                 .toString();
     }
 
+    @JsonCreator
+    static PluginDescriptor readValue(@JsonProperty("groupId") @Nullable String groupId,
+            @JsonProperty("artifactId") @Nullable String artifactId,
+            @JsonProperty("version") @Nullable String version,
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("properties") @Nullable List<PropertyDescriptor> properties,
+            @JsonProperty("aspects") @Nullable List<String> aspects) throws JsonMappingException {
+        checkRequiredProperty(groupId, "groupId");
+        checkRequiredProperty(artifactId, "artifactId");
+        checkRequiredProperty(version, "version");
+        checkRequiredProperty(name, "name");
+        return new PluginDescriptor(groupId, artifactId, version, name, orEmpty(properties),
+                orEmpty(aspects));
+    }
+
+    @ReadOnly
+    private static <T> List<T> orEmpty(@ReadOnly @Nullable List<T> list) {
+        if (list == null) {
+            return ImmutableList.of();
+        }
+        return list;
+    }
+
     // only used by packager-maven-plugin, placed in core to avoid shading issues
     public static PluginDescriptor readValue(String content) throws JsonProcessingException,
             IOException {
         ObjectMapper mapper = ObjectMappers.create();
-        return mapper.readValue(content, PluginDescriptor.class);
+        return ObjectMappers.readRequiredValue(mapper, content, PluginDescriptor.class);
     }
 
-    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
-        @Nullable
-        private String groupId;
-        @Nullable
-        private String artifactId;
-        @Nullable
-        private String version;
-        @Nullable
-        private String name;
+        private final String groupId;
+        private final String artifactId;
+        private final String version;
+        private final String name;
         @ReadOnly
         private List<PropertyDescriptor> properties = ImmutableList.of();
         @ReadOnly
         private List<String> aspects = ImmutableList.of();
-
-        private Builder() {}
 
         private Builder(PluginDescriptor base) {
             groupId = base.groupId;
@@ -141,41 +153,12 @@ public class PluginDescriptor {
             aspects = base.aspects;
         }
 
-        public Builder groupId(String groupId) {
-            this.groupId = groupId;
-            return this;
-        }
-
-        public Builder artifactId(String artifactId) {
-            this.artifactId = artifactId;
-            return this;
-        }
-
-        public Builder version(String version) {
-            this.version = version;
-            return this;
-        }
-
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
         public Builder properties(List<PropertyDescriptor> properties) {
             this.properties = properties;
             return this;
         }
 
-        public Builder aspects(List<String> aspects) {
-            this.aspects = aspects;
-            return this;
-        }
-
         public PluginDescriptor build() {
-            Preconditions.checkNotNull(groupId);
-            Preconditions.checkNotNull(artifactId);
-            Preconditions.checkNotNull(version);
-            Preconditions.checkNotNull(name);
             return new PluginDescriptor(groupId, artifactId, version, name, properties, aspects);
         }
     }
