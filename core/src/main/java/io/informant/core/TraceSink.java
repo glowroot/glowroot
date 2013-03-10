@@ -69,60 +69,6 @@ public class TraceSink {
         this.ticker = ticker;
     }
 
-    public void onCompletedTrace(final Trace trace) {
-        if (shouldStore(trace)) {
-            // promote thread local trace metrics since they will be reset after this method returns
-            // TODO instead of confusing "promotion", just capture the metric snapshots here and
-            // pass them to the trace snapshot creation below
-            trace.promoteMetrics();
-            if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
-                logPendingLimitWarning();
-                return;
-            }
-            pendingCompleteTraces.add(trace);
-            executorService.execute(new Runnable() {
-                public void run() {
-                    try {
-                        Snapshot snapshot = SnapshotCreator.createSnapshot(trace, Long.MAX_VALUE,
-                                false);
-                        snapshotSink.store(snapshot);
-                        pendingCompleteTraces.remove(trace);
-                    } catch (Throwable t) {
-                        // log and terminate successfully
-                        logger.error(t.getMessage(), t);
-                    }
-                }
-            });
-        }
-    }
-
-    private void logPendingLimitWarning() {
-        synchronized (warningRateLimiter) {
-            if (warningRateLimiter.tryAcquire(0, MILLISECONDS)) {
-                logger.warn("not storing a trace because of an excessive backlog of {} traces"
-                        + " already waiting to be stored (this warning will appear at most once a"
-                        + " minute, there were {} additional traces not stored since the last"
-                        + " warning)", PENDING_LIMIT, countSinceLastWarning);
-                countSinceLastWarning = 0;
-            } else {
-                countSinceLastWarning++;
-            }
-        }
-    }
-
-    // no need to throttle stuck trace storage since throttling is handled upstream by using a
-    // single thread executor in StuckTraceCollector
-    public void onStuckTrace(Trace trace) {
-        try {
-            Snapshot snaphsot = SnapshotCreator.createSnapshot(trace, ticker.read(), false);
-            if (!trace.isCompleted()) {
-                snapshotSink.store(snaphsot);
-            }
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
     public boolean shouldStore(Trace trace) {
         if (trace.isStuck() || trace.isError()) {
             return true;
@@ -149,6 +95,60 @@ public class TraceSink {
 
     public Collection<Trace> getPendingCompleteTraces() {
         return pendingCompleteTraces;
+    }
+
+    void onCompletedTrace(final Trace trace) {
+        if (shouldStore(trace)) {
+            // promote thread local trace metrics since they will be reset after this method returns
+            // TODO instead of confusing "promotion", just capture the metric snapshots here and
+            // pass them to the trace snapshot creation below
+            trace.promoteMetrics();
+            if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
+                logPendingLimitWarning();
+                return;
+            }
+            pendingCompleteTraces.add(trace);
+            executorService.execute(new Runnable() {
+                public void run() {
+                    try {
+                        Snapshot snapshot = SnapshotCreator.createSnapshot(trace, Long.MAX_VALUE,
+                                false);
+                        snapshotSink.store(snapshot);
+                        pendingCompleteTraces.remove(trace);
+                    } catch (Throwable t) {
+                        // log and terminate successfully
+                        logger.error(t.getMessage(), t);
+                    }
+                }
+            });
+        }
+    }
+
+    // no need to throttle stuck trace storage since throttling is handled upstream by using a
+    // single thread executor in StuckTraceCollector
+    void onStuckTrace(Trace trace) {
+        try {
+            Snapshot snaphsot = SnapshotCreator.createSnapshot(trace, ticker.read(), false);
+            if (!trace.isCompleted()) {
+                snapshotSink.store(snaphsot);
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private void logPendingLimitWarning() {
+        synchronized (warningRateLimiter) {
+            if (warningRateLimiter.tryAcquire(0, MILLISECONDS)) {
+                logger.warn("not storing a trace because of an excessive backlog of {} traces"
+                        + " already waiting to be stored (this warning will appear at most once a"
+                        + " minute, there were {} additional traces not stored since the last"
+                        + " warning)", PENDING_LIMIT, countSinceLastWarning);
+                countSinceLastWarning = 0;
+            } else {
+                countSinceLastWarning++;
+            }
+        }
     }
 
     private boolean shouldStoreBasedOnCoreStoreThreshold(Trace trace) {

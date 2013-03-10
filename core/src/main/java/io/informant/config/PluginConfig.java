@@ -78,7 +78,7 @@ public class PluginConfig {
         return new Builder(pluginDescriptor).build();
     }
 
-    public PluginConfig(PluginDescriptor pluginDescriptor, boolean enabled,
+    private PluginConfig(PluginDescriptor pluginDescriptor, boolean enabled,
             ImmutableMap<String, String> stringProperties,
             ImmutableMap<String, Boolean> booleanProperties,
             ImmutableMap<String, Optional<Double>> doubleProperties, String version) {
@@ -218,6 +218,7 @@ public class PluginConfig {
             doubleProperties.putAll(base.doubleProperties);
         }
 
+        @OnlyUsedByTests
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
             return this;

@@ -21,6 +21,7 @@ import io.informant.config.DataDir;
 import io.informant.local.store.DataSource;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.Static;
+import io.informant.util.UsedByReflection;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
@@ -87,9 +88,10 @@ public class MainEntryPoint {
     }
 
     // called via reflection from io.informant.api.PluginServices
+    @UsedByReflection
     public static PluginServices getPluginServices(String pluginId) {
         checkNotNull(informantModule, "Informant has not been started");
-        return informantModule.getCoreModule().getPluginServices(pluginId);
+        return informantModule.getPluginServices(pluginId);
     }
 
     // used by Viewer
@@ -101,8 +103,7 @@ public class MainEntryPoint {
             @Nullable Instrumentation instrumentation) throws Exception {
         informantModule = new InformantModule(properties);
         if (instrumentation != null) {
-            instrumentation.addTransformer(
-                    informantModule.getCoreModule().createWeavingClassFileTransformer());
+            instrumentation.addTransformer(informantModule.createWeavingClassFileTransformer());
         }
         return informantModule;
     }

@@ -44,7 +44,7 @@ public class Hashing2 {
         return hashCode(Hashing.sha1(), objects);
     }
 
-    public static String hashCode(HashFunction function, @Nullable Object... objects) {
+    private static String hashCode(HashFunction function, @Nullable Object... objects) {
         Hasher hasher = function.newHasher();
         for (Object object : objects) {
             putObject(hasher, object);

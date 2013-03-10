@@ -89,7 +89,7 @@ public class DataSourceShutdownTest {
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
         public void executeApp() throws InterruptedException {
-            DaemonExecutors.newSingleThreadExecutor("GenerateTraces").execute(new Runnable() {
+            DaemonExecutors.newCachedThreadPool("GenerateTraces").execute(new Runnable() {
                 public void run() {
                     // generate traces during the shutdown process to test there are no error caused
                     // by trying to write a trace to the database during/after shutdown

@@ -15,6 +15,7 @@
  */
 package io.informant;
 
+import io.informant.api.PluginServices;
 import io.informant.config.ConfigModule;
 import io.informant.core.CoreModule;
 import io.informant.local.store.DataSourceModule;
@@ -23,6 +24,7 @@ import io.informant.local.ui.LocalUiModule;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
 
+import java.lang.instrument.ClassFileTransformer;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -30,10 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import checkers.igj.quals.ReadOnly;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@VisibleForTesting
 @ThreadSafe
 public class InformantModule {
 
@@ -45,7 +50,7 @@ public class InformantModule {
     private final CoreModule coreModule;
     private final LocalUiModule uiModule;
 
-    public InformantModule(@ReadOnly Map<String, String> properties) throws Exception {
+    InformantModule(@ReadOnly Map<String, String> properties) throws Exception {
         configModule = new ConfigModule(properties);
         dataSourceModule = new DataSourceModule(configModule, properties);
         storageModule = new StorageModule(configModule, dataSourceModule);
@@ -54,22 +59,35 @@ public class InformantModule {
                 properties);
     }
 
-    public ConfigModule getConfigModule() {
-        return configModule;
+    ClassFileTransformer createWeavingClassFileTransformer() {
+        return coreModule.createWeavingClassFileTransformer();
     }
 
-    public DataSourceModule getDataSourceModule() {
-        return dataSourceModule;
+    PluginServices getPluginServices(String pluginId) {
+        return coreModule.getPluginServices(pluginId);
     }
 
-    public StorageModule getStorageModule() {
-        return storageModule;
-    }
-
+    @OnlyUsedByTests
     public CoreModule getCoreModule() {
         return coreModule;
     }
 
+    @OnlyUsedByTests
+    public ConfigModule getConfigModule() {
+        return configModule;
+    }
+
+    @OnlyUsedByTests
+    public DataSourceModule getDataSourceModule() {
+        return dataSourceModule;
+    }
+
+    @OnlyUsedByTests
+    public StorageModule getStorageModule() {
+        return storageModule;
+    }
+
+    @OnlyUsedByTests
     public LocalUiModule getUiModule() {
         return uiModule;
     }

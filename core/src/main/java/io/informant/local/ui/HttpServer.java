@@ -67,7 +67,7 @@ import com.google.common.io.Resources;
  */
 @VisibleForTesting
 @Singleton
-public class HttpServer extends HttpServerBase {
+class HttpServer extends HttpServerBase {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
     private static final ObjectMapper mapper = ObjectMappers.create();

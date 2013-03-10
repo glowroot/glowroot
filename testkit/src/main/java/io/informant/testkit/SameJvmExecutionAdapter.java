@@ -91,6 +91,6 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     }
 
     public int getUiPort() {
-        return informantModule.getUiModule().getHttpServer().getPort();
+        return informantModule.getUiModule().getPort();
     }
 }

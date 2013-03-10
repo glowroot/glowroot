@@ -106,8 +106,8 @@ public class LocalUiModule {
         httpServer.close();
     }
 
-    public HttpServer getHttpServer() {
-        return httpServer;
+    public int getPort() {
+        return httpServer.getPort();
     }
 
     public TraceExportHttpService getTraceExportHttpService() {

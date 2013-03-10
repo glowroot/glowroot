@@ -18,7 +18,6 @@ package io.informant.util;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 
@@ -158,14 +157,14 @@ public class Threads {
 
     @SuppressWarnings("serial")
     public static class RogueThreadsException extends ThreadsException {
-        protected RogueThreadsException(Collection<Thread> threads) {
+        private RogueThreadsException(Collection<Thread> threads) {
             super(threads);
         }
     }
 
     @SuppressWarnings("serial")
     public static class TooManyThreadsException extends ThreadsException {
-        protected TooManyThreadsException(Collection<Thread> threads) {
+        private TooManyThreadsException(Collection<Thread> threads) {
             super(threads);
         }
     }

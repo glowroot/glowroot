@@ -76,7 +76,7 @@ public class DataSource {
             });
 
     // creates an in-memory database
-    public DataSource() throws SQLException {
+    DataSource() throws SQLException {
         dbFile = null;
         connection = createConnection(null);
         shutdownHookThread = new ShutdownHookThread();

@@ -30,10 +30,6 @@ class RandomAccessFiles {
 
     private RandomAccessFiles() {}
 
-    static int readFully(RandomAccessFile in, byte[] b) throws IOException {
-        return readFully(in, b, 0, b.length);
-    }
-
     static int readFully(RandomAccessFile in, byte[] b, int off, int len) throws IOException {
         int total = 0;
         while (total < len) {

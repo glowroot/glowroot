@@ -83,7 +83,7 @@ public class Resources2 {
 
     @SuppressWarnings("serial")
     public static class ResourceNotFound extends IOException {
-        public ResourceNotFound(String message) {
+        private ResourceNotFound(String message) {
             super(message);
         }
     }

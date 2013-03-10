@@ -115,7 +115,7 @@ class SocketCommandProcessor implements Runnable {
                     // informant failed to start
                     respond(NO_PORT, commandNum);
                 } else {
-                    respond(informantModule.getUiModule().getHttpServer().getPort(), commandNum);
+                    respond(informantModule.getUiModule().getPort(), commandNum);
                 }
             } else if (command.equals(KILL_COMMAND)) {
                 System.exit(0);

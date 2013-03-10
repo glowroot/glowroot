@@ -64,7 +64,7 @@ class PointcutConfigJsonService implements JsonService {
         TypeNameRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, TypeNameRequest.class);
         List<String> matchingTypeNames = parsedTypeCache.getMatchingTypeNames(
-                request.partialTypeName, request.limit);
+                request.getPartialTypeName(), request.getLimit());
         return mapper.writeValueAsString(matchingTypeNames);
     }
 
@@ -74,7 +74,7 @@ class PointcutConfigJsonService implements JsonService {
         MethodNameRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodNameRequest.class);
         List<String> matchingMethodNames = parsedTypeCache.getMatchingMethodNames(
-                request.typeName, request.partialMethodName, request.limit);
+                request.getTypeName(), request.getPartialMethodName(), request.getLimit());
         return mapper.writeValueAsString(matchingMethodNames);
     }
 
@@ -84,7 +84,7 @@ class PointcutConfigJsonService implements JsonService {
         MethodRequest request =
                 ObjectMappers.readRequiredValue(mapper, content, MethodRequest.class);
         List<ParsedMethod> parsedMethods = parsedTypeCache.getMatchingParsedMethods(
-                request.typeName, request.methodName);
+                request.getTypeName(), request.getMethodName());
         ArrayNode matchingMethods = mapper.createArrayNode();
         for (ParsedMethod parsedMethod : parsedMethods) {
             ObjectNode matchingMethod = mapper.createObjectNode();
@@ -114,7 +114,7 @@ class PointcutConfigJsonService implements JsonService {
         return typeName;
     }
 
-    class TypeNameRequest {
+    private class TypeNameRequest {
 
         private final String partialTypeName;
         private final int limit;
@@ -127,16 +127,16 @@ class PointcutConfigJsonService implements JsonService {
             this.limit = limit;
         }
 
-        String getPartialTypeName() {
+        private String getPartialTypeName() {
             return partialTypeName;
         }
 
-        int getLimit() {
+        private int getLimit() {
             return limit;
         }
     }
 
-    class MethodNameRequest {
+    private class MethodNameRequest {
 
         private final String typeName;
         private final String partialMethodName;
@@ -153,20 +153,20 @@ class PointcutConfigJsonService implements JsonService {
             this.limit = limit;
         }
 
-        String getTypeName() {
+        private String getTypeName() {
             return typeName;
         }
 
-        String getPartialMethodName() {
+        private String getPartialMethodName() {
             return partialMethodName;
         }
 
-        int getLimit() {
+        private int getLimit() {
             return limit;
         }
     }
 
-    class MethodRequest {
+    private class MethodRequest {
 
         private final String typeName;
         private final String methodName;
@@ -182,12 +182,12 @@ class PointcutConfigJsonService implements JsonService {
         }
 
         @Nullable
-        String getTypeName() {
+        private String getTypeName() {
             return typeName;
         }
 
         @Nullable
-        String getMethodName() {
+        private String getMethodName() {
             return methodName;
         }
     }

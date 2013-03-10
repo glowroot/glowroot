@@ -23,6 +23,7 @@ import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
+import io.informant.util.UsedByGeneratedBytecode;
 import io.informant.weaving.Advice.ParameterKind;
 import io.informant.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
@@ -609,6 +610,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     // exception would otherwise be caught by the overall try/catch triggering @OnThrow and @OnAfter
     //
     // needs to be public since it is accessed from bytecode injected into other packages
+    @UsedByGeneratedBytecode
     @SuppressWarnings("serial")
     public static class MarkerException extends RuntimeException {
         private static final Type TYPE = Type.getType(MarkerException.class);
@@ -626,7 +628,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             }
         }
         // static methods are easier to call via bytecode than constructors
-        // needs to be public since it is accessed from bytecode injected into other packages
+        @UsedByGeneratedBytecode
         public static MarkerException from(Throwable cause) {
             return new MarkerException(cause);
         }
