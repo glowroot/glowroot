@@ -33,11 +33,6 @@ public class ClassPath {
     }
 
     @Nullable
-    public static File getDelegatingJavaagentJarFile() {
-        return getJarFile("delegating-javaagent-[0-9.]+(-SNAPSHOT)?.jar");
-    }
-
-    @Nullable
     private static File getJarFile(String pattern) {
         String classpath = System.getProperty("java.class.path");
         String[] classpathElements = classpath.split(File.pathSeparator);

@@ -64,7 +64,7 @@ public class InformantContainer {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
-            executionAdapter = new ExternalJvmExecutionAdapter(properties);
+            executionAdapter = new ExternalJvmExecutionAdapter(properties, dataDir);
             if (executionAdapter.getUiPort() == SocketCommandProcessor.NO_PORT) {
                 executionAdapter.close();
                 throw new StartupFailedException();

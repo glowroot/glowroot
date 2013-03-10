@@ -19,6 +19,7 @@ import io.informant.MainEntryPoint;
 import io.informant.marker.ThreadSafe;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 import io.informant.testkit.internal.ClassPath;
+import io.informant.testkit.internal.DelegatingJavaagent;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,10 +76,11 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private volatile long numConsoleBytes;
 
-    ExternalJvmExecutionAdapter(final @ReadOnly Map<String, String> properties) throws Exception {
+    ExternalJvmExecutionAdapter(final @ReadOnly Map<String, String> properties, File dataDir)
+            throws Exception {
         // need to start socket listener before spawning process so process can connect to socket
         serverSocket = new ServerSocket(0);
-        List<String> command = buildCommand(properties, serverSocket.getLocalPort());
+        List<String> command = buildCommand(properties, serverSocket.getLocalPort(), dataDir);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         process = processBuilder.start();
@@ -181,7 +183,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         // do not close socket since program is still running after main returns
     }
 
-    private static List<String> buildCommand(Map<String, String> properties, int port)
+    private static List<String> buildCommand(Map<String, String> properties, int port, File dataDir)
             throws IOException {
         List<String> command = Lists.newArrayList();
         String javaExecutable = System.getProperty("java.home") + File.separator + "bin"
@@ -193,7 +195,8 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         command.addAll(getJavaAgentsFromCurrentJvm());
         File javaagentJarFile = ClassPath.getInformantCoreJarFile();
         if (javaagentJarFile == null) {
-            javaagentJarFile = ClassPath.getDelegatingJavaagentJarFile();
+            // create jar file in data dir since that gets cleaned up at end of test already
+            javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
             command.add("-javaagent:" + javaagentJarFile);
             command.add("-DdelegateJavaagent=" + MainEntryPoint.class.getName());
         } else {
