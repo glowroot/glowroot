@@ -348,6 +348,8 @@
                 <option>-keep class io.informant.config.** { *; }</option>
                 <option>-keep class io.informant.core.** { *; }</option>
                 <option>-keep class io.informant.local.** { *; }</option>
+                <!-- keep marker annotations so they can be used to doc tests also -->
+                <option>-keep class io.informant.marker.** { *; }</option>
                 <option>-keep class io.informant.util.** { *; }</option>
                 <option>-keep class io.informant.weaving.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->

@@ -19,8 +19,8 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableMessage;
 import io.informant.core.trace.Metric.MetricSnapshot;
+import io.informant.marker.PartiallyThreadSafe;
 import io.informant.util.Clock;
-import io.informant.util.PartiallyThreadSafe;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;

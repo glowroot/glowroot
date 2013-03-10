@@ -21,8 +21,8 @@ import io.informant.core.CoreModule;
 import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.StorageModule;
 import io.informant.local.ui.LocalUiModule;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.ThreadSafe;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.util.Map;

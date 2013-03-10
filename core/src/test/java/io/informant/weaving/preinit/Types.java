@@ -15,7 +15,7 @@
  */
 package io.informant.weaving.preinit;
 
-import io.informant.util.ThreadSafe;
+import io.informant.marker.ThreadSafe;
 
 import java.util.concurrent.ConcurrentMap;
 

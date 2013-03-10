@@ -26,8 +26,8 @@ import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.RollingFile;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.StorageModule;
+import io.informant.marker.ThreadSafe;
 import io.informant.util.Clock;
-import io.informant.util.ThreadSafe;
 import io.informant.weaving.ParsedTypeCache;
 
 import java.io.File;

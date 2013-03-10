@@ -17,7 +17,7 @@ package io.informant.weaving;
 
 import io.informant.api.MetricTimer;
 import io.informant.api.weaving.Mixin;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.ThreadSafe;
 
 import java.io.PrintWriter;
 import java.security.CodeSource;

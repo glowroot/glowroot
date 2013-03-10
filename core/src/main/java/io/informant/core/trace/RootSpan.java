@@ -17,7 +17,7 @@ package io.informant.core.trace;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.util.PartiallyThreadSafe;
+import io.informant.marker.PartiallyThreadSafe;
 
 import java.util.List;
 import java.util.Queue;

@@ -16,8 +16,8 @@
 package io.informant.core.trace;
 
 import io.informant.api.MetricTimer;
-import io.informant.util.Singleton;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.Singleton;
+import io.informant.marker.ThreadSafe;
 import io.informant.weaving.WeavingMetric;
 
 import com.google.common.base.Ticker;

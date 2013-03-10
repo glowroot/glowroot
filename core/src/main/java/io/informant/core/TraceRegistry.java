@@ -16,7 +16,7 @@
 package io.informant.core;
 
 import io.informant.core.trace.Trace;
-import io.informant.util.Singleton;
+import io.informant.marker.Singleton;
 
 import java.util.Queue;
 

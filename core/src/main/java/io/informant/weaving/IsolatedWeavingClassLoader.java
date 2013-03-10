@@ -16,8 +16,8 @@
 package io.informant.weaving;
 
 import io.informant.api.weaving.Mixin;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.ThreadSafe;
 
 import java.io.IOException;
 import java.net.URL;

@@ -15,7 +15,7 @@
  */
 package io.informant.testkit;
 
-import io.informant.util.ThreadSafe;
+import io.informant.marker.ThreadSafe;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

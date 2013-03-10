@@ -19,9 +19,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.PluginServices;
 import io.informant.config.DataDir;
 import io.informant.local.store.DataSource;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.Static;
-import io.informant.util.UsedByReflection;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.Static;
+import io.informant.marker.UsedByReflection;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;

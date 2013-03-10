@@ -16,9 +16,9 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import io.informant.marker.Static;
 import io.informant.util.Clock;
 import io.informant.util.DaemonExecutors;
-import io.informant.util.Static;
 
 import java.io.File;
 import java.util.concurrent.ScheduledExecutorService;

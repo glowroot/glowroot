@@ -23,7 +23,7 @@ import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
-import io.informant.util.UsedByGeneratedBytecode;
+import io.informant.marker.UsedByGeneratedBytecode;
 import io.informant.weaving.Advice.ParameterKind;
 import io.informant.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 

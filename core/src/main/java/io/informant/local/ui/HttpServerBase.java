@@ -15,8 +15,8 @@
  */
 package io.informant.local.ui;
 
+import io.informant.marker.ThreadSafe;
 import io.informant.util.DaemonExecutors;
-import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

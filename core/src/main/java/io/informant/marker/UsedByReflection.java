@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.marker;
+
+import static java.lang.annotation.ElementType.METHOD;
 
 import java.lang.annotation.Documented;
+import java.lang.annotation.Target;
 
 /**
+ * Marker to identify methods that are called by reflection. This is helpful to know when
+ * refactoring.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// marker annotation
 @Documented
+@Target(METHOD)
 public @interface UsedByReflection {}

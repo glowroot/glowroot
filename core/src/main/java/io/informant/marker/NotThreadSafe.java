@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.marker;
+
+import static java.lang.annotation.ElementType.TYPE;
 
 import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 /**
- * Marker to identify classes that have only one instance.
+ * Marker to identify classes that are not thread safe.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Documented
-@Target(ElementType.TYPE)
-public @interface Singleton {}
+@Target(TYPE)
+public @interface NotThreadSafe {}

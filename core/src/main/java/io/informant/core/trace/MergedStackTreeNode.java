@@ -15,7 +15,7 @@
  */
 package io.informant.core.trace;
 
-import io.informant.util.ThreadSafe;
+import io.informant.marker.ThreadSafe;
 
 import java.util.List;
 

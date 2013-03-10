@@ -21,7 +21,7 @@ import io.informant.core.snapshot.SnapshotWriter;
 import io.informant.core.snapshot.SnapshotCreator;
 import io.informant.core.trace.Trace;
 import io.informant.local.store.SnapshotDao;
-import io.informant.util.Singleton;
+import io.informant.marker.Singleton;
 
 import java.io.IOException;
 

@@ -23,10 +23,10 @@ import io.informant.local.store.FileBlock.InvalidBlockIdFormatException;
 import io.informant.local.store.Schemas.Column;
 import io.informant.local.store.Schemas.Index;
 import io.informant.local.store.Schemas.PrimaryKeyColumn;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.Singleton;
+import io.informant.marker.ThreadSafe;
 import io.informant.util.Clock;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.Singleton;
-import io.informant.util.ThreadSafe;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.marker;
+
+import static java.lang.annotation.ElementType.TYPE;
 
 import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 /**
@@ -27,7 +28,7 @@ import java.lang.annotation.Target;
  * @since 0.5
  */
 @Documented
-@Target(ElementType.TYPE)
+@Target(TYPE)
 public @interface PartiallyThreadSafe {
     // explanation
     String value();

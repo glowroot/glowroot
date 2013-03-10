@@ -15,7 +15,7 @@
  */
 package io.informant.local.ui;
 
-import io.informant.util.Singleton;
+import io.informant.marker.Singleton;
 
 import java.io.IOException;
 

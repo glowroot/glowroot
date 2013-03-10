@@ -15,6 +15,8 @@
  */
 package io.informant.util;
 
+import io.informant.marker.Static;
+
 import java.util.List;
 
 import org.slf4j.Logger;

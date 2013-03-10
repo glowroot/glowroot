@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.marker;
+
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 
 import java.lang.annotation.Documented;
+import java.lang.annotation.Target;
 
 /**
+ * Marker to identify methods that are only used by tests.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// marker annotation
 @Documented
-public @interface UsedByGeneratedBytecode {}
+@Target({ TYPE, METHOD })
+public @interface OnlyUsedByTests {}

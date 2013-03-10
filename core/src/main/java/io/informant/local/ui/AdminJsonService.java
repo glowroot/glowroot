@@ -20,8 +20,8 @@ import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.Singleton;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.Singleton;
 
 import java.io.IOException;
 import java.sql.SQLException;

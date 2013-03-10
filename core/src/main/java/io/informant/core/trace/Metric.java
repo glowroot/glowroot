@@ -16,7 +16,7 @@
 package io.informant.core.trace;
 
 import io.informant.api.MetricTimer;
-import io.informant.util.PartiallyThreadSafe;
+import io.informant.marker.PartiallyThreadSafe;
 import checkers.igj.quals.Immutable;
 
 import com.google.common.base.Objects;

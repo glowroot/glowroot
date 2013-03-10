@@ -16,7 +16,7 @@
 package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import io.informant.util.Singleton;
+import io.informant.marker.Singleton;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

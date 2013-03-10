@@ -15,9 +15,9 @@
  */
 package io.informant.weaving;
 
-import io.informant.util.NotThreadSafe;
-import io.informant.util.PartiallyThreadSafe;
-import io.informant.util.UsedByGeneratedBytecode;
+import io.informant.marker.NotThreadSafe;
+import io.informant.marker.PartiallyThreadSafe;
+import io.informant.marker.UsedByGeneratedBytecode;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

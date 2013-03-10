@@ -31,10 +31,10 @@ import io.informant.local.store.StorageModule;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
+import io.informant.marker.ThreadSafe;
 import io.informant.testkit.PointcutConfig.CaptureItem;
 import io.informant.testkit.PointcutConfig.MethodModifier;
 import io.informant.testkit.internal.ObjectMappers;
-import io.informant.util.ThreadSafe;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

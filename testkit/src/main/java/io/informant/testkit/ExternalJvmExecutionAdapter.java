@@ -16,9 +16,9 @@
 package io.informant.testkit;
 
 import io.informant.MainEntryPoint;
+import io.informant.marker.ThreadSafe;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
 import io.informant.testkit.internal.ClassPath;
-import io.informant.util.ThreadSafe;
 
 import java.io.File;
 import java.io.IOException;

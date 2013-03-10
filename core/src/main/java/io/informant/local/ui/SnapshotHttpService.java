@@ -17,8 +17,8 @@ package io.informant.local.ui;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.informant.marker.Singleton;
 import io.informant.util.ReaderChunkedInput;
-import io.informant.util.Singleton;
 
 import java.io.IOException;
 

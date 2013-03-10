@@ -27,8 +27,8 @@ import io.informant.config.PointcutConfig;
 import io.informant.config.UserConfig;
 import io.informant.config.WithVersionJsonView;
 import io.informant.local.store.RollingFile;
+import io.informant.marker.Singleton;
 import io.informant.util.ObjectMappers;
-import io.informant.util.Singleton;
 
 import java.io.File;
 import java.io.IOException;

@@ -15,6 +15,8 @@
  */
 package io.informant.util;
 
+import io.informant.marker.Static;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;

@@ -19,7 +19,7 @@ import io.informant.api.Optional;
 import io.informant.config.PropertyDescriptor.BooleanPropertyDescriptor;
 import io.informant.config.PropertyDescriptor.DoublePropertyDescriptor;
 import io.informant.config.PropertyDescriptor.StringPropertyDescriptor;
-import io.informant.util.OnlyUsedByTests;
+import io.informant.marker.OnlyUsedByTests;
 
 import java.util.Iterator;
 import java.util.Map;

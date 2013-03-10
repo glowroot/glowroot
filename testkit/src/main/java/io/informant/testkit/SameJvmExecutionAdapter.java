@@ -18,8 +18,8 @@ package io.informant.testkit;
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
 import io.informant.config.PluginDescriptorCache;
+import io.informant.marker.ThreadSafe;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
-import io.informant.util.ThreadSafe;
 import io.informant.util.Threads;
 import io.informant.weaving.IsolatedWeavingClassLoader;
 

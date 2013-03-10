@@ -15,7 +15,7 @@
  */
 package io.informant;
 
-import io.informant.util.Static;
+import io.informant.marker.Static;
 
 /**
  * @author Trask Stalnaker

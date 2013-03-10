@@ -15,7 +15,7 @@
  */
 package io.informant.weaving;
 
-import io.informant.util.Static;
+import io.informant.marker.Static;
 import checkers.nullness.quals.PolyNull;
 
 import com.google.common.collect.ImmutableList;

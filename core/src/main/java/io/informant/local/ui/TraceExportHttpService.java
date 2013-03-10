@@ -18,11 +18,11 @@ package io.informant.local.ui;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.Singleton;
 import io.informant.util.CharStreams2;
-import io.informant.util.OnlyUsedByTests;
 import io.informant.util.Resources2;
 import io.informant.util.Resources2.ResourceNotFound;
-import io.informant.util.Singleton;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

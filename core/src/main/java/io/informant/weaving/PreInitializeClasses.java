@@ -15,7 +15,7 @@
  */
 package io.informant.weaving;
 
-import io.informant.util.Static;
+import io.informant.marker.Static;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

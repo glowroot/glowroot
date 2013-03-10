@@ -16,8 +16,8 @@
 package io.informant.config;
 
 import io.informant.api.PluginServices.ConfigListener;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.Singleton;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.Singleton;
 
 import java.io.File;
 import java.io.IOException;

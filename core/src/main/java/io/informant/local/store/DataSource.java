@@ -17,8 +17,8 @@ package io.informant.local.store;
 
 import io.informant.local.store.Schemas.Column;
 import io.informant.local.store.Schemas.Index;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.ThreadSafe;
 
 import java.io.File;
 import java.sql.Connection;

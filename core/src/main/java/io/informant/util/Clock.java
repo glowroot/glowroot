@@ -15,6 +15,8 @@
  */
 package io.informant.util;
 
+import io.informant.marker.ThreadSafe;
+
 import com.google.common.base.Ticker;
 
 /**

@@ -33,9 +33,9 @@ import io.informant.core.trace.Metric;
 import io.informant.core.trace.MetricNameImpl;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.WeavingMetricNameImpl;
+import io.informant.marker.NotThreadSafe;
+import io.informant.marker.ThreadSafe;
 import io.informant.util.Clock;
-import io.informant.util.NotThreadSafe;
-import io.informant.util.ThreadSafe;
 
 import java.util.List;
 import java.util.Random;

@@ -15,8 +15,8 @@
  */
 package io.informant.core.trace;
 
-import io.informant.util.NotThreadSafe;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.NotThreadSafe;
+import io.informant.marker.ThreadSafe;
 
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;

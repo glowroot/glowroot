@@ -18,7 +18,7 @@ package io.informant.core.trace;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableErrorMessage;
-import io.informant.util.ThreadSafe;
+import io.informant.marker.ThreadSafe;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;

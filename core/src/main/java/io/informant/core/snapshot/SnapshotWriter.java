@@ -15,8 +15,8 @@
  */
 package io.informant.core.snapshot;
 
+import io.informant.marker.OnlyUsedByTests;
 import io.informant.util.CharStreams2;
-import io.informant.util.OnlyUsedByTests;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

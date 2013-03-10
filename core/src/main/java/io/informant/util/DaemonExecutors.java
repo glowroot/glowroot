@@ -17,6 +17,8 @@ package io.informant.util;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import io.informant.marker.Static;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

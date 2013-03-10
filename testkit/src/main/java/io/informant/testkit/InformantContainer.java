@@ -16,8 +16,8 @@
 package io.informant.testkit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import io.informant.marker.ThreadSafe;
 import io.informant.testkit.internal.TempDirs;
-import io.informant.util.ThreadSafe;
 
 import java.io.File;
 

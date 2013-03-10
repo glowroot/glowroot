@@ -15,6 +15,8 @@
  */
 package io.informant.util;
 
+import io.informant.marker.Static;
+
 
 /**
  * Convenience method for nanosecond comparison.

@@ -15,7 +15,7 @@
  */
 package io.informant.local.store;
 
-import io.informant.util.Static;
+import io.informant.marker.Static;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

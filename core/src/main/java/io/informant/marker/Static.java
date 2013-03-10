@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.marker;
+
+import static java.lang.annotation.ElementType.TYPE;
 
 import java.lang.annotation.Documented;
+import java.lang.annotation.Target;
 
 /**
+ * Marker to identify classes that have only static members (similar to a C# static class).
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-// marker annotation
 @Documented
-public @interface OnlyUsedByTests {}
+@Target(TYPE)
+public @interface Static {}

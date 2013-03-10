@@ -15,6 +15,8 @@
  */
 package io.informant.util;
 
+import io.informant.marker.NotThreadSafe;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5

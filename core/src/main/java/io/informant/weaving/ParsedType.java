@@ -15,7 +15,7 @@
  */
 package io.informant.weaving;
 
-import io.informant.util.NotThreadSafe;
+import io.informant.marker.NotThreadSafe;
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 

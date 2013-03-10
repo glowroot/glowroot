@@ -17,7 +17,7 @@ package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import io.informant.util.OnlyUsedByTests;
+import io.informant.marker.OnlyUsedByTests;
 
 import java.io.File;
 import java.io.IOException;

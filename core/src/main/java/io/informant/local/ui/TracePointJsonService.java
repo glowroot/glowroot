@@ -22,9 +22,9 @@ import io.informant.core.trace.Trace;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
+import io.informant.marker.Singleton;
 import io.informant.util.Clock;
 import io.informant.util.ObjectMappers;
-import io.informant.util.Singleton;
 
 import java.io.IOException;
 import java.util.Collections;

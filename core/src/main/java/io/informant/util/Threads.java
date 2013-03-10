@@ -18,6 +18,9 @@ package io.informant.util;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.Static;
+
 import java.util.Collection;
 import java.util.List;
 

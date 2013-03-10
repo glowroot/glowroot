@@ -18,10 +18,10 @@ package io.informant.local.store;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.core.SnapshotSink;
+import io.informant.marker.OnlyUsedByTests;
+import io.informant.marker.ThreadSafe;
 import io.informant.util.Clock;
 import io.informant.util.DaemonExecutors;
-import io.informant.util.OnlyUsedByTests;
-import io.informant.util.ThreadSafe;
 
 import java.io.File;
 import java.io.IOException;

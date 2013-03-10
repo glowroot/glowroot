@@ -16,9 +16,9 @@
 package io.informant.testkit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import io.informant.marker.ThreadSafe;
 import io.informant.testkit.TracePointResponse.RawPoint;
 import io.informant.testkit.internal.ObjectMappers;
-import io.informant.util.ThreadSafe;
 
 import java.io.IOException;
 import java.io.InputStream;

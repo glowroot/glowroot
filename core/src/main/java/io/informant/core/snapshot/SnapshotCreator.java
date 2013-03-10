@@ -27,10 +27,10 @@ import io.informant.core.trace.Metric.MetricSnapshot;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.Trace.TraceAttribute;
+import io.informant.marker.NotThreadSafe;
+import io.informant.marker.Static;
 import io.informant.util.CharArrayWriter;
-import io.informant.util.NotThreadSafe;
 import io.informant.util.ObjectMappers;
-import io.informant.util.Static;
 
 import java.io.IOException;
 import java.io.Reader;
