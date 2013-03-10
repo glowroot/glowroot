@@ -24,14 +24,14 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import io.informant.common.Clock;
+import io.informant.common.ObjectMappers;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.core.trace.Trace;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
-import io.informant.util.Clock;
-import io.informant.util.ObjectMappers;
 
 import java.io.IOException;
 import java.util.List;

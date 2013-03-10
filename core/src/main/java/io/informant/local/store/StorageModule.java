@@ -15,22 +15,24 @@
  */
 package io.informant.local.store;
 
+import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.core.SnapshotSink;
 import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.ThreadSafe;
-import io.informant.util.Clock;
-import io.informant.util.DaemonExecutors;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * @author Trask Stalnaker
@@ -54,7 +56,9 @@ public class StorageModule {
         int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
         DataSource dataSource = dataSourceModule.getDataSource();
 
-        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Storage");
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setNameFormat("Informant-StorageBackgroundTasks").build();
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);
         snapshotDao = new SnapshotDao(dataSource, rollingFile, clock);

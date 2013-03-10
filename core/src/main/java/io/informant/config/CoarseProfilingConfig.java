@@ -15,7 +15,6 @@
  */
 package io.informant.config;
 
-import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -59,7 +58,7 @@ public class CoarseProfilingConfig {
         this.initialDelayMillis = initialDelayMillis;
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
-        version = Hashing2.sha1(enabled, initialDelayMillis, intervalMillis, totalSeconds);
+        version = VersionHashes.sha1(enabled, initialDelayMillis, intervalMillis, totalSeconds);
     }
 
     public boolean isEnabled() {

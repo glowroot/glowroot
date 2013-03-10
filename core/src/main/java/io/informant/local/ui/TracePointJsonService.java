@@ -16,6 +16,8 @@
 package io.informant.local.ui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import io.informant.common.Clock;
+import io.informant.common.ObjectMappers;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.core.trace.Trace;
@@ -23,8 +25,6 @@ import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
 import io.informant.marker.Singleton;
-import io.informant.util.Clock;
-import io.informant.util.ObjectMappers;
 
 import java.io.IOException;
 import java.util.Collections;

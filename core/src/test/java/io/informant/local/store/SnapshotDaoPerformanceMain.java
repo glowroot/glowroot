@@ -16,11 +16,11 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import io.informant.common.Clock;
 import io.informant.marker.Static;
-import io.informant.util.Clock;
-import io.informant.util.DaemonExecutors;
 
 import java.io.File;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
@@ -44,8 +44,7 @@ public class SnapshotDaoPerformanceMain {
     public static void main(String... args) throws Exception {
         SnapshotTestData snapshotTestData = new SnapshotTestData();
         DataSource dataSource = new DataSource();
-        ScheduledExecutorService scheduledExecutor =
-                DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000,
                 scheduledExecutor, Ticker.systemTicker());
         SnapshotDao snapshotDao = new SnapshotDao(dataSource, rollingFile,

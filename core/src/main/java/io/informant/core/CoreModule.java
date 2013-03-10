@@ -23,13 +23,14 @@ import io.informant.config.PluginDescriptorCache;
 import io.informant.core.trace.WeavingMetricNameImpl;
 import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.ThreadSafe;
-import io.informant.util.DaemonExecutors;
 import io.informant.weaving.Advice;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.WeavingClassFileTransformer;
 
 import java.util.Random;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * @author Trask Stalnaker
@@ -86,7 +88,9 @@ public class CoreModule {
         metricCache = new MetricCache(ticker);
         random = new Random();
 
-        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Core");
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setNameFormat("Informant-Core").build();
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
         traceSink = new TraceSink(scheduledExecutor, configService, snapshotSink, ticker);
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
                 configService, ticker);

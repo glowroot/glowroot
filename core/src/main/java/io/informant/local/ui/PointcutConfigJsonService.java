@@ -15,9 +15,9 @@
  */
 package io.informant.local.ui;
 
-import static io.informant.util.ObjectMappers.checkRequiredProperty;
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
+import io.informant.common.ObjectMappers;
 import io.informant.marker.Singleton;
-import io.informant.util.ObjectMappers;
 import io.informant.weaving.ParsedMethod;
 import io.informant.weaving.ParsedTypeCache;
 

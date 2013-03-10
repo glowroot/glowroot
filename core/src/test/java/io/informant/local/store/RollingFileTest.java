@@ -16,11 +16,11 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.util.DaemonExecutors;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
@@ -43,7 +43,7 @@ public class RollingFileTest {
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("informant-test-", ".rolling.db");
-        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         rollingFile = new RollingFile(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
     }
 

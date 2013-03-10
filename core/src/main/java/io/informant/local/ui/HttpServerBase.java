@@ -16,11 +16,13 @@
 package io.informant.local.ui;
 
 import io.informant.marker.ThreadSafe;
-import io.informant.util.DaemonExecutors;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -57,6 +59,7 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Base class for a very simple Netty-based http server.
@@ -79,10 +82,12 @@ abstract class HttpServerBase {
     private final int port;
 
     HttpServerBase(int port, int numWorkerThreads) {
-        setThreadNameDeterminer(numWorkerThreads);
-        bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
-                DaemonExecutors.newCachedThreadPool("Informant-Netty-Boss"), 1,
-                DaemonExecutors.newCachedThreadPool("Informant-Netty-Worker"), 1));
+        setThreadNameDeterminer();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
+        ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
+        ExecutorService workerExecutor = Executors.newCachedThreadPool(threadFactory);
+        bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(bossExecutor, 1,
+                workerExecutor, numWorkerThreads));
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
                 ChannelPipeline pipeline = Channels.pipeline();
@@ -129,7 +134,7 @@ abstract class HttpServerBase {
     protected abstract HttpResponse handleRequest(HttpRequest request, Channel channel)
             throws IOException, InterruptedException;
 
-    private static void setThreadNameDeterminer(final int numWorkerThreads) {
+    private static void setThreadNameDeterminer() {
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
             private final AtomicInteger workerCount = new AtomicInteger();
             public String determineThreadName(String currentThreadName, String proposedThreadName) {

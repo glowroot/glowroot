@@ -15,7 +15,6 @@
  */
 package io.informant.config;
 
-import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -65,7 +64,7 @@ public class FineProfilingConfig {
         this.intervalMillis = intervalMillis;
         this.totalSeconds = totalSeconds;
         this.storeThresholdMillis = storeThresholdMillis;
-        version = Hashing2.sha1(enabled, tracePercentage, intervalMillis, totalSeconds,
+        version = VersionHashes.sha1(enabled, tracePercentage, intervalMillis, totalSeconds,
                 storeThresholdMillis);
     }
 

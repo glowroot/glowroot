@@ -16,16 +16,14 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.common.MockClock;
 import io.informant.core.snapshot.Snapshot;
-import io.informant.util.DaemonExecutors;
-import io.informant.util.MockClock;
-import io.informant.util.Threads;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
@@ -40,7 +38,6 @@ import com.google.common.base.Ticker;
  */
 public class SnapshotDaoTest {
 
-    private Collection<Thread> preExistingThreads;
     private DataSource dataSource;
     private File rollingDbFile;
     private ScheduledExecutorService scheduledExecutor;
@@ -49,13 +46,12 @@ public class SnapshotDaoTest {
 
     @Before
     public void before() throws SQLException, IOException {
-        preExistingThreads = Threads.currentThreads();
         dataSource = new DataSource();
         if (dataSource.tableExists("snapshot")) {
             dataSource.execute("drop table snapshot");
         }
         rollingDbFile = new File("informant.rolling.db");
-        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         rollingFile = new RollingFile(rollingDbFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());
         snapshotDao = new SnapshotDao(dataSource, rollingFile, new MockClock());
@@ -63,12 +59,10 @@ public class SnapshotDaoTest {
 
     @After
     public void after() throws Exception {
-        Threads.preShutdownCheck(preExistingThreads);
-        dataSource.close();
         scheduledExecutor.shutdownNow();
+        dataSource.close();
         rollingFile.close();
         rollingDbFile.delete();
-        Threads.postShutdownCheck(preExistingThreads);
     }
 
     @Test

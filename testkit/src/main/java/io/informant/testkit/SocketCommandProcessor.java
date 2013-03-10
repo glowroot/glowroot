@@ -19,9 +19,7 @@ import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
 import io.informant.testkit.SocketCommander.CommandWrapper;
 import io.informant.testkit.SocketCommander.ResponseWrapper;
-import io.informant.util.DaemonExecutors;
-import io.informant.util.Threads;
-import io.informant.util.Threads.ThreadsException;
+import io.informant.testkit.Threads.ThreadsException;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -29,6 +27,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +58,7 @@ class SocketCommandProcessor implements Runnable {
 
     private final ObjectInputStream objectIn;
     private final ObjectOutputStream objectOut;
-    private final ExecutorService executorService =
-            DaemonExecutors.newCachedThreadPool("Informant-SocketCommandProcessor");
+    private final ExecutorService executorService;
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
 
     @LazyNonNull
@@ -69,6 +67,7 @@ class SocketCommandProcessor implements Runnable {
     SocketCommandProcessor(ObjectInputStream objectIn, ObjectOutputStream objectOut) {
         this.objectIn = objectIn;
         this.objectOut = objectOut;
+        executorService = Executors.newCachedThreadPool();
     }
 
     public void run() {

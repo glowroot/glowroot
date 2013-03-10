@@ -15,8 +15,8 @@
  */
 package io.informant.config;
 
+import io.informant.common.Clock;
 import io.informant.marker.ThreadSafe;
-import io.informant.util.Clock;
 
 import java.io.File;
 import java.util.Map;

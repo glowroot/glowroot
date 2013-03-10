@@ -16,13 +16,13 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.util.DaemonExecutors;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
@@ -45,7 +45,7 @@ public class RollingOutputStreamTest {
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("informant-test-", ".rolling.txt");
-        scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         rollingOut = new RollingOutputStream(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
         in = new RandomAccessFile(tempFile, "r");
     }

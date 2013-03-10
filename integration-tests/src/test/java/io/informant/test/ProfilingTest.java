@@ -22,11 +22,11 @@ import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.CoarseProfilingConfig;
 import io.informant.testkit.FineProfilingConfig;
 import io.informant.testkit.InformantContainer;
+import io.informant.testkit.Threads;
 import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.MergedStackTreeNode;
 import io.informant.testkit.TraceMarker;
 import io.informant.testkit.UserConfig;
-import io.informant.util.Threads;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;

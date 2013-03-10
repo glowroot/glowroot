@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.config;
 
-import io.informant.util.Multiline.MultilineDeserializer;
+import io.informant.config.Multiline.MultilineDeserializer;
 
 import java.io.IOException;
 
@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  */
 // for binding either string or array of strings joined into a single string
 @JsonDeserialize(using = MultilineDeserializer.class)
-public class Multiline {
+class Multiline {
 
     private final String joined;
 
@@ -40,7 +40,7 @@ public class Multiline {
         this.joined = s;
     }
 
-    public String getJoined() {
+    String getJoined() {
         return joined;
     }
 

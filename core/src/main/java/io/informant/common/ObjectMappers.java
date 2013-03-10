@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.common;
+
+import io.informant.marker.Static;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -48,6 +50,7 @@ import com.google.common.collect.ImmutableMap;
 // unfortunately this class cannot be used by plugin-testkit since sometimes this class exposes
 // unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build),
 // therefore there is an exact duplicate of this class under plugin-testkit
+@Static
 public class ObjectMappers {
 
     private static final Logger logger = LoggerFactory.getLogger(ObjectMappers.class);

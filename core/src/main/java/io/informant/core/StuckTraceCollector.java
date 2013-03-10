@@ -22,7 +22,6 @@ import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.core.trace.Trace;
 import io.informant.marker.Singleton;
-import io.informant.util.Nanoseconds;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;

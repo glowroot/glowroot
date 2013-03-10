@@ -15,7 +15,6 @@
  */
 package io.informant.config;
 
-import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -91,7 +90,7 @@ public class GeneralConfig {
         this.snapshotExpirationHours = snapshotExpirationHours;
         this.rollingSizeMb = rollingSizeMb;
         this.warnOnSpanOutsideTrace = warnOnSpanOutsideTrace;
-        this.version = Hashing2.sha1(enabled, storeThresholdMillis, stuckThresholdSeconds,
+        this.version = VersionHashes.sha1(enabled, storeThresholdMillis, stuckThresholdSeconds,
                 maxSpans, snapshotExpirationHours, rollingSizeMb, warnOnSpanOutsideTrace);
     }
 

@@ -17,12 +17,12 @@ package io.informant.config;
 
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
-import io.informant.util.ObjectMappers;
-import io.informant.util.Resources2;
+import io.informant.common.ObjectMappers;
 import io.informant.weaving.Advice;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -30,10 +30,12 @@ import org.slf4j.LoggerFactory;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -109,7 +111,7 @@ public class PluginDescriptorCache {
 
     private static List<PluginDescriptor> readInstalledPlugins() throws IOException {
         List<PluginDescriptor> plugins = Lists.newArrayList();
-        List<URL> urls = Resources2.getResources("META-INF/io.informant.plugin.json");
+        List<URL> urls = getResources("META-INF/io.informant.plugin.json");
         for (URL url : urls) {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
@@ -127,7 +129,7 @@ public class PluginDescriptorCache {
 
     @ReadOnly
     private static List<PluginDescriptor> readPackagedPlugins() throws IOException {
-        URL url = Resources2.getResource("META-INF/io.informant.package.json");
+        URL url = getResource("META-INF/io.informant.package.json");
         if (url == null) {
             return ImmutableList.of();
         }
@@ -163,5 +165,34 @@ public class PluginDescriptorCache {
             }
         }
         return mixins;
+    }
+
+    private static List<URL> getResources(String resourceName) throws IOException {
+        ClassLoader loader = PluginDescriptorCache.class.getClassLoader();
+        if (loader == null) {
+            // highly unlikely that this class is loaded by the bootstrap class loader,
+            // but handling anyways
+            return Collections.list(ClassLoader.getSystemResources(resourceName));
+        }
+        return Collections.list(loader.getResources(resourceName));
+    }
+
+    @Nullable
+    private static URL getResource(String resourceName) throws IOException {
+        List<URL> urls = PluginDescriptorCache.getResources(resourceName);
+        if (urls.isEmpty()) {
+            return null;
+        }
+        if (urls.size() == 1) {
+            return urls.get(0);
+        }
+        List<String> resourcePaths = Lists.newArrayList();
+        for (URL url : urls) {
+            resourcePaths.add("'" + url.getPath() + "'");
+        }
+        logger.error("more than one resource found with name '{}'. This file is only supported"
+                + " inside of an informant packaged jar so there should be only one. Only using"
+                + " the first one of {}.", resourceName, Joiner.on(", ").join(resourcePaths));
+        return urls.get(0);
     }
 }

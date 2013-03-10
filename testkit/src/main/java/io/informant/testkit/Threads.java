@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.testkit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.Static;
 
 import java.util.Collection;
@@ -39,7 +37,6 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@OnlyUsedByTests
 @Static
 public class Threads {
 
@@ -155,7 +152,12 @@ public class Threads {
     }
 
     private static boolean isShaded() {
-        return org.h2.Driver.class.getName().startsWith("io.informant.shaded.");
+        try {
+            Class.forName("io.informant.shaded.h2.Driver");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     @SuppressWarnings("serial")

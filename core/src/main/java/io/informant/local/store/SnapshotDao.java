@@ -16,6 +16,7 @@
 
 package io.informant.local.store;
 
+import io.informant.common.Clock;
 import io.informant.core.SnapshotSink;
 import io.informant.core.snapshot.Snapshot;
 import io.informant.local.store.DataSource.RowMapper;
@@ -26,7 +27,6 @@ import io.informant.local.store.Schemas.PrimaryKeyColumn;
 import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.Singleton;
 import io.informant.marker.ThreadSafe;
-import io.informant.util.Clock;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

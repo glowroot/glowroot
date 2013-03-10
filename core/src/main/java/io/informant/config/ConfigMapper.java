@@ -15,7 +15,7 @@
  */
 package io.informant.config;
 
-import io.informant.util.ObjectMappers;
+import io.informant.common.ObjectMappers;
 
 import java.io.File;
 import java.io.IOException;

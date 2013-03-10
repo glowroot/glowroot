@@ -13,27 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.common;
+
+import io.informant.marker.ThreadSafe;
+
+import com.google.common.base.Ticker;
 
 /**
+ * Modeled after Guava's {@link Ticker} class, but for currentTimeMillis.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class MockClock extends Clock {
+@ThreadSafe
+public abstract class Clock {
 
-    private long currentTimeMillis;
+    private static final Clock SYSTEM_CLOCK = new Clock() {
+        @Override
+        public long currentTimeMillis() {
+            return System.currentTimeMillis();
+        }
+    };
 
-    @Override
-    public long currentTimeMillis() {
-        return currentTimeMillis;
-    }
+    public abstract long currentTimeMillis();
 
-    public long updateTime() {
-        currentTimeMillis = System.currentTimeMillis();
-        return currentTimeMillis;
-    }
-
-    public void forwardTime(long millis) {
-        currentTimeMillis += millis;
+    public static Clock systemClock() {
+        return SYSTEM_CLOCK;
     }
 }

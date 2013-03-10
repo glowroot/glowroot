@@ -20,17 +20,18 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
 import io.informant.testkit.TraceMarker;
-import io.informant.util.DaemonExecutors;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.junit.Test;
 
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * @author Trask Stalnaker
@@ -89,9 +90,11 @@ public class DataSourceShutdownTest {
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
         public void executeApp() throws InterruptedException {
-            DaemonExecutors.newCachedThreadPool("GenerateTraces").execute(new Runnable() {
+            ThreadFactory daemonThreadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
+            Executors.newSingleThreadExecutor(daemonThreadFactory).execute(new Runnable() {
                 public void run() {
-                    // generate traces during the shutdown process to test there are no error caused
+                    // generate traces during the shutdown process to test there are no
+                    // error caused
                     // by trying to write a trace to the database during/after shutdown
                     while (true) {
                         try {

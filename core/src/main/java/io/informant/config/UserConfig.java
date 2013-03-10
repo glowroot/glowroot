@@ -15,7 +15,6 @@
  */
 package io.informant.config;
 
-import io.informant.util.Hashing2;
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 
@@ -61,7 +60,7 @@ public class UserConfig {
         this.userId = userId;
         this.storeThresholdMillis = storeThresholdMillis;
         this.fineProfiling = fineProfiling;
-        version = Hashing2.sha1(enabled, userId, storeThresholdMillis, fineProfiling);
+        version = VersionHashes.sha1(enabled, userId, storeThresholdMillis, fineProfiling);
     }
 
     public boolean isEnabled() {

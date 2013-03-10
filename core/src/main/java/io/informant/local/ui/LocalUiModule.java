@@ -15,6 +15,7 @@
  */
 package io.informant.local.ui;
 
+import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
@@ -27,7 +28,6 @@ import io.informant.local.store.RollingFile;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.StorageModule;
 import io.informant.marker.ThreadSafe;
-import io.informant.util.Clock;
 import io.informant.weaving.ParsedTypeCache;
 
 import java.io.File;

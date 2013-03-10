@@ -15,6 +15,7 @@
  */
 package io.informant.local.ui;
 
+import io.informant.common.ObjectMappers;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
 import io.informant.config.ConfigService.OptimisticLockException;
@@ -28,7 +29,6 @@ import io.informant.config.UserConfig;
 import io.informant.config.WithVersionJsonView;
 import io.informant.local.store.RollingFile;
 import io.informant.marker.Singleton;
-import io.informant.util.ObjectMappers;
 
 import java.io.File;
 import java.io.IOException;

@@ -22,6 +22,7 @@ import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
+import io.informant.common.Clock;
 import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
 import io.informant.config.GeneralConfig;
@@ -35,7 +36,6 @@ import io.informant.core.trace.Trace;
 import io.informant.core.trace.WeavingMetricNameImpl;
 import io.informant.marker.NotThreadSafe;
 import io.informant.marker.ThreadSafe;
-import io.informant.util.Clock;
 
 import java.util.List;
 import java.util.Random;

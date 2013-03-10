@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.config;
 
 import io.informant.marker.Static;
 
@@ -29,20 +29,18 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
 /**
- * Additional method similar to those in Guava's {@link Hashing} class.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Static
-public class Hashing2 {
+class VersionHashes {
 
-    private static final Logger logger = LoggerFactory.getLogger(Hashing2.class);
+    private static final Logger logger = LoggerFactory.getLogger(VersionHashes.class);
     private static final long DELIMITER = 123454321;
 
-    private Hashing2() {}
+    private VersionHashes() {}
 
-    public static String sha1(@Nullable Object... objects) {
+    static String sha1(@Nullable Object... objects) {
         return hashCode(Hashing.sha1(), objects);
     }
 

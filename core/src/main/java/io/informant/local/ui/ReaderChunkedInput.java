@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.local.ui;
 
 import java.io.IOException;
 import java.io.PushbackReader;
@@ -31,14 +31,14 @@ import com.google.common.base.Charsets;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class ReaderChunkedInput implements ChunkedInput {
+class ReaderChunkedInput implements ChunkedInput {
 
     private final PushbackReader reader;
     private final char[] buffer = new char[8192];
 
     private boolean hasSentTerminatingChunk;
 
-    public ReaderChunkedInput(Reader reader) {
+    ReaderChunkedInput(Reader reader) {
         this.reader = new PushbackReader(reader);
     }
 

@@ -20,6 +20,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
 import io.informant.api.internal.ReadableMessage;
+import io.informant.common.ObjectMappers;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
@@ -29,8 +30,6 @@ import io.informant.core.trace.Trace;
 import io.informant.core.trace.Trace.TraceAttribute;
 import io.informant.marker.NotThreadSafe;
 import io.informant.marker.Static;
-import io.informant.util.CharArrayWriter;
-import io.informant.util.ObjectMappers;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -441,6 +440,15 @@ public class SnapshotCreator {
         @Immutable
         private static enum JsonGeneratorOp {
             END_OBJECT, END_ARRAY, POP_METRIC_NAME;
+        }
+    }
+
+    @NotThreadSafe
+    private static class CharArrayWriter extends java.io.CharArrayWriter {
+
+        // provides access to protected char buffer
+        public void arraycopy(int srcPos, char[] dest, int destPos, int length) {
+            System.arraycopy(buf, srcPos, dest, destPos, length);
         }
     }
 }

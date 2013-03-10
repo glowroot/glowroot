@@ -15,9 +15,8 @@
  */
 package io.informant.config;
 
-import static io.informant.util.ObjectMappers.checkRequiredProperty;
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
 import io.informant.api.weaving.MethodModifier;
-import io.informant.util.Hashing2;
 
 import java.util.List;
 
@@ -67,7 +66,7 @@ public class PointcutConfig {
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
         this.metricName = metricName;
         this.spanTemplate = spanTemplate;
-        version = Hashing2.sha1(captureItems, typeName, methodName, methodArgTypeNames,
+        version = VersionHashes.sha1(captureItems, typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanTemplate);
     }
 

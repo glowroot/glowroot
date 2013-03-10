@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.util;
+package io.informant.core;
 
 import io.informant.marker.Static;
-
 
 /**
  * Convenience method for nanosecond comparison.
@@ -25,14 +24,14 @@ import io.informant.marker.Static;
  * @since 0.5
  */
 @Static
-public class Nanoseconds {
+class Nanoseconds {
 
     private Nanoseconds() {}
 
     // nano times roll over every 292 years, so it is important to test differences between
     // nano times (e.g. nano2 - nano1 >= 0, not nano1 <= nano2)
     // (see http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
-    public static boolean lessThan(long nano1, long nano2) {
+    static boolean lessThan(long nano1, long nano2) {
         return nano2 - nano1 >= 0;
     }
 }

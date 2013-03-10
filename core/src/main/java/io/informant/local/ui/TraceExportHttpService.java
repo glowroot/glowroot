@@ -18,11 +18,9 @@ package io.informant.local.ui;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.informant.common.CharStreams2;
 import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.Singleton;
-import io.informant.util.CharStreams2;
-import io.informant.util.Resources2;
-import io.informant.util.Resources2.ResourceNotFound;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,6 +28,7 @@ import java.io.OutputStreamWriter;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URL;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,9 +50,11 @@ import org.slf4j.LoggerFactory;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
+import com.google.common.io.Resources;
 
 /**
  * Http service to export full trace html page.
@@ -103,8 +104,7 @@ public class TraceExportHttpService implements HttpService {
         if (traceCharSource == null) {
             return null;
         }
-        String templateContent =
-                Resources2.asCharStream("io/informant/local/ui/export.html").read();
+        String templateContent = asCharStream("io/informant/local/ui/export.html").read();
         Pattern pattern = Pattern.compile("\\{\\{include ([^}]+)\\}\\}");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
@@ -116,7 +116,7 @@ public class TraceExportHttpService implements HttpService {
             if (include.equals("detailTrace")) {
                 charSources.add(traceCharSource);
             } else {
-                charSources.add(Resources2.asCharStream(include));
+                charSources.add(asCharStream(include));
             }
             curr = matcher.end();
         }
@@ -147,6 +147,21 @@ public class TraceExportHttpService implements HttpService {
 
     private static String getFilename(String id) {
         return "trace-" + id;
+    }
+
+    private static CharSource asCharStream(String path) throws ResourceNotFound {
+        URL url = Resources.getResource(path);
+        if (url == null) {
+            throw new ResourceNotFound("Resource not found: " + path);
+        }
+        return Resources.asCharSource(url, Charsets.UTF_8);
+    }
+
+    @SuppressWarnings("serial")
+    private static class ResourceNotFound extends IOException {
+        private ResourceNotFound(String message) {
+            super(message);
+        }
     }
 
     private static class ExportChunkedInput implements ChunkedInput {

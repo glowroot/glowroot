@@ -20,8 +20,8 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SER
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.informant.common.ObjectMappers;
 import io.informant.marker.Singleton;
-import io.informant.util.ObjectMappers;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

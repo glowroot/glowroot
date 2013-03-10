@@ -15,8 +15,7 @@
  */
 package io.informant.config;
 
-import static io.informant.util.ObjectMappers.checkRequiredProperty;
-import io.informant.util.Multiline;
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

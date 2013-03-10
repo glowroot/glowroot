@@ -84,11 +84,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     public byte[] transform(@Nullable ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] bytes) {
         // don't weave informant-core classes, included shaded classes like h2 jdbc driver
-        if (className.startsWith("io/informant/config/")
+        if (className.startsWith("io/informant/common/")
+                || className.startsWith("io/informant/config/")
                 || className.startsWith("io/informant/core/")
                 || className.startsWith("io/informant/local/")
                 || className.startsWith("io/informant/shaded/")
-                || className.startsWith("io/informant/util/")
                 || className.startsWith("io/informant/weaving/")) {
             return bytes;
         }
