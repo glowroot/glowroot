@@ -23,9 +23,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 
 /**
- * Element of MetricData.
- * 
- * All timing data is measured in nanoseconds.
+ * All timing data is in nanoseconds.
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -45,14 +43,6 @@ public class TraceMetric implements MetricTimer {
     // any non-volatile fields are read, creating a memory barrier and making the latest values of
     // the non-volatile fields visible to the reading thread
     private volatile int selfNestingLevel;
-
-    // storing Trace here is just an optimization to avoid a second ThreadLocal call in cases where
-    // the TraceMetric ThreadLocal already has to be looked up
-    // there is no visibility issue for this field as it is only ever accessed by a single thread
-
-    // tracking whether this is linked to a trace is just an optimization to avoid a ThreadLocal
-    // access to look up the trace in PluginServicesImpl.startMetric()
-    private boolean linkedToTrace;
 
     private final Ticker ticker;
 
@@ -76,9 +66,11 @@ public class TraceMetric implements MetricTimer {
             if (count == 0) {
                 return new Snapshot(name, curr, curr, curr, 1, true, true, true);
             } else if (curr > max) {
-                return new Snapshot(name, total + curr, min, curr, count + 1, true, false, true);
+                return new Snapshot(name, total + curr, min, curr, count + 1, true, false,
+                        true);
             } else {
-                return new Snapshot(name, total + curr, min, max, count + 1, true, false, false);
+                return new Snapshot(name, total + curr, min, max, count + 1, true, false,
+                        false);
             }
         } else {
             return new Snapshot(name, total, min, max, count, false, false, false);
@@ -87,10 +79,6 @@ public class TraceMetric implements MetricTimer {
 
     public void stop() {
         end(ticker.read());
-    }
-
-    public boolean isLinkedToTrace() {
-        return linkedToTrace;
     }
 
     // prefer this method when startTick is not already available, since it avoids a ticker.read()
@@ -104,7 +92,7 @@ public class TraceMetric implements MetricTimer {
         selfNestingLevel++;
     }
 
-    void start(long startTick) {
+    public void start(long startTick) {
         if (selfNestingLevel == 0) {
             this.startTick = startTick;
         }
@@ -124,20 +112,6 @@ public class TraceMetric implements MetricTimer {
 
     long getCount() {
         return count;
-    }
-
-    void reset() {
-        total = 0;
-        min = Long.MAX_VALUE;
-        max = Long.MIN_VALUE;
-        count = 0;
-        startTick = 0;
-        selfNestingLevel = 0;
-        linkedToTrace = false;
-    }
-
-    void setLinkedToTrace() {
-        linkedToTrace = true;
     }
 
     private void recordData(long time) {
@@ -161,7 +135,6 @@ public class TraceMetric implements MetricTimer {
                 .add("count", count)
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
-                .add("linkedToTrace", linkedToTrace)
                 .toString();
     }
 
@@ -179,7 +152,6 @@ public class TraceMetric implements MetricTimer {
 
         private Snapshot(String name, long total, long min, long max, long count, boolean active,
                 boolean minActive, boolean maxActive) {
-
             this.name = name;
             this.total = total;
             this.min = min;

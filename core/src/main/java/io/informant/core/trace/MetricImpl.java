@@ -17,6 +17,7 @@ package io.informant.core.trace;
 
 import io.informant.api.Metric;
 import io.informant.util.PartiallyThreadSafe;
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
 
@@ -28,31 +29,27 @@ import com.google.common.base.Ticker;
 public class MetricImpl implements Metric {
 
     private final String name;
-    private final ThreadLocal<TraceMetric> traceMetricHolder = new ThreadLocal<TraceMetric>() {
-        @Override
-        protected TraceMetric initialValue() {
-            return new TraceMetric(name, ticker);
-        }
-    };
-
     private final Ticker ticker;
+
+    private final ThreadLocal<TraceMetric> traceMetricHolder = new ThreadLocal<TraceMetric>();
 
     public MetricImpl(String name, Ticker ticker) {
         this.name = name;
         this.ticker = ticker;
     }
 
+    @Nullable
     public TraceMetric get() {
         return traceMetricHolder.get();
     }
 
-    public TraceMetric start(long startTick) {
-        TraceMetric traceMetric = traceMetricHolder.get();
-        traceMetric.start(startTick);
+    public TraceMetric create() {
+        TraceMetric traceMetric = new TraceMetric(name, ticker);
+        traceMetricHolder.set(traceMetric);
         return traceMetric;
     }
 
-    void resetTraceMetric() {
-        traceMetricHolder.get().reset();
+    void remove() {
+        traceMetricHolder.remove();
     }
 }

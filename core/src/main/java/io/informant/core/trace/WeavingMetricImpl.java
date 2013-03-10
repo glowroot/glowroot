@@ -45,21 +45,19 @@ public class WeavingMetricImpl implements WeavingMetric {
         // at the end of every trace, so isLinkedToTrace() can be used to check if currently in a
         // trace
         TraceMetric traceMetric = metricImpl.get();
-        if (!traceMetric.isLinkedToTrace()) {
+        if (traceMetric == null) {
             return NopMetricTimer.INSTANCE;
         }
         traceMetric.start();
         return traceMetric;
     }
 
-    TraceMetric initTraceMetric() {
-        TraceMetric traceMetric = metricImpl.get();
-        traceMetric.setLinkedToTrace();
-        return traceMetric;
+    TraceMetric create() {
+        return metricImpl.create();
     }
 
     void resetTraceMetric() {
-        metricImpl.resetTraceMetric();
+        metricImpl.remove();
     }
 
     @ThreadSafe

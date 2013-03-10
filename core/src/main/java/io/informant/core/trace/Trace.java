@@ -133,8 +133,8 @@ public class Trace {
         start = clock.currentTimeMillis();
         id = new TraceUniqueId(start);
         long startTick = ticker.read();
-        TraceMetric traceMetric = metric.start(startTick);
-        traceMetric.setLinkedToTrace();
+        TraceMetric traceMetric = metric.create();
+        traceMetric.start(startTick);
         rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
         List<TraceMetric> traceMetrics =
                 Lists.newArrayListWithCapacity(TRACE_METRICS_LIST_INITIAL_CAPACITY);
@@ -145,7 +145,7 @@ public class Trace {
         // the weaving metric thread local is initialized to an empty TraceMetric instance so that
         // it can be cached in this class (otherwise it is painful to synchronize properly between
         // clearThreadLocalMetrics() and getTraceMetrics())
-        weavingTraceMetric = weavingMetric.initTraceMetric();
+        weavingTraceMetric = weavingMetric.create();
         this.weavingMetric = weavingMetric;
     }
 
@@ -229,11 +229,11 @@ public class Trace {
     }
 
     public ImmutableList<Snapshot> getTraceMetricSnapshots() {
-        if (finalTraceMetricSnapshots != null) {
-            return finalTraceMetricSnapshots;
-        }
         List<TraceMetric> copyOfTraceMetrics;
         synchronized (traceMetrics) {
+            if (finalTraceMetricSnapshots != null) {
+                return finalTraceMetricSnapshots;
+            }
             // getTraceMetricSnapshots() can be called by another thread during the trace, so prefer
             // smaller synchronized block compared to getTraceMetricSnapshots()
             copyOfTraceMetrics = ImmutableList.copyOf(traceMetrics);
@@ -341,10 +341,11 @@ public class Trace {
     public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier,
             boolean spanLimitBypass) {
         long startTick = ticker.read();
-        TraceMetric traceMetric = metric.start(startTick);
-        if (!traceMetric.isLinkedToTrace()) {
-            linkTraceMetric(metric, traceMetric);
+        TraceMetric traceMetric = metric.get();
+        if (traceMetric == null) {
+            traceMetric = addTraceMetric(metric);
         }
+        traceMetric.start(startTick);
         return rootSpan.pushSpan(startTick, messageSupplier, traceMetric, spanLimitBypass);
     }
 
@@ -368,12 +369,13 @@ public class Trace {
         }
     }
 
-    public void linkTraceMetric(MetricImpl metric, TraceMetric traceMetric) {
+    public TraceMetric addTraceMetric(MetricImpl metric) {
+        TraceMetric traceMetric = metric.create();
         synchronized (traceMetrics) {
             traceMetrics.add(traceMetric);
         }
-        traceMetric.setLinkedToTrace();
         metrics.add(metric);
+        return traceMetric;
     }
 
     public void promoteTraceMetrics() {
@@ -387,7 +389,7 @@ public class Trace {
     public void resetTraceMetrics() {
         // reset metric thread locals to clear their state for next time
         for (MetricImpl metric : metrics) {
-            metric.resetTraceMetric();
+            metric.remove();
         }
         // reset weaving metric thread local to prevent the thread from continuing to
         // increment the one associated to this trace

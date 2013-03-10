@@ -235,13 +235,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         // don't call MetricImpl.start() in case this method returns NopTimer.INSTANCE below
         TraceMetric traceMetric = ((MetricImpl) metric).get();
-        if (!traceMetric.isLinkedToTrace()) {
+        if (traceMetric == null) {
             // don't access trace thread local unless necessary
             Trace trace = traceRegistry.getCurrentTrace();
             if (trace == null) {
                 return NopMetricTimer.INSTANCE;
             }
-            trace.linkTraceMetric((MetricImpl) metric, traceMetric);
+            traceMetric = trace.addTraceMetric((MetricImpl) metric);
         }
         traceMetric.start();
         return traceMetric;
@@ -324,10 +324,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             // the span limit has been exceeded for this trace
             trace.addSpanLimitExceededMarkerIfNeeded();
             long startTick = ticker.read();
-            TraceMetric traceMetric = metric.start(startTick);
-            if (!traceMetric.isLinkedToTrace()) {
-                trace.linkTraceMetric(metric, traceMetric);
+            TraceMetric traceMetric = metric.get();
+            if (traceMetric == null) {
+                traceMetric = trace.addTraceMetric(metric);
             }
+            traceMetric.start(startTick);
             return new TimerWrappedInSpan(traceMetric, startTick, trace, messageSupplier);
         } else {
             return new SpanImpl(trace.pushSpan(metric, messageSupplier, false), trace);
