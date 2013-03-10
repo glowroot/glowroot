@@ -20,7 +20,7 @@ import io.informant.api.weaving.Mixin;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
-import io.informant.core.trace.WeavingMetricImpl;
+import io.informant.core.trace.WeavingMetricNameImpl;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;
@@ -53,7 +53,7 @@ public class CoreModule {
 
     private final TraceSink traceSink;
     private final ParsedTypeCache parsedTypeCache;
-    private final WeavingMetricImpl weavingMetric;
+    private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
     private final MetricCache metricCache;
     private final Random random;
@@ -70,7 +70,7 @@ public class CoreModule {
                     return new PluginServicesImpl(traceRegistry, traceSink,
                             configModule.getConfigService(), metricCache, fineGrainedProfiler,
                             configModule.getTicker(), configModule.getClock(), random,
-                            weavingMetric, configModule.getPluginDescriptorCache(), pluginId);
+                            weavingMetricName, configModule.getPluginDescriptorCache(), pluginId);
                 }
             });
 
@@ -81,7 +81,7 @@ public class CoreModule {
         Ticker ticker = configModule.getTicker();
 
         parsedTypeCache = new ParsedTypeCache();
-        weavingMetric = new WeavingMetricImpl(ticker);
+        weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
         metricCache = new MetricCache(ticker);
         random = new Random();
@@ -99,7 +99,8 @@ public class CoreModule {
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
         Mixin[] mixins = Iterables.toArray(pluginDescriptorCache.getMixins(), Mixin.class);
         Advice[] advisors = Iterables.toArray(pluginDescriptorCache.getAdvisors(), Advice.class);
-        return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache, weavingMetric);
+        return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache,
+                weavingMetricName);
     }
 
     public PluginServices getPluginServices(String pluginId) {
@@ -114,8 +115,8 @@ public class CoreModule {
         return parsedTypeCache;
     }
 
-    public WeavingMetricImpl getWeavingMetric() {
-        return weavingMetric;
+    public WeavingMetricNameImpl getWeavingMetricName() {
+        return weavingMetricName;
     }
 
     public TraceRegistry getTraceRegistry() {

@@ -55,7 +55,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
                 "io.informant.shaded");
-        loader.weavingMetric(informantModule.getCoreModule().getWeavingMetric());
+        loader.weavingMetric(informantModule.getCoreModule().getWeavingMetricName());
         isolatedWeavingClassLoader = loader.build();
         informant = new SameJvmInformant(informantModule);
     }

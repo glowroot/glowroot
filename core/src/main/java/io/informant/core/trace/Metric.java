@@ -29,7 +29,7 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @PartiallyThreadSafe("getSnapshot() can be called from any thread")
-public class TraceMetric implements MetricTimer {
+public class Metric implements MetricTimer {
 
     private final String name;
     // nanosecond rollover (292 years) isn't a concern for total time on a single trace
@@ -46,7 +46,7 @@ public class TraceMetric implements MetricTimer {
 
     private final Ticker ticker;
 
-    TraceMetric(String name, Ticker ticker) {
+    Metric(String name, Ticker ticker) {
         this.name = name;
         this.ticker = ticker;
     }

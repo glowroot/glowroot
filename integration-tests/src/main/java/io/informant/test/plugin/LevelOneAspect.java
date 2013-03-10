@@ -18,7 +18,7 @@ package io.informant.test.plugin;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectThrowable;
@@ -45,7 +45,8 @@ public class LevelOneAspect {
             methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level one")
     public static class LevelOneAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LevelOneAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LevelOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -71,7 +72,7 @@ public class LevelOneAspect {
                     return Message.withDetail(traceHeadline, detail);
                 }
             };
-            Span span = pluginServices.startTrace(messageSupplier, metric);
+            Span span = pluginServices.startTrace(messageSupplier, metricName);
             // several trace attributes to test ordering
             pluginServices.setTraceAttribute(arg1, arg2);
             pluginServices.setTraceAttribute("z", "zz");

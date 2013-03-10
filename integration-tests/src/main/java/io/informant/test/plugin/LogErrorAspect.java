@@ -17,7 +17,7 @@ package io.informant.test.plugin;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.PointcutStackTrace;
 import io.informant.api.Span;
@@ -40,7 +40,8 @@ public class LogErrorAspect {
             methodArgs = { "java.lang.String" }, metricName = "log error")
     public static class LogErrorAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LogErrorAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -49,7 +50,8 @@ public class LogErrorAspect {
 
         @OnBefore
         public static Span onBefore(String message) {
-            return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message), metric);
+            return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
+                    metricName);
 
         }
 

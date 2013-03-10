@@ -106,7 +106,7 @@ public abstract class PluginServices {
      * @param adviceClass
      * @return the {@code Metric} instance for the specified {@code adviceClass}
      */
-    public abstract Metric getMetric(Class<?> adviceClass);
+    public abstract MetricName getMetricName(Class<?> adviceClass);
 
     /**
      * Registers a listener that will receive a callback when the plugin's property values are
@@ -181,27 +181,28 @@ public abstract class PluginServices {
      * If there is no active trace, a new trace is started.
      * 
      * If there is already an active trace, this method acts the same as
-     * {@link #startSpan(MessageSupplier, Metric)}.
+     * {@link #startSpan(MessageSupplier, MetricName)}.
      * 
      * @param messageSupplier
      * @param metric
      * @return
      */
-    public abstract Span startTrace(MessageSupplier messageSupplier, Metric metric);
+    public abstract Span startTrace(MessageSupplier messageSupplier, MetricName metricName);
 
     /**
      * If there is no active trace, a new trace is started and the trace is marked as a background
      * trace. Traces can be filtered by their background flag on the trace explorer page.
      * 
      * If there is already an active trace, this method acts the same as
-     * {@link #startSpan(MessageSupplier, Metric)} (the background flag is not modified on the
+     * {@link #startSpan(MessageSupplier, MetricName)} (the background flag is not modified on the
      * existing trace).
      * 
      * @param messageSupplier
      * @param metric
      * @return
      */
-    public abstract Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric);
+    public abstract Span startBackgroundTrace(MessageSupplier messageSupplier,
+            MetricName metricName);
 
     /**
      * Creates and starts a span with the given {@code messageSupplier}. A metric timer for the
@@ -223,7 +224,7 @@ public abstract class PluginServices {
      * @param metric
      * @return
      */
-    public abstract Span startSpan(MessageSupplier messageSupplier, Metric metric);
+    public abstract Span startSpan(MessageSupplier messageSupplier, MetricName metricName);
 
     /**
      * Starts a timer for the specified metric. If a timer is already running for the specified
@@ -233,7 +234,7 @@ public abstract class PluginServices {
      * @param metric
      * @return the timer for calling stop
      */
-    public abstract MetricTimer startMetricTimer(Metric metric);
+    public abstract MetricTimer startMetricTimer(MetricName metricName);
 
     /**
      * Adds a span with duration zero.
@@ -344,7 +345,7 @@ public abstract class PluginServices {
 
     private static class PluginServicesNop extends PluginServices {
         @Override
-        public Metric getMetric(Class<?> adviceClass) {
+        public MetricName getMetricName(Class<?> adviceClass) {
             return NopMetric.INSTANCE;
         }
         @Override
@@ -367,19 +368,19 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
+        public Span startTrace(MessageSupplier messageSupplier, MetricName metricName) {
             return new NopSpan(messageSupplier);
         }
         @Override
-        public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
+        public Span startBackgroundTrace(MessageSupplier messageSupplier, MetricName metricName) {
             return new NopSpan(messageSupplier);
         }
         @Override
-        public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
+        public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
             return new NopSpan(messageSupplier);
         }
         @Override
-        public MetricTimer startMetricTimer(Metric metric) {
+        public MetricTimer startMetricTimer(MetricName metricName) {
             return NopMetricTimer.INSTANCE;
         }
         @Override
@@ -391,7 +392,7 @@ public abstract class PluginServices {
         @Override
         public void setTraceAttribute(String name, @Nullable String value) {}
 
-        private static class NopMetric implements Metric {
+        private static class NopMetric implements MetricName {
             private static final NopMetric INSTANCE = new NopMetric();
         }
 

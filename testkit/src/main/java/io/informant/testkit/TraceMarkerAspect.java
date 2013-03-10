@@ -16,7 +16,7 @@
 package io.informant.testkit;
 
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectTraveler;
@@ -37,15 +37,20 @@ public class TraceMarkerAspect {
     @Pointcut(typeName = "io.informant.testkit.TraceMarker", methodName = "traceMarker",
             metricName = "mock trace marker")
     public static class TraceMarkerAdvice {
-        private static final Metric metric = pluginServices.getMetric(TraceMarkerAdvice.class);
+
+        private static final MetricName metricName =
+                pluginServices.getMetricName(TraceMarkerAdvice.class);
+
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
+
         @OnBefore
         public static Span onBefore() {
-            return pluginServices.startTrace(MessageSupplier.from("mock trace marker"), metric);
+            return pluginServices.startTrace(MessageSupplier.from("mock trace marker"), metricName);
         }
+
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
             span.end();

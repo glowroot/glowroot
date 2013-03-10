@@ -18,7 +18,7 @@ package io.informant.core.trace;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableMessage;
-import io.informant.core.trace.TraceMetric.Snapshot;
+import io.informant.core.trace.Metric.Snapshot;
 import io.informant.util.Clock;
 import io.informant.util.PartiallyThreadSafe;
 
@@ -55,15 +55,15 @@ import com.google.common.collect.Maps;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@PartiallyThreadSafe("pushSpan(), addSpan(), popSpan(), startTraceMetric(),"
-        + "  clearThreadLocalMetrics() can only be called from constructing thread")
+@PartiallyThreadSafe("pushSpan(), addSpan(), popSpan(), addMetric(),"
+        + "  resetThreadLocalMetrics() can only be called from constructing thread")
 public class Trace {
 
     private static final Logger logger = LoggerFactory.getLogger(Trace.class);
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
     private static final int ATTRIBUTES_LIST_INITIAL_CAPACITY = 16;
-    private static final int TRACE_METRICS_LIST_INITIAL_CAPACITY = 32;
+    private static final int METRICS_LIST_INITIAL_CAPACITY = 32;
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -86,14 +86,14 @@ public class Trace {
 
     // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
     // ThreadSafeCollectionOfTenBenchmark
-    @GuardedBy("traceMetrics")
-    private final List<TraceMetric> traceMetrics;
+    @GuardedBy("metrics")
+    private final List<Metric> metrics;
 
-    // the MetricImpls are tracked since they contain thread locals that need to be cleared at the
+    // the MetricNames are tracked since they contain thread locals that need to be cleared at the
     // end of the trace
     //
     // this doesn't need to be thread safe as it is only accessed by the trace thread
-    private final List<MetricImpl> metrics = Lists.newArrayList();
+    private final List<MetricNameImpl> metricNames = Lists.newArrayList();
 
     // root span for this trace
     private final RootSpan rootSpan;
@@ -121,32 +121,31 @@ public class Trace {
     private volatile ScheduledFuture<?> stuckScheduledFuture;
 
     private final Ticker ticker;
-    private final WeavingMetricImpl weavingMetric;
-    private final TraceMetric weavingTraceMetric;
+    private final WeavingMetricNameImpl weavingMetricName;
+    private final Metric weavingMetric;
 
     @LazyNonNull
-    private volatile ImmutableList<Snapshot> finalTraceMetricSnapshots;
+    private volatile ImmutableList<Snapshot> finalMetricSnapshots;
 
-    public Trace(MetricImpl metric, MessageSupplier messageSupplier, Ticker ticker, Clock clock,
-            WeavingMetricImpl weavingMetric) {
+    public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, Ticker ticker,
+            Clock clock, WeavingMetricNameImpl weavingMetricName) {
         this.ticker = ticker;
         start = clock.currentTimeMillis();
         id = new TraceUniqueId(start);
         long startTick = ticker.read();
-        TraceMetric traceMetric = metric.create();
-        traceMetric.start(startTick);
-        rootSpan = new RootSpan(messageSupplier, traceMetric, startTick, ticker);
-        List<TraceMetric> traceMetrics =
-                Lists.newArrayListWithCapacity(TRACE_METRICS_LIST_INITIAL_CAPACITY);
-        traceMetrics.add(traceMetric);
-        // safe publish of traceMetrics to avoid synchronization
-        this.traceMetrics = traceMetrics;
+        Metric metric = metricName.create();
+        metric.start(startTick);
+        rootSpan = new RootSpan(messageSupplier, metric, startTick, ticker);
+        List<Metric> metrics = Lists.newArrayListWithCapacity(METRICS_LIST_INITIAL_CAPACITY);
         metrics.add(metric);
-        // the weaving metric thread local is initialized to an empty TraceMetric instance so that
-        // it can be cached in this class (otherwise it is painful to synchronize properly between
-        // clearThreadLocalMetrics() and getTraceMetrics())
-        weavingTraceMetric = weavingMetric.create();
-        this.weavingMetric = weavingMetric;
+        // safe publish of metrics to avoid synchronization
+        this.metrics = metrics;
+        metricNames.add(metricName);
+        // the weaving metric thread local is initialized so that it can be cached in this class
+        // (otherwise it is painful to synchronize properly between clearThreadLocalMetrics()
+        // and getMetricSnapshots())
+        weavingMetric = weavingMetricName.create();
+        this.weavingMetricName = weavingMetricName;
     }
 
     public long getStart() {
@@ -228,17 +227,17 @@ public class Trace {
         return fineMergedStackTree != null;
     }
 
-    public ImmutableList<Snapshot> getTraceMetricSnapshots() {
-        List<TraceMetric> copyOfTraceMetrics;
-        synchronized (traceMetrics) {
-            if (finalTraceMetricSnapshots != null) {
-                return finalTraceMetricSnapshots;
+    public ImmutableList<Snapshot> getMetricSnapshots() {
+        List<Metric> copyOfMetrics;
+        synchronized (metrics) {
+            if (finalMetricSnapshots != null) {
+                return finalMetricSnapshots;
             }
-            // getTraceMetricSnapshots() can be called by another thread during the trace, so prefer
-            // smaller synchronized block compared to getTraceMetricSnapshots()
-            copyOfTraceMetrics = ImmutableList.copyOf(traceMetrics);
+            // getMetricSnapshots() can be called by another thread during the trace, so prefer
+            // smaller synchronized block compared to promoteMetrics()
+            copyOfMetrics = ImmutableList.copyOf(metrics);
         }
-        return buildTraceMetricSnapshots(copyOfTraceMetrics);
+        return buildMetricSnapshots(copyOfMetrics);
     }
 
     public Span getRootSpan() {
@@ -338,15 +337,15 @@ public class Trace {
         this.stuckScheduledFuture = scheduledFuture;
     }
 
-    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier,
+    public Span pushSpan(MetricNameImpl metricName, MessageSupplier messageSupplier,
             boolean spanLimitBypass) {
         long startTick = ticker.read();
-        TraceMetric traceMetric = metric.get();
-        if (traceMetric == null) {
-            traceMetric = addTraceMetric(metric);
+        Metric metric = metricName.get();
+        if (metric == null) {
+            metric = addMetric(metricName);
         }
-        traceMetric.start(startTick);
-        return rootSpan.pushSpan(startTick, messageSupplier, traceMetric, spanLimitBypass);
+        metric.start(startTick);
+        return rootSpan.pushSpan(startTick, messageSupplier, metric, spanLimitBypass);
     }
 
     public Span addSpan(@Nullable MessageSupplier messageSupplier,
@@ -363,37 +362,37 @@ public class Trace {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     public void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
         rootSpan.popSpan(span, endTick, errorMessage);
-        TraceMetric traceMetric = span.getTraceMetric();
-        if (traceMetric != null) {
-            traceMetric.end(endTick);
+        Metric metric = span.getMetric();
+        if (metric != null) {
+            metric.end(endTick);
         }
     }
 
-    public TraceMetric addTraceMetric(MetricImpl metric) {
-        TraceMetric traceMetric = metric.create();
-        synchronized (traceMetrics) {
-            traceMetrics.add(traceMetric);
+    public Metric addMetric(MetricNameImpl metricName) {
+        Metric metric = metricName.create();
+        synchronized (metrics) {
+            metrics.add(metric);
         }
-        metrics.add(metric);
-        return traceMetric;
+        metricNames.add(metricName);
+        return metric;
     }
 
-    public void promoteTraceMetrics() {
-        synchronized (traceMetrics) {
-            // promoteTraceMetrics() is called by the trace thread, so prefer larger synchronized
-            // block compared to getTraceMetricSnapshots()
-            finalTraceMetricSnapshots = buildTraceMetricSnapshots(traceMetrics);
+    public void promoteMetrics() {
+        synchronized (metrics) {
+            // promoteMetrics() is called by the trace thread, so prefer larger synchronized
+            // block compared to getMetricSnapshots()
+            finalMetricSnapshots = buildMetricSnapshots(metrics);
         }
     }
 
-    public void resetTraceMetrics() {
+    public void clearThreadLocalMetrics() {
         // reset metric thread locals to clear their state for next time
-        for (MetricImpl metric : metrics) {
-            metric.remove();
+        for (MetricNameImpl metricName : metricNames) {
+            metricName.clear();
         }
         // reset weaving metric thread local to prevent the thread from continuing to
         // increment the one associated to this trace
-        weavingMetric.resetTraceMetric();
+        weavingMetricName.clear();
     }
 
     public void captureStackTrace(boolean fine) {
@@ -428,18 +427,17 @@ public class Trace {
         }
     }
 
-    private ImmutableList<Snapshot> buildTraceMetricSnapshots(
-            @ReadOnly List<TraceMetric> traceMetrics) {
+    private ImmutableList<Snapshot> buildMetricSnapshots(@ReadOnly List<Metric> metrics) {
         // since the metrics are bound to the thread, they need to be recorded and reset
         // while still in the trace thread, before the thread is reused for another trace
-        ImmutableList.Builder<Snapshot> traceMetricSnapshots = ImmutableList.builder();
-        for (TraceMetric traceMetric : traceMetrics) {
-            traceMetricSnapshots.add(traceMetric.getSnapshot());
+        ImmutableList.Builder<Snapshot> metricSnapshots = ImmutableList.builder();
+        for (Metric metric : metrics) {
+            metricSnapshots.add(metric.getSnapshot());
         }
-        if (weavingTraceMetric.getCount() > 0) {
-            traceMetricSnapshots.add(weavingTraceMetric.getSnapshot());
+        if (weavingMetric.getCount() > 0) {
+            metricSnapshots.add(weavingMetric.getSnapshot());
         }
-        return traceMetricSnapshots.build();
+        return metricSnapshots.build();
     }
 
     @Override
@@ -451,7 +449,7 @@ public class Trace {
                 .add("background", background)
                 .add("attributes", attributes)
                 .add("userId", userId)
-                .add("traceMetrics", traceMetrics)
+                .add("metrics", metrics)
                 .add("rootSpan", rootSpan)
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)

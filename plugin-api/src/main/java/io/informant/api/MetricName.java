@@ -16,9 +16,9 @@
 package io.informant.api;
 
 /**
- * See {@link PluginServices#getMetric(Class)} for how to retrieve and use {@code Metric} instances.
+ * See {@link PluginServices#getMetricName(Class)} for how to retrieve and use {@code Metric} instances.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface Metric {}
+public interface MetricName {}

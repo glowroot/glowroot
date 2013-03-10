@@ -15,9 +15,9 @@
  */
 package io.informant.core;
 
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.weaving.Pointcut;
-import io.informant.core.trace.MetricImpl;
+import io.informant.core.trace.MetricNameImpl;
 import io.informant.util.Singleton;
 
 import org.slf4j.Logger;
@@ -39,11 +39,11 @@ class MetricCache {
 
     private final Ticker ticker;
 
-    private final LoadingCache<String, MetricImpl> metrics = CacheBuilder.newBuilder().build(
-            new CacheLoader<String, MetricImpl>() {
+    private final LoadingCache<String, MetricNameImpl> metricNames =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, MetricNameImpl>() {
                 @Override
-                public MetricImpl load(String name) {
-                    return new MetricImpl(name, ticker);
+                public MetricNameImpl load(String name) {
+                    return new MetricNameImpl(name, ticker);
                 }
             });
 
@@ -51,17 +51,17 @@ class MetricCache {
         this.ticker = ticker;
     }
 
-    Metric getMetric(Class<?> adviceClass) {
+    MetricName getMetricName(Class<?> adviceClass) {
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
         if (pointcut == null) {
             logger.warn("advice class '{}' has no @Pointcut", adviceClass.getName());
-            return metrics.getUnchecked("unknown");
+            return metricNames.getUnchecked("unknown");
         } else if (pointcut.metricName().equals("")) {
             logger.warn("@Pointcut on advice class '{}' has no metricName() attribute",
                     adviceClass.getName());
-            return metrics.getUnchecked("unknown");
+            return metricNames.getUnchecked("unknown");
         } else {
-            return metrics.getUnchecked(pointcut.metricName());
+            return metricNames.getUnchecked(pointcut.metricName());
         }
     }
 }

@@ -17,7 +17,7 @@ package io.informant.plugin.servlet;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.PointcutStackTrace;
 import io.informant.api.Span;
@@ -74,7 +74,8 @@ public class ServletAspect {
             methodArgs = { "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
             metricName = "http request")
     public static class ServletAdvice {
-        private static final Metric metric = pluginServices.getMetric(ServletAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ServletAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter span
@@ -97,7 +98,7 @@ public class ServletAspect {
                         request.getRequestURI(), session.getId(), getSessionAttributes(session));
             }
             topLevel.set(messageSupplier);
-            Span span = pluginServices.startTrace(messageSupplier, metric);
+            Span span = pluginServices.startTrace(messageSupplier, metricName);
             if (session != null) {
                 String sessionUserIdAttributePath = ServletPluginProperties
                         .sessionUserIdAttributePath();
@@ -305,8 +306,8 @@ public class ServletAspect {
     @Pointcut(typeName = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
             methodArgs = { "javax.servlet.ServletContextEvent" }, metricName = "servlet startup")
     public static class ContextInitializedAdvice {
-        private static final Metric metric = pluginServices
-                .getMetric(ContextInitializedAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ContextInitializedAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -315,7 +316,7 @@ public class ServletAspect {
         @Nullable
         public static Span onBefore(@InjectTarget Object listener) {
             return pluginServices.startTrace(MessageSupplier.from("servlet context initialized"
-                    + " ({})", listener.getClass().getName()), metric);
+                    + " ({})", listener.getClass().getName()), metricName);
         }
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
@@ -330,7 +331,8 @@ public class ServletAspect {
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "init",
             methodArgs = { "javax.servlet.ServletConfig" }, metricName = "servlet startup")
     public static class ServletInitAdvice {
-        private static final Metric metric = pluginServices.getMetric(ServletInitAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ServletInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -338,7 +340,7 @@ public class ServletAspect {
         @OnBefore
         public static Span onBefore(@InjectTarget Object servlet) {
             return pluginServices.startTrace(MessageSupplier.from("servlet init ({})",
-                    servlet.getClass().getName()), metric);
+                    servlet.getClass().getName()), metricName);
         }
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
@@ -353,7 +355,8 @@ public class ServletAspect {
     @Pointcut(typeName = "javax.servlet.Filter", methodName = "init",
             methodArgs = { "javax.servlet.FilterConfig" }, metricName = "servlet startup")
     public static class FilterInitAdvice {
-        private static final Metric metric = pluginServices.getMetric(FilterInitAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(FilterInitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
@@ -361,7 +364,7 @@ public class ServletAspect {
         @OnBefore
         public static Span onBefore(@InjectTarget Object filter) {
             return pluginServices.startTrace(MessageSupplier.from("filter init ({})",
-                    filter.getClass().getName()), metric);
+                    filter.getClass().getName()), metricName);
         }
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {

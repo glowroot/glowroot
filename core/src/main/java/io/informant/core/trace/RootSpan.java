@@ -62,11 +62,10 @@ class RootSpan {
 
     private final Ticker ticker;
 
-    RootSpan(MessageSupplier messageSupplier, TraceMetric traceMetric, long startTick,
-            Ticker ticker) {
+    RootSpan(MessageSupplier messageSupplier, Metric metric, long startTick, Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootSpan = new Span(messageSupplier, startTick, startTick, 0, traceMetric);
+        rootSpan = new Span(messageSupplier, startTick, startTick, 0, metric);
         pushSpanInternal(rootSpan);
     }
 
@@ -99,9 +98,9 @@ class RootSpan {
         return endTick != 0;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier, TraceMetric traceMetric,
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, Metric metric,
             boolean spanLimitBypass) {
-        Span span = createSpan(startTick, messageSupplier, null, traceMetric, spanLimitBypass);
+        Span span = createSpan(startTick, messageSupplier, null, metric, spanLimitBypass);
         pushSpanInternal(span);
         return span;
     }
@@ -137,8 +136,7 @@ class RootSpan {
     }
 
     private Span createSpan(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TraceMetric traceMetric,
-            boolean spanLimitBypass) {
+            @Nullable ErrorMessage errorMessage, @Nullable Metric metric, boolean spanLimitBypass) {
         if (!spanLimitBypass && spanLimitExceeded) {
             // just in case the spanLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
@@ -150,7 +148,7 @@ class RootSpan {
         }
         Span currentSpan = spanStack.get(spanStack.size() - 1);
         Span span = new Span(messageSupplier, this.startTick, startTick,
-                currentSpan.getNestingLevel() + 1, traceMetric);
+                currentSpan.getNestingLevel() + 1, metric);
         span.setErrorMessage(errorMessage);
         return span;
     }

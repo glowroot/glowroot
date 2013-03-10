@@ -88,7 +88,7 @@ public class TraceSnapshotDaoTest {
         assertThat(snapshot2.isCompleted()).isEqualTo(snapshot.isCompleted());
         assertThat(snapshot2.getHeadline()).isEqualTo("test headline");
         assertThat(snapshot2.getUserId()).isEqualTo(snapshot.getUserId());
-        // TODO verify metricData, trace and mergedStackTree
+        // TODO verify metrics, trace and mergedStackTree
     }
 
     @Test

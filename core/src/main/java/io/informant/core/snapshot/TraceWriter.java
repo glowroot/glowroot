@@ -26,7 +26,7 @@ import io.informant.core.trace.MergedStackTreeNode;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.Trace.TraceAttribute;
-import io.informant.core.trace.TraceMetric.Snapshot;
+import io.informant.core.trace.Metric.Snapshot;
 import io.informant.util.CharArrayWriter;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ObjectMappers;
@@ -98,7 +98,7 @@ public class TraceWriter {
         }
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.userId(trace.getUserId());
-        builder.metrics(writeMetricsAsString(trace.getTraceMetricSnapshots()));
+        builder.metrics(writeMetricsAsString(trace.getMetricSnapshots()));
         if (!summary) {
             builder.spans(new SpansCharSource(trace.getSpans(), captureTick));
             builder.coarseMergedStackTree(createCharSource(trace.getCoarseMergedStackTree()));

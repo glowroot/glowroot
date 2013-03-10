@@ -17,7 +17,7 @@ package io.informant.test.plugin;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectTraveler;
@@ -43,7 +43,8 @@ public class LogCauseAspect {
             methodArgs = { "java.lang.String" }, metricName = "log error")
     public static class LogCauseAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LogCauseAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogCauseAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -52,7 +53,8 @@ public class LogCauseAspect {
 
         @OnBefore
         public static Span onBefore(String message) {
-            return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message), metric);
+            return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
+                    metricName);
 
         }
 

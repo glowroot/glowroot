@@ -19,7 +19,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.UnresolvedMethod;
@@ -58,7 +58,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute0",
             metricName = "expensive 0")
     public static class ExpensiveCallAdvice0 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice0.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice0.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -66,7 +67,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static Span onBefore(@InjectTarget Object expensive) {
             // not delegating to onBeforeInternal(), this span returns message supplier with detail
-            return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metric);
+            return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
@@ -83,7 +84,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute1",
             metricName = "expensive 1")
     public static class ExpensiveCallAdvice1 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice1.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice1.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -91,7 +93,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -108,7 +110,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute2",
             metricName = "expensive 2")
     public static class ExpensiveCallAdvice2 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice2.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice2.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -116,7 +119,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -133,7 +136,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute3",
             metricName = "expensive 3")
     public static class ExpensiveCallAdvice3 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice3.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice3.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -141,7 +145,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -158,7 +162,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute4",
             metricName = "expensive 4")
     public static class ExpensiveCallAdvice4 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice4.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice4.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -166,7 +171,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -183,7 +188,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute5",
             metricName = "expensive 5")
     public static class ExpensiveCallAdvice5 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice5.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice5.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -191,7 +197,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -208,7 +214,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute6",
             metricName = "expensive 6")
     public static class ExpensiveCallAdvice6 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice6.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice6.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -216,7 +223,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -233,7 +240,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute7",
             metricName = "expensive 7")
     public static class ExpensiveCallAdvice7 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice7.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice7.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -241,7 +249,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -258,7 +266,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute8",
             metricName = "expensive 8")
     public static class ExpensiveCallAdvice8 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice8.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice8.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -266,7 +275,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -283,7 +292,8 @@ public class ExpensiveCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute9",
             metricName = "expensive 9")
     public static class ExpensiveCallAdvice9 {
-        private static final Metric metric = pluginServices.getMetric(ExpensiveCallAdvice9.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ExpensiveCallAdvice9.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -291,7 +301,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@InjectTarget Object expensive) {
-            return onBeforeInternal(expensive, metric);
+            return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler @Nullable Span span) {
@@ -306,7 +316,7 @@ public class ExpensiveCallAspect {
     }
 
     @Nullable
-    private static Span onBeforeInternal(Object expensive, Metric metric) {
+    private static Span onBeforeInternal(Object expensive, MetricName metric) {
         if (random.nextDouble() < 0.05) {
             return null;
         }

@@ -27,7 +27,7 @@ import com.google.common.collect.Queues;
 
 /**
  * This micro benchmark helps justify using synchronized ArrayList over ConcurrentLinkedQueue for
- * {@code attributes} and {@code traceMetrics} fields in {@link Trace}.
+ * {@code attributes} and {@code metrics} fields in {@link Trace}.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -32,32 +32,31 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @Singleton
-public class WeavingMetricImpl implements WeavingMetric {
+public class WeavingMetricNameImpl implements WeavingMetric {
 
-    private final MetricImpl metricImpl;
+    private final MetricNameImpl metricName;
 
-    public WeavingMetricImpl(Ticker ticker) {
-        metricImpl = new MetricImpl("informant weaving", ticker);
+    public WeavingMetricNameImpl(Ticker ticker) {
+        metricName = new MetricNameImpl("informant weaving", ticker);
     }
 
     public MetricTimer start() {
-        // initTraceMetric is called at the beginning of every trace, and resetTraceMetric is called
-        // at the end of every trace, so isLinkedToTrace() can be used to check if currently in a
-        // trace
-        TraceMetric traceMetric = metricImpl.get();
-        if (traceMetric == null) {
+        // create is called at the beginning of every trace, and clear is called at the end of every
+        // trace, so metric will be non-null if currently in a trace
+        Metric metric = metricName.get();
+        if (metric == null) {
             return NopMetricTimer.INSTANCE;
         }
-        traceMetric.start();
-        return traceMetric;
+        metric.start();
+        return metric;
     }
 
-    TraceMetric create() {
-        return metricImpl.create();
+    Metric create() {
+        return metricName.create();
     }
 
-    void resetTraceMetric() {
-        metricImpl.remove();
+    void clear() {
+        metricName.clear();
     }
 
     @ThreadSafe

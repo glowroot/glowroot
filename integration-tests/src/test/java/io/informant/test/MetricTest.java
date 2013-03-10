@@ -38,7 +38,7 @@ import checkers.nullness.quals.Nullable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceMetricDataTest {
+public class MetricTest {
 
     private static InformantContainer container;
 
@@ -58,11 +58,11 @@ public class TraceMetricDataTest {
     }
 
     @Test
-    public void shouldReadTraceMetricData() throws Exception {
+    public void shouldReadMetrics() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMetricData.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
         // then
         Trace trace = container.getInformant().getLastTraceSummary();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
@@ -70,7 +70,7 @@ public class TraceMetricDataTest {
     }
 
     @Test
-    public void shouldReadTraceMetricDataWithRootAndSameNested() throws Exception {
+    public void shouldReadMetricsWithRootAndSameNested() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         // when
@@ -83,7 +83,7 @@ public class TraceMetricDataTest {
     }
 
     @Test
-    public void shouldReadActiveTraceMetricData() throws Exception {
+    public void shouldReadActiveMetrics() throws Exception {
         // given
         container.getInformant().setStoreThresholdMillis(0);
         // when
@@ -91,7 +91,7 @@ public class TraceMetricDataTest {
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Nullable
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateActiveTraceWithMetricData.class);
+                container.executeAppUnderTest(ShouldGenerateActiveTraceWithMetrics.class);
                 return null;
             }
         });
@@ -109,7 +109,7 @@ public class TraceMetricDataTest {
         executorService.shutdown();
     }
 
-    public static class ShouldGenerateTraceWithMetricData implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithMetrics implements AppUnderTest, TraceMarker {
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
@@ -133,7 +133,7 @@ public class TraceMetricDataTest {
         }
     }
 
-    public static class ShouldGenerateActiveTraceWithMetricData implements AppUnderTest,
+    public static class ShouldGenerateActiveTraceWithMetrics implements AppUnderTest,
             TraceMarker {
         public void executeApp() throws InterruptedException {
             traceMarker();

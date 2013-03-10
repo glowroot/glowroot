@@ -601,7 +601,7 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.SettableFuture");
         types.add("com.google.common.util.concurrent.UncheckedExecutionException");
         types.add("com.google.common.util.concurrent.Uninterruptibles");
-        types.add("io.informant.api.Metric");
+        types.add("io.informant.api.MetricName");
         types.add("io.informant.api.MetricTimer");
         types.add("io.informant.api.weaving.InjectMethodArg");
         types.add("io.informant.api.weaving.InjectMethodArgArray");
@@ -618,10 +618,10 @@ class PreInitializeClasses {
         types.add("io.informant.api.weaving.OnReturn");
         types.add("io.informant.api.weaving.OnThrow");
         types.add("io.informant.api.weaving.Pointcut");
-        types.add("io.informant.core.trace.MetricImpl");
-        types.add("io.informant.core.trace.TraceMetric");
-        types.add("io.informant.core.trace.WeavingMetricImpl");
-        types.add("io.informant.core.trace.WeavingMetricImpl$NopMetricTimer");
+        types.add("io.informant.core.trace.Metric");
+        types.add("io.informant.core.trace.MetricNameImpl");
+        types.add("io.informant.core.trace.WeavingMetricNameImpl");
+        types.add("io.informant.core.trace.WeavingMetricNameImpl$NopMetricTimer");
         types.add("io.informant.weaving.Advice");
         types.add("io.informant.weaving.Advice$ParameterKind");
         types.add("io.informant.weaving.AdviceFlowOuterHolder");

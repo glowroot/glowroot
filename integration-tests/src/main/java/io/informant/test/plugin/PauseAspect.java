@@ -17,7 +17,7 @@ package io.informant.test.plugin;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectTraveler;
@@ -40,7 +40,8 @@ public class PauseAspect {
             methodArgs = {}, metricName = "pause")
     public static class PauseAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LogErrorAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -50,7 +51,7 @@ public class PauseAspect {
         @OnBefore
         public static Span onBefore() {
             return pluginServices.startSpan(
-                    MessageSupplier.from("Pause.pauseOneMillisecond()"), metric);
+                    MessageSupplier.from("Pause.pauseOneMillisecond()"), metricName);
         }
 
         @OnAfter

@@ -72,7 +72,7 @@ public class TraceSink {
     public void onCompletedTrace(final Trace trace) {
         if (shouldStore(trace)) {
             // promote thread local trace metrics since they will be reset after this method returns
-            trace.promoteTraceMetrics();
+            trace.promoteMetrics();
             if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
                 logPendingLimitWarning();
                 return;

@@ -53,17 +53,17 @@ public class Span {
 
     // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
-    private final TraceMetric traceMetric;
+    private final Metric metric;
     @Nullable
     private volatile ImmutableList<StackTraceElement> stackTrace;
 
     Span(@Nullable MessageSupplier messageSupplier, long traceStartTick, long startTick,
-            int nesting, @Nullable TraceMetric traceMetric) {
+            int nesting, @Nullable Metric metric) {
         this.messageSupplier = messageSupplier;
         this.traceStartTick = traceStartTick;
         this.startTick = startTick;
         this.nestingLevel = nesting;
-        this.traceMetric = traceMetric;
+        this.metric = metric;
     }
 
     @Nullable
@@ -107,8 +107,8 @@ public class Span {
     }
 
     @Nullable
-    TraceMetric getTraceMetric() {
-        return traceMetric;
+    Metric getMetric() {
+        return metric;
     }
 
     void setErrorMessage(@Nullable ErrorMessage errorMessage) {
@@ -132,7 +132,7 @@ public class Span {
                 .add("startTick", startTick)
                 .add("endTick", endTick)
                 .add("nestingLevel", nestingLevel)
-                .add("traceMetric", traceMetric)
+                .add("metric", metric)
                 .add("stackTrace", stackTrace)
                 .add("limitExceededMarker", isLimitExceededMarker())
                 .add("limitExtendedMarker", isLimitExtendedMarker())

@@ -17,7 +17,7 @@ package io.informant.core;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
@@ -29,10 +29,10 @@ import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.config.UserConfig;
-import io.informant.core.trace.MetricImpl;
+import io.informant.core.trace.Metric;
+import io.informant.core.trace.MetricNameImpl;
 import io.informant.core.trace.Trace;
-import io.informant.core.trace.TraceMetric;
-import io.informant.core.trace.WeavingMetricImpl;
+import io.informant.core.trace.WeavingMetricNameImpl;
 import io.informant.util.Clock;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ThreadSafe;
@@ -75,7 +75,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final Clock clock;
     private final Ticker ticker;
     private final Random random;
-    private final WeavingMetricImpl weavingMetric;
+    private final WeavingMetricNameImpl weavingMetricName;
 
     // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
     // plugin's io.informant.plugin.json
@@ -90,7 +90,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache,
             FineGrainedProfiler fineGrainedProfiler, Ticker ticker, Clock clock, Random random,
-            WeavingMetricImpl weavingMetric, PluginDescriptorCache pluginDescriptorCache,
+            WeavingMetricNameImpl weavingMetricName, PluginDescriptorCache pluginDescriptorCache,
             String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
@@ -100,7 +100,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         this.clock = clock;
         this.ticker = ticker;
         this.random = random;
-        this.weavingMetric = weavingMetric;
+        this.weavingMetricName = weavingMetricName;
         this.pluginId = pluginId;
         // add config listener first before caching config properties to avoid a
         // (remotely) possible race condition
@@ -120,8 +120,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Metric getMetric(Class<?> adviceClass) {
-        return metricCache.getMetric(adviceClass);
+    public MetricName getMetricName(Class<?> adviceClass) {
+        return metricCache.getMetricName(adviceClass);
     }
 
     @Override
@@ -179,72 +179,74 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Span startTrace(MessageSupplier messageSupplier, Metric metric) {
-        return startTrace(messageSupplier, metric, false);
+    public Span startTrace(MessageSupplier messageSupplier, MetricName metricName) {
+        return startTrace(messageSupplier, metricName, false);
     }
 
     @Override
-    public Span startBackgroundTrace(MessageSupplier messageSupplier, Metric metric) {
-        return startTrace(messageSupplier, metric, true);
+    public Span startBackgroundTrace(MessageSupplier messageSupplier, MetricName metricName) {
+        return startTrace(messageSupplier, metricName, true);
     }
 
-    private Span startTrace(MessageSupplier messageSupplier, Metric metric, boolean background) {
+    private Span startTrace(MessageSupplier messageSupplier, MetricName metricName,
+            boolean background) {
         if (messageSupplier == null) {
             logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
         }
-        if (metric == null) {
-            logger.warn("startTrace(): argument 'metric' must be non-null");
+        if (metricName == null) {
+            logger.warn("startTrace(): argument 'metricName' must be non-null");
             return new NopSpan(messageSupplier);
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            trace = new Trace((MetricImpl) metric, messageSupplier, ticker, clock, weavingMetric);
+            trace = new Trace((MetricNameImpl) metricName, messageSupplier, ticker, clock,
+                    weavingMetricName);
             trace.setBackground(background);
             traceRegistry.addTrace(trace);
             maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
         } else {
-            return startSpan(trace, (MetricImpl) metric, messageSupplier);
+            return startSpan(trace, (MetricNameImpl) metricName, messageSupplier);
         }
     }
 
     @Override
-    public Span startSpan(MessageSupplier messageSupplier, Metric metric) {
+    public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
         if (messageSupplier == null) {
             logger.warn("startSpan(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
         }
-        if (metric == null) {
-            logger.warn("startSpan(): argument 'metric' must be non-null");
+        if (metricName == null) {
+            logger.warn("startSpan(): argument 'metricName' must be non-null");
             return new NopSpan(messageSupplier);
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
             return new NopSpan(messageSupplier);
         } else {
-            return startSpan(trace, (MetricImpl) metric, messageSupplier);
+            return startSpan(trace, (MetricNameImpl) metricName, messageSupplier);
         }
     }
 
     @Override
-    public MetricTimer startMetricTimer(Metric metric) {
-        if (metric == null) {
-            logger.warn("startTimer(): argument 'metric' must be non-null");
+    public MetricTimer startMetricTimer(MetricName metricName) {
+        if (metricName == null) {
+            logger.warn("startTimer(): argument 'metricName' must be non-null");
             return NopMetricTimer.INSTANCE;
         }
         // don't call MetricImpl.start() in case this method returns NopTimer.INSTANCE below
-        TraceMetric traceMetric = ((MetricImpl) metric).get();
-        if (traceMetric == null) {
+        Metric metric = ((MetricNameImpl) metricName).get();
+        if (metric == null) {
             // don't access trace thread local unless necessary
             Trace trace = traceRegistry.getCurrentTrace();
             if (trace == null) {
                 return NopMetricTimer.INSTANCE;
             }
-            traceMetric = trace.addTraceMetric((MetricImpl) metric);
+            metric = trace.addMetric((MetricNameImpl) metricName);
         }
-        traceMetric.start();
-        return traceMetric;
+        metric.start();
+        return metric;
     }
 
     @Override
@@ -319,19 +321,20 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    private Span startSpan(Trace trace, MetricImpl metric, MessageSupplier messageSupplier) {
+    private Span startSpan(Trace trace, MetricNameImpl metricName,
+            MessageSupplier messageSupplier) {
         if (trace.getSpanCount() >= maxSpans) {
             // the span limit has been exceeded for this trace
             trace.addSpanLimitExceededMarkerIfNeeded();
             long startTick = ticker.read();
-            TraceMetric traceMetric = metric.get();
-            if (traceMetric == null) {
-                traceMetric = trace.addTraceMetric(metric);
+            Metric metric = metricName.get();
+            if (metric == null) {
+                metric = trace.addMetric(metricName);
             }
-            traceMetric.start(startTick);
-            return new TimerWrappedInSpan(traceMetric, startTick, trace, messageSupplier);
+            metric.start(startTick);
+            return new TimerWrappedInSpan(metric, startTick, trace, messageSupplier);
         } else {
-            return new SpanImpl(trace.pushSpan(metric, messageSupplier, false), trace);
+            return new SpanImpl(trace.pushSpan(metricName, messageSupplier, false), trace);
         }
     }
 
@@ -402,9 +405,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // from the registry and storing it
                 traceSink.onCompletedTrace(trace);
                 traceRegistry.removeTrace(trace);
-                // if the thread local trace metrics are still needed they should have been promoted
-                // by TraceSink.onCompletedTrace() above (via Trace.promoteTraceMetrics())
-                trace.resetTraceMetrics();
+                // if the thread local metrics are still needed they should have been promoted
+                // by TraceSink.onCompletedTrace() above (via Trace.promoteMetrics())
+                trace.clearThreadLocalMetrics();
             }
         }
         private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {
@@ -429,23 +432,23 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private class TimerWrappedInSpan implements Span {
-        private final TraceMetric traceMetric;
+        private final Metric metric;
         private final long startTick;
         private final Trace trace;
         private final MessageSupplier messageSupplier;
-        public TimerWrappedInSpan(TraceMetric metricTimer, long startTick, Trace trace,
+        public TimerWrappedInSpan(Metric metric, long startTick, Trace trace,
                 MessageSupplier messageSupplier) {
-            this.traceMetric = metricTimer;
+            this.metric = metric;
             this.startTick = startTick;
             this.trace = trace;
             this.messageSupplier = messageSupplier;
         }
         public void end() {
-            traceMetric.stop();
+            metric.stop();
         }
         public void endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
-            traceMetric.end(endTick);
+            metric.end(endTick);
             // use higher span limit when adding slow spans, but still need some kind of cap
             if (endTick - startTick >= unit.toNanos(threshold)
                     && trace.getSpanCount() < 2 * maxSpans) {
@@ -462,7 +465,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 end();
                 return;
             }
-            traceMetric.stop();
+            metric.stop();
             // use higher span limit when adding errors, but still need some kind of cap
             if (trace.getSpanCount() < 2 * maxSpans) {
                 // span won't necessarily be nested properly, and won't have any timing data, but at

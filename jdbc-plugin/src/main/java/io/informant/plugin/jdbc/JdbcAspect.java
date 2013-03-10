@@ -18,7 +18,7 @@ package io.informant.plugin.jdbc;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
@@ -112,8 +112,8 @@ public class JdbcAspect {
             methodArgs = { "java.lang.String", ".." }, captureNested = false,
             metricName = "jdbc prepare")
     public static class PrepareStatementTimingAdvice {
-        private static final Metric metric = pluginServices
-                .getMetric(PrepareStatementTimingAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(PrepareStatementTimingAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -122,7 +122,7 @@ public class JdbcAspect {
         }
         @OnBefore
         public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metric);
+            return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
@@ -204,7 +204,8 @@ public class JdbcAspect {
             methodArgs = { "java.lang.String", ".." }, captureNested = false,
             metricName = "jdbc execute")
     public static class StatementExecuteAdvice {
-        private static final Metric metric = pluginServices.getMetric(StatementExecuteAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -219,7 +220,7 @@ public class JdbcAspect {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql,
                         getConnectionHashCode(statement));
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, metric);
+                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
                 // if the plugin is re-enabled in the middle of iterating over a different
@@ -251,8 +252,8 @@ public class JdbcAspect {
             methodName = "execute|executeQuery|executeUpdate", captureNested = false,
             metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
-        private static final Metric metric = pluginServices
-                .getMetric(PreparedStatementExecuteAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -266,7 +267,7 @@ public class JdbcAspect {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
                         .createWithParameters(mirror, getConnectionHashCode(preparedStatement));
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startSpan(jdbcMessageSupplier, metric);
+                return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
                 // if the plugin is re-enabled in the middle of iterating over a different
@@ -296,8 +297,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.Statement", methodName = "executeBatch", captureNested = false,
             metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
-        private static final Metric metric = pluginServices
-                .getMetric(StatementExecuteBatchAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -313,7 +314,7 @@ public class JdbcAspect {
                     JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
                             .createWithBatchedParameters(mirror, getConnectionHashCode(statement));
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, metric);
+                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
                     // updated if the plugin is re-enabled in the middle of iterating over a
@@ -330,7 +331,7 @@ public class JdbcAspect {
                     JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
                             .createWithBatchedSqls(mirror, getConnectionHashCode(statement));
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                    return pluginServices.startSpan(jdbcMessageSupplier, metric);
+                    return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
                     // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
                     // updated if the plugin is re-enabled in the middle of iterating over a
@@ -367,7 +368,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "next", captureNested = false,
             metricName = "jdbc resultset next")
     public static class ResultSetNextAdvice {
-        private static final Metric metric = pluginServices.getMetric(ResultSetNextAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ResultSetNextAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNext is cached to limit map lookups
         private static volatile boolean metricEnabled;
@@ -392,7 +394,7 @@ public class JdbcAspect {
         @Nullable
         public static MetricTimer onBefore() {
             if (metricEnabled) {
-                return pluginServices.startMetricTimer(metric);
+                return pluginServices.startMetricTimer(metricName);
             } else {
                 return null;
             }
@@ -434,7 +436,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*", methodArgs = { "int", ".." },
             metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice {
-        private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ResultSetValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
@@ -454,7 +457,7 @@ public class JdbcAspect {
         }
         @OnBefore
         public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metric);
+            return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
@@ -465,7 +468,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*",
             methodArgs = { "java.lang.String", ".." }, metricName = "jdbc resultset value")
     public static class ResultSetValueAdvice2 {
-        private static final Metric metric = pluginServices.getMetric(ResultSetValueAdvice2.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ResultSetValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
         private static volatile boolean metricEnabled;
         static {
@@ -485,7 +489,7 @@ public class JdbcAspect {
         }
         @OnBefore
         public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metric);
+            return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
@@ -498,7 +502,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.Connection", methodName = "commit", captureNested = false,
             metricName = "jdbc commit")
     public static class ConnectionCommitAdvice {
-        private static final Metric metric = pluginServices.getMetric(ConnectionCommitAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(ConnectionCommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -506,7 +511,7 @@ public class JdbcAspect {
         @OnBefore
         public static Span onBefore(@InjectTarget Connection connection) {
             return pluginServices.startSpan(MessageSupplier.from("jdbc commit [connection: {}]",
-                    Integer.toHexString(connection.hashCode())), metric);
+                    Integer.toHexString(connection.hashCode())), metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
@@ -519,7 +524,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.Statement", methodName = "close", captureNested = false,
             metricName = "jdbc statement close")
     public static class StatementCloseAdvice {
-        private static final Metric metric = pluginServices.getMetric(StatementCloseAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(StatementCloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -532,7 +538,7 @@ public class JdbcAspect {
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
             getStatementMirror(statement).setLastJdbcMessageSupplier(null);
-            return pluginServices.startMetricTimer(metric);
+            return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
@@ -545,7 +551,8 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.DatabaseMetaData", methodName = "*", methodArgs = { ".." },
             captureNested = false, metricName = "jdbc metadata")
     public static class DatabaseMetaDataAdvice {
-        private static final Metric metric = pluginServices.getMetric(DatabaseMetaDataAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(DatabaseMetaDataAdvice.class);
         // DatabaseMetaData method timings are captured below, so this thread local is used to
         // avoid capturing driver-specific java.sql.Statement executions used to implement the
         // method internally (especially since it is haphazard whether a particular driver
@@ -578,9 +585,9 @@ public class JdbcAspect {
                 if (spanEnabled) {
                     return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
                             + " DatabaseMetaData.{}() [connection: {}]", methodName,
-                            getConnectionHashCode(databaseMetaData)), metric);
+                            getConnectionHashCode(databaseMetaData)), metricName);
                 } else {
-                    return pluginServices.startMetricTimer(metric);
+                    return pluginServices.startMetricTimer(metricName);
                 }
             } else {
                 return null;

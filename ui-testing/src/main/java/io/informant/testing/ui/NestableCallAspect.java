@@ -18,7 +18,7 @@ package io.informant.testing.ui;
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectTraveler;
@@ -51,7 +51,8 @@ public class NestableCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable", captureNested = false)
     public static class NestableCallAdvice {
-        private static final Metric metric = pluginServices.getMetric(NestableCallAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
@@ -62,9 +63,9 @@ public class NestableCallAspect {
             int count = counter.getAndIncrement();
             Span span;
             if (count % 2 == 0) {
-                span = pluginServices.startTrace(getRootMessageSupplier(), metric);
+                span = pluginServices.startTrace(getRootMessageSupplier(), metricName);
             } else {
-                span = pluginServices.startBackgroundTrace(getRootMessageSupplier(), metric);
+                span = pluginServices.startBackgroundTrace(getRootMessageSupplier(), metricName);
             }
             int index = count % (USER_IDS.size() + 1);
             if (index < USER_IDS.size()) {
@@ -88,8 +89,8 @@ public class NestableCallAspect {
     @Pointcut(typeName = "io.informant.testing.ui.NestableCall", methodName = "execute",
             metricName = "nestable and very long", captureNested = false)
     public static class NestableCallLongMetricAdvice {
-        private static final Metric metric = pluginServices
-                .getMetric(NestableCallLongMetricAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(NestableCallLongMetricAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -102,7 +103,7 @@ public class NestableCallAspect {
                     + "mnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
             pluginServices.setTraceAttribute("and another", "a b c d e f g h i j k l m n o p q"
                     + " r s t u v w x y z a b c d e f g h i j k l m n o p q r s t u v w x y z");
-            return pluginServices.startSpan(MessageSupplier.from("Nestable"), metric);
+            return pluginServices.startSpan(MessageSupplier.from("Nestable"), metricName);
         }
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {

@@ -17,7 +17,7 @@ package io.informant.test.plugin;
 
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
-import io.informant.api.Metric;
+import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectTraveler;
@@ -40,7 +40,8 @@ public class LevelThreeAspect {
             methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level three")
     public static class LevelThreeAdvice {
 
-        private static final Metric metric = pluginServices.getMetric(LevelThreeAdvice.class);
+        private static final MetricName metricName =
+                pluginServices.getMetricName(LevelThreeAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -55,7 +56,7 @@ public class LevelThreeAspect {
                     return Message.withDetail("Level Three",
                             ImmutableMap.of("arg1", arg1, "arg2", arg2));
                 }
-            }, metric);
+            }, metricName);
         }
 
         @OnAfter

@@ -15,8 +15,7 @@
  */
 package io.informant.core.trace;
 
-import io.informant.api.Metric;
-import io.informant.util.PartiallyThreadSafe;
+import io.informant.api.MetricName;
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
@@ -25,31 +24,30 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@PartiallyThreadSafe("get(), getName() can be called from any thread")
-public class MetricImpl implements Metric {
+public class MetricNameImpl implements MetricName {
 
     private final String name;
     private final Ticker ticker;
 
-    private final ThreadLocal<TraceMetric> traceMetricHolder = new ThreadLocal<TraceMetric>();
+    private final ThreadLocal<Metric> metricHolder = new ThreadLocal<Metric>();
 
-    public MetricImpl(String name, Ticker ticker) {
+    public MetricNameImpl(String name, Ticker ticker) {
         this.name = name;
         this.ticker = ticker;
     }
 
     @Nullable
-    public TraceMetric get() {
-        return traceMetricHolder.get();
+    public Metric get() {
+        return metricHolder.get();
     }
 
-    public TraceMetric create() {
-        TraceMetric traceMetric = new TraceMetric(name, ticker);
-        traceMetricHolder.set(traceMetric);
-        return traceMetric;
+    Metric create() {
+        Metric metric = new Metric(name, ticker);
+        metricHolder.set(metric);
+        return metric;
     }
 
-    void remove() {
-        traceMetricHolder.remove();
+    void clear() {
+        metricHolder.remove();
     }
 }
