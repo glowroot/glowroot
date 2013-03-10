@@ -27,9 +27,9 @@ import static org.mockito.Mockito.when;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.core.trace.Trace;
+import io.informant.local.store.SnapshotDao;
+import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
-import io.informant.local.store.TraceSnapshotDao;
-import io.informant.local.store.TraceSnapshotDao.StringComparator;
 import io.informant.util.Clock;
 import io.informant.util.ObjectMappers;
 
@@ -204,14 +204,14 @@ public class TracePointJsonServiceTest {
 
         List<TracePoint> orderedPoints = durationDescOrdering.sortedCopy(points);
 
-        TraceSnapshotDao traceSnapshotDao = mock(TraceSnapshotDao.class);
+        SnapshotDao snapshotDao = mock(SnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
         TraceSink traceSink = mock(TraceSink.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(traceSnapshotDao.readPoints(anyLong(), anyLong(), anyLong(), anyLong(),
-                anyBoolean(), anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
+        when(snapshotDao.readPoints(anyLong(), anyLong(), anyLong(), anyLong(), anyBoolean(),
+                anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
                 any(StringComparator.class), anyString(), anyInt())).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
@@ -220,7 +220,7 @@ public class TracePointJsonServiceTest {
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);
 
-        return new TracePointJsonService(traceSnapshotDao, traceRegistry, traceSink,
+        return new TracePointJsonService(snapshotDao, traceRegistry, traceSink,
                 ticker, clock);
     }
 

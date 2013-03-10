@@ -42,7 +42,7 @@ public class StorageModule {
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
     private final RollingFile rollingFile;
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final SnapshotDao snapshotDao;
     private final ScheduledExecutorService scheduledExecutor;
 
     public StorageModule(ConfigModule configModule, DataSourceModule dataSourceModule)
@@ -57,20 +57,20 @@ public class StorageModule {
         scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Storage");
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);
-        traceSnapshotDao = new TraceSnapshotDao(dataSource, rollingFile, clock);
-        new TraceSnapshotReaper(configService, traceSnapshotDao, clock).start(scheduledExecutor);
+        snapshotDao = new SnapshotDao(dataSource, rollingFile, clock);
+        new SnapshotReaper(configService, snapshotDao, clock).start(scheduledExecutor);
     }
 
     public RollingFile getRollingFile() {
         return rollingFile;
     }
 
-    public TraceSnapshotDao getTraceSnapshotDao() {
-        return traceSnapshotDao;
+    public SnapshotDao getSnapshotDao() {
+        return snapshotDao;
     }
 
     public SnapshotSink getSnapshotSink() {
-        return traceSnapshotDao;
+        return snapshotDao;
     }
 
     @OnlyUsedByTests

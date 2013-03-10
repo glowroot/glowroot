@@ -19,9 +19,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.core.trace.Trace;
+import io.informant.local.store.SnapshotDao;
+import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
-import io.informant.local.store.TraceSnapshotDao;
-import io.informant.local.store.TraceSnapshotDao.StringComparator;
 import io.informant.util.Clock;
 import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
@@ -62,15 +62,15 @@ class TracePointJsonService implements JsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
 
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final SnapshotDao snapshotDao;
     private final TraceRegistry traceRegistry;
     private final TraceSink traceSink;
     private final Ticker ticker;
     private final Clock clock;
 
-    TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
+    TracePointJsonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry,
             TraceSink traceSink, Ticker ticker, Clock clock) {
-        this.traceSnapshotDao = traceSnapshotDao;
+        this.snapshotDao = snapshotDao;
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.ticker = ticker;
@@ -160,7 +160,7 @@ class TracePointJsonService implements JsonService {
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
-            List<TracePoint> points = traceSnapshotDao.readPoints(request.getFrom(),
+            List<TracePoint> points = snapshotDao.readPoints(request.getFrom(),
                     request.getTo(), low, high, request.isBackground(), request.isErrorOnly(),
                     request.isFineOnly(), headlineComparator, request.getHeadline(),
                     userIdComparator, request.getUserId(), request.getLimit() + 1);

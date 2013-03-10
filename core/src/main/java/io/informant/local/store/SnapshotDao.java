@@ -17,7 +17,7 @@
 package io.informant.local.store;
 
 import io.informant.core.SnapshotSink;
-import io.informant.core.snapshot.TraceSnapshot;
+import io.informant.core.snapshot.Snapshot;
 import io.informant.local.store.DataSource.RowMapper;
 import io.informant.local.store.FileBlock.InvalidBlockIdFormatException;
 import io.informant.local.store.Schemas.Column;
@@ -51,9 +51,9 @@ import com.google.common.io.CharSource;
  * @since 0.5
  */
 @Singleton
-public class TraceSnapshotDao implements SnapshotSink {
+public class SnapshotDao implements SnapshotSink {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDao.class);
 
     private static final ImmutableList<Column> columns = ImmutableList.of(
             new PrimaryKeyColumn("id", Types.VARCHAR),
@@ -78,25 +78,25 @@ public class TraceSnapshotDao implements SnapshotSink {
 
     // this index includes all of the columns needed for the trace points query so h2 can return
     // result set directly from the index without having to reference the table for each row
-    private static final ImmutableList<Index> indexes = ImmutableList.of(new Index(
-            "trace_snapshot_idx", ImmutableList.of("captured_at", "duration", "id", "completed",
+    private static final ImmutableList<Index> indexes = ImmutableList.of(new Index("snapshot_idx",
+            ImmutableList.of("captured_at", "duration", "id", "completed",
                     "error")));
 
     private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final Clock clock;
 
-    TraceSnapshotDao(DataSource dataSource, RollingFile rollingFile, Clock clock)
+    SnapshotDao(DataSource dataSource, RollingFile rollingFile, Clock clock)
             throws SQLException {
         this.dataSource = dataSource;
         this.rollingFile = rollingFile;
         this.clock = clock;
-        upgradeTraceSnapshotTable(dataSource);
-        dataSource.syncTable("trace_snapshot", columns);
-        dataSource.syncIndexes("trace_snapshot", indexes);
+        upgradeSnapshotTable(dataSource);
+        dataSource.syncTable("snapshot", columns);
+        dataSource.syncIndexes("snapshot", indexes);
     }
 
-    public void store(TraceSnapshot snapshot) {
+    public void store(Snapshot snapshot) {
         logger.debug("storeSnapshot(): snapshot={}", snapshot);
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
@@ -116,9 +116,9 @@ public class TraceSnapshotDao implements SnapshotSink {
             fineMergedStackTreeBlockId = rollingFile.write(fineMergedStackTree).getId();
         }
         try {
-            dataSource.update("merge into trace_snapshot (id, captured_at, start_at, duration,"
-                    + " stuck, completed, background, error, fine, headline, attributes,"
-                    + " user_id, error_text, error_detail, exception, metrics, spans,"
+            dataSource.update("merge into snapshot (id, captured_at, start_at, duration, stuck,"
+                    + " completed, background, error, fine, headline, attributes, user_id,"
+                    + " error_text, error_detail, exception, metrics, spans,"
                     + " coarse_merged_stack_tree, fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
                     + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), capturedAt,
                     snapshot.getStart(), snapshot.getDuration(), snapshot.isStuck(),
@@ -151,8 +151,8 @@ public class TraceSnapshotDao implements SnapshotSink {
         try {
             // all of these columns should be in the same index so h2 can return result set directly
             // from the index without having to reference the table for each row
-            String sql = "select id, captured_at, duration, completed, error from trace_snapshot"
-                    + " where captured_at >= ? and captured_at <= ?";
+            String sql = "select id, captured_at, duration, completed, error from snapshot where"
+                    + " captured_at >= ? and captured_at <= ?";
             List<Object> args = Lists.newArrayList();
             args.add(capturedFrom);
             args.add(capturedTo);
@@ -194,15 +194,15 @@ public class TraceSnapshotDao implements SnapshotSink {
     }
 
     @Nullable
-    public TraceSnapshot readSnapshot(String id) {
+    public Snapshot readSnapshot(String id) {
         logger.debug("readSnapshot(): id={}", id);
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
                     + " completed, background, headline, attributes, user_id, error_text,"
                     + " error_detail, exception, metrics, spans, coarse_merged_stack_tree,"
-                    + " fine_merged_stack_tree from trace_snapshot where id = ?",
-                    ImmutableList.of(id), new TraceRowMapper());
+                    + " fine_merged_stack_tree from snapshot where id = ?", ImmutableList.of(id),
+                    new TraceRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -217,14 +217,14 @@ public class TraceSnapshotDao implements SnapshotSink {
     }
 
     @Nullable
-    public TraceSnapshot readSnapshotWithoutDetail(String id) {
+    public Snapshot readSnapshotWithoutDetail(String id) {
         logger.debug("readSnapshot(): id={}", id);
-        List<TraceSnapshot> snapshots;
+        List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
                     + " background, headline, attributes, user_id, error_text, error_detail,"
-                    + " exception, metrics from trace_snapshot where id = ?", ImmutableList.of(id),
-                    new TraceSnapshotRowMapper());
+                    + " exception, metrics from snapshot where id = ?", ImmutableList.of(id),
+                    new SnapshotRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -240,7 +240,7 @@ public class TraceSnapshotDao implements SnapshotSink {
     public void deleteAllSnapshots() {
         logger.debug("deleteAllSnapshots()");
         try {
-            dataSource.execute("truncate table trace_snapshot");
+            dataSource.execute("truncate table snapshot");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
         }
@@ -249,8 +249,7 @@ public class TraceSnapshotDao implements SnapshotSink {
     int deleteSnapshotsBefore(long capturedAt) {
         logger.debug("deleteSnapshotsBefore(): capturedAt={}", capturedAt);
         try {
-            return dataSource.update("delete from trace_snapshot where captured_at <= ?",
-                    capturedAt);
+            return dataSource.update("delete from snapshot where captured_at <= ?", capturedAt);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;
@@ -259,10 +258,9 @@ public class TraceSnapshotDao implements SnapshotSink {
 
     @OnlyUsedByTests
     @Nullable
-    public TraceSnapshot getLastSnapshot(boolean summary) throws SQLException {
+    public Snapshot getLastSnapshot(boolean summary) throws SQLException {
         List<String> ids = dataSource.query(
-                "select id from trace_snapshot order by captured_at desc limit 1",
-                ImmutableList.of(),
+                "select id from snapshot order by captured_at desc limit 1", ImmutableList.of(),
                 new RowMapper<String>() {
                     public String mapRow(ResultSet resultSet) throws SQLException {
                         return resultSet.getString(1);
@@ -281,15 +279,15 @@ public class TraceSnapshotDao implements SnapshotSink {
     @OnlyUsedByTests
     public long count() {
         try {
-            return dataSource.queryForLong("select count(*) from trace_snapshot");
+            return dataSource.queryForLong("select count(*) from snapshot");
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return 0;
         }
     }
 
-    private static TraceSnapshot.Builder createBuilder(ResultSet resultSet) throws SQLException {
-        return TraceSnapshot.builder()
+    private static Snapshot.Builder createBuilder(ResultSet resultSet) throws SQLException {
+        return Snapshot.builder()
                 .id(resultSet.getString(1))
                 .start(resultSet.getLong(2))
                 .duration(resultSet.getLong(3))
@@ -305,14 +303,14 @@ public class TraceSnapshotDao implements SnapshotSink {
                 .metrics(resultSet.getString(13));
     }
 
-    private static void upgradeTraceSnapshotTable(DataSource dataSource) throws SQLException {
-        if (!dataSource.tableExists("trace_snapshot")) {
+    private static void upgradeSnapshotTable(DataSource dataSource) throws SQLException {
+        if (!dataSource.tableExists("snapshot")) {
             return;
         }
         // 'description' column renamed to 'headline'
-        for (Column column : dataSource.getColumns("trace_snapshot")) {
+        for (Column column : dataSource.getColumns("snapshot")) {
             if (column.getName().equals("description")) {
-                dataSource.execute("alter table trace_snapshot alter column description rename to"
+                dataSource.execute("alter table snapshot alter column description rename to"
                         + " headline");
                 break;
             }
@@ -323,7 +321,7 @@ public class TraceSnapshotDao implements SnapshotSink {
     private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
 
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
-            TraceSnapshot.Builder builder = createBuilder(resultSet);
+            Snapshot.Builder builder = createBuilder(resultSet);
             // wait and read from rolling file outside of the jdbc connection
             String spansFileBlockId = resultSet.getString(14);
             String coarseMergedStackTreeFileBlockId = resultSet.getString(15);
@@ -335,7 +333,7 @@ public class TraceSnapshotDao implements SnapshotSink {
 
     private class PartiallyHydratedTrace {
 
-        private final TraceSnapshot.Builder builder;
+        private final Snapshot.Builder builder;
         // file block ids are stored temporarily while reading the trace snapshot from the
         // database so that reading from the rolling file can occur outside of the jdbc connection
         @Nullable
@@ -345,7 +343,7 @@ public class TraceSnapshotDao implements SnapshotSink {
         @Nullable
         private final String fineMergedStackTreeFileBlockId;
 
-        private PartiallyHydratedTrace(TraceSnapshot.Builder builder,
+        private PartiallyHydratedTrace(Snapshot.Builder builder,
                 @Nullable String spansFileBlockId,
                 @Nullable String coarseMergedStackTreeFileBlockId,
                 @Nullable String fineMergedStackTreeFileBlockId) {
@@ -356,7 +354,7 @@ public class TraceSnapshotDao implements SnapshotSink {
             this.fineMergedStackTreeFileBlockId = fineMergedStackTreeFileBlockId;
         }
 
-        private TraceSnapshot fullyHydrate() {
+        private Snapshot fullyHydrate() {
             if (spansFileBlockId != null) {
                 FileBlock block;
                 try {
@@ -422,9 +420,9 @@ public class TraceSnapshotDao implements SnapshotSink {
     }
 
     @ThreadSafe
-    private static class TraceSnapshotRowMapper implements RowMapper<TraceSnapshot> {
+    private static class SnapshotRowMapper implements RowMapper<Snapshot> {
 
-        public TraceSnapshot mapRow(ResultSet resultSet) throws SQLException {
+        public Snapshot mapRow(ResultSet resultSet) throws SQLException {
             return createBuilder(resultSet).build();
         }
     }

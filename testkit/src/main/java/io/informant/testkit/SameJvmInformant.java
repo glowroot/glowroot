@@ -22,13 +22,13 @@ import io.informant.config.ConfigService;
 import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
-import io.informant.core.snapshot.TraceSnapshot;
-import io.informant.core.snapshot.TraceSnapshotWriter;
-import io.informant.core.snapshot.TraceWriter;
+import io.informant.core.snapshot.Snapshot;
+import io.informant.core.snapshot.SnapshotWriter;
+import io.informant.core.snapshot.SnapshotCreator;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.StorageModule;
-import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.SnapshotDao;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
 import io.informant.testkit.PointcutConfig.CaptureItem;
@@ -67,7 +67,7 @@ class SameJvmInformant implements Informant {
 
     private final ConfigService configService;
     private final DataSource dataSource;
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final SnapshotDao snapshotDao;
     private final TraceExportHttpService traceExportHttpService;
     private final TraceSink traceSink;
     private final TraceRegistry traceRegistry;
@@ -81,7 +81,7 @@ class SameJvmInformant implements Informant {
         LocalUiModule uiModule = informantModule.getUiModule();
         configService = configModule.getConfigService();
         dataSource = dataSourceModule.getDataSource();
-        traceSnapshotDao = storageModule.getTraceSnapshotDao();
+        snapshotDao = storageModule.getSnapshotDao();
         traceExportHttpService = uiModule.getTraceExportHttpService();
         traceSink = coreModule.getTraceSink();
         traceRegistry = coreModule.getTraceRegistry();
@@ -257,7 +257,7 @@ class SameJvmInformant implements Informant {
     }
 
     public void cleanUpAfterEachTest() throws Exception {
-        traceSnapshotDao.deleteAllSnapshots();
+        snapshotDao.deleteAllSnapshots();
         assertNoActiveTraces();
         // TODO assert no warn or error log messages
         configService.resetAllConfig();
@@ -267,8 +267,8 @@ class SameJvmInformant implements Informant {
         return traceSink.getPendingCompleteTraces().size();
     }
 
-    public long getNumStoredTraceSnapshots() {
-        return traceSnapshotDao.count();
+    public long getNumStoredSnapshots() {
+        return snapshotDao.count();
     }
 
     public InputStream getTraceExport(String id) throws Exception {
@@ -277,12 +277,12 @@ class SameJvmInformant implements Informant {
 
     @Nullable
     private Trace getLastTrace(boolean summary) throws Exception {
-        TraceSnapshot snapshot = traceSnapshotDao.getLastSnapshot(summary);
+        Snapshot snapshot = snapshotDao.getLastSnapshot(summary);
         if (snapshot == null) {
             return null;
         }
         Trace trace = ObjectMappers.readRequiredValue(mapper,
-                TraceSnapshotWriter.toString(snapshot, false), Trace.class);
+                SnapshotWriter.toString(snapshot, false), Trace.class);
         trace.setSummary(summary);
         return trace;
     }
@@ -312,10 +312,10 @@ class SameJvmInformant implements Informant {
         } else if (traces.size() > 1) {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
-            TraceSnapshot snapshot =
-                    TraceWriter.toTraceSnapshot(traces.get(0), ticker.read(), summary);
+            Snapshot snapshot =
+                    SnapshotCreator.createSnapshot(traces.get(0), ticker.read(), summary);
             Trace trace = ObjectMappers.readRequiredValue(mapper,
-                    TraceSnapshotWriter.toString(snapshot, true), Trace.class);
+                    SnapshotWriter.toString(snapshot, true), Trace.class);
             trace.setSummary(summary);
             return trace;
         }

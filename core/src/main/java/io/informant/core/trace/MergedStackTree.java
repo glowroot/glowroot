@@ -18,7 +18,6 @@ package io.informant.core.trace;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ThreadSafe;
 
-import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -56,7 +55,7 @@ public class MergedStackTree {
     @GuardedBy("lock")
     private final List<List<StackTraceElement>> unmergedStackTraces = Lists.newArrayList();
     @GuardedBy("lock")
-    private final List<State> unmergedStackTraceStates = Lists.newArrayList();
+    private final List<Thread.State> unmergedStackTraceThreadStates = Lists.newArrayList();
     @GuardedBy("lock")
     private final List<MergedStackTreeNode> rootNodes = Lists.newArrayList();
 
@@ -77,7 +76,7 @@ public class MergedStackTree {
         synchronized (lock) {
             List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
             unmergedStackTraces.add(stackTrace);
-            unmergedStackTraceStates.add(threadInfo.getThreadState());
+            unmergedStackTraceThreadStates.add(threadInfo.getThreadState());
             if (unmergedStackTraces.size() >= 10) {
                 // merged stack tree takes up less memory, so merge from time to time
                 mergeTheUnmergedStackTraces();
@@ -89,17 +88,17 @@ public class MergedStackTree {
     private void mergeTheUnmergedStackTraces() {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
-            State threadState = unmergedStackTraceStates.get(i);
+            Thread.State threadState = unmergedStackTraceThreadStates.get(i);
             addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
         }
         unmergedStackTraces.clear();
-        unmergedStackTraceStates.clear();
+        unmergedStackTraceThreadStates.clear();
     }
 
     @Holding("lock")
     @VisibleForTesting
     public void addToStackTree(@ReadOnly List<StackTraceElementPlus> stackTrace,
-            State threadState) {
+            Thread.State threadState) {
         MergedStackTreeNode lastMatchedNode = null;
         List<MergedStackTreeNode> nextChildNodes = rootNodes;
         int nextIndex;
@@ -210,9 +209,9 @@ public class MergedStackTree {
     }
 
     private static boolean matches(StackTraceElement stackTraceElement,
-            MergedStackTreeNode childNode, boolean leaf, State threadState) {
+            MergedStackTreeNode childNode, boolean leaf, Thread.State threadState) {
 
-        State leafThreadState = childNode.getLeafThreadState();
+        Thread.State leafThreadState = childNode.getLeafThreadState();
         if (leafThreadState != null && leaf) {
             // only consider thread state when matching the leaf node
             return stackTraceElement.equals(childNode.getStackTraceElement())

@@ -183,9 +183,9 @@ class ExternalJvmInformant implements Informant {
         return Integer.parseInt(numPendingCompleteTraces);
     }
 
-    public long getNumStoredTraceSnapshots() throws Exception {
-        String numStoredTraceSnapshots = get("/admin/num-stored-trace-snapshots");
-        return Long.parseLong(numStoredTraceSnapshots);
+    public long getNumStoredSnapshots() throws Exception {
+        String numStoredSnapshots = get("/admin/num-stored-snapshots");
+        return Long.parseLong(numStoredSnapshots);
     }
 
     @Nullable

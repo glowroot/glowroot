@@ -34,21 +34,21 @@ import com.google.common.io.CharStreams;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceSnapshotWriter {
+public class SnapshotWriter {
 
     private final StringBuilder sb = new StringBuilder();
     private final List</*@ReadOnly*/CharSource> charSources = Lists.newArrayList();
 
     @ReadOnly
-    public static CharSource toCharSource(TraceSnapshot snapshot, boolean active)
+    public static CharSource toCharSource(Snapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
-        return new TraceSnapshotWriter().toCharSourceInternal(snapshot, active);
+        return new SnapshotWriter().toCharSourceInternal(snapshot, active);
     }
 
-    private TraceSnapshotWriter() {}
+    private SnapshotWriter() {}
 
     @ReadOnly
-    private CharSource toCharSourceInternal(TraceSnapshot snapshot, boolean active)
+    private CharSource toCharSourceInternal(Snapshot snapshot, boolean active)
             throws UnsupportedEncodingException {
         sb.append("{\"id\":\"");
         sb.append(snapshot.getId());
@@ -79,7 +79,7 @@ public class TraceSnapshotWriter {
         return CharStreams2.join(charSources);
     }
 
-    private void writeAttributes(TraceSnapshot snapshot) {
+    private void writeAttributes(Snapshot snapshot) {
         String attributes = snapshot.getAttributes();
         if (attributes != null) {
             sb.append(",\"attributes\":");
@@ -87,7 +87,7 @@ public class TraceSnapshotWriter {
         }
     }
 
-    private void writeUserId(TraceSnapshot snapshot) {
+    private void writeUserId(Snapshot snapshot) {
         String userId = snapshot.getUserId();
         if (userId != null) {
             sb.append(",\"userId\":\"");
@@ -96,7 +96,7 @@ public class TraceSnapshotWriter {
         }
     }
 
-    private void writeError(TraceSnapshot snapshot) {
+    private void writeError(Snapshot snapshot) {
         String errorText = snapshot.getErrorText();
         if (errorText != null) {
             sb.append(",\"error\":{\"text\":\"");
@@ -114,7 +114,7 @@ public class TraceSnapshotWriter {
         }
     }
 
-    private void writeMetrics(TraceSnapshot snapshot) {
+    private void writeMetrics(Snapshot snapshot) {
         String metrics = snapshot.getMetrics();
         if (metrics != null) {
             sb.append(",\"metrics\":");
@@ -141,7 +141,7 @@ public class TraceSnapshotWriter {
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
     @OnlyUsedByTests
-    public static String toString(TraceSnapshot snapshot, boolean active) throws IOException {
+    public static String toString(Snapshot snapshot, boolean active) throws IOException {
         return toCharSource(snapshot, active).read();
     }
 }

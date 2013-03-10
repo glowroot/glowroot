@@ -16,7 +16,7 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import io.informant.core.snapshot.TraceSnapshot;
+import io.informant.core.snapshot.Snapshot;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,12 +26,12 @@ import com.google.common.io.CharStreams;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class TraceSnapshotTestData {
+class SnapshotTestData {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    TraceSnapshot createSnapshot() {
-        return TraceSnapshot.builder()
+    Snapshot createSnapshot() {
+        return Snapshot.builder()
                 .id("abc" + counter.getAndIncrement())
                 .start(System.currentTimeMillis() - 10)
                 .stuck(false)

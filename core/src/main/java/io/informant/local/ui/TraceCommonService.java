@@ -16,11 +16,11 @@
 package io.informant.local.ui;
 
 import io.informant.core.TraceRegistry;
-import io.informant.core.snapshot.TraceSnapshot;
-import io.informant.core.snapshot.TraceSnapshotWriter;
-import io.informant.core.snapshot.TraceWriter;
+import io.informant.core.snapshot.Snapshot;
+import io.informant.core.snapshot.SnapshotWriter;
+import io.informant.core.snapshot.SnapshotCreator;
 import io.informant.core.trace.Trace;
-import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.SnapshotDao;
 import io.informant.util.Singleton;
 
 import java.io.IOException;
@@ -38,13 +38,12 @@ import com.google.common.io.CharSource;
 @Singleton
 class TraceCommonService {
 
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final SnapshotDao snapshotDao;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
-    TraceCommonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
-            Ticker ticker) {
-        this.traceSnapshotDao = traceSnapshotDao;
+    TraceCommonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry, Ticker ticker) {
+        this.snapshotDao = snapshotDao;
         this.traceRegistry = traceRegistry;
         this.ticker = ticker;
     }
@@ -57,21 +56,21 @@ class TraceCommonService {
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                TraceSnapshot snapshot = TraceWriter.toTraceSnapshot(active, ticker.read(),
+                Snapshot snapshot = SnapshotCreator.createSnapshot(active, ticker.read(),
                         summary);
-                return TraceSnapshotWriter.toCharSource(snapshot, true);
+                return SnapshotWriter.toCharSource(snapshot, true);
             }
         }
-        TraceSnapshot snapshot;
+        Snapshot snapshot;
         if (summary) {
-            snapshot = traceSnapshotDao.readSnapshotWithoutDetail(id);
+            snapshot = snapshotDao.readSnapshotWithoutDetail(id);
         } else {
-            snapshot = traceSnapshotDao.readSnapshot(id);
+            snapshot = snapshotDao.readSnapshot(id);
         }
         if (snapshot == null) {
             return null;
         } else {
-            return TraceSnapshotWriter.toCharSource(snapshot, false);
+            return SnapshotWriter.toCharSource(snapshot, false);
         }
     }
 }

@@ -24,8 +24,8 @@ import io.informant.core.TraceSink;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.RollingFile;
+import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.StorageModule;
-import io.informant.local.store.TraceSnapshotDao;
 import io.informant.util.Clock;
 import io.informant.util.ThreadSafe;
 import io.informant.weaving.ParsedTypeCache;
@@ -66,21 +66,20 @@ public class LocalUiModule {
 
         DataSource dataSource = dataSourceModule.getDataSource();
         RollingFile rollingFile = traceSinkModule.getRollingFile();
-        TraceSnapshotDao traceSnapshotDao = traceSinkModule.getTraceSnapshotDao();
+        SnapshotDao snapshotDao = traceSinkModule.getSnapshotDao();
         TraceSink traceSink = coreModule.getTraceSink();
         ParsedTypeCache parsedTypeCache = coreModule.getParsedTypeCache();
 
         int port = getHttpServerPort(properties);
         TraceRegistry traceRegistry = coreModule.getTraceRegistry();
 
-        TraceCommonService traceCommonService = new TraceCommonService(traceSnapshotDao,
-                traceRegistry, ticker);
-        TracePointJsonService tracePointJsonService = new TracePointJsonService(traceSnapshotDao,
+        TraceCommonService traceCommonService = new TraceCommonService(snapshotDao, traceRegistry,
+                ticker);
+        TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
                 traceRegistry, traceSink, ticker, clock);
         TraceSummaryJsonService traceSummaryJsonService = new TraceSummaryJsonService(
                 traceCommonService);
-        TraceSnapshotHttpService traceSnapshotHttpService = new TraceSnapshotHttpService(
-                traceCommonService);
+        SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService);
         // when port is 0, intentionally passing it as 0 instead of its resolved value since the
         // port is just displayed on config page for its documentation value anyways, and more
@@ -91,13 +90,13 @@ public class LocalUiModule {
         PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
                 parsedTypeCache);
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
-        AdminJsonService adminJsonService = new AdminJsonService(traceSnapshotDao, configService,
+        AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
                 traceSink, dataSource, traceRegistry);
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
         httpServer = new HttpServer(port, numWorkerThreads, tracePointJsonService,
-                traceSummaryJsonService, traceSnapshotHttpService, traceExportHttpService,
+                traceSummaryJsonService, snapshotHttpService, traceExportHttpService,
                 configJsonService, pointcutConfigJsonService, threadDumpJsonService,
                 adminJsonService);
     }

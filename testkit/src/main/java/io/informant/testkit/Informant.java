@@ -76,7 +76,7 @@ public interface Informant {
 
     int getNumPendingCompleteTraces() throws Exception;
 
-    long getNumStoredTraceSnapshots() throws Exception;
+    long getNumStoredSnapshots() throws Exception;
 
     InputStream getTraceExport(String string) throws Exception;
 }

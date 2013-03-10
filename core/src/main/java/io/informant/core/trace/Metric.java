@@ -28,7 +28,7 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@PartiallyThreadSafe("getSnapshot() can be called from any thread")
+@PartiallyThreadSafe("getState() can be called from any thread")
 public class Metric implements MetricTimer {
 
     private final String name;
@@ -52,7 +52,7 @@ public class Metric implements MetricTimer {
     }
 
     // safe to be called from another thread
-    public Snapshot getSnapshot() {
+    public MetricSnapshot getState() {
         // try to grab a quick, consistent snapshot, but no guarantees on consistency if trace is
         // active
 
@@ -64,16 +64,16 @@ public class Metric implements MetricTimer {
             long currentTick = ticker.read();
             long curr = currentTick - startTick;
             if (count == 0) {
-                return new Snapshot(name, curr, curr, curr, 1, true, true, true);
+                return new MetricSnapshot(name, curr, curr, curr, 1, true, true, true);
             } else if (curr > max) {
-                return new Snapshot(name, total + curr, min, curr, count + 1, true, false,
+                return new MetricSnapshot(name, total + curr, min, curr, count + 1, true, false,
                         true);
             } else {
-                return new Snapshot(name, total + curr, min, max, count + 1, true, false,
+                return new MetricSnapshot(name, total + curr, min, max, count + 1, true, false,
                         false);
             }
         } else {
-            return new Snapshot(name, total, min, max, count, false, false, false);
+            return new MetricSnapshot(name, total, min, max, count, false, false, false);
         }
     }
 
@@ -139,7 +139,7 @@ public class Metric implements MetricTimer {
     }
 
     @Immutable
-    public static class Snapshot {
+    public static class MetricSnapshot {
 
         private final String name;
         private final long total;
@@ -150,8 +150,8 @@ public class Metric implements MetricTimer {
         private final boolean minActive;
         private final boolean maxActive;
 
-        private Snapshot(String name, long total, long min, long max, long count, boolean active,
-                boolean minActive, boolean maxActive) {
+        private MetricSnapshot(String name, long total, long min, long max, long count,
+                boolean active, boolean minActive, boolean maxActive) {
             this.name = name;
             this.total = total;
             this.min = min;

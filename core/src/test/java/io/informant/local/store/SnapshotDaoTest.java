@@ -16,7 +16,7 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.core.snapshot.TraceSnapshot;
+import io.informant.core.snapshot.Snapshot;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.MockClock;
 import io.informant.util.Threads;
@@ -38,27 +38,27 @@ import com.google.common.base.Ticker;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceSnapshotDaoTest {
+public class SnapshotDaoTest {
 
     private Collection<Thread> preExistingThreads;
     private DataSource dataSource;
     private File rollingDbFile;
     private ScheduledExecutorService scheduledExecutor;
     private RollingFile rollingFile;
-    private TraceSnapshotDao snapshotDao;
+    private SnapshotDao snapshotDao;
 
     @Before
     public void before() throws SQLException, IOException {
         preExistingThreads = Threads.currentThreads();
         dataSource = new DataSource();
-        if (dataSource.tableExists("trace_snapshot")) {
-            dataSource.execute("drop table trace_snapshot");
+        if (dataSource.tableExists("snapshot")) {
+            dataSource.execute("drop table snapshot");
         }
         rollingDbFile = new File("informant.rolling.db");
         scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
         rollingFile = new RollingFile(rollingDbFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());
-        snapshotDao = new TraceSnapshotDao(dataSource, rollingFile, new MockClock());
+        snapshotDao = new SnapshotDao(dataSource, rollingFile, new MockClock());
     }
 
     @After
@@ -74,12 +74,12 @@ public class TraceSnapshotDaoTest {
     @Test
     public void shouldReadSnapshot() {
         // given
-        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
                 false, false, null, null, null, null, 1);
-        TraceSnapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
+        Snapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
         assertThat(snapshot2.getStart()).isEqualTo(snapshot.getStart());
         assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
@@ -94,7 +94,7 @@ public class TraceSnapshotDaoTest {
     @Test
     public void shouldReadSnapshotWithDurationQualifier() {
         // given
-        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
@@ -106,7 +106,7 @@ public class TraceSnapshotDaoTest {
     @Test
     public void shouldNotReadSnapshotWithHighDurationQualifier() {
         // given
-        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
@@ -118,7 +118,7 @@ public class TraceSnapshotDaoTest {
     @Test
     public void shouldNotReadSnapshotWithLowDurationQualifier() {
         // given
-        TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
+        Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
@@ -130,7 +130,7 @@ public class TraceSnapshotDaoTest {
     @Test
     public void shouldDeletedTrace() {
         // given
-        snapshotDao.store(new TraceSnapshotTestData().createSnapshot());
+        snapshotDao.store(new SnapshotTestData().createSnapshot());
         // when
         snapshotDao.deleteSnapshotsBefore(0);
         // then

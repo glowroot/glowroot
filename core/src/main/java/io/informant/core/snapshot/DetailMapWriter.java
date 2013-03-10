@@ -34,13 +34,13 @@ import com.fasterxml.jackson.core.JsonGenerator;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class MessageDetailSerializer {
+class DetailMapWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(MessageDetailSerializer.class);
+    private static final Logger logger = LoggerFactory.getLogger(DetailMapWriter.class);
 
     private final JsonGenerator jg;
 
-    MessageDetailSerializer(JsonGenerator jg) {
+    DetailMapWriter(JsonGenerator jg) {
         this.jg = jg;
     }
 

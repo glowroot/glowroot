@@ -18,8 +18,8 @@ package io.informant.core;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
-import io.informant.core.snapshot.TraceSnapshot;
-import io.informant.core.snapshot.TraceWriter;
+import io.informant.core.snapshot.Snapshot;
+import io.informant.core.snapshot.SnapshotCreator;
 import io.informant.core.trace.Trace;
 import io.informant.util.Singleton;
 
@@ -63,7 +63,7 @@ public class TraceSink {
 
     TraceSink(ExecutorService executorService, ConfigService configService,
             SnapshotSink snapshotSink, Ticker ticker) {
-        this.executorService = executorService;// DaemonExecutors.newSingleThreadExecutor("test");
+        this.executorService = executorService;
         this.configService = configService;
         this.snapshotSink = snapshotSink;
         this.ticker = ticker;
@@ -72,6 +72,8 @@ public class TraceSink {
     public void onCompletedTrace(final Trace trace) {
         if (shouldStore(trace)) {
             // promote thread local trace metrics since they will be reset after this method returns
+            // TODO instead of confusing "promotion", just capture the metric snapshots here and
+            // pass them to the trace snapshot creation below
             trace.promoteMetrics();
             if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
                 logPendingLimitWarning();
@@ -81,7 +83,7 @@ public class TraceSink {
             executorService.execute(new Runnable() {
                 public void run() {
                     try {
-                        TraceSnapshot snapshot = TraceWriter.toTraceSnapshot(trace, Long.MAX_VALUE,
+                        Snapshot snapshot = SnapshotCreator.createSnapshot(trace, Long.MAX_VALUE,
                                 false);
                         snapshotSink.store(snapshot);
                         pendingCompleteTraces.remove(trace);
@@ -97,11 +99,10 @@ public class TraceSink {
     private void logPendingLimitWarning() {
         synchronized (warningRateLimiter) {
             if (warningRateLimiter.tryAcquire(0, MILLISECONDS)) {
-                logger.warn("not storing a trace in the local h2 database because of an excessive"
-                        + " backlog of {} traces already waiting to be stored (this warning will"
-                        + " appear at most once a minute, there were {} additional traces not"
-                        + " stored in the local h2 database since the last warning)",
-                        PENDING_LIMIT, countSinceLastWarning);
+                logger.warn("not storing a trace because of an excessive backlog of {} traces"
+                        + " already waiting to be stored (this warning will appear at most once a"
+                        + " minute, there were {} additional traces not stored since the last"
+                        + " warning)", PENDING_LIMIT, countSinceLastWarning);
                 countSinceLastWarning = 0;
             } else {
                 countSinceLastWarning++;
@@ -113,7 +114,7 @@ public class TraceSink {
     // single thread executor in StuckTraceCollector
     public void onStuckTrace(Trace trace) {
         try {
-            TraceSnapshot snaphsot = TraceWriter.toTraceSnapshot(trace, ticker.read(), false);
+            Snapshot snaphsot = SnapshotCreator.createSnapshot(trace, ticker.read(), false);
             if (!trace.isCompleted()) {
                 snapshotSink.store(snaphsot);
             }

@@ -19,7 +19,7 @@ import io.informant.config.ConfigService;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.local.store.DataSource;
-import io.informant.local.store.TraceSnapshotDao;
+import io.informant.local.store.SnapshotDao;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.Singleton;
 
@@ -42,15 +42,15 @@ class AdminJsonService implements JsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final SnapshotDao snapshotDao;
     private final ConfigService configService;
     private final TraceSink traceSink;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
-    AdminJsonService(TraceSnapshotDao traceSnapshotDao, ConfigService configService,
-            TraceSink traceSink, DataSource dataSource, TraceRegistry traceRegistry) {
-        this.traceSnapshotDao = traceSnapshotDao;
+    AdminJsonService(SnapshotDao snapshotDao, ConfigService configService, TraceSink traceSink,
+            DataSource dataSource, TraceRegistry traceRegistry) {
+        this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.traceSink = traceSink;
         this.dataSource = dataSource;
@@ -71,7 +71,7 @@ class AdminJsonService implements JsonService {
     @JsonServiceMethod
     void deleteAllData() {
         logger.debug("deleteAllData()");
-        traceSnapshotDao.deleteAllSnapshots();
+        snapshotDao.deleteAllSnapshots();
     }
 
     @OnlyUsedByTests
@@ -90,9 +90,9 @@ class AdminJsonService implements JsonService {
 
     @OnlyUsedByTests
     @JsonServiceMethod
-    String getNumStoredTraceSnapshots() {
-        logger.debug("getNumStoredTraceSnapshots()");
-        return Long.toString(traceSnapshotDao.count());
+    String getNumStoredSnapshots() {
+        logger.debug("getNumStoredSnapshots()");
+        return Long.toString(snapshotDao.count());
     }
 
     @OnlyUsedByTests

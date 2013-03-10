@@ -34,21 +34,21 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @Static
-public class TraceSnapshotDaoPerformanceMain {
+public class SnapshotDaoPerformanceMain {
 
     private static final Logger logger = LoggerFactory
-            .getLogger(TraceSnapshotDaoPerformanceMain.class);
+            .getLogger(SnapshotDaoPerformanceMain.class);
 
-    private TraceSnapshotDaoPerformanceMain() {}
+    private SnapshotDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        TraceSnapshotTestData snapshotTestData = new TraceSnapshotTestData();
+        SnapshotTestData snapshotTestData = new SnapshotTestData();
         DataSource dataSource = new DataSource();
         ScheduledExecutorService scheduledExecutor =
                 DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Fsync");
         RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000,
                 scheduledExecutor, Ticker.systemTicker());
-        TraceSnapshotDao snapshotDao = new TraceSnapshotDao(dataSource, rollingFile,
+        SnapshotDao snapshotDao = new SnapshotDao(dataSource, rollingFile,
                 Clock.systemClock());
 
         Stopwatch stopwatch = new Stopwatch().start();

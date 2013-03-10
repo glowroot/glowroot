@@ -15,7 +15,7 @@
  */
 package io.informant.core;
 
-import io.informant.core.snapshot.TraceSnapshot;
+import io.informant.core.snapshot.Snapshot;
 
 /**
  * Interface for storing traces.
@@ -25,5 +25,5 @@ import io.informant.core.snapshot.TraceSnapshot;
  */
 public interface SnapshotSink {
 
-    void store(TraceSnapshot snapshot);
+    void store(Snapshot snapshot);
 }

@@ -31,20 +31,19 @@ import org.slf4j.LoggerFactory;
  * @since 0.5
  */
 @Singleton
-class TraceSnapshotReaper implements Runnable {
+class SnapshotReaper implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotReaper.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotReaper.class);
     private static final int CHECK_INTERVAL_MINUTES = 10;
     private static final long MILLISECONDS_PER_HOUR = 60L * 60L * 1000L;
 
     private final ConfigService configService;
-    private final TraceSnapshotDao traceSnapshotDao;
+    private final SnapshotDao snapshotDao;
     private final Clock clock;
 
-    TraceSnapshotReaper(ConfigService configService, TraceSnapshotDao traceSnapshotDao,
-            Clock clock) {
+    SnapshotReaper(ConfigService configService, SnapshotDao snapshotDao, Clock clock) {
         this.configService = configService;
-        this.traceSnapshotDao = traceSnapshotDao;
+        this.snapshotDao = snapshotDao;
         this.clock = clock;
     }
 
@@ -57,7 +56,7 @@ class TraceSnapshotReaper implements Runnable {
             int snapshotExpirationHours = configService.getGeneralConfig()
                     .getSnapshotExpirationHours();
             if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
-                traceSnapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
+                snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
                         - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
             }
         } catch (Throwable t) {

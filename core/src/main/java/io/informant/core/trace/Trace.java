@@ -18,7 +18,7 @@ package io.informant.core.trace;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableMessage;
-import io.informant.core.trace.Metric.Snapshot;
+import io.informant.core.trace.Metric.MetricSnapshot;
 import io.informant.util.Clock;
 import io.informant.util.PartiallyThreadSafe;
 
@@ -125,7 +125,7 @@ public class Trace {
     private final Metric weavingMetric;
 
     @LazyNonNull
-    private volatile ImmutableList<Snapshot> finalMetricSnapshots;
+    private volatile ImmutableList<MetricSnapshot> finalMetricSnapshots;
 
     public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, Ticker ticker,
             Clock clock, WeavingMetricNameImpl weavingMetricName) {
@@ -227,7 +227,7 @@ public class Trace {
         return fineMergedStackTree != null;
     }
 
-    public ImmutableList<Snapshot> getMetricSnapshots() {
+    public ImmutableList<MetricSnapshot> getMetricSnapshots() {
         List<Metric> copyOfMetrics;
         synchronized (metrics) {
             if (finalMetricSnapshots != null) {
@@ -427,15 +427,15 @@ public class Trace {
         }
     }
 
-    private ImmutableList<Snapshot> buildMetricSnapshots(@ReadOnly List<Metric> metrics) {
+    private ImmutableList<MetricSnapshot> buildMetricSnapshots(@ReadOnly List<Metric> metrics) {
         // since the metrics are bound to the thread, they need to be recorded and reset
         // while still in the trace thread, before the thread is reused for another trace
-        ImmutableList.Builder<Snapshot> metricSnapshots = ImmutableList.builder();
+        ImmutableList.Builder<MetricSnapshot> metricSnapshots = ImmutableList.builder();
         for (Metric metric : metrics) {
-            metricSnapshots.add(metric.getSnapshot());
+            metricSnapshots.add(metric.getState());
         }
         if (weavingMetric.getCount() > 0) {
-            metricSnapshots.add(weavingMetric.getSnapshot());
+            metricSnapshots.add(weavingMetric.getState());
         }
         return metricSnapshots.build();
     }

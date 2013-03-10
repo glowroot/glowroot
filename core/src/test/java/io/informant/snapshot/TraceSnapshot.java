@@ -18,7 +18,7 @@ package io.informant.snapshot;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import io.informant.core.snapshot.TraceWriter;
+import io.informant.core.snapshot.SnapshotCreator;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.Trace;
 
@@ -34,7 +34,7 @@ import com.google.common.io.CharSource;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceSnapshotTest {
+public class TraceSnapshot {
 
     @Test
     public void shouldStoreVeryLargeMergedStackTree() throws IOException {
@@ -46,14 +46,14 @@ public class TraceSnapshotTest {
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
         for (int i = 0; i < stackTrace.length; i++) {
-            stackTrace[i] = new StackTraceElement(TraceSnapshotTest.class.getName(), "method" + i,
+            stackTrace[i] = new StackTraceElement(TraceSnapshot.class.getName(), "method" + i,
                     "TraceSnapshotsTest.java", 100 + 10 * i);
         }
         mergedStackTree.addToStackTree(
                 MergedStackTree.stripSyntheticMetricMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE);
         // when
-        CharSource mergedStackTreeCharSource = TraceWriter.createCharSource(trace
+        CharSource mergedStackTreeCharSource = SnapshotCreator.createCharSource(trace
                 .getCoarseMergedStackTree());
         assertThat(mergedStackTreeCharSource).isNotNull();
         // then don't blow up with StackOverflowError

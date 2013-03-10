@@ -43,13 +43,13 @@ import com.google.common.io.CharSource;
  * @since 0.5
  */
 @Singleton
-class TraceSnapshotHttpService implements HttpService {
+class SnapshotHttpService implements HttpService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotHttpService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotHttpService.class);
 
     private final TraceCommonService traceCommonService;
 
-    TraceSnapshotHttpService(TraceCommonService traceCommonService) {
+    SnapshotHttpService(TraceCommonService traceCommonService) {
         this.traceCommonService = traceCommonService;
     }
 

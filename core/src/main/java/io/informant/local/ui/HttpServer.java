@@ -78,7 +78,7 @@ public class HttpServer extends HttpServerBase {
 
     HttpServer(int port, int numWorkerThreads, TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
-            TraceSnapshotHttpService traceSnapshotHttpService,
+            SnapshotHttpService snapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
             ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
@@ -97,7 +97,7 @@ public class HttpServer extends HttpServerBase {
         uriMappings.put(Pattern.compile("^/libs/(.*)$"), "io/informant/local/ui/libs/$1");
         // services
         uriMappings.put(Pattern.compile("^/explorer/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/explorer/detail/.*$"), traceSnapshotHttpService);
+        uriMappings.put(Pattern.compile("^/explorer/detail/.*$"), snapshotHttpService);
         this.uriMappings = uriMappings.build();
 
         // the parentheses define the part of the match that is used to construct the args for
@@ -142,8 +142,8 @@ public class HttpServer extends HttpServerBase {
                 adminJsonService, "resetAllConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-complete-traces$",
                 adminJsonService, "getNumPendingCompleteTraces"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-stored-trace-snapshots$",
-                adminJsonService, "getNumStoredTraceSnapshots"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-stored-snapshots$",
+                adminJsonService, "getNumStoredSnapshots"));
         jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-active-traces",
                 adminJsonService, "getNumActiveTraces"));
         this.jsonServiceMappings = jsonServiceMappings.build();

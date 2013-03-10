@@ -23,10 +23,10 @@ import io.informant.api.internal.ReadableMessage;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
+import io.informant.core.trace.Metric.MetricSnapshot;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.Trace.TraceAttribute;
-import io.informant.core.trace.Metric.Snapshot;
 import io.informant.util.CharArrayWriter;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ObjectMappers;
@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,17 +62,17 @@ import com.google.common.io.CharStreams;
  * @since 0.5
  */
 @Static
-public class TraceWriter {
+public class SnapshotCreator {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotCreator.class);
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private TraceWriter() {}
+    private SnapshotCreator() {}
 
-    public static TraceSnapshot toTraceSnapshot(Trace trace, long captureTick, boolean summary)
+    public static Snapshot createSnapshot(Trace trace, long captureTick, boolean summary)
             throws IOException {
-        TraceSnapshot.Builder builder = TraceSnapshot.builder();
+        Snapshot.Builder builder = Snapshot.builder();
         builder.id(trace.getId());
         builder.start(trace.getStart());
         builder.stuck(trace.isStuck() && !trace.isCompleted());
@@ -116,7 +115,7 @@ public class TraceWriter {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        new MessageDetailSerializer(jg).write(errorDetail);
+        new DetailMapWriter(jg).write(errorDetail);
         jg.close();
         return sb.toString();
     }
@@ -152,16 +151,16 @@ public class TraceWriter {
     }
 
     @Nullable
-    private static String writeMetricsAsString(@ReadOnly List<Snapshot> items)
+    private static String writeMetricsAsString(@ReadOnly List<MetricSnapshot> metricSnapshots)
             throws JsonProcessingException {
-        Ordering<Snapshot> byTotalOrdering = Ordering.natural().onResultOf(
-                new Function<Snapshot, Long>() {
-                    public Long apply(@Nullable Snapshot snapshot) {
-                        checkNotNull(snapshot, "Ordering of non-null elements only");
-                        return snapshot.getTotal();
+        Ordering<MetricSnapshot> byTotalOrdering = Ordering.natural().onResultOf(
+                new Function<MetricSnapshot, Long>() {
+                    public Long apply(@Nullable MetricSnapshot metricSnapshots) {
+                        checkNotNull(metricSnapshots, "Ordering of non-null elements only");
+                        return metricSnapshots.getTotal();
                     }
                 });
-        return mapper.writeValueAsString(byTotalOrdering.reverse().sortedCopy(items));
+        return mapper.writeValueAsString(byTotalOrdering.reverse().sortedCopy(metricSnapshots));
     }
 
     @VisibleForTesting
@@ -342,7 +341,7 @@ public class TraceWriter {
             Map<String, ? extends /*@Nullable*/Object> detail = message.getDetail();
             if (!detail.isEmpty()) {
                 jg.writeFieldName("detail");
-                new MessageDetailSerializer(jg).write(detail);
+                new DetailMapWriter(jg).write(detail);
             }
             jg.writeEndObject();
         }
@@ -353,7 +352,7 @@ public class TraceWriter {
             Map<String, ? extends /*@Nullable*/Object> errorDetail = errorMessage.getDetail();
             if (errorDetail != null) {
                 jg.writeFieldName("detail");
-                new MessageDetailSerializer(jg).write(errorDetail);
+                new DetailMapWriter(jg).write(errorDetail);
             }
             ExceptionInfo exception = errorMessage.getExceptionInfo();
             if (exception != null) {
@@ -424,13 +423,13 @@ public class TraceWriter {
                 }
             }
             jg.writeNumberField("sampleCount", currNode.getSampleCount());
-            State leafThreadState = currNode.getLeafThreadState();
+            Thread.State leafThreadState = currNode.getLeafThreadState();
             if (leafThreadState != null) {
                 writeLeaf(leafThreadState);
             }
         }
 
-        private void writeLeaf(State leafThreadState) throws IOException {
+        private void writeLeaf(Thread.State leafThreadState) throws IOException {
             jg.writeStringField("leafThreadState", leafThreadState.name());
             jg.writeArrayFieldStart("metricNames");
             for (String metricName : metricNameStack) {

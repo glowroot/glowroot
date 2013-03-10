@@ -34,7 +34,7 @@ import com.google.common.io.CharSource;
  * @since 0.5
  */
 @Immutable
-public class TraceSnapshot {
+public class Snapshot {
 
     private final String id;
     private final long start; // milliseconds since 01/01/1970, 00:00:00 GMT
@@ -64,7 +64,7 @@ public class TraceSnapshot {
     @Nullable
     private final CharSource fineMergedStackTree; // json data
 
-    private TraceSnapshot(String id, long start, long duration, boolean stuck, boolean completed,
+    private Snapshot(String id, long start, long duration, boolean stuck, boolean completed,
             boolean background, String headline, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String exception, @Nullable String metrics,
@@ -306,7 +306,7 @@ public class TraceSnapshot {
             return this;
         }
 
-        public TraceSnapshot build() {
+        public Snapshot build() {
             if (id == null) {
                 logger.warn("setId() must be called before build()");
                 id = new TraceUniqueId(System.currentTimeMillis()).get();
@@ -316,7 +316,7 @@ public class TraceSnapshot {
                 logger.warn("setHeadline() must be called before build()");
                 headline = "<error: no headline provided>";
             }
-            return new TraceSnapshot(id, start, duration, stuck, completed, background,
+            return new Snapshot(id, start, duration, stuck, completed, background,
                     headline, attributes, userId, errorText, errorDetail, exception,
                     metrics, spans, coarseMergedStackTree, fineMergedStackTree);
         }

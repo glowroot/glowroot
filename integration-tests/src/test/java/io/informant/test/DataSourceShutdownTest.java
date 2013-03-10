@@ -83,7 +83,7 @@ public class DataSourceShutdownTest {
     }
 
     private long getNumCompletedTraces(final InformantContainer container) throws Exception {
-        return container.getInformant().getNumStoredTraceSnapshots()
+        return container.getInformant().getNumStoredSnapshots()
                 + container.getInformant().getNumPendingCompleteTraces();
     }
 

@@ -46,7 +46,7 @@ public class Threads {
     public static List<Thread> currentThreads() {
         List<Thread> threads = Lists.newArrayList();
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getState() != State.TERMINATED) {
+            if (thread.getState() != Thread.State.TERMINATED) {
                 threads.add(thread);
             }
         }
