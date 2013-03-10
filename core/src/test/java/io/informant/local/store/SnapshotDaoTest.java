@@ -16,7 +16,8 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.common.MockClock;
+import static org.mockito.Mockito.mock;
+import io.informant.common.Clock;
 import io.informant.core.snapshot.Snapshot;
 
 import java.io.File;
@@ -54,7 +55,7 @@ public class SnapshotDaoTest {
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         rollingFile = new RollingFile(rollingDbFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());
-        snapshotDao = new SnapshotDao(dataSource, rollingFile, new MockClock());
+        snapshotDao = new SnapshotDao(dataSource, rollingFile, mock(Clock.class));
     }
 
     @After
