@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.core;
+package io.informant.core.trace;
 
 import io.informant.api.MetricTimer;
 import io.informant.util.PartiallyThreadSafe;
@@ -95,7 +95,7 @@ public class TraceMetric implements MetricTimer {
 
     // prefer this method when startTick is not already available, since it avoids a ticker.read()
     // for nested metrics
-    void start() {
+    public void start() {
         if (selfNestingLevel == 0) {
             this.startTick = ticker.read();
         }
@@ -113,7 +113,7 @@ public class TraceMetric implements MetricTimer {
         selfNestingLevel++;
     }
 
-    void end(long endTick) {
+    public void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
         }

@@ -15,7 +15,7 @@
  */
 package io.informant.local.store;
 
-import io.informant.core.TraceUniqueId;
+import io.informant.core.trace.TraceUniqueId;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

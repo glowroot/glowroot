@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.core;
+package io.informant.core.trace;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableMessage;
-import io.informant.core.TraceMetric.Snapshot;
+import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.util.Clock;
 import io.informant.util.PartiallyThreadSafe;
 
@@ -127,7 +127,7 @@ public class Trace {
     @LazyNonNull
     private volatile ImmutableList<Snapshot> finalTraceMetricSnapshots;
 
-    Trace(MetricImpl metric, MessageSupplier messageSupplier, Ticker ticker, Clock clock,
+    public Trace(MetricImpl metric, MessageSupplier messageSupplier, Ticker ticker, Clock clock,
             WeavingMetricImpl weavingMetric) {
         this.ticker = ticker;
         start = clock.currentTimeMillis();
@@ -290,7 +290,7 @@ public class Trace {
     }
 
     // returns previous value
-    boolean setStuck() {
+    public boolean setStuck() {
         return stuck.getAndSet(true);
     }
 
@@ -302,7 +302,7 @@ public class Trace {
         this.userId = userId;
     }
 
-    void setAttribute(String pluginId, String name, @Nullable String value) {
+    public void setAttribute(String pluginId, String name, @Nullable String value) {
         if (attributes == null) {
             // no race condition here since only trace thread calls setAttribute()
             //
@@ -338,7 +338,7 @@ public class Trace {
         this.stuckScheduledFuture = scheduledFuture;
     }
 
-    Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier,
+    public Span pushSpan(MetricImpl metric, MessageSupplier messageSupplier,
             boolean spanLimitBypass) {
         long startTick = ticker.read();
         TraceMetric traceMetric = metric.start(startTick);
@@ -348,19 +348,19 @@ public class Trace {
         return rootSpan.pushSpan(startTick, messageSupplier, traceMetric, spanLimitBypass);
     }
 
-    Span addSpan(@Nullable MessageSupplier messageSupplier,
+    public Span addSpan(@Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean spanLimitBypass) {
         return rootSpan.addSpan(ticker.read(), messageSupplier, errorMessage, spanLimitBypass);
     }
 
-    void addSpanLimitExceededMarkerIfNeeded() {
+    public void addSpanLimitExceededMarkerIfNeeded() {
         rootSpan.addSpanLimitExceededMarkerIfNeeded();
     }
 
     // typically pop() methods don't require the objects to pop, but for safety, the span to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
+    public void popSpan(Span span, long endTick, @Nullable ErrorMessage errorMessage) {
         rootSpan.popSpan(span, endTick, errorMessage);
         TraceMetric traceMetric = span.getTraceMetric();
         if (traceMetric != null) {
@@ -368,7 +368,7 @@ public class Trace {
         }
     }
 
-    void linkTraceMetric(MetricImpl metric, TraceMetric traceMetric) {
+    public void linkTraceMetric(MetricImpl metric, TraceMetric traceMetric) {
         synchronized (traceMetrics) {
             traceMetrics.add(traceMetric);
         }
@@ -384,7 +384,7 @@ public class Trace {
         }
     }
 
-    void resetTraceMetrics() {
+    public void resetTraceMetrics() {
         // reset metric thread locals to clear their state for next time
         for (MetricImpl metric : metrics) {
             metric.resetTraceMetric();
@@ -394,7 +394,7 @@ public class Trace {
         weavingMetric.resetTraceMetric();
     }
 
-    void captureStackTrace(boolean fine) {
+    public void captureStackTrace(boolean fine) {
         Thread thread = threadHolder.get();
         if (thread != null) {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();

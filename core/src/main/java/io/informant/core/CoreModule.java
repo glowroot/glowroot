@@ -20,6 +20,7 @@ import io.informant.api.weaving.Mixin;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
+import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.ThreadSafe;

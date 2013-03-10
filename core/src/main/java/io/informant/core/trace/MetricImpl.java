@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.core;
+package io.informant.core.trace;
 
 import io.informant.api.Metric;
 import io.informant.util.PartiallyThreadSafe;
@@ -25,7 +25,7 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @PartiallyThreadSafe("get(), getName() can be called from any thread")
-class MetricImpl implements Metric {
+public class MetricImpl implements Metric {
 
     private final String name;
     private final ThreadLocal<TraceMetric> traceMetricHolder = new ThreadLocal<TraceMetric>() {
@@ -37,16 +37,16 @@ class MetricImpl implements Metric {
 
     private final Ticker ticker;
 
-    MetricImpl(String name, Ticker ticker) {
+    public MetricImpl(String name, Ticker ticker) {
         this.name = name;
         this.ticker = ticker;
     }
 
-    TraceMetric get() {
+    public TraceMetric get() {
         return traceMetricHolder.get();
     }
 
-    TraceMetric start(long startTick) {
+    public TraceMetric start(long startTick) {
         TraceMetric traceMetric = traceMetricHolder.get();
         traceMetric.start(startTick);
         return traceMetric;

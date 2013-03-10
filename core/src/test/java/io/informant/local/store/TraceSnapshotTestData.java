@@ -17,6 +17,7 @@ package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.io.CharStreams;

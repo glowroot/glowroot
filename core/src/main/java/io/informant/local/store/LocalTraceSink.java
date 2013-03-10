@@ -16,8 +16,8 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import io.informant.core.Trace;
 import io.informant.core.TraceSink;
+import io.informant.core.trace.Trace;
 import io.informant.util.Singleton;
 
 import java.io.IOException;

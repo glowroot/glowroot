@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.core;
+package io.informant.core.trace;
+
+import io.informant.core.trace.Trace;
 
 import java.util.Collection;
 import java.util.Collections;

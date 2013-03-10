@@ -18,8 +18,8 @@ package io.informant.local.store;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import io.informant.core.MergedStackTree;
-import io.informant.core.Trace;
+import io.informant.core.trace.MergedStackTree;
+import io.informant.core.trace.Trace;
 
 import java.io.IOException;
 import java.lang.Thread.State;

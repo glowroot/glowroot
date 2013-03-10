@@ -17,6 +17,7 @@ package io.informant.core;
 
 import io.informant.api.Metric;
 import io.informant.api.weaving.Pointcut;
+import io.informant.core.trace.MetricImpl;
 import io.informant.util.Singleton;
 
 import org.slf4j.Logger;

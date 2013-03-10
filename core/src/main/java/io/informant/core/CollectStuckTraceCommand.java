@@ -15,6 +15,7 @@
  */
 package io.informant.core;
 
+import io.informant.core.trace.Trace;
 import io.informant.util.ThreadSafe;
 
 import org.slf4j.Logger;

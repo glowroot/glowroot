@@ -16,8 +16,8 @@
 package io.informant.local.ui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import io.informant.core.Trace;
 import io.informant.core.TraceRegistry;
+import io.informant.core.trace.Trace;
 import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.TracePoint;
 import io.informant.local.store.TraceSnapshotDao;

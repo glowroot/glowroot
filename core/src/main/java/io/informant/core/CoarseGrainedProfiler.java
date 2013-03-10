@@ -20,6 +20,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
+import io.informant.core.trace.Trace;
 import io.informant.util.Singleton;
 
 import java.util.concurrent.ScheduledExecutorService;

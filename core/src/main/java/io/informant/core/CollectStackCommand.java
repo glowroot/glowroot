@@ -15,6 +15,8 @@
  */
 package io.informant.core;
 
+import io.informant.core.trace.MergedStackTree;
+import io.informant.core.trace.Trace;
 import io.informant.util.ThreadSafe;
 
 import java.util.concurrent.ScheduledExecutorService;

@@ -29,6 +29,10 @@ import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.config.UserConfig;
+import io.informant.core.trace.MetricImpl;
+import io.informant.core.trace.Trace;
+import io.informant.core.trace.TraceMetric;
+import io.informant.core.trace.WeavingMetricImpl;
 import io.informant.util.Clock;
 import io.informant.util.NotThreadSafe;
 import io.informant.util.ThreadSafe;
@@ -350,9 +354,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @NotThreadSafe
     private class SpanImpl implements Span {
-        private final io.informant.core.Span span;
+        private final io.informant.core.trace.Span span;
         private final Trace trace;
-        private SpanImpl(io.informant.core.Span span, Trace trace) {
+        private SpanImpl(io.informant.core.trace.Span span, Trace trace) {
             this.span = span;
             this.trace = trace;
         }
@@ -446,7 +450,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     && trace.getSpanCount() < 2 * maxSpans) {
                 // span won't necessarily be nested properly, and won't have any timing data, but at
                 // least the long span and stack trace will get captured
-                io.informant.core.Span span = trace.addSpan(messageSupplier, null, true);
+                io.informant.core.trace.Span span = trace.addSpan(messageSupplier, null, true);
                 span.setStackTrace(captureSpanStackTrace());
             }
         }

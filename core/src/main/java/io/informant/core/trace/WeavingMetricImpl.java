@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.core;
+package io.informant.core.trace;
 
 import io.informant.api.MetricTimer;
 import io.informant.util.Singleton;
@@ -32,11 +32,11 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @Singleton
-class WeavingMetricImpl implements WeavingMetric {
+public class WeavingMetricImpl implements WeavingMetric {
 
     private final MetricImpl metricImpl;
 
-    WeavingMetricImpl(Ticker ticker) {
+    public WeavingMetricImpl(Ticker ticker) {
         metricImpl = new MetricImpl("informant weaving", ticker);
     }
 

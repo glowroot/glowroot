@@ -618,10 +618,10 @@ class PreInitializeClasses {
         types.add("io.informant.api.weaving.OnReturn");
         types.add("io.informant.api.weaving.OnThrow");
         types.add("io.informant.api.weaving.Pointcut");
-        types.add("io.informant.core.MetricImpl");
-        types.add("io.informant.core.TraceMetric");
-        types.add("io.informant.core.WeavingMetricImpl");
-        types.add("io.informant.core.WeavingMetricImpl$NopMetricTimer");
+        types.add("io.informant.core.trace.MetricImpl");
+        types.add("io.informant.core.trace.TraceMetric");
+        types.add("io.informant.core.trace.WeavingMetricImpl");
+        types.add("io.informant.core.trace.WeavingMetricImpl$NopMetricTimer");
         types.add("io.informant.weaving.Advice");
         types.add("io.informant.weaving.Advice$ParameterKind");
         types.add("io.informant.weaving.AdviceFlowOuterHolder");

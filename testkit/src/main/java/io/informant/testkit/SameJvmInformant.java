@@ -306,7 +306,7 @@ class SameJvmInformant implements Informant {
 
     @Nullable
     private Trace getActiveTrace(boolean summary) throws IOException {
-        List<io.informant.core.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
+        List<io.informant.core.trace.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
         if (traces.isEmpty()) {
             return null;
         } else if (traces.size() > 1) {

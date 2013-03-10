@@ -15,6 +15,8 @@
  */
 package io.informant.core;
 
+import io.informant.core.trace.Trace;
+
 import java.util.Collection;
 
 /**
