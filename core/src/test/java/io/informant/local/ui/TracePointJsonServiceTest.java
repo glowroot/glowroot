@@ -25,12 +25,11 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import io.informant.core.TraceRegistry;
+import io.informant.core.TraceSink;
 import io.informant.core.trace.Trace;
-import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.TracePoint;
 import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotDao.StringComparator;
-import io.informant.local.store.TraceSnapshotService;
 import io.informant.util.Clock;
 import io.informant.util.ObjectMappers;
 
@@ -207,8 +206,7 @@ public class TracePointJsonServiceTest {
 
         TraceSnapshotDao traceSnapshotDao = mock(TraceSnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
-        LocalTraceSink traceSinkLocal = mock(LocalTraceSink.class);
-        TraceSnapshotService traceSnapshotService = mock(TraceSnapshotService.class);
+        TraceSink traceSink = mock(TraceSink.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
@@ -217,13 +215,13 @@ public class TracePointJsonServiceTest {
                 any(StringComparator.class), anyString(), anyInt())).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
-        when(traceSnapshotService.shouldStore(any(Trace.class))).thenReturn(true);
-        when(traceSinkLocal.getPendingCompleteTraces()).thenReturn(pendingTraces);
+        when(traceSink.shouldStore(any(Trace.class))).thenReturn(true);
+        when(traceSink.getPendingCompleteTraces()).thenReturn(pendingTraces);
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);
 
-        return new TracePointJsonService(traceSnapshotDao, traceRegistry, traceSinkLocal,
-                traceSnapshotService, ticker, clock);
+        return new TracePointJsonService(traceSnapshotDao, traceRegistry, traceSink,
+                ticker, clock);
     }
 
     private static Trace mockActiveTrace(String id, long durationMillis) {

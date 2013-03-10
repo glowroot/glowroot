@@ -53,7 +53,7 @@ public class TraceSnapshotDaoPerformanceMain {
 
         Stopwatch stopwatch = new Stopwatch().start();
         for (int i = 0; i < 1000; i++) {
-            snapshotDao.storeSnapshot(snapshotTestData.createSnapshot());
+            snapshotDao.store(snapshotTestData.createSnapshot());
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
         logger.info("num traces: {}", snapshotDao.count());

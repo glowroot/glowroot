@@ -17,12 +17,11 @@ package io.informant.local.ui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.core.TraceRegistry;
+import io.informant.core.TraceSink;
 import io.informant.core.trace.Trace;
-import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.TracePoint;
 import io.informant.local.store.TraceSnapshotDao;
 import io.informant.local.store.TraceSnapshotDao.StringComparator;
-import io.informant.local.store.TraceSnapshotService;
 import io.informant.util.Clock;
 import io.informant.util.ObjectMappers;
 import io.informant.util.Singleton;
@@ -65,18 +64,15 @@ class TracePointJsonService implements JsonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceRegistry traceRegistry;
-    private final LocalTraceSink traceSinkLocal;
-    private final TraceSnapshotService traceSnapshotService;
+    private final TraceSink traceSink;
     private final Ticker ticker;
     private final Clock clock;
 
     TracePointJsonService(TraceSnapshotDao traceSnapshotDao, TraceRegistry traceRegistry,
-            LocalTraceSink traceSinkLocal, TraceSnapshotService traceSnapshotService,
-            Ticker ticker, Clock clock) {
+            TraceSink traceSink, Ticker ticker, Clock clock) {
         this.traceSnapshotDao = traceSnapshotDao;
         this.traceRegistry = traceRegistry;
-        this.traceSinkLocal = traceSinkLocal;
-        this.traceSnapshotService = traceSnapshotService;
+        this.traceSink = traceSink;
         this.ticker = ticker;
         this.clock = clock;
     }
@@ -179,7 +175,7 @@ class TracePointJsonService implements JsonService {
         private List<Trace> getMatchingActiveTraces() {
             List<Trace> activeTraces = Lists.newArrayList();
             for (Trace trace : traceRegistry.getTraces()) {
-                if (traceSnapshotService.shouldStore(trace)
+                if (traceSink.shouldStore(trace)
                         && matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
@@ -204,7 +200,7 @@ class TracePointJsonService implements JsonService {
 
         private List<TracePoint> getMatchingPendingPoints() {
             List<TracePoint> points = Lists.newArrayList();
-            for (Trace trace : traceSinkLocal.getPendingCompleteTraces()) {
+            for (Trace trace : traceSink.getPendingCompleteTraces()) {
                 if (matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)

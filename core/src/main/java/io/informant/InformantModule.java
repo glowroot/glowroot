@@ -49,7 +49,7 @@ public class InformantModule {
         configModule = new ConfigModule(properties);
         dataSourceModule = new DataSourceModule(configModule, properties);
         storageModule = new StorageModule(configModule, dataSourceModule);
-        coreModule = new CoreModule(configModule, storageModule.getTraceSink());
+        coreModule = new CoreModule(configModule, storageModule.getSnapshotSink());
         uiModule = new LocalUiModule(configModule, dataSourceModule, storageModule, coreModule,
                 properties);
     }

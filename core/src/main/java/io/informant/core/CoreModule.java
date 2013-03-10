@@ -50,8 +50,8 @@ public class CoreModule {
     private static final Logger logger = LoggerFactory.getLogger(CoreModule.class);
 
     private final ConfigModule configModule;
-    private final TraceSink traceSink;
 
+    private final TraceSink traceSink;
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingMetricImpl weavingMetric;
     private final TraceRegistry traceRegistry;
@@ -74,9 +74,8 @@ public class CoreModule {
                 }
             });
 
-    public CoreModule(ConfigModule configModule, TraceSink traceSink) throws Exception {
+    public CoreModule(ConfigModule configModule, SnapshotSink snapshotSink) throws Exception {
         this.configModule = configModule;
-        this.traceSink = traceSink;
 
         ConfigService configService = configModule.getConfigService();
         Ticker ticker = configModule.getTicker();
@@ -88,6 +87,7 @@ public class CoreModule {
         random = new Random();
 
         scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Core");
+        traceSink = new TraceSink(scheduledExecutor, configService, snapshotSink, ticker);
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
                 configService, ticker);
         coarseGrainedProfiler = new CoarseGrainedProfiler(scheduledExecutor, traceRegistry,
@@ -104,6 +104,10 @@ public class CoreModule {
 
     public PluginServices getPluginServices(String pluginId) {
         return pluginServices.getUnchecked(pluginId);
+    }
+
+    public TraceSink getTraceSink() {
+        return traceSink;
     }
 
     public ParsedTypeCache getParsedTypeCache() {

@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.core.snapshot.TraceSnapshot;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.MockClock;
 import io.informant.util.Threads;
@@ -74,7 +75,7 @@ public class TraceSnapshotDaoTest {
     public void shouldReadSnapshot() {
         // given
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
-        snapshotDao.storeSnapshot(snapshot);
+        snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
                 false, false, null, null, null, null, 1);
@@ -94,7 +95,7 @@ public class TraceSnapshotDaoTest {
     public void shouldReadSnapshotWithDurationQualifier() {
         // given
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
-        snapshotDao.storeSnapshot(snapshot);
+        snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
                 snapshot.getDuration(), false, false, false, null, null, null, null, 1);
@@ -106,7 +107,7 @@ public class TraceSnapshotDaoTest {
     public void shouldNotReadSnapshotWithHighDurationQualifier() {
         // given
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
-        snapshotDao.storeSnapshot(snapshot);
+        snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, 1);
@@ -118,7 +119,7 @@ public class TraceSnapshotDaoTest {
     public void shouldNotReadSnapshotWithLowDurationQualifier() {
         // given
         TraceSnapshot snapshot = new TraceSnapshotTestData().createSnapshot();
-        snapshotDao.storeSnapshot(snapshot);
+        snapshotDao.store(snapshot);
         // when
         List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, 1);
@@ -129,7 +130,7 @@ public class TraceSnapshotDaoTest {
     @Test
     public void shouldDeletedTrace() {
         // given
-        snapshotDao.storeSnapshot(new TraceSnapshotTestData().createSnapshot());
+        snapshotDao.store(new TraceSnapshotTestData().createSnapshot());
         // when
         snapshotDao.deleteSnapshotsBefore(0);
         // then

@@ -17,8 +17,8 @@ package io.informant.local.ui;
 
 import io.informant.config.ConfigService;
 import io.informant.core.TraceRegistry;
+import io.informant.core.TraceSink;
 import io.informant.local.store.DataSource;
-import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.TraceSnapshotDao;
 import io.informant.util.OnlyUsedByTests;
 import io.informant.util.Singleton;
@@ -44,15 +44,15 @@ class AdminJsonService implements JsonService {
 
     private final TraceSnapshotDao traceSnapshotDao;
     private final ConfigService configService;
-    private final LocalTraceSink traceSinkLocal;
+    private final TraceSink traceSink;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(TraceSnapshotDao traceSnapshotDao, ConfigService configService,
-            LocalTraceSink traceSinkLocal, DataSource dataSource, TraceRegistry traceRegistry) {
+            TraceSink traceSink, DataSource dataSource, TraceRegistry traceRegistry) {
         this.traceSnapshotDao = traceSnapshotDao;
         this.configService = configService;
-        this.traceSinkLocal = traceSinkLocal;
+        this.traceSink = traceSink;
         this.dataSource = dataSource;
         this.traceRegistry = traceRegistry;
     }
@@ -85,7 +85,7 @@ class AdminJsonService implements JsonService {
     @JsonServiceMethod
     String getNumPendingCompleteTraces() {
         logger.debug("getNumPendingCompleteTraces()");
-        return Integer.toString(traceSinkLocal.getPendingCompleteTraces().size());
+        return Integer.toString(traceSink.getPendingCompleteTraces().size());
     }
 
     @OnlyUsedByTests

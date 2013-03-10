@@ -20,13 +20,12 @@ import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
+import io.informant.core.TraceSink;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
-import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.RollingFile;
 import io.informant.local.store.StorageModule;
 import io.informant.local.store.TraceSnapshotDao;
-import io.informant.local.store.TraceSnapshotService;
 import io.informant.util.Clock;
 import io.informant.util.ThreadSafe;
 import io.informant.weaving.ParsedTypeCache;
@@ -67,9 +66,8 @@ public class LocalUiModule {
 
         DataSource dataSource = dataSourceModule.getDataSource();
         RollingFile rollingFile = traceSinkModule.getRollingFile();
-        TraceSnapshotService traceSnapshotService = traceSinkModule.getTraceSnapshotService();
         TraceSnapshotDao traceSnapshotDao = traceSinkModule.getTraceSnapshotDao();
-        LocalTraceSink traceSinkLocal = traceSinkModule.getTraceSink();
+        TraceSink traceSink = coreModule.getTraceSink();
         ParsedTypeCache parsedTypeCache = coreModule.getParsedTypeCache();
 
         int port = getHttpServerPort(properties);
@@ -78,7 +76,7 @@ public class LocalUiModule {
         TraceCommonService traceCommonService = new TraceCommonService(traceSnapshotDao,
                 traceRegistry, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceSnapshotDao,
-                traceRegistry, traceSinkLocal, traceSnapshotService, ticker, clock);
+                traceRegistry, traceSink, ticker, clock);
         TraceSummaryJsonService traceSummaryJsonService = new TraceSummaryJsonService(
                 traceCommonService);
         TraceSnapshotHttpService traceSnapshotHttpService = new TraceSnapshotHttpService(
@@ -94,7 +92,7 @@ public class LocalUiModule {
                 parsedTypeCache);
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(traceSnapshotDao, configService,
-                traceSinkLocal, dataSource, traceRegistry);
+                traceSink, dataSource, traceRegistry);
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;

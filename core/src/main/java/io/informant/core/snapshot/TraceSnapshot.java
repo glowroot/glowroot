@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.local.store;
+package io.informant.core.snapshot;
 
 import io.informant.core.trace.TraceUniqueId;
 
@@ -89,79 +89,79 @@ public class TraceSnapshot {
         this.fineMergedStackTree = fineMergedStackTree;
     }
 
-    String getId() {
+    public String getId() {
         return id;
     }
 
-    long getStart() {
+    public long getStart() {
         return start;
     }
 
-    long getDuration() {
+    public long getDuration() {
         return duration;
     }
 
-    boolean isStuck() {
+    public boolean isStuck() {
         return stuck;
     }
 
-    boolean isCompleted() {
+    public boolean isCompleted() {
         return completed;
     }
 
-    boolean isBackground() {
+    public boolean isBackground() {
         return background;
     }
 
-    String getHeadline() {
+    public String getHeadline() {
         return headline;
     }
 
     @Nullable
-    String getAttributes() {
+    public String getAttributes() {
         return attributes;
     }
 
     @Nullable
-    String getUserId() {
+    public String getUserId() {
         return userId;
     }
 
     @Nullable
-    String getErrorText() {
+    public String getErrorText() {
         return errorText;
     }
 
     @Nullable
-    String getErrorDetail() {
+    public String getErrorDetail() {
         return errorDetail;
     }
 
     @Nullable
-    String getException() {
+    public String getException() {
         return exception;
     }
 
     @Nullable
-    String getMetrics() {
+    public String getMetrics() {
         return metrics;
     }
 
     @Immutable
     @Nullable
-    CharSource getSpans() {
+    public CharSource getSpans() {
         return spans;
     }
 
     @Immutable
     @Nullable
-    CharSource getCoarseMergedStackTree() {
+    public CharSource getCoarseMergedStackTree() {
         return coarseMergedStackTree;
     }
 
     @Immutable
     @Nullable
-    CharSource getFineMergedStackTree() {
+    public CharSource getFineMergedStackTree() {
         return fineMergedStackTree;
     }
 
@@ -184,11 +184,11 @@ public class TraceSnapshot {
                 .toString();
     }
 
-    static Builder builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
-    static class Builder {
+    public static class Builder {
 
         private static final Logger logger = LoggerFactory.getLogger(Builder.class);
 
@@ -225,87 +225,88 @@ public class TraceSnapshot {
 
         private Builder() {}
 
-        Builder id(String id) {
+        public Builder id(String id) {
             this.id = id;
             return this;
         }
 
-        Builder start(long start) {
+        public Builder start(long start) {
             this.start = start;
             return this;
         }
 
-        Builder duration(long duration) {
+        public Builder duration(long duration) {
             this.duration = duration;
             return this;
         }
 
-        Builder stuck(boolean stuck) {
+        public Builder stuck(boolean stuck) {
             this.stuck = stuck;
             return this;
         }
 
-        Builder completed(boolean completed) {
+        public Builder completed(boolean completed) {
             this.completed = completed;
             return this;
         }
 
-        Builder background(boolean background) {
+        public Builder background(boolean background) {
             this.background = background;
             return this;
         }
 
-        Builder headline(String headline) {
+        public Builder headline(String headline) {
             this.headline = headline;
             return this;
         }
 
-        Builder attributes(@Nullable String attributes) {
+        public Builder attributes(@Nullable String attributes) {
             this.attributes = attributes;
             return this;
         }
 
-        Builder userId(@Nullable String userId) {
+        public Builder userId(@Nullable String userId) {
             this.userId = userId;
             return this;
         }
 
-        Builder errorText(@Nullable String errorText) {
+        public Builder errorText(@Nullable String errorText) {
             this.errorText = errorText;
             return this;
         }
 
-        Builder errorDetail(@Nullable String errorDetail) {
+        public Builder errorDetail(@Nullable String errorDetail) {
             this.errorDetail = errorDetail;
             return this;
         }
 
-        Builder exception(@Nullable String exception) {
+        public Builder exception(@Nullable String exception) {
             this.exception = exception;
             return this;
         }
 
-        Builder metrics(@Nullable String metrics) {
+        public Builder metrics(@Nullable String metrics) {
             this.metrics = metrics;
             return this;
         }
 
-        Builder spans(@Immutable @Nullable CharSource spans) {
+        public Builder spans(@Immutable @Nullable CharSource spans) {
             this.spans = spans;
             return this;
         }
 
-        Builder coarseMergedStackTree(@Immutable @Nullable CharSource coarseMergedStackTree) {
+        public Builder coarseMergedStackTree(
+                @Immutable @Nullable CharSource coarseMergedStackTree) {
             this.coarseMergedStackTree = coarseMergedStackTree;
             return this;
         }
 
-        Builder fineMergedStackTree(@Immutable @Nullable CharSource fineMergedStackTree) {
+        public Builder fineMergedStackTree(@Immutable @Nullable CharSource fineMergedStackTree) {
             this.fineMergedStackTree = fineMergedStackTree;
             return this;
         }
 
-        TraceSnapshot build() {
+        public TraceSnapshot build() {
             if (id == null) {
                 logger.warn("setId() must be called before build()");
                 id = new TraceUniqueId(System.currentTimeMillis()).get();

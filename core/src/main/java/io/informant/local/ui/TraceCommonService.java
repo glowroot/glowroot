@@ -16,11 +16,11 @@
 package io.informant.local.ui;
 
 import io.informant.core.TraceRegistry;
+import io.informant.core.snapshot.TraceSnapshot;
+import io.informant.core.snapshot.TraceSnapshotWriter;
+import io.informant.core.snapshot.TraceWriter;
 import io.informant.core.trace.Trace;
-import io.informant.local.store.TraceSnapshot;
 import io.informant.local.store.TraceSnapshotDao;
-import io.informant.local.store.TraceSnapshotWriter;
-import io.informant.local.store.TraceWriter;
 import io.informant.util.Singleton;
 
 import java.io.IOException;

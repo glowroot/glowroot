@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.local.store;
+package io.informant.snapshot;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import io.informant.core.snapshot.TraceWriter;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.Trace;
 
@@ -33,7 +34,7 @@ import com.google.common.io.CharSource;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class TraceSnapshotsTest {
+public class TraceSnapshotTest {
 
     @Test
     public void shouldStoreVeryLargeMergedStackTree() throws IOException {
@@ -45,7 +46,7 @@ public class TraceSnapshotsTest {
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
         for (int i = 0; i < stackTrace.length; i++) {
-            stackTrace[i] = new StackTraceElement(TraceSnapshotsTest.class.getName(), "method" + i,
+            stackTrace[i] = new StackTraceElement(TraceSnapshotTest.class.getName(), "method" + i,
                     "TraceSnapshotsTest.java", 100 + 10 * i);
         }
         mergedStackTree.addToStackTree(

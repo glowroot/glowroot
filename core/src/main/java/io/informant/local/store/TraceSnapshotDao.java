@@ -16,6 +16,8 @@
 
 package io.informant.local.store;
 
+import io.informant.core.SnapshotSink;
+import io.informant.core.snapshot.TraceSnapshot;
 import io.informant.local.store.DataSource.RowMapper;
 import io.informant.local.store.FileBlock.InvalidBlockIdFormatException;
 import io.informant.local.store.Schemas.Column;
@@ -49,7 +51,7 @@ import com.google.common.io.CharSource;
  * @since 0.5
  */
 @Singleton
-public class TraceSnapshotDao {
+public class TraceSnapshotDao implements SnapshotSink {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSnapshotDao.class);
 
@@ -89,12 +91,12 @@ public class TraceSnapshotDao {
         this.dataSource = dataSource;
         this.rollingFile = rollingFile;
         this.clock = clock;
-        TraceSnapshotSchema.upgradeTraceSnapshotTable(dataSource);
+        upgradeTraceSnapshotTable(dataSource);
         dataSource.syncTable("trace_snapshot", columns);
         dataSource.syncIndexes("trace_snapshot", indexes);
     }
 
-    void storeSnapshot(TraceSnapshot snapshot) {
+    public void store(TraceSnapshot snapshot) {
         logger.debug("storeSnapshot(): snapshot={}", snapshot);
         // capture time before writing to rolling file
         long capturedAt = clock.currentTimeMillis();
@@ -301,6 +303,20 @@ public class TraceSnapshotDao {
                 .errorDetail(resultSet.getString(11))
                 .exception(resultSet.getString(12))
                 .metrics(resultSet.getString(13));
+    }
+
+    private static void upgradeTraceSnapshotTable(DataSource dataSource) throws SQLException {
+        if (!dataSource.tableExists("trace_snapshot")) {
+            return;
+        }
+        // 'description' column renamed to 'headline'
+        for (Column column : dataSource.getColumns("trace_snapshot")) {
+            if (column.getName().equals("description")) {
+                dataSource.execute("alter table trace_snapshot alter column description rename to"
+                        + " headline");
+                break;
+            }
+        }
     }
 
     @ThreadSafe

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.core;
+package io.informant.util;
 
-import io.informant.util.Static;
 
 /**
  * Convenience method for nanosecond comparison.
@@ -24,7 +23,7 @@ import io.informant.util.Static;
  * @since 0.5
  */
 @Static
-class Nanoseconds {
+public class Nanoseconds {
 
     private Nanoseconds() {}
 

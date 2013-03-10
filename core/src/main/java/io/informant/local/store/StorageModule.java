@@ -17,6 +17,7 @@ package io.informant.local.store;
 
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
+import io.informant.core.SnapshotSink;
 import io.informant.util.Clock;
 import io.informant.util.DaemonExecutors;
 import io.informant.util.OnlyUsedByTests;
@@ -41,10 +42,7 @@ public class StorageModule {
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
     private final RollingFile rollingFile;
-    private final TraceSnapshotService traceSnapshotService;
     private final TraceSnapshotDao traceSnapshotDao;
-    private final LocalTraceSink traceSink;
-
     private final ScheduledExecutorService scheduledExecutor;
 
     public StorageModule(ConfigModule configModule, DataSourceModule dataSourceModule)
@@ -59,11 +57,7 @@ public class StorageModule {
         scheduledExecutor = DaemonExecutors.newSingleThreadScheduledExecutor("Informant-Storage");
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);
-        traceSnapshotService = new TraceSnapshotService(configService);
         traceSnapshotDao = new TraceSnapshotDao(dataSource, rollingFile, clock);
-        traceSink = new LocalTraceSink(scheduledExecutor, traceSnapshotService, traceSnapshotDao,
-                ticker);
-
         new TraceSnapshotReaper(configService, traceSnapshotDao, clock).start(scheduledExecutor);
     }
 
@@ -71,16 +65,12 @@ public class StorageModule {
         return rollingFile;
     }
 
-    public TraceSnapshotService getTraceSnapshotService() {
-        return traceSnapshotService;
-    }
-
     public TraceSnapshotDao getTraceSnapshotDao() {
         return traceSnapshotDao;
     }
 
-    public LocalTraceSink getTraceSink() {
-        return traceSink;
+    public SnapshotSink getSnapshotSink() {
+        return traceSnapshotDao;
     }
 
     @OnlyUsedByTests

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.local.store;
+package io.informant.core.snapshot;
 
 import io.informant.util.CharStreams2;
 import io.informant.util.OnlyUsedByTests;

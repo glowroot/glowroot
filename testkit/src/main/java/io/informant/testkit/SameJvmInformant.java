@@ -21,14 +21,14 @@ import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
+import io.informant.core.TraceSink;
+import io.informant.core.snapshot.TraceSnapshot;
+import io.informant.core.snapshot.TraceSnapshotWriter;
+import io.informant.core.snapshot.TraceWriter;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
-import io.informant.local.store.LocalTraceSink;
 import io.informant.local.store.StorageModule;
-import io.informant.local.store.TraceSnapshot;
 import io.informant.local.store.TraceSnapshotDao;
-import io.informant.local.store.TraceSnapshotWriter;
-import io.informant.local.store.TraceWriter;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
 import io.informant.testkit.PointcutConfig.CaptureItem;
@@ -67,9 +67,9 @@ class SameJvmInformant implements Informant {
 
     private final ConfigService configService;
     private final DataSource dataSource;
-    private final LocalTraceSink traceSinkLocal;
     private final TraceSnapshotDao traceSnapshotDao;
     private final TraceExportHttpService traceExportHttpService;
+    private final TraceSink traceSink;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
@@ -81,9 +81,9 @@ class SameJvmInformant implements Informant {
         LocalUiModule uiModule = informantModule.getUiModule();
         configService = configModule.getConfigService();
         dataSource = dataSourceModule.getDataSource();
-        traceSinkLocal = storageModule.getTraceSink();
         traceSnapshotDao = storageModule.getTraceSnapshotDao();
         traceExportHttpService = uiModule.getTraceExportHttpService();
+        traceSink = coreModule.getTraceSink();
         traceRegistry = coreModule.getTraceRegistry();
         // can't use ticker from Informant since it is shaded when run in mvn and unshaded in ide
         ticker = Ticker.systemTicker();
@@ -264,7 +264,7 @@ class SameJvmInformant implements Informant {
     }
 
     public int getNumPendingCompleteTraces() {
-        return traceSinkLocal.getPendingCompleteTraces().size();
+        return traceSink.getPendingCompleteTraces().size();
     }
 
     public long getNumStoredTraceSnapshots() {

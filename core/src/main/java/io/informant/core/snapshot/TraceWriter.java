@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.local.store;
+package io.informant.core.snapshot;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.MessageSupplier;
@@ -21,10 +21,10 @@ import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
 import io.informant.api.internal.ReadableMessage;
 import io.informant.core.trace.MergedStackTree;
+import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
-import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.Trace.TraceAttribute;
 import io.informant.core.trace.TraceMetric.Snapshot;
 import io.informant.util.CharArrayWriter;
@@ -167,7 +167,7 @@ public class TraceWriter {
     @VisibleForTesting
     @Immutable
     @Nullable
-    static CharSource createCharSource(@Nullable MergedStackTree mergedStackTree) {
+    public static CharSource createCharSource(@Nullable MergedStackTree mergedStackTree) {
         if (mergedStackTree == null) {
             return null;
         }
