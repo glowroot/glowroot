@@ -495,15 +495,15 @@
   function applyPointcutEditTemplate(pointcut, selector) {
     var pointcutNum = pointcutCounter++
     function matchingTypeNames(partialTypeName, callback) {
-      var url = 'pointcut/matching-type-names?partialTypeName=' + partialTypeName + '&limit=7'
+      var url = 'pointcut/matching-type-names?partial-type-name=' + partialTypeName + '&limit=7'
       $.getJSON(url, function(matchingTypeNames) {
         callback(matchingTypeNames)
       })
     }
     function matchingMethodNames(partialMethodName, callback) {
-      var url = 'pointcut/matching-method-names?typeName='
-          + $('#pointcutTypeName_' + pointcutNum).val() + '&partialMethodName=' + partialMethodName
-          + '&limit=7'
+      var url = 'pointcut/matching-method-names?type-name='
+          + $('#pointcutTypeName_' + pointcutNum).val() + '&partial-method-name='
+          + partialMethodName + '&limit=7'
       $.getJSON(url, function(matchingMethodNames) {
         callback(matchingMethodNames)
       })
@@ -543,8 +543,8 @@
       $('#pointcutSpanTemplate_' + pointcutNum).val(template)
     }
     function matchingMethods(methodName) {
-      var url = 'pointcut/matching-methods?typeName=' + $('#pointcutTypeName_' + pointcutNum).val()
-          + '&methodName=' + methodName
+      var url = 'pointcut/matching-methods?type-name=' + $('#pointcutTypeName_' + pointcutNum).val()
+          + '&method-name=' + methodName
       $.getJSON(url, function(signatures) {
         $('#pointcutMethodSignatures_' + pointcutNum).html('')
         $('#pointcutSpanTemplate_' + pointcutNum).val('')
@@ -644,7 +644,7 @@
       // methodReturnTypeName and methodModifiers are intentionally not included in pointcuts since
       // the method name and arg types are enough to uniquely identify the method, and further
       // restricting the pointcut based on return type and modifiers would make it brittle to slight
-      // changes in the return type (e.g. narrowing) or modifiers on the method (e.g. accessibility)
+      // changes in the return type (e.g. narrowing) or modifiers on the method (e.g. visibility)
       var updatedPointcut = {
         'captureItems': captureItems,
         'typeName': $('#pointcutTypeName_' + pointcutNum).val(),

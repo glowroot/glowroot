@@ -114,7 +114,7 @@ class PointcutConfigJsonService implements JsonService {
         return typeName;
     }
 
-    private class TypeNameRequest {
+    private static class TypeNameRequest {
 
         private final String partialTypeName;
         private final int limit;
@@ -136,7 +136,7 @@ class PointcutConfigJsonService implements JsonService {
         }
     }
 
-    private class MethodNameRequest {
+    private static class MethodNameRequest {
 
         private final String typeName;
         private final String partialMethodName;
@@ -166,7 +166,7 @@ class PointcutConfigJsonService implements JsonService {
         }
     }
 
-    private class MethodRequest {
+    private static class MethodRequest {
 
         private final String typeName;
         private final String methodName;
