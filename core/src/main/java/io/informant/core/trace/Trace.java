@@ -19,7 +19,6 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableMessage;
 import io.informant.common.Clock;
-import io.informant.core.trace.Metric.MetricSnapshot;
 import io.informant.marker.PartiallyThreadSafe;
 
 import java.lang.management.ManagementFactory;
@@ -124,9 +123,6 @@ public class Trace {
     private final WeavingMetricNameImpl weavingMetricName;
     private final Metric weavingMetric;
 
-    @LazyNonNull
-    private volatile ImmutableList<MetricSnapshot> finalMetricSnapshots;
-
     public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, Ticker ticker,
             Clock clock, WeavingMetricNameImpl weavingMetricName) {
         this.ticker = ticker;
@@ -227,17 +223,18 @@ public class Trace {
         return fineMergedStackTree != null;
     }
 
-    public ImmutableList<MetricSnapshot> getMetricSnapshots() {
+    // this is called from a non-trace thread
+    public List<Metric> getMetrics() {
         List<Metric> copyOfMetrics;
+        // metrics is a non-thread safe list, but it is guarded by itself, so ok to make a copy
+        // inside of synchronized block
         synchronized (metrics) {
-            if (finalMetricSnapshots != null) {
-                return finalMetricSnapshots;
-            }
-            // getMetricSnapshots() can be called by another thread during the trace, so prefer
-            // smaller synchronized block compared to promoteMetrics()
-            copyOfMetrics = ImmutableList.copyOf(metrics);
+            copyOfMetrics = Lists.newArrayList(metrics);
         }
-        return buildMetricSnapshots(copyOfMetrics);
+        if (weavingMetric.getCount() > 0) {
+            copyOfMetrics.add(weavingMetric);
+        }
+        return copyOfMetrics;
     }
 
     public Span getRootSpan() {
@@ -377,14 +374,6 @@ public class Trace {
         return metric;
     }
 
-    public void promoteMetrics() {
-        synchronized (metrics) {
-            // promoteMetrics() is called by the trace thread, so prefer larger synchronized
-            // block compared to getMetricSnapshots()
-            finalMetricSnapshots = buildMetricSnapshots(metrics);
-        }
-    }
-
     public void clearThreadLocalMetrics() {
         // reset metric thread locals to clear their state for next time
         for (MetricNameImpl metricName : metricNames) {
@@ -425,19 +414,6 @@ public class Trace {
                 coarseMergedStackTree.addStackTrace(threadInfo);
             }
         }
-    }
-
-    private ImmutableList<MetricSnapshot> buildMetricSnapshots(@ReadOnly List<Metric> metrics) {
-        // since the metrics are bound to the thread, they need to be recorded and reset
-        // while still in the trace thread, before the thread is reused for another trace
-        ImmutableList.Builder<MetricSnapshot> metricSnapshots = ImmutableList.builder();
-        for (Metric metric : metrics) {
-            metricSnapshots.add(metric.getState());
-        }
-        if (weavingMetric.getCount() > 0) {
-            metricSnapshots.add(weavingMetric.getState());
-        }
-        return metricSnapshots.build();
     }
 
     @Override

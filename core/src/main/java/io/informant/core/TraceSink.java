@@ -99,10 +99,6 @@ public class TraceSink {
 
     void onCompletedTrace(final Trace trace) {
         if (shouldStore(trace)) {
-            // promote thread local trace metrics since they will be reset after this method returns
-            // TODO instead of confusing "promotion", just capture the metric snapshots here and
-            // pass them to the trace snapshot creation below
-            trace.promoteMetrics();
             if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
                 logPendingLimitWarning();
                 return;

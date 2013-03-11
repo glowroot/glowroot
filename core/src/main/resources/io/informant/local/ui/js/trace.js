@@ -52,7 +52,7 @@ var traceSummaryTemplateText = ''
 + '    </tr>'
 + '  </thead>'
 + '  <tbody>'
-+ '    {{#each metrics}}'
++ '    {{#eachMetricOrdered metrics}}'
 + '      <tr>'
 + '        <td style="text-align: left">{{name}}</td>'
 + '        <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>'
@@ -60,7 +60,7 @@ var traceSummaryTemplateText = ''
 + '        <td>{{nanosToMillis max}}{{#if maxActive}}..{{/if}}</td>'
 + '        <td>{{count}}</td>'
 + '      </tr>'
-+ '    {{/each}}'
++ '    {{/eachMetricOrdered}}'
 + '  </tbody>'
 + '</table>'
 var traceDetailTemplateText = ''
@@ -211,6 +211,15 @@ Handlebars.registerHelper('eachKeyValuePair', function(map, options) {
       buffer += options.fn({ key: key, value: value })
     })
   }
+  return buffer
+})
+Handlebars.registerHelper('eachMetricOrdered', function(metrics, options) {
+  // mutating original list seems fine here
+  metrics.sort(function(a, b) { return b.total - a.total })
+  var buffer = ''
+  $.each(metrics, function(index, metric) {
+    buffer += options.fn(metric)
+  })
   return buffer
 })
 Handlebars.registerHelper('date', function(timestamp) {

@@ -15,7 +15,6 @@
  */
 package io.informant.core.snapshot;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
@@ -24,7 +23,7 @@ import io.informant.common.ObjectMappers;
 import io.informant.core.trace.MergedStackTree;
 import io.informant.core.trace.MergedStackTree.StackTraceElementPlus;
 import io.informant.core.trace.MergedStackTreeNode;
-import io.informant.core.trace.Metric.MetricSnapshot;
+import io.informant.core.trace.Metric;
 import io.informant.core.trace.Span;
 import io.informant.core.trace.Trace;
 import io.informant.core.trace.Trace.TraceAttribute;
@@ -47,12 +46,9 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 
@@ -96,7 +92,7 @@ public class SnapshotCreator {
         }
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.userId(trace.getUserId());
-        builder.metrics(writeMetricsAsString(trace.getMetricSnapshots()));
+        builder.metrics(writeMetricsAsString(trace.getMetrics()));
         if (!summary) {
             builder.spans(new SpansCharSource(trace.getSpans(), captureTick));
             builder.coarseMergedStackTree(createCharSource(trace.getCoarseMergedStackTree()));
@@ -150,16 +146,16 @@ public class SnapshotCreator {
     }
 
     @Nullable
-    private static String writeMetricsAsString(@ReadOnly List<MetricSnapshot> metricSnapshots)
-            throws JsonProcessingException {
-        Ordering<MetricSnapshot> byTotalOrdering = Ordering.natural().onResultOf(
-                new Function<MetricSnapshot, Long>() {
-                    public Long apply(@Nullable MetricSnapshot metricSnapshots) {
-                        checkNotNull(metricSnapshots, "Ordering of non-null elements only");
-                        return metricSnapshots.getTotal();
-                    }
-                });
-        return mapper.writeValueAsString(byTotalOrdering.reverse().sortedCopy(metricSnapshots));
+    private static String writeMetricsAsString(@ReadOnly List<Metric> metrics) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartArray();
+        for (Metric metric : metrics) {
+            metric.writeValue(jg);
+        }
+        jg.writeEndArray();
+        jg.close();
+        return sb.toString();
     }
 
     @VisibleForTesting

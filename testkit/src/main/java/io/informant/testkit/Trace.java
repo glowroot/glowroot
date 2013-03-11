@@ -23,6 +23,8 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Longs;
 
 /**
  * @author Trask Stalnaker
@@ -111,12 +113,12 @@ public class Trace {
 
     @Nullable
     public List<Metric> getMetrics() {
-        return getStableMetrics();
+        return getStableAndOrderedMetrics();
     }
 
     @Nullable
     public List<String> getMetricNames() {
-        List<Metric> stableMetrics = getStableMetrics();
+        List<Metric> stableMetrics = getStableAndOrderedMetrics();
         if (stableMetrics == null) {
             return null;
         }
@@ -167,7 +169,7 @@ public class Trace {
     // woven during the test or not
     // it's easiest to just ignore this metric completely
     @Nullable
-    private List<Metric> getStableMetrics() {
+    private List<Metric> getStableAndOrderedMetrics() {
         if (metrics == null) {
             return null;
         }
@@ -177,7 +179,7 @@ public class Trace {
                 i.remove();
             }
         }
-        return stableMetrics;
+        return Metric.orderingByTotal.reverse().sortedCopy(stableMetrics);
     }
 
     @Override
@@ -280,6 +282,13 @@ public class Trace {
     }
 
     public static class Metric {
+
+        private static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
+            @Override
+            public int compare(Metric left, Metric right) {
+                return Longs.compare(left.total, right.total);
+            }
+        };
 
         @Nullable
         private String name;

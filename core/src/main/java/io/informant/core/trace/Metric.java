@@ -17,8 +17,11 @@ package io.informant.core.trace;
 
 import io.informant.api.MetricTimer;
 import io.informant.marker.PartiallyThreadSafe;
-import checkers.igj.quals.Immutable;
 
+import java.io.IOException;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 
@@ -52,29 +55,64 @@ public class Metric implements MetricTimer {
     }
 
     // safe to be called from another thread
-    public MetricSnapshot getState() {
-        // try to grab a quick, consistent snapshot, but no guarantees on consistency if trace is
-        // active
+    public void writeValue(JsonGenerator jg) throws JsonGenerationException, IOException {
+        jg.writeStartObject();
+        jg.writeStringField("name", name);
 
         // selfNestingLevel is read first since it is used as a memory barrier so that the
         // non-volatile fields below will be visible to this thread
         boolean active = selfNestingLevel > 0;
 
         if (active) {
+            // try to grab a quick, consistent snapshot, but no guarantee on consistency since the
+            // trace is active
             long currentTick = ticker.read();
-            long curr = currentTick - startTick;
             if (count == 0) {
-                return new MetricSnapshot(name, curr, curr, curr, 1, true, true, true);
-            } else if (curr > max) {
-                return new MetricSnapshot(name, total + curr, min, curr, count + 1, true, false,
-                        true);
+                long curr = currentTick - startTick;
+                jg.writeNumberField("total", curr);
+                jg.writeNumberField("min", curr);
+                jg.writeNumberField("max", curr);
+                jg.writeNumberField("count", 1);
+                jg.writeBooleanField("active", true);
+                jg.writeBooleanField("minActive", true);
+                jg.writeBooleanField("maxActive", true);
             } else {
-                return new MetricSnapshot(name, total + curr, min, max, count + 1, true, false,
-                        false);
+                // grab the total before curr, to avoid case where total is updated in between
+                // these two lines and then calculated "total" could overstate the correct value
+                // (better to understate the correct value if there is an update to the metric
+                // values in between these two lines)
+                long total = this.total;
+                long curr = currentTick - startTick;
+                if (curr < 0) {
+                    // startTick was just updated concurrently
+                    curr = 0;
+                }
+                jg.writeNumberField("total", total + curr);
+                jg.writeNumberField("min", min);
+                if (curr > max) {
+                    jg.writeNumberField("max", curr);
+                } else {
+                    jg.writeNumberField("max", max);
+                }
+                jg.writeNumberField("count", count + 1);
+                jg.writeBooleanField("active", true);
+                jg.writeBooleanField("minActive", false);
+                if (curr > max) {
+                    jg.writeBooleanField("maxActive", true);
+                } else {
+                    jg.writeBooleanField("maxActive", false);
+                }
             }
         } else {
-            return new MetricSnapshot(name, total, min, max, count, false, false, false);
+            jg.writeNumberField("total", total);
+            jg.writeNumberField("min", min);
+            jg.writeNumberField("max", max);
+            jg.writeNumberField("count", count);
+            jg.writeBooleanField("active", false);
+            jg.writeBooleanField("minActive", false);
+            jg.writeBooleanField("maxActive", false);
         }
+        jg.writeEndObject();
     }
 
     public void stop() {
@@ -136,62 +174,5 @@ public class Metric implements MetricTimer {
                 .add("startTick", startTick)
                 .add("selfNestingLevel", selfNestingLevel)
                 .toString();
-    }
-
-    @Immutable
-    public static class MetricSnapshot {
-
-        private final String name;
-        private final long total;
-        private final long min;
-        private final long max;
-        private final long count;
-        private final boolean active;
-        private final boolean minActive;
-        private final boolean maxActive;
-
-        private MetricSnapshot(String name, long total, long min, long max, long count,
-                boolean active, boolean minActive, boolean maxActive) {
-            this.name = name;
-            this.total = total;
-            this.min = min;
-            this.max = max;
-            this.count = count;
-            this.active = active;
-            this.minActive = minActive;
-            this.maxActive = maxActive;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public long getTotal() {
-            return total;
-        }
-
-        public long getMin() {
-            return min;
-        }
-
-        public long getMax() {
-            return max;
-        }
-
-        public long getCount() {
-            return count;
-        }
-
-        public boolean isActive() {
-            return active;
-        }
-
-        public boolean isMinActive() {
-            return minActive;
-        }
-
-        public boolean isMaxActive() {
-            return maxActive;
-        }
     }
 }

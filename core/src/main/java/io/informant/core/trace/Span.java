@@ -51,7 +51,7 @@ public class Span {
 
     private final int nestingLevel;
 
-    // associated trace metric, stored here so it can be accessed in PluginServices.endSpan(Span)
+    // associated metric, stored here so it can be accessed in PluginServices.endSpan(Span)
     @Nullable
     private final Metric metric;
     @Nullable
