@@ -15,9 +15,10 @@
  */
 package io.informant.api.weaving;
 
-import java.lang.annotation.ElementType;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import checkers.igj.quals.Immutable;
@@ -26,8 +27,8 @@ import checkers.igj.quals.Immutable;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Target(TYPE)
+@Retention(RUNTIME)
 @Immutable
 public @interface Pointcut {
 

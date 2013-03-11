@@ -15,9 +15,11 @@
  */
 package io.informant.api.weaving;
 
-import java.lang.annotation.ElementType;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Annotates a parameter to an {@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore},
@@ -28,6 +30,6 @@ import java.lang.annotation.RetentionPolicy;
  * @since 0.5
  */
 // for static methods, injects class object
-@java.lang.annotation.Target(ElementType.PARAMETER)
-@Retention(RetentionPolicy.RUNTIME)
+@Target(PARAMETER)
+@Retention(RUNTIME)
 public @interface InjectTarget {}
