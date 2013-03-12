@@ -417,6 +417,9 @@ function toggleFineMergedStackTree() {
   toggleMergedStackTree(detailTrace.fineMergedStackTree, $('#mstFineOuter'))
 }
 function toggleMergedStackTree(rootNode, selector) {
+  function escapeHtml(html) {
+      return html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  }
   function curr(node, level, metricName) {
     var rootNodeSampleCount
     var nodeSampleCount
@@ -441,13 +444,13 @@ function toggleMergedStackTree(rootNode, selector) {
     // separation between the percentage and the stack trace element and so eclipse is still able to
     // understand the stack trace
     ret += '% </span>'
-    ret += node.stackTraceElement + '<br>'
+    ret += escapeHtml(node.stackTraceElement) + '<br>'
     if (node.leafThreadState) {
       // each indent is 1/3em, so adding extra .333em to indent thread state
       ret += '<span class="inlineblock" style="width: 4.333em; margin-left: ' + ((level / 3))
                  + 'em">'
       ret += '</span>'
-      ret += node.leafThreadState
+      ret += escapeHtml(node.leafThreadState)
       ret += '<br>'
     }
     if (node.childNodes) {
@@ -543,14 +546,14 @@ function toggleMergedStackTree(rootNode, selector) {
       $(selector).find('.mst-filter').change(function() {
         // update merged stack tree based on filter
         var interestingHtml = curr(interestingRootNode, 0, $(this).val())
-        $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
-        $(selector).find('.mst-common').removeClass('hide')
         $(selector).find('.mst-interesting').html(interestingHtml)
       })
       // build initial merged stack tree
       var interestingHtml = curr(interestingRootNode, 0)
-      $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
-      $(selector).find('.mst-common').removeClass('hide')
+      if (uninterestingHtml) {
+        $(selector).find('.mst-common .expanded-content').html(uninterestingHtml)
+        $(selector).find('.mst-common').removeClass('hide')
+      }
       $(selector).find('.mst-interesting').html(interestingHtml)
     }
     $(selector).removeClass('hide')

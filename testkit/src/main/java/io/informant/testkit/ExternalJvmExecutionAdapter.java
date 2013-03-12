@@ -168,7 +168,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         return numConsoleBytes;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         try {
             int port = Integer.parseInt(args[0]);
             Socket socket = new Socket((String) null, port);
@@ -179,6 +179,12 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         } catch (Throwable t) {
             // log error and exit gracefully
             logger.error(t.getMessage(), t);
+        }
+        // spin a bit to so that caller can capture a trace with <multiple root nodes> if desired
+        for (int i = 0; i < 1000; i++) {
+            Thread.sleep(1);
+            Thread.sleep(1);
+            Thread.sleep(1);
         }
         // do not close socket since program is still running after main returns
     }

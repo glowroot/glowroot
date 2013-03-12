@@ -27,6 +27,7 @@
   ],
   "aspects": [
     "io.informant.testing.ui.NestableCallAspect",
-    "io.informant.testing.ui.ExpensiveCallAspect"
+    "io.informant.testing.ui.ExpensiveCallAspect",
+    "io.informant.testing.ui.ExternalJvmMainAspect"
   ]
 }

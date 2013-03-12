@@ -386,6 +386,7 @@ public class SnapshotCreator {
                 StackTraceElement stackTraceElement = currNode.getStackTraceElement();
                 if (stackTraceElement == null) {
                     jg.writeStringField("stackTraceElement", "<multiple root nodes>");
+                    jg.writeNumberField("sampleCount", currNode.getSampleCount());
                 } else {
                     writeStackTraceElement(stackTraceElement, currNode);
                 }
