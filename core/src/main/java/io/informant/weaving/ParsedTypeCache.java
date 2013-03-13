@@ -294,8 +294,8 @@ public class ParsedTypeCache {
             // a class was loaded by Class.forName() above that was not previously loaded which
             // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
             logger.warn("could not find resource '{}.class' in class loader '{}', so the class"
-                    + " was loaded during weaving of a subclass and was not woven itself", type,
-                    loader);
+                    + " was loaded during weaving of a subclass and was not woven itself",
+                    type.getName().replace('.', '/'), loader);
             return createParsedTypePlanC(typeName, type);
         } else {
             // the type was previously loaded so weaving was not bypassed, yay!

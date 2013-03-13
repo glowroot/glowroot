@@ -57,6 +57,22 @@
       <version>1.7.2</version>
     </dependency>
     <dependency>
+      <!-- logback is needed in order to compile the optional SpyConsoleAppender, testkit users can
+        still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.0.9</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- logback is needed in order to compile the optional SpyConsoleAppender, testkit users can
+        still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.0.9</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-reflect</artifactId>
       <version>1.4</version>

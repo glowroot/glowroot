@@ -171,13 +171,6 @@ class ExternalJvmInformant implements Informant {
         return getActiveTrace(timeout, unit, false);
     }
 
-    public void cleanUpAfterEachTest() throws Exception {
-        post("/admin/data/delete-all", "");
-        assertNoActiveTraces();
-        // TODO assert no warn or error log messages
-        post("/admin/config/reset-all", "");
-    }
-
     public int getNumPendingCompleteTraces() throws Exception {
         String numPendingCompleteTraces = get("/admin/num-pending-complete-traces");
         return Integer.parseInt(numPendingCompleteTraces);
@@ -186,6 +179,12 @@ class ExternalJvmInformant implements Informant {
     public long getNumStoredSnapshots() throws Exception {
         String numStoredSnapshots = get("/admin/num-stored-snapshots");
         return Long.parseLong(numStoredSnapshots);
+    }
+
+    void checkAndReset() throws Exception {
+        assertNoActiveTraces();
+        post("/admin/data/delete-all", "");
+        post("/admin/config/reset-all", "");
     }
 
     @Nullable

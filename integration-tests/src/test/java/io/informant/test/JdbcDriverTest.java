@@ -46,7 +46,7 @@ public class JdbcDriverTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().cleanUpAfterEachTest();
+        container.checkAndReset();
     }
 
     // can't just check MockDriverState.isLoaded() since need to check value in external jvm

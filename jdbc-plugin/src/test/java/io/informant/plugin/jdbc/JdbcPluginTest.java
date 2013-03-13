@@ -63,7 +63,7 @@ public class JdbcPluginTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().cleanUpAfterEachTest();
+        container.checkAndReset();
     }
 
     @Test

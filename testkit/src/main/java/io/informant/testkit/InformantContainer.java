@@ -17,6 +17,7 @@ package io.informant.testkit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.marker.ThreadSafe;
+import io.informant.testkit.SpyingConsoleAppender.MessageCount;
 import io.informant.testkit.internal.TempDirs;
 
 import java.io.File;
@@ -34,10 +35,15 @@ import com.google.common.collect.ImmutableMap;
 public class InformantContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantContainer.class);
+    private static final boolean spyingConsoleLoggerEnabled;
 
     private final ExecutionAdapter executionAdapter;
     private final File dataDir;
     private final Informant informant;
+
+    static {
+        spyingConsoleLoggerEnabled = spyingConsoleLoggerEnabled();
+    }
 
     public static InformantContainer create() throws Exception {
         InformantContainer sharedContainer = ExternalJvmRunListener.getSharedContainer();
@@ -65,7 +71,8 @@ public class InformantContainer {
             // process using -javaagent:informant-core.jar
             logger.debug("create(): using external JVM app container");
             executionAdapter = new ExternalJvmExecutionAdapter(properties, dataDir);
-            if (executionAdapter.getUiPort() == SocketCommandProcessor.NO_PORT) {
+            int externalJvmUiPort = ((ExternalJvmExecutionAdapter) executionAdapter).getUiPort();
+            if (externalJvmUiPort == SocketCommandProcessor.NO_PORT) {
                 executionAdapter.close();
                 throw new StartupFailedException();
             }
@@ -87,6 +94,10 @@ public class InformantContainer {
         return informant;
     }
 
+    public File getDataDir() {
+        return dataDir;
+    }
+
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
         executionAdapter.executeAppUnderTest(appUnderTestClass);
@@ -101,8 +112,30 @@ public class InformantContainer {
         executionAdapter.interruptAppUnderTest();
     }
 
-    public File getDataDir() {
-        return dataDir;
+    public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
+        if (spyingConsoleLoggerEnabled) {
+            executionAdapter.addExpectedLogMessage(loggerName, partialMessage);
+        } else {
+            throw new AssertionError(SpyingConsoleAppender.class.getSimpleName()
+                    + " is not enabled");
+        }
+    }
+
+    // checks no unexpected log messages
+    // checks no active traces
+    // resets Informant back to square one
+    public void checkAndReset() throws Exception {
+        executionAdapter.checkAndResetInformant();
+        // check and reset log messages
+        if (spyingConsoleLoggerEnabled) {
+            MessageCount logMessageCount = executionAdapter.clearLogMessages();
+            if (logMessageCount.getExpectedCount() > 0) {
+                throw new AssertionError("One or more expected messages were not logged");
+            }
+            if (logMessageCount.getUnexpectedCount() > 0) {
+                throw new AssertionError("One or more unexpected messages were logged");
+            }
+        }
     }
 
     public void close() throws Exception {
@@ -127,10 +160,6 @@ public class InformantContainer {
         executionAdapter.close();
     }
 
-    public int getUiPort() {
-        return executionAdapter.getUiPort();
-    }
-
     public static boolean isExternalJvm() {
         return Boolean.valueOf(System.getProperty("informant.testkit.externaljvm"));
     }
@@ -139,13 +168,25 @@ public class InformantContainer {
         System.setProperty("informant.testkit.externaljvm", String.valueOf(value));
     }
 
+    private static boolean spyingConsoleLoggerEnabled() {
+        try {
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
+                    .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            return root.getAppender(SpyingConsoleAppender.NAME) != null;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     @ThreadSafe
     interface ExecutionAdapter {
         Informant getInformant();
+        void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception;
         void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
         void interruptAppUnderTest() throws Exception;
+        void checkAndResetInformant() throws Exception;
         void close() throws Exception;
-        int getUiPort();
+        MessageCount clearLogMessages() throws Exception;
     }
 
     @SuppressWarnings("serial")

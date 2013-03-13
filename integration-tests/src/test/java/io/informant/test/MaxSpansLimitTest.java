@@ -60,7 +60,7 @@ public class MaxSpansLimitTest {
 
     @After
     public void afterEachTest() throws Exception {
-        container.getInformant().cleanUpAfterEachTest();
+        container.checkAndReset();
     }
 
     @Test

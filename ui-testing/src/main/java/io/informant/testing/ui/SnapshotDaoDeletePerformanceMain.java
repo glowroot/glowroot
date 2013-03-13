@@ -57,7 +57,7 @@ public class SnapshotDaoDeletePerformanceMain {
         long dbSize = dbFile.length();
         logger.info("informant.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = new Stopwatch().start();
-        container.getInformant().cleanUpAfterEachTest();
+        container.checkAndReset();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
         logger.info("informant.h2.db: {} bytes", dbFile.length());
         container.close();

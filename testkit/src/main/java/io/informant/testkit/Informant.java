@@ -72,8 +72,6 @@ public interface Informant {
     @Nullable
     Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception;
 
-    void cleanUpAfterEachTest() throws Exception;
-
     int getNumPendingCompleteTraces() throws Exception;
 
     long getNumStoredSnapshots() throws Exception;

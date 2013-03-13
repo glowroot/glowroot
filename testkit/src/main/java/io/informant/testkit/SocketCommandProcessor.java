@@ -32,7 +32,6 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
@@ -47,6 +46,8 @@ class SocketCommandProcessor implements Runnable {
 
     public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
     public static final String GET_PORT_COMMAND = "GET_PORT";
+    public static final String ADD_EXPECTED_LOG_MESSAGE = "ADD_EXPECTED_LOG_MESSAGE";
+    public static final String CLEAR_LOG_MESSAGES = "CLEAR_EXPECTED_LOG_MESSAGES";
     public static final String EXCEPTION_RESPONSE = "EXCEPTION";
     public static final String SHUTDOWN_COMMAND = "SHUTDOWN";
     public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
@@ -116,6 +117,8 @@ class SocketCommandProcessor implements Runnable {
                 } else {
                     respond(informantModule.getUiModule().getPort(), commandNum);
                 }
+            } else if (command.equals(CLEAR_LOG_MESSAGES)) {
+                respond(SpyingConsoleAppender.clearMessages(), commandNum);
             } else if (command.equals(KILL_COMMAND)) {
                 System.exit(0);
             } else if (command.equals(SHUTDOWN_COMMAND)) {
@@ -134,9 +137,14 @@ class SocketCommandProcessor implements Runnable {
                 respond(EXCEPTION_RESPONSE, commandNum);
             } else {
                 Object commandName = argList.get(0);
-                argList = ImmutableList.copyOf(argList).subList(1, argList.size());
                 if (commandName.equals(EXECUTE_APP_COMMAND)) {
-                    executeAppAndRespond(commandNum, argList);
+                    String appClassName = (String) argList.get(1);
+                    executeAppAndRespond(commandNum, appClassName);
+                } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {
+                    String loggerName = (String) argList.get(1);
+                    String partialMessage = (String) argList.get(2);
+                    SpyingConsoleAppender.addExpectedMessage(loggerName, partialMessage);
+                    respond(null, commandNum);
                 } else {
                     logger.error("unexpected command '" + commandName + "'");
                     respond(EXCEPTION_RESPONSE, commandNum);
@@ -170,13 +178,12 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void executeAppAndRespond(int commandNum, @ReadOnly List<?> argList) throws Exception {
+    private void executeAppAndRespond(int commandNum, String appClassName) throws Exception {
         if (preExistingThreads == null) {
             // wait until the first execute app command to capture pre-existing
             // threads, otherwise may pick up DestroyJavaVM thread
             preExistingThreads = ImmutableList.copyOf(Threads.currentThreads());
         }
-        String appClassName = (String) argList.get(0);
         Class<?> appClass = Class.forName(appClassName);
         try {
             executingAppThreads.add(Thread.currentThread());

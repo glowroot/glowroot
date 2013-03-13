@@ -23,12 +23,12 @@ import io.informant.core.CoreModule;
 import io.informant.core.TraceRegistry;
 import io.informant.core.TraceSink;
 import io.informant.core.snapshot.Snapshot;
-import io.informant.core.snapshot.SnapshotWriter;
 import io.informant.core.snapshot.SnapshotCreator;
+import io.informant.core.snapshot.SnapshotWriter;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
-import io.informant.local.store.StorageModule;
 import io.informant.local.store.SnapshotDao;
+import io.informant.local.store.StorageModule;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
 import io.informant.marker.ThreadSafe;
@@ -256,13 +256,6 @@ class SameJvmInformant implements Informant {
         return getActiveTrace(timeout, unit, false);
     }
 
-    public void cleanUpAfterEachTest() throws Exception {
-        snapshotDao.deleteAllSnapshots();
-        assertNoActiveTraces();
-        // TODO assert no warn or error log messages
-        configService.resetAllConfig();
-    }
-
     public int getNumPendingCompleteTraces() {
         return traceSink.getPendingCompleteTraces().size();
     }
@@ -273,6 +266,12 @@ class SameJvmInformant implements Informant {
 
     public InputStream getTraceExport(String id) throws Exception {
         return new ByteArrayInputStream(traceExportHttpService.getExportBytes(id));
+    }
+
+    void checkAndReset() throws Exception {
+        assertNoActiveTraces();
+        snapshotDao.deleteAllSnapshots();
+        configService.resetAllConfig();
     }
 
     @Nullable

@@ -20,6 +20,7 @@ import io.informant.MainEntryPoint;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.marker.ThreadSafe;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
+import io.informant.testkit.SpyingConsoleAppender.MessageCount;
 import io.informant.weaving.IsolatedWeavingClassLoader;
 
 import java.io.IOException;
@@ -83,6 +84,10 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         }
     }
 
+    public void checkAndResetInformant() throws Exception {
+        informant.checkAndReset();
+    }
+
     public void close() throws Exception {
         Threads.preShutdownCheck(preExistingThreads);
         informantModule.close();
@@ -91,5 +96,13 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
 
     public int getUiPort() {
         return informantModule.getUiModule().getPort();
+    }
+
+    public void addExpectedLogMessage(String loggerName, String partialMessage) {
+        SpyingConsoleAppender.addExpectedMessage(loggerName, partialMessage);
+    }
+
+    public MessageCount clearLogMessages() throws Exception {
+        return SpyingConsoleAppender.clearMessages();
     }
 }

@@ -17,6 +17,7 @@ package io.informant.test;
 
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.InformantContainer;
+import io.informant.weaving.ParsedTypeCache;
 
 import java.io.IOException;
 import java.net.URL;
@@ -60,9 +61,7 @@ public class ParsedTypePlanBTest {
         // when
         container.executeAppUnderTest(ShouldNotLogWarningInParsedTypeCachePlanB.class);
         // then
-        // FIXME
-        // List<LogMessage> logMessages = container.getInformant().getLogMessages();
-        // assertThat(logMessages).isEmpty();
+        // container close will validate that there were no unexpected warnings or errors
     }
 
     @Test
@@ -75,14 +74,12 @@ public class ParsedTypePlanBTest {
             return;
         }
         // given
+        container.addExpectedLogMessage(ParsedTypeCache.class.getName(),
+                "could not find resource '" + Y.class.getName().replace('.', '/') + ".class'");
         // when
         container.executeAppUnderTest(ShouldLogWarningInParsedTypeCachePlanB.class);
         // then
-        // FIXME
-        // List<LogMessage> logMessages = container.getInformant().getLogMessages();
-        // assertThat(logMessages).hasSize(1);
-        // assertThat(logMessages.get(0).getText()).contains(Y.class.getName());
-        // container.getInformant().deleteAllLogMessages();
+
     }
 
     public static class ShouldNotLogWarningInParsedTypeCachePlanB implements AppUnderTest {

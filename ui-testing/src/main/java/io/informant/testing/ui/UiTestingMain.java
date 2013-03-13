@@ -53,7 +53,7 @@ public class UiTestingMain {
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setTotalSeconds(1);
         container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
-        logger.info("view ui at http://localhost:" + container.getUiPort());
+        logger.info("view ui at http://localhost:" + UI_PORT);
         container.executeAppUnderTest(GenerateTraces.class);
     }
 

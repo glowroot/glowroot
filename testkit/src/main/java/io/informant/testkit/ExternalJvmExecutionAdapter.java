@@ -18,6 +18,7 @@ package io.informant.testkit;
 import io.informant.MainEntryPoint;
 import io.informant.marker.ThreadSafe;
 import io.informant.testkit.InformantContainer.ExecutionAdapter;
+import io.informant.testkit.SpyingConsoleAppender.MessageCount;
 import io.informant.testkit.internal.ClassPath;
 import io.informant.testkit.internal.DelegatingJavaagent;
 
@@ -132,6 +133,11 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         return informant;
     }
 
+    public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
+        socketCommander.sendCommand(ImmutableList.of(
+                SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName, partialMessage));
+    }
+
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws IOException, InterruptedException {
         socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP_COMMAND,
@@ -140,6 +146,10 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     public void interruptAppUnderTest() throws IOException, InterruptedException {
         socketCommander.sendCommand(SocketCommandProcessor.INTERRUPT);
+    }
+
+    public void checkAndResetInformant() throws Exception {
+        informant.checkAndReset();
     }
 
     public void close() throws IOException, InterruptedException {
@@ -152,7 +162,12 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         asyncHttpClient.close();
     }
 
-    public void kill() throws IOException, InterruptedException {
+    public MessageCount clearLogMessages() throws Exception {
+        return (MessageCount) socketCommander
+                .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
+    }
+
+    void kill() throws IOException, InterruptedException {
         socketCommander.sendKillCommand();
         socketCommander.close();
         process.waitFor();
@@ -160,11 +175,11 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
     }
 
-    public int getUiPort() {
+    int getUiPort() {
         return uiPort;
     }
 
-    public long getNumConsoleBytes() {
+    long getNumConsoleBytes() {
         return numConsoleBytes;
     }
 
