@@ -26,12 +26,12 @@ import java.lang.annotation.Target;
  * method execution picked out by the {@link Pointcut}. Only one method in a
  * 
  * {@literal @}{@link Pointcut} class may be annotated with {@literal @}{@code IsEnabled}.
- * 
+ * <p>
  * An {@literal @}{@code IsEnabled} method can accept parameters annotated with any of the
  * following: {@link BindTarget}, {@link BindMethodArg}, {@link BindMethodArgArray} or
  * {@link BindMethodName}. Any un-annotated parameters are implicitly annotated with
  * {@link BindMethodArg}.
- * 
+ * <p>
  * An {@literal @}{@code IsEnabled} method must return a {@code boolean}. If it returns
  * {@code false} then none of the {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},
  * {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} methods are called for that execution

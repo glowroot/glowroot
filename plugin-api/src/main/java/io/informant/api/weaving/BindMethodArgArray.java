@@ -22,9 +22,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a parameter to an {@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore},
- * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} method
- * in a {@literal @}{@link Pointcut} class.
+ * Annotates a parameter to any {@literal @}{@link Pointcut} advice method
+ * 
+ * ({@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},
+ * {@literal @}{@link OnThrow}, {@literal @}{@link OnAfter}).
+ * <p>
+ * When the advice method is called, all of the arguments passed to the method matched by the
+ * {@link Pointcut} are wrapped into a single {@link Object[]} and bound to this parameter.
+ * <p>
+ * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link Object[]}.
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -22,9 +22,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a parameter to an {@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore},
- * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} or {@literal @}{@link OnAfter} method
- * in a {@literal @}{@link Pointcut} class.
+ * Annotates a parameter to any {@literal @}{@link Pointcut} advice method
+ * 
+ * ({@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},
+ * {@literal @}{@link OnThrow}, {@literal @}{@link OnAfter}).
+ * <p>
+ * When the advice method is called, the name of the method matched by the
+ * 
+ * {@literal @}{@link Pointcut} is bound to this parameter. This is useful when the
+ * {@link Pointcut#methodName()} uses wildcards or is a regular expression.
+ * <p>
+ * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link String}.
  * 
  * @author Trask Stalnaker
  * @since 0.5

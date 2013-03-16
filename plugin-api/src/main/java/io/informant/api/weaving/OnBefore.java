@@ -26,13 +26,13 @@ import java.lang.annotation.Target;
  * method execution picked out by the {@link Pointcut}. Only one method in a
  * 
  * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnBefore}.
- * 
+ * <p>
  * An {@literal @}{@code OnBefore} method can accept parameters annotated with any of the following:
  * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
- * {@literal @}{@link BindMethodArgArray} or {@literal @}{@link BindMethodName}. Any
- * un-annotated parameters are implicitly annotated with {@literal @}{@link BindMethodArg}.
- * 
+ * {@literal @}{@link BindMethodArgArray} or {@literal @}{@link BindMethodName}. Any un-annotated
+ * parameters are implicitly annotated with {@literal @}{@link BindMethodArg}.
+ * <p>
  * An {@literal @}{@code OnBefore} method may return {@code void} or a non-{@code void} type. If it
  * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnBefore} method is
  * called the <em>traveler</em>, and is available as input to subsequent {@literal @}

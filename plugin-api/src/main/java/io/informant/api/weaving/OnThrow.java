@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * method execution picked out by the {@link Pointcut}, but only if the method picked out by the
  * {@link Pointcut} throws an {@code Exception}. Only one method in a {@literal @}{@code Pointcut}
  * class may be annotated with {@code OnThrow}.
- * 
+ * <p>
  * An {@literal @}{@code OnThrow} method can accept parameters annotated with any of the following:
  * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
@@ -41,7 +41,7 @@ import java.lang.annotation.Target;
  * 
  * {@literal @}{@code OnThrow} method. Any un-annotated parameters are implicitly annotated with
  * {@literal @}{@link BindMethodArg}.
- * 
+ * <p>
  * An {@literal @}{@code OnThrow} method must return {@code void}. It is not able to suppress the
  * original {@code Exception} or change the {@code Exception} that is thrown (at least not
  * currently).

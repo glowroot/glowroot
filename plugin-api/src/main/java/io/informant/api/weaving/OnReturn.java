@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * method execution picked out by the {@link Pointcut}, but only if the method picked out by the
  * {@link Pointcut} returns successfully (does not throw an {@code Exception}). Only one method in a
  * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnReturn}.
- * 
+ * <p>
  * An {@literal @}{@code OnReturn} method can accept parameters annotated with any of the following:
  * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
@@ -37,11 +37,11 @@ import java.lang.annotation.Target;
  * {@literal @}{@link BindTraveler} can only be used if there is a corresponding
  * 
  * {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the <em>traveler</em>).
- * {@literal @}{@link BindReturn} can only be used if each method picked out by the
- * {@link Pointcut} returns a non-{@code void} type. If {@literal @}{@link BindReturn} is used, it
- * must be the first parameter to the {@literal @}{@code OnReturn} method. Any un-annotated
- * parameters are implicitly annotated with {@literal @}{@link BindMethodArg}.
- * 
+ * {@literal @}{@link BindReturn} can only be used if each method picked out by the {@link Pointcut}
+ * returns a non-{@code void} type. If {@literal @}{@link BindReturn} is used, it must be the first
+ * parameter to the {@literal @}{@code OnReturn} method. Any un-annotated parameters are implicitly
+ * annotated with {@literal @}{@link BindMethodArg}.
+ * <p>
  * An {@literal @}{@code OnReturn} method may return {@code void} or a non-{@code void} type. If it
  * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnReturn} method is
  * returned from the method execution picked out by the {@link Pointcut} instead of that method's

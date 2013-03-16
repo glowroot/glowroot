@@ -26,21 +26,21 @@ import java.lang.annotation.Target;
  * method execution picked out by the {@link Pointcut}, whether the method picked out by the
  * {@link Pointcut} returns successfully or throws an {@code Exception}. Only one method in a
  * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnAfter}.
- * 
+ * <p>
  * An {@literal @}{@link OnAfter} method is run after the {@literal @}{@link OnReturn} and
  * {@literal @}{@link OnThrow} methods, if either of those are present.
- * 
+ * <p>
  * An {@literal @}{@code OnAfter} method can accept parameters annotated with any of the following:
  * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
  * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName} or
  * 
- * {@literal @}{@link BindTraveler}. {@literal @}{@link BindTraveler} can only be used if there
- * is a corresponding {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the
+ * {@literal @}{@link BindTraveler}. {@literal @}{@link BindTraveler} can only be used if there is a
+ * corresponding {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the
  * <em>traveler</em>). Any un-annotated parameters are implicitly annotated with
  * 
  * {@literal @}{@link BindMethodArg}.
- * 
+ * <p>
  * An {@literal @}{@code OnAfter} method must return {@code void}.
  * 
  * @author Trask Stalnaker

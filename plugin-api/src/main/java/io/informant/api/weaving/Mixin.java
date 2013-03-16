@@ -24,6 +24,25 @@ import java.lang.annotation.Target;
 import checkers.igj.quals.Immutable;
 
 /**
+ * Annotation to designate a class as a mixin class. The fields and methods from the mixin class
+ * will be added to the {@code target} types. The {@code target} types can include interfaces, in
+ * which case the annotated class will be mixed in to all classes which implement any of those
+ * interfaces.
+ * <p>
+ * If the mixin class implements any interfaces, those interfaces will be added to the
+ * {@code target} types. This is the recommended way to access methods that are mixed in to the
+ * {@code target} types.
+ * <p>
+ * Constructors are not mixed in to the {@code target} types, but a single method in the mixin class
+ * can be annotated with {@literal @}{@code MixinInit} and this will be called exactly once at some
+ * point during the construction of each {@code target} type (to be precise, it is called at the end
+ * of each {@code target} type constructor that doesn't cascade to another constructor in the same
+ * type).
+ * <p>
+ * It's important to note that inline field initializers in the mixin class will not get added to
+ * the {@code target} types (since at the bytecode level they are be part of the mixin constructor),
+ * so field initializers must be placed in the {@literal @}{@code MixinInit}.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
