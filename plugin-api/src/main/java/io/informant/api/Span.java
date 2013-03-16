@@ -15,12 +15,15 @@
  */
 package io.informant.api;
 
+import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnReturn;
+import io.informant.api.weaving.OnThrow;
+import io.informant.api.weaving.Pointcut;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * See {@link PluginServices#startSpan(MessageSupplier, Metric)} for how to create and use
+ * See {@link PluginServices#startSpan(MessageSupplier, MetricName)} for how to create and use
  * {@code Span} instances.
  * 
  * @author Trask Stalnaker
@@ -34,8 +37,13 @@ public interface Span {
     void end();
 
     /**
-     * End the span and capture a stack trace if the span duration exceeds the specified
-     * {@code threshold}.
+     * End the span and capture a stack trace if the span duration exceeds (or is equal to) the
+     * specified {@code threshold}.
+     * 
+     * This method must be called directly from {@link OnReturn}, {@link OnThrow} or {@link OnAfter}
+     * so it can roll back the correct number of frames in the stack trace that it captures, making
+     * the stack trace point to the method execution picked out by the {@link Pointcut} instead of
+     * pointing to the Informant code that performs the stack trace capture.
      * 
      * @param threshold
      * @param unit
@@ -47,6 +55,10 @@ public interface Span {
      * 
      * If this is the root span, then the error flag on the trace is set. Traces can be filtered by
      * their error flag on the trace explorer page.
+     * 
+     * In case the trace has accumulated {@code maxSpans} spans and this is a dummy span, this
+     * method escalates the dummy span to a regular error span (see
+     * {@link PluginServices#startSpan(MessageSupplier, MetricName)} for full details).
      * 
      * @param errorMessage
      */

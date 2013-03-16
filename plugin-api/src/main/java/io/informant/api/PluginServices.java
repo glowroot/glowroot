@@ -217,8 +217,11 @@ public abstract class PluginServices {
      * {@link Span} contract and return the specified {@link MessageSupplier} in response to
      * {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span ends the
      * metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the dummy span, then an
-     * error span will get created and added to the trace, with the original {@link MessageSupplier}
-     * and the specified {@link ErrorMessage}.
+     * error span will get created and added to the trace (even though the span limit was already
+     * hit), with the original {@link MessageSupplier} and the specified {@link ErrorMessage}. Just
+     * in case of a runaway trace that generates tons of error messages, a hard cap
+     * 
+     * ({@code maxSpans * 2}) on number of spans is still applied when adding error spans.
      * 
      * @param messageSupplier
      * @param metric
@@ -247,7 +250,10 @@ public abstract class PluginServices {
      * Adds an error span with duration zero. It does not set the error attribute on the trace,
      * which must be done with {@link Span#endWithError(ErrorMessage)} on the root span.
      * 
-     * This method bypasses the {@code maxSpans} check.
+     * This method bypasses the regular {@code maxSpans} check so that errors after {@code maxSpans}
+     * will still be included in the trace. Just in case of a runaway trace that generates tons of
+     * error messages, a hard cap ({@code maxSpans * 2}) on number of spans is still applied when
+     * adding error spans .
      * 
      * @param errorMessage
      */
