@@ -612,7 +612,6 @@ class PreInitializeClasses {
         types.add("io.informant.api.weaving.InjectTraveler");
         types.add("io.informant.api.weaving.IsEnabled");
         types.add("io.informant.api.weaving.MethodModifier");
-        types.add("io.informant.api.weaving.Mixin");
         types.add("io.informant.api.weaving.OnAfter");
         types.add("io.informant.api.weaving.OnBefore");
         types.add("io.informant.api.weaving.OnReturn");
@@ -630,6 +629,7 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("io.informant.weaving.AdviceMatcher");
         types.add("io.informant.weaving.MixinMatcher");
+        types.add("io.informant.weaving.MixinType");
         types.add("io.informant.weaving.ParsedMethod");
         types.add("io.informant.weaving.ParsedType");
         types.add("io.informant.weaving.ParsedType$Builder");
@@ -671,8 +671,14 @@ class PreInitializeClasses {
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
         types.add("org.objectweb.asm.commons.LocalVariablesSorter");
         types.add("org.objectweb.asm.commons.Method");
+        types.add("org.objectweb.asm.commons.Remapper");
+        types.add("org.objectweb.asm.commons.RemappingAnnotationAdapter");
+        types.add("org.objectweb.asm.commons.RemappingMethodAdapter");
+        types.add("org.objectweb.asm.commons.RemappingSignatureAdapter");
+        types.add("org.objectweb.asm.commons.SimpleRemapper");
         types.add("org.objectweb.asm.signature.SignatureReader");
         types.add("org.objectweb.asm.signature.SignatureVisitor");
+        types.add("org.objectweb.asm.signature.SignatureWriter");
         types.add("org.objectweb.asm.tree.AbstractInsnNode");
         types.add("org.objectweb.asm.tree.AnnotationNode");
         types.add("org.objectweb.asm.tree.ClassNode");

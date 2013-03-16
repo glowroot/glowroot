@@ -16,7 +16,6 @@
 package io.informant.weaving;
 
 import io.informant.api.MetricTimer;
-import io.informant.api.weaving.Mixin;
 import io.informant.marker.ThreadSafe;
 
 import java.io.PrintWriter;
@@ -49,21 +48,22 @@ class Weaver implements Opcodes {
     private static final boolean verifyWeaving =
             Boolean.valueOf(System.getProperty("informant.internal.weaving.verify"));
 
-    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
 
-    private final WeavingMetric metric;
+    private final WeavingMetric weavingMetric;
 
-    Weaver(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
-            @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
-        this.mixins = mixins;
+    Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors,
+            @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
+            WeavingMetric weavingMetric) {
+        this.mixinTypes = mixinTypes;
         this.advisors = advisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
-        this.metric = metric;
+        this.weavingMetric = weavingMetric;
     }
 
     byte[] weave(byte[] classBytes, String className) {
@@ -79,10 +79,10 @@ class Weaver implements Opcodes {
     private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes,
             @Nullable CodeSource codeSource, String className) {
 
-        MetricTimer metricTimer = metric.start();
+        MetricTimer metricTimer = weavingMetric.start();
         try {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            WeavingClassVisitor cv = new WeavingClassVisitor(mixins, advisors, loader,
+            WeavingClassVisitor cv = new WeavingClassVisitor(mixinTypes, advisors, loader,
                     parsedTypeCache, codeSource, cw);
             ClassReader cr = new ClassReader(classBytes);
             try {
@@ -113,7 +113,7 @@ class Weaver implements Opcodes {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("mixins", mixins)
+                .add("mixinTypes", mixinTypes)
                 .add("advisors", advisors)
                 .add("loader", loader)
                 .add("parsedTypeCache", parsedTypeCache)

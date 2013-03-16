@@ -15,55 +15,45 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.Mixin;
+import io.informant.marker.Static;
 
 import java.util.List;
 
 import org.objectweb.asm.Type;
 
-import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
+@Static
 class MixinMatcher {
 
-    private final Mixin mixin;
-    private final boolean targetTypeClassMatch;
-    private final boolean alreadyImplementsMixin;
-    private final boolean superClassMatch;
+    private MixinMatcher() {}
 
-    MixinMatcher(Mixin mixin, Type targetType, @ReadOnly List<ParsedType> superTypes) {
-        this.mixin = mixin;
-        targetTypeClassMatch = isTypeMatch(targetType.getClassName());
-
-        boolean superClassMatchLocal = false;
-        boolean alreadyImplementsMixinLocal = false;
+    static boolean isMatch(MixinType mixinType, Type targetType,
+            @ReadOnly List<ParsedType> superTypes) {
+        boolean targetTypeClassMatch = isTypeMatch(mixinType, targetType.getClassName());
+        boolean superClassMatch = false;
+        boolean alreadyImplementsMixin = false;
         for (ParsedType superType : superTypes) {
-            if (isTypeMatch(superType.getName())) {
-                superClassMatchLocal = true;
+            if (isTypeMatch(mixinType, superType.getName())) {
+                superClassMatch = true;
             }
-            if (mixin.mixin().getName().equals(superType.getName())) {
-                alreadyImplementsMixinLocal = true;
+            if (mixinType.getInterfaceNames().contains(superType.getName())) {
+                alreadyImplementsMixin = true;
             }
-            if (superClassMatchLocal && alreadyImplementsMixinLocal) {
+            if (superClassMatch && alreadyImplementsMixin) {
                 // nothing else to find out
                 break;
             }
         }
-        superClassMatch = superClassMatchLocal;
-        alreadyImplementsMixin = alreadyImplementsMixinLocal;
-    }
-
-    boolean isMatch() {
         return (targetTypeClassMatch || superClassMatch) && !alreadyImplementsMixin;
     }
 
-    private boolean isTypeMatch(String className) {
+    private static boolean isTypeMatch(MixinType mixinType, String className) {
         // currently only exact matching is supported
-        return mixin.target().equals(className);
+        return mixinType.getTargets().contains(className);
     }
 }

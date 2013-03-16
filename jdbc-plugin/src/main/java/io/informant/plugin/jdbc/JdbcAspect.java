@@ -90,9 +90,28 @@ public class JdbcAspect {
         stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
     }
 
-    @Mixin(target = "java.sql.Statement", mixin = HasStatementMirror.class,
-            mixinImpl = HasStatementMirrorImpl.class)
-    public static class MixinAdvice {}
+    // ===================== Mixin =====================
+
+    @Mixin(target = "java.sql.Statement")
+    public static class HasStatementMirrorImpl implements HasStatementMirror {
+        @Nullable
+        private volatile StatementMirror statementMirror;
+        @Nullable
+        public StatementMirror getInformantStatementMirror() {
+            return statementMirror;
+        }
+        public void setInformantStatementMirror(StatementMirror statementMirror) {
+            this.statementMirror = statementMirror;
+        }
+    }
+
+    // the method names are verbose to avoid conflict since they will become methods in all classes
+    // that extend java.sql.Statement
+    public interface HasStatementMirror {
+        @Nullable
+        StatementMirror getInformantStatementMirror();
+        void setInformantStatementMirror(StatementMirror statementMirror);
+    }
 
     // ===================== Statement Preparation =====================
 

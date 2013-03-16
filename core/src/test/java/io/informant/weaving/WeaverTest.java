@@ -24,8 +24,10 @@ import io.informant.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import io.informant.weaving.SomeAspect.BrokenAdvice;
 import io.informant.weaving.SomeAspect.ChangeReturnAdvice;
 import io.informant.weaving.SomeAspect.CircularClassDependencyAdvice;
-import io.informant.weaving.SomeAspect.ClassTargetedMixin;
 import io.informant.weaving.SomeAspect.HasString;
+import io.informant.weaving.SomeAspect.HasStringClassMixin;
+import io.informant.weaving.SomeAspect.HasStringInterfaceMixin;
+import io.informant.weaving.SomeAspect.HasStringMultipleMixin;
 import io.informant.weaving.SomeAspect.InjectAutoboxedReturnAdvice;
 import io.informant.weaving.SomeAspect.InjectMethodArgAdvice;
 import io.informant.weaving.SomeAspect.InjectMethodArgArrayAdvice;
@@ -39,7 +41,6 @@ import io.informant.weaving.SomeAspect.InjectThrowableAdvice;
 import io.informant.weaving.SomeAspect.InjectTravelerAdvice;
 import io.informant.weaving.SomeAspect.InnerMethodAdvice;
 import io.informant.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
-import io.informant.weaving.SomeAspect.InterfaceTargetedMixin;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice1;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice2;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice3;
@@ -446,7 +447,7 @@ public class WeaverTest {
     @Test
     public void shouldMixinToClass() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, ClassTargetedMixin.class,
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, HasStringClassMixin.class,
                 HasString.class);
         // when
         ((HasString) test).setString("another value");
@@ -457,12 +458,33 @@ public class WeaverTest {
     @Test
     public void shouldMixinToInterface() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InterfaceTargetedMixin.class,
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, HasStringInterfaceMixin.class,
                 HasString.class);
         // when
         ((HasString) test).setString("another value");
         // then
         assertThat(((HasString) test).getString()).isEqualTo("another value");
+    }
+
+    @Test
+    public void shouldMixinOnlyOnce() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, HasStringMultipleMixin.class,
+                HasString.class);
+        // when
+        ((HasString) test).setString("another value");
+        // then
+        assertThat(((HasString) test).getString()).isEqualTo("another value");
+    }
+
+    @Test
+    public void shouldMixinAndCallInitExactlyOnce() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, HasStringClassMixin.class,
+                HasString.class);
+        // when
+        // then
+        assertThat(((HasString) test).getString()).isEqualTo("a string");
     }
 
     // ===================== @Pointcut.nestable =====================
@@ -880,7 +902,7 @@ public class WeaverTest {
         }
         Mixin mixin = adviceClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            loader.setMixins(ImmutableList.of(mixin));
+            loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceClass)));
         }
         // adviceClass is passed as bridgeable so that the static threadlocals will be accessible
         // for test verification

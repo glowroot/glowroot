@@ -31,8 +31,5 @@ import checkers.igj.quals.Immutable;
 @Retention(RUNTIME)
 @Immutable
 public @interface Mixin {
-
-    String target();
-    Class<?> mixin();
-    Class<?> mixinImpl();
+    String[] target();
 }

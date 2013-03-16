@@ -19,6 +19,7 @@ import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.common.ObjectMappers;
 import io.informant.weaving.Advice;
+import io.informant.weaving.MixinType;
 
 import java.io.IOException;
 import java.net.URL;
@@ -53,7 +54,7 @@ public class PluginDescriptorCache {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
-    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
 
     public PluginDescriptorCache() {
@@ -66,7 +67,7 @@ public class PluginDescriptorCache {
         }
         this.pluginDescriptors = pluginDescriptors.build();
 
-        ImmutableList.Builder<Mixin> mixins = ImmutableList.builder();
+        ImmutableList.Builder<MixinType> mixinTypes = ImmutableList.builder();
         ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
         for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
             for (String aspect : pluginDescriptor.getAspects()) {
@@ -76,13 +77,13 @@ public class PluginDescriptorCache {
                     Class<?> aspectClass = Class.forName(aspect, false,
                             PluginDescriptor.class.getClassLoader());
                     advisors.addAll(getAdvisors(aspectClass));
-                    mixins.addAll(getMixins(aspectClass));
+                    mixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
                     continue;
                 }
             }
         }
-        this.mixins = mixins.build();
+        this.mixinTypes = mixinTypes.build();
         this.advisors = advisors.build();
     }
 
@@ -99,8 +100,8 @@ public class PluginDescriptorCache {
     // but then if a unit test is run inside an IDE without rebuilding SameJvmExecutionAdapter it
     // will fail since informant is then unshaded
     @Immutable
-    public List<Mixin> getMixins() {
-        return mixins;
+    public List<MixinType> getMixinTypes() {
+        return mixinTypes;
     }
 
     // don't return ImmutableList, see comment above
@@ -156,15 +157,15 @@ public class PluginDescriptorCache {
         return advisors;
     }
 
-    private static List<Mixin> getMixins(Class<?> aspectClass) {
-        List<Mixin> mixins = Lists.newArrayList();
+    private static List<MixinType> getMixinTypes(Class<?> aspectClass) {
+        List<MixinType> mixinTypes = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Mixin mixin = memberClass.getAnnotation(Mixin.class);
             if (mixin != null) {
-                mixins.add(mixin);
+                mixinTypes.add(MixinType.from(mixin, memberClass));
             }
         }
-        return mixins;
+        return mixinTypes;
     }
 
     private static List<URL> getResources(String resourceName) throws IOException {

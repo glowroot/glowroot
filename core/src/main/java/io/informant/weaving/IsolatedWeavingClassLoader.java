@@ -15,7 +15,6 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.Mixin;
 import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.ThreadSafe;
 
@@ -68,11 +67,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
-    private IsolatedWeavingClassLoader(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
-            ImmutableList<Class<?>> bridgeClasses, ImmutableList<String> excludePackages,
-            WeavingMetric weavingMetric) {
+    private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
+            ImmutableList<Advice> advisors, ImmutableList<Class<?>> bridgeClasses,
+            ImmutableList<String> excludePackages, WeavingMetric weavingMetric) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        weaver = new Weaver(mixins, advisors, this, new ParsedTypeCache(), weavingMetric);
+        weaver = new Weaver(mixinTypes, advisors, this, new ParsedTypeCache(), weavingMetric);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
     }
@@ -181,7 +180,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public static class Builder {
 
-        private ImmutableList<Mixin> mixins = ImmutableList.of();
+        private ImmutableList<MixinType> mixinTypes = ImmutableList.of();
         private ImmutableList<Advice> advisors = ImmutableList.of();
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
@@ -189,8 +188,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
         private Builder() {}
 
-        public void setMixins(@ReadOnly List<Mixin> mixins) {
-            this.mixins = ImmutableList.copyOf(mixins);
+        public void setMixinTypes(@ReadOnly List<MixinType> mixinTypes) {
+            this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         }
 
         public void setAdvisors(@ReadOnly List<Advice> advisors) {
@@ -213,7 +212,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
                         public IsolatedWeavingClassLoader run() {
-                            return new IsolatedWeavingClassLoader(mixins, advisors,
+                            return new IsolatedWeavingClassLoader(mixinTypes, advisors,
                                     bridgeClasses.build(), excludePackages.build(), weavingMetric);
                         }
                     });

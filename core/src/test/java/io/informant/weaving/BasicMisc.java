@@ -23,6 +23,13 @@ import checkers.nullness.quals.Nullable;
  */
 public class BasicMisc implements Misc, Misc2, Misc3 {
 
+    // the cascading constructor is for testing that MixinInit is called exactly once
+    public BasicMisc() {
+        this(null);
+    }
+
+    public BasicMisc(Object dummy) {}
+
     // Misc implementation
     public void execute1() {
         // do some stuff that can be intercepted

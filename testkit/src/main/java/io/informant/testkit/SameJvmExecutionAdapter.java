@@ -50,7 +50,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
         informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache = new PluginDescriptorCache();
-        loader.setMixins(pluginDescriptorCache.getMixins());
+        loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
         loader.setAdvisors(pluginDescriptorCache.getAdvisors());
         loader.addBridgeClasses(AppUnderTest.class);
         loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",

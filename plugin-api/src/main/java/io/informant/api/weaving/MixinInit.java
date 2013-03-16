@@ -1,5 +1,5 @@
 /**
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.plugin.jdbc;
+package io.informant.api.weaving;
 
-import checkers.nullness.quals.Nullable;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import checkers.igj.quals.Immutable;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-// the method names are verbose to avoid conflict since they will become methods in all classes
-// that extend java.sql.Statement
-public interface HasStatementMirror {
-
-    @Nullable
-    StatementMirror getInformantStatementMirror();
-
-    void setInformantStatementMirror(StatementMirror statementMirror);
-}
+@Target(METHOD)
+@Retention(RUNTIME)
+@Immutable
+public @interface MixinInit {}

@@ -16,7 +16,6 @@
 package io.informant.core;
 
 import io.informant.api.PluginServices;
-import io.informant.api.weaving.Mixin;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
@@ -24,6 +23,7 @@ import io.informant.core.trace.WeavingMetricNameImpl;
 import io.informant.marker.OnlyUsedByTests;
 import io.informant.marker.ThreadSafe;
 import io.informant.weaving.Advice;
+import io.informant.weaving.MixinType;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.WeavingClassFileTransformer;
 
@@ -101,9 +101,10 @@ public class CoreModule {
 
     public WeavingClassFileTransformer createWeavingClassFileTransformer() {
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
-        Mixin[] mixins = Iterables.toArray(pluginDescriptorCache.getMixins(), Mixin.class);
+        MixinType[] mixinTypes = Iterables.toArray(pluginDescriptorCache.getMixinTypes(),
+                MixinType.class);
         Advice[] advisors = Iterables.toArray(pluginDescriptorCache.getAdvisors(), Advice.class);
-        return new WeavingClassFileTransformer(mixins, advisors, parsedTypeCache,
+        return new WeavingClassFileTransformer(mixinTypes, advisors, parsedTypeCache,
                 weavingMetricName);
     }
 

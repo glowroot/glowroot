@@ -15,7 +15,6 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.Mixin;
 import io.informant.marker.ThreadSafe;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -40,9 +39,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
-    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
-    private final WeavingMetric metric;
+    private final WeavingMetric weavingMetric;
 
     private final ParsedTypeCache parsedTypeCache;
 
@@ -56,7 +55,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                     .build(new CacheLoader<ClassLoader, Weaver>() {
                         @Override
                         public Weaver load(ClassLoader loader) {
-                            return new Weaver(mixins, advisors, loader, parsedTypeCache, metric);
+                            return new Weaver(mixinTypes, advisors, loader, parsedTypeCache,
+                                    weavingMetric);
                         }
                     });
     // the weaver for the bootstrap class loader (null) has to be stored separately since
@@ -70,13 +70,14 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // calculation in the test class io.informant.core.weaving.preinit.GlobalCollector, and
     // hard-coded results in io.informant.core.weaving.PreInitializeClasses)
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
-    public WeavingClassFileTransformer(Mixin[] mixins, Advice[] advisors,
-            ParsedTypeCache parsedTypeCache, WeavingMetric metric) {
-        this.mixins = ImmutableList.copyOf(mixins);
+    public WeavingClassFileTransformer(MixinType[] mixinTypes, Advice[] advisors,
+            ParsedTypeCache parsedTypeCache, WeavingMetric weavingMetric) {
+        this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.advisors = ImmutableList.copyOf(advisors);
         this.parsedTypeCache = parsedTypeCache;
-        this.metric = metric;
-        bootLoaderWeaver = new Weaver(this.mixins, this.advisors, null, parsedTypeCache, metric);
+        this.weavingMetric = weavingMetric;
+        bootLoaderWeaver = new Weaver(this.mixinTypes, this.advisors, null, parsedTypeCache,
+                weavingMetric);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
     }

@@ -16,13 +16,15 @@
 package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import io.informant.api.weaving.Mixin;
 import io.informant.weaving.ParsedType.Builder;
 
+import java.io.IOException;
 import java.security.CodeSource;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -30,6 +32,11 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.commons.RemappingMethodAdapter;
+import org.objectweb.asm.commons.SimpleRemapper;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +50,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * @author Trask Stalnaker
@@ -54,7 +62,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private static final Type adviceFlowType = Type.getType(AdviceFlowOuterHolder.class);
 
-    private final ImmutableList<Mixin> mixins;
+    private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
     @Nullable
     private final ClassLoader loader;
@@ -62,7 +70,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     @Nullable
     private final CodeSource codeSource;
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
-    private ImmutableList<Mixin> matchedMixins = ImmutableList.of();
+    private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
     @LazyNonNull
     private Type type;
     private ImmutableMap<Advice, Integer> adviceFlowOuterHolderNums = ImmutableMap.of();
@@ -74,11 +82,11 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     @LazyNonNull
     private Builder parsedType;
 
-    public WeavingClassVisitor(ImmutableList<Mixin> mixins, ImmutableList<Advice> advisors,
+    public WeavingClassVisitor(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
             @Nullable CodeSource codeSource, ClassVisitor cv) {
         super(ASM4, cv);
-        this.mixins = mixins;
+        this.mixinTypes = mixinTypes;
         this.advisors = advisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
@@ -101,15 +109,15 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         type = Type.getObjectType(name);
         List<ParsedType> superTypes = getSuperTypes(superName, interfaceNames);
         adviceMatchers = getAdviceMatchers(type, superTypes);
-        matchedMixins = getMatchedMixins(type, superTypes);
-        if (adviceMatchers.isEmpty() && matchedMixins.isEmpty()) {
+        matchedMixinTypes = getMatchedMixinTypes(type, superTypes);
+        if (adviceMatchers.isEmpty() && matchedMixinTypes.isEmpty()) {
             nothingAtAllToWeave = true;
             return;
         }
         logger.debug("visit(): adviceMatchers={}", adviceMatchers);
         adviceFlowOuterHolderNums = getAdviceFlowOuterHolderNums(adviceMatchers);
         super.visit(version, access, name, signature, superName,
-                getInterfacesIncludingMixins(interfaceNames, matchedMixins));
+                getInterfacesIncludingMixins(interfaceNames, matchedMixinTypes));
     }
 
     @Override
@@ -139,9 +147,9 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             mv = new InitThreadLocals(mv, access, name, desc);
             // there can only be at most one clinit
             writtenAdviceFlowThreadLocals = true;
-        } else if (name.equals("<init>") && !matchedMixins.isEmpty()) {
+        } else if (name.equals("<init>") && !matchedMixinTypes.isEmpty()) {
             mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            mv = new InitMixins(mv, access, name, desc, matchedMixins, type);
+            mv = new InitMixins(mv, access, name, desc, matchedMixinTypes, type);
         }
         if ((access & ACC_SYNTHETIC) != 0) {
             return visitMethod(mv, access, name, desc, signature, exceptions);
@@ -186,28 +194,38 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
-        for (int i = 0; i < matchedMixins.size(); i++) {
-            // add mixin field
-            Type mixinType = Type.getType(matchedMixins.get(i).mixin());
-            visitField(ACC_PRIVATE | ACC_FINAL, "informant$mixin$" + i, mixinType.getDescriptor(),
-                    null, null);
-            // add mixin methods
-            for (java.lang.reflect.Method method : matchedMixins.get(i).mixin().getMethods()) {
-                Type[] exceptions = new Type[method.getExceptionTypes().length];
-                for (int j = 0; j < method.getExceptionTypes().length; j++) {
-                    exceptions[j] = Type.getType(method.getExceptionTypes()[j]);
+        for (int i = 0; i < matchedMixinTypes.size(); i++) {
+            ClassReader cr;
+            try {
+                cr = new ClassReader(matchedMixinTypes.get(i).getImplementation().getName());
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                continue;
+            }
+            ClassNode cn = new ClassNode();
+            cr.accept(cn, 0);
+            // SuppressWarnings because generics are explicitly removed from asm binaries
+            // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
+            @SuppressWarnings("unchecked")
+            Iterator<FieldNode> fieldNodes = cn.fields.iterator();
+            while (fieldNodes.hasNext()) {
+                fieldNodes.next().accept(this);
+            }
+            // SuppressWarnings because generics are explicitly removed from asm binaries
+            @SuppressWarnings("unchecked")
+            Iterator<MethodNode> methodNodes = cn.methods.iterator();
+            while (methodNodes.hasNext()) {
+                MethodNode mn = methodNodes.next();
+                if (mn.name.equals("<init>")) {
+                    continue;
                 }
-                Method m = Method.getMethod(method);
-                // passing null for signature just means the optional bytecode signature attribute
-                // won't be populated
-                // (see http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.9)
-                GeneratorAdapter mg = new GeneratorAdapter(ACC_PUBLIC, m, null, exceptions, cv);
-                mg.loadThis();
-                mg.getField(type, "informant$mixin$" + i, mixinType);
-                mg.loadArgs();
-                mg.invokeInterface(mixinType, m);
-                mg.returnValue();
-                mg.endMethod();
+                // SuppressWarnings because generics are explicitly removed from asm binaries
+                @SuppressWarnings("unchecked")
+                String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
+                MethodVisitor mv = cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
+                        exceptions);
+                mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
+                        new SimpleRemapper(cn.name, type.getInternalName())));
             }
         }
     }
@@ -251,15 +269,14 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return adviceMatchersBuilder.build();
     }
 
-    private ImmutableList<Mixin> getMatchedMixins(Type type, List<ParsedType> superTypes) {
-        ImmutableList.Builder<Mixin> matchedMixinsBuilder = ImmutableList.builder();
-        for (Mixin mixin : mixins) {
-            MixinMatcher mixinMatcher = new MixinMatcher(mixin, type, superTypes);
-            if (mixinMatcher.isMatch()) {
-                matchedMixinsBuilder.add(mixin);
+    private ImmutableList<MixinType> getMatchedMixinTypes(Type type, List<ParsedType> superTypes) {
+        ImmutableList.Builder<MixinType> matchedMixinTypesBuilder = ImmutableList.builder();
+        for (MixinType mixinType : mixinTypes) {
+            if (MixinMatcher.isMatch(mixinType, type, superTypes)) {
+                matchedMixinTypesBuilder.add(mixinType);
             }
         }
-        return matchedMixinsBuilder.build();
+        return matchedMixinTypesBuilder.build();
     }
 
     private ImmutableMap<Advice, Integer> getAdviceFlowOuterHolderNums(
@@ -273,13 +290,15 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     private static String[] getInterfacesIncludingMixins(String[] interfaceNames,
-            ImmutableList<Mixin> matchedMixins) {
-        if (matchedMixins.isEmpty()) {
+            ImmutableList<MixinType> matchedMixinTypes) {
+        if (matchedMixinTypes.isEmpty()) {
             return interfaceNames;
         }
-        List<String> interfacesIncludingMixins = Lists.newArrayList(interfaceNames);
-        for (Mixin matchedMixin : matchedMixins) {
-            interfacesIncludingMixins.add(Type.getInternalName(matchedMixin.mixin()));
+        Set<String> interfacesIncludingMixins = Sets.newHashSet(interfaceNames);
+        for (MixinType matchedMixinType : matchedMixinTypes) {
+            for (Class<?> mixinInterface : matchedMixinType.getInterfaces()) {
+                interfacesIncludingMixins.add(Type.getInternalName(mixinInterface));
+            }
         }
         return Iterables.toArray(interfacesIncludingMixins, String.class);
     }
@@ -373,7 +392,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 .add("adviceFlowType", adviceFlowType)
                 .add("codeSource", codeSource)
                 .add("adviceMatchers", adviceMatchers)
-                .add("matchedMixins", matchedMixins)
+                .add("matchedMixinTypes", matchedMixinTypes)
                 .add("type", type)
                 .add("adviceFlowThreadLocalNums", adviceFlowOuterHolderNums)
                 .add("writtenAdviceFlowThreadLocals", writtenAdviceFlowThreadLocals)
@@ -388,26 +407,38 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private static class InitMixins extends AdviceAdapter {
 
         @ReadOnly
-        private final List<Mixin> matchedMixins;
+        private final List<MixinType> matchedMixinTypes;
         private final Type type;
+        private boolean cascadingConstructor;
 
         protected InitMixins(MethodVisitor mv, int access, String name, String desc,
-                @ReadOnly List<Mixin> matchedMixins, Type type) {
-
+                @ReadOnly List<MixinType> matchedMixinTypes, Type type) {
             super(ASM4, mv, access, name, desc);
-            this.matchedMixins = matchedMixins;
+            this.matchedMixinTypes = matchedMixinTypes;
             this.type = type;
         }
 
         @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+            if (name.equals("<init>") && owner.equals(type.getInternalName())) {
+                cascadingConstructor = true;
+            }
+            super.visitMethodInsn(opcode, owner, name, desc);
+        }
+
+        @Override
         protected void onMethodExit(int opcode) {
-            for (int i = 0; i < matchedMixins.size(); i++) {
-                Type mixinImplType = Type.getType(matchedMixins.get(i).mixinImpl());
-                loadThis();
-                newInstance(mixinImplType);
-                dup();
-                invokeConstructor(mixinImplType, new Method("<init>", "()V"));
-                putField(type, "informant$mixin$" + i, Type.getType(matchedMixins.get(i).mixin()));
+            if (cascadingConstructor) {
+                // need to call MixinInit exactly once, so don't call MixinInit at end of cascading
+                // constructors
+                return;
+            }
+            for (int i = 0; i < matchedMixinTypes.size(); i++) {
+                String initMethodName = matchedMixinTypes.get(i).getInitMethodName();
+                if (initMethodName != null) {
+                    loadThis();
+                    invokeVirtual(type, new Method(initMethodName, "()V"));
+                }
             }
         }
     }

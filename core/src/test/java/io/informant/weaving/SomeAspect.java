@@ -25,6 +25,7 @@ import io.informant.api.weaving.InjectTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.MethodModifier;
 import io.informant.api.weaving.Mixin;
+import io.informant.api.weaving.MixinInit;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
@@ -525,21 +526,52 @@ public class SomeAspect {
         }
     }
 
-    @Mixin(target = "io.informant.weaving.BasicMisc", mixin = HasString.class,
-            mixinImpl = HasStringImpl.class)
-    public static class ClassTargetedMixin {}
-
-    @Mixin(target = "io.informant.weaving.Misc", mixin = HasString.class,
-            mixinImpl = HasStringImpl.class)
-    public static class InterfaceTargetedMixin {}
-
     public interface HasString {
         String getString();
         void setString(String string);
     }
 
-    public static class HasStringImpl implements HasString {
-        private String string = "a string";
+    @Mixin(target = "io.informant.weaving.BasicMisc")
+    public static class HasStringClassMixin implements HasString {
+        private String string;
+        @MixinInit
+        private void initHasString() {
+            if (string == null) {
+                string = "a string";
+            } else {
+                string = "init called twice";
+            }
+        }
+        public String getString() {
+            return string;
+        }
+        public void setString(String string) {
+            this.string = string;
+        }
+    }
+
+    @Mixin(target = "io.informant.weaving.Misc")
+    public static class HasStringInterfaceMixin implements HasString {
+        private String string;
+        @MixinInit
+        private void initHasString() {
+            string = "a string";
+        }
+        public String getString() {
+            return string;
+        }
+        public void setString(String string) {
+            this.string = string;
+        }
+    }
+
+    @Mixin(target = { "io.informant.weaving.Misc", "io.informant.weaving.Misc2" })
+    public static class HasStringMultipleMixin implements HasString {
+        private String string;
+        @MixinInit
+        private void initHasString() {
+            string = "a string";
+        }
         public String getString() {
             return string;
         }
