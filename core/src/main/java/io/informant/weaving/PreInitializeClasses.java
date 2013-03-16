@@ -503,6 +503,7 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableBiMap");
+        types.add("com.google.common.collect.ImmutableBiMap$Builder");
         types.add("com.google.common.collect.ImmutableCollection");
         types.add("com.google.common.collect.ImmutableCollection$1");
         types.add("com.google.common.collect.ImmutableCollection$Builder");
@@ -550,6 +551,13 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.Platform");
         types.add("com.google.common.collect.Queues");
         types.add("com.google.common.collect.RegularImmutableAsList");
+        types.add("com.google.common.collect.RegularImmutableBiMap");
+        types.add("com.google.common.collect.RegularImmutableBiMap$1");
+        types.add("com.google.common.collect.RegularImmutableBiMap$BiMapEntry");
+        types.add("com.google.common.collect.RegularImmutableBiMap$Inverse");
+        types.add("com.google.common.collect.RegularImmutableBiMap$Inverse$InverseEntrySet");
+        types.add("com.google.common.collect.RegularImmutableBiMap$Inverse$InverseEntrySet$1");
+        types.add("com.google.common.collect.RegularImmutableBiMap$NonTerminalBiMapEntry");
         types.add("com.google.common.collect.RegularImmutableList");
         types.add("com.google.common.collect.RegularImmutableMap");
         types.add("com.google.common.collect.RegularImmutableMap$1");

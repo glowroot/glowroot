@@ -39,8 +39,7 @@ import java.lang.annotation.Target;
  * {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the <em>traveler</em>).
  * If {@literal @}{@link BindThrowable} is used, it must be the first parameter to the
  * 
- * {@literal @}{@code OnThrow} method. Any un-annotated parameters are implicitly annotated with
- * {@literal @}{@link BindMethodArg}.
+ * {@literal @}{@code OnThrow} method.
  * <p>
  * An {@literal @}{@code OnThrow} method must return {@code void}. It is not able to suppress the
  * original {@code Exception} or change the {@code Exception} that is thrown (at least not

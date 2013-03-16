@@ -19,6 +19,7 @@ import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.common.ObjectMappers;
 import io.informant.weaving.Advice;
+import io.informant.weaving.Advice.AdviceConstructionException;
 import io.informant.weaving.MixinType;
 
 import java.io.IOException;
@@ -151,7 +152,11 @@ public class PluginDescriptorCache {
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Pointcut pointcut = memberClass.getAnnotation(Pointcut.class);
             if (pointcut != null) {
-                advisors.add(Advice.from(pointcut, memberClass));
+                try {
+                    advisors.add(Advice.from(pointcut, memberClass));
+                } catch (AdviceConstructionException e) {
+                    logger.error("invalid advice '{}': {}", memberClass.getName(), e.getMessage());
+                }
             }
         }
         return advisors;

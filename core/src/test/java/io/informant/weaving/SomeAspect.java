@@ -676,7 +676,7 @@ public class SomeAspect {
             return true;
         }
         @OnBefore
-        public static void onBefore(@SuppressWarnings("unused") int x) {
+        public static void onBefore(@SuppressWarnings("unused") @BindMethodArg int x) {
             onBeforeCount.increment();
         }
         public static void resetThreadLocals() {

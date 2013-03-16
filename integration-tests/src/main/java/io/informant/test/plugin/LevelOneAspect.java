@@ -21,6 +21,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
+import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindThrowable;
 import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
@@ -54,7 +55,8 @@ public class LevelOneAspect {
         }
 
         @OnBefore
-        public static Span onBefore(final String arg1, final String arg2) {
+        public static Span onBefore(@BindMethodArg final String arg1,
+                @BindMethodArg final String arg2) {
             MessageSupplier messageSupplier = new MessageSupplier() {
                 @Override
                 public Message get() {

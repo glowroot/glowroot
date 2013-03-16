@@ -29,8 +29,7 @@ import java.lang.annotation.Target;
  * <p>
  * An {@literal @}{@code IsEnabled} method can accept parameters annotated with any of the
  * following: {@link BindTarget}, {@link BindMethodArg}, {@link BindMethodArgArray} or
- * {@link BindMethodName}. Any un-annotated parameters are implicitly annotated with
- * {@link BindMethodArg}.
+ * {@link BindMethodName}.
  * <p>
  * An {@literal @}{@code IsEnabled} method must return a {@code boolean}. If it returns
  * {@code false} then none of the {@literal @}{@link OnBefore}, {@literal @}{@link OnReturn},

@@ -384,7 +384,7 @@ public class ServletAspect {
             methodArgs = { "int", ".." })
     public static class SendErrorAdvice {
         @OnAfter
-        public static void onAfter(Integer statusCode) {
+        public static void onAfter(@BindMethodArg Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null) {
                 ErrorMessage errorMessage = ErrorMessage.from("sendError, HTTP status code "

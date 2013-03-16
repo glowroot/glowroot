@@ -37,9 +37,7 @@ import java.lang.annotation.Target;
  * 
  * {@literal @}{@link BindTraveler}. {@literal @}{@link BindTraveler} can only be used if there is a
  * corresponding {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the
- * <em>traveler</em>). Any un-annotated parameters are implicitly annotated with
- * 
- * {@literal @}{@link BindMethodArg}.
+ * <em>traveler</em>).
  * <p>
  * An {@literal @}{@code OnAfter} method must return {@code void}.
  * 

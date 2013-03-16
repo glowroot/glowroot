@@ -20,6 +20,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
+import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
@@ -52,10 +53,9 @@ public class LogCauseAspect {
         }
 
         @OnBefore
-        public static Span onBefore(String message) {
+        public static Span onBefore(@BindMethodArg String message) {
             return pluginServices.startSpan(MessageSupplier.from("ERROR -- {}", message),
                     metricName);
-
         }
 
         @OnAfter

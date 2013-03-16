@@ -45,8 +45,9 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
@@ -77,8 +78,8 @@ public class Advice {
                     ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
                     ParameterKind.TRAVELER);
 
-    private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
-            new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
+    private static final ImmutableBiMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
+            new ImmutableBiMap.Builder<Class<? extends Annotation>, ParameterKind>()
                     .put(BindTarget.class, ParameterKind.TARGET)
                     .put(BindMethodArg.class, ParameterKind.METHOD_ARG)
                     .put(BindMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
@@ -112,7 +113,8 @@ public class Advice {
     private final ImmutableList<ParameterKind> onThrowParameterKinds;
     private final ImmutableList<ParameterKind> onAfterParameterKinds;
 
-    public static Advice from(Pointcut pointcut, Class<?> adviceClass) {
+    public static Advice from(Pointcut pointcut, Class<?> adviceClass)
+            throws AdviceConstructionException {
         return new Builder(pointcut, adviceClass).build();
     }
 
@@ -237,6 +239,13 @@ public class Advice {
         PRIMITIVE_RETURN, THROWABLE, TRAVELER;
     }
 
+    @SuppressWarnings("serial")
+    public static class AdviceConstructionException extends Exception {
+        private AdviceConstructionException(String message) {
+            super(message);
+        }
+    }
+
     private static class Builder {
 
         private final Pointcut pointcut;
@@ -264,7 +273,8 @@ public class Advice {
         private ImmutableList<ParameterKind> onThrowParameterKinds = ImmutableList.of();
         private ImmutableList<ParameterKind> onAfterParameterKinds = ImmutableList.of();
 
-        private Builder(Pointcut pointcut, Class<?> adviceClass) {
+        private Builder(Pointcut pointcut, Class<?> adviceClass)
+                throws AdviceConstructionException {
             this.pointcut = pointcut;
             adviceType = Type.getType(adviceClass);
             pointcutTypePattern = buildPattern(pointcut.typeName());
@@ -312,7 +322,8 @@ public class Advice {
             return pattern.replace("\\Q\\E", "");
         }
 
-        private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+        private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
+                throws AdviceConstructionException {
             if (isEnabledAdvice != null) {
                 logger.warn("@Pointcut '{}' has more than one @IsEnabled method",
                         adviceClass.getName());
@@ -322,13 +333,14 @@ public class Advice {
             if (asmMethod.getReturnType().getSort() == Type.BOOLEAN) {
                 this.isEnabledAdvice = asmMethod;
                 this.isEnabledParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                        method.getParameterTypes(), isEnabledValidParameterKinds);
+                        method.getParameterTypes(), isEnabledValidParameterKinds, IsEnabled.class);
             } else {
                 logger.warn("@IsEnabled method must return boolean");
             }
         }
 
-        private void initOnBeforeAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+        private void initOnBeforeAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
+                throws AdviceConstructionException {
             if (onBeforeAdvice != null) {
                 logger.warn("@Pointcut '{}' has more than one @OnBefore method",
                         adviceClass.getName());
@@ -336,13 +348,14 @@ public class Advice {
             }
             onBeforeAdvice = Method.getMethod(method);
             onBeforeParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                    method.getParameterTypes(), onBeforeValidParameterKinds);
+                    method.getParameterTypes(), onBeforeValidParameterKinds, OnBefore.class);
             if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
                 travelerType = onBeforeAdvice.getReturnType();
             }
         }
 
-        private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+        private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
+                throws AdviceConstructionException {
             if (onReturnAdvice != null) {
                 logger.warn("@Pointcut '{}' has more than one @OnReturn method",
                         adviceClass.getName());
@@ -350,7 +363,7 @@ public class Advice {
             }
             ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
                     method.getParameterAnnotations(), method.getParameterTypes(),
-                    onReturnValidParameterKinds);
+                    onReturnValidParameterKinds, OnReturn.class);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.RETURN) {
                     logger.warn("@BindReturn must be the first argument to @OnReturn");
@@ -361,7 +374,8 @@ public class Advice {
             this.onReturnParameterKinds = parameterKinds;
         }
 
-        private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+        private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
+                throws AdviceConstructionException {
             if (onThrowAdvice != null) {
                 logger.warn("@Pointcut '{}' has more than one @OnThrow method",
                         adviceClass.getName());
@@ -369,7 +383,7 @@ public class Advice {
             }
             ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
                     method.getParameterAnnotations(), method.getParameterTypes(),
-                    onThrowValidParameterKinds);
+                    onThrowValidParameterKinds, OnThrow.class);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.THROWABLE) {
                     logger.warn("@BindThrowable must be the first argument to @OnThrow");
@@ -387,7 +401,8 @@ public class Advice {
             this.onThrowParameterKinds = parameterKinds;
         }
 
-        private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method) {
+        private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
+                throws AdviceConstructionException {
             if (onAfterAdvice != null) {
                 logger.warn("@Pointcut '{}' has more than one @OnAfter method",
                         adviceClass.getName());
@@ -400,7 +415,7 @@ public class Advice {
             }
             this.onAfterAdvice = asmMethod;
             this.onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                    method.getParameterTypes(), onAfterValidParameterKinds);
+                    method.getParameterTypes(), onAfterValidParameterKinds, OnAfter.class);
         }
 
         private Advice build() {
@@ -412,15 +427,24 @@ public class Advice {
 
         private static ImmutableList<ParameterKind> getParameterKinds(
                 Annotation[][] parameterAnnotations, Class<?>[] parameterTypes,
-                @ReadOnly List<ParameterKind> validParameterKinds) {
+                @ReadOnly List<ParameterKind> validParameterKinds,
+                Class<? extends Annotation> adviceAnnotationType)
+                throws AdviceConstructionException {
 
             ImmutableList.Builder<ParameterKind> parameterKinds = ImmutableList.builder();
             for (int i = 0; i < parameterAnnotations.length; i++) {
                 ParameterKind parameterKind = findParam(parameterAnnotations[i],
                         validParameterKinds);
                 if (parameterKind == null) {
-                    // no applicable annotations found
-                    parameterKind = ParameterKind.METHOD_ARG;
+                    // no applicable annotations found, provide a good error message
+                    List<String> validAnnotations = Lists.newArrayList();
+                    for (ParameterKind validParameterKind : validParameterKinds) {
+                        validAnnotations.add("@" + parameterKindMap.inverse()
+                                .get(validParameterKind).getSimpleName());
+                    }
+                    throw new AdviceConstructionException("All parameters to @"
+                            + adviceAnnotationType.getSimpleName() + " must be annotated with one"
+                            + " of " + Joiner.on(", ").join(validAnnotations));
                 }
                 if (parameterKind == ParameterKind.METHOD_ARG
                         && parameterTypes[i].isPrimitive()) {
@@ -435,7 +459,6 @@ public class Advice {
             }
             return parameterKinds.build();
         }
-
         @Nullable
         private static ParameterKind findParam(Annotation[] parameterAnnotations,
                 @ReadOnly List<ParameterKind> validArgTypes) {

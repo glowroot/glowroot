@@ -39,8 +39,7 @@ import java.lang.annotation.Target;
  * {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the <em>traveler</em>).
  * {@literal @}{@link BindReturn} can only be used if each method picked out by the {@link Pointcut}
  * returns a non-{@code void} type. If {@literal @}{@link BindReturn} is used, it must be the first
- * parameter to the {@literal @}{@code OnReturn} method. Any un-annotated parameters are implicitly
- * annotated with {@literal @}{@link BindMethodArg}.
+ * parameter to the {@literal @}{@code OnReturn} method.
  * <p>
  * An {@literal @}{@code OnReturn} method may return {@code void} or a non-{@code void} type. If it
  * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnReturn} method is
