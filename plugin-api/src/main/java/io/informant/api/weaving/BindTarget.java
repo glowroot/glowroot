@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
  * @author Trask Stalnaker
  * @since 0.5
  */
+// for static methods, binds class object
 @Target(PARAMETER)
 @Retention(RUNTIME)
-public @interface InjectMethodArg {}
+public @interface BindTarget {}

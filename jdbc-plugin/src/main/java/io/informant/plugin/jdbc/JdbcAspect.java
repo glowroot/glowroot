@@ -23,12 +23,12 @@ import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
-import io.informant.api.weaving.InjectMethodArg;
-import io.informant.api.weaving.InjectMethodName;
-import io.informant.api.weaving.InjectReturn;
-import io.informant.api.weaving.InjectTarget;
-import io.informant.api.weaving.InjectThrowable;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindMethodArg;
+import io.informant.api.weaving.BindMethodName;
+import io.informant.api.weaving.BindReturn;
+import io.informant.api.weaving.BindTarget;
+import io.informant.api.weaving.BindThrowable;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.OnAfter;
@@ -120,8 +120,8 @@ public class JdbcAspect {
             methodArgs = { "java.lang.String", ".." }, captureNested = false)
     public static class PrepareStatementTrackingAdvice {
         @OnReturn
-        public static void onReturn(@InjectReturn PreparedStatement preparedStatement,
-                @InjectMethodArg String sql) {
+        public static void onReturn(@BindReturn PreparedStatement preparedStatement,
+                @BindMethodArg String sql) {
             ((HasStatementMirror) preparedStatement)
                     .setInformantStatementMirror(new PreparedStatementMirror(sql));
         }
@@ -144,7 +144,7 @@ public class JdbcAspect {
             return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
             metricTimer.stop();
         }
     }
@@ -158,8 +158,8 @@ public class JdbcAspect {
             methodArgs = { "int", "*", ".." }, captureNested = false)
     public static class PreparedStatementSetXAdvice {
         @OnReturn
-        public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
-                @InjectMethodArg int parameterIndex, @InjectMethodArg Object x) {
+        public static void onReturn(@BindTarget PreparedStatement preparedStatement,
+                @BindMethodArg int parameterIndex, @BindMethodArg Object x) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (x instanceof InputStream || x instanceof Reader) {
                 mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
@@ -178,8 +178,8 @@ public class JdbcAspect {
             methodArgs = { "int", "int", ".." }, captureNested = false)
     public static class PreparedStatementSetNullAdvice {
         @OnReturn
-        public static void onReturn(@InjectTarget PreparedStatement preparedStatement,
-                @InjectMethodArg int parameterIndex) {
+        public static void onReturn(@BindTarget PreparedStatement preparedStatement,
+                @BindMethodArg int parameterIndex) {
             getPreparedStatementMirror(preparedStatement).setParameterValue(parameterIndex,
                     new NullParameterValue());
         }
@@ -191,8 +191,8 @@ public class JdbcAspect {
             methodArgs = { "java.lang.String" }, captureNested = false)
     public static class StatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@InjectTarget Statement statement,
-                @InjectMethodArg String sql) {
+        public static void onReturn(@BindTarget Statement statement,
+                @BindMethodArg String sql) {
             getStatementMirror(statement).addBatch(sql);
         }
     }
@@ -201,7 +201,7 @@ public class JdbcAspect {
             captureNested = false)
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@InjectTarget PreparedStatement preparedStatement) {
+        public static void onReturn(@BindTarget PreparedStatement preparedStatement) {
             getPreparedStatementMirror(preparedStatement).addBatch();
         }
     }
@@ -211,7 +211,7 @@ public class JdbcAspect {
     @Pointcut(typeName = "java.sql.Statement", methodName = "clearBatch")
     public static class StatementClearBatchAdvice {
         @OnReturn
-        public static void onReturn(@InjectTarget Statement statement) {
+        public static void onReturn(@BindTarget Statement statement) {
             StatementMirror mirror = getStatementMirror(statement);
             mirror.clearBatch();
         }
@@ -232,8 +232,8 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Statement statement,
-                @InjectMethodArg String sql) {
+        public static Span onBefore(@BindTarget Statement statement,
+                @BindMethodArg String sql) {
             StatementMirror mirror = getStatementMirror(statement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql,
@@ -252,14 +252,14 @@ public class JdbcAspect {
             }
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t,
-                @InjectTraveler @Nullable Span span) {
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithError(ErrorMessage.from(t));
             }
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler @Nullable Span span) {
+        public static void onReturn(@BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
@@ -280,7 +280,7 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget PreparedStatement preparedStatement) {
+        public static Span onBefore(@BindTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
@@ -299,14 +299,14 @@ public class JdbcAspect {
             }
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t,
-                @InjectTraveler @Nullable Span span) {
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithError(ErrorMessage.from(t));
             }
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler @Nullable Span span) {
+        public static void onReturn(@BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
@@ -325,7 +325,7 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Statement statement) {
+        public static Span onBefore(@BindTarget Statement statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
@@ -364,14 +364,14 @@ public class JdbcAspect {
             }
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t,
-                @InjectTraveler @Nullable Span span) {
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithError(ErrorMessage.from(t));
             }
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler @Nullable Span span) {
+        public static void onReturn(@BindTraveler @Nullable Span span) {
             if (span != null) {
                 span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
@@ -419,8 +419,8 @@ public class JdbcAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@InjectReturn boolean currentRowValid,
-                @InjectTarget ResultSet resultSet) {
+        public static void onReturn(@BindReturn boolean currentRowValid,
+                @BindTarget ResultSet resultSet) {
             try {
                 Statement statement = resultSet.getStatement();
                 if (statement == null) {
@@ -445,7 +445,7 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
             if (metricTimer != null) {
                 metricTimer.stop();
             }
@@ -479,7 +479,7 @@ public class JdbcAspect {
             return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
             metricTimer.stop();
         }
     }
@@ -511,7 +511,7 @@ public class JdbcAspect {
             return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
             metricTimer.stop();
         }
     }
@@ -528,12 +528,12 @@ public class JdbcAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Connection connection) {
+        public static Span onBefore(@BindTarget Connection connection) {
             return pluginServices.startSpan(MessageSupplier.from("jdbc commit [connection: {}]",
                     Integer.toHexString(connection.hashCode())), metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
         }
     }
@@ -552,7 +552,7 @@ public class JdbcAspect {
                     && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
         }
         @OnBefore
-        public static MetricTimer onBefore(@InjectTarget Statement statement) {
+        public static MetricTimer onBefore(@BindTarget Statement statement) {
             // help out gc a little by clearing the weak reference, don't want to solely rely on
             // this (and use strong reference) in case a jdbc driver implementation closes
             // statements in finalize by calling an internal method and not calling public close()
@@ -560,7 +560,7 @@ public class JdbcAspect {
             return pluginServices.startMetricTimer(metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler MetricTimer metricTimer) {
+        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
             metricTimer.stop();
         }
     }
@@ -597,8 +597,8 @@ public class JdbcAspect {
         }
         @OnBefore
         @Nullable
-        public static Object onBefore(@InjectTarget DatabaseMetaData databaseMetaData,
-                @InjectMethodName String methodName) {
+        public static Object onBefore(@BindTarget DatabaseMetaData databaseMetaData,
+                @BindMethodName String methodName) {
             inDatabaseMetataDataMethod.set(methodName);
             if (pluginServices.isEnabled()) {
                 if (spanEnabled) {
@@ -613,7 +613,7 @@ public class JdbcAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Object spanOrTimer) {
+        public static void onAfter(@BindTraveler @Nullable Object spanOrTimer) {
             // don't need to track prior value and reset to that value, since
             // @Pointcut.captureNested = false prevents re-entrant calls
             inDatabaseMetataDataMethod.remove();

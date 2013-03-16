@@ -31,15 +31,15 @@ import java.lang.annotation.Target;
  * {@literal @}{@link OnThrow} methods, if either of those are present.
  * 
  * An {@literal @}{@code OnAfter} method can accept parameters annotated with any of the following:
- * {@literal @}{@link InjectTarget}, {@literal @}{@link InjectMethodArg},
+ * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
- * {@literal @}{@link InjectMethodArgArray}, {@literal @}{@link InjectMethodName} or
+ * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName} or
  * 
- * {@literal @}{@link InjectTraveler}. {@literal @}{@link InjectTraveler} can only be used if there
+ * {@literal @}{@link BindTraveler}. {@literal @}{@link BindTraveler} can only be used if there
  * is a corresponding {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the
  * <em>traveler</em>). Any un-annotated parameters are implicitly annotated with
  * 
- * {@literal @}{@link InjectMethodArg}.
+ * {@literal @}{@link BindMethodArg}.
  * 
  * An {@literal @}{@code OnAfter} method must return {@code void}.
  * 

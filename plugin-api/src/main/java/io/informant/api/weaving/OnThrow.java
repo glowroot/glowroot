@@ -28,19 +28,19 @@ import java.lang.annotation.Target;
  * class may be annotated with {@code OnThrow}.
  * 
  * An {@literal @}{@code OnThrow} method can accept parameters annotated with any of the following:
- * {@literal @}{@link InjectTarget}, {@literal @}{@link InjectMethodArg},
+ * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
- * {@literal @}{@link InjectMethodArgArray}, {@literal @}{@link InjectMethodName},
+ * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName},
  * 
- * {@literal @}{@link InjectTraveler} or {@literal @}{@link InjectThrowable}.
+ * {@literal @}{@link BindTraveler} or {@literal @}{@link BindThrowable}.
  * 
- * {@literal @}{@link InjectTraveler} can only be used if there is a corresponding
+ * {@literal @}{@link BindTraveler} can only be used if there is a corresponding
  * 
  * {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the <em>traveler</em>).
- * If {@literal @}{@link InjectThrowable} is used, it must be the first parameter to the
+ * If {@literal @}{@link BindThrowable} is used, it must be the first parameter to the
  * 
  * {@literal @}{@code OnThrow} method. Any un-annotated parameters are implicitly annotated with
- * {@literal @}{@link InjectMethodArg}.
+ * {@literal @}{@link BindMethodArg}.
  * 
  * An {@literal @}{@code OnThrow} method must return {@code void}. It is not able to suppress the
  * original {@code Exception} or change the {@code Exception} that is thrown (at least not

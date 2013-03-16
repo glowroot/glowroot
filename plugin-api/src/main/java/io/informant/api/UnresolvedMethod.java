@@ -47,7 +47,7 @@ import com.google.common.collect.MapMaker;
  *             .from(&quot;org.apache.jasper.JspCompilationContext&quot;, &quot;getJspFile&quot;);
  * 
  *     &#064;OnBefore
- *     public static Span onBefore(@InjectTarget final Object context) {
+ *     public static Span onBefore(@BindTarget final Object context) {
  *         String jspFile = (String) getJspFileMethod.invoke(context, &quot;&lt;unknown&gt;&quot;);
  *         ...
  *     }

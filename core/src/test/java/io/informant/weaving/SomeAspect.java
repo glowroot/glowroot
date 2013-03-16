@@ -15,13 +15,13 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.InjectMethodArg;
-import io.informant.api.weaving.InjectMethodArgArray;
-import io.informant.api.weaving.InjectMethodName;
-import io.informant.api.weaving.InjectReturn;
-import io.informant.api.weaving.InjectTarget;
-import io.informant.api.weaving.InjectThrowable;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindMethodArg;
+import io.informant.api.weaving.BindMethodArgArray;
+import io.informant.api.weaving.BindMethodName;
+import io.informant.api.weaving.BindReturn;
+import io.informant.api.weaving.BindTarget;
+import io.informant.api.weaving.BindThrowable;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.MethodModifier;
 import io.informant.api.weaving.Mixin;
@@ -191,31 +191,31 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
-    public static class InjectTargetAdvice {
+    public static class BindTargetAdvice {
         public static ThreadLocal<Misc> isEnabledTarget = new ThreadLocal<Misc>();
         public static ThreadLocal<Misc> onBeforeTarget = new ThreadLocal<Misc>();
         public static ThreadLocal<Misc> onReturnTarget = new ThreadLocal<Misc>();
         public static ThreadLocal<Misc> onThrowTarget = new ThreadLocal<Misc>();
         public static ThreadLocal<Misc> onAfterTarget = new ThreadLocal<Misc>();
         @IsEnabled
-        public static boolean isEnabled(@InjectTarget Misc target) {
+        public static boolean isEnabled(@BindTarget Misc target) {
             isEnabledTarget.set(target);
             return true;
         }
         @OnBefore
-        public static void onBefore(@InjectTarget Misc target) {
+        public static void onBefore(@BindTarget Misc target) {
             onBeforeTarget.set(target);
         }
         @OnReturn
-        public static void onReturn(@InjectTarget Misc target) {
+        public static void onReturn(@BindTarget Misc target) {
             onReturnTarget.set(target);
         }
         @OnThrow
-        public static void onThrow(@InjectTarget Misc target) {
+        public static void onThrow(@BindTarget Misc target) {
             onThrowTarget.set(target);
         }
         @OnAfter
-        public static void onAfter(@InjectTarget Misc target) {
+        public static void onAfter(@BindTarget Misc target) {
             onAfterTarget.set(target);
         }
         public static void resetThreadLocals() {
@@ -229,31 +229,31 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = { "java.lang.String", "int" })
-    public static class InjectMethodArgAdvice {
+    public static class BindMethodArgAdvice {
         public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
-        public static boolean isEnabled(@InjectMethodArg String one, @InjectMethodArg int two) {
+        public static boolean isEnabled(@BindMethodArg String one, @BindMethodArg int two) {
             isEnabledParams.set(new Object[] { one, two });
             return true;
         }
         @OnBefore
-        public static void onBefore(@InjectMethodArg String one, @InjectMethodArg int two) {
+        public static void onBefore(@BindMethodArg String one, @BindMethodArg int two) {
             onBeforeParams.set(new Object[] { one, two });
         }
         @OnReturn
-        public static void onReturn(@InjectMethodArg String one, @InjectMethodArg int two) {
+        public static void onReturn(@BindMethodArg String one, @BindMethodArg int two) {
             onReturnParams.set(new Object[] { one, two });
         }
         @OnThrow
-        public static void onThrow(@InjectMethodArg String one, @InjectMethodArg int two) {
+        public static void onThrow(@BindMethodArg String one, @BindMethodArg int two) {
             onThrowParams.set(new Object[] { one, two });
         }
         @OnAfter
-        public static void onAfter(@InjectMethodArg String one, @InjectMethodArg int two) {
+        public static void onAfter(@BindMethodArg String one, @BindMethodArg int two) {
             onAfterParams.set(new Object[] { one, two });
         }
         public static void resetThreadLocals() {
@@ -267,31 +267,31 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = { "java.lang.String", "int" })
-    public static class InjectMethodArgArrayAdvice {
+    public static class BindMethodArgArrayAdvice {
         public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
-        public static boolean isEnabled(@InjectMethodArgArray Object[] args) {
+        public static boolean isEnabled(@BindMethodArgArray Object[] args) {
             isEnabledParams.set(args);
             return true;
         }
         @OnBefore
-        public static void onBefore(@InjectMethodArgArray Object[] args) {
+        public static void onBefore(@BindMethodArgArray Object[] args) {
             onBeforeParams.set(args);
         }
         @OnReturn
-        public static void onReturn(@InjectMethodArgArray Object[] args) {
+        public static void onReturn(@BindMethodArgArray Object[] args) {
             onReturnParams.set(args);
         }
         @OnThrow
-        public static void onThrow(@InjectMethodArgArray Object[] args) {
+        public static void onThrow(@BindMethodArgArray Object[] args) {
             onThrowParams.set(args);
         }
         @OnAfter
-        public static void onAfter(@InjectMethodArgArray Object[] args) {
+        public static void onAfter(@BindMethodArgArray Object[] args) {
             onAfterParams.set(args);
         }
         public static void resetThreadLocals() {
@@ -304,7 +304,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
-    public static class InjectTravelerAdvice {
+    public static class BindTravelerAdvice {
         public static ThreadLocal<String> onReturnTraveler = new ThreadLocal<String>();
         public static ThreadLocal<String> onThrowTraveler = new ThreadLocal<String>();
         public static ThreadLocal<String> onAfterTraveler = new ThreadLocal<String>();
@@ -313,15 +313,15 @@ public class SomeAspect {
             return "a traveler";
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler String traveler) {
+        public static void onReturn(@BindTraveler String traveler) {
             onReturnTraveler.set(traveler);
         }
         @OnThrow
-        public static void onThrow(@InjectTraveler String traveler) {
+        public static void onThrow(@BindTraveler String traveler) {
             onThrowTraveler.set(traveler);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler String traveler) {
+        public static void onAfter(@BindTraveler String traveler) {
             onAfterTraveler.set(traveler);
         }
         public static void resetThreadLocals() {
@@ -332,7 +332,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
-    public static class InjectPrimitiveTravelerAdvice {
+    public static class BindPrimitiveTravelerAdvice {
         public static ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
         public static ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
         public static ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
@@ -341,15 +341,15 @@ public class SomeAspect {
             return 3;
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler int traveler) {
+        public static void onReturn(@BindTraveler int traveler) {
             onReturnTraveler.set(traveler);
         }
         @OnThrow
-        public static void onThrow(@InjectTraveler int traveler) {
+        public static void onThrow(@BindTraveler int traveler) {
             onThrowTraveler.set(traveler);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler int traveler) {
+        public static void onAfter(@BindTraveler int traveler) {
             onAfterTraveler.set(traveler);
         }
         public static void resetThreadLocals() {
@@ -360,7 +360,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
-    public static class InjectPrimitiveBooleanTravelerAdvice {
+    public static class BindPrimitiveBooleanTravelerAdvice {
         public static ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
         public static ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
         public static ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
@@ -369,15 +369,15 @@ public class SomeAspect {
             return true;
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler boolean traveler) {
+        public static void onReturn(@BindTraveler boolean traveler) {
             onReturnTraveler.set(traveler);
         }
         @OnThrow
-        public static void onThrow(@InjectTraveler boolean traveler) {
+        public static void onThrow(@BindTraveler boolean traveler) {
             onThrowTraveler.set(traveler);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler boolean traveler) {
+        public static void onAfter(@BindTraveler boolean traveler) {
             onAfterTraveler.set(traveler);
         }
         public static void resetThreadLocals() {
@@ -388,10 +388,10 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn")
-    public static class InjectReturnAdvice {
+    public static class BindReturnAdvice {
         public static ThreadLocal<String> returnValue = new ThreadLocal<String>();
         @OnReturn
-        public static void onReturn(@InjectReturn String value) {
+        public static void onReturn(@BindReturn String value) {
             returnValue.set(value);
         }
         public static void resetThreadLocals() {
@@ -401,10 +401,10 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
-    public static class InjectPrimitiveReturnAdvice {
+    public static class BindPrimitiveReturnAdvice {
         public static ThreadLocal<Integer> returnValue = new ThreadLocal<Integer>();
         @OnReturn
-        public static void onReturn(@InjectReturn int value) {
+        public static void onReturn(@BindReturn int value) {
             returnValue.set(value);
         }
         public static void resetThreadLocals() {
@@ -414,10 +414,10 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
-    public static class InjectAutoboxedReturnAdvice {
+    public static class BindAutoboxedReturnAdvice {
         public static ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
         @OnReturn
-        public static void onReturn(@InjectReturn Object value) {
+        public static void onReturn(@BindReturn Object value) {
             returnValue.set(value);
         }
         public static void resetThreadLocals() {
@@ -426,10 +426,10 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
-    public static class InjectThrowableAdvice {
+    public static class BindThrowableAdvice {
         public static ThreadLocal<Throwable> throwable = new ThreadLocal<Throwable>();
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t) {
+        public static void onThrow(@BindThrowable Throwable t) {
             throwable.set(t);
         }
         public static void resetThreadLocals() {
@@ -439,31 +439,31 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1",
             metricName = "efg")
-    public static class InjectMethodNameAdvice {
+    public static class BindMethodNameAdvice {
         public static ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
         public static ThreadLocal<String> onBeforeMethodName = new ThreadLocal<String>();
         public static ThreadLocal<String> onReturnMethodName = new ThreadLocal<String>();
         public static ThreadLocal<String> onThrowMethodName = new ThreadLocal<String>();
         public static ThreadLocal<String> onAfterMethodName = new ThreadLocal<String>();
         @IsEnabled
-        public static boolean isEnabled(@InjectMethodName String methodName) {
+        public static boolean isEnabled(@BindMethodName String methodName) {
             isEnabledMethodName.set(methodName);
             return true;
         }
         @OnBefore
-        public static void onBefore(@InjectMethodName String methodName) {
+        public static void onBefore(@BindMethodName String methodName) {
             onBeforeMethodName.set(methodName);
         }
         @OnReturn
-        public static void onReturn(@InjectMethodName String methodName) {
+        public static void onReturn(@BindMethodName String methodName) {
             onReturnMethodName.set(methodName);
         }
         @OnThrow
-        public static void onThrow(@InjectMethodName String methodName) {
+        public static void onThrow(@BindMethodName String methodName) {
             onThrowMethodName.set(methodName);
         }
         @OnAfter
-        public static void onAfter(@InjectMethodName String methodName) {
+        public static void onAfter(@BindMethodName String methodName) {
             onAfterMethodName.set(methodName);
         }
         public static void resetThreadLocals() {
@@ -482,7 +482,7 @@ public class SomeAspect {
             return true;
         }
         @OnReturn
-        public static String onReturn(@InjectReturn String value) {
+        public static String onReturn(@BindReturn String value) {
             return "modified " + value;
         }
     }
@@ -650,10 +650,10 @@ public class SomeAspect {
     public static class NonMatchingMethodReturnAdvice2 extends BasicAdvice {}
 
     @Pointcut(typeName = "io.informant.weaving.StaticMisc", methodName = "executeStatic")
-    public static class StaticInjectTargetClassAdvice {
+    public static class StaticBindTargetClassAdvice {
         public static ThreadLocal<Class<?>> onBeforeCount = new ThreadLocal<Class<?>>();
         @OnBefore
-        public static void onBefore(@InjectTarget Class<?> type) {
+        public static void onBefore(@BindTarget Class<?> type) {
             onBeforeCount.set(type);
         }
         public static void resetThreadLocals() {
@@ -671,7 +671,7 @@ public class SomeAspect {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @IsEnabled
-        public static boolean isEnabled(@SuppressWarnings("unused") @InjectMethodArg int x) {
+        public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg int x) {
             enabledCount.increment();
             return true;
         }
@@ -690,7 +690,7 @@ public class SomeAspect {
     public static class PrimitiveWithAutoboxAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         @IsEnabled
-        public static boolean isEnabled(@SuppressWarnings("unused") @InjectMethodArg Object x) {
+        public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg Object x) {
             enabledCount.increment();
             return true;
         }
@@ -712,7 +712,7 @@ public class SomeAspect {
             return null;
         }
         @OnAfter
-        public static void onAfter(@SuppressWarnings("unused") @InjectTraveler Object traveler) {}
+        public static void onAfter(@SuppressWarnings("unused") @BindTraveler Object traveler) {}
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",

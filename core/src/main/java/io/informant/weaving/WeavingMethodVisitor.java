@@ -16,8 +16,8 @@
 package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import io.informant.api.weaving.InjectMethodArg;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindMethodArg;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -365,12 +365,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (onReturnAdvice.getArgumentTypes().length > 0) {
             int startIndex = 0;
             if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.RETURN) {
-                // @InjectReturn must be the first argument to @OnReturn (if present)
+                // @BindReturn must be the first argument to @OnReturn (if present)
                 loadReturnValue(opcode, false);
                 startIndex = 1;
             }
             if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.PRIMITIVE_RETURN) {
-                // @InjectReturn must be the first argument to @OnReturn (if present)
+                // @BindReturn must be the first argument to @OnReturn (if present)
                 loadReturnValue(opcode, true);
                 startIndex = 1;
             }
@@ -388,8 +388,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void loadReturnValue(int opcode, boolean primitive) {
         if (opcode == RETURN) {
-            logger.error("cannot use @InjectReturn on a @Pointcut returning void");
-            // try to pass null, but this will fail anyways if @InjectReturn is primitive arg
+            logger.error("cannot use @BindReturn on a @Pointcut returning void");
+            // try to pass null, but this will fail anyways if @BindReturn is primitive arg
             // TODO handle primitive args, then reduce logger from error to warn
             visitInsn(ACONST_NULL);
         } else if (opcode == ARETURN || opcode == ATHROW) {
@@ -424,7 +424,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             } else {
                 int startIndex = 0;
                 if (advice.getOnThrowParameterKinds().get(0) == ParameterKind.THROWABLE) {
-                    // @InjectThrowable must be the first argument to @OnThrow (if present)
+                    // @BindThrowable must be the first argument to @OnThrow (if present)
                     dup();
                     startIndex++;
                 }
@@ -522,7 +522,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (argIndex >= argumentTypes.length) {
             logger.warn("the @" + annotationType.getSimpleName() + " method in "
                     + adviceType.getClassName() + " has more @"
-                    + InjectMethodArg.class.getSimpleName() + " arguments than the number of args"
+                    + BindMethodArg.class.getSimpleName() + " arguments than the number of args"
                     + " in the target method");
             visitInsn(ACONST_NULL);
             return;
@@ -546,9 +546,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (travelerLocal == null) {
             logger.error("the @" + annotationType.getSimpleName() + " method in "
                     + adviceType.getClassName() + " requested @"
-                    + InjectTraveler.class.getSimpleName() + " but @"
+                    + BindTraveler.class.getSimpleName() + " but @"
                     + OnBefore.class.getSimpleName() + " returns void");
-            // try to pass null, but this will fail anyways if @InjectTraveler is primitive arg
+            // try to pass null, but this will fail anyways if @BindTraveler is primitive arg
             // TODO handle primitive args, then reduce logger from error to warn
             visitInsn(ACONST_NULL);
         } else {

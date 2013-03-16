@@ -23,8 +23,8 @@ import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
 import io.informant.api.UnresolvedMethod;
-import io.informant.api.weaving.InjectTarget;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindTarget;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -65,12 +65,12 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             // not delegating to onBeforeInternal(), this span returns message supplier with detail
             return pluginServices.startSpan(getMessageSupplierWithDetail(expensive), metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -92,11 +92,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -118,11 +118,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -144,11 +144,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -170,11 +170,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -196,11 +196,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -222,11 +222,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -248,11 +248,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -274,11 +274,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut
@@ -300,11 +300,11 @@ public class ExpensiveCallAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object expensive) {
+        public static Span onBefore(@BindTarget Object expensive) {
             return onBeforeInternal(expensive, metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler @Nullable Span span) {
+        public static void onAfter(@BindTraveler @Nullable Span span) {
             if (span != null && random.nextDouble() < 0.05) {
                 // Span.endWithStackTrace() must be called directly from @On.. method so it can
                 // strip back the stack trace to the method picked out by the @Pointcut

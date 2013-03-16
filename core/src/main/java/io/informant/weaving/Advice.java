@@ -15,13 +15,13 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.InjectMethodArg;
-import io.informant.api.weaving.InjectMethodArgArray;
-import io.informant.api.weaving.InjectMethodName;
-import io.informant.api.weaving.InjectReturn;
-import io.informant.api.weaving.InjectTarget;
-import io.informant.api.weaving.InjectThrowable;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindMethodArg;
+import io.informant.api.weaving.BindMethodArgArray;
+import io.informant.api.weaving.BindMethodName;
+import io.informant.api.weaving.BindReturn;
+import io.informant.api.weaving.BindTarget;
+import io.informant.api.weaving.BindThrowable;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -79,13 +79,13 @@ public class Advice {
 
     private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
             new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
-                    .put(InjectTarget.class, ParameterKind.TARGET)
-                    .put(InjectMethodArg.class, ParameterKind.METHOD_ARG)
-                    .put(InjectMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
-                    .put(InjectMethodName.class, ParameterKind.METHOD_NAME)
-                    .put(InjectReturn.class, ParameterKind.RETURN)
-                    .put(InjectThrowable.class, ParameterKind.THROWABLE)
-                    .put(InjectTraveler.class, ParameterKind.TRAVELER).build();
+                    .put(BindTarget.class, ParameterKind.TARGET)
+                    .put(BindMethodArg.class, ParameterKind.METHOD_ARG)
+                    .put(BindMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
+                    .put(BindMethodName.class, ParameterKind.METHOD_NAME)
+                    .put(BindReturn.class, ParameterKind.RETURN)
+                    .put(BindThrowable.class, ParameterKind.THROWABLE)
+                    .put(BindTraveler.class, ParameterKind.TRAVELER).build();
 
     private final Pointcut pointcut;
     private final Type adviceType;
@@ -353,7 +353,7 @@ public class Advice {
                     onReturnValidParameterKinds);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.RETURN) {
-                    logger.warn("@InjectReturn must be the first argument to @OnReturn");
+                    logger.warn("@BindReturn must be the first argument to @OnReturn");
                     return;
                 }
             }
@@ -372,8 +372,7 @@ public class Advice {
                     onThrowValidParameterKinds);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.THROWABLE) {
-                    logger.warn("@InjectThrowable must be the first argument to"
-                            + " @OnThrow");
+                    logger.warn("@BindThrowable must be the first argument to @OnThrow");
                     return;
                 }
             }

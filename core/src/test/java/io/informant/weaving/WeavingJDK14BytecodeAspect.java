@@ -15,7 +15,7 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.InjectTarget;
+import io.informant.api.weaving.BindTarget;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
 
@@ -29,6 +29,6 @@ public class WeavingJDK14BytecodeAspect {
             methodArgs = { "java.lang.String" }, metricName = "is empty")
     public static class BasicAdvice {
         @OnBefore
-        public static void onBefore(@SuppressWarnings("unused") @InjectTarget Class<?> target) {}
+        public static void onBefore(@SuppressWarnings("unused") @BindTarget Class<?> target) {}
     }
 }

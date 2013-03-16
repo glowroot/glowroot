@@ -50,12 +50,12 @@ import checkers.nullness.quals.Nullable;
  *             return pluginServices.isEnabled();
  *         }
  *         &#064;OnBefore
- *         public static Span onBefore(@InjectTarget Object validator) {
+ *         public static Span onBefore(@BindTarget Object validator) {
  *             return pluginServices.startSpan(MessageSupplier.from(&quot;spring validator: {}&quot;,
  *                     validator.getClass().getName()), metric);
  *         }
  *         &#064;OnAfter
- *         public static void onAfter(@InjectTraveler Span span) {
+ *         public static void onAfter(@BindTraveler Span span) {
  *             span.end();
  *         }
  *     }

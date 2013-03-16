@@ -21,7 +21,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -76,7 +76,7 @@ public class NestableCallAspect {
             return span;
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (random.nextDouble() < 0.8) {
                 span.end();
             } else {
@@ -106,7 +106,7 @@ public class NestableCallAspect {
             return pluginServices.startSpan(MessageSupplier.from("Nestable"), metricName);
         }
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             span.end();
         }
     }

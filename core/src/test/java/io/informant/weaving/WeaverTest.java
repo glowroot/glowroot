@@ -21,6 +21,17 @@ import io.informant.api.weaving.Pointcut;
 import io.informant.weaving.SomeAspect.BasicAdvice;
 import io.informant.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import io.informant.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
+import io.informant.weaving.SomeAspect.BindAutoboxedReturnAdvice;
+import io.informant.weaving.SomeAspect.BindMethodArgAdvice;
+import io.informant.weaving.SomeAspect.BindMethodArgArrayAdvice;
+import io.informant.weaving.SomeAspect.BindMethodNameAdvice;
+import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
+import io.informant.weaving.SomeAspect.BindPrimitiveReturnAdvice;
+import io.informant.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
+import io.informant.weaving.SomeAspect.BindReturnAdvice;
+import io.informant.weaving.SomeAspect.BindTargetAdvice;
+import io.informant.weaving.SomeAspect.BindThrowableAdvice;
+import io.informant.weaving.SomeAspect.BindTravelerAdvice;
 import io.informant.weaving.SomeAspect.BrokenAdvice;
 import io.informant.weaving.SomeAspect.ChangeReturnAdvice;
 import io.informant.weaving.SomeAspect.CircularClassDependencyAdvice;
@@ -28,17 +39,6 @@ import io.informant.weaving.SomeAspect.HasString;
 import io.informant.weaving.SomeAspect.HasStringClassMixin;
 import io.informant.weaving.SomeAspect.HasStringInterfaceMixin;
 import io.informant.weaving.SomeAspect.HasStringMultipleMixin;
-import io.informant.weaving.SomeAspect.InjectAutoboxedReturnAdvice;
-import io.informant.weaving.SomeAspect.InjectMethodArgAdvice;
-import io.informant.weaving.SomeAspect.InjectMethodArgArrayAdvice;
-import io.informant.weaving.SomeAspect.InjectMethodNameAdvice;
-import io.informant.weaving.SomeAspect.InjectPrimitiveBooleanTravelerAdvice;
-import io.informant.weaving.SomeAspect.InjectPrimitiveReturnAdvice;
-import io.informant.weaving.SomeAspect.InjectPrimitiveTravelerAdvice;
-import io.informant.weaving.SomeAspect.InjectReturnAdvice;
-import io.informant.weaving.SomeAspect.InjectTargetAdvice;
-import io.informant.weaving.SomeAspect.InjectThrowableAdvice;
-import io.informant.weaving.SomeAspect.InjectTravelerAdvice;
 import io.informant.weaving.SomeAspect.InnerMethodAdvice;
 import io.informant.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice1;
@@ -58,7 +58,7 @@ import io.informant.weaving.SomeAspect.PrimitiveAdvice;
 import io.informant.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import io.informant.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import io.informant.weaving.SomeAspect.StaticAdvice;
-import io.informant.weaving.SomeAspect.StaticInjectTargetClassAdvice;
+import io.informant.weaving.SomeAspect.StaticBindTargetClassAdvice;
 import io.informant.weaving.SomeAspect.TypeNamePatternAdvice;
 import io.informant.weaving.SomeAspect.VeryBadAdvice;
 
@@ -140,64 +140,64 @@ public class WeaverTest {
         assertThat(BasicAdvice.onAfterCount.get()).isEqualTo(0);
     }
 
-    // ===================== @InjectTarget =====================
+    // ===================== @BindTarget =====================
 
     @Test
-    public void shouldInjectTarget() throws Exception {
+    public void shouldBindTarget() throws Exception {
         // given
-        InjectTargetAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectTargetAdvice.class);
+        BindTargetAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindTargetAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
-        assertThat(InjectTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
-        assertThat(InjectTargetAdvice.onReturnTarget.get()).isEqualTo(test);
-        assertThat(InjectTargetAdvice.onThrowTarget.get()).isNull();
-        assertThat(InjectTargetAdvice.onAfterTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.onReturnTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.onThrowTarget.get()).isNull();
+        assertThat(BindTargetAdvice.onAfterTarget.get()).isEqualTo(test);
     }
 
     @Test
-    public void shouldInjectTargetOnThrow() throws Exception {
+    public void shouldBindTargetOnThrow() throws Exception {
         // given
-        InjectTargetAdvice.resetThreadLocals();
-        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, InjectTargetAdvice.class);
+        BindTargetAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindTargetAdvice.class);
         // when
         try {
             test.execute1();
         } catch (Throwable t) {
         }
         // then
-        assertThat(InjectTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
-        assertThat(InjectTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
-        assertThat(InjectTargetAdvice.onReturnTarget.get()).isNull();
-        assertThat(InjectTargetAdvice.onThrowTarget.get()).isEqualTo(test);
-        assertThat(InjectTargetAdvice.onAfterTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.isEnabledTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.onBeforeTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.onReturnTarget.get()).isNull();
+        assertThat(BindTargetAdvice.onThrowTarget.get()).isEqualTo(test);
+        assertThat(BindTargetAdvice.onAfterTarget.get()).isEqualTo(test);
     }
 
-    // ===================== @InjectMethodArg =====================
+    // ===================== @BindMethodArg =====================
 
     @Test
-    public void shouldInjectMethodArgs() throws Exception {
+    public void shouldBindMethodArgs() throws Exception {
         // given
-        InjectMethodArgAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectMethodArgAdvice.class);
+        BindMethodArgAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindMethodArgAdvice.class);
         // when
         test.executeWithArgs("one", 2);
         // then
         Object[] parameters = new Object[] { "one", 2 };
-        assertThat(InjectMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgAdvice.onReturnParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgAdvice.onThrowParams.get()).isNull();
-        assertThat(InjectMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.onReturnParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.onThrowParams.get()).isNull();
+        assertThat(BindMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
     @Test
-    public void shouldInjectMethodArgOnThrow() throws Exception {
+    public void shouldBindMethodArgOnThrow() throws Exception {
         // given
-        InjectMethodArgAdvice.resetThreadLocals();
-        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, InjectMethodArgAdvice.class);
+        BindMethodArgAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindMethodArgAdvice.class);
         // when
         try {
             test.executeWithArgs("one", 2);
@@ -205,37 +205,37 @@ public class WeaverTest {
         }
         // then
         Object[] parameters = new Object[] { "one", 2 };
-        assertThat(InjectMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgAdvice.onReturnParams.get()).isNull();
-        assertThat(InjectMethodArgAdvice.onThrowParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.onReturnParams.get()).isNull();
+        assertThat(BindMethodArgAdvice.onThrowParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
-    // ===================== @InjectMethodArgArray =====================
+    // ===================== @BindMethodArgArray =====================
 
     @Test
-    public void shouldInjectMethodArgArray() throws Exception {
+    public void shouldBindMethodArgArray() throws Exception {
         // given
-        InjectMethodArgArrayAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectMethodArgArrayAdvice.class);
+        BindMethodArgArrayAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindMethodArgArrayAdvice.class);
         // when
         test.executeWithArgs("one", 2);
         // then
         Object[] parameters = new Object[] { "one", 2 };
-        assertThat(InjectMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgArrayAdvice.onReturnParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgArrayAdvice.onThrowParams.get()).isNull();
-        assertThat(InjectMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.onReturnParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.onThrowParams.get()).isNull();
+        assertThat(BindMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
     @Test
-    public void shouldInjectMethodArgArrayOnThrow() throws Exception {
+    public void shouldBindMethodArgArrayOnThrow() throws Exception {
         // given
-        InjectMethodArgArrayAdvice.resetThreadLocals();
+        BindMethodArgArrayAdvice.resetThreadLocals();
         Misc test = newWovenObject(ThrowingMisc.class, Misc.class,
-                InjectMethodArgArrayAdvice.class);
+                BindMethodArgArrayAdvice.class);
         // when
         try {
             test.executeWithArgs("one", 2);
@@ -243,140 +243,140 @@ public class WeaverTest {
         }
         // then
         Object[] parameters = new Object[] { "one", 2 };
-        assertThat(InjectMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgArrayAdvice.onReturnParams.get()).isNull();
-        assertThat(InjectMethodArgArrayAdvice.onThrowParams.get()).isEqualTo(parameters);
-        assertThat(InjectMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.onReturnParams.get()).isNull();
+        assertThat(BindMethodArgArrayAdvice.onThrowParams.get()).isEqualTo(parameters);
+        assertThat(BindMethodArgArrayAdvice.onAfterParams.get()).isEqualTo(parameters);
     }
 
-    // ===================== @InjectTraveler =====================
+    // ===================== @BindTraveler =====================
 
     @Test
-    public void shouldInjectTraveler() throws Exception {
+    public void shouldBindTraveler() throws Exception {
         // given
-        InjectTravelerAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectTravelerAdvice.class);
+        BindTravelerAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindTravelerAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectTravelerAdvice.onReturnTraveler.get()).isEqualTo("a traveler");
-        assertThat(InjectTravelerAdvice.onThrowTraveler.get()).isNull();
-        assertThat(InjectTravelerAdvice.onAfterTraveler.get()).isEqualTo("a traveler");
+        assertThat(BindTravelerAdvice.onReturnTraveler.get()).isEqualTo("a traveler");
+        assertThat(BindTravelerAdvice.onThrowTraveler.get()).isNull();
+        assertThat(BindTravelerAdvice.onAfterTraveler.get()).isEqualTo("a traveler");
     }
 
     @Test
-    public void shouldInjectPrimitiveTraveler() throws Exception {
+    public void shouldBindPrimitiveTraveler() throws Exception {
         // given
-        InjectPrimitiveTravelerAdvice.resetThreadLocals();
+        BindPrimitiveTravelerAdvice.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                InjectPrimitiveTravelerAdvice.class);
+                BindPrimitiveTravelerAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectPrimitiveTravelerAdvice.onReturnTraveler.get()).isEqualTo(3);
-        assertThat(InjectPrimitiveTravelerAdvice.onThrowTraveler.get()).isNull();
-        assertThat(InjectPrimitiveTravelerAdvice.onAfterTraveler.get()).isEqualTo(3);
+        assertThat(BindPrimitiveTravelerAdvice.onReturnTraveler.get()).isEqualTo(3);
+        assertThat(BindPrimitiveTravelerAdvice.onThrowTraveler.get()).isNull();
+        assertThat(BindPrimitiveTravelerAdvice.onAfterTraveler.get()).isEqualTo(3);
     }
 
     @Test
-    public void shouldInjectPrimitiveBooleanTraveler() throws Exception {
+    public void shouldBindPrimitiveBooleanTraveler() throws Exception {
         // given
-        InjectPrimitiveBooleanTravelerAdvice.resetThreadLocals();
+        BindPrimitiveBooleanTravelerAdvice.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                InjectPrimitiveBooleanTravelerAdvice.class);
+                BindPrimitiveBooleanTravelerAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectPrimitiveBooleanTravelerAdvice.onReturnTraveler.get()).isEqualTo(true);
-        assertThat(InjectPrimitiveBooleanTravelerAdvice.onThrowTraveler.get()).isNull();
-        assertThat(InjectPrimitiveBooleanTravelerAdvice.onAfterTraveler.get()).isEqualTo(true);
+        assertThat(BindPrimitiveBooleanTravelerAdvice.onReturnTraveler.get()).isEqualTo(true);
+        assertThat(BindPrimitiveBooleanTravelerAdvice.onThrowTraveler.get()).isNull();
+        assertThat(BindPrimitiveBooleanTravelerAdvice.onAfterTraveler.get()).isEqualTo(true);
     }
 
     @Test
-    public void shouldInjectTravelerOnThrow() throws Exception {
+    public void shouldBindTravelerOnThrow() throws Exception {
         // given
-        InjectTravelerAdvice.resetThreadLocals();
-        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, InjectTravelerAdvice.class);
+        BindTravelerAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindTravelerAdvice.class);
         // when
         try {
             test.execute1();
         } catch (Throwable t) {
         }
         // then
-        assertThat(InjectTravelerAdvice.onReturnTraveler.get()).isNull();
-        assertThat(InjectTravelerAdvice.onThrowTraveler.get()).isEqualTo("a traveler");
-        assertThat(InjectTravelerAdvice.onAfterTraveler.get()).isEqualTo("a traveler");
+        assertThat(BindTravelerAdvice.onReturnTraveler.get()).isNull();
+        assertThat(BindTravelerAdvice.onThrowTraveler.get()).isEqualTo("a traveler");
+        assertThat(BindTravelerAdvice.onAfterTraveler.get()).isEqualTo("a traveler");
     }
 
-    // ===================== @InjectReturn =====================
+    // ===================== @BindReturn =====================
 
     @Test
-    public void shouldInjectReturn() throws Exception {
+    public void shouldBindReturn() throws Exception {
         // given
-        InjectReturnAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectReturnAdvice.class);
+        BindReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindReturnAdvice.class);
         // when
         test.executeWithReturn();
         // then
-        assertThat(InjectReturnAdvice.returnValue.get()).isEqualTo("xyz");
+        assertThat(BindReturnAdvice.returnValue.get()).isEqualTo("xyz");
     }
 
     @Test
-    public void shouldInjectPrimitiveReturn() throws Exception {
+    public void shouldBindPrimitiveReturn() throws Exception {
         // given
-        InjectPrimitiveReturnAdvice.resetThreadLocals();
+        BindPrimitiveReturnAdvice.resetThreadLocals();
         Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
-                InjectPrimitiveReturnAdvice.class);
+                BindPrimitiveReturnAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectPrimitiveReturnAdvice.returnValue.get()).isEqualTo(4);
+        assertThat(BindPrimitiveReturnAdvice.returnValue.get()).isEqualTo(4);
     }
 
     @Test
-    public void shouldInjectAutoboxedReturn() throws Exception {
+    public void shouldBindAutoboxedReturn() throws Exception {
         // given
-        InjectAutoboxedReturnAdvice.resetThreadLocals();
+        BindAutoboxedReturnAdvice.resetThreadLocals();
         Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
-                InjectAutoboxedReturnAdvice.class);
+                BindAutoboxedReturnAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectAutoboxedReturnAdvice.returnValue.get()).isEqualTo(4);
+        assertThat(BindAutoboxedReturnAdvice.returnValue.get()).isEqualTo(4);
     }
 
-    // ===================== @InjectThrowable =====================
+    // ===================== @BindThrowable =====================
 
     @Test
-    public void shouldInjectThrowable() throws Exception {
+    public void shouldBindThrowable() throws Exception {
         // given
-        InjectThrowableAdvice.resetThreadLocals();
-        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, InjectThrowableAdvice.class);
+        BindThrowableAdvice.resetThreadLocals();
+        Misc test = newWovenObject(ThrowingMisc.class, Misc.class, BindThrowableAdvice.class);
         // when
         try {
             test.execute1();
         } catch (Throwable t) {
         }
         // then
-        assertThat(InjectThrowableAdvice.throwable.get()).isNotNull();
+        assertThat(BindThrowableAdvice.throwable.get()).isNotNull();
     }
 
-    // ===================== @InjectMethodName =====================
+    // ===================== @BindMethodName =====================
 
     @Test
-    public void shouldInjectMethodName() throws Exception {
+    public void shouldBindMethodName() throws Exception {
         // given
-        InjectMethodNameAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class, InjectMethodNameAdvice.class);
+        BindMethodNameAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindMethodNameAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(InjectMethodNameAdvice.isEnabledMethodName.get()).isEqualTo("execute1");
-        assertThat(InjectMethodNameAdvice.onBeforeMethodName.get()).isEqualTo("execute1");
-        assertThat(InjectMethodNameAdvice.onReturnMethodName.get()).isEqualTo("execute1");
-        assertThat(InjectMethodNameAdvice.onThrowMethodName.get()).isNull();
-        assertThat(InjectMethodNameAdvice.onAfterMethodName.get()).isEqualTo("execute1");
+        assertThat(BindMethodNameAdvice.isEnabledMethodName.get()).isEqualTo("execute1");
+        assertThat(BindMethodNameAdvice.onBeforeMethodName.get()).isEqualTo("execute1");
+        assertThat(BindMethodNameAdvice.onReturnMethodName.get()).isEqualTo("execute1");
+        assertThat(BindMethodNameAdvice.onThrowMethodName.get()).isNull();
+        assertThat(BindMethodNameAdvice.onAfterMethodName.get()).isEqualTo("execute1");
     }
 
     // ===================== change return value =====================
@@ -596,15 +596,15 @@ public class WeaverTest {
     }
 
     @Test
-    public void shouldWeaveStaticMethodInjectTargetClass() throws Exception {
+    public void shouldWeaveStaticMethodBindTargetClass() throws Exception {
         // given
-        StaticInjectTargetClassAdvice.resetThreadLocals();
+        StaticBindTargetClassAdvice.resetThreadLocals();
         Misc test = newWovenObject(StaticMisc.class, Misc.class,
-                StaticInjectTargetClassAdvice.class);
+                StaticBindTargetClassAdvice.class);
         // when
         test.execute1();
         // then
-        assertThat(StaticInjectTargetClassAdvice.onBeforeCount.get().getName()).isEqualTo(
+        assertThat(StaticBindTargetClassAdvice.onBeforeCount.get().getName()).isEqualTo(
                 StaticMisc.class.getName());
     }
     // ===================== primitive args =====================

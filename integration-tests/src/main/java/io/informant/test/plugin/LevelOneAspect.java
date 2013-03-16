@@ -21,8 +21,8 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
-import io.informant.api.weaving.InjectThrowable;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindThrowable;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
@@ -83,12 +83,12 @@ public class LevelOneAspect {
         }
 
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             span.endWithError(ErrorMessage.from(t));
         }
 
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             span.end();
         }
     }

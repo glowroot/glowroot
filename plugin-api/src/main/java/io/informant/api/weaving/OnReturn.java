@@ -28,19 +28,19 @@ import java.lang.annotation.Target;
  * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnReturn}.
  * 
  * An {@literal @}{@code OnReturn} method can accept parameters annotated with any of the following:
- * {@literal @}{@link InjectTarget}, {@literal @}{@link InjectMethodArg},
+ * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},
  * 
- * {@literal @}{@link InjectMethodArgArray}, {@literal @}{@link InjectMethodName},
+ * {@literal @}{@link BindMethodArgArray}, {@literal @}{@link BindMethodName},
  * 
- * {@literal @}{@link InjectTraveler} or {@literal @}{@link InjectReturn}.
+ * {@literal @}{@link BindTraveler} or {@literal @}{@link BindReturn}.
  * 
- * {@literal @}{@link InjectTraveler} can only be used if there is a corresponding
+ * {@literal @}{@link BindTraveler} can only be used if there is a corresponding
  * 
  * {@literal @}{@link OnBefore} method that returns a non-{@code void} type (the <em>traveler</em>).
- * {@literal @}{@link InjectReturn} can only be used if each method picked out by the
- * {@link Pointcut} returns a non-{@code void} type. If {@literal @}{@link InjectReturn} is used, it
+ * {@literal @}{@link BindReturn} can only be used if each method picked out by the
+ * {@link Pointcut} returns a non-{@code void} type. If {@literal @}{@link BindReturn} is used, it
  * must be the first parameter to the {@literal @}{@code OnReturn} method. Any un-annotated
- * parameters are implicitly annotated with {@literal @}{@link InjectMethodArg}.
+ * parameters are implicitly annotated with {@literal @}{@link BindMethodArg}.
  * 
  * An {@literal @}{@code OnReturn} method may return {@code void} or a non-{@code void} type. If it
  * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnReturn} method is
@@ -48,7 +48,7 @@ import java.lang.annotation.Target;
  * original return value. This can be used to wrap the original return value by passing the original
  * return value in to an {@literal @}{@code OnReturn} method (using
  * 
- * {@literal @}{@link InjectReturn}) and then returning the wrapped value.
+ * {@literal @}{@link BindReturn}) and then returning the wrapped value.
  * 
  * @author Trask Stalnaker
  * @since 0.5

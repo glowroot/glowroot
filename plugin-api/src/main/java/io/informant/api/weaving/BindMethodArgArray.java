@@ -31,4 +31,4 @@ import java.lang.annotation.Target;
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)
-public @interface InjectMethodArgArray {}
+public @interface BindMethodArgArray {}

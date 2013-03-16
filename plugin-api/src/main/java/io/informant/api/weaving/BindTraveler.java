@@ -22,12 +22,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a parameter to an {@literal @}{@link OnReturn} method in a {@literal @}{@link Pointcut}
- * class.
+ * Annotates a parameter to an {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} or
+ * {@literal @}{@link OnAfter} method in a {@literal @}{@link Pointcut} class.
  * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)
-public @interface InjectReturn {}
+public @interface BindTraveler {}

@@ -20,7 +20,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -55,7 +55,7 @@ public class PauseAspect {
         }
 
         @OnAfter
-        public static void onAfter(@InjectTraveler Span span) {
+        public static void onAfter(@BindTraveler Span span) {
             if (pluginServices.getBooleanProperty("captureSpanStackTraces")) {
                 span.endWithStackTrace(0, NANOSECONDS);
             } else {

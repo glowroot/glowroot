@@ -21,11 +21,11 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
-import io.informant.api.weaving.InjectMethodArg;
-import io.informant.api.weaving.InjectReturn;
-import io.informant.api.weaving.InjectTarget;
-import io.informant.api.weaving.InjectThrowable;
-import io.informant.api.weaving.InjectTraveler;
+import io.informant.api.weaving.BindMethodArg;
+import io.informant.api.weaving.BindReturn;
+import io.informant.api.weaving.BindTarget;
+import io.informant.api.weaving.BindThrowable;
+import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
@@ -82,7 +82,7 @@ public class ServletAspect {
             return pluginServices.isEnabled() && topLevel.get() == null;
         }
         @OnBefore
-        public static Span onBefore(@InjectMethodArg Object realRequest) {
+        public static Span onBefore(@BindMethodArg Object realRequest) {
             HttpServletRequest request = HttpServletRequest.from(realRequest);
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
@@ -112,14 +112,14 @@ public class ServletAspect {
             return span;
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             // ignoring potential sendError since this seems worse
             sendError.remove();
             span.endWithError(ErrorMessage.from(t));
             topLevel.remove();
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             ErrorMessage errorMessage = sendError.get();
             if (errorMessage != null) {
                 span.endWithError(errorMessage);
@@ -140,15 +140,15 @@ public class ServletAspect {
             return ServletAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectMethodArg Object realRequest) {
+        public static Span onBefore(@BindMethodArg Object realRequest) {
             return ServletAdvice.onBefore(realRequest);
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             ServletAdvice.onThrow(t, span);
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             ServletAdvice.onReturn(span);
         }
     }
@@ -162,15 +162,15 @@ public class ServletAspect {
             return ServletAdvice.isEnabled();
         }
         @OnBefore
-        public static Span onBefore(@InjectMethodArg Object realRequest) {
+        public static Span onBefore(@BindMethodArg Object realRequest) {
             return ServletAdvice.onBefore(realRequest);
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             ServletAdvice.onThrow(t, span);
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             ServletAdvice.onReturn(span);
         }
     }
@@ -190,7 +190,7 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@InjectTarget Object realRequest) {
+        public static void onAfter(@BindTarget Object realRequest) {
             if (inRequestGetParameterPointcut.get()) {
                 return;
             }
@@ -225,7 +225,7 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnReturn
-        public static void onReturn(@InjectReturn @Nullable Object realSession) {
+        public static void onReturn(@BindReturn @Nullable Object realSession) {
             if (realSession == null) {
                 return;
             }
@@ -248,7 +248,7 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static void onBefore(@InjectTarget Object realSession) {
+        public static void onBefore(@BindTarget Object realSession) {
             HttpSession session = HttpSession.from(realSession);
             ServletMessageSupplier messageSupplier = getServletMessageSupplier(session);
             if (messageSupplier != null) {
@@ -265,9 +265,9 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@InjectTarget Object realSession,
-                @InjectMethodArg @Nullable String name,
-                @InjectMethodArg @Nullable Object value) {
+        public static void onAfter(@BindTarget Object realSession,
+                @BindMethodArg @Nullable String name,
+                @BindMethodArg @Nullable Object value) {
             if (name == null) {
                 // theoretically possible, so just ignore
                 return;
@@ -291,8 +291,8 @@ public class ServletAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@InjectTarget Object realSession,
-                @InjectMethodArg @Nullable String name) {
+        public static void onAfter(@BindTarget Object realSession,
+                @BindMethodArg @Nullable String name) {
             // calling HttpSession.setAttribute() with null value is the same as calling
             // removeAttribute(), per the setAttribute() javadoc
             SetAttributeAdvice.onAfter(realSession, name, null);
@@ -314,16 +314,16 @@ public class ServletAspect {
         }
         @OnBefore
         @Nullable
-        public static Span onBefore(@InjectTarget Object listener) {
+        public static Span onBefore(@BindTarget Object listener) {
             return pluginServices.startTrace(MessageSupplier.from("servlet context initialized"
                     + " ({})", listener.getClass().getName()), metricName);
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             span.endWithError(ErrorMessage.from(t));
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             span.end();
         }
     }
@@ -338,16 +338,16 @@ public class ServletAspect {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Object servlet) {
+        public static Span onBefore(@BindTarget Object servlet) {
             return pluginServices.startTrace(MessageSupplier.from("servlet init ({})",
                     servlet.getClass().getName()), metricName);
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             span.endWithError(ErrorMessage.from(t));
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             span.end();
         }
     }
@@ -362,16 +362,16 @@ public class ServletAspect {
             return pluginServices.isEnabled() && ServletPluginProperties.captureStartup();
         }
         @OnBefore
-        public static Span onBefore(@InjectTarget Object filter) {
+        public static Span onBefore(@BindTarget Object filter) {
             return pluginServices.startTrace(MessageSupplier.from("filter init ({})",
                     filter.getClass().getName()), metricName);
         }
         @OnThrow
-        public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
             span.endWithError(ErrorMessage.from(t));
         }
         @OnReturn
-        public static void onReturn(@InjectTraveler Span span) {
+        public static void onReturn(@BindTraveler Span span) {
             span.end();
         }
     }
