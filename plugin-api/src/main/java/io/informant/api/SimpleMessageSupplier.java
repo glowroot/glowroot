@@ -23,7 +23,7 @@ import com.google.common.collect.ObjectArrays;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class PointcutMessageSupplier extends MessageSupplier {
+public class SimpleMessageSupplier extends MessageSupplier {
 
     private final String template;
     private final/*@Nullable*/String[] args;
@@ -32,18 +32,18 @@ public class PointcutMessageSupplier extends MessageSupplier {
     private volatile Object returnValue;
 
     // supplier creation needs to be as efficient as possible
-    public static PointcutMessageSupplier create(String template, @Nullable String... args) {
-        return new PointcutMessageSupplier(template, args);
+    public static SimpleMessageSupplier create(String template, @Nullable String... args) {
+        return new SimpleMessageSupplier(template, args);
     }
 
     // supplier creation needs to be as efficient as possible
-    public static PointcutMessageSupplier create(String template, @Nullable Object... args) {
+    public static SimpleMessageSupplier create(String template, @Nullable Object... args) {
         // it is safer however to convert args to strings immediately in case any of the object's
         // string representations can change
-        return new PointcutMessageSupplier(template, convert(args));
+        return new SimpleMessageSupplier(template, convert(args));
     }
 
-    private PointcutMessageSupplier(String template, @Nullable String[] args) {
+    private SimpleMessageSupplier(String template, @Nullable String[] args) {
         this.template = template;
         this.args = args;
     }
