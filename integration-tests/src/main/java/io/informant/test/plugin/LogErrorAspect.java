@@ -19,7 +19,6 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
-import io.informant.api.PointcutStackTrace;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectTraveler;
 import io.informant.api.weaving.IsEnabled;
@@ -57,7 +56,7 @@ public class LogErrorAspect {
 
         @OnAfter
         public static void onAfter(@InjectTraveler Span span) {
-            span.endWithError(ErrorMessage.from(new PointcutStackTrace(LogErrorAdvice.class)));
+            span.endWithError(ErrorMessage.from("test error message")).captureSpanStackTrace();
         }
     }
 

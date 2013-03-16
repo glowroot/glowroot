@@ -15,6 +15,7 @@
  */
 package io.informant.core;
 
+import io.informant.api.CompletedSpan;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
@@ -250,29 +251,31 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void addSpan(MessageSupplier messageSupplier) {
+    public CompletedSpan addSpan(MessageSupplier messageSupplier) {
         if (messageSupplier == null) {
             logger.warn("addSpan(): argument 'messageSupplier' must be non-null");
-            return;
+            return NopCompletedSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace != null && trace.getSpanCount() < maxSpans) {
             // the trace limit has not been exceeded
-            trace.addSpan(messageSupplier, null, false);
+            return new CompletedSpanImpl(trace.addSpan(messageSupplier, null, false));
         }
+        return NopCompletedSpan.INSTANCE;
     }
 
     @Override
-    public void addErrorSpan(ErrorMessage errorMessage) {
+    public CompletedSpan addErrorSpan(ErrorMessage errorMessage) {
         if (errorMessage == null) {
             logger.warn("addErrorSpan(): argument 'errorMessage' must be non-null");
-            return;
+            return NopCompletedSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         // use higher span limit when adding errors, but still need some kind of cap
         if (trace != null && trace.getSpanCount() < 2 * maxSpans) {
-            trace.addSpan(null, errorMessage, true);
+            return new CompletedSpanImpl(trace.addSpan(null, errorMessage, true));
         }
+        return NopCompletedSpan.INSTANCE;
     }
 
     @Override
@@ -341,15 +344,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private static ImmutableList<StackTraceElement> captureSpanStackTrace() {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         // need to strip back a few stack calls:
-        // 0 - java.lang.Thread.getStackTrace()
-        // 1 - io.informant.core.PluginServicesImpl$SpanImpl.captureSpanStackTrace()
-        // 2? - io.informant.core.PluginServicesImpl$SpanImpl.access$1()
-        // 3 - io.informant.core.PluginServicesImpl$SpanImpl.endWithStackTrace()
-        // 4 - the @Pointcut @OnReturn/@OnThrow/@OnAfter method
-        // (possibly more if the @Pointcut method doesn't call end()/endWithError() directly)
-        for (int i = 0; i < stackTrace.length; i++) {
-            if (stackTrace[i].getMethodName().equals("endWithStackTrace")) {
-                return ImmutableList.copyOf(stackTrace).subList(i + 2, stackTrace.length);
+        // skip i=0 which is "java.lang.Thread.getStackTrace()"
+        for (int i = 1; i < stackTrace.length; i++) {
+            // startsWith to include nested classes
+            if (!stackTrace[i].getClassName().startsWith(PluginServicesImpl.class.getName())) {
+                // found the caller of PluginServicesImpl, this should be the @Pointcut
+                // @OnReturn/@OnThrow/@OnAfter method, next one should be the woven method
+                return ImmutableList.copyOf(stackTrace).subList(i + 1, stackTrace.length);
             }
         }
         logger.warn("stack trace didn't include endWithStackTrace()");
@@ -364,23 +365,23 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.span = span;
             this.trace = trace;
         }
-        public void end() {
-            endInternal(ticker.read(), null);
+        public CompletedSpan end() {
+            return endInternal(ticker.read(), null);
         }
-        public void endWithStackTrace(long threshold, TimeUnit unit) {
+        public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
             if (endTick - span.getStartTick() >= unit.toNanos(threshold)) {
                 span.setStackTrace(captureSpanStackTrace());
             }
-            endInternal(endTick, null);
+            return endInternal(endTick, null);
         }
-        public void endWithError(ErrorMessage errorMessage) {
+        public CompletedSpan endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
                 logger.warn("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
-                end();
+                return end();
             } else {
-                endInternal(ticker.read(), errorMessage);
+                return endInternal(ticker.read(), errorMessage);
             }
         }
         public MessageSupplier getMessageSupplier() {
@@ -393,7 +394,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             return messageSupplier;
         }
-        private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
+        private CompletedSpan endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
             trace.popSpan(span, endTick, errorMessage);
             if (trace.isCompleted()) {
                 // the root span has been popped off
@@ -409,6 +410,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // by TraceSink.onCompletedTrace() above (via Trace.promoteMetrics())
                 trace.clearThreadLocalMetrics();
             }
+            return new CompletedSpanImpl(span);
         }
         private void cancelScheduledFuture(@Nullable ScheduledFuture<?> scheduledFuture) {
             if (scheduledFuture == null) {
@@ -443,10 +445,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.trace = trace;
             this.messageSupplier = messageSupplier;
         }
-        public void end() {
+        public CompletedSpan end() {
             metric.stop();
+            return NopCompletedSpan.INSTANCE;
         }
-        public void endWithStackTrace(long threshold, TimeUnit unit) {
+        public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
             metric.end(endTick);
             // use higher span limit when adding slow spans, but still need some kind of cap
@@ -456,25 +459,37 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // least the long span and stack trace will get captured
                 io.informant.core.trace.Span span = trace.addSpan(messageSupplier, null, true);
                 span.setStackTrace(captureSpanStackTrace());
+                return new CompletedSpanImpl(span);
             }
+            return NopCompletedSpan.INSTANCE;
         }
-        public void endWithError(ErrorMessage errorMessage) {
+        public CompletedSpan endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
                 logger.warn("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
-                end();
-                return;
+                return end();
             }
             metric.stop();
             // use higher span limit when adding errors, but still need some kind of cap
             if (trace.getSpanCount() < 2 * maxSpans) {
                 // span won't necessarily be nested properly, and won't have any timing data, but at
                 // least the error will get captured
-                trace.addSpan(messageSupplier, errorMessage, true);
+                return new CompletedSpanImpl(trace.addSpan(messageSupplier, errorMessage, true));
             }
+            return NopCompletedSpan.INSTANCE;
         }
         public MessageSupplier getMessageSupplier() {
             return messageSupplier;
+        }
+    }
+
+    private static class CompletedSpanImpl implements CompletedSpan {
+        private final io.informant.core.trace.Span span;
+        private CompletedSpanImpl(io.informant.core.trace.Span span) {
+            this.span = span;
+        }
+        public void captureSpanStackTrace() {
+            span.setStackTrace(PluginServicesImpl.captureSpanStackTrace());
         }
     }
 
@@ -483,9 +498,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         private NopSpan(MessageSupplier messageSupplier) {
             this.messageSupplier = messageSupplier;
         }
-        public void end() {}
-        public void endWithStackTrace(long threshold, TimeUnit unit) {}
-        public void endWithError(ErrorMessage errorMessage) {}
+        public CompletedSpan end() {
+            return NopCompletedSpan.INSTANCE;
+        }
+        public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
+            return NopCompletedSpan.INSTANCE;
+        }
+        public CompletedSpan endWithError(ErrorMessage errorMessage) {
+            return NopCompletedSpan.INSTANCE;
+        }
         public MessageSupplier getMessageSupplier() {
             return messageSupplier;
         }
@@ -495,5 +516,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private static class NopMetricTimer implements MetricTimer {
         private static final NopMetricTimer INSTANCE = new NopMetricTimer();
         public void stop() {}
+    }
+
+    private static class NopCompletedSpan implements CompletedSpan {
+        private static final NopCompletedSpan INSTANCE = new NopCompletedSpan();
+        public void captureSpanStackTrace() {}
     }
 }

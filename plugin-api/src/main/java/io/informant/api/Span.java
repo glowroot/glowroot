@@ -34,21 +34,26 @@ public interface Span {
     /**
      * End the span.
      */
-    void end();
+    CompletedSpan end();
 
     /**
-     * End the span and capture a stack trace if the span duration exceeds (or is equal to) the
-     * specified {@code threshold}.
+     * End the span and capture a stack trace if the span duration exceeds the specified
+     * {@code threshold}.
      * 
      * This method must be called directly from {@link OnReturn}, {@link OnThrow} or {@link OnAfter}
      * so it can roll back the correct number of frames in the stack trace that it captures, making
      * the stack trace point to the method execution picked out by the {@link Pointcut} instead of
      * pointing to the Informant code that performs the stack trace capture.
      * 
+     * In case the trace has accumulated {@code maxSpans} spans and this is a dummy span and its
+     * duration exceeds the specified threshold, then this dummy span is escalated into a real span.
+     * A hard cap ({@code maxSpans * 2}) on the total number of (real) spans is applied when
+     * escalating dummy spans to real spans.
+     * 
      * @param threshold
      * @param unit
      */
-    void endWithStackTrace(long threshold, TimeUnit unit);
+    CompletedSpan endWithStackTrace(long threshold, TimeUnit unit);
 
     /**
      * End the span and add the specified {@code errorMessage} to the span.
@@ -56,13 +61,13 @@ public interface Span {
      * If this is the root span, then the error flag on the trace is set. Traces can be filtered by
      * their error flag on the trace explorer page.
      * 
-     * In case the trace has accumulated {@code maxSpans} spans and this is a dummy span, this
-     * method escalates the dummy span to a regular error span (see
-     * {@link PluginServices#startSpan(MessageSupplier, MetricName)} for full details).
+     * In case the trace has accumulated {@code maxSpans} spans and this is a dummy span, then this
+     * dummy span is escalated into a real span. A hard cap ({@code maxSpans * 2}) on the total
+     * number of (real) spans is applied when escalating dummy spans to real spans.
      * 
      * @param errorMessage
      */
-    void endWithError(ErrorMessage errorMessage);
+    CompletedSpan endWithError(ErrorMessage errorMessage);
 
     /**
      * Returns the {@code MessageSupplier} that was supplied when the {@code Span} was created.
@@ -70,6 +75,9 @@ public interface Span {
      * This can be useful (for example) to retrieve the {@code MessageSupplier} in @
      * {@link OnReturn} so that the return value can be added to the message produced by the
      * {@code MessageSupplier}.
+     * 
+     * This returns the {@code MessageSupplier} even if the trace has accumulated {@code maxSpans}
+     * spans and this is a dummy span.
      * 
      * @return the {@code MessageSupplier} that was supplied when the {@code Span} was created
      */

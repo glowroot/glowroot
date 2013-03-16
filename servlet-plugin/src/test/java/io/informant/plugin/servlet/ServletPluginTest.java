@@ -223,11 +223,21 @@ public class ServletPluginTest {
         container.executeAppUnderTest(Send500Error.class);
         // then
         Trace trace = container.getInformant().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getError()).isNotNull();
+        assertThat(trace.getError().getText()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(trace.getError().getException()).isNull();
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
         assertThat(trace.getSpans().get(0).getError().getText()).isEqualTo(
                 "sendError, HTTP status code 500");
+        assertThat(trace.getSpans().get(0).getError().getException()).isNull();
+        assertThat(trace.getSpans().get(0).getStackTrace()).isNull();
+        assertThat(trace.getSpans().get(1).getError()).isNotNull();
+        assertThat(trace.getSpans().get(1).getError().getText()).isEqualTo(
+                "sendError, HTTP status code 500");
+        assertThat(trace.getSpans().get(1).getError().getException()).isNull();
+        assertThat(trace.getSpans().get(1).getStackTrace()).isNotNull();
+        assertThat(trace.getSpans().get(1).getStackTrace().get(0)).contains(".sendError(");
     }
 
     @SuppressWarnings("serial")

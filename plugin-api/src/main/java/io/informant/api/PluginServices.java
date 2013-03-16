@@ -216,12 +216,13 @@ public abstract class PluginServices {
      * started, since metrics are very cheap, even in great quantities. The dummy span adhere to the
      * {@link Span} contract and return the specified {@link MessageSupplier} in response to
      * {@link Span#getMessageSupplier()}. Calling {@link Span#end()} on the dummy span ends the
-     * metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the dummy span, then an
-     * error span will get created and added to the trace (even though the span limit was already
-     * hit), with the original {@link MessageSupplier} and the specified {@link ErrorMessage}. Just
-     * in case of a runaway trace that generates tons of error messages, a hard cap
-     * 
-     * ({@code maxSpans * 2}) on number of spans is still applied when adding error spans.
+     * metric timer. If {@link Span#endWithError(ErrorMessage)} is called on the dummy span, then
+     * the dummy span will be escalated to a real span. If
+     * {@link Span#endWithStackTrace(long, TimeUnit)} is called on the dummy span and the dummy span
+     * duration exceeds the specified threshold, then the dummy span will be escalated to a real
+     * span. If {@link Span#captureSpanStackTrace()} is called on the dummy span, then the dummy
+     * span will be escalated to a real span. A hard cap ({@code maxSpans * 2}) on the total number
+     * of (real) spans is applied when escalating dummy spans to real spans.
      * 
      * @param messageSupplier
      * @param metric
@@ -242,22 +243,23 @@ public abstract class PluginServices {
     /**
      * Adds a span with duration zero.
      * 
+     * Once a trace has accumulated {@code maxSpans} spans, this method does nothing.
+     * 
      * @param messageSupplier
      */
-    public abstract void addSpan(MessageSupplier messageSupplier);
+    public abstract CompletedSpan addSpan(MessageSupplier messageSupplier);
 
     /**
      * Adds an error span with duration zero. It does not set the error attribute on the trace,
      * which must be done with {@link Span#endWithError(ErrorMessage)} on the root span.
      * 
      * This method bypasses the regular {@code maxSpans} check so that errors after {@code maxSpans}
-     * will still be included in the trace. Just in case of a runaway trace that generates tons of
-     * error messages, a hard cap ({@code maxSpans * 2}) on number of spans is still applied when
-     * adding error spans .
+     * will still be included in the trace. A hard cap ({@code maxSpans * 2}) on the total number of
+     * spans is still applied, after which this method does nothing.
      * 
      * @param errorMessage
      */
-    public abstract void addErrorSpan(ErrorMessage errorMessage);
+    public abstract CompletedSpan addErrorSpan(ErrorMessage errorMessage);
 
     /**
      * Sets the user id attribute on the trace. This attribute is shared across all plugins, and is
@@ -390,9 +392,13 @@ public abstract class PluginServices {
             return NopMetricTimer.INSTANCE;
         }
         @Override
-        public void addSpan(MessageSupplier messageSupplier) {}
+        public CompletedSpan addSpan(MessageSupplier messageSupplier) {
+            return NopCompletedSpan.INSTANCE;
+        }
         @Override
-        public void addErrorSpan(ErrorMessage errorMessage) {}
+        public CompletedSpan addErrorSpan(ErrorMessage errorMessage) {
+            return NopCompletedSpan.INSTANCE;
+        }
         @Override
         public void setUserId(@Nullable String userId) {}
         @Override
@@ -407,9 +413,15 @@ public abstract class PluginServices {
             private NopSpan(MessageSupplier messageSupplier) {
                 this.messageSupplier = messageSupplier;
             }
-            public void end() {}
-            public void endWithStackTrace(long threshold, TimeUnit unit) {}
-            public void endWithError(ErrorMessage errorMessage) {}
+            public CompletedSpan end() {
+                return NopCompletedSpan.INSTANCE;
+            }
+            public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
+                return NopCompletedSpan.INSTANCE;
+            }
+            public CompletedSpan endWithError(ErrorMessage errorMessage) {
+                return NopCompletedSpan.INSTANCE;
+            }
             public MessageSupplier getMessageSupplier() {
                 return messageSupplier;
             }
@@ -418,6 +430,11 @@ public abstract class PluginServices {
         private static class NopMetricTimer implements MetricTimer {
             private static final NopMetricTimer INSTANCE = new NopMetricTimer();
             public void stop() {}
+        }
+
+        private static class NopCompletedSpan implements CompletedSpan {
+            private static final NopCompletedSpan INSTANCE = new NopCompletedSpan();
+            public void captureSpanStackTrace() {}
         }
     }
 }

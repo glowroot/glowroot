@@ -15,11 +15,11 @@
  */
 package io.informant.plugin.servlet;
 
+import io.informant.api.CompletedSpan;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
-import io.informant.api.PointcutStackTrace;
 import io.informant.api.Span;
 import io.informant.api.weaving.InjectMethodArg;
 import io.informant.api.weaving.InjectReturn;
@@ -114,8 +114,8 @@ public class ServletAspect {
         @OnThrow
         public static void onThrow(@InjectThrowable Throwable t, @InjectTraveler Span span) {
             // ignoring potential sendError since this seems worse
-            span.endWithError(ErrorMessage.from(t));
             sendError.remove();
+            span.endWithError(ErrorMessage.from(t));
             topLevel.remove();
         }
         @OnReturn
@@ -387,8 +387,11 @@ public class ServletAspect {
         public static void onAfter(Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null) {
-                sendError.set(ErrorMessage.from("sendError, HTTP status code " + statusCode,
-                        new PointcutStackTrace(SendErrorAdvice.class)));
+                ErrorMessage errorMessage = ErrorMessage.from("sendError, HTTP status code "
+                        + statusCode);
+                CompletedSpan span = pluginServices.addErrorSpan(errorMessage);
+                span.captureSpanStackTrace();
+                sendError.set(errorMessage);
             }
         }
     }

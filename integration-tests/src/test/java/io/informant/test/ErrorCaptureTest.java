@@ -24,6 +24,7 @@ import io.informant.testkit.Trace;
 import io.informant.testkit.Trace.ExceptionInfo;
 import io.informant.testkit.TraceMarker;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.After;
@@ -83,9 +84,8 @@ public class ErrorCaptureTest {
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        ExceptionInfo exception = trace.getSpans().get(1).getError().getException();
-        assertThat(exception.getStackTrace().get(0)).startsWith(
-                ShouldCaptureErrorWithSpanStackTrace.class.getName() + ".traceMarker(");
+        List<String> stackTrace = trace.getSpans().get(1).getStackTrace();
+        assertThat(stackTrace.get(0)).startsWith(LogError.class.getName() + ".log(");
     }
 
     @Test

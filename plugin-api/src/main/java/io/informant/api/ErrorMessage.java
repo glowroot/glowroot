@@ -51,6 +51,10 @@ public abstract class ErrorMessage {
         return new ErrorMessageImpl(message, null, ExceptionInfo.from(t));
     }
 
+    public static ErrorMessage from(String message) {
+        return new ErrorMessageImpl(message, null, null);
+    }
+
     private static Throwable getRootCause(Throwable t) {
         Throwable root = t;
         Throwable cause = root.getCause();
