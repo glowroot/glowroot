@@ -45,7 +45,7 @@ class SameJvmExecutionAdapter implements ExecutionAdapter {
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
     private final InformantModule informantModule;
 
-    SameJvmExecutionAdapter(final @ReadOnly Map<String, String> properties) throws Exception {
+    SameJvmExecutionAdapter(@ReadOnly Map<String, String> properties) throws Exception {
         preExistingThreads = Threads.currentThreads();
         informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();

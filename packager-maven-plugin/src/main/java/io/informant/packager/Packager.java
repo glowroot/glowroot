@@ -341,11 +341,9 @@ public class Packager {
         model.setDependencies(Lists.newArrayList());
         File dependencyReducedPomLocation = new File(project.getBuild().getDirectory(),
                 "dependency-reduced-pom.xml");
-        if (dependencyReducedPomLocation.exists()) {
-            if (!dependencyReducedPomLocation.delete()) {
-                throw new IOException("Could not delete file '"
-                        + dependencyReducedPomLocation.getCanonicalPath() + "'");
-            }
+        if (dependencyReducedPomLocation.exists() && !dependencyReducedPomLocation.delete()) {
+            throw new IOException("Could not delete file '"
+                    + dependencyReducedPomLocation.getCanonicalPath() + "'");
         }
         Writer w = WriterFactory.newXmlWriter(dependencyReducedPomLocation);
         PomWriter.write(w, model, true);

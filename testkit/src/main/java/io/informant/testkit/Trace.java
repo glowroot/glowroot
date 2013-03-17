@@ -15,6 +15,8 @@
  */
 package io.informant.testkit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -285,7 +287,9 @@ public class Trace {
 
         private static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
             @Override
-            public int compare(Metric left, Metric right) {
+            public int compare(@Nullable Metric left, @Nullable Metric right) {
+                checkNotNull(left, "Ordering of non-null elements only");
+                checkNotNull(right, "Ordering of non-null elements only");
                 return Longs.compare(left.total, right.total);
             }
         };

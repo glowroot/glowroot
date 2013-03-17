@@ -43,7 +43,7 @@ public abstract class MessageSupplier {
      * @param message
      * @return a {@code MessageSupplier} created for the specified {@code message}
      */
-    public static MessageSupplier from(final @Nullable String message) {
+    public static MessageSupplier from(@Nullable final String message) {
         return new MessageSupplier() {
             @Override
             public Message get() {

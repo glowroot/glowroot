@@ -36,7 +36,7 @@ class Multiline {
 
     private final String joined;
 
-    private Multiline(String s) {
+    Multiline(String s) {
         this.joined = s;
     }
 

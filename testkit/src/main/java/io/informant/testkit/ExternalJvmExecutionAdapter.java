@@ -77,7 +77,7 @@ class ExternalJvmExecutionAdapter implements ExecutionAdapter {
 
     private volatile long numConsoleBytes;
 
-    ExternalJvmExecutionAdapter(final @ReadOnly Map<String, String> properties, File dataDir)
+    ExternalJvmExecutionAdapter(@ReadOnly Map<String, String> properties, File dataDir)
             throws Exception {
         // need to start socket listener before spawning process so process can connect to socket
         serverSocket = new ServerSocket(0);

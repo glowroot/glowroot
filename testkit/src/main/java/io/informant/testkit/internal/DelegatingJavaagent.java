@@ -15,6 +15,8 @@
  */
 package io.informant.testkit.internal;
 
+import io.informant.marker.Static;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,9 +33,12 @@ import com.google.common.io.Resources;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Static
 public class DelegatingJavaagent {
 
     private static final String DELEGATE_JAVA_AGENT_PROPERTY = "delegateJavaagent";
+
+    private DelegatingJavaagent() {}
 
     public static void premain(String agentArgs, Instrumentation instrumentation) throws Exception {
         String delegateJavaagent = System.getProperty(DELEGATE_JAVA_AGENT_PROPERTY);
