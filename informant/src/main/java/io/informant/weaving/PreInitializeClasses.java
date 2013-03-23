@@ -17,6 +17,8 @@ package io.informant.weaving;
 
 import io.informant.markers.Static;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,7 @@ import checkers.nullness.quals.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * "There are some things that agents are allowed to do that simply should not be permitted"
@@ -90,6 +93,16 @@ class PreInitializeClasses {
     @VisibleForTesting
     static ImmutableList<String> usedTypes() {
         ImmutableList.Builder<String> types = ImmutableList.builder();
+        types.addAll(getLogbackUsedTypes());
+        types.addAll(getGuavaUsedTypes());
+        types.addAll(getInformantUsedTypes());
+        types.addAll(getAsmUsedTypes());
+        types.addAll(getSlf4jUsedTypes());
+        return types.build();
+    }
+
+    private static List<String> getLogbackUsedTypes() {
+        List<String> types = Lists.newArrayList();
         types.add("ch.qos.logback.classic.BasicConfigurator");
         types.add("ch.qos.logback.classic.Level");
         types.add("ch.qos.logback.classic.Logger");
@@ -375,6 +388,11 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.util.OptionHelper");
         types.add("ch.qos.logback.core.util.PropertySetterException");
         types.add("ch.qos.logback.core.util.StatusPrinter");
+        return types;
+    }
+
+    private static List<String> getGuavaUsedTypes() {
+        List<String> types = Lists.newArrayList();
         types.add("com.google.common.base.Ascii");
         types.add("com.google.common.base.Equivalence");
         types.add("com.google.common.base.Equivalence$Equals");
@@ -609,6 +627,11 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.SettableFuture");
         types.add("com.google.common.util.concurrent.UncheckedExecutionException");
         types.add("com.google.common.util.concurrent.Uninterruptibles");
+        return types;
+    }
+
+    private static List<String> getInformantUsedTypes() {
+        List<String> types = Lists.newArrayList();
         types.add("io.informant.api.MetricName");
         types.add("io.informant.api.MetricTimer");
         types.add("io.informant.api.weaving.BindMethodArg");
@@ -655,6 +678,11 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.WeavingMethodVisitor");
         types.add("io.informant.weaving.WeavingMethodVisitor$MarkerException");
         types.add("io.informant.weaving.WeavingMetric");
+        return types;
+    }
+
+    private static List<String> getAsmUsedTypes() {
+        List<String> types = Lists.newArrayList();
         types.add("org.objectweb.asm.AnnotationVisitor");
         types.add("org.objectweb.asm.AnnotationWriter");
         types.add("org.objectweb.asm.Attribute");
@@ -734,6 +762,11 @@ class PreInitializeClasses {
         types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
         types.add("org.objectweb.asm.util.TraceMethodVisitor");
         types.add("org.objectweb.asm.util.TraceSignatureVisitor");
+        return types;
+    }
+
+    private static List<String> getSlf4jUsedTypes() {
+        List<String> types = Lists.newArrayList();
         types.add("org.slf4j.ILoggerFactory");
         types.add("org.slf4j.Logger");
         types.add("org.slf4j.LoggerFactory");
@@ -774,7 +807,7 @@ class PreInitializeClasses {
             }
             types.add("io.informant.shaded.logback.slf4j.spi.MDCAdapter");
         }
-        return types.build();
+        return types;
     }
 
     @VisibleForTesting
