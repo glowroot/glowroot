@@ -16,12 +16,14 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.GeneralConfig;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.Span;
-import io.informant.testkit.internal.TempDirs;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TempDirs;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.local.LocalContainer;
+import io.informant.container.trace.Span;
+import io.informant.container.trace.Trace;
 
 import java.io.File;
 
@@ -46,9 +48,9 @@ public class UpgradeTest {
                 .copyTo(Files.asByteSink(new File(dataDir, "informant.h2.db")));
         Resources.asByteSource(Resources.getResource("for-upgrade-test/informant.rolling.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "informant.rolling.db")));
-        InformantContainer container = InformantContainer.create(0, true, dataDir);
+        Container container = Containers.create(dataDir, 0, true);
         // when
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         // then
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getSpans()).hasSize(3);
@@ -64,21 +66,22 @@ public class UpgradeTest {
 
     // create initial database for upgrade test
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.create(0, true);
-        container.getInformant().setStoreThresholdMillis(0);
-        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
+        File dataDir = TempDirs.createTempDir("informant-test-datadir");
+        Container container = LocalContainer.createWithFileDb(dataDir);
+        container.getConfigService().setStoreThresholdMillis(0);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         // disable trace snapshot expiration so the test data won't expire
         generalConfig.setSnapshotExpirationHours(-1);
-        container.getInformant().updateGeneralConfig(generalConfig);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
-        container.closeWithoutDeletingDataDir();
-        Files.copy(new File(container.getDataDir(), "config.json"),
+        container.close();
+        Files.copy(new File(dataDir, "config.json"),
                 new File("src/test/resources/for-upgrade-test/config.json"));
-        Files.copy(new File(container.getDataDir(), "informant.h2.db"),
+        Files.copy(new File(dataDir, "informant.h2.db"),
                 new File("src/test/resources/for-upgrade-test/informant.h2.db"));
-        Files.copy(new File(container.getDataDir(), "informant.rolling.db"),
+        Files.copy(new File(dataDir, "informant.rolling.db"),
                 new File("src/test/resources/for-upgrade-test/informant.rolling.db"));
-        TempDirs.deleteRecursively(container.getDataDir());
+        TempDirs.deleteRecursively(dataDir);
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {

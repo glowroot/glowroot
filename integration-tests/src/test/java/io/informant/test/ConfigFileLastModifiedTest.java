@@ -16,8 +16,9 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.internal.TempDirs;
+import io.informant.Containers;
+import io.informant.container.Container;
+import io.informant.container.TempDirs;
 
 import java.io.File;
 
@@ -33,16 +34,17 @@ public class ConfigFileLastModifiedTest {
     public void shouldNotUpdateFileOnStartupIfNoChanges() throws Exception {
         // given
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        InformantContainer container = InformantContainer.create(0, false, dataDir);
+        Container container = Containers.create(dataDir, 0, false);
         File configFile = new File(dataDir, "config.json");
         long originalLastModified = configFile.lastModified();
         // when
-        container.closeWithoutDeletingDataDir();
-        container = InformantContainer.create(0, true, dataDir);
+        container.close();
+        container = Containers.create(dataDir, 0, true);
         long lastModified = configFile.lastModified();
         // then
         assertThat(lastModified).isEqualTo(originalLastModified);
         // cleanup
         container.close();
+        TempDirs.deleteRecursively(dataDir);
     }
 }

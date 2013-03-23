@@ -17,11 +17,10 @@ package io.informant.plugin.jdbc;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
+import io.informant.testkit.Container;
+import io.informant.testkit.Metric;
+import io.informant.testkit.Span;
 import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.Metric;
-import io.informant.testkit.Trace.Span;
 import io.informant.testkit.TraceMarker;
 
 import java.sql.Connection;
@@ -49,11 +48,11 @@ public class JdbcPluginTest {
 
     private static final String PLUGIN_ID = "io.informant.plugins:jdbc-plugin";
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Container.create(PLUGIN_ID);
     }
 
     @AfterClass
@@ -69,11 +68,10 @@ public class JdbcPluginTest {
     @Test
     public void testStatement() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
@@ -85,11 +83,10 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatement() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
@@ -102,11 +99,10 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
@@ -119,11 +115,10 @@ public class JdbcPluginTest {
     @Test
     public void testCommit() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         Span rootSpan = trace.getSpans().get(0);
         assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
@@ -143,14 +138,11 @@ public class JdbcPluginTest {
     @Test
     public void testResultSetValueMetric() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureResultSetGet", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureResultSetGet", true);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getInformant().getLastTraceSummary();
+        Trace trace = container.getLastTrace();
         boolean found = false;
         for (Metric metric : trace.getMetrics()) {
             if (metric.getName().equals("jdbc resultset value")) {
@@ -164,16 +156,11 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricDisabledSpan() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
-                "io.informant.plugins:jdbc-plugin");
-        pluginConfig.setProperty("captureDatabaseMetaDataSpans", false);
-        container.getInformant().updatePluginConfig("io.informant.plugins:jdbc-plugin",
-                pluginConfig);
+        container.setPluginProperty("captureDatabaseMetaDataSpans", false);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getMetrics().size()).isEqualTo(2);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
@@ -183,16 +170,11 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricEnabledSpan() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(
-                "io.informant.plugins:jdbc-plugin");
-        pluginConfig.setProperty("captureDatabaseMetaDataSpans", true);
-        container.getInformant().updatePluginConfig("io.informant.plugins:jdbc-plugin",
-                pluginConfig);
+        container.setPluginProperty("captureDatabaseMetaDataSpans", true);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc metadata:"
                 + " DatabaseMetaData.getTables() [connection: ");
@@ -204,11 +186,10 @@ public class JdbcPluginTest {
     @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");

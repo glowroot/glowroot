@@ -55,7 +55,7 @@
     </dependency>
     <dependency>
       <groupId>io.informant</groupId>
-      <artifactId>informant-testkit</artifactId>
+      <artifactId>informant-test-container</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -85,8 +85,8 @@
             </configuration>
           </execution>
           <execution>
-            <!-- run tests a second time using the external jvm app container (and with
-              JarFileShadingTest this time) -->
+            <!-- run tests a second time using the javaagent container (and with JarFileShadingTest
+              this time) -->
             <id>integration-test</id>
             <phase>integration-test</phase>
             <goals>
@@ -94,12 +94,12 @@
             </goals>
             <configuration>
               <systemPropertyVariables>
-                <informant.testkit.externaljvm>true</informant.testkit.externaljvm>
+                <informant.container.javaagent>true</informant.container.javaagent>
               </systemPropertyVariables>
               <properties>
                 <property>
                   <name>listener</name>
-                  <value>io.informant.testkit.ExternalJvmRunListener</value>
+                  <value>io.informant.container.SharedContainerRunListener</value>
                 </property>
               </properties>
             </configuration>

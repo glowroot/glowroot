@@ -16,9 +16,10 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.trace.Trace;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -34,11 +35,11 @@ import org.junit.Test;
  */
 public class TraceAttributesTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -54,11 +55,11 @@ public class TraceAttributesTest {
     @Test
     public void shouldReadTraceAttributesInOrder() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         Iterator<Entry<String, String>> i = trace.getAttributes().entrySet().iterator();
         Entry<String, String> entry = i.next();
         assertThat(entry.getKey()).isEqualTo("ax");

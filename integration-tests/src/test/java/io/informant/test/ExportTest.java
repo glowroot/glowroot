@@ -15,9 +15,10 @@
  */
 package io.informant.test;
 
+import io.informant.Containers;
+import io.informant.container.Container;
+import io.informant.container.trace.Trace;
 import io.informant.test.BasicTest.ShouldGenerateTraceWithNestedSpans;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
 
 import java.io.InputStream;
 import java.util.zip.ZipInputStream;
@@ -35,11 +36,11 @@ import com.google.common.io.ByteStreams;
  */
 public class ExportTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -55,11 +56,11 @@ public class ExportTest {
     @Test
     public void shouldExportTrace() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // when
-        Trace trace = container.getInformant().getLastTrace();
-        InputStream in = container.getInformant().getTraceExport(trace.getId());
+        Trace trace = container.getTraceService().getLastTrace();
+        InputStream in = container.getTraceService().getTraceExport(trace.getId());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
         zipIn.getNextEntry();

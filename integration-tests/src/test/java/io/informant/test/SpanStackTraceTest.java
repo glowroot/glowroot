@@ -16,12 +16,13 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.GeneralConfig;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
-import io.informant.testkit.Trace;
-import io.informant.testkit.TraceMarker;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.config.PluginConfig;
+import io.informant.container.trace.Trace;
 
 import java.util.List;
 
@@ -38,11 +39,11 @@ public class SpanStackTraceTest {
 
     private static final String PLUGIN_ID = "io.informant:informant-integration-tests";
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -58,15 +59,15 @@ public class SpanStackTraceTest {
     @Test
     public void shouldReadSpanStackTrace() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
-        container.getInformant().updateGeneralConfig(generalConfig);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureSpanStackTraces", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithSpanStackTrace.class);
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         List<String> stackTrace = trace.getSpans().get(1).getStackTrace();
         assertThat(stackTrace).isNotEmpty();

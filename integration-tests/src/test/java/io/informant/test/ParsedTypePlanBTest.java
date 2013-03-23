@@ -15,8 +15,9 @@
  */
 package io.informant.test;
 
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
 import io.informant.weaving.ParsedTypeCache;
 
 import java.io.IOException;
@@ -36,11 +37,11 @@ import com.google.common.io.Resources;
 // this cannot be tested using IsolatedWeavingClassLoader
 public class ParsedTypePlanBTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -50,7 +51,7 @@ public class ParsedTypePlanBTest {
 
     @Test
     public void shouldNotLogWarningInParsedTypeCachePlanB() throws Exception {
-        if (!InformantContainer.isExternalJvm()) {
+        if (!Containers.isJavaagent()) {
             // this test is only relevant under javaagent
             // (tests are run under javaagent during mvn integration-test but not during mvn test)
             // not using org.junit.Assume which reports the test as ignored, since ignored tests
@@ -66,7 +67,7 @@ public class ParsedTypePlanBTest {
 
     @Test
     public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
-        if (!InformantContainer.isExternalJvm()) {
+        if (!Containers.isJavaagent()) {
             // this test is only relevant under javaagent
             // (tests are run under javaagent during mvn integration-test but not during mvn test)
             // not using org.junit.Assume which reports the test as ignored, since ignored tests

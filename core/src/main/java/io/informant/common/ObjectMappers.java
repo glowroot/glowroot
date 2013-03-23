@@ -47,9 +47,9 @@ import com.google.common.collect.ImmutableMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// unfortunately this class cannot be used by plugin-testkit since sometimes this class exposes
+// unfortunately this class cannot be used by test-container since sometimes this class exposes
 // unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build),
-// therefore there is an exact duplicate of this class under plugin-testkit
+// therefore there is an exact duplicate of this class under test-container
 @Static
 public class ObjectMappers {
 

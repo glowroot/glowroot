@@ -17,10 +17,11 @@ package io.informant.test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
-import io.informant.testkit.TraceMarker;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.trace.Trace;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -40,11 +41,11 @@ import checkers.nullness.quals.Nullable;
  */
 public class MetricTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -60,11 +61,11 @@ public class MetricTest {
     @Test
     public void shouldReadMetrics() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
         // then
-        Trace trace = container.getInformant().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTraceSummary();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
     }
@@ -72,11 +73,11 @@ public class MetricTest {
     @Test
     public void shouldReadMetricsWithRootAndSameNested() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSameNestedMetric.class);
         // then
-        Trace trace = container.getInformant().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTraceSummary();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");
         assertThat(trace.getMetrics().get(0).getCount()).isEqualTo(1);
@@ -85,7 +86,7 @@ public class MetricTest {
     @Test
     public void shouldReadActiveMetrics() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
@@ -96,7 +97,7 @@ public class MetricTest {
             }
         });
         // then
-        Trace trace = container.getInformant().getActiveTraceSummary(5, SECONDS);
+        Trace trace = container.getTraceService().getActiveTraceSummary(5, SECONDS);
         assertThat(trace).isNotNull();
         assertThat(trace.getMetrics().size()).isEqualTo(1);
         assertThat(trace.getMetrics().get(0).getName()).isEqualTo("mock trace marker");

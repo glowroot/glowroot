@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 <configuration>
-  <appender name="STDOUT" class="io.informant.testkit.SpyingConsoleAppender">
+  <appender name="STDOUT" class="io.informant.container.SpyingConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>

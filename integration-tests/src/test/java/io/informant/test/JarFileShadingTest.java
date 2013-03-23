@@ -17,7 +17,7 @@ package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.MainEntryPoint;
-import io.informant.testkit.internal.ClassPath;
+import io.informant.container.ClassPath;
 
 import java.io.File;
 import java.io.FilenameFilter;

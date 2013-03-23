@@ -15,11 +15,12 @@
  */
 package io.informant.testing.ui;
 
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.CoarseProfilingConfig;
-import io.informant.testkit.FineProfilingConfig;
-import io.informant.testkit.GeneralConfig;
-import io.informant.testkit.InformantContainer;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.config.CoarseProfilingConfig;
+import io.informant.container.config.FineProfilingConfig;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.local.LocalContainer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,22 +38,23 @@ public class UiTestingMain {
     private UiTestingMain() {}
 
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.create(UI_PORT, true);
+        Container container = LocalContainer.createWithFileDb(UI_PORT);
         // set thresholds low so there will be lots of data to view
-        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
-        container.getInformant().updateGeneralConfig(generalConfig);
-        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(500);
         coarseProfilingConfig.setIntervalMillis(500);
         coarseProfilingConfig.setTotalSeconds(2);
-        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getConfigService()
+                .getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(50);
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setTotalSeconds(1);
-        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         logger.info("view ui at http://localhost:" + UI_PORT);
         container.executeAppUnderTest(GenerateTraces.class);
     }

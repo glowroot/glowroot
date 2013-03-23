@@ -16,8 +16,7 @@
 package io.informant.plugin.servlet;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
+import io.informant.testkit.Container;
 import io.informant.testkit.Trace;
 
 import java.util.Map;
@@ -40,11 +39,11 @@ public class SessionAttributeTest {
 
     private static final String PLUGIN_ID = "io.informant.plugins:servlet-plugin";
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Container.create(PLUGIN_ID);
     }
 
     @AfterClass
@@ -60,14 +59,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttribute() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "testattr");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "testattr");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -77,14 +73,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeWithoutTrimmedAttributeName() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", " testattr , other");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", " testattr , other");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -94,14 +87,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "*");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -111,14 +101,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeUsingWildcardPlusOther() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "*,other");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "*,other");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
@@ -128,14 +115,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -144,14 +128,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttribute() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "testattr");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "testattr");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -161,14 +142,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "*");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -178,14 +156,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeUsingWildcardAndOther() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "*,other");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "*,other");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -195,14 +170,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -211,14 +183,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeNull() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "*");
         // when
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -228,14 +197,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "one.two");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "one.two");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace).get("one.two")).isEqualTo("three");
@@ -245,14 +211,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "one.two");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "one.two");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -262,14 +225,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "missingtestattr");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "missingtestattr");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -278,14 +238,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "one.missingtwo");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "one.missingtwo");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -294,14 +251,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "one.*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "one.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNotNull();
         assertThat(getSessionAttributes(trace)).hasSize(2);
@@ -313,14 +267,11 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "one.*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "one.*");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
@@ -332,14 +283,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "missingtestattr.*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "missingtestattr.*");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();
@@ -348,14 +296,11 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath2() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionAttributes", "one.missingtwo.*");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionAttributes", "one.missingtwo.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(getSessionAttributes(trace)).isNull();
         assertThat(getUpdatedSessionAttributes(trace)).isNull();

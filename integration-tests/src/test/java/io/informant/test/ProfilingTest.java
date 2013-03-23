@@ -17,16 +17,17 @@ package io.informant.test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.Containers;
 import io.informant.api.PluginServices;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.CoarseProfilingConfig;
-import io.informant.testkit.FineProfilingConfig;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Threads;
-import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.MergedStackTreeNode;
-import io.informant.testkit.TraceMarker;
-import io.informant.testkit.UserConfig;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.Threads;
+import io.informant.container.TraceMarker;
+import io.informant.container.config.CoarseProfilingConfig;
+import io.informant.container.config.FineProfilingConfig;
+import io.informant.container.config.UserConfig;
+import io.informant.container.trace.MergedStackTreeNode;
+import io.informant.container.trace.Trace;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -46,18 +47,19 @@ import checkers.nullness.quals.Nullable;
  */
 public class ProfilingTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
-        container.getInformant().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        container.getConfigService().setStoreThresholdMillis(0);
+        CoarseProfilingConfig profilingConfig = container.getConfigService()
+                .getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
-        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
+        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
     }
 
@@ -74,15 +76,16 @@ public class ProfilingTest {
     @Test
     public void shouldReadCoarseProfilingTree() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        container.getConfigService().setStoreThresholdMillis(0);
+        CoarseProfilingConfig profilingConfig = container.getConfigService()
+                .getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
-        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
+        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNotNull();
         // coarse profiler should have captured exactly 5 stack traces
         assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isEqualTo(5);
@@ -93,16 +96,17 @@ public class ProfilingTest {
     @Test
     public void shouldReadCoarseProfilingTreeWhenTotalSecondsIsZero() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        container.getConfigService().setStoreThresholdMillis(0);
+        CoarseProfilingConfig profilingConfig = container.getConfigService()
+                .getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(60);
         profilingConfig.setIntervalMillis(10);
         profilingConfig.setTotalSeconds(0);
-        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
+        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNotNull();
         // coarse profiler should have captured exactly 1 stack trace
         assertThat(trace.getCoarseMergedStackTree().getSampleCount()).isEqualTo(1);
@@ -113,22 +117,23 @@ public class ProfilingTest {
     @Test
     public void shouldReadFineProfilingTree() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(10000);
-        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+        container.getConfigService().setStoreThresholdMillis(10000);
+        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
         coarseProfilingConfig.setIntervalMillis(10);
         coarseProfilingConfig.setTotalSeconds(300);
-        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getConfigService()
+                .getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setStoreThresholdMillis(0);
-        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNotNull();
         // fine profiler should have captured about 10 stack traces
@@ -139,26 +144,27 @@ public class ProfilingTest {
     @Test
     public void shouldReadFineUserProfilingTree() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(10000);
-        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+        container.getConfigService().setStoreThresholdMillis(10000);
+        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setInitialDelayMillis(200);
         coarseProfilingConfig.setIntervalMillis(10);
-        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getConfigService()
+                .getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(0);
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setStoreThresholdMillis(10000);
-        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
-        UserConfig userConfig = container.getInformant().getUserConfig();
+        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
+        UserConfig userConfig = container.getConfigService().getUserConfig();
         userConfig.setUserId("able");
         userConfig.setStoreThresholdMillis(0);
         userConfig.setFineProfiling(true);
-        container.getInformant().updateUserConfig(userConfig);
+        container.getConfigService().updateUserConfig(userConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTreeForAble.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNotNull();
         // fine profiler should have captured about 10 stack traces
@@ -170,12 +176,13 @@ public class ProfilingTest {
     @Test
     public void shouldReadActiveFineProfilingTree() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(10000);
-        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        container.getConfigService().setStoreThresholdMillis(10000);
+        FineProfilingConfig fineProfilingConfig = container.getConfigService()
+                .getFineProfilingConfig();
         fineProfilingConfig.setTracePercentage(100);
         fineProfilingConfig.setIntervalMillis(10);
         fineProfilingConfig.setStoreThresholdMillis(0);
-        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
@@ -186,7 +193,7 @@ public class ProfilingTest {
             }
         });
         // then
-        Trace trace = container.getInformant().getActiveTraceSummary(5, SECONDS);
+        Trace trace = container.getTraceService().getActiveTraceSummary(5, SECONDS);
         assertThat(trace).isNotNull();
         // cleanup
         future.get();
@@ -196,20 +203,21 @@ public class ProfilingTest {
     @Test
     public void shouldNotReadProfilingTreeWhenDisabled() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        CoarseProfilingConfig coarseProfilingConfig = container.getInformant()
+        container.getConfigService().setStoreThresholdMillis(0);
+        CoarseProfilingConfig coarseProfilingConfig = container.getConfigService()
                 .getCoarseProfilingConfig();
         coarseProfilingConfig.setEnabled(false);
         coarseProfilingConfig.setInitialDelayMillis(60);
         coarseProfilingConfig.setIntervalMillis(10);
-        container.getInformant().updateCoarseProfilingConfig(coarseProfilingConfig);
-        FineProfilingConfig fineProfilingConfig = container.getInformant().getFineProfilingConfig();
+        container.getConfigService().updateCoarseProfilingConfig(coarseProfilingConfig);
+        FineProfilingConfig fineProfilingConfig = container.getConfigService()
+                .getFineProfilingConfig();
         fineProfilingConfig.setEnabled(false);
-        container.getInformant().updateFineProfilingConfig(fineProfilingConfig);
+        container.getConfigService().updateFineProfilingConfig(fineProfilingConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getCoarseMergedStackTree()).isNull();
         assertThat(trace.getFineMergedStackTree()).isNull();
     }

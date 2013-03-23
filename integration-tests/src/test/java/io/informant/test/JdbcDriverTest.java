@@ -16,10 +16,11 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.Containers;
 import io.informant.api.PluginServices;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.TraceMarker;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -32,11 +33,11 @@ import org.junit.Test;
  */
 public class JdbcDriverTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create(0, true);
+        container = Containers.createWithFileDb();
     }
 
     @AfterClass
@@ -54,11 +55,11 @@ public class JdbcDriverTest {
     @Test
     public void shouldNotTriggerMockJdbcDriverToLoad() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
-        String mockDriverLoaded =
-                container.getInformant().getLastTrace().getAttributes().get("mock driver loaded");
+        String mockDriverLoaded = container.getTraceService().getLastTrace().getAttributes()
+                .get("mock driver loaded");
         assertThat(mockDriverLoaded).isEqualTo("false");
     }
 

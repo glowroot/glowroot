@@ -17,9 +17,11 @@ package io.informant.test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.TraceMarker;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.javaagent.JavaagentContainer;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -44,7 +46,7 @@ public class DataSourceShutdownTest {
 
     @Test
     public void shouldShutdown() throws Exception {
-        if (!InformantContainer.isExternalJvm()) {
+        if (!Containers.isJavaagent()) {
             // this test is only relevant under javaagent
             // (tests are run under javaagent during mvn integration-test but not during mvn test)
             // not using org.junit.Assume which reports the test as ignored, since ignored tests
@@ -52,8 +54,8 @@ public class DataSourceShutdownTest {
             return;
         }
         // given
-        final InformantContainer container = InformantContainer.create(0, true);
-        container.getInformant().setStoreThresholdMillis(0);
+        final JavaagentContainer container = JavaagentContainer.createWithFileDb();
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {
@@ -72,7 +74,7 @@ public class DataSourceShutdownTest {
             }
             Thread.sleep(1);
         }
-        container.killExternalJvm();
+        container.kill();
         // then
         assertThat(foundEnoughTraces).isTrue();
         // check that no error messages were logged, problem is (1) the external jvm is terminated
@@ -83,9 +85,9 @@ public class DataSourceShutdownTest {
         executorService.shutdown();
     }
 
-    private long getNumCompletedTraces(final InformantContainer container) throws Exception {
-        return container.getInformant().getNumStoredSnapshots()
-                + container.getInformant().getNumPendingCompleteTraces();
+    private long getNumCompletedTraces(Container container) throws Exception {
+        return container.getTraceService().getNumStoredSnapshots()
+                + container.getTraceService().getNumPendingCompleteTraces();
     }
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {

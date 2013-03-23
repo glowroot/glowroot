@@ -16,9 +16,10 @@
 package io.informant.testing.ui;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.CoarseProfilingConfig;
-import io.informant.testkit.InformantContainer;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.config.CoarseProfilingConfig;
 
 import java.io.File;
 
@@ -39,19 +40,20 @@ public class SnapshotDaoDeletePerformanceMain {
     private SnapshotDaoDeletePerformanceMain() {}
 
     public static void main(String... args) throws Exception {
-        InformantContainer container = InformantContainer.create();
+        Container container = Containers.create();
         // set thresholds low so there will be lots of data to view
-        container.getInformant().setStoreThresholdMillis(0);
-        CoarseProfilingConfig profilingConfig = container.getInformant().getCoarseProfilingConfig();
+        container.getConfigService().setStoreThresholdMillis(0);
+        CoarseProfilingConfig profilingConfig = container.getConfigService()
+                .getCoarseProfilingConfig();
         profilingConfig.setInitialDelayMillis(100);
         profilingConfig.setIntervalMillis(10);
-        container.getInformant().updateCoarseProfilingConfig(profilingConfig);
+        container.getConfigService().updateCoarseProfilingConfig(profilingConfig);
         container.executeAppUnderTest(GenerateTraces.class);
-        int pendingWrites = container.getInformant().getNumPendingCompleteTraces();
+        int pendingWrites = container.getTraceService().getNumPendingCompleteTraces();
         while (pendingWrites > 0) {
             logger.info("pending trace writes: {}", pendingWrites);
             Thread.sleep(1000);
-            pendingWrites = container.getInformant().getNumPendingCompleteTraces();
+            pendingWrites = container.getTraceService().getNumPendingCompleteTraces();
         }
         File dbFile = new File("informant.h2.db");
         long dbSize = dbFile.length();

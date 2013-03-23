@@ -42,7 +42,7 @@ public class DataSourceModule {
     public DataSourceModule(ConfigModule configModule, @ReadOnly Map<String, String> properties)
             throws Exception {
         File dataDir = configModule.getDataDir();
-        // mem db is only used for testing (by informant-testkit)
+        // mem db is only used for testing (by informant-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         if (Boolean.parseBoolean(h2MemDb)) {
             dataSource = new DataSource();

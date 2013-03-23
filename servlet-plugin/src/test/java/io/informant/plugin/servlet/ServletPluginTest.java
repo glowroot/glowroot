@@ -17,10 +17,9 @@ package io.informant.plugin.servlet;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
+import io.informant.testkit.Container;
+import io.informant.testkit.Span;
 import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.Span;
 
 import java.io.IOException;
 
@@ -56,11 +55,11 @@ public class ServletPluginTest {
 
     private static final String PLUGIN_ID = "io.informant.plugins:servlet-plugin";
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Container.create(PLUGIN_ID);
     }
 
     @AfterClass
@@ -76,11 +75,10 @@ public class ServletPluginTest {
     @Test
     public void testServlet() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("GET /testservlet");
@@ -89,11 +87,10 @@ public class ServletPluginTest {
     @Test
     public void testFilter() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
@@ -102,11 +99,10 @@ public class ServletPluginTest {
     @Test
     public void testCombination() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
         assertThat(span.getMessage().getText()).isEqualTo("GET /testfilter");
@@ -115,34 +111,29 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameters() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then don't fall into an infinite loop! (yes, at one time it did)
-        container.getInformant().getLastTraceSummary();
+        container.getLastTrace();
     }
 
     @Test
     public void testRequestParameterMap() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(GetParameterMap.class);
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
-        container.getInformant().getLastTraceSummary();
+        container.getLastTrace();
     }
 
     @Test
     public void testSessionInvalidate() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureSessionId", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureSessionId", true);
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getHeadline()).isEqualTo("GET /testservlet");
         assertThat(trace.getSpans().get(0).getMessage().getDetail()
@@ -156,14 +147,11 @@ public class ServletPluginTest {
     @Test
     public void testServletContextInitialized() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureStartup", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureStartup", true);
         // when
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getHeadline()).isEqualTo(
                 "servlet context initialized (" + TestServletContextListener.class.getName() + ")");
@@ -172,14 +160,11 @@ public class ServletPluginTest {
     @Test
     public void testServletInit() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureStartup", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureStartup", true);
         // when
         container.executeAppUnderTest(TestServletInit.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getHeadline()).isEqualTo(
                 "servlet init (" + TestServletInit.class.getName() + ")");
@@ -188,14 +173,11 @@ public class ServletPluginTest {
     @Test
     public void testFilterInit() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureStartup", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.setPluginProperty("captureStartup", true);
         // when
         container.executeAppUnderTest(TestFilterInit.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getHeadline()).isEqualTo(
                 "filter init (" + TestFilterInit.class.getName() + ")");
@@ -204,11 +186,10 @@ public class ServletPluginTest {
     @Test
     public void testThrowsException() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(10000);
         // when
         container.executeAppUnderTest(ThrowsException.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getError().getText()).isNotNull();
@@ -218,11 +199,10 @@ public class ServletPluginTest {
     @Test
     public void testSend404Error() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(Send500Error.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getError().getText()).isEqualTo("sendError, HTTP status code 500");

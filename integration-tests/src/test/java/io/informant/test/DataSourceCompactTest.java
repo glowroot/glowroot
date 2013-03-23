@@ -16,9 +16,11 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.TraceMarker;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TempDirs;
+import io.informant.container.TraceMarker;
 
 import java.io.File;
 
@@ -33,16 +35,19 @@ import org.junit.Test;
  */
 public class DataSourceCompactTest {
 
-    private static InformantContainer container;
+    private static File dataDir;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create(0, true);
+        dataDir = TempDirs.createTempDir("informant-test-datadir");
+        container = Containers.createWithFileDb(dataDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
+        TempDirs.deleteRecursively(dataDir);
     }
 
     @After
@@ -53,12 +58,12 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        File dbFile = new File(container.getDataDir(), "informant.h2.db");
+        container.getConfigService().setStoreThresholdMillis(0);
+        File dbFile = new File(dataDir, "informant.h2.db");
         // when
         container.executeAppUnderTest(GenerateLotsOfTraces.class);
         long preCompactionDbSize = dbFile.length();
-        container.getInformant().compactData();
+        container.getConfigService().compactData();
         // then
         assertThat(dbFile.length()).isLessThan(preCompactionDbSize);
     }

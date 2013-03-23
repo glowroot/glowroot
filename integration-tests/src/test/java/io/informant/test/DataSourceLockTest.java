@@ -16,8 +16,12 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.InformantContainer.StartupFailedException;
+import io.informant.Containers;
+import io.informant.container.Container;
+import io.informant.container.Container.StartupFailedException;
+import io.informant.container.TempDirs;
+
+import java.io.File;
 
 import org.junit.Test;
 
@@ -29,7 +33,7 @@ public class DataSourceLockTest {
 
     @Test
     public void shouldShutdown() throws Exception {
-        if (!InformantContainer.isExternalJvm()) {
+        if (!Containers.isJavaagent()) {
             // this test is only relevant in external jvm since H2 transparently handles two
             // connections to the same file inside the same jvm with no problem
             // (tests are run in external jvm during mvn integration-test but not during mvn test)
@@ -38,15 +42,17 @@ public class DataSourceLockTest {
             return;
         }
         // given
-        InformantContainer container = InformantContainer.create(0, true);
+        File dataDir = TempDirs.createTempDir("informant-test-datadir");
+        Container container = Containers.createWithFileDb(dataDir);
         boolean exception = false;
         try {
-            InformantContainer.create(0, true, container.getDataDir());
+            Containers.createWithFileDb(dataDir);
         } catch (StartupFailedException e) {
             exception = true;
         }
         assertThat(exception).isTrue();
         // cleanup
         container.close();
+        TempDirs.deleteRecursively(dataDir);
     }
 }

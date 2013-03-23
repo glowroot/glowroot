@@ -15,13 +15,14 @@
  */
 package io.informant.plugin.jdbc;
 
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.GeneralConfig;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
-import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.Metric;
-import io.informant.testkit.TraceMarker;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.config.PluginConfig;
+import io.informant.container.javaagent.JavaagentContainer;
+import io.informant.container.trace.Metric;
+import io.informant.container.trace.Trace;
 
 import java.io.File;
 import java.lang.management.GarbageCollectorMXBean;
@@ -46,7 +47,6 @@ public class JdbcPluginPerformanceMain {
 
     public static void main(String... args) throws Exception {
         setUpTestDatabase();
-        InformantContainer.setExternalJvm(true);
         testWithInformant();
     }
 
@@ -78,9 +78,9 @@ public class JdbcPluginPerformanceMain {
 
     private static void testWithInformant() throws Exception {
         System.out.print("with informant:            ");
-        InformantContainer container = setUpContainer();
+        Container container = setUpContainer();
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
-        Trace trace = container.getInformant().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTrace();
         for (Metric metric : trace.getMetrics()) {
             System.out.format("%s %d %d%n", metric.getName(), metric.getTotal(), metric.getCount());
         }
@@ -90,10 +90,10 @@ public class JdbcPluginPerformanceMain {
     @SuppressWarnings("unused")
     private static void testWithInformantCoreDisabled() throws Exception {
         System.out.print("with informant disabled:   ");
-        InformantContainer container = setUpContainer();
-        GeneralConfig config = container.getInformant().getGeneralConfig();
+        Container container = setUpContainer();
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
         config.setEnabled(false);
-        container.getInformant().updateGeneralConfig(config);
+        container.getConfigService().updateGeneralConfig(config);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         container.close();
     }
@@ -101,10 +101,10 @@ public class JdbcPluginPerformanceMain {
     @SuppressWarnings("unused")
     private static void testWithInformantJdbcPluginDisabled() throws Exception {
         System.out.print("with jdbc plugin disabled: ");
-        InformantContainer container = setUpContainer();
-        PluginConfig config = container.getInformant().getPluginConfig(PLUGIN_ID);
+        Container container = setUpContainer();
+        PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
         config.setEnabled(false);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, config);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, config);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         container.close();
     }
@@ -112,17 +112,17 @@ public class JdbcPluginPerformanceMain {
     @SuppressWarnings("unused")
     private static void testWithInformantResultSetNextDisabled() throws Exception {
         System.out.print("with jdbc result set next metric disabled: ");
-        InformantContainer container = setUpContainer();
-        PluginConfig config = container.getInformant().getPluginConfig(PLUGIN_ID);
+        Container container = setUpContainer();
+        PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
         config.setProperty("captureResultSetNext", false);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, config);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, config);
         container.executeAppUnderTest(ExecuteJdbcSelectAndIterateOverResults.class);
         container.close();
     }
 
-    private static InformantContainer setUpContainer() throws Exception {
-        InformantContainer container = InformantContainer.create();
-        container.getInformant().setStoreThresholdMillis(60000);
+    private static Container setUpContainer() throws Exception {
+        Container container = JavaagentContainer.createWithFileDb();
+        container.getConfigService().setStoreThresholdMillis(60000);
         return container;
     }
 

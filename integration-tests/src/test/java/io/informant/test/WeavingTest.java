@@ -16,10 +16,11 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.Span;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.trace.Span;
+import io.informant.container.trace.Trace;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -32,11 +33,11 @@ import org.junit.Test;
  */
 public class WeavingTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -52,11 +53,11 @@ public class WeavingTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         Span span1 = trace.getSpans().get(0);
         Span span2 = trace.getSpans().get(1);
         assertThat(span1.getMessage().getText()).isEqualTo("Level One");

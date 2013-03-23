@@ -18,11 +18,12 @@ package io.informant.test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.GeneralConfig;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
-import io.informant.testkit.TraceMarker;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.trace.Trace;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -44,13 +45,13 @@ import com.google.common.base.Stopwatch;
  */
 public class StuckTraceTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
         // capture one trace to warm up the system since this test involves some timing
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         container.executeAppUnderTest(WarmupTrace.class);
     }
 
@@ -67,10 +68,10 @@ public class StuckTraceTest {
     @Test
     public void shouldReadActiveStuckTrace() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getInformant().getGeneralConfig();
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
         generalConfig.setStuckThresholdSeconds(0);
-        container.getInformant().updateGeneralConfig(generalConfig);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
@@ -85,7 +86,7 @@ public class StuckTraceTest {
         Stopwatch stopwatch = new Stopwatch().start();
         Trace trace = null;
         while (stopwatch.elapsed(SECONDS) < 2) {
-            trace = container.getInformant().getActiveTraceSummary(0, MILLISECONDS);
+            trace = container.getTraceService().getActiveTraceSummary(0, MILLISECONDS);
             if (trace != null && trace.isStuck()) {
                 break;
             }
@@ -99,7 +100,7 @@ public class StuckTraceTest {
         container.interruptAppUnderTest();
         future.get();
         // should now be reported as unstuck
-        trace = container.getInformant().getLastTraceSummary();
+        trace = container.getTraceService().getLastTraceSummary();
         assertThat(trace.isStuck()).isFalse();
         assertThat(trace.isCompleted()).isTrue();
         // cleanup

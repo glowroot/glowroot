@@ -16,13 +16,14 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.trace.ExceptionInfo;
+import io.informant.container.trace.Trace;
 import io.informant.test.plugin.LogCauseAspect;
 import io.informant.test.plugin.LogCauseAspect.LogCauseAdvice;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.Trace;
-import io.informant.testkit.Trace.ExceptionInfo;
-import io.informant.testkit.TraceMarker;
 
 import java.util.List;
 import java.util.Set;
@@ -40,11 +41,11 @@ import com.google.common.collect.Sets;
  */
 public class ErrorCaptureTest {
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -60,11 +61,11 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureError() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(10000);
+        container.getConfigService().setStoreThresholdMillis(10000);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getError()).isNotNull();
         assertThat(trace.getSpans()).hasSize(3);
         assertThat(trace.getSpans().get(0).getError()).isNotNull();
@@ -75,11 +76,11 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureErrorWithSpanStackTrace() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithSpanStackTrace.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getError()).isNull();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();
@@ -91,11 +92,11 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureErrorWithCausalChain() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
+        container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
         // then
-        Trace trace = container.getInformant().getLastTrace();
+        Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getError()).isNull();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getSpans().get(1).getError()).isNotNull();

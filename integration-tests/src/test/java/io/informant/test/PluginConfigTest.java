@@ -16,10 +16,11 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
-import io.informant.testkit.Trace;
+import io.informant.Containers;
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.config.PluginConfig;
+import io.informant.container.trace.Trace;
 
 import java.util.Random;
 
@@ -38,11 +39,11 @@ public class PluginConfigTest {
 
     private static final Random random = new Random();
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -60,12 +61,12 @@ public class PluginConfigTest {
         // given
         String randomText = "Level " + random.nextLong();
         boolean randomBoolean = random.nextBoolean();
-        PluginConfig randomPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig randomPluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         randomPluginConfig.setProperty("alternateHeadline", randomText);
         randomPluginConfig.setProperty("starredHeadline", randomBoolean);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, randomPluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, randomPluginConfig);
         // when
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // then
         assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo(randomText);
         assertThat(pluginConfig.getProperty("starredHeadline")).isEqualTo(randomBoolean);
@@ -74,7 +75,7 @@ public class PluginConfigTest {
     @Test
     public void shouldReadDefaultPropertyValue() throws Exception {
         // when
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // then
         assertThat((String) pluginConfig.getProperty("hasDefaultVal")).isEqualTo("one");
     }
@@ -82,11 +83,11 @@ public class PluginConfigTest {
     @Test
     public void shouldSetNullPropertyValueAsEmptyString() throws Exception {
         // given
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateHeadline", "");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        PluginConfig updatedPluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig updatedPluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // then
         assertThat(updatedPluginConfig.getProperty("alternateHeadline")).isEqualTo("");
         assertThat(updatedPluginConfig.hasProperty("alternateHeadline")).isTrue();
@@ -95,45 +96,45 @@ public class PluginConfigTest {
     @Test
     public void shouldClearPluginProperty() throws Exception {
         // given
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateHeadline", "a non-null value");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
-        pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateHeadline", "");
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // then
-        pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo("");
     }
 
     @Test
     public void shouldReadAlternateHeadline() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        container.getConfigService().setStoreThresholdMillis(0);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateHeadline", "Level 1");
         pluginConfig.setProperty("starredHeadline", false);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getInformant().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTraceSummary();
         assertThat(trace.getHeadline()).isEqualTo("Level 1");
     }
 
     @Test
     public void shouldReadStarredHeadline() throws Exception {
         // given
-        container.getInformant().setStoreThresholdMillis(0);
-        PluginConfig pluginConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        container.getConfigService().setStoreThresholdMillis(0);
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("alternateHeadline", "");
         pluginConfig.setProperty("starredHeadline", true);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getInformant().getLastTraceSummary();
+        Trace trace = container.getTraceService().getLastTraceSummary();
         assertThat(trace.getHeadline()).isEqualTo("Level One*");
     }
 

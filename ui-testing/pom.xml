@@ -17,7 +17,7 @@
   <dependencies>
     <dependency>
       <groupId>io.informant</groupId>
-      <artifactId>informant-testkit</artifactId>
+      <artifactId>informant-test-container</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

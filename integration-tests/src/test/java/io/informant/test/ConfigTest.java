@@ -16,15 +16,16 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import io.informant.testkit.CoarseProfilingConfig;
-import io.informant.testkit.FineProfilingConfig;
-import io.informant.testkit.GeneralConfig;
-import io.informant.testkit.InformantContainer;
-import io.informant.testkit.PluginConfig;
-import io.informant.testkit.PointcutConfig;
-import io.informant.testkit.PointcutConfig.CaptureItem;
-import io.informant.testkit.PointcutConfig.MethodModifier;
-import io.informant.testkit.UserConfig;
+import io.informant.Containers;
+import io.informant.container.Container;
+import io.informant.container.config.CoarseProfilingConfig;
+import io.informant.container.config.FineProfilingConfig;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.config.PluginConfig;
+import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.PointcutConfig.CaptureItem;
+import io.informant.container.config.PointcutConfig.MethodModifier;
+import io.informant.container.config.UserConfig;
 
 import java.util.List;
 
@@ -44,11 +45,11 @@ public class ConfigTest {
 
     private static final String PLUGIN_ID = "io.informant:informant-integration-tests";
 
-    private static InformantContainer container;
+    private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = InformantContainer.create();
+        container = Containers.create();
     }
 
     @AfterClass
@@ -64,60 +65,61 @@ public class ConfigTest {
     @Test
     public void shouldUpdateGeneralConfig() throws Exception {
         // given
-        GeneralConfig config = container.getInformant().getGeneralConfig();
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
         // when
         updateAllFields(config);
-        container.getInformant().updateGeneralConfig(config);
+        container.getConfigService().updateGeneralConfig(config);
         // then
-        GeneralConfig updatedConfig = container.getInformant().getGeneralConfig();
+        GeneralConfig updatedConfig = container.getConfigService().getGeneralConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
     @Test
     public void shouldUpdateCoarseProfilingConfig() throws Exception {
         // given
-        CoarseProfilingConfig config = container.getInformant().getCoarseProfilingConfig();
+        CoarseProfilingConfig config = container.getConfigService().getCoarseProfilingConfig();
         // when
         updateAllFields(config);
-        container.getInformant().updateCoarseProfilingConfig(config);
+        container.getConfigService().updateCoarseProfilingConfig(config);
         // then
-        CoarseProfilingConfig updatedConfig = container.getInformant().getCoarseProfilingConfig();
+        CoarseProfilingConfig updatedConfig = container.getConfigService()
+                .getCoarseProfilingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
     @Test
     public void shouldUpdateFineProfilingConfig() throws Exception {
         // given
-        FineProfilingConfig config = container.getInformant().getFineProfilingConfig();
+        FineProfilingConfig config = container.getConfigService().getFineProfilingConfig();
         // when
         updateAllFields(config);
-        container.getInformant().updateFineProfilingConfig(config);
+        container.getConfigService().updateFineProfilingConfig(config);
         // then
-        FineProfilingConfig updatedConfig = container.getInformant().getFineProfilingConfig();
+        FineProfilingConfig updatedConfig = container.getConfigService().getFineProfilingConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
     @Test
     public void shouldUpdateUserConfig() throws Exception {
         // given
-        UserConfig config = container.getInformant().getUserConfig();
+        UserConfig config = container.getConfigService().getUserConfig();
         // when
         updateAllFields(config);
-        container.getInformant().updateUserConfig(config);
+        container.getConfigService().updateUserConfig(config);
         // then
-        UserConfig updatedConfig = container.getInformant().getUserConfig();
+        UserConfig updatedConfig = container.getConfigService().getUserConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
     @Test
     public void shouldUpdatePluginConfig() throws Exception {
         // given
-        PluginConfig config = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // when
         updateAllFields(config);
-        container.getInformant().updatePluginConfig(PLUGIN_ID, config);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, config);
         // then
-        PluginConfig updatedConfig = container.getInformant().getPluginConfig(PLUGIN_ID);
+        PluginConfig updatedConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -126,9 +128,9 @@ public class ConfigTest {
         // given
         PointcutConfig config = createPointcutConfig();
         // when
-        container.getInformant().addPointcutConfig(config);
+        container.getConfigService().addPointcutConfig(config);
         // then
-        List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
+        List<PointcutConfig> pointcuts = container.getConfigService().getPointcutConfigs();
         assertThat(pointcuts).hasSize(1);
         assertThat(pointcuts.get(0)).isEqualTo(config);
     }
@@ -137,12 +139,12 @@ public class ConfigTest {
     public void shouldUpdatePointcutConfig() throws Exception {
         // given
         PointcutConfig config = createPointcutConfig();
-        String version = container.getInformant().addPointcutConfig(config);
+        String version = container.getConfigService().addPointcutConfig(config);
         // when
         updateAllFields(config);
-        container.getInformant().updatePointcutConfig(version, config);
+        container.getConfigService().updatePointcutConfig(version, config);
         // then
-        List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
+        List<PointcutConfig> pointcuts = container.getConfigService().getPointcutConfigs();
         assertThat(pointcuts).hasSize(1);
         assertThat(pointcuts.get(0)).isEqualTo(config);
     }
@@ -151,11 +153,12 @@ public class ConfigTest {
     public void shouldDeletePointcutConfig() throws Exception {
         // given
         PointcutConfig pointcut = createPointcutConfig();
-        String version = container.getInformant().addPointcutConfig(pointcut);
+        String version = container.getConfigService().addPointcutConfig(pointcut);
         // when
-        container.getInformant().removePointcutConfig(version);
+        container.getConfigService().removePointcutConfig(version);
         // then
-        List<PointcutConfig> pointcuts = container.getInformant().getPointcutConfigs();
+        List<? extends PointcutConfig> pointcuts =
+                container.getConfigService().getPointcutConfigs();
         assertThat(pointcuts).isEmpty();
     }
 
