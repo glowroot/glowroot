@@ -29,6 +29,7 @@ import java.util.Map;
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
@@ -37,6 +38,7 @@ import com.google.common.base.Objects;
  * @author Trask Stalnaker
  * @since 0.5
  */
+@JsonIgnoreProperties("pluginDescriptors")
 class Config {
 
     private final GeneralConfig generalConfig;
@@ -45,7 +47,6 @@ class Config {
     private final UserConfig userConfig;
     private final Map<String, PluginConfig> pluginConfigs;
     private final List<PointcutConfig> pointcutConfigs;
-    private final List<PluginDescriptor> pluginDescriptors;
     private final String dataDir;
     private final int uiPort;
 
@@ -56,7 +57,6 @@ class Config {
             @JsonProperty("userConfig") @Nullable UserConfig userConfig,
             @JsonProperty("pluginConfigs") @Nullable Map<String, PluginConfig> pluginConfigs,
             @JsonProperty("pointcutConfigs") @Nullable List<PointcutConfig> pointcutConfigs,
-            @JsonProperty("pluginDescriptors") @Nullable List<PluginDescriptor> pluginDescriptors,
             @JsonProperty("dataDir") @Nullable String dataDir,
             @JsonProperty("uiPort") @Nullable Integer uiPort) throws JsonMappingException {
         checkRequiredProperty(generalConfig, "generalConfig");
@@ -65,7 +65,6 @@ class Config {
         checkRequiredProperty(userConfig, "userConfig");
         checkRequiredProperty(pluginConfigs, "pluginConfigs");
         checkRequiredProperty(pointcutConfigs, "pointcutConfigs");
-        checkRequiredProperty(pluginDescriptors, "pluginDescriptors");
         checkRequiredProperty(dataDir, "dataDir");
         checkRequiredProperty(uiPort, "uiPort");
         this.generalConfig = generalConfig;
@@ -74,7 +73,6 @@ class Config {
         this.userConfig = userConfig;
         this.pluginConfigs = pluginConfigs;
         this.pointcutConfigs = pointcutConfigs;
-        this.pluginDescriptors = pluginDescriptors;
         this.dataDir = dataDir;
         this.uiPort = uiPort;
     }
@@ -103,10 +101,6 @@ class Config {
         return pointcutConfigs;
     }
 
-    List<PluginDescriptor> getPluginDescriptors() {
-        return pluginDescriptors;
-    }
-
     String getDataDir() {
         return dataDir;
     }
@@ -124,7 +118,6 @@ class Config {
                 .add("userConfig", userConfig)
                 .add("pluginConfigs", pluginConfigs)
                 .add("pointcutConfigs", pointcutConfigs)
-                .add("pluginDescriptors", pluginDescriptors)
                 .add("dataDir", dataDir)
                 .add("uiPort", uiPort)
                 .toString();
