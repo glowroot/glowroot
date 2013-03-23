@@ -26,7 +26,7 @@ import io.informant.container.TempDirs;
 import io.informant.container.Threads;
 import io.informant.container.config.ConfigService;
 import io.informant.container.trace.TraceService;
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
 import io.informant.weaving.IsolatedWeavingClassLoader;
 
 import java.io.File;
@@ -81,9 +81,10 @@ public class GenericLocalContainer<T> {
         loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
         loader.setAdvisors(pluginDescriptorCache.getAdvisors());
         loader.addBridgeClasses(appInterface);
-        loader.addExcludePackages("io.informant.api", "io.informant.core", "io.informant.local",
-                "io.informant.shaded");
-        loader.weavingMetric(informantModule.getCoreModule().getWeavingMetricName());
+        loader.addExcludePackages("io.informant.api", "io.informant.common", "io.informant.config",
+                "io.informant.local", "io.informant.snapshot", "io.informant.trace",
+                "io.informant.weaving", "io.informant.shaded");
+        loader.weavingMetric(informantModule.getTraceModule().getWeavingMetricName());
         isolatedWeavingClassLoader = loader.build();
         this.appInterface = appInterface;
         this.appExecutor = appExecutor;

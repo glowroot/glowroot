@@ -15,7 +15,7 @@
  */
 package io.informant.container;
 
-import io.informant.marker.Static;
+import io.informant.markers.Static;
 
 import java.io.File;
 import java.io.IOException;

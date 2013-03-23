@@ -61,8 +61,8 @@ public abstract class Message {
         return new MessageImpl(message, new String[0], detail);
     }
 
-    // implementing ReadableMessage is just a way to access this class from io.informant.core
-    // package without making it (obviously) accessible to plugin implementations
+    // implementing ReadableMessage is just a way to access this class from informant without making
+    // it (obviously) accessible to plugin implementations
     private static class MessageImpl extends Message implements ReadableMessage {
 
         private static final Logger logger = LoggerFactory.getLogger(MessageImpl.class);

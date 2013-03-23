@@ -65,8 +65,8 @@ public abstract class ErrorMessage {
         return root;
     }
 
-    // implementing ReadableErrorMessage is just a way to access this class from io.informant.core
-    // package without making it (obviously) accessible to plugin implementations
+    // implementing ReadableErrorMessage is just a way to access this class from informant without
+    // making it (obviously) accessible to plugin implementations
     private static class ErrorMessageImpl extends ErrorMessage implements ReadableErrorMessage {
 
         private final String text;

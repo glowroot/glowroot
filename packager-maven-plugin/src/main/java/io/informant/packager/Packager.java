@@ -166,14 +166,14 @@ public class Packager {
             MojoExecutionException {
         for (Artifact artifact : artifacts) {
             if (artifact.getGroupId().equals("io.informant")
-                    && artifact.getArtifactId().equals("informant-core")) {
+                    && artifact.getArtifactId().equals("informant")) {
                 JarFile jarFile = new JarFile(artifact.getFile());
                 Manifest manifest = jarFile.getManifest();
                 jarFile.close();
                 return new Manifest(manifest);
             }
         }
-        throw new MojoExecutionException("Missing project dependency io.informant:informant-core");
+        throw new MojoExecutionException("Missing project dependency io.informant:informant");
     }
 
     private void explode(File jarFile, JarOutputStream jarOut, Set<String> seenDirectories,
@@ -261,7 +261,7 @@ public class Packager {
             updatedPlugin.properties(getPropertiesWithOverrides(pluginDescriptor));
             updatedPlugins.add(updatedPlugin.build());
         }
-        // because of jackson shading, must perform serialization inside core "shaded" code
+        // because of jackson shading, must perform serialization inside informant "shaded" code
         new PackageDescriptor(updatedPlugins).writeValue(out);
     }
 

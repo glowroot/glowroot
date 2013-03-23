@@ -45,8 +45,8 @@ import com.google.common.collect.ImmutableMap;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// unfortunately this is an exact duplicate of a class from informant-core
-// test-container cannot use the class from informant-core since sometimes that class exposes
+// unfortunately this is an exact duplicate of a class from the informant module
+// test-container cannot use the class from the informant module since sometimes that class exposes
 // unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build)
 public class ObjectMappers {
 

@@ -18,7 +18,7 @@ package io.informant.container.local;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.TempDirs;
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
 
 import java.io.File;
 

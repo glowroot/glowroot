@@ -82,7 +82,7 @@ public class Containers {
             boolean shared) throws Exception {
         if (isJavaagent()) {
             // this is the most realistic way to run tests because it launches an external JVM
-            // process using -javaagent:informant-core.jar
+            // process using -javaagent:informant.jar
             logger.debug("create(): using javaagent container");
             return new JavaagentContainer(dataDir, uiPort, useFileDb, shared);
         } else {

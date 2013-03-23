@@ -15,7 +15,7 @@
  */
 package io.informant.container.javaagent;
 
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

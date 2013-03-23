@@ -28,7 +28,7 @@ import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.UserConfig;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
 
 import java.io.IOException;
 import java.sql.SQLException;

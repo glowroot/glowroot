@@ -20,17 +20,14 @@ import io.informant.InformantModule;
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.trace.Trace;
 import io.informant.container.trace.TraceService;
-import io.informant.core.CoreModule;
-import io.informant.core.TraceRegistry;
-import io.informant.core.TraceSink;
-import io.informant.core.snapshot.Snapshot;
-import io.informant.core.snapshot.SnapshotCreator;
-import io.informant.core.snapshot.SnapshotWriter;
 import io.informant.local.store.SnapshotDao;
-import io.informant.local.store.StorageModule;
-import io.informant.local.ui.LocalUiModule;
 import io.informant.local.ui.TraceExportHttpService;
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
+import io.informant.snapshot.Snapshot;
+import io.informant.snapshot.SnapshotCreator;
+import io.informant.snapshot.SnapshotTraceSink;
+import io.informant.snapshot.SnapshotWriter;
+import io.informant.trace.TraceRegistry;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -61,18 +58,15 @@ class LocalTraceService implements TraceService {
 
     private final SnapshotDao snapshotDao;
     private final TraceExportHttpService traceExportHttpService;
-    private final TraceSink traceSink;
+    private final SnapshotTraceSink traceSink;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
     LocalTraceService(InformantModule informantModule) {
-        StorageModule storageModule = informantModule.getStorageModule();
-        CoreModule coreModule = informantModule.getCoreModule();
-        LocalUiModule uiModule = informantModule.getUiModule();
-        snapshotDao = storageModule.getSnapshotDao();
-        traceExportHttpService = uiModule.getTraceExportHttpService();
-        traceSink = coreModule.getTraceSink();
-        traceRegistry = coreModule.getTraceRegistry();
+        snapshotDao = informantModule.getStorageModule().getSnapshotDao();
+        traceExportHttpService = informantModule.getUiModule().getTraceExportHttpService();
+        traceSink = informantModule.getSnapshotModule().getSnapshotTraceSink();
+        traceRegistry = informantModule.getTraceModule().getTraceRegistry();
         // can't use ticker from Informant since it is shaded when run in mvn and unshaded in ide
         ticker = Ticker.systemTicker();
     }
@@ -161,7 +155,7 @@ class LocalTraceService implements TraceService {
 
     @Nullable
     private Trace getActiveTrace(boolean summary) throws IOException {
-        List<io.informant.core.trace.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
+        List<io.informant.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
         if (traces.isEmpty()) {
             return null;
         } else if (traces.size() > 1) {

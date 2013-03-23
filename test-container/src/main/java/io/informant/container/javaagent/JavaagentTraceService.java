@@ -20,7 +20,7 @@ import io.informant.container.common.ObjectMappers;
 import io.informant.container.javaagent.TracePointResponse.RawPoint;
 import io.informant.container.trace.Trace;
 import io.informant.container.trace.TraceService;
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
 
 import java.io.InputStream;
 import java.util.List;

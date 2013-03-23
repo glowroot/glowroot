@@ -20,9 +20,8 @@ import java.util.Map;
 import checkers.igj.quals.ReadOnly;
 
 /**
- * This interface exists to provide access to MessageImpl from io.informant.core package without
- * making MessageImpl accessible to plugins (at least not solely through the io.informant.api
- * package)
+ * This interface exists to provide access to MessageImpl from informant without making MessageImpl
+ * accessible to plugins (at least not through the io.informant.api package)
  * 
  * @author Trask Stalnaker
  * @since 0.5

@@ -26,7 +26,7 @@ import io.informant.container.SpyingConsoleAppender.MessageCount;
 import io.informant.container.TempDirs;
 import io.informant.container.config.ConfigService;
 import io.informant.container.trace.TraceService;
-import io.informant.marker.ThreadSafe;
+import io.informant.markers.ThreadSafe;
 
 import java.io.File;
 import java.io.IOException;
@@ -274,7 +274,7 @@ public class JavaagentContainer implements Container {
         command.add("-cp");
         command.add(classpath);
         command.addAll(getJavaAgentsFromCurrentJvm());
-        File javaagentJarFile = ClassPath.getInformantCoreJarFile();
+        File javaagentJarFile = ClassPath.getInformantJarFile();
         if (javaagentJarFile == null) {
             // create jar file in data dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);

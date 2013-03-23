@@ -21,9 +21,8 @@ import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
 /**
- * This interface exists to provide access to ErrorMessageImpl from io.informant.core package
- * without making ErrorMessageImpl accessible to plugins (at least not solely through the
- * io.informant.api package)
+ * This interface exists to provide access to ErrorMessageImpl from informant without making
+ * ErrorMessageImpl accessible to plugins (at least not through the io.informant.api package)
  * 
  * @author Trask Stalnaker
  * @since 0.5

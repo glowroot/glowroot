@@ -88,7 +88,7 @@ public class JdbcPluginPerformanceMain {
     }
 
     @SuppressWarnings("unused")
-    private static void testWithInformantCoreDisabled() throws Exception {
+    private static void testWithInformantDisabled() throws Exception {
         System.out.print("with informant disabled:   ");
         Container container = setUpContainer();
         GeneralConfig config = container.getConfigService().getGeneralConfig();

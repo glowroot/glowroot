@@ -31,7 +31,7 @@
 
   <modules>
     <module>plugin-api</module>
-    <module>core</module>
+    <module>informant</module>
     <module>test-container</module>
     <module>plugin-testkit</module>
     <module>packager-maven-plugin</module>

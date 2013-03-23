@@ -17,7 +17,7 @@ package io.informant.container;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import io.informant.marker.Static;
+import io.informant.markers.Static;
 
 import java.util.Collection;
 import java.util.List;
@@ -72,8 +72,8 @@ public class Threads {
             //
             // currently, the six threads are:
             //
-            // Informant-Core-0
-            // Informant-Storage-0
+            // Informant-Background-0
+            // Informant-Background-1
             // H2 Log Writer INFORMANT
             // H2 File Lock Watchdog <lock db file>
             // Informant-Http-Boss

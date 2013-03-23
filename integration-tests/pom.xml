@@ -77,9 +77,9 @@
             <id>default-test</id>
             <configuration>
               <excludes>
-                <!-- JarFileShadingTest requires informant-core.jar to be available on the
+                <!-- JarFileShadingTest requires informant.jar to be available on the
                   classpath, so it is excluded here in case 'mvn test' is executed from the parent
-                  module (informant-core.jar is built in the package phase) -->
+                  module (informant.jar is built in the package phase) -->
                 <exclude>**/JarFileShadingTest.java</exclude>
               </excludes>
             </configuration>
