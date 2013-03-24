@@ -59,10 +59,6 @@ import checkers.nullness.quals.Nullable;
  * Defines pointcuts to capture data on {@link Statement}, {@link PreparedStatement},
  * {@link CallableStatement} and {@link ResultSet} calls.
  * 
- * All pointcuts use !cflowbelow() constructs in order to pick out only top-level executions since
- * often jdbc drivers are exposed by application servers via wrappers (this is primarily useful for
- * runtime weaving which exposes these application server proxies to the weaving process).
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */

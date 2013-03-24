@@ -25,21 +25,19 @@ import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
 import io.informant.common.Clock;
 import io.informant.config.ConfigService;
-import io.informant.config.FineProfilingConfig;
 import io.informant.config.GeneralConfig;
 import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
-import io.informant.config.UserConfig;
 import io.informant.markers.NotThreadSafe;
 import io.informant.markers.ThreadSafe;
+import io.informant.trace.CollectStackCommand.TerminateScheduledActionException;
 import io.informant.trace.model.Metric;
 import io.informant.trace.model.MetricNameImpl;
 import io.informant.trace.model.Trace;
 import io.informant.trace.model.WeavingMetricNameImpl;
 
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -72,10 +70,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TraceSink traceSink;
     private final ConfigService configService;
     private final MetricCache metricCache;
-    private final FineGrainedProfiler fineGrainedProfiler;
+    private final FineProfileScheduler fineProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
-    private final Random random;
     private final WeavingMetricNameImpl weavingMetricName;
 
     // pluginId should be "groupId:artifactId", based on the groupId and artifactId specified in the
@@ -90,17 +87,16 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
             ConfigService configService, MetricCache metricCache,
-            FineGrainedProfiler fineGrainedProfiler, Ticker ticker, Clock clock, Random random,
+            FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
             WeavingMetricNameImpl weavingMetricName, PluginDescriptorCache pluginDescriptorCache,
             String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceSink = traceSink;
         this.configService = configService;
         this.metricCache = metricCache;
-        this.fineGrainedProfiler = fineGrainedProfiler;
+        this.fineProfileScheduler = fineProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
-        this.random = random;
         this.weavingMetricName = weavingMetricName;
         this.pluginId = pluginId;
         // add config listener first before caching config properties to avoid a
@@ -201,11 +197,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            trace = new Trace((MetricNameImpl) metricName, messageSupplier, ticker, clock,
-                    weavingMetricName);
+            trace = new Trace((MetricNameImpl) metricName, messageSupplier,
+                    clock.currentTimeMillis(), ticker, weavingMetricName);
             trace.setBackground(background);
             traceRegistry.addTrace(trace);
-            maybeScheduleFineProfilingUsingPercentage(trace);
+            fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
         } else {
             return startSpan(trace, (MetricNameImpl) metricName, messageSupplier);
@@ -284,7 +280,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (trace != null) {
             trace.setUserId(userId);
             if (userId != null && trace.getFineProfilingScheduledFuture() == null) {
-                maybeScheduleFineProfilingUsingUserId(trace, userId);
+                fineProfileScheduler.maybeScheduleFineProfilingUsingUserId(trace, userId);
             }
         }
     }
@@ -306,22 +302,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         pluginConfig = configService.getPluginConfig(pluginId);
         enabled = generalConfig.isEnabled() && pluginConfig != null && pluginConfig.isEnabled();
         maxSpans = generalConfig.getMaxSpans();
-    }
-
-    private void maybeScheduleFineProfilingUsingUserId(Trace trace, String userId) {
-        UserConfig userConfig = configService.getUserConfig();
-        if (userConfig.isEnabled() && userConfig.isFineProfiling()
-                && userId.equals(userConfig.getUserId())) {
-            fineGrainedProfiler.scheduleProfiling(trace);
-        }
-    }
-
-    private void maybeScheduleFineProfilingUsingPercentage(Trace trace) {
-        FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
-        if (fineProfilingConfig.isEnabled()
-                && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
-            fineGrainedProfiler.scheduleProfiling(trace);
-        }
     }
 
     private Span startSpan(Trace trace, MetricNameImpl metricName,

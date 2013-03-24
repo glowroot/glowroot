@@ -78,7 +78,7 @@ public class RollingOutputStreamTest {
         assertThat(rollingSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
         byte[] bytes = new byte[10];
-        RandomAccessFiles.readFully(in, bytes, 0, bytes.length);
+        in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }
@@ -112,9 +112,9 @@ public class RollingOutputStreamTest {
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
         byte[] bytes = new byte[600];
         in.seek(RollingOutputStream.HEADER_SKIP_BYTES + 600);
-        RandomAccessFiles.readFully(in, bytes, 0, 424);
+        in.readFully(bytes, 0, 424);
         in.seek(RollingOutputStream.HEADER_SKIP_BYTES);
-        RandomAccessFiles.readFully(in, bytes, 424, 176);
+        in.readFully(bytes, 424, 176);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }
@@ -152,7 +152,7 @@ public class RollingOutputStreamTest {
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
         byte[] bytes = new byte[600];
         in.seek(RollingOutputStream.HEADER_SKIP_BYTES + 176);
-        RandomAccessFiles.readFully(in, bytes, 0, bytes.length);
+        in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }
@@ -189,7 +189,7 @@ public class RollingOutputStreamTest {
         assertThat(lastCompactionBaseIndex).isEqualTo(176);
         byte[] bytes = new byte[600];
         in.seek(RollingOutputStream.HEADER_SKIP_BYTES + 424);
-        RandomAccessFiles.readFully(in, bytes, 0, 600);
+        in.readFully(bytes, 0, 600);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }

@@ -253,7 +253,7 @@ public class ParsedTypeCache {
 
     private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader) {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
-        String path = TypeNames.toInternal(typeName) + ".class";
+        String path = typeName.replace('.', '/') + ".class";
         URL url;
         if (loader == null) {
             // null loader means the bootstrap class loader

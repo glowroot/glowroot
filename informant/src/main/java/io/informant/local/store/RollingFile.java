@@ -167,11 +167,12 @@ public class RollingFile {
                 inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);
                 long fileRemaining = out.getRollingSizeKb() * 1024 - filePosition;
                 int numToRead = (int) Longs.min(len, blockRemaining, fileRemaining);
-                RandomAccessFiles.readFully(inFile, bytes, off, numToRead);
+                inFile.readFully(bytes, off, numToRead);
                 blockIndex += numToRead;
                 return numToRead;
             }
         }
+
         // delegate to read(...) above
         @Override
         public int read(byte bytes[]) throws IOException {

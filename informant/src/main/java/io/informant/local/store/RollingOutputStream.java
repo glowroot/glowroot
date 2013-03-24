@@ -172,12 +172,12 @@ class RollingOutputStream extends OutputStream {
         long remaining = rollingSizeBytes - startPosition;
         if (numKeepBytes > remaining) {
             out.seek(HEADER_SKIP_BYTES + startPosition);
-            RandomAccessFiles.copyFully(out, tmpOut, remaining);
+            copy(out, tmpOut, remaining);
             out.seek(HEADER_SKIP_BYTES);
-            RandomAccessFiles.copyFully(out, tmpOut, numKeepBytes - remaining);
+            copy(out, tmpOut, numKeepBytes - remaining);
         } else {
             out.seek(HEADER_SKIP_BYTES + startPosition);
-            RandomAccessFiles.copyFully(out, tmpOut, numKeepBytes);
+            copy(out, tmpOut, numKeepBytes);
         }
         out.close();
         tmpOut.close();
@@ -256,5 +256,16 @@ class RollingOutputStream extends OutputStream {
     @OnlyUsedByTests
     void sync() throws IOException {
         out.getFD().sync();
+    }
+
+    private static void copy(RandomAccessFile in, RandomAccessFile out, long numBytes)
+            throws IOException {
+        byte[] block = new byte[1024];
+        long total = 0;
+        while (total < numBytes) {
+            int n = in.read(block, 0, (int) Math.min(1024L, numBytes - total));
+            out.write(block, 0, n);
+            total += n;
+        }
     }
 }

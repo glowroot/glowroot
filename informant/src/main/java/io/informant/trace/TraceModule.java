@@ -16,9 +16,11 @@
 package io.informant.trace;
 
 import io.informant.api.PluginServices;
+import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
+import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.trace.model.WeavingMetricNameImpl;
 import io.informant.weaving.Advice;
@@ -42,8 +44,10 @@ import com.google.common.collect.Iterables;
 @ThreadSafe
 public class TraceModule {
 
-    private final ConfigModule configModule;
+    private final Ticker ticker;
+    private final Clock clock;
 
+    private final ConfigModule configModule;
     private final TraceSink traceSink;
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingMetricNameImpl weavingMetricName;
@@ -52,38 +56,40 @@ public class TraceModule {
     private final Random random;
 
     private final StuckTraceCollector stuckTraceCollector;
-    private final CoarseGrainedProfiler coarseGrainedProfiler;
-    private final FineGrainedProfiler fineGrainedProfiler;
+    private final CoarseProfiler coarseProfiler;
+    private final FineProfileScheduler fineProfileScheduler;
 
     private final LoadingCache<String, PluginServices> pluginServices =
             CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
                 @Override
                 public PluginServices load(String pluginId) {
                     return new PluginServicesImpl(traceRegistry, traceSink,
-                            configModule.getConfigService(), metricCache, fineGrainedProfiler,
-                            configModule.getTicker(), configModule.getClock(), random,
-                            weavingMetricName, configModule.getPluginDescriptorCache(), pluginId);
+                            configModule.getConfigService(), metricCache, fineProfileScheduler,
+                            ticker, clock, weavingMetricName,
+                            configModule.getPluginDescriptorCache(), pluginId);
                 }
             });
 
-    public TraceModule(ConfigModule configModule, TraceSink traceSink,
+    public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule, TraceSink traceSink,
             ScheduledExecutorService scheduledExecutor) throws Exception {
+        this.ticker = ticker;
+        this.clock = clock;
         this.configModule = configModule;
         this.traceSink = traceSink;
-
         ConfigService configService = configModule.getConfigService();
-        Ticker ticker = configModule.getTicker();
-
         parsedTypeCache = new ParsedTypeCache();
         weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
         metricCache = new MetricCache(ticker);
         random = new Random();
+        fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
+                random);
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
                 configService, ticker);
-        coarseGrainedProfiler = new CoarseGrainedProfiler(scheduledExecutor, traceRegistry,
-                configService, ticker);
-        fineGrainedProfiler = new FineGrainedProfiler(scheduledExecutor, configService, ticker);
+        coarseProfiler = new CoarseProfiler(scheduledExecutor, traceRegistry, configService,
+                ticker);
+        stuckTraceCollector.start();
+        coarseProfiler.start();
     }
 
     public WeavingClassFileTransformer createWeavingClassFileTransformer() {
@@ -99,31 +105,22 @@ public class TraceModule {
         return pluginServices.getUnchecked(pluginId);
     }
 
-    public TraceSink getTraceSink() {
-        return traceSink;
-    }
-
     public ParsedTypeCache getParsedTypeCache() {
         return parsedTypeCache;
-    }
-
-    public WeavingMetricNameImpl getWeavingMetricName() {
-        return weavingMetricName;
     }
 
     public TraceRegistry getTraceRegistry() {
         return traceRegistry;
     }
 
-    public StuckTraceCollector getStuckTraceCollector() {
-        return stuckTraceCollector;
+    @OnlyUsedByTests
+    public WeavingMetricNameImpl getWeavingMetricName() {
+        return weavingMetricName;
     }
 
-    public CoarseGrainedProfiler getCoarseGrainedProfiler() {
-        return coarseGrainedProfiler;
-    }
-
-    public FineGrainedProfiler getFineGrainedProfiler() {
-        return fineGrainedProfiler;
+    @OnlyUsedByTests
+    public void close() {
+        stuckTraceCollector.close();
+        coarseProfiler.close();
     }
 }

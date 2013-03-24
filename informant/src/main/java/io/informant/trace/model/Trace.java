@@ -18,7 +18,6 @@ package io.informant.trace.model;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableMessage;
-import io.informant.common.Clock;
 import io.informant.markers.PartiallyThreadSafe;
 
 import java.lang.management.ManagementFactory;
@@ -123,10 +122,10 @@ public class Trace {
     private final WeavingMetricNameImpl weavingMetricName;
     private final Metric weavingMetric;
 
-    public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, Ticker ticker,
-            Clock clock, WeavingMetricNameImpl weavingMetricName) {
+    public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, long start,
+            Ticker ticker, WeavingMetricNameImpl weavingMetricName) {
+        this.start = start;
         this.ticker = ticker;
-        start = clock.currentTimeMillis();
         id = new TraceUniqueId(start);
         long startTick = ticker.read();
         Metric metric = metricName.create();

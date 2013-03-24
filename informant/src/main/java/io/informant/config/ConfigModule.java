@@ -15,15 +15,9 @@
  */
 package io.informant.config;
 
-import io.informant.common.Clock;
 import io.informant.markers.ThreadSafe;
 
 import java.io.File;
-import java.util.Map;
-
-import checkers.igj.quals.ReadOnly;
-
-import com.google.common.base.Ticker;
 
 /**
  * @author Trask Stalnaker
@@ -32,30 +26,12 @@ import com.google.common.base.Ticker;
 @ThreadSafe
 public class ConfigModule {
 
-    private final Ticker ticker;
-    private final Clock clock;
-    private final File dataDir;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final ConfigService configService;
 
-    public ConfigModule(@ReadOnly Map<String, String> properties) {
-        ticker = Ticker.systemTicker();
-        clock = Clock.systemClock();
-        dataDir = DataDir.getDataDir(properties);
+    public ConfigModule(File dataDir) {
         pluginDescriptorCache = new PluginDescriptorCache();
         configService = new ConfigService(dataDir, pluginDescriptorCache);
-    }
-
-    public Ticker getTicker() {
-        return ticker;
-    }
-
-    public Clock getClock() {
-        return clock;
-    }
-
-    public File getDataDir() {
-        return dataDir;
     }
 
     public PluginDescriptorCache getPluginDescriptorCache() {

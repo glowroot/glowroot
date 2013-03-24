@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.config;
+package io.informant;
 
 import io.informant.markers.Static;
 
@@ -37,7 +37,7 @@ import com.google.common.io.Files;
  * @since 0.5
  */
 @Static
-public class DataDir {
+class DataDir {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDir.class);
 
@@ -66,7 +66,7 @@ public class DataDir {
 
     private DataDir() {}
 
-    public static File getDataDirWithNoWarning(@ReadOnly Map<String, String> properties) {
+    static File getDataDirWithNoWarning(@ReadOnly Map<String, String> properties) {
         return getDataDir(properties, true);
     }
 

@@ -16,6 +16,7 @@
 package io.informant;
 
 import io.informant.api.PluginServices;
+import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.StorageModule;
@@ -25,6 +26,7 @@ import io.informant.markers.ThreadSafe;
 import io.informant.snapshot.SnapshotModule;
 import io.informant.trace.TraceModule;
 
+import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -37,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import checkers.igj.quals.ReadOnly;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -49,6 +52,10 @@ public class InformantModule {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantModule.class);
 
+    private final Ticker ticker;
+    private final Clock clock;
+    private final File dataDir;
+
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigModule configModule;
     private final DataSourceModule dataSourceModule;
@@ -58,18 +65,35 @@ public class InformantModule {
     private final LocalUiModule uiModule;
 
     InformantModule(@ReadOnly Map<String, String> properties) throws Exception {
+        ticker = Ticker.systemTicker();
+        clock = Clock.systemClock();
+        dataDir = DataDir.getDataDir(properties);
+
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Informant-Background").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
-        configModule = new ConfigModule(properties);
-        dataSourceModule = new DataSourceModule(configModule, properties);
-        storageModule = new StorageModule(configModule, dataSourceModule, scheduledExecutor);
-        snapshotModule = new SnapshotModule(configModule, storageModule.getSnapshotSink(),
+        configModule = new ConfigModule(dataDir);
+        dataSourceModule = new DataSourceModule(dataDir, properties);
+        storageModule = new StorageModule(ticker, clock, dataDir, configModule, dataSourceModule,
                 scheduledExecutor);
-        traceModule = new TraceModule(configModule, snapshotModule.getSnapshotTraceSink(),
+        snapshotModule = new SnapshotModule(ticker, configModule, storageModule.getSnapshotSink(),
                 scheduledExecutor);
-        uiModule = new LocalUiModule(configModule, dataSourceModule, storageModule, snapshotModule,
-                traceModule, properties);
+        traceModule = new TraceModule(ticker, clock, configModule,
+                snapshotModule.getSnapshotTraceSink(), scheduledExecutor);
+        uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, dataSourceModule,
+                storageModule, snapshotModule, traceModule, properties);
+    }
+
+    public Ticker getTicker() {
+        return ticker;
+    }
+
+    public Clock getClock() {
+        return clock;
+    }
+
+    public File getDataDir() {
+        return dataDir;
     }
 
     ClassFileTransformer createWeavingClassFileTransformer() {
@@ -114,6 +138,7 @@ public class InformantModule {
     public void close() {
         logger.debug("shutdown()");
         uiModule.close();
+        traceModule.close();
         storageModule.close();
         dataSourceModule.close();
         scheduledExecutor.shutdownNow();

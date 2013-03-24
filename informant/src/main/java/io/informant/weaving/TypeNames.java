@@ -30,7 +30,7 @@ class TypeNames {
     private TypeNames() {}
 
     @PolyNull
-    public static String fromInternal(@PolyNull String typeName) {
+    static String fromInternal(@PolyNull String typeName) {
         if (typeName == null) {
             return null;
         } else {
@@ -38,7 +38,7 @@ class TypeNames {
         }
     }
 
-    public static ImmutableList<String> fromInternal(String/*@Nullable*/[] typeNames) {
+    static ImmutableList<String> fromInternal(String/*@Nullable*/[] typeNames) {
         if (typeNames == null) {
             return ImmutableList.of();
         }
@@ -50,7 +50,7 @@ class TypeNames {
     }
 
     @PolyNull
-    public static String toInternal(@PolyNull String typeName) {
+    static String toInternal(@PolyNull String typeName) {
         if (typeName == null) {
             return null;
         } else {

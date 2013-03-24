@@ -19,8 +19,6 @@ import io.informant.markers.ThreadSafe;
 import io.informant.trace.model.MergedStackTree;
 import io.informant.trace.model.Trace;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +28,6 @@ import com.google.common.base.Ticker;
 /**
  * Captures a stack trace for the thread executing a trace and stores the stack trace in the
  * {@link Trace}'s {@link MergedStackTree}.
- * 
- * Designed to be scheduled and run in a separate thread as soon as the trace exceeds a given
- * threshold, and then again at specified intervals after that (e.g. via
- * {@link ScheduledExecutorService#scheduleAtFixedRate}).
  * 
  * @author Trask Stalnaker
  * @since 0.5
@@ -89,4 +83,7 @@ class CollectStackCommand implements Runnable {
                 .add("fine", fine)
                 .toString();
     }
+
+    @SuppressWarnings("serial")
+    class TerminateScheduledActionException extends RuntimeException {}
 }

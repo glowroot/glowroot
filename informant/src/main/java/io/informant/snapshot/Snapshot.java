@@ -309,7 +309,6 @@ public class Snapshot {
         public Snapshot build() {
             if (id == null) {
                 logger.warn("setId() must be called before build()");
-                id = new TraceUniqueId(System.currentTimeMillis()).get();
                 headline = "<error: no id provided>";
             }
             if (headline == null) {

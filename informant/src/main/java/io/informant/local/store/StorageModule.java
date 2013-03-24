@@ -43,11 +43,9 @@ public class StorageModule {
     private final RollingFile rollingFile;
     private final SnapshotDao snapshotDao;
 
-    public StorageModule(ConfigModule configModule, DataSourceModule dataSourceModule,
-            ScheduledExecutorService scheduledExecutor) throws Exception {
-        Ticker ticker = configModule.getTicker();
-        Clock clock = configModule.getClock();
-        File dataDir = configModule.getDataDir();
+    public StorageModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
+            DataSourceModule dataSourceModule, ScheduledExecutorService scheduledExecutor)
+            throws Exception {
         ConfigService configService = configModule.getConfigService();
         int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
         DataSource dataSource = dataSourceModule.getDataSource();

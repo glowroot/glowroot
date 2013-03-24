@@ -15,7 +15,6 @@
  */
 package io.informant.local.store;
 
-import io.informant.config.ConfigModule;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 
@@ -39,9 +38,8 @@ public class DataSourceModule {
 
     private final DataSource dataSource;
 
-    public DataSourceModule(ConfigModule configModule, @ReadOnly Map<String, String> properties)
+    public DataSourceModule(File dataDir, @ReadOnly Map<String, String> properties)
             throws Exception {
-        File dataDir = configModule.getDataDir();
         // mem db is only used for testing (by informant-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         if (Boolean.parseBoolean(h2MemDb)) {

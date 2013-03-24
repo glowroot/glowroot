@@ -19,15 +19,14 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
 import io.informant.api.internal.ReadableMessage;
-import io.informant.common.ObjectMappers;
 import io.informant.markers.NotThreadSafe;
 import io.informant.markers.Static;
 import io.informant.trace.model.MergedStackTree;
+import io.informant.trace.model.MergedStackTree.StackTraceElementPlus;
 import io.informant.trace.model.MergedStackTreeNode;
 import io.informant.trace.model.Metric;
 import io.informant.trace.model.Span;
 import io.informant.trace.model.Trace;
-import io.informant.trace.model.MergedStackTree.StackTraceElementPlus;
 import io.informant.trace.model.Trace.TraceAttribute;
 
 import java.io.IOException;
@@ -45,8 +44,8 @@ import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
@@ -61,7 +60,7 @@ public class SnapshotCreator {
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotCreator.class);
     @ReadOnly
-    private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final JsonFactory jsonFactory = new JsonFactory();
 
     private SnapshotCreator() {}
 
@@ -109,7 +108,7 @@ public class SnapshotCreator {
             return null;
         }
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         new DetailMapWriter(jg).write(errorDetail);
         jg.close();
         return sb.toString();
@@ -122,7 +121,7 @@ public class SnapshotCreator {
             return null;
         }
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         writeException(exceptionInfo, jg);
         jg.close();
         return sb.toString();
@@ -135,7 +134,7 @@ public class SnapshotCreator {
             return null;
         }
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         for (TraceAttribute attribute : attributes) {
             jg.writeStringField(attribute.getName(), attribute.getValue());
@@ -148,7 +147,7 @@ public class SnapshotCreator {
     @Nullable
     private static String writeMetricsAsString(@ReadOnly List<Metric> metrics) throws IOException {
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartArray();
         for (Metric metric : metrics) {
             metric.writeValue(jg);
@@ -244,7 +243,7 @@ public class SnapshotCreator {
             this.spans = spans;
             this.captureTick = captureTick;
             writer = new CharArrayWriter();
-            jg = mapper.getFactory().createGenerator(writer);
+            jg = jsonFactory.createGenerator(writer);
             jg.writeStartArray();
         }
 
@@ -367,7 +366,7 @@ public class SnapshotCreator {
         private MergedStackTreeWriter(MergedStackTreeNode rootNode, Writer writer)
                 throws IOException {
             this.toVisit = Lists.newArrayList((Object) rootNode);
-            jg = mapper.getFactory().createGenerator(writer);
+            jg = jsonFactory.createGenerator(writer);
         }
 
         private void write() throws IOException {

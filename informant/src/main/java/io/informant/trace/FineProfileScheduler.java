@@ -20,9 +20,11 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
+import io.informant.config.UserConfig;
 import io.informant.markers.Singleton;
 import io.informant.trace.model.Trace;
 
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
@@ -36,22 +38,40 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @Singleton
-class FineGrainedProfiler {
+class FineProfileScheduler {
 
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigService configService;
     private final Ticker ticker;
+    private final Random random;
 
-    FineGrainedProfiler(ScheduledExecutorService scheduledExecutor, ConfigService configService,
-            Ticker ticker) {
+    FineProfileScheduler(ScheduledExecutorService scheduledExecutor, ConfigService configService,
+            Ticker ticker, Random random) {
         this.scheduledExecutor = scheduledExecutor;
         this.configService = configService;
         this.ticker = ticker;
+        this.random = random;
+    }
+
+    void maybeScheduleFineProfilingUsingUserId(Trace trace, String userId) {
+        UserConfig userConfig = configService.getUserConfig();
+        if (userConfig.isEnabled() && userConfig.isFineProfiling()
+                && userId.equals(userConfig.getUserId())) {
+            scheduleProfiling(trace);
+        }
+    }
+
+    void maybeScheduleFineProfilingUsingPercentage(Trace trace) {
+        FineProfilingConfig fineProfilingConfig = configService.getFineProfilingConfig();
+        if (fineProfilingConfig.isEnabled()
+                && random.nextDouble() * 100 < fineProfilingConfig.getTracePercentage()) {
+            scheduleProfiling(trace);
+        }
     }
 
     // schedules the first stack collection for configured interval after trace start (or
     // immediately, if trace duration already exceeds configured collection interval)
-    void scheduleProfiling(Trace trace) {
+    private void scheduleProfiling(Trace trace) {
         FineProfilingConfig config = configService.getFineProfilingConfig();
         // extra half interval at the end to make sure the final stack trace is grabbed if it aligns
         // on total (e.g. 100ms interval, 1 second total should result in exactly 10 stack traces)

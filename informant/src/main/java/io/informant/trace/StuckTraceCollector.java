@@ -20,15 +20,19 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
+import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.model.Trace;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
 
@@ -53,6 +57,9 @@ class StuckTraceCollector implements Runnable {
     private final ConfigService configService;
     private final Ticker ticker;
 
+    @Nullable
+    private volatile Future<?> future;
+
     StuckTraceCollector(ScheduledExecutorService scheduledExecutor, TraceRegistry traceRegistry,
             TraceSink traceSink, ConfigService configService, Ticker ticker) {
         this.scheduledExecutor = scheduledExecutor;
@@ -60,9 +67,13 @@ class StuckTraceCollector implements Runnable {
         this.traceSink = traceSink;
         this.configService = configService;
         this.ticker = ticker;
+    }
+
+    void start() {
         // wait to schedule the real stuck thread command until it is within CHECK_INTERVAL_MILLIS
         // from needing to start
-        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS, MILLISECONDS);
+        future = scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS,
+                MILLISECONDS);
     }
 
     public void run() {
@@ -76,6 +87,13 @@ class StuckTraceCollector implements Runnable {
         } catch (Throwable t) {
             // log and terminate successfully
             logger.error(t.getMessage(), t);
+        }
+    }
+
+    @OnlyUsedByTests
+    void close() {
+        if (future != null) {
+            future.cancel(true);
         }
     }
 

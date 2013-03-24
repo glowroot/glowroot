@@ -32,10 +32,9 @@ public class SnapshotModule {
 
     private final SnapshotTraceSink traceSink;
 
-    public SnapshotModule(ConfigModule configModule, SnapshotSink snapshotSink,
+    public SnapshotModule(Ticker ticker, ConfigModule configModule, SnapshotSink snapshotSink,
             ExecutorService executorService) throws Exception {
         ConfigService configService = configModule.getConfigService();
-        Ticker ticker = configModule.getTicker();
         traceSink = new SnapshotTraceSink(executorService, configService, snapshotSink, ticker);
     }
 

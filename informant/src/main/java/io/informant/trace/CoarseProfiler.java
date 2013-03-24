@@ -20,14 +20,18 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
+import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 import io.informant.trace.model.Trace;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Ticker;
 
@@ -39,9 +43,9 @@ import com.google.common.base.Ticker;
  * @since 0.5
  */
 @Singleton
-class CoarseGrainedProfiler implements Runnable {
+class CoarseProfiler implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(CoarseGrainedProfiler.class);
+    private static final Logger logger = LoggerFactory.getLogger(CoarseProfiler.class);
     private static final int CHECK_INTERVAL_MILLIS = 50;
 
     private final ScheduledExecutorService scheduledExecutor;
@@ -49,12 +53,18 @@ class CoarseGrainedProfiler implements Runnable {
     private final ConfigService configService;
     private final Ticker ticker;
 
-    CoarseGrainedProfiler(ScheduledExecutorService scheduledExecutor, TraceRegistry traceRegistry,
+    @Nullable
+    private volatile Future<?> future;
+
+    CoarseProfiler(ScheduledExecutorService scheduledExecutor, TraceRegistry traceRegistry,
             ConfigService configService, Ticker ticker) {
         this.scheduledExecutor = scheduledExecutor;
         this.traceRegistry = traceRegistry;
         this.configService = configService;
         this.ticker = ticker;
+    }
+
+    void start() {
         // the main repeating Runnable (this) only runs every CHECK_INTERVAL_MILLIS at which time it
         // checks to see if there are any traces that may need stack traces scheduled before the
         // main repeating Runnable runs again (in another CHECK_INTERVAL_MILLIS).
@@ -63,7 +73,8 @@ class CoarseGrainedProfiler implements Runnable {
         // since the majority of traces never end up needing stack traces this is much more
         // efficient than scheduling a repeating CollectStackCommand for every trace (this was
         // learned the hard way).
-        scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS, MILLISECONDS);
+        future = scheduledExecutor.scheduleAtFixedRate(this, 0, CHECK_INTERVAL_MILLIS,
+                MILLISECONDS);
     }
 
     public void run() {
@@ -77,6 +88,13 @@ class CoarseGrainedProfiler implements Runnable {
         } catch (Throwable t) {
             // log and terminate successfully
             logger.error(t.getMessage(), t);
+        }
+    }
+
+    @OnlyUsedByTests
+    void close() {
+        if (future != null) {
+            future.cancel(true);
         }
     }
 
