@@ -28,7 +28,7 @@
         makes the tests run measurably faster) -->
       <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
-      <version>14.0-rc1-SNAPSHOT</version>
+      <version>14.0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -45,7 +45,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>14.0</version>
+      <version>14.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
