@@ -59,6 +59,7 @@ import io.informant.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import io.informant.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import io.informant.weaving.SomeAspect.StaticAdvice;
 import io.informant.weaving.SomeAspect.StaticBindTargetClassAdvice;
+import io.informant.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import io.informant.weaving.SomeAspect.TypeNamePatternAdvice;
 import io.informant.weaving.SomeAspect.VeryBadAdvice;
 
@@ -890,6 +891,14 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(InterfaceAppearsTwiceInHierarchyAdvice.onBeforeCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    // test weaving against JSR bytecode that ends up being inlined via JSRInlinerAdapter
+    public void shouldWeaveJsrInlinedBytecode() throws Exception {
+        Misc test = newWovenObject(JsrInlinedMethodMisc.class, Misc.class,
+                TestJSRInlinedMethodAdvice.class);
+        test.executeWithReturn();
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,

@@ -99,6 +99,7 @@ class PreInitializeClasses {
         types.addAll(getAsmUsedTypes());
         types.addAll(getSlf4jUsedTypes());
         return types.build();
+
     }
 
     private static List<String> getLogbackUsedTypes() {
@@ -666,10 +667,14 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.ParsedType$Builder");
         types.add("io.informant.weaving.ParsedTypeCache");
         types.add("io.informant.weaving.ParsedTypeCache$1");
+        types.add("io.informant.weaving.ParsedTypeCache$ParseContext");
         types.add("io.informant.weaving.ParsedTypeCache$ParsedTypeClassVisitor");
         types.add("io.informant.weaving.PreInitializeClasses");
         types.add("io.informant.weaving.TypeNames");
         types.add("io.informant.weaving.Weaver");
+        types.add("io.informant.weaving.Weaver$1");
+        types.add("io.informant.weaving.Weaver$ComputeFramesClassWriter");
+        types.add("io.informant.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("io.informant.weaving.WeavingClassFileTransformer");
         types.add("io.informant.weaving.WeavingClassFileTransformer$1");
         types.add("io.informant.weaving.WeavingClassVisitor");
@@ -705,6 +710,8 @@ class PreInitializeClasses {
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
+        types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
+        types.add("org.objectweb.asm.commons.JSRInlinerAdapter$Instantiation");
         types.add("org.objectweb.asm.commons.LocalVariablesSorter");
         types.add("org.objectweb.asm.commons.Method");
         types.add("org.objectweb.asm.commons.Remapper");

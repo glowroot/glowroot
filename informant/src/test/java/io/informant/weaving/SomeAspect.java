@@ -824,6 +824,11 @@ public class SomeAspect {
         }
     }
 
+    // test weaving against JSR bytecode that ends up being inlined via JSRInlinerAdapter
+    @Pointcut(typeName = "org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager",
+            methodName = "loadBundle", methodArgs = { "org.apache.jackrabbit.core.id.NodeId" })
+    public static class TestJSRInlinedMethodAdvice {}
+
     static class IntegerThreadLocal extends ThreadLocal<Integer> {
         @Override
         protected Integer initialValue() {

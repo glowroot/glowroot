@@ -17,6 +17,7 @@ package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import io.informant.weaving.ParsedType.Builder;
+import io.informant.weaving.ParsedTypeCache.ParseContext;
 
 import java.io.IOException;
 import java.security.CodeSource;
@@ -99,8 +100,9 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
         String[] interfaceNames = interfaceNamesNullable == null ? new String[0]
                 : interfaceNamesNullable;
-        parsedType = ParsedType.builder(TypeNames.fromInternal(name),
-                TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames));
+        parsedType = ParsedType.builder((access & ACC_INTERFACE) != 0,
+                TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
+                TypeNames.fromInternal(interfaceNames));
         if ((access & ACC_INTERFACE) != 0) {
             // interfaces never get woven
             nothingAtAllToWeave = true;
@@ -203,7 +205,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 continue;
             }
             ClassNode cn = new ClassNode();
-            cr.accept(cn, 0);
+            cr.accept(cn, ClassReader.SKIP_FRAMES);
             // SuppressWarnings because generics are explicitly removed from asm binaries
             // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
             @SuppressWarnings("unchecked")
@@ -238,22 +240,14 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
     private List<ParsedType> getSuperTypes(@Nullable String superName, String[] interfaceNames) {
+        checkNotNull(type, "Call to visit() is required");
         List<ParsedType> superTypes = Lists.newArrayList();
-        superTypes.addAll(parsedTypeCache.getTypeHierarchy(TypeNames.fromInternal(superName),
-                loader));
+        ParseContext parseContext = new ParseContext(type.getClassName(), codeSource);
+        superTypes.addAll(parsedTypeCache.getTypeHierarchy(
+                TypeNames.fromInternal(superName), loader, parseContext));
         for (String interfaceName : interfaceNames) {
             superTypes.addAll(parsedTypeCache.getTypeHierarchy(
-                    TypeNames.fromInternal(interfaceName), loader));
-        }
-        for (Iterator<ParsedType> i = superTypes.iterator(); i.hasNext();) {
-            ParsedType superType = i.next();
-            if (superType.isMissing()) {
-                i.remove();
-                logger.warn("type not found '{}' while recursing super types of '{}'{}",
-                        new Object[] { superType.getName(),
-                                type == null ? "???" : type.getClassName(),
-                                codeSource == null ? "" : "(" + codeSource.getLocation() + ")" });
-            }
+                    TypeNames.fromInternal(interfaceName), loader, parseContext));
         }
         return superTypes;
     }

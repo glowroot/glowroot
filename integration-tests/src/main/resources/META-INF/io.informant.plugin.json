@@ -32,6 +32,7 @@
     "io.informant.test.plugin.LevelThreeAspect",
     "io.informant.test.plugin.LogErrorAspect",
     "io.informant.test.plugin.LogCauseAspect",
-    "io.informant.test.plugin.PauseAspect"
+    "io.informant.test.plugin.PauseAspect",
+    "io.informant.test.plugin.MatchAllTypesAspect"
   ]
 }

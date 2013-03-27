@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.security.CodeSource;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -172,8 +173,16 @@ public class ParsedTypeCache {
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
     ImmutableList<ParsedType> getTypeHierarchy(@Nullable String typeName,
-            @Nullable ClassLoader loader) {
-        return ImmutableList.copyOf(getSuperTypes(typeName, loader));
+            @Nullable ClassLoader loader, ParseContext parseContext) {
+        if (typeName == null || typeName.equals("java.lang.Object")) {
+            return ImmutableList.of();
+        }
+        return ImmutableList.copyOf(getSuperTypes(typeName, loader, parseContext));
+    }
+
+    ParsedType getParsedType(String typeName, @Nullable ClassLoader loader)
+            throws ClassNotFoundException, IOException {
+        return getOrCreateParsedType(typeName, loader);
     }
 
     private List<ParsedType> getMatchingParsedTypes(String typeName) {
@@ -195,26 +204,45 @@ public class ParsedTypeCache {
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
     @ReadOnly
-    private List<ParsedType> getSuperTypes(@Nullable String typeName,
-            @Nullable ClassLoader loader) {
-        if (typeName == null || typeName.equals("java.lang.Object")) {
+    private List<ParsedType> getSuperTypes(String typeName, @Nullable ClassLoader loader,
+            ParseContext parseContext) {
+        ParsedType parsedType;
+        try {
+            parsedType = getOrCreateParsedType(typeName, loader);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return ImmutableList.of();
+        } catch (ClassNotFoundException e) {
+            // log at debug level only since this code must not be getting used anyways, as it would
+            // fail on execution since the type doesn't exist
+            logger.debug("type not found '{}' while parsing: {}", typeName, parseContext);
             return ImmutableList.of();
         }
+        List<ParsedType> superTypes = Lists.newArrayList(parsedType);
+        String superName = parsedType.getSuperName();
+        if (superName != null && !superName.equals("java.lang.Object")) {
+            superTypes.addAll(getSuperTypes(superName, loader, parseContext));
+        }
+        for (String interfaceName : parsedType.getInterfaceNames()) {
+            superTypes.addAll(getSuperTypes(interfaceName, loader, parseContext));
+        }
+        return superTypes;
+    }
+
+    private ParsedType getOrCreateParsedType(String typeName, @Nullable ClassLoader loader)
+            throws ClassNotFoundException, IOException {
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
         // class hasn't already been loaded, so instead, call the package protected
         // ClassLoader.findLoadClass()
-        Class<?> type;
+        Class<?> type = null;
         try {
             type = (Class<?>) findLoadedClassMethod.invoke(loader, typeName);
         } catch (IllegalArgumentException e) {
             logger.error(e.getMessage(), e);
-            return ImmutableList.of(ParsedType.fromMissing(typeName));
         } catch (IllegalAccessException e) {
             logger.error(e.getMessage(), e);
-            return ImmutableList.of(ParsedType.fromMissing(typeName));
         } catch (InvocationTargetException e) {
             logger.error(e.getMessage(), e);
-            return ImmutableList.of(ParsedType.fromMissing(typeName));
         }
         ClassLoader parsedTypeLoader = loader;
         if (type != null) {
@@ -225,18 +253,6 @@ public class ParsedTypeCache {
             // ClassLoader.getResource(), as well as being a good optimization in other cases
             parsedTypeLoader = type.getClassLoader();
         }
-        List<ParsedType> superTypes = Lists.newArrayList();
-        ParsedType parsedType = getOrCreateParsedType(typeName, parsedTypeLoader);
-        superTypes.add(parsedType);
-        superTypes.addAll(getSuperTypes(parsedType.getSuperName(), loader));
-        for (String interfaceName : parsedType.getInterfaceNames()) {
-            superTypes.addAll(getSuperTypes(interfaceName, loader));
-        }
-        return superTypes;
-    }
-
-    private ParsedType getOrCreateParsedType(String typeName,
-            @Nullable ClassLoader parsedTypeLoader) {
         ConcurrentMap<String, ParsedType> loaderParsedTypes = getParsedTypes(parsedTypeLoader);
         ParsedType parsedType = loaderParsedTypes.get(typeName);
         if (parsedType == null) {
@@ -251,7 +267,8 @@ public class ParsedTypeCache {
         return parsedType;
     }
 
-    private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader) {
+    private ParsedType createParsedType(String typeName, @Nullable ClassLoader loader)
+            throws ClassNotFoundException, IOException {
         ParsedTypeClassVisitor cv = new ParsedTypeClassVisitor();
         String path = typeName.replace('.', '/') + ".class";
         URL url;
@@ -267,28 +284,18 @@ public class ParsedTypeCache {
             // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
             return createParsedTypePlanB(typeName, loader);
         }
-        try {
-            byte[] bytes = Resources.toByteArray(url);
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, 0);
-            return cv.build();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return ParsedType.fromMissing(typeName);
-        }
+        byte[] bytes = Resources.toByteArray(url);
+        ClassReader cr = new ClassReader(bytes);
+        cr.accept(cv, 0);
+        return cv.build();
     }
 
     // plan B covers some class loaders like
     // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader that delegate loadClass() to some
     // other loader where the type may have already been loaded
-    private ParsedType createParsedTypePlanB(String typeName, @Nullable ClassLoader loader) {
-        Class<?> type;
-        try {
-            type = Class.forName(typeName, false, loader);
-        } catch (ClassNotFoundException e) {
-            logger.warn("could not find type '{}' in class loader '{}'", typeName, loader);
-            return ParsedType.fromMissing(typeName);
-        }
+    private ParsedType createParsedTypePlanB(String typeName, @Nullable ClassLoader loader)
+            throws ClassNotFoundException {
+        Class<?> type = Class.forName(typeName, false, loader);
         ParsedType parsedType = getParsedTypes(type.getClassLoader()).get(typeName);
         if (parsedType == null) {
             // a class was loaded by Class.forName() above that was not previously loaded which
@@ -321,7 +328,8 @@ public class ParsedTypeCache {
         }
         Class<?> superclass = type.getSuperclass();
         String superName = superclass == null ? null : superclass.getName();
-        return ParsedType.from(typeName, superName, interfaceNames.build(), parsedMethods.build());
+        return ParsedType.from(type.isInterface(), typeName, superName, interfaceNames.build(),
+                parsedMethods.build());
     }
 
     private ConcurrentMap<String, ParsedType> getParsedTypes(@Nullable ClassLoader loader) {
@@ -340,8 +348,28 @@ public class ParsedTypeCache {
                 .toString();
     }
 
+    static class ParseContext {
+        private final String className;
+        @Nullable
+        private final CodeSource codeSource;
+        ParseContext(String className, CodeSource codeSource) {
+            this.codeSource = codeSource;
+            this.className = className;
+        }
+        // toString() is used in logger warning construction
+        @Override
+        public String toString() {
+            if (codeSource == null) {
+                return className;
+            } else {
+                return className + " (" + codeSource.getLocation() + ")";
+            }
+        }
+    }
+
     private static class ParsedTypeClassVisitor extends ClassVisitor {
 
+        private boolean iface;
         @Nullable
         private String name;
         @Nullable
@@ -356,7 +384,7 @@ public class ParsedTypeCache {
         @Override
         public void visit(int version, int access, String name, @Nullable String signature,
                 @Nullable String superName, String/*@Nullable*/[] interfaceNames) {
-
+            this.iface = (access & Opcodes.ACC_INTERFACE) != 0;
             this.name = name;
             if (superName == null || superName.equals("java/lang/Object")) {
                 this.superName = null;
@@ -377,8 +405,9 @@ public class ParsedTypeCache {
 
         private ParsedType build() {
             checkNotNull(name, "Call to visit() is required");
-            return ParsedType.from(TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
-                    TypeNames.fromInternal(interfaceNames), methods.build());
+            return ParsedType.from(iface, TypeNames.fromInternal(name),
+                    TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames),
+                    methods.build());
         }
     }
 }

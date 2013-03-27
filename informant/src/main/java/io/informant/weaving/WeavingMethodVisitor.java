@@ -80,6 +80,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private Label methodStartLabel;
     @LazyNonNull
     private Label catchStartLabel;
+    private boolean visitedLocalVariableThis;
 
     protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
             Type owner, @ReadOnly List<Advice> advisors,
@@ -127,7 +128,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
         checkNotNull(methodStartLabel, "Call to onMethodEnter() is required");
-        if (name.equals("this")) {
+        // the JSRInlinerAdapter writes the local variable "this" across different label ranges
+        // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
+        // once per method
+        if (name.equals("this") && !visitedLocalVariableThis) {
+            visitedLocalVariableThis = true;
             // this is only so that eclipse debugger will not display <unknown receiving type>
             // inside code when inside of code before the previous method start label
             // (the debugger asks for "this", which is not otherwise available in the new code

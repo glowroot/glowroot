@@ -30,43 +30,40 @@ import com.google.common.collect.ImmutableList;
 @Immutable
 class ParsedType {
 
-    private final boolean missing;
-
+    private final boolean iface;
     private final String name;
+    // null superName means the super type is Object.class
+    // (a ParsedType is never created for Object.class)
     @Nullable
     private final String superName;
     private final ImmutableList<String> interfaceNames;
     private final ImmutableList<ParsedMethod> methods;
 
     // interfaces that do not extend anything have null superClass
-    static ParsedType from(String name, @Nullable String superName,
+    static ParsedType from(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
-        return new ParsedType(false, name, superName, interfaceNames, methods);
+        return new ParsedType(iface, name, superName, interfaceNames, methods);
     }
 
-    static ParsedType fromMissing(String name) {
-        return new ParsedType(true, name, null, ImmutableList.<String> of(),
-                ImmutableList.<ParsedMethod> of());
-    }
-
-    private ParsedType(boolean missing, String name, @Nullable String superName,
+    private ParsedType(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames, ImmutableList<ParsedMethod> methods) {
-
-        this.missing = missing;
+        this.iface = iface;
         this.name = name;
         this.superName = superName;
         this.interfaceNames = interfaceNames;
         this.methods = methods;
     }
 
-    boolean isMissing() {
-        return missing;
+    boolean isInterface() {
+        return iface;
     }
 
     String getName() {
         return name;
     }
 
+    // null superName means the super type is Object.class
+    // (a ParsedType is never created for Object.class)
     @Nullable
     String getSuperName() {
         return superName;
@@ -93,7 +90,7 @@ class ParsedType {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("missing", missing)
+                .add("interface", iface)
                 .add("name", name)
                 .add("superName", superName)
                 .add("interfaceNames", interfaceNames)
@@ -101,23 +98,24 @@ class ParsedType {
                 .toString();
     }
 
-    static Builder builder(String name, @Nullable String superName,
+    static Builder builder(boolean iface, String name, @Nullable String superName,
             ImmutableList<String> interfaceNames) {
-        return new Builder(name, superName, interfaceNames);
+        return new Builder(iface, name, superName, interfaceNames);
     }
 
     @NotThreadSafe
     static class Builder {
 
+        private final boolean iface;
         private final String name;
         @Nullable
         private final String superName;
         private final ImmutableList<String> interfaceNames;
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
-        private Builder(String name, @Nullable String superName,
+        private Builder(boolean iface, String name, @Nullable String superName,
                 ImmutableList<String> interfaceNames) {
-
+            this.iface = iface;
             this.name = name;
             this.superName = superName;
             this.interfaceNames = interfaceNames;
@@ -128,7 +126,7 @@ class ParsedType {
         }
 
         ParsedType build() {
-            return new ParsedType(false, name, superName, interfaceNames, methods.build());
+            return new ParsedType(iface, name, superName, interfaceNames, methods.build());
         }
     }
 }
