@@ -74,16 +74,19 @@ public class JdbcAspect {
     private static final AtomicBoolean noSqlTextAvailableLoggedOnce = new AtomicBoolean();
 
     private static volatile int stackTraceThresholdMillis;
+    private static volatile boolean captureBindParameters;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
             public void onChange() {
                 Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
+                captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
             }
         });
         Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
         stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
+        captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
     }
 
     // ===================== Mixin =====================
@@ -279,8 +282,14 @@ public class JdbcAspect {
         public static Span onBefore(@BindTarget PreparedStatement preparedStatement) {
             PreparedStatementMirror mirror = getPreparedStatementMirror(preparedStatement);
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
-                        .createWithParameters(mirror, getConnectionHashCode(preparedStatement));
+                JdbcMessageSupplier jdbcMessageSupplier;
+                if (captureBindParameters) {
+                    jdbcMessageSupplier = JdbcMessageSupplier.createWithParameters(mirror,
+                            getConnectionHashCode(preparedStatement));
+                } else {
+                    jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql(),
+                            getConnectionHashCode(preparedStatement));
+                }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
@@ -326,8 +335,14 @@ public class JdbcAspect {
                 PreparedStatementMirror mirror =
                         getPreparedStatementMirror((PreparedStatement) statement);
                 if (pluginServices.isEnabled()) {
-                    JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier
-                            .createWithBatchedParameters(mirror, getConnectionHashCode(statement));
+                    JdbcMessageSupplier jdbcMessageSupplier;
+                    if (captureBindParameters) {
+                        jdbcMessageSupplier = JdbcMessageSupplier.createWithBatchedParameters(
+                                mirror, getConnectionHashCode(statement));
+                    } else {
+                        jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql(),
+                                getConnectionHashCode(statement));
+                    }
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {

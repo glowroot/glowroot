@@ -297,6 +297,8 @@ public class ConfigService {
             throw new IOException("Could not delete file: " + configFile.getCanonicalPath());
         }
         config = loadConfig(configFile, pluginDescriptorCache);
+        notifyConfigListeners();
+        notifyAllPluginConfigListeners();
     }
 
     private static Config loadConfig(File configFile, PluginDescriptorCache pluginDescriptorCache)

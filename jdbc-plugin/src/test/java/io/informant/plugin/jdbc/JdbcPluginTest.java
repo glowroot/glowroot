@@ -92,6 +92,22 @@ public class JdbcPluginTest {
         assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee where name like ? => 1 row [connection: ");
+    }
+
+    @Test
+    public void testPreparedStatementWithBindParameters() throws Exception {
+        // given
+        container.setPluginProperty("captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span rootSpan = trace.getSpans().get(0);
+        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee"
                         + " where name like ? ['john%'] => 1 row [connection: ");
     }
@@ -99,6 +115,7 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
+        container.setPluginProperty("captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
@@ -186,6 +203,7 @@ public class JdbcPluginTest {
     @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
+        container.setPluginProperty("captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
