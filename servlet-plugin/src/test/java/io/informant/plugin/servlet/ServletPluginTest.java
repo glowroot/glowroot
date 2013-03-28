@@ -22,6 +22,7 @@ import io.informant.testkit.Span;
 import io.informant.testkit.Trace;
 
 import java.io.IOException;
+import java.util.Map;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -111,10 +112,29 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameters() throws Exception {
         // given
+        container.setPluginProperty("captureRequestParameters", true);
         // when
         container.executeAppUnderTest(GetParameter.class);
-        // then don't fall into an infinite loop! (yes, at one time it did)
-        container.getLastTrace();
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(1);
+        Span span = trace.getSpans().get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, String> requestParameters =
+                (Map<String, String>) span.getMessage().getDetail().get("request parameters");
+        assertThat(requestParameters.get("xy")).isEqualTo("abc");
+    }
+
+    @Test
+    public void testWithoutCaptureRequestParameters() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(GetParameter.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(1);
+        Span span = trace.getSpans().get(0);
+        assertThat(span.getMessage().getDetail()).isNull();
     }
 
     @Test

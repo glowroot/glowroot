@@ -51,6 +51,16 @@
         " javax.servlet.ServletContextListener.contextInitialized(),",
         " javax.servlet.Servlet.init() and javax.servlet.Filter.init()."
       ]
+    },
+    {
+      "prompt": "Capture request parameters",
+      "name": "captureRequestParameters",
+      "type": "boolean",
+      "description": [
+        "Capture http request parameters. This is disabled by default as it can cause Informant",
+        " to capture potentially secure data, e.g. account data being updated via request",
+        " parameters."
+      ]
     }
   ],
   "aspects": [

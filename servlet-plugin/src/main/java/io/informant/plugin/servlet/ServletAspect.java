@@ -20,6 +20,7 @@ import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
+import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindReturn;
@@ -64,11 +65,23 @@ public class ServletAspect {
     private static final ThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
             new ThreadLocal</*@Nullable*/ServletMessageSupplier>();
 
+    private static volatile boolean captureRequestParameters;
+
     // the life of this thread local is tied to the life of the topLevel thread local
     // it is only created if the topLevel thread local exists, and it is cleared when topLevel
     // thread local is cleared
     private static final ThreadLocal</*@Nullable*/ErrorMessage> sendError =
             new ThreadLocal</*@Nullable*/ErrorMessage>();
+
+    static {
+        pluginServices.registerConfigListener(new ConfigListener() {
+            public void onChange() {
+                captureRequestParameters =
+                        pluginServices.getBooleanProperty("captureRequestParameters");
+            }
+        });
+        captureRequestParameters = pluginServices.getBooleanProperty("captureRequestParameters");
+    }
 
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service",
             methodArgs = { "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
@@ -187,7 +200,7 @@ public class ServletAspect {
     public static class GetParameterAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginServices.isEnabled() && captureRequestParameters;
         }
         @OnAfter
         public static void onAfter(@BindTarget Object realRequest) {
@@ -207,7 +220,7 @@ public class ServletAspect {
                     messageSupplier.captureRequestParameterMap(request.getParameterMap());
                 }
             } finally {
-                // taking no chances on re-setting thread local (thus the second try/finally)
+                // taking no chances on re-setting thread local
                 inRequestGetParameterPointcut.set(false);
             }
         }
