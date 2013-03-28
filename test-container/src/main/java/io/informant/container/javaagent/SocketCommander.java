@@ -102,8 +102,8 @@ class SocketCommander {
         executorService.shutdownNow();
     }
 
-    @SuppressWarnings("serial")
     static class CommandWrapper implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final int commandNum;
         private final Object command;
         private CommandWrapper(int commandNum, Object command) {
@@ -125,8 +125,8 @@ class SocketCommander {
         }
     }
 
-    @SuppressWarnings("serial")
     static class ResponseWrapper implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final int commandNum;
         @Nullable
         private final Object response;
