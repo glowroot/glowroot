@@ -18,790 +18,23 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Configuration</title>
-<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
-<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css" />
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
+<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
-    type="text/css" />
-<link rel="stylesheet" href="css/informant.css" type="text/css" />
+      type="text/css"/>
+<link rel="stylesheet" href="css/informant.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
 <script type="text/javascript" src="libs/bootstrap/2.2.2/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.rc.2/handlebars.js"></script>
 <script type="text/javascript" src="libs/spin/1.2.7/spin.min.js"></script>
-<script type="text/javascript" src="js/informant.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
-<div style="margin-left: 40px">
-  <button class="section-header realbtn"
-      onclick="$('#form_' + escapeForSelector('{{id}}')).toggleClass('hide')">
-    {{name}} <span class="configuration-status" id="{{id}}_status"></span>
-  </button>
-</div>
-<br>
-<form class="section-body form-horizontal hide" id="form_{{id}}" style="margin-left: 60px">
-  <fieldset>
-    <div class="section-body-padding">
-      <div class="control-group">
-        <label class="control-label" for="{{id}}_enabled">Enabled</label>
-        <div class="controls">
-          <input type="checkbox" id="{{id}}_enabled" value="true">
-        </div>
-      </div>
-      {{#each properties}}
-        {{#ifString type}}
-          <div class="control-group">
-            <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
-            <div class="controls">
-              <input type="text" id="{{../../id}}_{{name}}" style="width: 25em">
-              {{#if description}}
-                <div class="help-block">
-                  {{description}}
-                </div>
-              {{/if}}
-            </div>
-          </div>
-        {{/ifString}}
-        {{#ifBoolean type}}
-          <div class="control-group">
-            <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
-            <div class="controls">
-              <input type="checkbox" id="{{../../id}}_{{name}}" value="true">
-              {{#if description}}
-                <div class="help-block">
-                  {{description}}
-                </div>
-              {{/if}}
-            </div>
-          </div>
-        {{/ifBoolean}}
-        {{#ifDouble type}}
-          <div class="control-group">
-            <label class="control-label" for="{{../../id}}_{{name}}">{{prompt}}</label>
-            <div class="controls">
-              <input type="text" id="{{../../id}}_{{name}}" style="width: 5em">
-              {{#if description}}
-                <div class="help-block">
-                  {{description}}
-                </div>
-              {{/if}}
-            </div>
-          </div>
-        {{/ifDouble}}
-      {{/each}}
-    </div>
-    <div class="form-actions section-body-save">
-      <button type="button" class="btn" onclick="updatePluginConfig('{{id}}')">Save changes</button>
-      <span class="button-success-message hide" id="{{id}}_saveComplete">Saved</span>
-    </div>
-  </fieldset>
-</form>
+  /*#include "template/config-plugin.html" */
 </script>
 <script type="text/x-handlebars-template" id="pointcutTemplate">
-<div id="pointcut_{{num}}">
-  <div style="margin-left: 40px">
-    <button class="section-header realbtn" style="width: 100%"
-        onclick="$('#pointcutForm_{{num}}').toggleClass('hide')">
-      <span id="pointcutHeader_{{num}}"></span>
-      <span class="configuration-status" id="pointcutHeaderStatus_{{num}}"></span>
-      <span id="pointcutHeaderType_{{num}}" style="float: right"></span>
-    </button>
-  </div>
-  <br>
-  <form class="section-body form-horizontal hide" id="pointcutForm_{{num}}"
-      style="margin-left: 60px">
-    <fieldset>
-      <div class="section-body-padding">
-        <div class="control-group">
-          <label class="control-label" for="pointcutTypeName_{{num}}">Type</label>
-          <div class="controls">
-            <input type="text" data-provide="typeahead" id="pointcutTypeName_{{num}}"
-                    style="width: 40em">
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="pointcutMethodName_{{num}}">Method</label>
-          <div class="controls">
-            <input type="text" data-provide="typeahead" id="pointcutMethodName_{{num}}"
-                style="width: 40em">
-            <div id="pointcutMethodSignatures_{{num}}"></div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label">Capture</label>
-          <div class="controls">
-            <div class="checkbox">
-              <input type="checkbox" id="pointcutCaptureMetric_{{num}}" value="true"> Metric
-            </div>
-            <div class="checkbox">
-              <input type="checkbox" id="pointcutCaptureSpan_{{num}}" value="true"> Span
-            </div>
-            <div class="checkbox">
-              <input type="checkbox" id="pointcutCaptureTrace_{{num}}" value="true"> Trace
-            </div>
-          </div>
-        </div>
-        <div class="control-group hide" id="pointcutMetricSection_{{num}}">
-          <label class="control-label" for="pointcutMetricName_{{num}}">Metric Name</label>
-          <div class="controls">
-            <input type="text" id="pointcutMetricName_{{num}}" style="width: 10em">
-          </div>
-        </div>
-        <div class="hide" id="pointcutSpanSection_{{num}}">
-          <div class="control-group">
-            <label class="control-label" for="pointcutSpanTemplate_{{num}}">
-              Span template
-            </label>
-            <div class="controls">
-              <textarea id="pointcutSpanTemplate_{{num}}" rows="2" style="width: 40em"></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-actions section-body-save">
-        <button type="button" class="btn" id="pointcutSaveButton_{{num}}">Save</button>
-        <button type="button" class="btn" id="pointcutDeleteButton_{{num}}"
-            style="margin-left: 5px">Delete</button>
-        <span class="button-success-message hide" id="pointcutSaveComplete_{{num}}">
-          Saved
-        </span>
-      </div>
-    </fieldset>
-  </form>
-</div>
+  /*#include "template/config-pointcut.html" */
 </script>
-<script type="text/javascript">
-  Handlebars.registerHelper('ifString', function(type, options) {
-    if (type == 'string') {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
-  })
-  Handlebars.registerHelper('ifBoolean', function(type, options) {
-    if (type == 'boolean') {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
-  })
-  Handlebars.registerHelper('ifDouble', function(type, options) {
-    if (type == 'double') {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
-  })
-  Handlebars.registerHelper('ifMetric', function(pointcut, options) {
-    if (pointcut.captureItems.indexOf('metric') != -1) {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
-  })
-  Handlebars.registerHelper('ifSpan', function(pointcut, options) {
-    if (pointcut.captureItems.indexOf('span') != -1) {
-      return options.fn(this)
-    } else {
-      return options.inverse(this)
-    }
-  })
-  var pluginTemplate = Handlebars.compile($('#pluginTemplate').html())
-  var pointcutTemplate = Handlebars.compile($('#pointcutTemplate').html())
-  var generalConfigVersion
-  var coarseConfigVersion
-  var fineConfigVersion
-  var userConfigVersion
-  var pluginConfigVersions = {}
-  var pluginDescriptors
-  function read() {
-    showSpinner('#initialLoadSpinner')
-    $.getJSON('config/read', function(config) {
-      hideSpinner('#initialLoadSpinner')
-      var generalConfig = config.generalConfig
-      setStatus('#generalStatus', generalConfig.enabled, true)
-      $('#generalEnabled').attr('checked', generalConfig.enabled)
-      $('#storeThresholdMillis').val(generalConfig.storeThresholdMillis)
-      addIntegerValidator('#storeThresholdMillis')
-      $('#stuckThresholdSeconds').val(generalConfig.stuckThresholdSeconds)
-      addIntegerValidator('#stuckThresholdSeconds')
-      $('#maxSpans').val(generalConfig.maxSpans)
-      addIntegerValidator('#maxSpans')
-      $('#snapshotExpirationDays').val(generalConfig.snapshotExpirationHours / 24)
-      addIntegerValidator('#snapshotExpirationDays')
-      $('#rollingSizeMb').val(generalConfig.rollingSizeMb)
-      addIntegerValidator('#rollingSizeMb')
-      $('#offscreenMeasure').text(config.dataDir)
-      $('#dataDir').text(config.dataDir)
-      $('#dataDir').css("width", ($('#offscreenMeasure').width() + 50) + "px")
-      $('#uiPort').text(config.uiPort)
-      generalConfigVersion = generalConfig.version
-      var coarseConfig = config.coarseProfilingConfig
-      setStatus('#coarseStatus', coarseConfig.enabled)
-      $('#coarseEnabled').attr('checked', coarseConfig.enabled)
-      $('#coarseInitialDelayMillis').val(coarseConfig.initialDelayMillis)
-      addIntegerValidator('#coarseInitialDelayMillis')
-      $('#coarseIntervalMillis').val(coarseConfig.intervalMillis)
-      addIntegerValidator('#coarseIntervalMillis')
-      $('#coarseTotalSeconds').val(coarseConfig.totalSeconds)
-      addIntegerValidator('#coarseTotalSeconds')
-      coarseConfigVersion = coarseConfig.version
-      var fineConfig = config.fineProfilingConfig
-      setStatus('#fineStatus', fineConfig.enabled)
-      $('#fineEnabled').attr('checked', fineConfig.enabled)
-      $('#fineTracePercentage').val(fineConfig.tracePercentage)
-      addPercentageValidator('#fineTracePercentage')
-      $('#fineIntervalMillis').val(fineConfig.intervalMillis)
-      addIntegerValidator('#fineIntervalMillis')
-      $('#fineTotalSeconds').val(fineConfig.totalSeconds)
-      addIntegerValidator('#fineTotalSeconds')
-      if (fineConfig.storeThresholdMillis == -1) {
-        $('#fineStoreThresholdMillis').attr('readonly','readonly')
-      } else {
-        $('#fineStoreThresholdOverride').attr('checked', true)
-        $('#fineStoreThresholdMillis').val(fineConfig.storeThresholdMillis)
-      }
-      addIntegerOrEmptyValidator('#fineStoreThresholdMillis')
-      fineConfigVersion = fineConfig.version
-      var userConfig = config.userConfig
-      setStatus('#userStatus', userConfig.enabled)
-      $('#userEnabled').attr('checked', userConfig.enabled)
-      $('#userUserId').val(userConfig.userId)
-      $('#userStoreThresholdMillis').val(userConfig.storeThresholdMillis)
-      addIntegerValidator('#userStoreThresholdMillis')
-      $('#userFineProfiling').attr('checked', userConfig.fineProfiling)
-      userConfigVersion = userConfig.version
-      pluginDescriptors = config.pluginDescriptors
-      for (var i = 0; i < pluginDescriptors.length; i++) {
-        var pluginDescriptor = pluginDescriptors[i]
-        pluginDescriptor.id = pluginDescriptor.groupId + ':' + pluginDescriptor.artifactId
-        var propertyDescriptors = []
-        for (var j = 0; j < pluginDescriptor.properties.length; j++) {
-          if (!pluginDescriptor.properties[j].hidden) {
-            propertyDescriptors.push(pluginDescriptor.properties[j])
-          }
-        }
-        pluginDescriptor.properties = propertyDescriptors
-        $('#plugins').append(pluginTemplate(pluginDescriptor))
-        var pluginConfig = config.pluginConfigs[pluginDescriptor.id]
-        pluginConfigVersions[pluginDescriptor.id] = pluginConfig.version
-        var enabled = pluginConfig.enabled
-        setStatus('#' + escapeForSelector(pluginDescriptor.id) + '_status', enabled)
-        $('#' + escapeForSelector(pluginDescriptor.id) + '_enabled').attr('checked', enabled)
-        for (var j = 0; j < pluginDescriptor.properties.length; j++) {
-          var propertyDescriptor = pluginDescriptor.properties[j]
-          var value = pluginConfig.properties[propertyDescriptor.name]
-          var selector =
-              '#' + escapeForSelector(pluginDescriptor.id + '_' + propertyDescriptor.name)
-          if (propertyDescriptor.type == 'boolean') {
-            $(selector).attr('checked', value)
-          } else if (propertyDescriptor.type == 'double') {
-            addDoubleValidator(selector)
-            $(selector).val(value)
-          } else {
-            $(selector).val(value)
-          }
-        }
-      }
-      var pointcutConfigs = config.pointcutConfigs
-      for (var i = 0; i < pointcutConfigs.length; i++) {
-        applyPointcutEditTemplate(pointcutConfigs[i], $('#existingPointcuts'))
-      }
-    })
-  }
-  // updateGeneralConfig can take a while if resizing large rolling database
-  var postingUpdateGeneral = false
-  function updateGeneralConfig() {
-    // handle crazy user clicking on the button because this can take a while if resizing large
-    // rolling database
-    if (postingUpdateGeneral) return
-    var enabled = $('#generalEnabled').is(':checked')
-    var storeThresholdMillis = $('#storeThresholdMillis').val()
-    var stuckThresholdSeconds = $('#stuckThresholdSeconds').val()
-    var maxSpans = $('#maxSpans').val()
-    var snapshotExpirationDays = $('#snapshotExpirationDays').val()
-    var rollingSizeMb = $('#rollingSizeMb').val()
-    // handle validation
-    if (!isInteger(storeThresholdMillis) || !isInteger(stuckThresholdSeconds)
-        || !isInteger(maxSpans) || !isInteger(snapshotExpirationDays)
-        || !isInteger(rollingSizeMb)) {
-      return
-    }
-    postingUpdateGeneral = true
-    var config = {
-      'enabled': enabled,
-      'storeThresholdMillis': parseInteger(storeThresholdMillis),
-      'stuckThresholdSeconds': parseInteger(stuckThresholdSeconds),
-      'maxSpans': parseInteger(maxSpans),
-      'snapshotExpirationHours': parseInteger(snapshotExpirationDays) * 24,
-      'rollingSizeMb': parseInteger(rollingSizeMb),
-      'version': generalConfigVersion
-    }
-    $.post('config/general', JSON.stringify(config), function(response) {
-      postingUpdateGeneral = false
-      generalConfigVersion = response
-      hideSpinner('#saveGeneralButtonSpinner')
-      showAndFadeSuccessMessage('#generalSaveComplete')
-      setStatus('#generalStatus', config.enabled, true)
-    })
-    // in case button is clicked again before success message is hidden
-    $('#saveGeneralComplete').addClass('hide')
-    showSpinner('#saveGeneralButtonSpinner')
-  }
-  function updateCoarseConfig() {
-    var enabled = $('#coarseEnabled').is(':checked')
-    var initialDelayMillis = $('#coarseInitialDelayMillis').val()
-    var intervalMillis = $('#coarseIntervalMillis').val()
-    var totalSeconds = $('#coarseTotalSeconds').val()
-    // handle validation
-    if (!isInteger(initialDelayMillis) || !isInteger(intervalMillis) || !isInteger(totalSeconds)) {
-      return
-    }
-    var config = {
-      'enabled': enabled,
-      'initialDelayMillis': parseInteger(initialDelayMillis),
-      'intervalMillis': parseInteger(intervalMillis),
-      'totalSeconds': parseInteger(totalSeconds),
-      'version': coarseConfigVersion
-    }
-    $.post('config/coarse-profiling', JSON.stringify(config), function(response) {
-      coarseConfigVersion = response
-      showAndFadeSuccessMessage('#coarseSaveComplete')
-      setStatus('#coarseStatus', config.enabled)
-    })
-  }
-  function updateFineConfig() {
-    var enabled = $('#fineEnabled').is(':checked')
-    var tracePercentage = $('#fineTracePercentage').val()
-    var intervalMillis = $('#fineIntervalMillis').val()
-    var totalSeconds = $('#fineTotalSeconds').val()
-    var storeThresholdMillis = $('#fineStoreThresholdMillis').val()
-    // handle validation
-    if (!isPercentage(tracePercentage) || !isInteger(intervalMillis) || !isInteger(totalSeconds)
-        || (storeThresholdMillis != '' && !isInteger(storeThresholdMillis))) {
-      return
-    }
-    if (storeThresholdMillis == '') {
-      storeThresholdMillis = '-1'
-    }
-    var config = {
-      'enabled': enabled,
-      'tracePercentage': parsePercentage(tracePercentage),
-      'intervalMillis': parseInteger(intervalMillis),
-      'totalSeconds': parseInteger(totalSeconds),
-      'storeThresholdMillis': parseInteger(storeThresholdMillis),
-      'version': fineConfigVersion
-    }
-    $.post('config/fine-profiling', JSON.stringify(config), function(response) {
-      fineConfigVersion = response
-      showAndFadeSuccessMessage('#fineSaveComplete')
-      setStatus('#fineStatus', config.enabled)
-    })
-  }
-  function updateUserConfig() {
-    var enabled = $('#userEnabled').is(':checked')
-    var storeThresholdMillis = $('#userStoreThresholdMillis').val()
-    // handle validation
-    if (!isInteger(storeThresholdMillis)) {
-      return
-    }
-    var config = {
-      'enabled': enabled,
-      'userId': $('#userUserId').val(),
-      'storeThresholdMillis': parseInteger(storeThresholdMillis),
-      'fineProfiling': $('#userFineProfiling').is(':checked'),
-      'version': userConfigVersion
-    }
-    $.post('config/user', JSON.stringify(config), function(response) {
-      userConfigVersion = response
-      showAndFadeSuccessMessage('#userSaveComplete')
-      setStatus('#userStatus', config.enabled)
-    })
-  }
-  function updatePluginConfig(pluginId) {
-    var pluginDescriptor = pluginDescriptorForId(pluginId)
-    var config = {
-      'enabled': $('#' + escapeForSelector(pluginId) + '_enabled').is(':checked'),
-      'properties': {},
-      'version': pluginConfigVersions[pluginId]
-    }
-    var validationError = false
-    for (var j = 0; j < pluginDescriptor.properties.length; j++) {
-      var propertyDescriptor = pluginDescriptor.properties[j]
-      if (propertyDescriptor.hidden) {
-        continue
-      }
-      var value
-      var selector = '#' + escapeForSelector(pluginDescriptor.id + '_' + propertyDescriptor.name)
-      if (propertyDescriptor.type == 'boolean') {
-        value = $(selector).is(':checked')
-      } else if (propertyDescriptor.type == 'double') {
-        if (isDouble($(selector).val())) {
-          value = parseDouble($(selector).val())
-        } else {
-          validationError = true
-        }
-      } else {
-        value = $(selector).val()
-      }
-      config.properties[propertyDescriptor.name] = value
-    }
-    // check for validation error
-    if (validationError) {
-      return
-    }
-    $.post('config/plugin/' + pluginId, JSON.stringify(config), function(response) {
-      pluginConfigVersions[pluginId] = response
-      showAndFadeSuccessMessage('#' + escapeForSelector(pluginId) + '_saveComplete')
-      setStatus('#' + escapeForSelector(pluginId) + '_status', config.enabled)
-    })
-  }
-  function setStatus(selector, value, general) {
-    if (value) {
-      $(selector).removeClass('configuration-status-off')
-      $(selector).addClass('configuration-status-on')
-      $(selector).text('ON')
-    } else {
-      $(selector).removeClass('configuration-status-on')
-      $(selector).addClass('configuration-status-off')
-      $(selector).text('OFF')
-    }
-    if (!general && !$('#generalEnabled').is(':checked')) {
-      // this needs to be set the first time through, at least for the plugin nodes which didn't
-      // exist when setStatus was called for general the first time
-      $(selector).css('color', '#bbb')
-    }
-    if (general) {
-      // update other status'
-      if (value) {
-        $('.configuration-status').css('color', '')
-      } else {
-        $('.configuration-status').css('color', '#bbb')
-        // except for general
-        $(selector).css('color', '')
-      }
-    }
-  }
-  function pluginDescriptorForId(pluginId) {
-    for (var i = 0; i < pluginDescriptors.length; i++) {
-      if (pluginDescriptors[i].id == pluginId) {
-        return pluginDescriptors[i]
-      }
-    }
-    return null
-  }
-  function escapeForSelector(id) {
-    // '.' and ':' have to be escaped for jquery selectors
-    return id.replace(/\./g, '\\.').replace(/:/g, '\\:')
-  }
-  var pointcutCounter = 0
-  function applyPointcutEditTemplate(pointcut, selector) {
-    var pointcutNum = pointcutCounter++
-    function matchingTypeNames(partialTypeName, callback) {
-      var url = 'pointcut/matching-type-names?partial-type-name=' + partialTypeName + '&limit=7'
-      $.getJSON(url, function(matchingTypeNames) {
-        callback(matchingTypeNames)
-      })
-    }
-    function matchingMethodNames(partialMethodName, callback) {
-      var url = 'pointcut/matching-method-names?type-name='
-          + $('#pointcutTypeName_' + pointcutNum).val() + '&partial-method-name='
-          + partialMethodName + '&limit=7'
-      $.getJSON(url, function(matchingMethodNames) {
-        callback(matchingMethodNames)
-      })
-    }
-    function signatureText(modifiers, returnType, methodName, argTypes) {
-      var signature = ''
-      for (var i = 0; i < modifiers.length; i++) {
-        signature += modifiers[i].toLowerCase() + ' '
-      }
-      signature += returnType + ' ' + methodName + '('
-      for (var j = 0; j < argTypes.length; j++) {
-        if (j > 0) {
-          signature += ', '
-        }
-        signature += argTypes[j]
-      }
-      signature += ')'
-      return signature
-    }
-    function updateSpanTemplate(signature) {
-      var signature = getSignature()
-      if (!signature) {
-        // no radio button selected
-        return
-      }
-      var template = $('#pointcutTypeName_' + pointcutNum).val() + '.' + signature.name + '()'
-      for (var i = 0; i < signature.argTypeNames.length; i++) {
-        if (i == 0) {
-          template += ': {{' + i + '}}'
-        } else {
-          template += ', {{' + i + '}}'
-        }
-      }
-      if (signature.returnTypeName != "void") {
-        template += ' => {{?}}'
-      }
-      $('#pointcutSpanTemplate_' + pointcutNum).val(template)
-    }
-    function matchingMethods(methodName) {
-      var url = 'pointcut/matching-methods?type-name=' + $('#pointcutTypeName_' + pointcutNum).val()
-          + '&method-name=' + methodName
-      $.getJSON(url, function(signatures) {
-        $('#pointcutMethodSignatures_' + pointcutNum).html('')
-        $('#pointcutSpanTemplate_' + pointcutNum).val('')
-        html = '<div style="padding-top: 20px">'
-        for (var i = 0; i < signatures.length; i++) {
-          html += '<div style="padding: 10px 0">'
-              + '<div class="radio">'
-              + '<input type="radio" name="pointcutMethodSignature_' + pointcutNum + '" value="' + i
-              + '">'
-              + signatureText(signatures[i].modifiers, signatures[i].returnTypeName,
-                              signatures[i].name, signatures[i].argTypeNames)
-              + '<br></div></div>'
-        }
-        html += '</div>'
-        $('#pointcutMethodSignatures_' + pointcutNum).append(html)
-        $('#pointcutMethodSignatures_' + pointcutNum).data('signatures', signatures)
-        $('input[type=radio][name=pointcutMethodSignature_' + pointcutNum + ']').change(function() {
-          var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked')
-          if (span) {
-            updateSpanTemplate()
-          }
-        })
-        if (signatures.length == 1) {
-          $('input[type=radio][name=pointcutMethodSignature_' + pointcutNum + ']').attr('checked',
-              true)
-          $('input[type=radio][name=pointcutMethodSignature_' + pointcutNum + ']').change()
-        }
-      })
-    }
-    function selectMethodName(methodName) {
-      // since matchingMethods clears the span template, check here if the value has really
-      // changed (e.g. that a user didn't start altering text and then changed mind and put the
-      // previous value back)
-      // also, this condition is needed in case where user clicks on typeahead value with mouse in
-      // which case change event and typeahead event are called and this condition ensures that the
-      // typeahead wins (because it runs first due to manually inserted delay in change event
-      // handler)
-      if (methodName != $('#pointcutMethodName_' + pointcutNum).data('selectedValue')) {
-        $('#pointcutMethodName_' + pointcutNum).data('selectedValue', methodName)
-        matchingMethods(methodName)
-      }
-      return methodName
-    }
-    function updateSectionHiding() {
-      var metric = $('#pointcutCaptureMetric_' + pointcutNum).is(':checked')
-      var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked')
-      var trace = $('#pointcutCaptureTrace_' + pointcutNum).is(':checked')
-      if (metric) {
-        $('#pointcutMetricSection_' + pointcutNum).removeClass('hide')
-      } else {
-        $('#pointcutMetricSection_' + pointcutNum).addClass('hide')
-      }
-      if (span || trace) {
-        $('#pointcutSpanSection_' + pointcutNum).removeClass('hide')
-      } else {
-        $('#pointcutSpanSection_' + pointcutNum).addClass('hide')
-      }
-      if (span && $('#pointcutSpanTemplate_' + pointcutNum).val() == '') {
-        // populate default template value on selecting span
-        updateSpanTemplate()
-      }
-      if (!span) {
-        // clear template value on de-selecting span
-        $('#pointcutSpanTemplate_' + pointcutNum).val('')
-      }
-    }
-    function getSignature() {
-      var signatures = $('#pointcutMethodSignatures_' + pointcutNum).data('signatures')
-      if (signatures.length == 1) {
-        return signatures[0]
-      } else {
-        var selectedMethodSignature = $('input[type=radio][name=pointcutMethodSignature_'
-            + pointcutNum + ']:checked')
-        if (selectedMethodSignature.length == 0) {
-          return
-        }
-        return signatures[selectedMethodSignature.val()]
-      }
-    }
-    function savePointcut() {
-      var captureItems = []
-      if ($('#pointcutCaptureMetric_' + pointcutNum).is(':checked')) {
-        captureItems.push('metric')
-      }
-      if ($('#pointcutCaptureSpan_' + pointcutNum).is(':checked')) {
-        captureItems.push('span')
-      }
-      if ($('#pointcutCaptureTrace_' + pointcutNum).is(':checked')) {
-        captureItems.push('trace')
-      }
-      var signature = getSignature()
-      if (!signature) {
-        // TODO handle this better
-        alert('method for pointcut must be selected')
-        return
-      }
-      // methodReturnTypeName and methodModifiers are intentionally not included in pointcuts since
-      // the method name and arg types are enough to uniquely identify the method, and further
-      // restricting the pointcut based on return type and modifiers would make it brittle to slight
-      // changes in the return type (e.g. narrowing) or modifiers on the method (e.g. visibility)
-      var updatedPointcut = {
-        'captureItems': captureItems,
-        'typeName': $('#pointcutTypeName_' + pointcutNum).val(),
-        'methodName': $('#pointcutMethodName_' + pointcutNum).val(),
-        'methodArgTypeNames': signature.argTypeNames,
-        'metricName': $('#pointcutMetricName_' + pointcutNum).val(),
-        'spanTemplate': $('#pointcutSpanTemplate_' + pointcutNum).val()
-      }
-      var url
-      if (pointcut.version) {
-        url = 'config/pointcut/' + pointcut.version
-      } else {
-        url = 'config/pointcut/+'
-      }
-      $.post(url, JSON.stringify(updatedPointcut), function(response) {
-        showAndFadeSuccessMessage('#pointcutSaveComplete_' + pointcutNum)
-        pointcut = updatedPointcut
-        pointcut.version = response
-        fixLabels()
-      })
-    }
-    function fixLabels() {
-      if (pointcut.version) {
-        $('#pointcutHeader_' + pointcutNum).text(pointcut.typeName + '.' + pointcut.methodName
-            + '(' + pointcut.methodArgTypeNames.join(', ') + ')')
-        $('#pointcutSaveButton_' + pointcutNum).text('Save')
-        $('#pointcutSaveComplete_' + pointcutNum).text('Saved')
-      } else {
-        $('#pointcutHeader_' + pointcutNum).text('<New Pointcut>')
-        $('#pointcutSaveButton_' + pointcutNum).text('Add')
-        $('#pointcutSaveComplete_' + pointcutNum).text('Added')
-      }
-    }
-    function addBehavior() {
-      $('#pointcutCaptureMetric_' + pointcutNum).click(updateSectionHiding)
-      $('#pointcutCaptureSpan_' + pointcutNum).click(updateSectionHiding)
-      $('#pointcutCaptureTrace_' + pointcutNum).click(updateSectionHiding)
-      $('#pointcutTypeName_' + pointcutNum).typeahead({ source : matchingTypeNames })
-      // important to bind typeahead event handler before change handler below since handler logic
-      // relies on it running first
-      $('#pointcutMethodName_' + pointcutNum).typeahead({
-        source : matchingMethodNames,
-        updater : selectMethodName
-      })
-      $('#pointcutTypeName_' + pointcutNum).change(function() {
-        // check if the value has really changed (e.g. that a user didn't start altering text and
-        // then changed mind and put the previous value back)
-        if ($(this).val() != $(this).data('value')) {
-          $(this).data('value', $(this).val())
-          $('#pointcutMethodName_' + pointcutNum).val('')
-          $('#pointcutMethodSignatures_' + pointcutNum).html('')
-          $('#pointcutSpanTemplate_' + pointcutNum).val('')
-        }
-      })
-      $('#pointcutMethodName_' + pointcutNum).change(function() {
-        // just in case user types in a value and doesn't select from typeahead
-        // but this also gets called if user selects typeahead with mouse (when the field loses
-        // focus, before the typeahead gains input control)
-        // so delay this action so that it runs after the typeahead in this case, at which time
-        // $('#pointcutMethodName_' + pointcutNum).val() will be the value selected in the typeahead
-        // instead of the partial value that the user typed
-        setTimeout(function() {
-          selectMethodName($('#pointcutMethodName_' + pointcutNum).val())
-        }, 250)
-      })
-      $('#pointcutSaveButton_' + pointcutNum).click(function() {
-        savePointcut()
-      })
-      $('#pointcutDeleteButton_' + pointcutNum).click(function() {
-        if (pointcut.version) {
-          $.post('/config/pointcut/-', JSON.stringify(pointcut.version), function(response) {
-            $('#pointcut_' + pointcutNum).remove()
-          })
-        } else {
-          $('#pointcut_' + pointcutNum).remove()
-        }
-      })
-    }
-    function addData() {
-      $('#pointcutTypeName_' + pointcutNum).val(pointcut.typeName)
-      $('#pointcutMethodName_' + pointcutNum).val(pointcut.methodName)
-      $('#pointcutMethodSignatures_' + pointcutNum).html('<div style="padding-top: 20px">'
-          + pointcut.methodName + '(' + pointcut.methodArgTypeNames.join(', ') + ')</div>')
-      $('#pointcutMethodSignatures_' + pointcutNum).data('signatures', [{
-        argTypeNames: pointcut.methodArgTypeNames
-      }])
-      if (pointcut.captureItems.indexOf('metric') != -1) {
-        $('#pointcutCaptureMetric_' + pointcutNum).attr('checked', true)
-      }
-      if (pointcut.captureItems.indexOf('span') != -1) {
-        $('#pointcutCaptureSpan_' + pointcutNum).attr('checked', true)
-      }
-      if (pointcut.captureItems.indexOf('trace') != -1) {
-        $('#pointcutCaptureTrace_' + pointcutNum).attr('checked', true)
-      }
-      // TODO 'methodArgTypeNames': signature.argTypeNames,
-      $('#pointcutMetricName_' + pointcutNum).val(pointcut.metricName)
-      $('#pointcutSpanTemplate_' + pointcutNum).val(pointcut.spanTemplate)
-      updateSectionHiding()
-    }
-    $(selector).append(pointcutTemplate({ num : pointcutNum }))
-    fixLabels()
-    addBehavior()
-    if (pointcut.version) {
-      addData()
-    } else {
-      // display form immediately for new pointcut
-      $('#pointcutForm_' + pointcutNum).removeClass('hide')
-    }
-  }
-  $(document).ready(function() {
-    configureAjaxError()
-    $('#fineStoreThresholdOverride').change(function() {
-      if ($('#fineStoreThresholdOverride').is(':checked')) {
-        $('#fineStoreThresholdMillis').removeAttr('readonly')
-      } else {
-        $('#fineStoreThresholdMillis').val('')
-        $('#fineStoreThresholdMillis').closest('.control-group').removeClass('error')
-        $('#fineStoreThresholdMillis').attr('readonly','readonly')
-      }
-    })
-    read()
-    $('#pointcutNewButton button').click(function() {
-      applyPointcutEditTemplate({}, '#pointcutNew')
-    })
-    var postingCompact = false
-    var postingDeleteAll = false
-    $('#compactButton').click(function() {
-      // handle crazy user clicking on the button
-      if (postingCompact || postingDeleteAll) return
-      postingCompact = true
-      $.post('admin/data/compact', function() {
-        postingCompact = false
-        hideSpinner('#compactDeleteAllSpinner')
-        showAndFadeSuccessMessage('#compactSuccessMessage')
-      })
-      // in case button is clicked again before success message is hidden
-      $('#compactSuccessMessage').addClass('hide')
-      $('#deleteAllSuccessMessage').addClass('hide')
-      showSpinner('#compactDeleteAllSpinner')
-    })
-    $('#deleteAllButton').click(function() {
-      // handle crazy user clicking on the button
-      if (postingCompact || postingDeleteAll) return
-      postingDeleteAll = true
-      $.post('admin/data/delete-all', function() {
-        postingDeleteAll = false
-        hideSpinner('#compactDeleteAllSpinner')
-        showAndFadeSuccessMessage('#deleteAllSuccessMessage')
-      })
-      // in case button is clicked again before success message is hidden
-      $('#compactSuccessMessage').addClass('hide')
-      $('#deleteAllSuccessMessage').addClass('hide')
-      showSpinner('#compactDeleteAllSpinner')
-    })
-  })
-</script>
+<script type="text/javascript" src="js/config.js"></script>
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">
@@ -811,374 +44,435 @@
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
-      <ul class="dropdown-menu" role="menu" style="margin: 0">
+      <ul class="dropdown-menu" role="menu" style="margin: 0;">
         <li role="menuitem"><a tabindex="-1" href="explorer.html">explorer</a></li>
         <li role="menuitem"><a tabindex="-1" href="threads.html">thread dump</a></li>
       </ul>
     </div>
   </div>
   <br>
-  <button class="section-header realbtn" onclick="$('#generalForm').toggleClass('hide')">
-    General <span class="configuration-status" id="generalStatus"></span>
-  </button>
-  <br>
-  <form class="section-body form-horizontal hide" id="generalForm">
-    <fieldset>
-      <div class="section-body-padding">
-        <div class="control-group">
-          <label class="control-label" for="generalEnabled">Enabled</label>
-          <div class="controls">
-            <input type="checkbox" id="generalEnabled" value="true">
+  <div class="accordion" id="outerAccordion">
+    <div class="accordion-group outer-accordion-group">
+      <div class="accordion-heading outer-accordion-heading">
+        <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                data-parent="#outerAccordion" data-target="#generalAccordion">
+          General
+        </button>
+      </div>
+      <div class="accordion accordion-body collapse in" id="generalAccordion">
+        <div class="accordion-group">
+          <div class="accordion-heading">
+            <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                    data-parent="#generalAccordion" data-target="#generalForm">
+              Trace Capture <span class="configuration-status" id="generalStatus"></span>
+            </button>
+          </div>
+          <div class="accordion-body collapse in" id="generalForm">
+            <form class="accordion-inner form-horizontal">
+              <fieldset>
+                <div class="section-body-padding">
+                  <div class="control-group">
+                    <label class="control-label" for="generalEnabled">Enabled</label>
+                    <div class="controls">
+                      <input type="checkbox" id="generalEnabled" value="true">
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="storeThresholdMillis">
+                      Store threshold
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="storeThresholdMillis" style="width: 5em;">
+                        <span class="add-on">milliseconds</span>
+                        <span class="help-inline">Invalid input</span>
+                      </div>
+                  <span class="help-block">
+                    Any trace that exceeds this amount of time will be viewable in the explorer
+                    immediately as an active trace and will be stored to disk at its completion.
+                  </span>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="stuckThresholdSeconds">Stuck threshold</label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="stuckThresholdSeconds" style="width: 5em;">
+                        <span class="add-on">seconds</span>
+                      </div>
+                      <div class="help-block">
+                        Any trace that exceeds this amount of time will be stored to disk
+                        immediately (prior to its completion).
+                        This is to guard against threads which get stuck forever (or at least long
+                        enough and do enough harm to the jvm that it has to be restarted).
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="maxSpans">Max spans</label>
+                    <div class="controls">
+                      <input type="text" id="maxSpans" style="width: 5em;">
+                      <div class="help-block">
+                        Maximum number of spans collected for a given trace. This is useful for
+                        limiting the memory requirement of very very long traces that capture
+                        potentially hundreds of thousands of spans (e.g. large batch or background
+                        operations).
+                        Also, the explorer is not really optimized for viewing super large numbers
+                        of spans.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions section-body-save">
+                  <button type="button" class="btn" id="saveGeneralButton">Save changes</button>
+                  <!-- spinner because updating general config can take a while if resizing rolling
+                       file or changing trace snapshot expiration -->
+                  <span class="button-spinner hide" id="saveGeneralButtonSpinner"></span>
+                  <span class="button-success-message hide" id="generalSaveComplete">Saved</span>
+                </div>
+              </fieldset>
+            </form>
           </div>
         </div>
-        <div class="control-group">
-          <label class="control-label" for="storeThresholdMillis">
-            Store threshold
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="storeThresholdMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
-              <span class="help-inline">Invalid input</span>
-            </div>
-            <span class="help-block">
-              Any trace that exceeds this amount of time will be viewable in the explorer
-              immediately as an active trace and will be stored to disk at its completion.
-            </span>
+        <div class="accordion-group">
+          <div class="accordion-heading">
+            <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                    data-parent="#generalAccordion" data-target="#coarseForm">
+              Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus"></span>
+            </button>
+          </div>
+          <div class="accordion-body collapse" id="coarseForm">
+            <form class="accordion-inner form-horizontal">
+              <fieldset>
+                <div class="section-body-padding">
+                  <div class="control-group">
+                    <label class="control-label" for="coarseEnabled">Enabled</label>
+                    <div class="controls">
+                      <input type="checkbox" id="coarseEnabled" value="true">
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="coarseInitialDelayMillis">
+                      Initial delay
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="coarseInitialDelayMillis" style="width: 5em;">
+                        <span class="add-on">milliseconds</span>
+                      </div>
+                      <div class="help-block">
+                        Once a trace exceeds this amount of time, the coarse-grained profiler
+                        captures stack traces periodically.
+                        The interval between successive stack trace captures is defined by the
+                        property directly below.
+                        The stack traces captured for an individual trace are merged into a tree
+                        view and provide a profile of the time spent in various portions of the
+                        code.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="coarseIntervalMillis">
+                      Interval
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="coarseIntervalMillis" style="width: 5em;">
+                        <span class="add-on">milliseconds</span>
+                      </div>
+                      <div class="help-block">
+                        The interval at which the coarse-grained profiler captures stack traces
+                        (once a trace exceeds the initial delay directly above).
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="coarseTotalSeconds">
+                      Total
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="coarseTotalSeconds" style="width: 5em;">
+                        <span class="add-on">seconds</span>
+                      </div>
+                      <div class="help-block">
+                        The total length of time that the coarse-grained profiler captures stack
+                        traces (once a trace exceeds the initial delay above).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions section-body-save">
+                  <button type="button" class="btn" id="saveCoarseButton">Save changes</button>
+                  <span class="button-success-message hide" id="coarseSaveComplete">Saved</span>
+                </div>
+              </fieldset>
+            </form>
           </div>
         </div>
-        <div class="control-group">
-          <label class="control-label" for="stuckThresholdSeconds">Stuck threshold</label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="stuckThresholdSeconds" style="width: 5em">
-              <span class="add-on">seconds</span>
-            </div>
-            <div class="help-block">
-              Any trace that exceeds this amount of time will be stored to disk immediately
-              (prior to its completion). This is to guard against threads which get stuck forever
-              (or at least long enough and do enough harm to the jvm that it has to be restarted).
-            </div>
+        <div class="accordion-group">
+          <div class="accordion-heading">
+            <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                    data-parent="#generalAccordion" data-target="#fineForm">
+              Fine-Grained Profiling <span class="configuration-status" id="fineStatus"></span>
+            </button>
+          </div>
+          <div class="accordion-body collapse" id="fineForm">
+            <form class="accordion-inner form-horizontal">
+              <fieldset>
+                <div class="section-body-padding">
+                  <div class="control-group">
+                    <label class="control-label" for="fineEnabled">Enabled</label>
+                    <div class="controls">
+                      <input type="checkbox" id="fineEnabled" value="true">
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="fineTracePercentage">
+                      Trace percentage
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="fineTracePercentage" style="width: 5em;">
+                        <span class="add-on">%</span>
+                      </div>
+                      <div class="help-block">
+                        Apply fine-grained profiling to this percentage of traces.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="fineIntervalMillis">
+                      Interval
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="fineIntervalMillis" style="width: 5em;">
+                        <span class="add-on">milliseconds</span>
+                      </div>
+                      <div class="help-block">
+                        The interval at which the fine-grained profiler captures stack traces (there
+                        is no initial delay for the fine-grained profiler).
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="fineTotalSeconds">
+                      Total
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="fineTotalSeconds" style="width: 5em;">
+                        <span class="add-on">seconds</span>
+                      </div>
+                      <div class="help-block">
+                        The total length of time that the fine-grained profiler captures stack
+                        traces.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="fineStoreThresholdMillis">
+                      Store threshold
+                    </label>
+                    <div class="controls">
+                      <div style="padding-top: 5px; padding-bottom: 5px;">
+                        <label class="checkbox">
+                          <input type="checkbox" id="fineStoreThresholdOverride" value="true">
+                          Override general store threshold
+                        </label>
+                      </div>
+                      <div class="input-append">
+                        <input type="text" id="fineStoreThresholdMillis" style="width: 5em;">
+                        <span class="add-on">milliseconds</span>
+                      </div>
+                      <div class="help-block">
+                        After going through the trouble of collecting fine-grained profiling info,
+                        it may be worth while to store the given trace even if it doesn't hit the
+                        general store threshold.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions section-body-save">
+                  <button type="button" class="btn" id="saveFineButton">Save changes</button>
+                  <span class="button-success-message hide" id="fineSaveComplete">Saved</span>
+                </div>
+              </fieldset>
+            </form>
           </div>
         </div>
-        <div class="control-group">
-          <label class="control-label" for="maxSpans">Max spans</label>
-          <div class="controls">
-            <input type="text" id="maxSpans" style="width: 5em">
-            <div class="help-block">
-              Maximum number of spans collected for a given trace. This is useful for limiting
-              the memory requirement of very very long traces that capture potentially hundreds of
-              thousands of spans (e.g. large batch or background operations).
-              Also, the explorer is not really optimized for viewing super large numbers of spans.
-            </div>
+        <div class="accordion-group">
+          <div class="accordion-heading">
+            <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                    data-parent="#generalAccordion" data-target="#userForm">
+              User-Specific Overrides <span class="configuration-status" id="userStatus"></span>
+            </button>
+          </div>
+          <div class="accordion-body collapse" id="userForm">
+            <form class="accordion-inner form-horizontal">
+              <fieldset>
+                <div class="section-body-padding">
+                  <div class="control-group">
+                    <label class="control-label" for="userEnabled">Enabled</label>
+                    <div class="controls">
+                      <input type="checkbox" id="userEnabled" value="true">
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="userUserId">
+                      User ID
+                    </label>
+                    <div class="controls">
+                      <input type="text" id="userUserId" style="width: 10em;">
+                      <div class="help-block">
+                        All traces for the given user will use the store threshold and profiling
+                        configuration below.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="userStoreThresholdMillis">
+                      Store threshold
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="userStoreThresholdMillis" style="width: 5em;">
+                        <span class="add-on">milliseconds</span>
+                      </div>
+                      <div class="help-block">
+                        All traces for the given user that exceeds this amount of time will be
+                        viewable in the explorer immediately as an active trace and will be stored
+                        to disk at its completion.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="userFineProfiling">
+                      Fine profiling
+                    </label>
+                    <div class="controls">
+                      <input type="checkbox" id="userFineProfiling" value="true">
+                      <div class="help-block">
+                        All traces for the given user will be profiled using the fine-grained
+                        profiler.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions section-body-save">
+                  <button type="button" class="btn" id="saveUserButton">Save changes</button>
+                  <span class="button-success-message hide" id="userSaveComplete">Saved</span>
+                </div>
+              </fieldset>
+            </form>
           </div>
         </div>
-        <div class="control-group">
-          <label class="control-label" for="snapshotExpirationDays">
-            Keep trace snapshots for
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="snapshotExpirationDays" style="width: 5em">
-              <span class="add-on">days</span>
-            </div>
-            <span>
-              <button type="button" class="btn" id="compactButton" style="margin-left: 20px">
-                Compact
-              </button>
-              <button type="button" class="btn" id="deleteAllButton" style="margin-left: 20px">
-                Delete All
-              </button>
-              <span class="button-spinner hide" id="compactDeleteAllSpinner"></span>
-              <span class="button-success-message hide" id="compactSuccessMessage">Compacted</span>
-              <span class="button-success-message hide" id="deleteAllSuccessMessage">Deleted</span>
-            </span>
-            <div class="help-block" style="margin-top: 10px">
-              Defines how long the trace snapshots should be retained in the H2 data file.
-              <em>Compact</em> will compact the H2 data file (this could take several seconds or
-              more depending on the data file size). <em>Delete All</em> will clear all trace
-              snapshots from the H2 data file.
-            </div>
+        <div class="accordion-group">
+          <div class="accordion-heading">
+            <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                    data-parent="#generalAccordion" data-target="#storageForm">
+              Storage
+            </button>
           </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="rollingSizeMb">Rolling data file size</label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="rollingSizeMb" style="width: 5em">
-              <span class="add-on">MB</span>
-            </div>
-            <div class="help-block">
-              Trace detail data (spans and profiling data) is stored to disk as
-              LZF-compressed json data in a rolling data file to efficiently cap the growth of this
-              large data. (Trace summary data - capture time, duration, headline, user ID,
-              attributes, metrics - is stored to an H2 data file by the embedded H2 database
-              engine.)
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="dataDir">Data directory</label>
-          <div class="controls">
-            <span class="uneditable-input" id="dataDir"></span>
-            <div class="help-block">
-              The data directory where the H2 data file and the rolling database are stored.
-              The default value is the directory where the informant.jar resides.
-              This can only be changed on the command line, using
-              <span class="nowrap">-Dinformant.data.dir=&lt;folder&gt;</span>.
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="uiPort">UI Port</label>
-          <div class="controls">
-            <span class="uneditable-input" id="uiPort" style="width: 5em"></span>
-            <div class="help-block">
-              The port that the embedded web UI is served on. The default value is 4000.
-              This can only be changed on the command line, using
-              <span class="nowrap">-Dinformant.ui.port=&lt;port&gt;</span>.
-            </div>
+          <div class="accordion-body collapse" id="storageForm">
+            <form class="accordion-inner form-horizontal">
+              <fieldset>
+                <div class="section-body-padding">
+                  <div class="control-group">
+                    <label class="control-label" for="dataExpirationDays">
+                      Keep trace snapshots for
+                    </label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="dataExpirationDays" style="width: 5em;">
+                        <span class="add-on">days</span>
+                      </div>
+                  <span>
+                    <button type="button" class="btn" id="deleteAllButton"
+                            style="margin-left: 20px;">
+                      Delete All
+                    </button>
+                    <span class="button-spinner hide" id="deleteAllSpinner"></span>
+                    <span class="button-success-message hide"
+                          id="deleteAllSuccessMessage">Deleted</span>
+                  </span>
+                      <div class="help-block" style="margin-top: 10px;">
+                        Defines how long the trace snapshots should be retained in the H2 data file.
+                        <em>Delete All</em> will clear all trace snapshots from the H2 data file.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="dataRollingSizeMb">Rolling data file
+                      size</label>
+                    <div class="controls">
+                      <div class="input-append">
+                        <input type="text" id="dataRollingSizeMb" style="width: 5em;">
+                        <span class="add-on">MB</span>
+                      </div>
+                      <div class="help-block">
+                        Trace detail data (spans and profiling data) is stored to disk as
+                        LZF-compressed json data in a rolling data file to efficiently cap the
+                        growth of this large data.
+                        (Trace summary data - capture time, duration, headline, user ID, attributes,
+                        metrics - is stored to an H2 data file by the embedded H2 database engine.)
+                      </div>
+                    </div>
+                  </div>
+                  <div class="control-group">
+                    <label class="control-label" for="dataDir">Data directory</label>
+                    <div class="controls">
+                      <span class="uneditable-input" id="dataDir"></span>
+                      <div class="help-block">
+                        The data directory where the H2 data file and the rolling database are
+                        stored.
+                        The default value is the directory where the informant.jar resides.
+                        This can only be changed on the command line, using
+                        <span class="nowrap">-Dinformant.data.dir=&lt;folder&gt;</span>.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions section-body-save">
+                  <button type="button" class="btn" id="saveStorageButton">Save changes</button>
+                  <span class="button-success-message hide" id="storageSaveComplete">Saved</span>
+                </div>
+              </fieldset>
+            </form>
           </div>
         </div>
       </div>
-      <div class="form-actions section-body-save">
-        <button type="button" class="btn" onclick="updateGeneralConfig()">Save changes</button>
-        <!-- spinner because updating general config can take a while if resizing rolling file
-             or changing trace snapshot expiration -->
-        <span class="button-spinner hide" id="saveGeneralButtonSpinner"></span>
-        <span class="button-success-message hide" id="generalSaveComplete">Saved</span>
+    </div>
+    <div class="accordion-group outer-accordion-group">
+      <div class="accordion-heading outer-accordion-heading">
+        <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                data-parent="#outerAccordion" data-target="#pluginAccordion">
+          Plugins
+        </button>
       </div>
-    </fieldset>
-  </form>
-  <button class="section-header realbtn" onclick="$('#coarseForm').toggleClass('hide')">
-    Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus"></span>
-  </button>
-  <br>
-  <form class="section-body form-horizontal hide" id="coarseForm">
-    <fieldset>
-      <div class="section-body-padding">
-        <div class="control-group">
-          <label class="control-label" for="coarseEnabled">Enabled</label>
-          <div class="controls">
-            <input type="checkbox" id="coarseEnabled" value="true">
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="coarseInitialDelayMillis">
-            Initial delay
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="coarseInitialDelayMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
-            </div>
-            <div class="help-block">
-              Once a trace exceeds this amount of time, the coarse-grained profiler captures stack
-              traces periodically.
-              The interval between successive stack trace captures is defined by the property
-              directly below.
-              The stack traces captured for an individual trace are merged into a tree view and
-              provide a profile of the time spent in various portions of the code.
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="coarseIntervalMillis">
-            Interval
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="coarseIntervalMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
-            </div>
-            <div class="help-block">
-              The interval at which the coarse-grained profiler captures stack traces (once a trace
-              exceeds the initial delay directly above).
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="coarseTotalSeconds">
-            Total
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="coarseTotalSeconds" style="width: 5em">
-              <span class="add-on">seconds</span>
-            </div>
-            <div class="help-block">
-              The total length of time that the coarse-grained profiler captures stack traces (once
-              a trace exceeds the initial delay above).
-            </div>
+      <div class="accordion accordion-body collapse" id="pluginAccordion">
+        <div id="plugins"></div>
+      </div>
+    </div>
+    <div class="accordion-group outer-accordion-group">
+      <div class="accordion-heading outer-accordion-heading">
+        <button class="realbtn accordion-heading-button" data-toggle="collapse"
+                data-parent="#outerAccordion" data-target="#pointcutAccordion">
+          Pointcuts
+        </button>
+      </div>
+      <div class="accordion accordion-body collapse" id="pointcutAccordion">
+        <div id="pointcuts">
+          <div id="existingPointcuts"></div>
+          <div id="pointcutNew"></div>
+          <div class="new-pointcut-header" id="pointcutNewButton">
+            <button type="button" class="btn">Add Pointcut</button>
           </div>
         </div>
       </div>
-      <div class="form-actions section-body-save">
-        <button type="button" class="btn" onclick="updateCoarseConfig()">Save changes</button>
-        <span class="button-success-message hide" id="coarseSaveComplete">Saved</span>
-      </div>
-    </fieldset>
-  </form>
-  <button class="section-header realbtn" onclick="$('#fineForm').toggleClass('hide')">
-    Fine-Grained Profiling <span class="configuration-status" id="fineStatus"></span>
-  </button>
-  <br>
-  <form class="section-body form-horizontal hide" id="fineForm">
-    <fieldset>
-      <div class="section-body-padding">
-        <div class="control-group">
-          <label class="control-label" for="fineEnabled">Enabled</label>
-          <div class="controls">
-            <input type="checkbox" id="fineEnabled" value="true">
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="fineTracePercentage">
-            Trace percentage
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="fineTracePercentage" style="width: 5em">
-              <span class="add-on">%</span>
-            </div>
-            <div class="help-block">
-              Apply fine-grained profiling to this percentage of traces.
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="fineIntervalMillis">
-            Interval
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="fineIntervalMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
-            </div>
-            <div class="help-block">
-              The interval at which the fine-grained profiler captures stack traces (there is no
-              initial delay for the fine-grained profiler).
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="fineTotalSeconds">
-            Total
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="fineTotalSeconds" style="width: 5em">
-              <span class="add-on">seconds</span>
-            </div>
-            <div class="help-block">
-              The total length of time that the fine-grained profiler captures stack traces.
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="fineStoreThresholdMillis">
-            Store threshold
-          </label>
-          <div class="controls">
-            <div style="padding-top: 5px; padding-bottom: 5px">
-              <label class="checkbox">
-                <input type="checkbox" id="fineStoreThresholdOverride" value="true">
-                Override general store threshold
-              </label>
-            </div>
-            <div class="input-append">
-              <input type="text" id="fineStoreThresholdMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
-            </div>
-            <div class="help-block">
-              After going through the trouble of collecting fine-grained profiling info, it may be
-              worth while to store the given trace even if it doesn't hit the general store
-              threshold.
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-actions section-body-save">
-        <button type="button" class="btn" onclick="updateFineConfig()">Save changes</button>
-        <span class="button-success-message hide" id="fineSaveComplete">Saved</span>
-      </div>
-    </fieldset>
-  </form>
-  <button class="section-header realbtn" onclick="$('#userForm').toggleClass('hide')">
-    User Tracing <span class="configuration-status" id="userStatus"></span>
-  </button>
-  <br>
-  <form class="section-body form-horizontal hide" id="userForm">
-    <fieldset>
-      <div class="section-body-padding">
-        <div class="control-group">
-          <label class="control-label" for="userEnabled">Enabled</label>
-          <div class="controls">
-            <input type="checkbox" id="userEnabled" value="true">
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="userUserId">
-            User ID
-          </label>
-          <div class="controls">
-            <input type="text" id="userUserId" style="width: 10em">
-            <div class="help-block">
-              Traces for the given user will use the store threshold and profiling configuration
-              below.
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="userStoreThresholdMillis">
-            Store threshold
-          </label>
-          <div class="controls">
-            <div class="input-append">
-              <input type="text" id="userStoreThresholdMillis" style="width: 5em">
-              <span class="add-on">milliseconds</span>
-            </div>
-            <div class="help-block">
-              Any trace for the given user that exceeds this amount of time will be viewable in the
-              explorer immediately as an active trace and will be stored to disk at its
-              completion.
-            </div>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="userFineProfiling">
-            Fine profiling
-          </label>
-          <div class="controls">
-            <input type="checkbox" id="userFineProfiling" value="true">
-            <div class="help-block">
-              Traces for the given user will be profiled using the fine-grained profiler.
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-actions section-body-save">
-        <button type="button" class="btn" onclick="updateUserConfig()">Save changes</button>
-        <span class="button-success-message hide" id="userSaveComplete">Saved</span>
-      </div>
-    </fieldset>
-  </form>
-  <button class="section-header realbtn" onclick="$('#plugins').toggleClass('hide')">
-    Plugins
-  </button>
-  <br>
-  <div class="hide" id="plugins"></div>
-  <button class="section-header realbtn" onclick="$('#pointcuts').toggleClass('hide')">
-    Pointcuts
-  </button>
-  <br>
-  <div class="hide" id="pointcuts">
-    <div id="existingPointcuts"></div>
-    <div id="pointcutNew"></div>
-    <div class="new-pointcut-header" id="pointcutNewButton">
-      <button type="button" class="btn">New Pointcut</button>
     </div>
   </div>
-  <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0px"></span>
+  <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0;"></span>
 </body>
 </html>

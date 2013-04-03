@@ -16,20 +16,16 @@
 package io.informant.local.ui;
 
 import java.io.IOException;
-import java.io.PushbackReader;
-import java.io.Reader;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharSource;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,68 +73,5 @@ class SnapshotHttpService implements HttpService {
         channel.write(new ReaderChunkedInput(charSource.openStream()));
         // return null to indicate streaming
         return null;
-    }
-
-    private static class ReaderChunkedInput implements ChunkedInput {
-
-        private final PushbackReader reader;
-        private final char[] buffer = new char[8192];
-
-        private boolean hasSentTerminatingChunk;
-
-        ReaderChunkedInput(Reader reader) {
-            this.reader = new PushbackReader(reader);
-        }
-
-        public boolean hasNextChunk() throws Exception {
-            return !hasSentTerminatingChunk;
-        }
-
-        @Nullable
-        public Object nextChunk() throws Exception {
-            if (hasMoreBytes()) {
-                return readNextChunk();
-            } else if (!hasSentTerminatingChunk) {
-                // chunked transfer encoding must be terminated by a final chunk of length zero
-                hasSentTerminatingChunk = true;
-                return new DefaultHttpChunk(ChannelBuffers.EMPTY_BUFFER);
-            } else {
-                return null;
-            }
-        }
-
-        public boolean isEndOfInput() throws Exception {
-            return hasSentTerminatingChunk;
-        }
-
-        public void close() throws Exception {
-            reader.close();
-        }
-
-        private boolean hasMoreBytes() throws IOException {
-            int b = reader.read();
-            if (b == -1) {
-                return false;
-            } else {
-                reader.unread(b);
-                return true;
-            }
-        }
-
-        private Object readNextChunk() throws IOException {
-            int total = 0;
-            while (true) {
-                int n = reader.read(buffer, total, buffer.length - total);
-                if (n == -1) {
-                    break;
-                }
-                total += n;
-                if (total == buffer.length) {
-                    break;
-                }
-            }
-            return new DefaultHttpChunk(ChannelBuffers.copiedBuffer(buffer, 0, total,
-                    Charsets.UTF_8));
-        }
     }
 }

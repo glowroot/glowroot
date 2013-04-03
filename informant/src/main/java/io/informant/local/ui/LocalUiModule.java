@@ -163,8 +163,8 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/js/(.*)$"), "io/informant/local/ui/js/$1");
         uriMappings.put(Pattern.compile("^/libs/(.*)$"), "io/informant/local/ui/libs/$1");
         // services
-        uriMappings.put(Pattern.compile("^/explorer/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/explorer/detail/.*$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
+        uriMappings.put(Pattern.compile("^/trace/detail/.*$"), snapshotHttpService);
 
         // the parentheses define the part of the match that is used to construct the args for
         // calling the method in json service, e.g. /explorer/summary/abc123 below calls the method

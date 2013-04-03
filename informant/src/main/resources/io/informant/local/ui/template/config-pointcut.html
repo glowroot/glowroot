@@ -1,0 +1,88 @@
+{{!
+Copyright 2013 the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+<div class="accordion-group" id="pointcut_{{num}}">
+  <div class="accordion-heading">
+    <button class="realbtn accordion-heading-button" data-toggle="collapse"
+            data-parent="#pointcutAccordion" data-target="#pointcutForm_{{num}}">
+      <span id="pointcutHeader_{{num}}"></span>
+      <span class="configuration-status" id="pointcutHeaderStatus_{{num}}"></span>
+      <span id="pointcutHeaderType_{{num}}" style="float: right"></span>
+    </button>
+  </div>
+  <div class="accordion-body collapse" id="pointcutForm_{{num}}">
+    <form class="accordion-inner form-horizontal">
+      <fieldset>
+        <div class="section-body-padding">
+          <div class="control-group">
+            <label class="control-label" for="pointcutTypeName_{{num}}">Type</label>
+            <div class="controls">
+              <input type="text" data-provide="typeahead" id="pointcutTypeName_{{num}}"
+                     style="width: 40em">
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="pointcutMethodName_{{num}}">Method</label>
+            <div class="controls">
+              <input type="text" data-provide="typeahead" id="pointcutMethodName_{{num}}"
+                     style="width: 40em">
+              <div id="pointcutMethodSignatures_{{num}}"></div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">Capture</label>
+            <div class="controls">
+              <div class="checkbox">
+                <input type="checkbox" id="pointcutCaptureMetric_{{num}}" value="true"> Metric
+              </div>
+              <div class="checkbox">
+                <input type="checkbox" id="pointcutCaptureSpan_{{num}}" value="true"> Span
+              </div>
+              <div class="checkbox">
+                <input type="checkbox" id="pointcutCaptureTrace_{{num}}" value="true"> Trace
+              </div>
+            </div>
+          </div>
+          <div class="control-group hide" id="pointcutMetricSection_{{num}}">
+            <label class="control-label" for="pointcutMetricName_{{num}}">Metric Name</label>
+            <div class="controls">
+              <input type="text" id="pointcutMetricName_{{num}}" style="width: 10em;">
+            </div>
+          </div>
+          <div class="hide" id="pointcutSpanSection_{{num}}">
+            <div class="control-group">
+              <label class="control-label" for="pointcutSpanTemplate_{{num}}">
+                Span template
+              </label>
+              <div class="controls">
+                <textarea id="pointcutSpanTemplate_{{num}}" rows="2" style="width: 40em;">
+                </textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions section-body-save">
+          <button type="button" class="btn" id="pointcutSaveButton_{{num}}">Save</button>
+          <button type="button" class="btn" id="pointcutDeleteButton_{{num}}"
+                  style="margin-left: 5px;">Delete
+          </button>
+        <span class="button-success-message hide" id="pointcutSaveComplete_{{num}}">
+          Saved
+        </span>
+        </div>
+      </fieldset>
+    </form>
+  </div>
+</div>

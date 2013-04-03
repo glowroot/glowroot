@@ -18,22 +18,22 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Trace explorer</title>
-<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
-<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css" />
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
+<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
-    type="text/css" />
+      type="text/css"/>
 <link rel="stylesheet" href="libs/bootstrap-datepicker/0.1-nightly-20130113-1/css/datepicker.css"
-    type="text/css" />
+      type="text/css"/>
 <link rel="stylesheet" href="libs/qtip/2.0.0-nightly-20130103/jquery.qtip.min.css"
-    type="text/css" />
-<link rel="stylesheet" href="css/informant.css" type="text/css" />
+      type="text/css"/>
+<link rel="stylesheet" href="css/informant.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
 <!-- jquery-migrate is needed until qtip is jquery 1.9 compatible,
      see https://github.com/Craga89/qTip2/issues/459 -->
 <script type="text/javascript" src="libs/jquery-migrate/1.0.0/jquery-migrate.min.js"></script>
 <script type="text/javascript" src="libs/bootstrap/2.2.2/js/bootstrap.min.js"></script>
 <script type="text/javascript"
-    src="libs/bootstrap-datepicker/0.1-nightly-20130113-1/js/bootstrap-datepicker.js">
+        src="libs/bootstrap-datepicker/0.1-nightly-20130113-1/js/bootstrap-datepicker.js">
 </script>
 <script type="text/javascript" src="libs/moment/1.7.2/moment.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.rc.2/handlebars.js"></script>
@@ -50,636 +50,18 @@
 <script type="text/javascript" src="libs/qtip/2.0.0-nightly-20130103/jquery.qtip.min.js"></script>
 <script type="text/javascript" src="libs/jquery-color/2.1.2/jquery.color.min.js">
 </script>
-<script type="text/javascript" src="js/trace.js"></script>
-<script type="text/javascript" src="js/informant.js"></script>
-<script type="text/javascript">
-  $(document).ready(function() {
-    configureAjaxError()
-    var plot, normalPoints, errorPoints, activePoints, highlightedItemId, summaryItem, limitExceeded
-    var plotSelecting
-    // previousFrom and previousTo are needed for tracking whether scroll wheel zoom is in or out
-    var previousFrom, previousTo
-    var modalVanishPoint
-    var options = {
-      legend: { show: false },
-      series: {
-        points: { show: true }
-      },
-      grid: { hoverable: true, clickable: true },
-      xaxis: { mode: 'time' },
-      yaxis: { ticks: 10, zoomRange : false },
-      zoom: { interactive: true, amount : 1.5 },
-      colors: ['#edc240', '#cb4b4b', '#afd8f8'],
-      selection: { mode: 'xy' }
-    }
-    // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
-    // detail modal to close slowly when it has 5000 spans
-    // this extra cleanup code is not needed anyways since cleanup is performed explicitly
-    $.cleanData = $['cleanData_replacedByqTip']
-    // need to track dimensions to identify real window resizes in IE which sends window
-    // resize event when any element on the page is resized
-    // also, now with responsive design, body width doesn't change on every window resize event
-    // so body dimensions are tracked instead of window dimensions since that is what determines
-    // plot dimensions
-    var bodyWidth = $('body').width()
-    var bodyHeight = $('body').height()
-    $(window).resize(function(e){
-      // check plot in case this is a resize before initial plot is rendered
-      if (plot && ($('body').width() != bodyWidth || $('body').height() != bodyHeight)) {
-        bodyWidth = $('body').width()
-        bodyHeight = $('body').height()
-        plot = $.plot($('#chart'), [normalPoints, errorPoints, activePoints], options)
-      }})
-    function plotResponseData(from, to) {
-      // update time filter before translating range to timezone-less flot values
-      updateTimeFilter(from, to)
-      var fromAsDate = new Date(from)
-      fromAsDate.setHours(0,0,0,0)
-      var zoomRangeFrom = fromAsDate.getTime()
-      var zoomRangeTo = zoomRangeFrom + 24 * 60 * 60 * 1000; // zoomRangeFrom + 24 hours
-      from -= new Date(from).getTimezoneOffset() * 60 * 1000
-      to -= new Date(to).getTimezoneOffset() * 60 * 1000
-      zoomRangeFrom -= new Date(zoomRangeFrom).getTimezoneOffset() * 60 * 1000
-      zoomRangeTo -= new Date(zoomRangeTo).getTimezoneOffset() * 60 * 1000
-      options.xaxis.min = from
-      options.xaxis.max = to
-      options.xaxis.zoomRange = [ zoomRangeFrom, zoomRangeTo ]
-      options.yaxis.min = 0
-      // reset yaxis max so it will be auto calculated to fit data points
-      options.yaxis.max = undefined
-      hideTooltip()
-      if (plot) {
-        plot.unhighlight()
-      }
-      plot = $.plot($('#chart'), [normalPoints, errorPoints, activePoints], options)
-      if (highlightedItemId) {
-        // re-highlight if possible
-        highlightPoint(highlightedItemId)
-      }
-    }
-    function itemsEqual(plotItem1, plotItem2) {
-      if (!plotItem1 && !plotItem2) {
-        return true
-      } else if (!plotItem1) {
-        return false
-      } else if (!plotItem2) {
-        return false
-      } else {
-        return plotItem1.seriesIndex == plotItem2.seriesIndex && plotItem1.dataIndex
-            == plotItem2.dataIndex
-      }
-    }
-    function hideTooltip() {
-      hideSpinner('#tooltipSpinner')
-      $('#chart').qtip('hide')
-    }
-    $('#chart').bind('plotzoom', function(event, plot) {
-      var from = Math.floor(plot.getAxes().xaxis.min)
-      var to = Math.ceil(plot.getAxes().xaxis.max)
-      // convert points out of timezone-less flot values
-      from += new Date(from).getTimezoneOffset() * 60 * 1000
-      to += new Date(to).getTimezoneOffset() * 60 * 1000
-      var zoomingOut = from < previousFrom || to > previousTo
-      if (zoomingOut) {
-        // scroll zooming out, reset duration limits
-        $('#durationLow').val('')
-        $('#durationHigh').val('')
-        $('#durationComparator').val('greater').change()
-      }
-      if (limitExceeded || zoomingOut) {
-        // set delay=50 to handle rapid zooming
-        getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), false, 50)
-      } else {
-        // no need to hit server
-        // cancel any refresh in action
-        if (refreshQueryString) {
-          refreshQueryString = undefined
-          hideSpinner('#chartSpinner')
-        }
-        normalPoints = filterPoints(normalPoints, from, to, 0, Number.MAX_VALUE)
-        errorPoints = filterPoints(errorPoints, from, to, 0, Number.MAX_VALUE)
-        activePoints = filterPoints(activePoints, from, to, 0, Number.MAX_VALUE)
-        plotResponseData(from, to)
-      }
-    })
-    $('#chart').mousedown(function() {
-      hideTooltip()
-    })
-    $(document).keyup(function(e) {
-      if (e.keyCode == 27) { // esc key
-        if ($('#modal').is(':visible')) {
-          hideModal()
-        } else if (plotSelecting) {
-          plot.clearSelection()
-          cancelingPlotSelection = true
-        } else if (summaryItem) {
-          // the tooltips (spinny and summary) have hide events that set summaryItem = null
-          // so summaryItem must be checked before calling hideTooltip()
-          hideTooltip()
-        } else {
-          // hitting esc when no item
-          highlightedItemId = undefined
-          plot.unhighlight()
-        }
-      }
-    })
-    $('#chart').bind('plothover', function(event, pos, item) {
-      if (plotSelecting && item && itemId(item) != highlightedItemId) {
-        plot.unhighlight(item.series, item.datapoint)
-      }
-    })
-    $('#chart').bind('plotclick', function(event, pos, item) {
-      if (item) {
-        highlightedItemId = itemId(item)
-        plot.unhighlight()
-        // TODO highlight with bolder or larger outline
-        plot.highlight(item.series, item.datapoint)
-        showTraceDetailTooltip(item)
-      }
-    })
-    var cancelingPlotSelection
-    $(document).mousedown(function(e) {
-      // need to reset this variable at some point, now seems good
-      cancelingPlotSelection = false
-    })
-    $('#chart').bind('plotselecting', function(event, ranges) {
-      if (ranges) {
-        // plotselecting events are triggered with null ranges parameter when '!selectionIsSane()'
-        // (see jquery.flot.selection.js)
-        plotSelecting = true
-      }
-    })
-    $('#chart').bind('plotunselected', function(event, ranges) {
-      plotSelecting = false
-    })
-    $('#chart').bind('plotselected', function(event, ranges) {
-      if (cancelingPlotSelection) {
-        // unfortunately, plotselected is still called after plot.clearSelection() in the keyup
-        // event handler for the esc key
-        plot.clearSelection()
-        return
-      }
-      plotSelecting = false
-      var from = Math.floor(ranges.xaxis.from)
-      var to = Math.ceil(ranges.xaxis.to)
-      from += new Date(from).getTimezoneOffset() * 60 * 1000
-      to += new Date(to).getTimezoneOffset() * 60 * 1000
-      // round min/max to the nearest millisecond in outward direction so that they encompass the
-      // requested selection
-      var low = Math.floor(ranges.yaxis.from * 1000) / 1000
-      var high = Math.ceil(ranges.yaxis.to * 1000) / 1000
-      if (low == 0) {
-        $('#durationLow').val('')
-        $('#durationHigh').val(high)
-        $('#durationComparator').val('less').change()
-      } else {
-        $('#durationLow').val(low)
-        $('#durationHigh').val(high)
-        $('#durationComparator').val('between').change()
-      }
-      if (limitExceeded) {
-        getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), false)
-      } else {
-        // no need to hit server
-        // cancel any refresh in action
-        if (refreshQueryString) {
-          refreshQueryString = undefined
-          hideSpinner('#chartSpinner')
-        }
-        normalPoints = filterPoints(normalPoints, from, to, low, high)
-        errorPoints = filterPoints(errorPoints, from, to, low, high)
-        activePoints = filterPoints(activePoints, from, to, low, high)
-        plotResponseData(from, to)
-      }
-    })
-    function filterPoints(points, from, to, low, high) {
-      var filteredPoints = []
-      // points are in timezone-less flot values
-      from -= new Date(from).getTimezoneOffset() * 60 * 1000
-      to -= new Date(to).getTimezoneOffset() * 60 * 1000
-      for (var i = 0; i < points.length; i++) {
-        var point = points[i]
-        if (point[0] >= from && point[0] <= to && point[1] >= low && point[1] <= high) {
-          filteredPoints.push(point)
-        }
-      }
-      return filteredPoints
-    }
-    function updateTimeFilter(from, to) {
-      // TODO use localized time format
-      // currently momentjs provides only 'LT' for localized time but this does not include seconds
-      // see http://momentjs.com/docs/#/customization/long-date-formats
-      $('#timeFilter').html(moment(from).format('h:mm:ss A') + ' &nbsp; to &nbsp; '
-          + moment(to).format('h:mm:ss A (Z)'))
-      previousFrom = from
-      previousTo = to
-    }
-    function refresh() {
-      // TODO use localized date format, see more detailed comment at datepicker construction since
-      // the format needs to be sync'd between the date picker and this parsing
-      var date = moment($('#dateFilter').val(), 'MM/DD/YYYY')
-      var from
-      var to
-      if (plot) {
-        from = moment(Math.floor(plot.getAxes().xaxis.min))
-        to = moment(Math.ceil(plot.getAxes().xaxis.max))
-        // shift timezone
-        from.add('minutes', from.zone())
-        to.add('minutes', to.zone())
-        var fromAsDate = from.clone()
-        fromAsDate.hours(0)
-        fromAsDate.minutes(0)
-        fromAsDate.seconds(0)
-        fromAsDate.milliseconds(0)
-        if (date.valueOf() == fromAsDate.valueOf()) {
-          // dateFilter hasn't changed
-          from = from.valueOf()
-          to = to.valueOf()
-        } else {
-          // dateFilter has changed
-          from = date.valueOf()
-          to = date.valueOf() + 24 * 60 * 60 * 1000
-        }
-      } else {
-        // plot.getAxes() is not yet available because the refresh button was hit refresh during
-        // (a possibly very long) initial load and
-        from = date.valueOf()
-        to = date.valueOf() + 24 * 60 * 60 * 1000
-      }
-      getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), true)
-    }
-    function buildQueryString() {
-      var queryString = ''
-      var durationLow = $('#durationLow').val() * 1000
-      if (durationLow) {
-        queryString += '&low=' + durationLow
-      }
-      var durationHigh = $('#durationHigh').val() * 1000
-      if (durationHigh) {
-        queryString += '&high=' + durationHigh
-      }
-      if ($('#errorOnlyFilter').is(':checked')) {
-        queryString += '&error-only=true'
-      }
-      if ($('#fineOnlyFilter').is(':checked')) {
-        queryString += '&fine-only=true'
-      }
-      var headlineComparator = $('#headlineComparator').val()
-      var headline = $('#headlineFilter').val()
-      if (headline) {
-        queryString += '&headlineComparator=' + headlineComparator
-        queryString += '&headline=' + headline
-      }
-      var userIdComparator = $('#userIdComparator').val()
-      var userId = $('#userIdFilter').val()
-      if (userId) {
-        queryString += '&user-id-comparator=' + userIdComparator
-        queryString += '&user-id=' + userId
-      }
-      var background = $('#backgroundFilter').val()
-      if (background) {
-        queryString += '&background=' + background
-      }
-      return queryString
-    }
-    var refreshQueryString
-    var loadDetailId
-    function getTracePoints(from, to, limit, queryString, refreshButton, delay) {
-      var fullQueryString = 'from=' + from + '&to=' + to + '&limit=' + limit + queryString
-      // handle crazy user clicking on the button
-      if (refreshButton && fullQueryString == refreshQueryString) return
-      if (!refreshQueryString) {
-        // if refreshQueryString is defined, that means spinner is already showing
-        showSpinner('#chartSpinner')
-      }
-      refreshQueryString = fullQueryString
-      if (delay) {
-        setTimeout(function() {
-          if (refreshQueryString == fullQueryString) {
-            // still the current query
-            getTracePoints(from, to, limit, queryString, refreshButton, false)
-          }
-        }, delay)
-        return
-      }
-      $.getJSON('explorer/points?' + fullQueryString, function(response) {
-        if (refreshQueryString != fullQueryString) {
-          // a different query string has been posted since this one
-          // (or the refresh was 'canceled' by a zoom-in action that doesn't require data loading)
-          return
-        }
-        refreshQueryString = undefined
-        hideSpinner('#chartSpinner')
-        if (refreshButton) {
-          showAndFadeSuccessMessage('#refreshSuccessMessage')
-        }
-        normalPoints = response.normalPoints
-        errorPoints = response.errorPoints
-        activePoints = response.activePoints
-        limitExceeded = response.limitExceeded
-        if (response.limitExceeded) {
-          $('#limit').text(limit)
-          $('#limitExceeded').removeClass('hide')
-        } else {
-          $('#limitExceeded').addClass('hide')
-        }
-        hideTooltip()
-        // shift for timezone
-        for (var i = 0; i < normalPoints.length; i++) {
-          normalPoints[i][0] -= new Date(normalPoints[i][0]).getTimezoneOffset() * 60 * 1000
-        }
-        for (var i = 0; i < errorPoints.length; i++) {
-          errorPoints[i][0] -= new Date(errorPoints[i][0]).getTimezoneOffset() * 60 * 1000
-        }
-        for (var i = 0; i < activePoints.length; i++) {
-          activePoints[i][0] -= new Date(activePoints[i][0]).getTimezoneOffset() * 60 * 1000
-        }
-        plotResponseData(from, to)
-      })
-    }
-    function itemId(item) {
-      if (item.seriesIndex == 0) {
-        return normalPoints[item.dataIndex][2]
-      } else if (item.seriesIndex == 1) {
-        return errorPoints[item.dataIndex][2]
-      } else {
-        return activePoints[item.dataIndex][2]
-      }
-    }
-    function highlightPoint(id) {
-      for (var i = 0; i < normalPoints.length; i++) {
-        if (normalPoints[i][2] == id) {
-          plot.highlight(0, i)
-          return
-        }
-      }
-      for (var i = 0; i < errorPoints.length; i++) {
-        if (errorPoints[i][2] == id) {
-          plot.highlight(1, i)
-          return
-        }
-      }
-      for (var i = 0; i < activePoints.length; i++) {
-        if (activePoints[i][2] == id) {
-          plot.highlight(2, i)
-          return
-        }
-      }
-    }
-    function showTraceDetailTooltip(item) {
-      var x = item.pageX
-      var y = item.pageY
-      var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 })
-      function displaySpinner() {
-        if (spinner) {
-          var html = '<div class="inlineblock" id="tooltipSpinner" style="width: 35px;'
-            + ' height: 31px"></div>'
-          $('#chart').qtip({
-            content: {
-              text: html
-            },
-            position: {
-              my: 'left center',
-              target: [ x , y + 5 ],
-              viewport: $('#chart')
-            },
-            hide: {
-              event: 'unfocus'
-            },
-            show: {
-              event: false
-            },
-            events: {
-              hide: function() {
-                summaryItem = null
-              }
-            }
-          })
-          $('#chart').qtip('show')
-          spinner.spin($('#tooltipSpinner').get(0))
-        }
-      }
-      // small delay so that if there is an immediate response the spinner doesn't blink
-      setTimeout(displaySpinner, 100)
-      var id = itemId(item)
-      summaryItem = item
-      modalVanishPoint = [x, y]
-      var localSummaryItem = summaryItem
-      $.getJSON('explorer/summary/' + id, function(response) {
-        spinner.stop()
-        spinner = null
-        // intentionally not using itemEquals() here to avoid edge case where user clicks on item
-        // then zooms and clicks on the same item. if the first request comes back after the second
-        // click, then itemEquals() will be true and it will pop up the correct summary, but at the
-        // incorrect location
-        if (localSummaryItem != summaryItem) {
-          // too slow, the user has moved on to another summary already
-          return
-        }
-        var text
-        if (response.expired) {
-          text = 'expired'
-        } else {
-          summaryTrace = response
-          var html = traceSummaryTemplate(summaryTrace)
-          var showDetailHtml = '<div style="margin-top: 0.5em">'
-            + '<button class="realbtn red pad1" id="showDetail"'
-            + ' style="font-size: 12px">'
-            + 'show detail</button></div>'
-            text = '<div class="indent1">' + html + '</div>' + showDetailHtml
-        }
-        $('#chart').qtip({
-          content: {
-            text: text
-          },
-          position: {
-            my: 'left center',
-            target: [ x , y + 5 ],
-            viewport: $(window)
-          },
-          style: {
-            classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-' + item.seriesIndex
-          },
-          hide: {
-            event: 'unfocus'
-          },
-          show: {
-            event: false
-          },
-          events: {
-            hide: function() {
-              summaryItem = null
-            }
-          }
-        })
-        $('#chart').qtip('show')
-        $('#showDetail').click(function() {
-          // handle crazy user clicking on the 'show detail' link
-          if (id == loadDetailId) return
-          loadDetailId = id
-          summaryTrace.showExport = true
-          var summaryHtml = '<div class="indent1">' + traceSummaryTemplate(summaryTrace) + '</div>'
-              + '<br><div class="indent2"><div class="button-spinner hide" id="detailSpinner"'
-              + ' style="margin-left: 0px; margin-top: 30px"></div></div>'
-          var initialFixedOffset = {
-            top: $('.qtip').offset().top - $(window).scrollTop(),
-            left: $('.qtip').offset().left - $(window).scrollLeft()
-            }
-          var initialWidth = $('.qtip').width()
-          var initialHeight = $('.qtip').height()
-          $('#chart').qtip('hide')
-          displayModal(summaryHtml, initialFixedOffset, initialWidth, initialHeight)
-          $.getJSON('explorer/detail/' + id, function(response) {
-            if (loadDetailId != id) {
-              // a different id has been posted since this one
-              return
-            }
-            loadDetailId = undefined
-            var html
-            if (response.expired) {
-              html = 'expired'
-            } else {
-              detailTrace = response
-              detailTrace.showExport = true
-              html = '<div class="indent1">' + traceSummaryTemplate(detailTrace) + '</div><br>'
-                             + traceDetailTemplate(detailTrace)
-            }
-            hideSpinner('#detailSpinner')
-            $('#modalContent').html(html)
-          })
-          return false
-        })
-      })
-    }
-    function displayModal(initialHtml, initialFixedOffset, initialWidth, initialHeight) {
-      $('#modalContent').html(initialHtml)
-      $('#modal').removeClass('hide')
-      // need to focus on something inside the modal, otherwise keyboard events won't be captured,
-      // in particular, page up / page down won't scroll the modal
-      $('#modalContent').focus()
-      $('#modal').css('position', 'fixed')
-      $('#modal').css('top', initialFixedOffset.top)
-      $('#modal').css('left', initialFixedOffset.left)
-      $('#modal').width(initialWidth)
-      $('#modal').height(initialHeight)
-      $('#modal').css('margin', 0)
-      $('#modal').css('background-color', '#eee')
-      $('#modal').css('font-size', '12px')
-      $('#modal').css('line-height', '16px')
-      $('#modal').modal({ 'show': true, 'keyboard': false, 'backdrop': false })
-      var width = $(window).width() - 50
-      var height = $(window).height() - 50
-      $('#modal').animate({
-        left: '25px',
-        top: '25px',
-        width: width + 'px',
-        height: height + 'px',
-        backgroundColor: '#fff',
-        fontSize: '14px',
-        lineHeight: '20px'
-      }, 400, function() {
-        if (loadDetailId) {
-          // show spinner after animation, and only if still waiting for content
-          showSpinner('#detailSpinner')
-        }
-        // this is needed to prevent the background from scrolling
-        // wait until animation is complete since removing scrollbar makes the background page shift
-        $('body').css('overflow', 'hidden')
-        // hiding the flot chart is needed to prevent a strange issue in chrome that occurs when
-        // expanding a section of the details to trigger vertical scrollbar to be active, then
-        // scroll a little bit down, leaving the section header visible, then click the section
-        // header to collapse the section (while still scrolled down a bit from the top) and the
-        // whole modal will shift down and to the right 25px in each direction (only in chrome)
-        //
-        // and without hiding flot chart there is another problem in chrome, in smaller browser
-        // windows it causes the vertical scrollbar to get offset a bit left and upwards
-        $('#chart').hide()
-      })
-      $('body').append('<div class="modal-backdrop" id="modalBackdrop"></div>')
-      $('#modalBackdrop').css('background-color', '#ddd')
-      $('#modalBackdrop').css('opacity', 0)
-      $('#modalBackdrop').animate({
-        'opacity': 0.8
-      }, 400)
-    }
-    function hideModal() {
-      // just in case spinner is still showing
-      hideSpinner('#detailSpinner')
-      // reset overflow so the background can scroll again
-      $('body').css('overflow', '')
-      // re-display flot chart
-      $('#chart').show()
-      // remove large dom content first since it makes animation jerky at best
-      // (and need to remove it afterwards anyways to clean up the dom)
-      $('#modalContent').empty()
-      $('#modal').animate({
-        left: (modalVanishPoint[0] - $(window).scrollLeft()) + 'px',
-        top: (modalVanishPoint[1] - $(window).scrollTop()) + 'px',
-        width: 0,
-        height: 0,
-        backgroundColor: '#eee'
-      }, 200, function() {
-        $('#modal').addClass('hide')
-        $('#modal').modal('hide')
-      })
-      $('#modalBackdrop').animate({
-        'opacity': 0
-      }, 200, function() {
-        $('#modalBackdrop').remove()
-      })
-    }
-    $('#toggleExtraFiltersButton').click(function(e) {
-      $('#extraFilters').toggleClass('hide')
-      if ($('#extraFilters').hasClass('hide')) {
-        $('#toggleExtraFiltersButton').html('more filters')
-      } else {
-        $('#toggleExtraFiltersButton').html('less filters')
-      }
-      // without preventDefault, click triggers form submission
-      e.preventDefault()
-    })
-    var now = new Date()
-    var today = new Date()
-    today.setHours(0,0,0,0)
-    // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
-    // localized format 'moment.longDateFormat.L' both here and when parsing date
-    // see https://github.com/eternicode/bootstrap-datepicker/issues/24
-    $('#dateFilter').val(moment(today).format('MM/DD/YYYY'))
-    $('#dateFilter').datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true})
-    $('#durationComparator').change(function() {
-      if ($('#durationComparator').val() == 'greater') {
-        $('#durationLowDiv').removeClass('hide')
-        $('#durationAndDiv').addClass('hide')
-        $('#durationHighDiv').addClass('hide')
-        $('#durationHigh').val('')
-      } else if ($('#durationComparator').val() == 'less') {
-        $('#durationLowDiv').addClass('hide')
-        $('#durationLow').val('')
-        $('#durationAndDiv').addClass('hide')
-        $('#durationHighDiv').removeClass('hide')
-      } else if ($('#durationComparator').val() == 'between') {
-        $('#durationLowDiv').removeClass('hide')
-        $('#durationAndDiv').removeClass('hide')
-        $('#durationHighDiv').removeClass('hide')
-      }
-    })
-    $('#refreshButton').click(refresh)
-    $(".refresh-data-on-enter-key").keypress(function(event) {
-      if (event.which == 13) {
-        refresh()
-        // without preventDefault, enter triggers 'more filters' button
-        event.preventDefault()
-      }
-    })
-    $('#zoomOut').click(function() { plot.zoomOut() })
-    $('#modalHide').click(hideModal)
-    // get the last 2 hours, but nothing prior to today (e.g. if 'now' is 1am)
-    var from = Math.max(today.getTime(), now.getTime() - 2 * 60 * 60 * 1000)
-    // now + 15 minutes, this is primarily to set the right-hand border for the chart
-    var to = now.getTime() + 15 * 60 * 1000
-    getTracePoints(from, to, 500, '', false)
-  })
+<script type="text/x-handlebars-template" id="traceSummaryTemplate">
+  /*#include "template/trace-summary.html" */
 </script>
+<script type="text/x-handlebars-template" id="traceDetailTemplate">
+  /*#include "template/trace-detail.html" */
+</script>
+<script type="text/x-handlebars-template" id="traceSpanTemplate">
+  /*#include "template/trace-span.html" */
+</script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/trace.js"></script>
+<script type="text/javascript" src="js/explorer.js"></script>
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">
@@ -689,20 +71,21 @@
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
-      <ul class="dropdown-menu" role="menu" style="margin: 0">
+      <ul class="dropdown-menu" role="menu" style="margin: 0;">
         <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
         <li role="menuitem"><a tabindex="-1" href="threads.html">thread dump</a></li>
       </ul>
     </div>
   </div>
   <br>
-  <div style="position: relative; height: 300px">
+  <div style="position: relative; height: 300px;">
     <div class="explorer-chart" id="chart"></div>
-    <span class="explorer-chart button-spinner hide" id="chartSpinner" style="pointer-events: none">
+    <span class="explorer-chart button-spinner hide" id="chartSpinner"
+          style="pointer-events: none;">
     </span>
   </div>
   <br>
-  <div style="float: right; margin-top: 20px">
+  <div style="float: right; margin-top: 20px;">
     <div class="hide" id="limitExceeded">
       <div class="alert alert-error explorer-limit-exceeded">
         <strong>
@@ -713,14 +96,14 @@
       </div>
     </div>
     <div class="explorer-guide">
-      <div style="margin-top: 10px"><strong>Chart navigation</strong></div>
+      <div style="margin-top: 10px;"><strong>Chart navigation</strong></div>
       <ul>
         <li>click a data point to see<br>its summary</li>
         <li>use the mouse scroll wheel<br>to zoom in and out</li>
         <li>drag over a region to zoom in</li>
         <li>double click to zoom in</li>
         <li>
-          <button class="realbtn red" id="zoomOut" style="margin-left: -4px; padding: 0 4px">
+          <button class="realbtn red" id="zoomOut" style="margin-left: -4px; padding: 0 4px;">
             click here to zoom out
           </button>
           <br>
@@ -729,7 +112,7 @@
       </ul>
     </div>
   </div>
-  <form class="form-horizontal" style="float: left; max-width: 800px; margin: 20px auto 0 auto">
+  <form class="form-horizontal" style="float: left; max-width: 800px; margin: 20px auto 0 auto;">
     <fieldset>
       <div class="control-group">
         <label class="control-label" for="dateFilter">Date</label>
@@ -741,7 +124,7 @@
         <label class="control-label">Time</label>
         <div class="controls">
           <!-- maybe bootstrap issue that padding-top is required for vertical alignment? -->
-          <span class="help-inline" id="timeFilter" style="padding-top: 5px">All day</span>
+          <span class="help-inline" id="timeFilter" style="padding-top: 5px;">All day</span>
         </div>
       </div>
       <div class="control-group">
@@ -792,7 +175,7 @@
               <option value="contains">Contains</option>
             </select>
             <input type="text" class="input-medium refresh-data-on-enter-key"
-                id="headlineFilter">
+                   id="headlineFilter">
           </div>
         </div>
         <div class="control-group">
@@ -833,7 +216,7 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <button class="realbtn pad1 red" id="toggleExtraFiltersButton" style="margin-left: -1em">
+          <button class="realbtn pad1 red" id="toggleExtraFiltersButton" style="margin-left: -1em;">
             more filters
           </button>
         </div>
@@ -847,7 +230,7 @@
     </fieldset>
   </form>
   <div class="modal hide" id="modal">
-    <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px">
+    <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">
       &times;
     </button>
     <div class="modal-content" id="modalContent" tabindex="0"></div>

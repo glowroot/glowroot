@@ -163,13 +163,15 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
                 if (uriMappingEntry.getValue() instanceof HttpService) {
-                    HttpResponse response = ((HttpService) uriMappingEntry.getValue())
+                    return ((HttpService) uriMappingEntry.getValue())
                             .handleRequest(request, channel);
-                    return response;
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
-                    return handleStaticRequest(resourcePath);
+                    if (resourcePath.endsWith(".html")) {
+                        return handleStaticHtmlTemplate(resourcePath, channel);
+                    }
+                    return handleStaticResource(resourcePath);
                 }
             }
         }
@@ -189,7 +191,19 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
-    private static HttpResponse handleStaticRequest(String path) throws IOException {
+    private HttpResponse handleStaticHtmlTemplate(String resourcePath,
+            Channel channel) throws IOException {
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
+        response.setChunked(true);
+        channel.write(response);
+        channel.write(new ReaderChunkedInput(HtmlTemplates.processTemplate(resourcePath)
+                .openStream()));
+        // return null to indicate streaming
+        return null;
+    }
+
+    private static HttpResponse handleStaticResource(String path) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
             logger.warn("missing extension '{}'", path);
@@ -207,6 +221,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         } catch (IllegalArgumentException e) {
             logger.warn("unexpected path '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+        }
+        if (extension.equals("html")) {
         }
         byte[] staticContent = Resources.toByteArray(url);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -340,6 +356,13 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 }
             }
             return mapper.writeValueAsString(parameters);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    private static class ResourceNotFound extends IOException {
+        private ResourceNotFound(String message) {
+            super(message);
         }
     }
 

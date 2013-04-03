@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Structure used as part of the response to "/explorer/detail".
+ * Structure used as part of the response to "/trace/detail".
  * 
  * @author Trask Stalnaker
  * @since 0.5

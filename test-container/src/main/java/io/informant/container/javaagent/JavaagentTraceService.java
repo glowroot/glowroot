@@ -86,7 +86,7 @@ class JavaagentTraceService implements TraceService {
     }
 
     public InputStream getTraceExport(String traceId) throws Exception {
-        return httpClient.getAsStream("/explorer/export/" + traceId);
+        return httpClient.getAsStream("/trace/export/" + traceId);
     }
 
     void assertNoActiveTraces() throws Exception {
@@ -145,7 +145,7 @@ class JavaagentTraceService implements TraceService {
             return trace;
         } else {
             String traceContent =
-                    httpClient.get("/explorer/detail/" + mostRecentCapturedPoint.getId());
+                    httpClient.get("/trace/detail/" + mostRecentCapturedPoint.getId());
             return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
         }
     }
@@ -169,7 +169,7 @@ class JavaagentTraceService implements TraceService {
                 trace.setSummary(true);
                 return trace;
             } else {
-                String traceContent = httpClient.get("/explorer/detail/" + point.getId());
+                String traceContent = httpClient.get("/trace/detail/" + point.getId());
                 return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
             }
         }

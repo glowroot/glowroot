@@ -18,43 +18,59 @@
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Traces</title>
-<link rel="shortcut icon" href="http://informant.io/img/favicon.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="http://informant.io/img/favicon.ico" type="image/x-icon"/>
 <link href='http://fonts.googleapis.com/css?family=Special+Elite' rel='stylesheet' type='text/css'>
 <style type="text/css">
-  {{include io/informant/local/ui/libs/bootstrap/2.2.2/css/bootstrap.min.css}}
+    /*#include "libs/bootstrap/2.2.2/css/bootstrap.min.css" */
 </style>
 <style type="text/css">
-  {{include io/informant/local/ui/css/informant.css}}
+    /*#include "css/informant.css" */
 </style>
 <script type="text/javascript">
-  {{include io/informant/local/ui/libs/jquery/1.9.0/jquery.min.js}}
+  /*#include "libs/jquery/1.9.0/jquery.min.js" */
 </script>
 <script type="text/javascript">
-  {{include io/informant/local/ui/libs/moment/1.7.2/moment.min.js}}
+  /*#include "libs/moment/1.7.2/moment.min.js" */
 </script>
 <script type="text/javascript">
-  {{include io/informant/local/ui/libs/handlebars/1.0.rc.2/handlebars.js}}
+  /*#include "libs/handlebars/1.0.rc.2/handlebars.js" */
+</script>
+<script type="text/x-handlebars-template" id="traceSummaryTemplate">
+  /*#include "template/trace-summary.html" */
+</script>
+<script type="text/x-handlebars-template" id="traceDetailTemplate">
+  /*#include "template/trace-detail.html" */
+</script>
+<script type="text/x-handlebars-template" id="traceSpanTemplate">
+  /*#include "template/trace-span.html" */
 </script>
 <script type="text/javascript">
-  {{include io/informant/local/ui/js/trace.js}}
+  /*#include "js/trace.js" */
 </script>
 <script type="text/javascript">
-  {{include io/informant/local/ui/js/informant.js}}
+  /*#include "js/common.js" */
+</script>
+<script type="text/json" id="detailTraceJson">
+  /*#include "trace/detail" */
 </script>
 <script type="text/javascript">
-  detailTrace = {{include detailTrace}}
-  $(document).ready(function() {
-    var html = traceSummaryTemplate(detailTrace)
-    var detailHtml = traceDetailTemplate(detailTrace)
-    $('#detailTrace').html(html)
-    $('#detailTrace').append('<br>')
-    $('#detailTrace').append(detailHtml)
-  })
+  (function () {
+    'use strict';
+    Trace.detailTrace = JSON.parse($('#detailTraceJson').html());
+    $(document).ready(function () {
+      var html = Trace.traceSummaryTemplate(Trace.detailTrace);
+      var detailHtml = Trace.traceDetailTemplate(Trace.detailTrace);
+      var $detailTrace = $('#detailTrace');
+      $detailTrace.html(html);
+      $detailTrace.append('<br>');
+      $detailTrace.append(detailHtml);
+    });
+  }());
 </script>
 </head>
 <!-- export body needs explicit horizontal padding since it does not use the boostrap container
      class like other pages -->
-<body style="padding-left: 48px; padding-right: 48px">
+<body style="padding-left: 48px; padding-right: 48px;">
   <div class="header">
     <span class="header-logo header-logo-export">
         <!-- lack of spaces on this line is important -->

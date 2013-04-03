@@ -1,0 +1,84 @@
+{{!
+Copyright 2013 the original author or authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{#if limitExceededMarker}}
+<div class="indent1" style="padding: 10px 0;">
+  <strong>... Span limit exceeded ...</strong>
+</div>
+{{^}}
+{{#if limitExtendedMarker}}
+<div class="indent1" style="padding: 10px 0;">
+  <strong>... Span limit extended mid-trace ...</strong>
+</div>
+{{^}}
+<div class="inlineblock indent1 unexpanded-vertical-padding"
+     style="float: left; width: {{offsetColumnWidth}}em; text-align: right;">
+  +{{nanosToMillis offset}}
+</div>
+{{! +1 at the beginning is for the indent1 of the offset column }}
+<div style="margin-left: {{spanIndent .}}em;">
+  {{#if beyondLimit}}
+  {{^}}
+  <div class="indent1 unexpanded-vertical-padding"
+       style="width: {{offsetColumnWidth}}em; float: left; text-align: right;">
+    {{nanosToMillis duration}}{{#if active}}..{{/if}}
+  </div>
+  {{/if}}
+  <div style="margin-left: {{add 2 offsetColumnWidth}}em;">
+    {{#if message}}
+    {{#ifLongMessage message.text}}
+    <div>
+      <span class="unexpanded-content">{{firstPart message.text}}
+        <span class="red"><strong>...</strong></span> {{lastPart message.text}}
+      </span>
+      <div class="expanded-content breakword hide">{{message.text}}</div>
+    </div>
+    {{^}}
+    <div class="unexpanded-padding">{{message.text}}</div>
+    {{/ifLongMessage}}
+    {{#if message.detail}}
+    <div class="indent2">
+      <span class="unexpanded-content red">detail</span>
+      <div class="expanded-content hide">{{{messageDetailHtml message.detail}}}</div>
+    </div>
+    {{/if}}
+    {{/if}}
+    {{#if error}}
+    <div class="{{{errorIndentClass message}}}">
+      <strong><span class="indent1">{{error.text}}</span></strong>
+      <br>
+      {{#if error.detail}}
+      <div class="indent1">{{{messageDetailHtml error.detail}}}</div>
+      {{/if}}
+      {{#if error.exception}}
+      <div class="{{{exceptionIndentClass message}}}">
+        <span class="unexpanded-content red">exception</span>
+        {{! using span so background will stretch beyond page border if needed }}
+        <span class="expanded-content nowrap hide">{{{exceptionHtml error.exception}}}</span>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+    {{#if stackTrace}}
+    <div class="indent2">
+      <span class="unexpanded-content red">span stack trace</span>
+      {{! using span so background will stretch beyond page border if needed }}
+      <span class="expanded-content nowrap hide">{{{stackTraceHtml stackTrace}}}</span>
+    </div>
+    {{/if}}
+  </div>
+</div>
+{{/if}}
+{{/if}}
