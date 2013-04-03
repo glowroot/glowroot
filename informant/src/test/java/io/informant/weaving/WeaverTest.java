@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.weaving.SomeAspect.BasicAdvice;
@@ -186,7 +187,7 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then
-        Object[] parameters = new Object[] { "one", 2 };
+        Object[] parameters = new Object[] {"one", 2};
         assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgAdvice.onReturnParams.get()).isEqualTo(parameters);
@@ -205,7 +206,7 @@ public class WeaverTest {
         } catch (Throwable t) {
         }
         // then
-        Object[] parameters = new Object[] { "one", 2 };
+        Object[] parameters = new Object[] {"one", 2};
         assertThat(BindMethodArgAdvice.isEnabledParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgAdvice.onBeforeParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgAdvice.onReturnParams.get()).isNull();
@@ -223,7 +224,7 @@ public class WeaverTest {
         // when
         test.executeWithArgs("one", 2);
         // then
-        Object[] parameters = new Object[] { "one", 2 };
+        Object[] parameters = new Object[] {"one", 2};
         assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgArrayAdvice.onReturnParams.get()).isEqualTo(parameters);
@@ -243,7 +244,7 @@ public class WeaverTest {
         } catch (Throwable t) {
         }
         // then
-        Object[] parameters = new Object[] { "one", 2 };
+        Object[] parameters = new Object[] {"one", 2};
         assertThat(BindMethodArgArrayAdvice.isEnabledParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgArrayAdvice.onBeforeParams.get()).isEqualTo(parameters);
         assertThat(BindMethodArgArrayAdvice.onReturnParams.get()).isNull();

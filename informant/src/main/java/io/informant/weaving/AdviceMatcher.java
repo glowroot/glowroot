@@ -154,19 +154,19 @@ class AdviceMatcher {
 
     private boolean isMethodModifierMatch(MethodModifier methodModifier, int modifiers) {
         switch (methodModifier) {
-        case PUBLIC:
-            return Modifier.isPublic(modifiers);
-        case PROTECTED:
-            return Modifier.isProtected(modifiers);
-        case PRIVATE:
-            return Modifier.isPrivate(modifiers);
-        case PACKAGE_PRIVATE:
-            return !Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)
-                    && !Modifier.isPrivate(modifiers);
-        case STATIC:
-            return Modifier.isStatic(modifiers);
-        case NOT_STATIC:
-            return !Modifier.isStatic(modifiers);
+            case PUBLIC:
+                return Modifier.isPublic(modifiers);
+            case PROTECTED:
+                return Modifier.isProtected(modifiers);
+            case PRIVATE:
+                return Modifier.isPrivate(modifiers);
+            case PACKAGE_PRIVATE:
+                return !Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)
+                        && !Modifier.isPrivate(modifiers);
+            case STATIC:
+                return Modifier.isStatic(modifiers);
+            case NOT_STATIC:
+                return !Modifier.isStatic(modifiers);
         }
         return false;
     }

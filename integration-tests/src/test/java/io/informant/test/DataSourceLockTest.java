@@ -16,6 +16,7 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.Containers;
 import io.informant.container.Container;
 import io.informant.container.Container.StartupFailedException;

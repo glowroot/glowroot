@@ -16,6 +16,7 @@
 package io.informant.local.ui;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
 import io.informant.local.store.SnapshotDao;
@@ -234,17 +235,17 @@ class TracePointJsonService implements JsonService {
             }
             String traceHeadline = trace.getHeadline();
             switch (headlineComparator) {
-            case BEGINS:
-                return traceHeadline.toUpperCase(Locale.ENGLISH)
-                        .startsWith(headline.toUpperCase(Locale.ENGLISH));
-            case CONTAINS:
-                return traceHeadline.toUpperCase(Locale.ENGLISH)
-                        .contains(headline.toUpperCase(Locale.ENGLISH));
-            case EQUALS:
-                return traceHeadline.equalsIgnoreCase(headline);
-            default:
-                throw new IllegalStateException("Unexpected headline comparator: "
-                        + headlineComparator);
+                case BEGINS:
+                    return traceHeadline.toUpperCase(Locale.ENGLISH)
+                            .startsWith(headline.toUpperCase(Locale.ENGLISH));
+                case CONTAINS:
+                    return traceHeadline.toUpperCase(Locale.ENGLISH)
+                            .contains(headline.toUpperCase(Locale.ENGLISH));
+                case EQUALS:
+                    return traceHeadline.equalsIgnoreCase(headline);
+                default:
+                    throw new IllegalStateException("Unexpected headline comparator: "
+                            + headlineComparator);
             }
         }
 
@@ -258,17 +259,17 @@ class TracePointJsonService implements JsonService {
                 return false;
             }
             switch (userIdComparator) {
-            case BEGINS:
-                return traceUserId.toUpperCase(Locale.ENGLISH)
-                        .startsWith(userId.toUpperCase(Locale.ENGLISH));
-            case CONTAINS:
-                return traceUserId.toUpperCase(Locale.ENGLISH)
-                        .contains(userId.toUpperCase(Locale.ENGLISH));
-            case EQUALS:
-                return traceUserId.equalsIgnoreCase(userId);
-            default:
-                throw new IllegalStateException("Unexpected user id comparator: "
-                        + userIdComparator);
+                case BEGINS:
+                    return traceUserId.toUpperCase(Locale.ENGLISH)
+                            .startsWith(userId.toUpperCase(Locale.ENGLISH));
+                case CONTAINS:
+                    return traceUserId.toUpperCase(Locale.ENGLISH)
+                            .contains(userId.toUpperCase(Locale.ENGLISH));
+                case EQUALS:
+                    return traceUserId.equalsIgnoreCase(userId);
+                default:
+                    throw new IllegalStateException("Unexpected user id comparator: "
+                            + userIdComparator);
             }
         }
 

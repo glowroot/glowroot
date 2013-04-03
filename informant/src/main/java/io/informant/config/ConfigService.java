@@ -60,7 +60,7 @@ public class ConfigService {
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
     private final Multimap<String, ConfigListener> pluginConfigListeners =
-            Multimaps.synchronizedMultimap(ArrayListMultimap.<String, ConfigListener> create());
+            Multimaps.synchronizedMultimap(ArrayListMultimap.<String, ConfigListener>create());
 
     private volatile Config config;
 

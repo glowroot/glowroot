@@ -16,6 +16,7 @@
 package io.informant.container.trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import checkers.nullness.quals.Nullable;
 
 import com.google.common.base.Objects;

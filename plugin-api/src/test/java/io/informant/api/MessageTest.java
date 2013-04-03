@@ -16,6 +16,7 @@
 package io.informant.api;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.api.internal.ReadableMessage;
 
 import org.junit.Test;

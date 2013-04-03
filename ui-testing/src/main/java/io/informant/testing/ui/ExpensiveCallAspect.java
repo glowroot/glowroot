@@ -16,6 +16,7 @@
 package io.informant.testing.ui;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;

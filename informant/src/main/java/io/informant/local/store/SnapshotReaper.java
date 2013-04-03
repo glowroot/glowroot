@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.informant.common.Clock;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;

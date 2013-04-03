@@ -131,7 +131,7 @@ class ServletMessageSupplier extends MessageSupplier {
             if (key.toLowerCase(Locale.ENGLISH).contains("password")) {
                 // TODO implement configuration options for white listing and/or black listing
                 // certain request parameters and sql bind variables
-                map.put(key, new String[] { "****" });
+                map.put(key, new String[] {"****"});
                 continue;
             }
             String/*@Nullable*/[] value = (String/*@Nullable*/[]) entry.getValue();

@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.weaving.preinit.GlobalCollector;
 import io.informant.weaving.preinit.ReferencedMethod;
 

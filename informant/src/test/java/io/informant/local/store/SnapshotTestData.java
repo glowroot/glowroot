@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import io.informant.snapshot.Snapshot;
 
 import java.util.concurrent.atomic.AtomicInteger;

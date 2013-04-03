@@ -16,6 +16,7 @@
 package io.informant.container.config;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
+
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -87,8 +88,7 @@ public class UserConfig {
             // the server
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(userId, that.userId)
-                    && Objects.equal(storeThresholdMillis,
-                            that.storeThresholdMillis)
+                    && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(fineProfiling, that.fineProfiling);
         }
         return false;

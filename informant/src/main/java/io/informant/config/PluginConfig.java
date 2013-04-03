@@ -49,7 +49,7 @@ import com.google.common.hash.Hashing;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@JsonPropertyOrder({ "groupId", "artifactId" })
+@JsonPropertyOrder({"groupId", "artifactId"})
 @Immutable
 public class PluginConfig {
 
@@ -143,15 +143,15 @@ public class PluginConfig {
             }
             String propertyName = propertyDescriptor.getName();
             switch (propertyDescriptor.getType()) {
-            case STRING:
-                properties.put(propertyName, getStringProperty(propertyName));
-                break;
-            case BOOLEAN:
-                properties.put(propertyName, getBooleanProperty(propertyName));
-                break;
-            case DOUBLE:
-                properties.put(propertyName, getDoubleProperty(propertyName));
-                break;
+                case STRING:
+                    properties.put(propertyName, getStringProperty(propertyName));
+                    break;
+                case BOOLEAN:
+                    properties.put(propertyName, getBooleanProperty(propertyName));
+                    break;
+                case DOUBLE:
+                    properties.put(propertyName, getDoubleProperty(propertyName));
+                    break;
             }
         }
         return properties;
@@ -294,15 +294,15 @@ public class PluginConfig {
                 return this;
             }
             switch (propertyDescriptor.getType()) {
-            case STRING:
-                setStringProperty(name, value, ignoreWarnings);
-                return this;
-            case BOOLEAN:
-                setBooleanProperty(name, value, ignoreWarnings);
-                return this;
-            case DOUBLE:
-                setDoubleProperty(name, value, ignoreWarnings);
-                return this;
+                case STRING:
+                    setStringProperty(name, value, ignoreWarnings);
+                    return this;
+                case BOOLEAN:
+                    setBooleanProperty(name, value, ignoreWarnings);
+                    return this;
+                case DOUBLE:
+                    setDoubleProperty(name, value, ignoreWarnings);
+                    return this;
             }
             return this;
         }

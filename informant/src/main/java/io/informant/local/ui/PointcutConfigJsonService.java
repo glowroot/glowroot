@@ -16,6 +16,7 @@
 package io.informant.local.ui;
 
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
+
 import io.informant.common.ObjectMappers;
 import io.informant.markers.Singleton;
 import io.informant.weaving.ParsedMethod;

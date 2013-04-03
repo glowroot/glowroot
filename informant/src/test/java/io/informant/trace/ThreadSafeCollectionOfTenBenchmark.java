@@ -36,10 +36,10 @@ public class ThreadSafeCollectionOfTenBenchmark {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        runner.run(new String[] { SynchronizedArrayBenchmark.class.getName() });
-        runner.run(new String[] { SynchronizedArrayWithBadCapacityBenchmark.class.getName() });
-        runner.run(new String[] { ConcurrentLinkedQueueBenchmark.class.getName() });
-        runner.run(new String[] { CopyOnWriteArrayListBenchmark.class.getName() });
+        runner.run(new String[] {SynchronizedArrayBenchmark.class.getName()});
+        runner.run(new String[] {SynchronizedArrayWithBadCapacityBenchmark.class.getName()});
+        runner.run(new String[] {ConcurrentLinkedQueueBenchmark.class.getName()});
+        runner.run(new String[] {CopyOnWriteArrayListBenchmark.class.getName()});
     }
 
     // 119.04 ns; σ=3.98 ns @ 10 trials

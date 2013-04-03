@@ -16,6 +16,7 @@
 package io.informant.config;
 
 import static io.informant.common.ObjectMappers.checkRequiredProperty;
+
 import io.informant.common.ObjectMappers;
 
 import java.io.IOException;

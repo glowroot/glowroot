@@ -26,7 +26,7 @@ import io.informant.api.weaving.Pointcut;
 public class WeavingJDK14BytecodeAspect {
 
     @Pointcut(typeName = "org.apache.commons.lang.StringUtils", methodName = "isEmpty",
-            methodArgs = { "java.lang.String" }, metricName = "is empty")
+            methodArgs = {"java.lang.String"}, metricName = "is empty")
     public static class BasicAdvice {
         @OnBefore
         public static void onBefore(@SuppressWarnings("unused") @BindTarget Class<?> target) {}

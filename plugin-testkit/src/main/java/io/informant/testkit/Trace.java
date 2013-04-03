@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
  * @author Trask Stalnaker
  * @since 0.5
  */
-@JsonIgnoreProperties({ "coarseMergedStackTree", "fineMergedStackTree" })
+@JsonIgnoreProperties({"coarseMergedStackTree", "fineMergedStackTree"})
 public class Trace {
 
     @Nullable

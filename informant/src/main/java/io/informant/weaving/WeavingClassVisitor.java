@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.informant.weaving.ParsedType.Builder;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
 

@@ -16,6 +16,7 @@
 package io.informant.test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.MainEntryPoint;
 import io.informant.container.ClassPath;
 

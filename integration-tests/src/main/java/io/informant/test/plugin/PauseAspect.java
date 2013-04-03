@@ -16,6 +16,7 @@
 package io.informant.test.plugin;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
@@ -66,7 +67,7 @@ public class PauseAspect {
 
     // this is just to generate an additional $informant$ method to test that consecutive
     // $informant$ methods in a span stack trace are stripped out correctly
-    @Pointcut(typeName = "io.informant.test.LogError", methodName = "pause", methodArgs = { "int" },
+    @Pointcut(typeName = "io.informant.test.LogError", methodName = "pause", methodArgs = {"int"},
             metricName = "pause 2")
     public static class PauseAdvice2 {}
 }

@@ -16,6 +16,7 @@
 package io.informant.container.javaagent;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.informant.MainEntryPoint;
 import io.informant.container.AppUnderTest;
 import io.informant.container.ClassPath;

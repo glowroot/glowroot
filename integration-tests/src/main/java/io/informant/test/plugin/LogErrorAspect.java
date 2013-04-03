@@ -37,7 +37,7 @@ public class LogErrorAspect {
             PluginServices.get("io.informant:informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.test.LogError", methodName = "log",
-            methodArgs = { "java.lang.String" }, metricName = "log error")
+            methodArgs = {"java.lang.String"}, metricName = "log error")
     public static class LogErrorAdvice {
 
         private static final MetricName metricName =
@@ -64,6 +64,6 @@ public class LogErrorAspect {
     // this is just to generate an additional $informant$ method to test that consecutive
     // $informant$ methods in a span stack trace are stripped out correctly
     @Pointcut(typeName = "io.informant.test.LogError", methodName = "log",
-            methodArgs = { "java.lang.String" }, metricName = "log error 2")
+            methodArgs = {"java.lang.String"}, metricName = "log error 2")
     public static class LogErrorAdvice2 {}
 }

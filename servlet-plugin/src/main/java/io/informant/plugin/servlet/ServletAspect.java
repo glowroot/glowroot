@@ -84,7 +84,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "service",
-            methodArgs = { "javax.servlet.ServletRequest", "javax.servlet.ServletResponse" },
+            methodArgs = {"javax.servlet.ServletRequest", "javax.servlet.ServletResponse"},
             metricName = "http request")
     public static class ServletAdvice {
         private static final MetricName metricName =
@@ -145,7 +145,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.http.HttpServlet", methodName = "do*", methodArgs = {
-            "javax.servlet.http.HttpServletRequest", "javax.servlet.http.HttpServletResponse" },
+            "javax.servlet.http.HttpServletRequest", "javax.servlet.http.HttpServletResponse"},
             metricName = "http request")
     public static class HttpServletAdvice extends ServletAdvice {
         @IsEnabled
@@ -168,7 +168,7 @@ public class ServletAspect {
 
     @Pointcut(typeName = "javax.servlet.Filter", methodName = "doFilter", methodArgs = {
             "javax.servlet.ServletRequest", "javax.servlet.ServletResponse",
-            "javax.servlet.FilterChain" }, metricName = "http request")
+            "javax.servlet.FilterChain"}, metricName = "http request")
     public static class FilterAdvice extends ServletAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -196,7 +196,7 @@ public class ServletAspect {
             new BooleanThreadLocal();
 
     @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "getParameter*",
-            methodArgs = { ".." }, captureNested = false)
+            methodArgs = {".."}, captureNested = false)
     public static class GetParameterAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -231,7 +231,7 @@ public class ServletAspect {
      */
 
     @Pointcut(typeName = "javax.servlet.http.HttpServletRequest", methodName = "getSession",
-            methodArgs = { ".." })
+            methodArgs = {".."})
     public static class GetSessionAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -271,7 +271,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
-            methodArgs = { "java.lang.String", "java.lang.Object" })
+            methodArgs = {"java.lang.String", "java.lang.Object"})
     public static class SetAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -297,7 +297,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.http.HttpSession", methodName = "removeAttribute",
-            methodArgs = { "java.lang.String" })
+            methodArgs = {"java.lang.String"})
     public static class RemoveAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -317,7 +317,7 @@ public class ServletAspect {
      */
 
     @Pointcut(typeName = "javax.servlet.ServletContextListener", methodName = "contextInitialized",
-            methodArgs = { "javax.servlet.ServletContextEvent" }, metricName = "servlet startup")
+            methodArgs = {"javax.servlet.ServletContextEvent"}, metricName = "servlet startup")
     public static class ContextInitializedAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ContextInitializedAdvice.class);
@@ -342,7 +342,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.Servlet", methodName = "init",
-            methodArgs = { "javax.servlet.ServletConfig" }, metricName = "servlet startup")
+            methodArgs = {"javax.servlet.ServletConfig"}, metricName = "servlet startup")
     public static class ServletInitAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ServletInitAdvice.class);
@@ -366,7 +366,7 @@ public class ServletAspect {
     }
 
     @Pointcut(typeName = "javax.servlet.Filter", methodName = "init",
-            methodArgs = { "javax.servlet.FilterConfig" }, metricName = "servlet startup")
+            methodArgs = {"javax.servlet.FilterConfig"}, metricName = "servlet startup")
     public static class FilterInitAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(FilterInitAdvice.class);
@@ -394,7 +394,7 @@ public class ServletAspect {
      */
 
     @Pointcut(typeName = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
-            methodArgs = { "int", ".." })
+            methodArgs = {"int", ".."})
     public static class SendErrorAdvice {
         @OnAfter
         public static void onAfter(@BindMethodArg Integer statusCode) {

@@ -39,7 +39,7 @@ class Config {
     static Config getDefault(@ReadOnly List<PluginDescriptor> pluginDescriptors) {
         return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
                 FineProfilingConfig.getDefault(), UserConfig.getDefault(),
-                createPluginConfigs(pluginDescriptors), ImmutableList.<PointcutConfig> of());
+                createPluginConfigs(pluginDescriptors), ImmutableList.<PointcutConfig>of());
     }
 
     static Builder builder(Config base) {

@@ -36,7 +36,7 @@ public class ExternalJvmMainAspect {
             PluginServices.get("io.informant:informant-ui-testing");
 
     @Pointcut(typeName = "io.informant.container.javaagent.JavaagentContainer",
-            methodName = "main", methodArgs = { "java.lang.String[]" },
+            methodName = "main", methodArgs = {"java.lang.String[]"},
             metricName = "external jvm main")
     public static class MainAdvice {
 

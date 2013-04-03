@@ -15,7 +15,6 @@
  */
 package io.informant.snapshot;
 
-
 /**
  * Interface for storing traces.
  * 

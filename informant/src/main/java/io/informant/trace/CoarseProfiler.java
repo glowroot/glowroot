@@ -18,6 +18,7 @@ package io.informant.trace;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
 import io.informant.markers.OnlyUsedByTests;

@@ -60,7 +60,8 @@ public class ObjectMappers {
 
     public static <T> T readRequiredValue(@ReadOnly ObjectMapper mapper, String content,
             Class<T> type) throws IOException, JsonProcessingException {
-        /*@Nullable*/T value = mapper.readValue(content, type);
+        /*@Nullable*/
+        T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
         }
@@ -69,7 +70,8 @@ public class ObjectMappers {
 
     public static <T> T treeToRequiredValue(@ReadOnly ObjectMapper mapper, TreeNode n,
             Class<T> type) throws JsonProcessingException {
-        /*@Nullable*/T value = mapper.treeToValue(n, type);
+        /*@Nullable*/
+        T value = mapper.treeToValue(n, type);
         if (value == null) {
             throw new JsonMappingException("Node is json null");
         }

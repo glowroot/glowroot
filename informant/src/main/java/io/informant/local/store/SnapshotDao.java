@@ -144,9 +144,9 @@ public class SnapshotDao implements SnapshotSink {
             logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
                     + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
                     + " headlineComparator={}, headline={}, userIdComparator={}, userId={}",
-                    new Object[] { capturedFrom, capturedTo, durationLow, durationHigh, background,
+                    new Object[] {capturedFrom, capturedTo, durationLow, durationHigh, background,
                             errorOnly, fineOnly, headlineComparator, headline, userIdComparator,
-                            userId });
+                            userId});
         }
         try {
             // all of these columns should be in the same index so h2 can return result set directly

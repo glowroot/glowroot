@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
@@ -563,33 +564,33 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void pushDefault(Type travelerType) {
         switch (travelerType.getSort()) {
-        case Type.BOOLEAN:
-            push(false);
-            return;
-        case Type.CHAR:
-            push(0);
-            return;
-        case Type.BYTE:
-            push(0);
-            return;
-        case Type.SHORT:
-            push(0);
-            return;
-        case Type.INT:
-            push(0);
-            return;
-        case Type.FLOAT:
-            push(0f);
-            return;
-        case Type.LONG:
-            push(0L);
-            return;
-        case Type.DOUBLE:
-            push(0.0);
-            return;
-        default:
-            visitInsn(ACONST_NULL);
-            return;
+            case Type.BOOLEAN:
+                push(false);
+                return;
+            case Type.CHAR:
+                push(0);
+                return;
+            case Type.BYTE:
+                push(0);
+                return;
+            case Type.SHORT:
+                push(0);
+                return;
+            case Type.INT:
+                push(0);
+                return;
+            case Type.FLOAT:
+                push(0f);
+                return;
+            case Type.LONG:
+                push(0L);
+                return;
+            case Type.DOUBLE:
+                push(0.0);
+                return;
+            default:
+                visitInsn(ACONST_NULL);
+                return;
         }
     }
 

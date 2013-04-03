@@ -24,6 +24,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
 import io.informant.local.store.SnapshotDao;

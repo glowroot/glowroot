@@ -38,7 +38,7 @@ public class LevelTwoAspect {
             PluginServices.get("io.informant:informant-integration-tests");
 
     @Pointcut(typeName = "io.informant.test.LevelTwo", methodName = "call",
-            methodArgs = { "java.lang.String", "java.lang.String" }, metricName = "level two")
+            methodArgs = {"java.lang.String", "java.lang.String"}, metricName = "level two")
     public static class LevelTwoAdvice {
 
         private static final MetricName metricName =

@@ -29,5 +29,5 @@ import java.lang.annotation.Target;
  * @since 0.5
  */
 @Documented
-@Target({ TYPE, METHOD })
+@Target({TYPE, METHOD})
 public @interface UsedByGeneratedBytecode {}

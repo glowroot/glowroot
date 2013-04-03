@@ -18,6 +18,7 @@ package io.informant.test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;

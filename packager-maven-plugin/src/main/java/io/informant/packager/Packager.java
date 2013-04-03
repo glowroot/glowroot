@@ -312,14 +312,14 @@ public class Packager {
     private Object getDefaultFromText(String text, PropertyType type)
             throws MojoExecutionException {
         switch (type) {
-        case STRING:
-            return text;
-        case BOOLEAN:
-            return Boolean.valueOf(text);
-        case DOUBLE:
-            return Double.valueOf(text);
-        default:
-            throw new MojoExecutionException("Unexpected property type: " + type);
+            case STRING:
+                return text;
+            case BOOLEAN:
+                return Boolean.valueOf(text);
+            case DOUBLE:
+                return Double.valueOf(text);
+            default:
+                throw new MojoExecutionException("Unexpected property type: " + type);
         }
     }
 

@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.weaving.Weaver.ComputeFramesClassWriter;
 
 import org.junit.Before;

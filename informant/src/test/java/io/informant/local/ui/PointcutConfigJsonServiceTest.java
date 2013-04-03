@@ -18,6 +18,7 @@ package io.informant.local.ui;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import io.informant.common.ObjectMappers;
 import io.informant.weaving.ParsedTypeCache;
 

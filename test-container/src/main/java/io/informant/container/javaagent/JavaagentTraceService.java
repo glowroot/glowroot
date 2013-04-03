@@ -16,6 +16,7 @@
 package io.informant.container.javaagent;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.javaagent.TracePointResponse.RawPoint;
 import io.informant.container.trace.Trace;

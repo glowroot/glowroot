@@ -16,6 +16,7 @@
 package io.informant.container.javaagent;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
+
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;

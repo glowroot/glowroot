@@ -87,7 +87,7 @@ public abstract class Optional<T> {
      * @param type
      * @return an {@code Optional} instance with no contained reference
      */
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings({"unchecked"})
     public static <T> Optional<T> absent(Class<T> type) {
         return (Optional<T>) Absent.INSTANCE;
     }

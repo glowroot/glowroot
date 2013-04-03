@@ -31,6 +31,7 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
+
 import checkers.nullness.quals.Nullable;
 
 /**
@@ -140,7 +141,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.BasicMisc", methodName = "withInnerArg",
-            methodArgs = { "io.informant.weaving.BasicMisc.Inner" })
+            methodArgs = {"io.informant.weaving.BasicMisc.Inner"})
     public static class BasicWithInnerClassArgAdvice {
         public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
@@ -228,7 +229,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", "int" })
+            methodArgs = {"java.lang.String", "int"})
     public static class BindMethodArgAdvice {
         public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
@@ -237,24 +238,24 @@ public class SomeAspect {
         public static ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodArg String one, @BindMethodArg int two) {
-            isEnabledParams.set(new Object[] { one, two });
+            isEnabledParams.set(new Object[] {one, two});
             return true;
         }
         @OnBefore
         public static void onBefore(@BindMethodArg String one, @BindMethodArg int two) {
-            onBeforeParams.set(new Object[] { one, two });
+            onBeforeParams.set(new Object[] {one, two});
         }
         @OnReturn
         public static void onReturn(@BindMethodArg String one, @BindMethodArg int two) {
-            onReturnParams.set(new Object[] { one, two });
+            onReturnParams.set(new Object[] {one, two});
         }
         @OnThrow
         public static void onThrow(@BindMethodArg String one, @BindMethodArg int two) {
-            onThrowParams.set(new Object[] { one, two });
+            onThrowParams.set(new Object[] {one, two});
         }
         @OnAfter
         public static void onAfter(@BindMethodArg String one, @BindMethodArg int two) {
-            onAfterParams.set(new Object[] { one, two });
+            onAfterParams.set(new Object[] {one, two});
         }
         public static void resetThreadLocals() {
             isEnabledParams.remove();
@@ -266,7 +267,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", "int" })
+            methodArgs = {"java.lang.String", "int"})
     public static class BindMethodArgArrayAdvice {
         public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
         public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
@@ -488,7 +489,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { ".." })
+            methodArgs = {".."})
     public static class MethodArgsDotDotAdvice1 {
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
@@ -501,7 +502,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", ".." })
+            methodArgs = {"java.lang.String", ".."})
     public static class MethodArgsDotDotAdvice2 {
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
@@ -514,7 +515,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", "int", ".." })
+            methodArgs = {"java.lang.String", "int", ".."})
     public static class MethodArgsDotDotAdvice3 {
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
@@ -565,7 +566,7 @@ public class SomeAspect {
         }
     }
 
-    @Mixin(target = { "io.informant.weaving.Misc", "io.informant.weaving.Misc2" })
+    @Mixin(target = {"io.informant.weaving.Misc", "io.informant.weaving.Misc2"})
     public static class HasStringMultipleMixin implements HasString {
         private String string;
         @MixinInit
@@ -616,11 +617,11 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute*",
-            methodArgs = { ".." }, metricName = "abc xyz")
+            methodArgs = {".."}, metricName = "abc xyz")
     public static class InnerMethodAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute*",
-            methodArgs = { ".." }, captureNested = false)
+            methodArgs = {".."}, captureNested = false)
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "io.informant.weaving.StaticMisc", methodName = "executeStatic")
@@ -662,11 +663,11 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc", methodName = "executePrimitive",
-            methodArgs = { "int", "double", "long", "byte[]" })
+            methodArgs = {"int", "double", "long", "byte[]"})
     public static class PrimitiveAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc", methodName = "executePrimitive",
-            methodArgs = { "int", "double", "*", ".." })
+            methodArgs = {"int", "double", "*", ".."})
     public static class PrimitiveWithWildcardAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
@@ -686,7 +687,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc", methodName = "executePrimitive",
-            methodArgs = { "int", "double", "*", ".." })
+            methodArgs = {"int", "double", "*", ".."})
     public static class PrimitiveWithAutoboxAdvice {
         public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         @IsEnabled
@@ -700,7 +701,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", "int" })
+            methodArgs = {"java.lang.String", "int"})
     public static class BrokenAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -716,7 +717,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", "int" })
+            methodArgs = {"java.lang.String", "int"})
     public static class VeryBadAdvice {
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
@@ -744,7 +745,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
-            methodArgs = { "java.lang.String", "int" })
+            methodArgs = {"java.lang.String", "int"})
     public static class MoreVeryBadAdvice {
         public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
         public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
@@ -800,7 +801,7 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.Misc3", methodName = "identity",
-            methodArgs = { "io.informant.weaving.BasicMisc" })
+            methodArgs = {"io.informant.weaving.BasicMisc"})
     public static class CircularClassDependencyAdvice {
         public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
@@ -826,7 +827,7 @@ public class SomeAspect {
 
     // test weaving against JSR bytecode that ends up being inlined via JSRInlinerAdapter
     @Pointcut(typeName = "org.apache.jackrabbit.core.persistence.pool.BundleDbPersistenceManager",
-            methodName = "loadBundle", methodArgs = { "org.apache.jackrabbit.core.id.NodeId" })
+            methodName = "loadBundle", methodArgs = {"org.apache.jackrabbit.core.id.NodeId"})
     public static class TestJSRInlinedMethodAdvice {}
 
     static class IntegerThreadLocal extends ThreadLocal<Integer> {

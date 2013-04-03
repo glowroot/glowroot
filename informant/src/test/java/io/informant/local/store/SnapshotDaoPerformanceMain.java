@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import io.informant.common.Clock;
 import io.informant.markers.Static;
 

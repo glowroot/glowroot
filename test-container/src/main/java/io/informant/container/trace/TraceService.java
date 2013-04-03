@@ -15,7 +15,6 @@
  */
 package io.informant.container.trace;
 
-
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 

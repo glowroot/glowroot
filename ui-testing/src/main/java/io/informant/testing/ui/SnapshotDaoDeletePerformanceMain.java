@@ -16,6 +16,7 @@
 package io.informant.testing.ui;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;

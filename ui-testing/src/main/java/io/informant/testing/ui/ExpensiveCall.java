@@ -39,36 +39,36 @@ public class ExpensiveCall {
     void execute() {
         int route = random.nextInt(10);
         switch (route) {
-        case 0:
-            execute0();
-            return;
-        case 1:
-            execute1();
-            return;
-        case 2:
-            execute2();
-            return;
-        case 3:
-            execute3();
-            return;
-        case 4:
-            execute4();
-            return;
-        case 5:
-            execute5();
-            return;
-        case 6:
-            execute6();
-            return;
-        case 7:
-            execute7();
-            return;
-        case 8:
-            execute8();
-            return;
-        case 9:
-            execute9();
-            return;
+            case 0:
+                execute0();
+                return;
+            case 1:
+                execute1();
+                return;
+            case 2:
+                execute2();
+                return;
+            case 3:
+                execute3();
+                return;
+            case 4:
+                execute4();
+                return;
+            case 5:
+                execute5();
+                return;
+            case 6:
+                execute6();
+                return;
+            case 7:
+                execute7();
+                return;
+            case 8:
+                execute8();
+                return;
+            case 9:
+                execute9();
+                return;
         }
     }
 

@@ -18,6 +18,7 @@ package io.informant.local.ui;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+
 import io.informant.common.CharStreams2;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;

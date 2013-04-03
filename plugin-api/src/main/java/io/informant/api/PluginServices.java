@@ -42,7 +42,7 @@ import checkers.nullness.quals.Nullable;
  *             PluginServices.get(&quot;io.informant.plugins:spring-plugin&quot;);
  * 
  *     &#064;Pointcut(typeName = &quot;org.springframework.validation.Validator&quot;, methodName = &quot;validate&quot;,
- *             methodArgs = { &quot;..&quot; }, metricName = &quot;spring validator&quot;)
+ *             methodArgs = {&quot;..&quot;}, metricName = &quot;spring validator&quot;)
  *     public static class ValidatorAdvice {
  *         private static final Metric metric = pluginServices.getMetric(ValidatorAdvice.class);
  *         &#064;IsEnabled

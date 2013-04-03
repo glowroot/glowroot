@@ -56,8 +56,8 @@ public class SimpleMessageSupplier extends MessageSupplier {
     @Override
     public Message get() {
         if (hasReturnValue) {
-            /*@Nullable*/String[] messageArgs =
-                    ObjectArrays.concat(args, String.valueOf(returnValue));
+            /*@Nullable*/
+            String[] messageArgs = ObjectArrays.concat(args, String.valueOf(returnValue));
             return Message.from(template + " => {}", messageArgs);
         } else {
             return Message.from(template, args);
@@ -66,7 +66,8 @@ public class SimpleMessageSupplier extends MessageSupplier {
 
     @Nullable
     private static String[] convert(@Nullable Object... args) {
-        /*@Nullable*/String[] convertedArgs = new String[args.length];
+        /*@Nullable*/
+        String[] convertedArgs = new String[args.length];
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
             if (arg == null) {

@@ -16,6 +16,7 @@
 package io.informant.container.local;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.informant.InformantModule;
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.trace.Trace;

@@ -17,6 +17,7 @@ package io.informant.local.store;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import io.informant.markers.OnlyUsedByTests;
 
 import java.io.File;
@@ -207,7 +208,7 @@ class RollingOutputStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        write(new byte[] { (byte) b }, 0, 1);
+        write(new byte[] {(byte) b}, 0, 1);
     }
 
     @Override

@@ -17,6 +17,7 @@ package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+
 import io.informant.common.Clock;
 import io.informant.snapshot.Snapshot;
 

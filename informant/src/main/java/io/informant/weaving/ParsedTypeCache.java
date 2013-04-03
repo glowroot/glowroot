@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.informant.markers.Singleton;
 
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class ParsedTypeCache {
     static {
         try {
             findLoadedClassMethod = ClassLoader.class.getDeclaredMethod("findLoadedClass",
-                    new Class[] { String.class });
+                    new Class[] {String.class});
         } catch (SecurityException e) {
             logger.error(e.getMessage(), e);
             throw new IllegalStateException("Unrecoverable error", e);

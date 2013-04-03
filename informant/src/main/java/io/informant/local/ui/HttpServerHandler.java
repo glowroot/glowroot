@@ -20,6 +20,7 @@ import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SER
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+
 import io.informant.common.ObjectMappers;
 
 import java.io.IOException;
@@ -250,7 +251,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             String serviceMethodName, String[] args, String requestText) {
 
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
-                new Object[] { serviceMethodName, args, requestText });
+                new Object[] {serviceMethodName, args, requestText});
         Object responseText;
         try {
             responseText = callMethod(jsonService, serviceMethodName, args, requestText);

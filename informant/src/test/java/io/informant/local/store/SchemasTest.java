@@ -16,6 +16,7 @@
 package io.informant.local.store;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.local.store.Schemas.Index;
 
 import java.sql.Connection;

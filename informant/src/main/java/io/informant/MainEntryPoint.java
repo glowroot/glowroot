@@ -16,6 +16,7 @@
 package io.informant;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.informant.api.PluginServices;
 import io.informant.local.store.DataSource;
 import io.informant.markers.OnlyUsedByTests;

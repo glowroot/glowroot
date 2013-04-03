@@ -16,6 +16,7 @@
 package io.informant.plugin.jdbc;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 import io.informant.testkit.AppUnderTest;
 import io.informant.testkit.Container;
 import io.informant.testkit.Metric;

@@ -16,6 +16,7 @@
 package io.informant.container.config;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
+
 import checkers.nullness.quals.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;

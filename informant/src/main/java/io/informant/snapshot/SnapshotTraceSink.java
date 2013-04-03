@@ -16,6 +16,7 @@
 package io.informant.snapshot;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.markers.Singleton;

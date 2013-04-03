@@ -41,7 +41,7 @@ public class LogCauseAspect {
     private static final Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
 
     @Pointcut(typeName = "io.informant.test.LogCause", methodName = "log",
-            methodArgs = { "java.lang.String" }, metricName = "log error")
+            methodArgs = {"java.lang.String"}, metricName = "log error")
     public static class LogCauseAdvice {
 
         private static final MetricName metricName =

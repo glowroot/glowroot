@@ -107,7 +107,7 @@ public class UnresolvedMethod {
      * @return an {@code UnresolvedMethod} for the specified {@code typeName} and {@code methodName}
      */
     public static UnresolvedMethod from(String typeName, String methodName) {
-        return new UnresolvedMethod(typeName, methodName, ImmutableList.<Class<?>> of(), null);
+        return new UnresolvedMethod(typeName, methodName, ImmutableList.<Class<?>>of(), null);
     }
 
     /**
@@ -190,7 +190,7 @@ public class UnresolvedMethod {
      */
     @Nullable
     public Object invoke(Object target, Object parameter, @Nullable Object returnOnError) {
-        return invoke(target, new Object[] { parameter }, returnOnError);
+        return invoke(target, new Object[] {parameter}, returnOnError);
     }
 
     /**
@@ -258,7 +258,7 @@ public class UnresolvedMethod {
     @Nullable
     public Object invokeStatic(@Nullable ClassLoader loader, Object parameters,
             @Nullable Object returnOnError) {
-        return invokeStatic(loader, new Object[] { parameters }, returnOnError);
+        return invokeStatic(loader, new Object[] {parameters}, returnOnError);
     }
 
     /**
