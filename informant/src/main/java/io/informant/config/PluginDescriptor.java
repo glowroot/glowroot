@@ -15,17 +15,12 @@
  */
 package io.informant.config;
 
-import static io.informant.common.ObjectMappers.checkRequiredProperty;
-
-import io.informant.common.ObjectMappers;
-
 import java.io.IOException;
 import java.util.List;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,6 +29,10 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+
+import io.informant.common.ObjectMappers;
+
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker

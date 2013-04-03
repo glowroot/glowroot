@@ -15,20 +15,18 @@
  */
 package io.informant.weaving;
 
-import io.informant.markers.ThreadSafe;
-
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

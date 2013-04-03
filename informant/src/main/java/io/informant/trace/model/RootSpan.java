@@ -15,22 +15,20 @@
  */
 package io.informant.trace.model;
 
-import io.informant.api.ErrorMessage;
-import io.informant.api.MessageSupplier;
-import io.informant.markers.PartiallyThreadSafe;
-
 import java.util.List;
 import java.util.Queue;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.ErrorMessage;
+import io.informant.api.MessageSupplier;
+import io.informant.markers.PartiallyThreadSafe;
 
 /**
  * The "span" terminology is borrowed from <a

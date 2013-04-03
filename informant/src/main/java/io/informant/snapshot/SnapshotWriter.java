@@ -15,20 +15,19 @@
  */
 package io.informant.snapshot;
 
-import io.informant.common.CharStreams2;
-import io.informant.markers.OnlyUsedByTests;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.core.io.JsonStringEncoder;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
+
+import io.informant.common.CharStreams2;
+import io.informant.markers.OnlyUsedByTests;
 
 /**
  * @author Trask Stalnaker

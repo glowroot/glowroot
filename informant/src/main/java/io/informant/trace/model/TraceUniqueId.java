@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.Mutable;
-
 import com.google.common.base.Strings;
 
 /**

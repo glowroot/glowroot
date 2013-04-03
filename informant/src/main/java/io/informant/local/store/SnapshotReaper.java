@@ -15,17 +15,17 @@
  */
 package io.informant.local.store;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.common.Clock;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.markers.Singleton;
 
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker

@@ -15,20 +15,19 @@
  */
 package io.informant.local.store;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-import io.informant.common.Clock;
-import io.informant.markers.Static;
-
 import java.io.File;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.base.Ticker;
+import io.informant.common.Clock;
+import io.informant.markers.Static;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * @author Trask Stalnaker

@@ -15,7 +15,16 @@
  */
 package io.informant.container.local;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
@@ -30,17 +39,7 @@ import io.informant.container.trace.TraceService;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.IsolatedWeavingClassLoader;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker

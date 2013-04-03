@@ -15,10 +15,6 @@
  */
 package io.informant.local.store;
 
-import io.informant.markers.NotThreadSafe;
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.ThreadSafe;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -30,13 +26,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
@@ -44,6 +36,12 @@ import com.google.common.io.CharStreams;
 import com.google.common.primitives.Longs;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.markers.NotThreadSafe;
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

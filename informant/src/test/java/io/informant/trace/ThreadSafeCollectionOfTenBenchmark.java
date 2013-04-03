@@ -15,8 +15,6 @@
  */
 package io.informant.trace;
 
-import io.informant.trace.model.Trace;
-
 import java.util.Collection;
 import java.util.Collections;
 
@@ -24,6 +22,8 @@ import com.google.caliper.Runner;
 import com.google.caliper.SimpleBenchmark;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+
+import io.informant.trace.model.Trace;
 
 /**
  * This micro benchmark helps justify using synchronized ArrayList over ConcurrentLinkedQueue for

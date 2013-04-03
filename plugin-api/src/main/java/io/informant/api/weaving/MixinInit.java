@@ -15,13 +15,13 @@
  */
 package io.informant.api.weaving;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import checkers.igj.quals.Immutable;
+
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Designates a method in a {@literal @}{@link Mixin} class that should be called exactly once

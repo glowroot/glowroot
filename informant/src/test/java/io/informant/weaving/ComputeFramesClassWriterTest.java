@@ -15,12 +15,12 @@
  */
 package io.informant.weaving;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import org.junit.Before;
+import org.junit.Test;
 
 import io.informant.weaving.Weaver.ComputeFramesClassWriter;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

@@ -15,13 +15,12 @@
  */
 package io.informant.testkit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker

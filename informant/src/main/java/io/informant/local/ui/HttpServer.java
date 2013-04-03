@@ -15,10 +15,6 @@
  */
 package io.informant.local.ui;
 
-import io.informant.local.ui.HttpServerHandler.JsonServiceMapping;
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.Singleton;
-
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +22,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -42,9 +41,9 @@ import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.informant.local.ui.HttpServerHandler.JsonServiceMapping;
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.Singleton;
 
 /**
  * Handles all http requests for the embedded UI (by default http://localhost:4000).

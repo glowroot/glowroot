@@ -15,7 +15,25 @@
  */
 package io.informant.weaving;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.Map;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.AdviceAdapter;
+import org.objectweb.asm.commons.Method;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindTraveler;
@@ -28,27 +46,7 @@ import io.informant.markers.UsedByGeneratedBytecode;
 import io.informant.weaving.Advice.ParameterKind;
 import io.informant.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
-import java.lang.annotation.Annotation;
-import java.util.List;
-import java.util.Map;
-
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.AdviceAdapter;
-import org.objectweb.asm.commons.Method;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker

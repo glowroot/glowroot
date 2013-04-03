@@ -15,8 +15,6 @@
  */
 package io.informant.common;
 
-import io.informant.markers.Static;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
@@ -25,6 +23,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import com.google.common.io.InputSupplier;
+
+import io.informant.markers.Static;
 
 /**
  * Additional method similar to those in Guava's {@link CharStreams} class.

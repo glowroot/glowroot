@@ -15,13 +15,6 @@
  */
 package io.informant.plugin.servlet;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Container;
-import io.informant.testkit.Span;
-import io.informant.testkit.Trace;
-
 import java.io.IOException;
 import java.util.Map;
 
@@ -46,6 +39,13 @@ import org.springframework.mock.web.MockFilterConfig;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockServletConfig;
+
+import io.informant.testkit.AppUnderTest;
+import io.informant.testkit.Container;
+import io.informant.testkit.Span;
+import io.informant.testkit.Trace;
+
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * Basic test of the servlet plugin.

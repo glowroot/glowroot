@@ -15,18 +15,16 @@
  */
 package io.informant.config;
 
-import io.informant.markers.Static;
-
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.markers.Static;
 
 /**
  * @author Trask Stalnaker

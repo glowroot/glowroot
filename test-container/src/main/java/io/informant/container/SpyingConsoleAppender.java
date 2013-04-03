@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
-
 import com.google.common.collect.Lists;
 
 /**

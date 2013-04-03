@@ -15,8 +15,6 @@
  */
 package io.informant.config;
 
-import io.informant.config.Multiline.MultilineDeserializer;
-
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -25,6 +23,8 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.informant.config.Multiline.MultilineDeserializer;
 
 /**
  * @author Trask Stalnaker

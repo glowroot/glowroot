@@ -15,11 +15,6 @@
  */
 package io.informant.local.store;
 
-import io.informant.local.store.Schemas.Column;
-import io.informant.local.store.Schemas.Index;
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.ThreadSafe;
-
 import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,21 +25,24 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import org.h2.jdbc.JdbcConnection;
-import org.h2.store.FileLister;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.h2.jdbc.JdbcConnection;
+import org.h2.store.FileLister;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.local.store.Schemas.Column;
+import io.informant.local.store.Schemas.Index;
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.ThreadSafe;
 
 /**
  * DataSource is a cross between javax.sql.DataSource and spring's JdbcTemplate. Ideally would have

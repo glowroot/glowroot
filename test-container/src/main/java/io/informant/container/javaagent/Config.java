@@ -15,7 +15,15 @@
  */
 package io.informant.container.javaagent;
 
-import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
+import java.util.List;
+import java.util.Map;
+
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.base.Objects;
 
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
@@ -24,16 +32,7 @@ import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.UserConfig;
 
-import java.util.List;
-import java.util.Map;
-
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.Objects;
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker

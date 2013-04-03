@@ -15,11 +15,10 @@
  */
 package io.informant.packager;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.IOException;
 import java.util.List;
 
+import checkers.nullness.quals.Nullable;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
@@ -33,7 +32,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 
-import checkers.nullness.quals.Nullable;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker

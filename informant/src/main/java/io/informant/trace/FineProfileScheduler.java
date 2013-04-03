@@ -15,9 +15,11 @@
  */
 package io.informant.trace;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+
+import com.google.common.base.Ticker;
 
 import io.informant.config.ConfigService;
 import io.informant.config.FineProfilingConfig;
@@ -25,11 +27,9 @@ import io.informant.config.UserConfig;
 import io.informant.markers.Singleton;
 import io.informant.trace.model.Trace;
 
-import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-
-import com.google.common.base.Ticker;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Owns the thread (via a single threaded scheduled executor) that captures fine-grained thread

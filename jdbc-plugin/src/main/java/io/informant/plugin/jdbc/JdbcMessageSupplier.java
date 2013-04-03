@@ -15,15 +15,15 @@
  */
 package io.informant.plugin.jdbc;
 
-import io.informant.api.Message;
-import io.informant.api.MessageSupplier;
-import io.informant.shaded.google.common.collect.ImmutableList;
-
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.AssertNonNullIfTrue;
 import checkers.nullness.quals.Nullable;
+
+import io.informant.api.Message;
+import io.informant.api.MessageSupplier;
+import io.informant.shaded.google.common.collect.ImmutableList;
 
 /**
  * Jdbc message supplier created by pointcut.

@@ -15,15 +15,6 @@
  */
 package io.informant.container.javaagent;
 
-import io.informant.InformantModule;
-import io.informant.MainEntryPoint;
-import io.informant.container.AppUnderTest;
-import io.informant.container.SpyingConsoleAppender;
-import io.informant.container.Threads;
-import io.informant.container.Threads.ThreadsException;
-import io.informant.container.javaagent.SocketCommander.CommandWrapper;
-import io.informant.container.javaagent.SocketCommander.ResponseWrapper;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -32,14 +23,21 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.LazyNonNull;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import io.informant.InformantModule;
+import io.informant.MainEntryPoint;
+import io.informant.container.AppUnderTest;
+import io.informant.container.SpyingConsoleAppender;
+import io.informant.container.Threads;
+import io.informant.container.Threads.ThreadsException;
+import io.informant.container.javaagent.SocketCommander.CommandWrapper;
+import io.informant.container.javaagent.SocketCommander.ResponseWrapper;
 
 /**
  * @author Trask Stalnaker

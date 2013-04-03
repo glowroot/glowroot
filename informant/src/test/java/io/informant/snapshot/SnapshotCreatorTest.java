@@ -15,20 +15,19 @@
  */
 package io.informant.snapshot;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import io.informant.trace.model.MergedStackTree;
-import io.informant.trace.model.Trace;
-
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Arrays;
 
+import com.google.common.io.CharSource;
 import org.junit.Test;
 
-import com.google.common.io.CharSource;
+import io.informant.trace.model.MergedStackTree;
+import io.informant.trace.model.Trace;
+
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Trask Stalnaker

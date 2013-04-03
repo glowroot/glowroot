@@ -15,8 +15,6 @@
  */
 package io.informant.container.javaagent;
 
-import io.informant.markers.ThreadSafe;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -26,14 +24,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import checkers.lock.quals.GuardedBy;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.lock.quals.GuardedBy;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.Maps;
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

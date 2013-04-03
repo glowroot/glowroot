@@ -15,6 +15,19 @@
  */
 package io.informant.trace;
 
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Joiner;
+import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.api.CompletedSpan;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
@@ -36,21 +49,6 @@ import io.informant.trace.model.Metric;
 import io.informant.trace.model.MetricNameImpl;
 import io.informant.trace.model.Trace;
 import io.informant.trace.model.WeavingMetricNameImpl;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 /**
  * Implementation of PluginServices from the Plugin API. Each plugin gets its own instance so that

@@ -20,17 +20,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.objectweb.asm.ClassReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.objectweb.asm.ClassReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker

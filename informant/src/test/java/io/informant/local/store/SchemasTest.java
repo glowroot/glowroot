@@ -15,19 +15,18 @@
  */
 package io.informant.local.store;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
-import io.informant.local.store.Schemas.Index;
-
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.Properties;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.h2.jdbc.JdbcConnection;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
+import io.informant.local.store.Schemas.Index;
+
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

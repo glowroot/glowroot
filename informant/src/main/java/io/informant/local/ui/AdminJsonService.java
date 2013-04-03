@@ -15,6 +15,13 @@
  */
 package io.informant.local.ui;
 
+import java.io.IOException;
+import java.sql.SQLException;
+
+import com.google.common.collect.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.config.ConfigService;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
@@ -22,14 +29,6 @@ import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceRegistry;
-
-import java.io.IOException;
-import java.sql.SQLException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Iterables;
 
 /**
  * Json service for various admin tasks.

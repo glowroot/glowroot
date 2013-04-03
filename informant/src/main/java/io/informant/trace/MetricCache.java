@@ -15,18 +15,17 @@
  */
 package io.informant.trace;
 
-import io.informant.api.MetricName;
-import io.informant.api.weaving.Pointcut;
-import io.informant.markers.Singleton;
-import io.informant.trace.model.MetricNameImpl;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Ticker;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.MetricName;
+import io.informant.api.weaving.Pointcut;
+import io.informant.markers.Singleton;
+import io.informant.trace.model.MetricNameImpl;
 
 /**
  * @author Trask Stalnaker

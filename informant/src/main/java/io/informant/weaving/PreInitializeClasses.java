@@ -15,18 +15,16 @@
  */
 package io.informant.weaving;
 
-import io.informant.markers.Static;
-
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.markers.Static;
 
 /**
  * "There are some things that agents are allowed to do that simply should not be permitted"

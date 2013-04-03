@@ -15,7 +15,18 @@
  */
 package io.informant.plugin.jdbc;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import java.io.InputStream;
+import java.io.Reader;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import checkers.nullness.quals.Nullable;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
@@ -43,18 +54,7 @@ import io.informant.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import io.informant.shaded.slf4j.Logger;
 import io.informant.shaded.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.io.Reader;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import checkers.nullness.quals.Nullable;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Defines pointcuts to capture data on {@link Statement}, {@link PreparedStatement},

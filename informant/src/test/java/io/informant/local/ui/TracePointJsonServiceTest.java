@@ -15,15 +15,16 @@
  */
 package io.informant.local.ui;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.io.IOException;
+import java.util.List;
+import java.util.Random;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
+import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import org.junit.Test;
 
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
@@ -34,17 +35,15 @@ import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Random;
-
-import org.junit.Test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
-import com.google.common.base.Ticker;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Trask Stalnaker

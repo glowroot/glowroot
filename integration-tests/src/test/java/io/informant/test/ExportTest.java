@@ -15,20 +15,19 @@
  */
 package io.informant.test;
 
-import io.informant.Containers;
-import io.informant.container.Container;
-import io.informant.container.trace.Trace;
-import io.informant.test.BasicTest.ShouldGenerateTraceWithNestedSpans;
-
 import java.io.InputStream;
 import java.util.zip.ZipInputStream;
 
+import com.google.common.io.ByteStreams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.io.ByteStreams;
+import io.informant.Containers;
+import io.informant.container.Container;
+import io.informant.container.trace.Trace;
+import io.informant.test.BasicTest.ShouldGenerateTraceWithNestedSpans;
 
 /**
  * @author Trask Stalnaker

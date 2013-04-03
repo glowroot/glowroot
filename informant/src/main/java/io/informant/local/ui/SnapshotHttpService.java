@@ -15,15 +15,13 @@
  */
 package io.informant.local.ui;
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-
-import io.informant.markers.Singleton;
-
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Charsets;
+import com.google.common.io.CharSource;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
@@ -35,10 +33,10 @@ import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.Nullable;
+import io.informant.markers.Singleton;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.CharSource;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
+import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
  * Http service to read trace snapshot data.

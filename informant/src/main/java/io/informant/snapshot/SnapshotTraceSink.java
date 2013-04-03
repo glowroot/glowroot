@@ -15,7 +15,17 @@
  */
 package io.informant.snapshot;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+
+import checkers.lock.quals.GuardedBy;
+import com.google.common.base.Ticker;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.RateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
@@ -23,19 +33,7 @@ import io.informant.markers.Singleton;
 import io.informant.trace.TraceSink;
 import io.informant.trace.model.Trace;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.lock.quals.GuardedBy;
-
-import com.google.common.base.Ticker;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.RateLimiter;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * @author Trask Stalnaker

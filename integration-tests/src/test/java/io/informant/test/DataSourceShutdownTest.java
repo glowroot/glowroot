@@ -15,8 +15,15 @@
  */
 package io.informant.test;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
@@ -24,17 +31,8 @@ import io.informant.container.Container;
 import io.informant.container.TraceMarker;
 import io.informant.container.javaagent.JavaagentContainer;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
-import org.junit.Test;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Stopwatch;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

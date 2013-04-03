@@ -16,6 +16,20 @@
 
 package io.informant.local.store;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.List;
+import java.util.Locale;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.common.Clock;
 import io.informant.local.store.DataSource.RowMapper;
 import io.informant.local.store.FileBlock.InvalidBlockIdFormatException;
@@ -27,22 +41,6 @@ import io.informant.markers.Singleton;
 import io.informant.markers.ThreadSafe;
 import io.informant.snapshot.Snapshot;
 import io.informant.snapshot.SnapshotSink;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.List;
-import java.util.Locale;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
 
 /**
  * Data access object for storing and reading trace snapshot data from the embedded H2 database.

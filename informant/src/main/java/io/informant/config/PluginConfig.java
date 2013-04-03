@@ -15,23 +15,13 @@
  */
 package io.informant.config;
 
-import io.informant.api.Optional;
-import io.informant.config.PropertyDescriptor.BooleanPropertyDescriptor;
-import io.informant.config.PropertyDescriptor.DoublePropertyDescriptor;
-import io.informant.config.PropertyDescriptor.StringPropertyDescriptor;
-import io.informant.markers.OnlyUsedByTests;
-
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -42,6 +32,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.Optional;
+import io.informant.config.PropertyDescriptor.BooleanPropertyDescriptor;
+import io.informant.config.PropertyDescriptor.DoublePropertyDescriptor;
+import io.informant.config.PropertyDescriptor.StringPropertyDescriptor;
+import io.informant.markers.OnlyUsedByTests;
 
 /**
  * Immutable structure to hold the current config for a plugin.

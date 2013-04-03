@@ -15,11 +15,10 @@
  */
 package io.informant.trace.model;
 
-import io.informant.api.MetricName;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Ticker;
+
+import io.informant.api.MetricName;
 
 /**
  * @author Trask Stalnaker

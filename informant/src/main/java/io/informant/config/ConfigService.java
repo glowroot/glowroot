@@ -15,22 +15,14 @@
  */
 package io.informant.config;
 
-import io.informant.api.PluginServices.ConfigListener;
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.Singleton;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ArrayListMultimap;
@@ -40,6 +32,12 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.PluginServices.ConfigListener;
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.Singleton;
 
 /**
  * Stateful singleton service for accessing and updating config objects. Config objects are cached

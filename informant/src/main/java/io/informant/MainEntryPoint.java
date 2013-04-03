@@ -15,7 +15,17 @@
  */
 package io.informant;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.io.File;
+import java.lang.instrument.Instrumentation;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.api.PluginServices;
 import io.informant.local.store.DataSource;
@@ -23,19 +33,7 @@ import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Static;
 import io.informant.markers.UsedByReflection;
 
-import java.io.File;
-import java.lang.instrument.Instrumentation;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableMap;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This class is registered as the Premain-Class in the MANIFEST.MF of informant.jar:

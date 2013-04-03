@@ -15,6 +15,15 @@
  */
 package io.informant.trace;
 
+import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
+
+import com.google.common.base.Ticker;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Iterables;
+
 import io.informant.api.PluginServices;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
@@ -27,15 +36,6 @@ import io.informant.weaving.Advice;
 import io.informant.weaving.MixinType;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.WeavingClassFileTransformer;
-
-import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
-
-import com.google.common.base.Ticker;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.Iterables;
 
 /**
  * @author Trask Stalnaker

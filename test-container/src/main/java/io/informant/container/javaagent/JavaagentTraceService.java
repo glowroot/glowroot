@@ -15,7 +15,15 @@
  */
 package io.informant.container.javaagent;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.io.InputStream;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.javaagent.TracePointResponse.RawPoint;
@@ -23,16 +31,7 @@ import io.informant.container.trace.Trace;
 import io.informant.container.trace.TraceService;
 import io.informant.markers.ThreadSafe;
 
-import java.io.InputStream;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker

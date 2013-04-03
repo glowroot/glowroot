@@ -15,10 +15,10 @@
  */
 package io.informant.weaving;
 
-import io.informant.weaving.WeavingJDK14BytecodeAspect.BasicAdvice;
-
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
+
+import io.informant.weaving.WeavingJDK14BytecodeAspect.BasicAdvice;
 
 /**
  * @author Trask Stalnaker

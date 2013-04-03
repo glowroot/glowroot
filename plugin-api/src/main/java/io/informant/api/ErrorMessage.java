@@ -15,15 +15,14 @@
  */
 package io.informant.api;
 
-import io.informant.api.internal.ExceptionInfo;
-import io.informant.api.internal.ReadableErrorMessage;
-
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
+
+import io.informant.api.internal.ExceptionInfo;
+import io.informant.api.internal.ReadableErrorMessage;
 
 /**
  * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value

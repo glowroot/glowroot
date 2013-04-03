@@ -15,6 +15,19 @@
  */
 package io.informant.local.ui;
 
+import java.io.File;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import org.jboss.netty.channel.ChannelException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
@@ -32,21 +45,6 @@ import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceModule;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
-
-import java.io.File;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import org.jboss.netty.channel.ChannelException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker

@@ -15,17 +15,16 @@
  */
 package io.informant.weaving;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.io.IOException;
+import java.util.List;
+
+import com.google.common.collect.Sets;
+import org.junit.Test;
 
 import io.informant.weaving.preinit.GlobalCollector;
 import io.informant.weaving.preinit.ReferencedMethod;
 
-import java.io.IOException;
-import java.util.List;
-
-import org.junit.Test;
-
-import com.google.common.collect.Sets;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

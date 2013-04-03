@@ -15,11 +15,11 @@
  */
 package io.informant.weaving.preinit;
 
-import io.informant.markers.ThreadSafe;
-
 import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.Maps;
+
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

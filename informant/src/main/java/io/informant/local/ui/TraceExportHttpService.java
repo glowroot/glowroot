@@ -15,14 +15,6 @@
  */
 package io.informant.local.ui;
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-
-import io.informant.common.CharStreams2;
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.Singleton;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -36,6 +28,13 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -48,14 +47,13 @@ import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.Nullable;
+import io.informant.common.CharStreams2;
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.Singleton;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
-import com.google.common.io.CharStreams;
-import com.google.common.io.Resources;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
+import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
  * Http service to export full trace html page.

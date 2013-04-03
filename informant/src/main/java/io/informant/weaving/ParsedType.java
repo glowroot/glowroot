@@ -15,13 +15,12 @@
  */
 package io.informant.weaving;
 
-import io.informant.markers.NotThreadSafe;
-
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+
+import io.informant.markers.NotThreadSafe;
 
 /**
  * @author Trask Stalnaker

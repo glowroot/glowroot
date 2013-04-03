@@ -15,9 +15,6 @@
  */
 package io.informant.weaving;
 
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.ThreadSafe;
-
 import java.io.IOException;
 import java.net.URL;
 import java.security.AccessController;
@@ -25,15 +22,16 @@ import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.ReadOnly;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.reflect.Reflection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.ThreadSafe;
 
 /**
  * The placement of this code in the main Informant code base (and not inside of the tests folder)

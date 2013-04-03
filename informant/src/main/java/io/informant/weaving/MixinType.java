@@ -15,18 +15,16 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.Mixin;
-import io.informant.api.weaving.MixinInit;
-
 import java.lang.reflect.Method;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
+import io.informant.api.weaving.Mixin;
+import io.informant.api.weaving.MixinInit;
 
 /**
  * @author Trask Stalnaker

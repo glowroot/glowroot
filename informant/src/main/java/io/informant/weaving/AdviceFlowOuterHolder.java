@@ -15,13 +15,13 @@
  */
 package io.informant.weaving;
 
-import io.informant.markers.NotThreadSafe;
-import io.informant.markers.PartiallyThreadSafe;
-import io.informant.markers.UsedByGeneratedBytecode;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+
+import io.informant.markers.NotThreadSafe;
+import io.informant.markers.PartiallyThreadSafe;
+import io.informant.markers.UsedByGeneratedBytecode;
 
 /**
  * @author Trask Stalnaker

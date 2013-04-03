@@ -15,14 +15,14 @@
  */
 package io.informant.plugin.jdbc;
 
-import io.informant.shaded.google.common.collect.ImmutableList;
-import io.informant.shaded.google.common.collect.Queues;
-
 import java.lang.ref.WeakReference;
 import java.sql.Statement;
 import java.util.Collection;
 
 import checkers.nullness.quals.Nullable;
+
+import io.informant.shaded.google.common.collect.ImmutableList;
+import io.informant.shaded.google.common.collect.Queues;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of statements since the underlying

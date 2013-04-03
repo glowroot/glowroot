@@ -15,10 +15,10 @@
  */
 package io.informant.markers;
 
-import static java.lang.annotation.ElementType.METHOD;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.METHOD;
 
 /**
  * Marker to identify methods that are called by reflection. This is helpful to know when

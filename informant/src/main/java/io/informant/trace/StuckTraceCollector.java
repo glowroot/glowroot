@@ -15,9 +15,14 @@
  */
 package io.informant.trace;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Ticker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
@@ -26,16 +31,9 @@ import io.informant.markers.Singleton;
 import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.model.Trace;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Ticker;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Owns the thread (via a single threaded scheduled executor) that watches out for stuck traces.

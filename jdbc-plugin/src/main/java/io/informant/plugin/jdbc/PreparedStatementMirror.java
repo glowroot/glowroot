@@ -15,16 +15,16 @@
  */
 package io.informant.plugin.jdbc;
 
-import io.informant.shaded.google.common.collect.ImmutableList;
-import io.informant.shaded.google.common.collect.Lists;
-import io.informant.shaded.google.common.collect.Queues;
-import io.informant.shaded.google.common.hash.HashCodes;
-
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
+
+import io.informant.shaded.google.common.collect.ImmutableList;
+import io.informant.shaded.google.common.collect.Lists;
+import io.informant.shaded.google.common.collect.Queues;
+import io.informant.shaded.google.common.hash.HashCodes;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of prepared statements since the underlying

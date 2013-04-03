@@ -15,18 +15,17 @@
  */
 package io.informant.container.javaagent;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.List;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker

@@ -15,7 +15,11 @@
  */
 package io.informant.testing.ui;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import java.util.Map;
+import java.util.Random;
+
+import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableMap;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
@@ -31,12 +35,7 @@ import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
 
-import java.util.Map;
-import java.util.Random;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.collect.ImmutableMap;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * @author Trask Stalnaker

@@ -15,6 +15,13 @@
  */
 package io.informant.local.ui;
 
+import java.io.IOException;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Ticker;
+import com.google.common.io.CharSource;
+
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.Singleton;
 import io.informant.snapshot.Snapshot;
@@ -22,14 +29,6 @@ import io.informant.snapshot.SnapshotCreator;
 import io.informant.snapshot.SnapshotWriter;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
-
-import java.io.IOException;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Ticker;
-import com.google.common.io.CharSource;
 
 /**
  * @author Trask Stalnaker

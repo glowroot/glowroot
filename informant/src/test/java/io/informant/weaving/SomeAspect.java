@@ -15,6 +15,8 @@
  */
 package io.informant.weaving;
 
+import checkers.nullness.quals.Nullable;
+
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindMethodArgArray;
 import io.informant.api.weaving.BindMethodName;
@@ -31,8 +33,6 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

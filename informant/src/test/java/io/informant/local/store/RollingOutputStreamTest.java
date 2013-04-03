@@ -15,8 +15,6 @@
  */
 package io.informant.local.store;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -25,11 +23,12 @@ import java.io.Writer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Ticker;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

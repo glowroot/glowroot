@@ -16,7 +16,6 @@
 package io.informant.local.store;
 
 import checkers.igj.quals.Immutable;
-
 import com.google.common.base.Objects;
 
 /**

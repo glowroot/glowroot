@@ -15,13 +15,11 @@
  */
 package io.informant.weaving;
 
-import org.objectweb.asm.Type;
-
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import org.objectweb.asm.Type;
 
 /**
  * @author Trask Stalnaker

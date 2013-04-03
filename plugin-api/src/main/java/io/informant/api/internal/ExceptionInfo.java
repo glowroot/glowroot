@@ -21,7 +21,6 @@ import java.util.ListIterator;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.collect.ImmutableList;
 
 /**

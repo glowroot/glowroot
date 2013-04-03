@@ -18,7 +18,6 @@ package io.informant.api;
 import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 
 /**

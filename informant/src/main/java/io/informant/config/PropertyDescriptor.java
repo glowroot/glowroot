@@ -15,19 +15,17 @@
  */
 package io.informant.config;
 
-import static io.informant.common.ObjectMappers.checkRequiredProperty;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker

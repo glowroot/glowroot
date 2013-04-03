@@ -15,7 +15,12 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.io.File;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
@@ -23,12 +28,7 @@ import io.informant.container.Container;
 import io.informant.container.TempDirs;
 import io.informant.container.TraceMarker;
 
-import java.io.File;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

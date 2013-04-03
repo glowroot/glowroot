@@ -15,11 +15,6 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
-import io.informant.MainEntryPoint;
-import io.informant.container.ClassPath;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -28,12 +23,15 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.collect.Lists;
 import org.junit.Assume;
 import org.junit.Test;
 
-import checkers.nullness.quals.Nullable;
+import io.informant.MainEntryPoint;
+import io.informant.container.ClassPath;
 
-import com.google.common.collect.Lists;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

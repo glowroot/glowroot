@@ -15,14 +15,13 @@
  */
 package io.informant.local.ui;
 
-import io.informant.markers.Singleton;
-
 import java.io.IOException;
 
+import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.CharSource;
+import io.informant.markers.Singleton;
 
 /**
  * Json service to read trace data.

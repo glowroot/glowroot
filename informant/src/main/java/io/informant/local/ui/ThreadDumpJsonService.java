@@ -15,8 +15,6 @@
  */
 package io.informant.local.ui;
 
-import io.informant.markers.Singleton;
-
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -24,13 +22,14 @@ import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.markers.Singleton;
 
 /**
  * Json service to clear captured data.

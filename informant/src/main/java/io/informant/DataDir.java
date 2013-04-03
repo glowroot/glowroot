@@ -15,22 +15,20 @@
  */
 package io.informant;
 
-import io.informant.markers.Static;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Strings;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Strings;
-import com.google.common.io.Files;
+import io.informant.markers.Static;
 
 /**
  * @author Trask Stalnaker

@@ -15,13 +15,11 @@
  */
 package io.informant.weaving.preinit;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * @author Trask Stalnaker

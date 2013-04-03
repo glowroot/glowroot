@@ -15,15 +15,15 @@
  */
 package io.informant.testing.ui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.local.LocalContainer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker

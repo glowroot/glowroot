@@ -15,16 +15,15 @@
  */
 package io.informant.api;
 
-import io.informant.api.weaving.Pointcut;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
+import checkers.nullness.quals.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.Nullable;
+import io.informant.api.weaving.Pointcut;
 
 /**
  * This is the primary service exposed to plugins. Plugins acquire a {@code PluginServices} instance

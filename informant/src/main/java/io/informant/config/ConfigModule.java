@@ -15,9 +15,9 @@
  */
 package io.informant.config;
 
-import io.informant.markers.ThreadSafe;
-
 import java.io.File;
+
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

@@ -19,7 +19,6 @@ import java.util.List;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
-
 import com.google.common.collect.ImmutableList;
 
 /**

@@ -15,6 +15,24 @@
  */
 package io.informant.weaving;
 
+import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindMethodArgArray;
 import io.informant.api.weaving.BindMethodName;
@@ -28,26 +46,6 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
-
-import java.lang.annotation.Annotation;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker

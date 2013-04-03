@@ -15,21 +15,20 @@
  */
 package io.informant.test;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
+
+import com.google.common.io.Resources;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.javaagent.JavaagentContainer;
 import io.informant.weaving.ParsedTypeCache;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.io.Resources;
 
 /**
  * @author Trask Stalnaker

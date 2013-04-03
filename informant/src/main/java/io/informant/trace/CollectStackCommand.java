@@ -15,15 +15,14 @@
  */
 package io.informant.trace;
 
-import io.informant.markers.ThreadSafe;
-import io.informant.trace.model.MergedStackTree;
-import io.informant.trace.model.Trace;
-
+import com.google.common.base.Objects;
+import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Ticker;
+import io.informant.markers.ThreadSafe;
+import io.informant.trace.model.MergedStackTree;
+import io.informant.trace.model.Trace;
 
 /**
  * Captures a stack trace for the thread executing a trace and stores the stack trace in the

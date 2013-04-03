@@ -15,18 +15,16 @@
  */
 package io.informant.api;
 
-import io.informant.api.internal.ReadableMessage;
-
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.internal.ReadableMessage;
 
 /**
  * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value

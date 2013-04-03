@@ -15,7 +15,25 @@
  */
 package io.informant.local.ui;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
+import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.io.CharStreams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
@@ -27,27 +45,7 @@ import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
-import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.io.CharStreams;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Json service to read trace data.

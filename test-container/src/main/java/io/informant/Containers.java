@@ -15,17 +15,16 @@
  */
 package io.informant;
 
+import java.io.File;
+
+import checkers.nullness.quals.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.container.Container;
 import io.informant.container.SharedContainerRunListener;
 import io.informant.container.javaagent.JavaagentContainer;
 import io.informant.container.local.LocalContainer;
-
-import java.io.File;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

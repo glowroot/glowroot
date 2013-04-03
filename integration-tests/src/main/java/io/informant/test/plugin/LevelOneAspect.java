@@ -15,6 +15,8 @@
  */
 package io.informant.test.plugin;
 
+import java.util.Map;
+
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
@@ -30,8 +32,6 @@ import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
 import io.informant.shaded.google.common.collect.ImmutableMap;
-
-import java.util.Map;
 
 /**
  * @author Trask Stalnaker

@@ -15,13 +15,12 @@
  */
 package io.informant.weaving;
 
-import io.informant.markers.Static;
-
 import java.util.List;
 
+import checkers.igj.quals.ReadOnly;
 import org.objectweb.asm.Type;
 
-import checkers.igj.quals.ReadOnly;
+import io.informant.markers.Static;
 
 /**
  * @author Trask Stalnaker

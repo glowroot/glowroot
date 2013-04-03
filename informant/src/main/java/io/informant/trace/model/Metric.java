@@ -15,15 +15,15 @@
  */
 package io.informant.trace.model;
 
-import io.informant.api.MetricTimer;
-import io.informant.markers.PartiallyThreadSafe;
-
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
+
+import io.informant.api.MetricTimer;
+import io.informant.markers.PartiallyThreadSafe;
 
 /**
  * All timing data is in nanoseconds.

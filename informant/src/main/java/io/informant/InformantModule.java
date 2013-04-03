@@ -15,6 +15,20 @@
  */
 package io.informant;
 
+import java.io.File;
+import java.lang.instrument.ClassFileTransformer;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+
+import checkers.igj.quals.ReadOnly;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.api.PluginServices;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
@@ -25,22 +39,6 @@ import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.snapshot.SnapshotModule;
 import io.informant.trace.TraceModule;
-
-import java.io.File;
-import java.lang.instrument.ClassFileTransformer;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.ReadOnly;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Ticker;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * @author Trask Stalnaker

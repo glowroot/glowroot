@@ -15,21 +15,20 @@
  */
 package io.informant.local.store;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
+
+import com.google.common.base.Ticker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.snapshot.SnapshotSink;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Ticker;
 
 /**
  * @author Trask Stalnaker

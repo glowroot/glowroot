@@ -15,13 +15,12 @@
  */
 package io.informant.weaving.preinit;
 
+import checkers.nullness.quals.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.LocalVariablesSorter;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

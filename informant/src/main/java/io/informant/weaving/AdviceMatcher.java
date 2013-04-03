@@ -15,23 +15,21 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.weaving.MethodModifier;
-
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import io.informant.api.weaving.MethodModifier;
 
 /**
  * @author Trask Stalnaker

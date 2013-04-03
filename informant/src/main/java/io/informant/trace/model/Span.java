@@ -15,15 +15,14 @@
  */
 package io.informant.trace.model;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ReadableErrorMessage;
 import io.informant.markers.ThreadSafe;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
 
 /**
  * The "span" terminology is borrowed from <a

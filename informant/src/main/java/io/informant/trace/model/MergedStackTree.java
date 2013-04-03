@@ -15,9 +15,6 @@
  */
 package io.informant.trace.model;
 
-import io.informant.markers.NotThreadSafe;
-import io.informant.markers.ThreadSafe;
-
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,10 +26,12 @@ import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.lock.quals.Holding;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+
+import io.informant.markers.NotThreadSafe;
+import io.informant.markers.ThreadSafe;
 
 /**
  * Merged stack tree built from sampled stack traces captured by periodic calls to

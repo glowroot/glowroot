@@ -17,9 +17,8 @@ package io.informant.weaving.preinit;
 
 import java.util.Set;
 
-import org.objectweb.asm.commons.Remapper;
-
 import com.google.common.collect.Sets;
+import org.objectweb.asm.commons.Remapper;
 
 /**
  * @author Trask Stalnaker

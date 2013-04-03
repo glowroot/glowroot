@@ -15,8 +15,6 @@
  */
 package io.informant.test.plugin;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
@@ -27,6 +25,8 @@ import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
 import io.informant.test.plugin.LogErrorAspect.LogErrorAdvice;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * @author Trask Stalnaker

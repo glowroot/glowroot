@@ -15,20 +15,19 @@
  */
 package io.informant.container;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import io.informant.markers.Static;
-
 import java.util.Collection;
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
-
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+
+import io.informant.markers.Static;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * The placement of this code in the main Informant code base (and not inside of the tests folder)

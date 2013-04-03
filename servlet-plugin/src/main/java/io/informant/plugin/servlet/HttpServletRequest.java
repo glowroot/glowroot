@@ -15,13 +15,13 @@
  */
 package io.informant.plugin.servlet;
 
-import io.informant.api.UnresolvedMethod;
-import io.informant.shaded.google.common.collect.ImmutableMap;
-
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+
+import io.informant.api.UnresolvedMethod;
+import io.informant.shaded.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker

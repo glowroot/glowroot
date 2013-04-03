@@ -15,13 +15,13 @@
  */
 package io.informant.plugin.servlet;
 
-import io.informant.api.UnresolvedMethod;
-
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
+
+import io.informant.api.UnresolvedMethod;
 
 /**
  * @author Trask Stalnaker

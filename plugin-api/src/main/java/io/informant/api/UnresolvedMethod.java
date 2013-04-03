@@ -21,14 +21,12 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.MapMaker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Calling methods on 3rd party libraries from a plugin can be difficult. Plugins are loaded by the

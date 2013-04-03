@@ -15,14 +15,6 @@
  */
 package io.informant.plugin.servlet;
 
-import io.informant.api.Message;
-import io.informant.api.MessageSupplier;
-import io.informant.api.Optional;
-import io.informant.shaded.google.common.base.Joiner;
-import io.informant.shaded.google.common.base.Strings;
-import io.informant.shaded.google.common.collect.ImmutableMap;
-import io.informant.shaded.google.common.collect.Maps;
-
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,6 +22,14 @@ import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
+
+import io.informant.api.Message;
+import io.informant.api.MessageSupplier;
+import io.informant.api.Optional;
+import io.informant.shaded.google.common.base.Joiner;
+import io.informant.shaded.google.common.base.Strings;
+import io.informant.shaded.google.common.collect.ImmutableMap;
+import io.informant.shaded.google.common.collect.Maps;
 
 /**
  * Servlet message supplier created by pointcut.

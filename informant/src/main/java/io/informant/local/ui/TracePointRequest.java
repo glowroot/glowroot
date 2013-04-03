@@ -16,7 +16,6 @@
 package io.informant.local.ui;
 
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 
 /**

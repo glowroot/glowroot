@@ -15,17 +15,22 @@
  */
 package io.informant.weaving;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import io.informant.weaving.ParsedType.Builder;
-import io.informant.weaving.ParsedTypeCache.ParseContext;
-
 import java.io.IOException;
 import java.security.CodeSource;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.LazyNonNull;
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Objects;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -42,17 +47,10 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.LazyNonNull;
-import checkers.nullness.quals.Nullable;
+import io.informant.weaving.ParsedType.Builder;
+import io.informant.weaving.ParsedTypeCache.ParseContext;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Trask Stalnaker

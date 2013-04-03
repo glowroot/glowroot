@@ -15,10 +15,10 @@
  */
 package io.informant.container;
 
-import io.informant.markers.Static;
-
 import java.io.File;
 import java.io.IOException;
+
+import io.informant.markers.Static;
 
 /**
  * @author Trask Stalnaker

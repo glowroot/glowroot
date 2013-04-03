@@ -15,25 +15,14 @@
  */
 package io.informant.config;
 
-import io.informant.api.weaving.Mixin;
-import io.informant.api.weaving.Pointcut;
-import io.informant.common.ObjectMappers;
-import io.informant.weaving.Advice;
-import io.informant.weaving.Advice.AdviceConstructionException;
-import io.informant.weaving.MixinType;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
@@ -41,6 +30,15 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.weaving.Mixin;
+import io.informant.api.weaving.Pointcut;
+import io.informant.common.ObjectMappers;
+import io.informant.weaving.Advice;
+import io.informant.weaving.Advice.AdviceConstructionException;
+import io.informant.weaving.MixinType;
 
 /**
  * @author Trask Stalnaker

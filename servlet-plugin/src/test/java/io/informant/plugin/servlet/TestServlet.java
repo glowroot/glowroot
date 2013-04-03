@@ -15,8 +15,6 @@
  */
 package io.informant.plugin.servlet;
 
-import io.informant.testkit.AppUnderTest;
-
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -26,6 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+
+import io.informant.testkit.AppUnderTest;
 
 /**
  * @author Trask Stalnaker

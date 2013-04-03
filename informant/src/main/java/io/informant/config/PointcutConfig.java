@@ -15,16 +15,11 @@
  */
 package io.informant.config;
 
-import static io.informant.common.ObjectMappers.checkRequiredProperty;
-
-import io.informant.api.weaving.MethodModifier;
-
 import java.util.List;
 
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -32,6 +27,10 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+
+import io.informant.api.weaving.MethodModifier;
+
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * Immutable structure to hold an adhoc span/metric pointcut.

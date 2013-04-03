@@ -15,11 +15,10 @@
  */
 package io.informant.container;
 
+import checkers.nullness.quals.Nullable;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

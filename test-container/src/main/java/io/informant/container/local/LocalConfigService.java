@@ -15,6 +15,14 @@
  */
 package io.informant.container.local;
 
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map.Entry;
+
+import checkers.nullness.quals.Nullable;
+import com.google.common.collect.Lists;
+
 import io.informant.InformantModule;
 import io.informant.config.ConfigModule;
 import io.informant.container.config.CoarseProfilingConfig;
@@ -29,15 +37,6 @@ import io.informant.container.config.UserConfig;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
 import io.informant.markers.ThreadSafe;
-
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map.Entry;
-
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker

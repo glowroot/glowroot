@@ -15,20 +15,18 @@
  */
 package io.informant.container.javaagent;
 
-import io.informant.container.common.ObjectMappers;
-import io.informant.markers.ThreadSafe;
-
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-
 import checkers.igj.quals.ReadOnly;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
+import io.informant.container.common.ObjectMappers;
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

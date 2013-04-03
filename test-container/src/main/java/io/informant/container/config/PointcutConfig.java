@@ -15,18 +15,17 @@
  */
 package io.informant.container.config;
 
-import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
-
 import java.util.List;
 
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker

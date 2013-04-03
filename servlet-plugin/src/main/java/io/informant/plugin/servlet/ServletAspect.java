@@ -15,6 +15,12 @@
  */
 package io.informant.plugin.servlet;
 
+import java.util.Enumeration;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import checkers.nullness.quals.Nullable;
+
 import io.informant.api.CompletedSpan;
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
@@ -35,12 +41,6 @@ import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
 import io.informant.shaded.google.common.base.Strings;
 import io.informant.shaded.google.common.collect.ImmutableMap;
-
-import java.util.Enumeration;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * Defines pointcuts and captures data on

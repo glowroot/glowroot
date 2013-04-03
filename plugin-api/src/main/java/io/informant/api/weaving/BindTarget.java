@@ -15,11 +15,11 @@
  */
 package io.informant.api.weaving;
 
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Annotates a parameter to an {@literal @}{@link IsEnabled}, {@literal @}{@link OnBefore},

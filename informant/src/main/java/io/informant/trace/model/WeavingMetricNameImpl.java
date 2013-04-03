@@ -15,12 +15,12 @@
  */
 package io.informant.trace.model;
 
+import com.google.common.base.Ticker;
+
 import io.informant.api.MetricTimer;
 import io.informant.markers.Singleton;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.WeavingMetric;
-
-import com.google.common.base.Ticker;
 
 /**
  * Weaving metric is a very special case because it is measuring timing inside of

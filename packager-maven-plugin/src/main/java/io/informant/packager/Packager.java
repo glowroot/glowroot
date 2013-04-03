@@ -15,12 +15,6 @@
  */
 package io.informant.packager;
 
-import io.informant.config.PackageDescriptor;
-import io.informant.config.PluginDescriptor;
-import io.informant.config.PropertyDescriptor;
-import io.informant.config.PropertyDescriptor.PropertyType;
-import io.informant.packager.PluginConfig.PropertyConfig;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,6 +30,13 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -50,14 +51,11 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.codehaus.plexus.util.WriterFactory;
 
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
-import com.google.common.io.Files;
+import io.informant.config.PackageDescriptor;
+import io.informant.config.PluginDescriptor;
+import io.informant.config.PropertyDescriptor;
+import io.informant.config.PropertyDescriptor.PropertyType;
+import io.informant.packager.PluginConfig.PropertyConfig;
 
 /**
  * @author Trask Stalnaker

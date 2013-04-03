@@ -15,15 +15,6 @@
  */
 package io.informant.plugin.jdbc;
 
-import io.informant.container.AppUnderTest;
-import io.informant.container.Container;
-import io.informant.container.TraceMarker;
-import io.informant.container.config.GeneralConfig;
-import io.informant.container.config.PluginConfig;
-import io.informant.container.javaagent.JavaagentContainer;
-import io.informant.container.trace.Metric;
-import io.informant.container.trace.Trace;
-
 import java.io.File;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -33,6 +24,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.hsqldb.jdbc.JDBCDriver;
+
+import io.informant.container.AppUnderTest;
+import io.informant.container.Container;
+import io.informant.container.TraceMarker;
+import io.informant.container.config.GeneralConfig;
+import io.informant.container.config.PluginConfig;
+import io.informant.container.javaagent.JavaagentContainer;
+import io.informant.container.trace.Metric;
+import io.informant.container.trace.Trace;
 
 /**
  * Performance test of the jdbc plugin.

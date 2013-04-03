@@ -15,11 +15,11 @@
  */
 package io.informant.api;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import org.junit.Test;
 
 import io.informant.api.internal.ReadableMessage;
 
-import org.junit.Test;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

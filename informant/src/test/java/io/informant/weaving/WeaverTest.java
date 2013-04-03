@@ -15,7 +15,8 @@
  */
 package io.informant.weaving;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import com.google.common.collect.ImmutableList;
+import org.junit.Test;
 
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
@@ -64,9 +65,7 @@ import io.informant.weaving.SomeAspect.TestJSRInlinedMethodAdvice;
 import io.informant.weaving.SomeAspect.TypeNamePatternAdvice;
 import io.informant.weaving.SomeAspect.VeryBadAdvice;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

@@ -15,20 +15,18 @@
  */
 package io.informant.snapshot;
 
-import io.informant.api.Optional;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonGenerator;
+import io.informant.api.Optional;
 
 /**
  * @author Trask Stalnaker

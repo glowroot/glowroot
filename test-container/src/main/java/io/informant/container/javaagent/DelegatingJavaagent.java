@@ -15,8 +15,6 @@
  */
 package io.informant.container.javaagent;
 
-import io.informant.markers.Static;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,6 +26,8 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
 import com.google.common.io.Resources;
+
+import io.informant.markers.Static;
 
 /**
  * @author Trask Stalnaker

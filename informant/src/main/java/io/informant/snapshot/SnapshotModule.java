@@ -15,13 +15,13 @@
  */
 package io.informant.snapshot;
 
-import io.informant.config.ConfigModule;
-import io.informant.config.ConfigService;
-import io.informant.markers.ThreadSafe;
-
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.base.Ticker;
+
+import io.informant.config.ConfigModule;
+import io.informant.config.ConfigService;
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

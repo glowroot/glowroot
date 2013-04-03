@@ -15,15 +15,15 @@
  */
 package io.informant.weaving;
 
-import io.informant.api.MetricTimer;
-import io.informant.markers.ThreadSafe;
-import io.informant.weaving.ParsedTypeCache.ParseContext;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -34,11 +34,9 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.Nullable;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
+import io.informant.api.MetricTimer;
+import io.informant.markers.ThreadSafe;
+import io.informant.weaving.ParsedTypeCache.ParseContext;
 
 /**
  * @author Trask Stalnaker

@@ -15,6 +15,13 @@
  */
 package io.informant.testing.ui;
 
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import io.informant.api.ErrorMessage;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
@@ -26,13 +33,6 @@ import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.Pointcut;
-
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker

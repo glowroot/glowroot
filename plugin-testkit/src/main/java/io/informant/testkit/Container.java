@@ -15,13 +15,12 @@
  */
 package io.informant.testkit;
 
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.informant.container.config.PluginConfig;
 import io.informant.container.local.GenericLocalContainer;
 import io.informant.container.local.GenericLocalContainer.AppExecutor;
-
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Trask Stalnaker

@@ -16,7 +16,6 @@
 package io.informant.config;
 
 import checkers.igj.quals.Immutable;
-
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;

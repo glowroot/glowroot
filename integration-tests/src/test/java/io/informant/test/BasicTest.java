@@ -15,7 +15,13 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
@@ -23,14 +29,7 @@ import io.informant.container.Container;
 import io.informant.container.trace.Span;
 import io.informant.container.trace.Trace;
 
-import java.util.Map;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableMap;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

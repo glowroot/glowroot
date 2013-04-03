@@ -15,7 +15,12 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.util.List;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
@@ -25,12 +30,7 @@ import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.trace.Trace;
 
-import java.util.List;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

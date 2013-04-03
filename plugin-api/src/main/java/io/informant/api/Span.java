@@ -15,12 +15,12 @@
  */
 package io.informant.api;
 
+import java.util.concurrent.TimeUnit;
+
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * See {@link PluginServices#startSpan(MessageSupplier, MetricName)} for how to create and use

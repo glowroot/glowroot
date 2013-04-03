@@ -15,11 +15,6 @@
  */
 package io.informant.local.store;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import io.informant.markers.OnlyUsedByTests;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,10 +25,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Ticker;
+import io.informant.markers.OnlyUsedByTests;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Needs to be externally synchronized around startBlock()/write()/endBlock().

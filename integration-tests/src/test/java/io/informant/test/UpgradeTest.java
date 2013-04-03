@@ -15,7 +15,11 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.io.File;
+
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
@@ -26,12 +30,7 @@ import io.informant.container.local.LocalContainer;
 import io.informant.container.trace.Span;
 import io.informant.container.trace.Trace;
 
-import java.io.File;
-
-import org.junit.Test;
-
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

@@ -15,22 +15,21 @@
  */
 package io.informant.local.ui;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import io.informant.common.ObjectMappers;
-import io.informant.weaving.ParsedTypeCache;
-
 import java.io.IOException;
 import java.util.List;
-
-import org.junit.Test;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import org.junit.Test;
+
+import io.informant.common.ObjectMappers;
+import io.informant.weaving.ParsedTypeCache;
+
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Trask Stalnaker

@@ -15,30 +15,28 @@
  */
 package io.informant.local.ui;
 
-import static io.informant.common.ObjectMappers.checkRequiredProperty;
-
-import io.informant.common.ObjectMappers;
-import io.informant.markers.Singleton;
-import io.informant.weaving.ParsedMethod;
-import io.informant.weaving.ParsedTypeCache;
-
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.common.ObjectMappers;
+import io.informant.markers.Singleton;
+import io.informant.weaving.ParsedMethod;
+import io.informant.weaving.ParsedTypeCache;
+
+import static io.informant.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * Json service to read pointcut data.

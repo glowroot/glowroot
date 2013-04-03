@@ -15,15 +15,6 @@
  */
 package io.informant.plugin.jdbc;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
-import io.informant.testkit.AppUnderTest;
-import io.informant.testkit.Container;
-import io.informant.testkit.Metric;
-import io.informant.testkit.Span;
-import io.informant.testkit.Trace;
-import io.informant.testkit.TraceMarker;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -38,6 +29,15 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import io.informant.testkit.AppUnderTest;
+import io.informant.testkit.Container;
+import io.informant.testkit.Metric;
+import io.informant.testkit.Span;
+import io.informant.testkit.Trace;
+import io.informant.testkit.TraceMarker;
+
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * Basic test of the jdbc plugin.

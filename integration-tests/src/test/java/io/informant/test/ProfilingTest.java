@@ -15,8 +15,16 @@
  */
 package io.informant.test;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import checkers.nullness.quals.Nullable;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.api.PluginServices;
@@ -30,17 +38,8 @@ import io.informant.container.config.UserConfig;
 import io.informant.container.trace.MergedStackTreeNode;
 import io.informant.container.trace.Trace;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import checkers.nullness.quals.Nullable;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

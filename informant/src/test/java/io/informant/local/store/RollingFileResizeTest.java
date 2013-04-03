@@ -15,20 +15,19 @@
  */
 package io.informant.local.store;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
+import com.google.common.io.CharStreams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Ticker;
-import com.google.common.io.CharStreams;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

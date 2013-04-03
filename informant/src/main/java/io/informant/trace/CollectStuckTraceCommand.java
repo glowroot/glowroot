@@ -15,13 +15,12 @@
  */
 package io.informant.trace;
 
-import io.informant.markers.ThreadSafe;
-import io.informant.trace.model.Trace;
-
+import com.google.common.base.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects;
+import io.informant.markers.ThreadSafe;
+import io.informant.trace.model.Trace;
 
 /**
  * Designed to be scheduled and run as soon as the trace exceeds a given threshold.

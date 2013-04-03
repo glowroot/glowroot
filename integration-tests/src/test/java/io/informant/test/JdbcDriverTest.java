@@ -15,7 +15,10 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.api.PluginServices;
@@ -23,10 +26,7 @@ import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.TraceMarker;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

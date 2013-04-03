@@ -15,17 +15,16 @@
  */
 package io.informant.local.store;
 
-import io.informant.markers.OnlyUsedByTests;
-import io.informant.markers.ThreadSafe;
-
 import java.io.File;
 import java.sql.SQLException;
 import java.util.Map;
 
+import checkers.igj.quals.ReadOnly;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.igj.quals.ReadOnly;
+import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.ThreadSafe;
 
 /**
  * @author Trask Stalnaker

@@ -15,22 +15,21 @@
  */
 package io.informant.plugin.servlet;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-
-import io.informant.testkit.Container;
-import io.informant.testkit.Trace;
-
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import checkers.nullness.quals.Nullable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import checkers.nullness.quals.Nullable;
+import io.informant.testkit.Container;
+import io.informant.testkit.Trace;
+
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

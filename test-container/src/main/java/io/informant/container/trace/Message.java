@@ -18,7 +18,6 @@ package io.informant.container.trace;
 import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 
 /**

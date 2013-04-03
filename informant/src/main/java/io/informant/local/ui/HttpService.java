@@ -17,11 +17,10 @@ package io.informant.local.ui;
 
 import java.io.IOException;
 
+import checkers.nullness.quals.Nullable;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
-
-import checkers.nullness.quals.Nullable;
 
 /**
  * @author Trask Stalnaker

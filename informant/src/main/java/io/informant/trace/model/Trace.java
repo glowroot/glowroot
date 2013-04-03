@@ -15,11 +15,6 @@
  */
 package io.informant.trace.model;
 
-import io.informant.api.ErrorMessage;
-import io.informant.api.MessageSupplier;
-import io.informant.api.internal.ReadableMessage;
-import io.informant.markers.PartiallyThreadSafe;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -29,20 +24,23 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.informant.api.ErrorMessage;
+import io.informant.api.MessageSupplier;
+import io.informant.api.internal.ReadableMessage;
+import io.informant.markers.PartiallyThreadSafe;
 
 /**
  * Contains all data that has been captured for a given trace (e.g. servlet request).

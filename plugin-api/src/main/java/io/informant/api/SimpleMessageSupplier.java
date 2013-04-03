@@ -16,7 +16,6 @@
 package io.informant.api;
 
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.collect.ObjectArrays;
 
 /**

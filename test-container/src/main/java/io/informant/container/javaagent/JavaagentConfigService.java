@@ -15,6 +15,12 @@
  */
 package io.informant.container.javaagent;
 
+import java.util.List;
+
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
@@ -24,13 +30,6 @@ import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.UserConfig;
 import io.informant.markers.ThreadSafe;
-
-import java.util.List;
-
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Trask Stalnaker

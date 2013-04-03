@@ -15,9 +15,9 @@
  */
 package io.informant.common;
 
-import io.informant.markers.ThreadSafe;
-
 import com.google.common.base.Ticker;
+
+import io.informant.markers.ThreadSafe;
 
 /**
  * Modeled after Guava's {@link Ticker} class, but for currentTimeMillis.

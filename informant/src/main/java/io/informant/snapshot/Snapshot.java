@@ -15,17 +15,13 @@
  */
 package io.informant.snapshot;
 
-import io.informant.trace.model.TraceUniqueId;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.io.CharSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Structure used as part of the response to "/explorer/detail".

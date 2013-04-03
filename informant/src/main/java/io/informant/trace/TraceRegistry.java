@@ -15,14 +15,13 @@
  */
 package io.informant.trace;
 
-import io.informant.markers.Singleton;
-import io.informant.trace.model.Trace;
-
 import java.util.Queue;
 
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.collect.Queues;
+
+import io.informant.markers.Singleton;
+import io.informant.trace.model.Trace;
 
 /**
  * Registry to hold all active traces. Also holds the current trace state for each thread via

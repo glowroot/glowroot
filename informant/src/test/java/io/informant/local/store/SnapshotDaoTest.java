@@ -15,12 +15,6 @@
  */
 package io.informant.local.store;
 
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-import io.informant.common.Clock;
-import io.informant.snapshot.Snapshot;
-
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -28,11 +22,16 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.base.Ticker;
+import io.informant.common.Clock;
+import io.informant.snapshot.Snapshot;
+
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Trask Stalnaker

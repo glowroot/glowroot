@@ -15,20 +15,6 @@
  */
 package io.informant.container.javaagent;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import io.informant.MainEntryPoint;
-import io.informant.container.AppUnderTest;
-import io.informant.container.ClassPath;
-import io.informant.container.Container;
-import io.informant.container.SpyingAppenderCheck;
-import io.informant.container.SpyingConsoleAppender;
-import io.informant.container.SpyingConsoleAppender.MessageCount;
-import io.informant.container.TempDirs;
-import io.informant.container.config.ConfigService;
-import io.informant.container.trace.TraceService;
-import io.informant.markers.ThreadSafe;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -42,6 +28,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import checkers.nullness.quals.Nullable;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
 import org.fest.reflect.core.Reflection;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -54,14 +47,19 @@ import org.jboss.netty.handler.codec.http.HttpMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import checkers.nullness.quals.Nullable;
+import io.informant.MainEntryPoint;
+import io.informant.container.AppUnderTest;
+import io.informant.container.ClassPath;
+import io.informant.container.Container;
+import io.informant.container.SpyingAppenderCheck;
+import io.informant.container.SpyingConsoleAppender;
+import io.informant.container.SpyingConsoleAppender.MessageCount;
+import io.informant.container.TempDirs;
+import io.informant.container.config.ConfigService;
+import io.informant.container.trace.TraceService;
+import io.informant.markers.ThreadSafe;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
-import com.ning.http.client.providers.netty.NettyAsyncHttpProviderConfig;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker

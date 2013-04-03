@@ -15,6 +15,26 @@
  */
 package io.informant.snapshot;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
+import com.google.common.io.CharStreams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.informant.api.MessageSupplier;
 import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
@@ -28,28 +48,6 @@ import io.informant.trace.model.Metric;
 import io.informant.trace.model.Span;
 import io.informant.trace.model.Trace;
 import io.informant.trace.model.Trace.TraceAttribute;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import checkers.igj.quals.Immutable;
-import checkers.igj.quals.ReadOnly;
-import checkers.nullness.quals.Nullable;
-
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
-import com.google.common.io.CharStreams;
 
 /**
  * @author Trask Stalnaker

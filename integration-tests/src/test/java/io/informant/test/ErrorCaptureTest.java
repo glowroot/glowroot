@@ -15,7 +15,14 @@
  */
 package io.informant.test;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
@@ -26,15 +33,7 @@ import io.informant.container.trace.Trace;
 import io.informant.test.plugin.LogCauseAspect;
 import io.informant.test.plugin.LogCauseAspect.LogCauseAdvice;
 
-import java.util.List;
-import java.util.Set;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.collect.Sets;
+import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  * @author Trask Stalnaker

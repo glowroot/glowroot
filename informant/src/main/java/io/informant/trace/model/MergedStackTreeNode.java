@@ -15,15 +15,14 @@
  */
 package io.informant.trace.model;
 
-import io.informant.markers.ThreadSafe;
-
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+
+import io.informant.markers.ThreadSafe;
 
 /**
  * Element of {@link MergedStackTree}.

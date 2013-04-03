@@ -15,14 +15,6 @@
  */
 package io.informant.plugin.servlet;
 
-import io.informant.shaded.google.common.cache.CacheBuilder;
-import io.informant.shaded.google.common.cache.CacheLoader;
-import io.informant.shaded.google.common.cache.LoadingCache;
-import io.informant.shaded.google.common.collect.ImmutableMap;
-import io.informant.shaded.google.common.collect.MapMaker;
-import io.informant.shaded.slf4j.Logger;
-import io.informant.shaded.slf4j.LoggerFactory;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -30,6 +22,14 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.Nullable;
+
+import io.informant.shaded.google.common.cache.CacheBuilder;
+import io.informant.shaded.google.common.cache.CacheLoader;
+import io.informant.shaded.google.common.cache.LoadingCache;
+import io.informant.shaded.google.common.collect.ImmutableMap;
+import io.informant.shaded.google.common.collect.MapMaker;
+import io.informant.shaded.slf4j.Logger;
+import io.informant.shaded.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker
