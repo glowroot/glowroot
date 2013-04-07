@@ -91,6 +91,11 @@ public class JavaagentContainer implements Container {
         return new JavaagentContainer(dataDir, 0, true, false);
     }
 
+    public static JavaagentContainer createWithFileDb(int uiPort) throws Exception {
+        File dataDir = TempDirs.createTempDir("informant-test-datadir");
+        return new JavaagentContainer(dataDir, uiPort, true, false);
+    }
+
     public JavaagentContainer(@Nullable File dataDir, int uiPort, boolean useFileDb, boolean shared)
             throws Exception {
         if (dataDir == null) {

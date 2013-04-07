@@ -23,6 +23,7 @@ import io.informant.container.Container;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
+import io.informant.container.javaagent.JavaagentContainer;
 import io.informant.container.local.LocalContainer;
 
 /**
@@ -31,6 +32,7 @@ import io.informant.container.local.LocalContainer;
  */
 public class UiTestingMain {
 
+    private static final boolean useJavaagent = false;
     private static final int UI_PORT = 4000;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
@@ -38,7 +40,12 @@ public class UiTestingMain {
     private UiTestingMain() {}
 
     public static void main(String... args) throws Exception {
-        Container container = LocalContainer.createWithFileDb(UI_PORT);
+        Container container;
+        if (useJavaagent) {
+            container = JavaagentContainer.createWithFileDb(UI_PORT);
+        } else {
+            container = LocalContainer.createWithFileDb(UI_PORT);
+        }
         // set thresholds low so there will be lots of data to view
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setStoreThresholdMillis(0);
