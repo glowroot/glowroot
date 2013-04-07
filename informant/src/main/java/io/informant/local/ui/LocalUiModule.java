@@ -153,10 +153,12 @@ public class LocalUiModule {
 
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
-        uriMappings.put(Pattern.compile("^/explorer.html$"), "io/informant/local/ui/explorer.html");
+        uriMappings.put(Pattern.compile("^/$"), "io/informant/local/ui/home.html");
         uriMappings.put(Pattern.compile("^/config.html$"), "io/informant/local/ui/config.html");
-        uriMappings.put(Pattern.compile("^/threads.html$"), "io/informant/local/ui/threads.html");
-        uriMappings.put(Pattern.compile("^/admin.html$"), "io/informant/local/ui/admin.html");
+        uriMappings.put(Pattern.compile("^/pointcuts.html$"),
+                "io/informant/local/ui/pointcuts.html");
+        uriMappings.put(Pattern.compile("^/threaddump.html$"),
+                "io/informant/local/ui/threaddump.html");
         // internal resources
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "io/informant/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "io/informant/local/ui/css/$1");

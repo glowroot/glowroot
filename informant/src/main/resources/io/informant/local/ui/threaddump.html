@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
       type="text/css"/>
-<link rel="stylesheet" href="css/informant.css" type="text/css"/>
+<link rel="stylesheet" href="css/common.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
 <!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
 <script type="text/javascript" src="libs/bootstrap/2.2.2/js/bootstrap.min.js"></script>
@@ -55,7 +55,7 @@
     });
     var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html());
     $(document).ready(function () {
-      configureAjaxError();
+      Informant.configureAjaxError();
       function refresh(scroll) {
         $.getJSON('threads/dump', function (threads) {
           var html = threadDumpTemplate(threads);
@@ -84,14 +84,6 @@
     <span class="header-logo">
         <!-- lack of spaces on this line is important -->
         Informant</span><span class="header-page-name">Thread dump</span>
-    <div class="header-see-also dropdown pull-right">
-      <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
-      <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
-      <ul class="dropdown-menu" role="menu" style="margin: 0">
-        <li role="menuitem"><a tabindex="-1" href="explorer.html">explorer</a></li>
-        <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
-      </ul>
-    </div>
   </div>
   <br>
   <!-- margin-right: 20px since the log can be very wide, introducing horizontal scroller and

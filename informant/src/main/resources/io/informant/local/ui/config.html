@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
       type="text/css"/>
-<link rel="stylesheet" href="css/informant.css" type="text/css"/>
+<link rel="stylesheet" href="css/common.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
 <script type="text/javascript" src="libs/bootstrap/2.2.2/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.rc.2/handlebars.js"></script>
@@ -30,9 +30,6 @@
 <script type="text/javascript" src="js/common.js"></script>
 <script type="text/x-handlebars-template" id="pluginTemplate">
   /*#include "template/config-plugin.html" */
-</script>
-<script type="text/x-handlebars-template" id="pointcutTemplate">
-  /*#include "template/config-pointcut.html" */
 </script>
 <script type="text/javascript" src="js/config.js"></script>
 </head>
@@ -45,8 +42,8 @@
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0;">
-        <li role="menuitem"><a tabindex="-1" href="explorer.html">explorer</a></li>
-        <li role="menuitem"><a tabindex="-1" href="threads.html">thread dump</a></li>
+        <li role="menuitem"><a tabindex="-1" href="..">traces</a></li>
+        <li role="menuitem"><a tabindex="-1" href="pointcuts.html">pointcuts</a></li>
       </ul>
     </div>
   </div>
@@ -88,8 +85,8 @@
                         <span class="help-inline">Invalid input</span>
                       </div>
                   <span class="help-block">
-                    Any trace that exceeds this amount of time will be viewable in the explorer
-                    immediately as an active trace and will be stored to disk at its completion.
+                    Any trace that exceeds this amount of time will be viewable immediately as an
+                    active trace and will be stored to disk at its completion.
                   </span>
                     </div>
                   </div>
@@ -117,8 +114,8 @@
                         limiting the memory requirement of very very long traces that capture
                         potentially hundreds of thousands of spans (e.g. large batch or background
                         operations).
-                        Also, the explorer is not really optimized for viewing super large numbers
-                        of spans.
+                        Also, the ui is not really optimized for viewing super large numbers of
+                        spans.
                       </div>
                     </div>
                   </div>
@@ -342,8 +339,8 @@
                       </div>
                       <div class="help-block">
                         All traces for the given user that exceeds this amount of time will be
-                        viewable in the explorer immediately as an active trace and will be stored
-                        to disk at its completion.
+                        viewable immediately as an active trace and will be stored to disk at its
+                        completion.
                       </div>
                     </div>
                   </div>
@@ -453,23 +450,6 @@
       </div>
       <div class="accordion accordion-body collapse" id="pluginAccordion">
         <div id="plugins"></div>
-      </div>
-    </div>
-    <div class="accordion-group outer-accordion-group">
-      <div class="accordion-heading outer-accordion-heading">
-        <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                data-parent="#outerAccordion" data-target="#pointcutAccordion">
-          Pointcuts
-        </button>
-      </div>
-      <div class="accordion accordion-body collapse" id="pointcutAccordion">
-        <div id="pointcuts">
-          <div id="existingPointcuts"></div>
-          <div id="pointcutNew"></div>
-          <div class="new-pointcut-header" id="pointcutNewButton">
-            <button type="button" class="btn">Add Pointcut</button>
-          </div>
-        </div>
       </div>
     </div>
   </div>

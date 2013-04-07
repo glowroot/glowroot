@@ -17,7 +17,7 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>Informant | Trace explorer</title>
+<title>Informant | Traces</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
@@ -26,7 +26,7 @@
       type="text/css"/>
 <link rel="stylesheet" href="libs/qtip/2.0.0-nightly-20130103/jquery.qtip.min.css"
       type="text/css"/>
-<link rel="stylesheet" href="css/informant.css" type="text/css"/>
+<link rel="stylesheet" href="css/common.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
 <!-- jquery-migrate is needed until qtip is jquery 1.9 compatible,
      see https://github.com/Craga89/qTip2/issues/459 -->
@@ -60,20 +60,20 @@
   /*#include "template/trace-span.html" */
 </script>
 <script type="text/javascript" src="js/common.js"></script>
-<script type="text/javascript" src="js/trace.js"></script>
-<script type="text/javascript" src="js/explorer.js"></script>
+<script type="text/javascript" src="js/common-trace.js"></script>
+<script type="text/javascript" src="js/home.js"></script>
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">
     <span class="header-logo">
         <!-- lack of spaces on this line is important -->
-        Informant</span><span class="header-page-name">Explorer</span>
+        Informant</span><span class="header-page-name">Traces</span>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
       <ul class="dropdown-menu" role="menu" style="margin: 0;">
         <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
-        <li role="menuitem"><a tabindex="-1" href="threads.html">thread dump</a></li>
+        <li role="menuitem"><a tabindex="-1" href="pointcuts.html">pointcuts</a></li>
       </ul>
     </div>
   </div>

@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -154,11 +153,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
         logger.debug("handleRequest(): path={}", path);
-        if (path.equals("/")) {
-            DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, FOUND);
-            response.setHeader(HttpHeaders.Names.LOCATION, "explorer.html");
-            return response;
-        }
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {

@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  Copyright 2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Informant | Pointcuts</title>
+<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
+<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap.min.css" type="text/css"/>
+<link rel="stylesheet" href="libs/bootstrap/2.2.2/css/bootstrap-responsive.min.css"
+      type="text/css"/>
+<link rel="stylesheet" href="css/common.css" type="text/css"/>
+<script type="text/javascript" src="libs/jquery/1.9.0/jquery.min.js"></script>
+<script type="text/javascript" src="libs/bootstrap/2.2.2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="libs/handlebars/1.0.rc.2/handlebars.js"></script>
+<script type="text/javascript" src="libs/spin/1.2.7/spin.min.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/x-handlebars-template" id="pointcutTemplate">
+  /*#include "template/pointcut.html" */
+</script>
+<script type="text/javascript" src="js/pointcuts.js"></script>
+</head>
+<body class="container pin-vertical-scrollbar">
+  <div class="header">
+    <span class="header-logo">
+        <!-- lack of spaces on this line is important -->
+        Informant</span><span class="header-page-name">Pointcuts</span>
+    <div class="header-see-also dropdown pull-right">
+      <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
+      <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
+      <ul class="dropdown-menu" role="menu" style="margin: 0;">
+        <li role="menuitem"><a tabindex="-1" href="..">traces</a></li>
+        <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
+      </ul>
+    </div>
+  </div>
+  <br>
+  <div class="accordion" id="pointcutAccordion" style="margin-bottom: 0;">
+    <div id="existingPointcuts"></div>
+    <div id="pointcutNew"></div>
+  </div>
+  <div class="new-pointcut-header" id="pointcutNewButton">
+    <button type="button" class="btn">Add Pointcut</button>
+  </div>
+</body>
+</html>

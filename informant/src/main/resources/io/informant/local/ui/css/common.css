@@ -264,7 +264,7 @@ a:active {
 
 .modal-content {
   /* any change to this must also be made in the calculation of contentHeight and contentWidth
-     in displayModal() function in explorer.html */
+     in displayModal() function in home.html */
   padding: 20px 0 20px 20px;
 }
 
