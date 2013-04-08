@@ -139,8 +139,7 @@ public class Threads {
         } else if (isShaded() && !thread.getName().startsWith("Informant-")) {
             return true;
         } else if (!isShaded()
-                && !(thread.getName().startsWith("Informant-") || thread.getName().startsWith(
-                        "InformantTest-"))
+                && !(thread.getName().startsWith("Informant-"))
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
                 && !thread.getName().startsWith("H2 Log Writer ")
                 && !thread.getName().equals("Generate Seed")) {
