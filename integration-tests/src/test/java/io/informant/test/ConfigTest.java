@@ -33,6 +33,7 @@ import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.PointcutConfig.CaptureItem;
 import io.informant.container.config.PointcutConfig.MethodModifier;
+import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
 
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -112,6 +113,18 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldUpdateStorageConfig() throws Exception {
+        // given
+        StorageConfig config = container.getConfigService().getStorageConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateStorageConfig(config);
+        // then
+        StorageConfig updatedConfig = container.getConfigService().getStorageConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
     public void shouldUpdatePluginConfig() throws Exception {
         // given
         PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
@@ -167,8 +180,6 @@ public class ConfigTest {
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setStuckThresholdSeconds(config.getStuckThresholdSeconds() + 1);
         config.setMaxSpans(config.getMaxSpans() + 1);
-        config.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
-        config.setRollingSizeMb(config.getRollingSizeMb() + 1);
         config.setWarnOnSpanOutsideTrace(!config.isWarnOnSpanOutsideTrace());
     }
 
@@ -191,6 +202,11 @@ public class ConfigTest {
         config.setUserId(config.getUserId() + "x");
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
         config.setFineProfiling(!config.isFineProfiling());
+    }
+
+    private static void updateAllFields(StorageConfig config) {
+        config.setSnapshotExpirationHours(config.getSnapshotExpirationHours() + 1);
+        config.setRollingSizeMb(config.getRollingSizeMb() + 1);
     }
 
     private static void updateAllFields(PluginConfig config) {

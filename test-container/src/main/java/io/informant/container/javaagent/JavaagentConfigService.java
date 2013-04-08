@@ -28,6 +28,7 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
 import io.informant.markers.ThreadSafe;
 
@@ -92,6 +93,16 @@ class JavaagentConfigService implements ConfigService {
     // returns new version
     public String updateUserConfig(UserConfig config) throws Exception {
         String content = httpClient.post("/config/user", mapper.writeValueAsString(config));
+        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+    }
+
+    public StorageConfig getStorageConfig() throws Exception {
+        return getConfig().getStorageConfig();
+    }
+
+    // returns new version
+    public String updateStorageConfig(StorageConfig config) throws Exception {
+        String content = httpClient.post("/config/storage", mapper.writeValueAsString(config));
         return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 

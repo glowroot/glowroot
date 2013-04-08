@@ -54,7 +54,7 @@ class SnapshotReaper implements Runnable {
 
     public void run() {
         try {
-            int snapshotExpirationHours = configService.getGeneralConfig()
+            int snapshotExpirationHours = configService.getStorageConfig()
                     .getSnapshotExpirationHours();
             if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
                 snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()

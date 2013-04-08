@@ -46,7 +46,7 @@ public class StorageModule {
             DataSourceModule dataSourceModule, ScheduledExecutorService scheduledExecutor)
             throws Exception {
         ConfigService configService = configModule.getConfigService();
-        int rollingSizeMb = configService.getGeneralConfig().getRollingSizeMb();
+        int rollingSizeMb = configService.getStorageConfig().getRollingSizeMb();
         DataSource dataSource = dataSourceModule.getDataSource();
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);

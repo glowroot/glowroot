@@ -40,6 +40,7 @@
   var coarseConfigVersion;
   var fineConfigVersion;
   var userConfigVersion;
+  var storageConfigVersion;
   var pluginConfigVersions = {};
   var pluginDescriptors;
 
@@ -92,14 +93,15 @@
       Informant.addIntegerValidator('#userStoreThresholdMillis');
       $('#userFineProfiling').attr('checked', userConfig.fineProfiling);
       userConfigVersion = userConfig.version;
-      // storage
-      $('#dataExpirationDays').val(generalConfig.snapshotExpirationHours / 24);
-      Informant.addIntegerValidator('#dataExpirationDays');
-      $('#dataRollingSizeMb').val(generalConfig.rollingSizeMb);
-      Informant.addIntegerValidator('#dataRollingSizeMb');
+      var storageConfig = config.storageConfig;
+      $('#storageSnapshotExpirationDays').val(storageConfig.snapshotExpirationHours / 24);
+      Informant.addIntegerValidator('#storageSnapshotExpirationDays');
+      $('#storageRollingSizeMb').val(storageConfig.rollingSizeMb);
+      Informant.addIntegerValidator('#storageRollingSizeMb');
       $('#offscreenMeasure').text(config.dataDir);
-      $('#dataDir').text(config.dataDir);
-      $('#dataDir').css('width', ($('#offscreenMeasure').width() + 50) + 'px');
+      $('#storageDataDir').text(config.dataDir);
+      $('#storageDataDir').css('width', ($('#offscreenMeasure').width() + 50) + 'px');
+      storageConfigVersion = storageConfig.version;
       pluginDescriptors = config.pluginDescriptors;
       var i, j;
       for (i = 0; i < pluginDescriptors.length; i++) {
@@ -136,39 +138,24 @@
     });
   }
 
-  // updateGeneralConfig can take a while if resizing large rolling database
-  var postingUpdateGeneral = false;
-
   function saveGeneralConfig() {
-    // handle crazy user clicking on the button because this can take a while if resizing large
-    // rolling database
-    if (postingUpdateGeneral) {
-      return;
-    }
     var enabled = $('#generalEnabled').is(':checked');
     var storeThresholdMillis = $('#storeThresholdMillis').val();
     var stuckThresholdSeconds = $('#stuckThresholdSeconds').val();
     var maxSpans = $('#maxSpans').val();
-    var dataExpirationDays = $('#dataExpirationDays').val();
-    var dataRollingSizeMb = $('#dataRollingSizeMb').val();
     // handle validation
     if (!Informant.isInteger(storeThresholdMillis) || !Informant.isInteger(stuckThresholdSeconds)
-        || !Informant.isInteger(maxSpans) || !Informant.isInteger(dataExpirationDays)
-        || !Informant.isInteger(dataRollingSizeMb)) {
+        || !Informant.isInteger(maxSpans)) {
       return;
     }
-    postingUpdateGeneral = true;
     var config = {
       'enabled': enabled,
       'storeThresholdMillis': Informant.parseInteger(storeThresholdMillis),
       'stuckThresholdSeconds': Informant.parseInteger(stuckThresholdSeconds),
       'maxSpans': Informant.parseInteger(maxSpans),
-      'snapshotExpirationHours': Informant.parseInteger(dataExpirationDays) * 24,
-      'rollingSizeMb': Informant.parseInteger(dataRollingSizeMb),
       'version': generalConfigVersion
     };
     $.post('config/general', JSON.stringify(config), function (response) {
-      postingUpdateGeneral = false;
       generalConfigVersion = response;
       Informant.hideSpinner('#saveGeneralButtonSpinner');
       Informant.showAndFadeSuccessMessage('#generalSaveComplete');
@@ -252,6 +239,38 @@
       Informant.showAndFadeSuccessMessage('#userSaveComplete');
       setStatus('#userStatus', config.enabled);
     });
+  }
+
+  // saveStorageConfig can take a while if resizing large rolling database
+  var savingStorageConfig = false;
+
+  function saveStorageConfig() {
+    // handle crazy user clicking on the button because this can take a while if resizing large
+    // rolling database
+    if (savingStorageConfig) {
+      return;
+    }
+    var snapshotExpirationDays = $('#storageSnapshotExpirationDays').val();
+    var rollingSizeMb = $('#storageRollingSizeMb').val();
+    // handle validation
+    if (!Informant.isInteger(snapshotExpirationDays) || !Informant.isInteger(rollingSizeMb)) {
+      return;
+    }
+    savingStorageConfig = true;
+    var config = {
+      'snapshotExpirationHours': Informant.parseInteger(snapshotExpirationDays) * 24,
+      'rollingSizeMb': Informant.parseInteger(rollingSizeMb),
+      'version': storageConfigVersion
+    };
+    $.post('config/storage', JSON.stringify(config), function (response) {
+      savingStorageConfig = false;
+      storageConfigVersion = response;
+      Informant.hideSpinner('#saveStorageButtonSpinner');
+      Informant.showAndFadeSuccessMessage('#storageSaveComplete');
+    });
+    // in case button is clicked again before success message is hidden
+    $('#saveStorageComplete').addClass('hide');
+    Informant.showSpinner('#saveStorageButtonSpinner');
   }
 
   function savePluginConfig(pluginId) {
@@ -352,6 +371,7 @@
     $('#saveCoarseButton').click(saveCoarseConfig);
     $('#saveFineButton').click(saveFineConfig);
     $('#saveUserButton').click(saveUserConfig);
+    $('#saveStorageButton').click(saveStorageConfig);
     $('#plugins').on('click', '.save-plugin-button', function () {
       savePluginConfig($(this).data('plugin-id'));
     });

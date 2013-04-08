@@ -57,6 +57,7 @@ class ConfigMapper {
     private static final String COARSE_PROFILING = "coarse-profiling";
     private static final String FINE_PROFILING = "fine-profiling";
     private static final String USER = "user";
+    private static final String STORAGE = "storage";
     private static final String PLUGINS = "plugins";
     private static final String POINTCUTS = "pointcuts";
 
@@ -72,12 +73,13 @@ class ConfigMapper {
         CoarseProfilingConfig coarseProfilingConfig = readCoarseProfilingNode(rootNode);
         FineProfilingConfig fineProfilingConfig = readFineProfilingNode(rootNode);
         UserConfig userConfig = readUserNode(rootNode);
+        StorageConfig storageConfig = readStorageNode(rootNode);
         Map<String, ObjectNode> pluginNodes = createPluginNodes(rootNode);
         ImmutableList<PluginConfig> pluginConfigs =
                 createPluginConfigs(pluginNodes, pluginDescriptors);
         ImmutableList<PointcutConfig> pointcutConfigs = createPointcutConfigs(rootNode);
         return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig, userConfig,
-                pluginConfigs, pointcutConfigs);
+                storageConfig, pluginConfigs, pointcutConfigs);
     }
 
     static void writeValue(File configFile, Config config) throws IOException {
@@ -99,6 +101,8 @@ class ConfigMapper {
         writer.writeValue(jg, config.getFineProfilingConfig());
         jg.writeFieldName(USER);
         writer.writeValue(jg, config.getUserConfig());
+        jg.writeFieldName(STORAGE);
+        writer.writeValue(jg, config.getStorageConfig());
 
         jg.writeArrayFieldStart(PLUGINS);
         for (PluginConfig pluginConfig : config.getPluginConfigs()) {
@@ -161,6 +165,18 @@ class ConfigMapper {
             return defaultConfig;
         } else {
             UserConfig.Overlay overlay = UserConfig.overlay(defaultConfig);
+            mapper.readerForUpdating(overlay).readValue(configNode);
+            return overlay.build();
+        }
+    }
+
+    private static StorageConfig readStorageNode(ObjectNode rootNode) throws IOException {
+        ObjectNode configNode = (ObjectNode) rootNode.get(STORAGE);
+        StorageConfig defaultConfig = StorageConfig.getDefault();
+        if (configNode == null) {
+            return defaultConfig;
+        } else {
+            StorageConfig.Overlay overlay = StorageConfig.overlay(defaultConfig);
             mapper.readerForUpdating(overlay).readValue(configNode);
             return overlay.build();
         }

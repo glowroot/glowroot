@@ -32,13 +32,15 @@ class Config {
     private final CoarseProfilingConfig coarseProfilingConfig;
     private final FineProfilingConfig fineProfilingConfig;
     private final UserConfig userConfig;
+    private final StorageConfig storageConfig;
     private final ImmutableList<PluginConfig> pluginConfigs;
     private final ImmutableList<PointcutConfig> pointcutConfigs;
 
     static Config getDefault(@ReadOnly List<PluginDescriptor> pluginDescriptors) {
         return new Config(GeneralConfig.getDefault(), CoarseProfilingConfig.getDefault(),
                 FineProfilingConfig.getDefault(), UserConfig.getDefault(),
-                createPluginConfigs(pluginDescriptors), ImmutableList.<PointcutConfig>of());
+                StorageConfig.getDefault(), createPluginConfigs(pluginDescriptors),
+                ImmutableList.<PointcutConfig>of());
     }
 
     static Builder builder(Config base) {
@@ -47,12 +49,13 @@ class Config {
 
     Config(GeneralConfig generalConfig, CoarseProfilingConfig coarseProfilingConfig,
             FineProfilingConfig fineProfilingConfig, UserConfig userConfig,
-            ImmutableList<PluginConfig> pluginConfigs,
+            StorageConfig storageConfig, ImmutableList<PluginConfig> pluginConfigs,
             ImmutableList<PointcutConfig> pointcutConfigs) {
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
         this.userConfig = userConfig;
+        this.storageConfig = storageConfig;
         this.pluginConfigs = pluginConfigs;
         this.pointcutConfigs = pointcutConfigs;
     }
@@ -71,6 +74,10 @@ class Config {
 
     UserConfig getUserConfig() {
         return userConfig;
+    }
+
+    StorageConfig getStorageConfig() {
+        return storageConfig;
     }
 
     ImmutableList<PluginConfig> getPluginConfigs() {
@@ -96,6 +103,7 @@ class Config {
         private CoarseProfilingConfig coarseProfilingConfig;
         private FineProfilingConfig fineProfilingConfig;
         private UserConfig userConfig;
+        private StorageConfig storageConfig;
         private ImmutableList<PluginConfig> pluginConfigs;
         private ImmutableList<PointcutConfig> pointcutConfigs;
 
@@ -104,6 +112,7 @@ class Config {
             coarseProfilingConfig = base.coarseProfilingConfig;
             fineProfilingConfig = base.fineProfilingConfig;
             userConfig = base.userConfig;
+            storageConfig = base.storageConfig;
             pluginConfigs = base.pluginConfigs;
             pointcutConfigs = base.pointcutConfigs;
         }
@@ -123,6 +132,10 @@ class Config {
             this.userConfig = userConfig;
             return this;
         }
+        Builder storageConfig(StorageConfig storageConfig) {
+            this.storageConfig = storageConfig;
+            return this;
+        }
         Builder pluginConfigs(ImmutableList<PluginConfig> pluginConfigs) {
             this.pluginConfigs = pluginConfigs;
             return this;
@@ -133,7 +146,7 @@ class Config {
         }
         Config build() {
             return new Config(generalConfig, coarseProfilingConfig, fineProfilingConfig,
-                    userConfig, pluginConfigs, pointcutConfigs);
+                    userConfig, storageConfig, pluginConfigs, pointcutConfigs);
         }
     }
 }

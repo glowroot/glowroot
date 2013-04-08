@@ -90,6 +90,10 @@ public class ConfigService {
         return config.getUserConfig();
     }
 
+    public StorageConfig getStorageConfig() {
+        return config.getStorageConfig();
+    }
+
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) {
         for (PluginConfig pluginConfig : config.getPluginConfigs()) {
@@ -176,6 +180,22 @@ public class ConfigService {
         }
         notifyConfigListeners();
         return userConfig.getVersion();
+    }
+
+    public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)
+            throws OptimisticLockException, IOException {
+        synchronized (writeLock) {
+            if (!config.getStorageConfig().getVersion().equals(priorVersion)) {
+                throw new OptimisticLockException();
+            }
+            Config updatedConfig = Config.builder(config)
+                    .storageConfig(storageConfig)
+                    .build();
+            ConfigMapper.writeValue(configFile, updatedConfig);
+            config = updatedConfig;
+        }
+        notifyConfigListeners();
+        return storageConfig.getVersion();
     }
 
     public String updatePluginConfig(PluginConfig pluginConfig, String priorVersion)

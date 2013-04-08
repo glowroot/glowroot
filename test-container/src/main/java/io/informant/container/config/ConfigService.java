@@ -43,6 +43,10 @@ public interface ConfigService {
 
     String updateUserConfig(UserConfig config) throws Exception;
 
+    StorageConfig getStorageConfig() throws Exception;
+
+    String updateStorageConfig(StorageConfig config) throws Exception;
+
     @Nullable
     PluginConfig getPluginConfig(String pluginId) throws Exception;
 

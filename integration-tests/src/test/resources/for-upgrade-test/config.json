@@ -4,8 +4,6 @@
     "storeThresholdMillis" : 0,
     "stuckThresholdSeconds" : 180,
     "maxSpans" : 5000,
-    "snapshotExpirationHours" : -1,
-    "rollingSizeMb" : 1000,
     "warnOnSpanOutsideTrace" : false
   },
   "coarse-profiling" : {
@@ -26,6 +24,10 @@
     "userId" : null,
     "storeThresholdMillis" : 0,
     "fineProfiling" : true
+  },
+  "storage" : {
+    "snapshotExpirationHours" : -1,
+    "rollingSizeMb" : 1000
   },
   "plugins" : [ {
     "groupId" : "io.informant",

@@ -186,6 +186,8 @@ public class LocalUiModule {
                 configJsonService, "updateFineProfilingConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/user",
                 configJsonService, "updateUserConfig"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/config/storage",
+                configJsonService, "updateStorageConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/\\+$",

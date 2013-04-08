@@ -377,12 +377,12 @@
               <fieldset>
                 <div class="section-body-padding">
                   <div class="control-group">
-                    <label class="control-label" for="dataExpirationDays">
+                    <label class="control-label" for="storageSnapshotExpirationDays">
                       Keep trace snapshots for
                     </label>
                     <div class="controls">
                       <div class="input-append">
-                        <input type="text" id="dataExpirationDays" style="width: 5em;">
+                        <input type="text" id="storageSnapshotExpirationDays" style="width: 5em;">
                         <span class="add-on">days</span>
                       </div>
                   <span>
@@ -401,11 +401,12 @@
                     </div>
                   </div>
                   <div class="control-group">
-                    <label class="control-label" for="dataRollingSizeMb">Rolling data file
-                      size</label>
+                    <label class="control-label" for="storageRollingSizeMb">
+                      Rolling data file size
+                    </label>
                     <div class="controls">
                       <div class="input-append">
-                        <input type="text" id="dataRollingSizeMb" style="width: 5em;">
+                        <input type="text" id="storageRollingSizeMb" style="width: 5em;">
                         <span class="add-on">MB</span>
                       </div>
                       <div class="help-block">
@@ -418,9 +419,9 @@
                     </div>
                   </div>
                   <div class="control-group">
-                    <label class="control-label" for="dataDir">Data directory</label>
+                    <label class="control-label" for="storageDataDir">Data directory</label>
                     <div class="controls">
-                      <span class="uneditable-input" id="dataDir"></span>
+                      <span class="uneditable-input" id="storageDataDir"></span>
                       <div class="help-block">
                         The data directory where the H2 data file and the rolling database are
                         stored.

@@ -33,6 +33,7 @@ import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
 import io.informant.container.config.PointcutConfig.CaptureItem;
 import io.informant.container.config.PointcutConfig.MethodModifier;
+import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.DataSourceModule;
@@ -70,8 +71,6 @@ class LocalConfigService implements ConfigService {
         config.setStoreThresholdMillis(coreConfig.getStoreThresholdMillis());
         config.setStuckThresholdSeconds(coreConfig.getStuckThresholdSeconds());
         config.setMaxSpans(coreConfig.getMaxSpans());
-        config.setSnapshotExpirationHours(coreConfig.getSnapshotExpirationHours());
-        config.setRollingSizeMb(coreConfig.getRollingSizeMb());
         config.setWarnOnSpanOutsideTrace(coreConfig.isWarnOnSpanOutsideTrace());
         return config;
     }
@@ -82,8 +81,6 @@ class LocalConfigService implements ConfigService {
                         config.getStoreThresholdMillis(),
                         config.getStuckThresholdSeconds(),
                         config.getMaxSpans(),
-                        config.getSnapshotExpirationHours(),
-                        config.getRollingSizeMb(),
                         config.isWarnOnSpanOutsideTrace());
         return configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
@@ -142,6 +139,21 @@ class LocalConfigService implements ConfigService {
                 config.isEnabled(), config.getUserId(), config.getStoreThresholdMillis(),
                 config.isFineProfiling());
         return configService.updateUserConfig(updatedConfig, config.getVersion());
+    }
+
+    public StorageConfig getStorageConfig() {
+        io.informant.config.StorageConfig coreConfig = configService.getStorageConfig();
+        StorageConfig config = new StorageConfig(coreConfig.getVersion());
+        config.setSnapshotExpirationHours(coreConfig.getSnapshotExpirationHours());
+        config.setRollingSizeMb(coreConfig.getRollingSizeMb());
+        return config;
+    }
+
+    public String updateStorageConfig(StorageConfig config) throws Exception {
+        io.informant.config.StorageConfig updatedConfig =
+                new io.informant.config.StorageConfig(config.getSnapshotExpirationHours(),
+                        config.getRollingSizeMb());
+        return configService.updateStorageConfig(updatedConfig, config.getVersion());
     }
 
     @Nullable

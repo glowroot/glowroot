@@ -41,6 +41,7 @@ import io.informant.config.PluginConfig;
 import io.informant.config.PluginDescriptor;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.config.PointcutConfig;
+import io.informant.config.StorageConfig;
 import io.informant.config.UserConfig;
 import io.informant.config.WithVersionJsonView;
 import io.informant.local.store.RollingFile;
@@ -88,6 +89,8 @@ class ConfigJsonService implements JsonService {
         writer.writeValue(jg, configService.getFineProfilingConfig());
         jg.writeFieldName("userConfig");
         writer.writeValue(jg, configService.getUserConfig());
+        jg.writeFieldName("storageConfig");
+        writer.writeValue(jg, configService.getStorageConfig());
         jg.writeFieldName("pluginDescriptors");
         writer.writeValue(jg, pluginDescriptorCache.getPluginDescriptors());
         jg.writeFieldName("pluginConfigs");
@@ -116,8 +119,6 @@ class ConfigJsonService implements JsonService {
         GeneralConfig.Overlay builder = GeneralConfig.overlay(config);
         mapper.readerForUpdating(builder).readValue(configNode);
         String updatedVersion = configService.updateGeneralConfig(builder.build(), priorVersion);
-        // resize() doesn't do anything if the new and old value are the same
-        rollingFile.resize(configService.getGeneralConfig().getRollingSizeMb() * 1024);
         return "\"" + updatedVersion + "\"";
     }
 
@@ -178,6 +179,26 @@ class ConfigJsonService implements JsonService {
         mapper.readerForUpdating(overlay).readValue(configNode);
 
         String updatedVersion = configService.updateUserConfig(overlay.build(), priorVersion);
+        return "\"" + updatedVersion + "\"";
+    }
+
+    @JsonServiceMethod
+    String updateStorageConfig(String content) throws OptimisticLockException, IOException {
+        logger.debug("updateStorageConfig(): content={}", content);
+        ObjectNode configNode = (ObjectNode) mapper.readTree(content);
+        JsonNode versionNode = configNode.get("version");
+        if (versionNode == null || !versionNode.isTextual()) {
+            throw new IllegalStateException("Version is missing or is not a string value");
+        }
+        String priorVersion = versionNode.asText();
+        configNode.remove("version");
+
+        StorageConfig config = configService.getStorageConfig();
+        StorageConfig.Overlay builder = StorageConfig.overlay(config);
+        mapper.readerForUpdating(builder).readValue(configNode);
+        String updatedVersion = configService.updateStorageConfig(builder.build(), priorVersion);
+        // resize() doesn't do anything if the new and old value are the same
+        rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
         return "\"" + updatedVersion + "\"";
     }
 

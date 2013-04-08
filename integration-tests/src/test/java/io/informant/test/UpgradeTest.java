@@ -25,7 +25,7 @@ import io.informant.Containers;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.TempDirs;
-import io.informant.container.config.GeneralConfig;
+import io.informant.container.config.StorageConfig;
 import io.informant.container.local.LocalContainer;
 import io.informant.container.trace.Span;
 import io.informant.container.trace.Trace;
@@ -69,10 +69,10 @@ public class UpgradeTest {
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
         Container container = LocalContainer.createWithFileDb(dataDir);
         container.getConfigService().setStoreThresholdMillis(0);
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        StorageConfig storageConfig = container.getConfigService().getStorageConfig();
         // disable trace snapshot expiration so the test data won't expire
-        generalConfig.setSnapshotExpirationHours(-1);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        storageConfig.setSnapshotExpirationHours(-1);
+        container.getConfigService().updateStorageConfig(storageConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedSpans.class);
         container.close();
         Files.copy(new File(dataDir, "config.json"),

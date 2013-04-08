@@ -30,6 +30,7 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
+import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
@@ -45,6 +46,7 @@ class Config {
     private final CoarseProfilingConfig coarseProfilingConfig;
     private final FineProfilingConfig fineProfilingConfig;
     private final UserConfig userConfig;
+    private final StorageConfig storageConfig;
     private final Map<String, PluginConfig> pluginConfigs;
     private final List<PointcutConfig> pointcutConfigs;
     private final String dataDir;
@@ -55,6 +57,7 @@ class Config {
             @JsonProperty("coarseProfilingConfig") @Nullable CoarseProfilingConfig coarseProfilingConfig,
             @JsonProperty("fineProfilingConfig") @Nullable FineProfilingConfig fineProfilingConfig,
             @JsonProperty("userConfig") @Nullable UserConfig userConfig,
+            @JsonProperty("storageConfig") @Nullable StorageConfig storageConfig,
             @JsonProperty("pluginConfigs") @Nullable Map<String, PluginConfig> pluginConfigs,
             @JsonProperty("pointcutConfigs") @Nullable List<PointcutConfig> pointcutConfigs,
             @JsonProperty("dataDir") @Nullable String dataDir,
@@ -63,6 +66,7 @@ class Config {
         checkRequiredProperty(coarseProfilingConfig, "coarseProfilingConfig");
         checkRequiredProperty(fineProfilingConfig, "fineProfilingConfig");
         checkRequiredProperty(userConfig, "userConfig");
+        checkRequiredProperty(storageConfig, "storageConfig");
         checkRequiredProperty(pluginConfigs, "pluginConfigs");
         checkRequiredProperty(pointcutConfigs, "pointcutConfigs");
         checkRequiredProperty(dataDir, "dataDir");
@@ -71,6 +75,7 @@ class Config {
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
         this.userConfig = userConfig;
+        this.storageConfig = storageConfig;
         this.pluginConfigs = pluginConfigs;
         this.pointcutConfigs = pointcutConfigs;
         this.dataDir = dataDir;
@@ -91,6 +96,10 @@ class Config {
 
     UserConfig getUserConfig() {
         return userConfig;
+    }
+
+    StorageConfig getStorageConfig() {
+        return storageConfig;
     }
 
     Map<String, PluginConfig> getPluginConfigs() {

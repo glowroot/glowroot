@@ -33,8 +33,6 @@ public class GeneralConfig {
     private int storeThresholdMillis;
     private int stuckThresholdSeconds;
     private int maxSpans;
-    private int snapshotExpirationHours;
-    private int rollingSizeMb;
     private boolean warnOnSpanOutsideTrace;
 
     private final String version;
@@ -75,22 +73,6 @@ public class GeneralConfig {
         this.maxSpans = maxSpans;
     }
 
-    public int getSnapshotExpirationHours() {
-        return snapshotExpirationHours;
-    }
-
-    public void setSnapshotExpirationHours(int snapshotExpirationHours) {
-        this.snapshotExpirationHours = snapshotExpirationHours;
-    }
-
-    public int getRollingSizeMb() {
-        return rollingSizeMb;
-    }
-
-    public void setRollingSizeMb(int rollingSizeMb) {
-        this.rollingSizeMb = rollingSizeMb;
-    }
-
     public boolean isWarnOnSpanOutsideTrace() {
         return warnOnSpanOutsideTrace;
     }
@@ -114,8 +96,6 @@ public class GeneralConfig {
                     && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
                     && Objects.equal(stuckThresholdSeconds, that.stuckThresholdSeconds)
                     && Objects.equal(maxSpans, that.maxSpans)
-                    && Objects.equal(snapshotExpirationHours, that.snapshotExpirationHours)
-                    && Objects.equal(rollingSizeMb, that.rollingSizeMb)
                     && Objects.equal(warnOnSpanOutsideTrace, that.warnOnSpanOutsideTrace);
         }
         return false;
@@ -127,7 +107,7 @@ public class GeneralConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, storeThresholdMillis, stuckThresholdSeconds,
-                maxSpans, snapshotExpirationHours, rollingSizeMb, warnOnSpanOutsideTrace);
+                maxSpans, warnOnSpanOutsideTrace);
     }
 
     @Override
@@ -137,8 +117,6 @@ public class GeneralConfig {
                 .add("storeThresholdMillis", storeThresholdMillis)
                 .add("stuckThresholdSeconds", stuckThresholdSeconds)
                 .add("maxSpans", maxSpans)
-                .add("snapshotExpirationHours", snapshotExpirationHours)
-                .add("rollingSizeMb", rollingSizeMb)
                 .add("warnOnSpanOutsideTrace", warnOnSpanOutsideTrace)
                 .add("version", version)
                 .toString();
@@ -149,16 +127,12 @@ public class GeneralConfig {
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
             @JsonProperty("stuckThresholdSeconds") @Nullable Integer stuckThresholdSeconds,
             @JsonProperty("maxSpans") @Nullable Integer maxSpans,
-            @JsonProperty("snapshotExpirationHours") @Nullable Integer snapshotExpirationHours,
-            @JsonProperty("rollingSizeMb") @Nullable Integer rollingSizeMb,
             @JsonProperty("warnOnSpanOutsideTrace") @Nullable Boolean warnOnSpanOutsideTrace,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
         checkRequiredProperty(stuckThresholdSeconds, "stuckThresholdSeconds");
         checkRequiredProperty(maxSpans, "maxSpans");
-        checkRequiredProperty(snapshotExpirationHours, "snapshotExpirationHours");
-        checkRequiredProperty(rollingSizeMb, "rollingSizeMb");
         checkRequiredProperty(warnOnSpanOutsideTrace, "warnOnSpanOutsideTrace");
         checkRequiredProperty(version, "version");
         GeneralConfig config = new GeneralConfig(version);
@@ -166,8 +140,6 @@ public class GeneralConfig {
         config.setStoreThresholdMillis(storeThresholdMillis);
         config.setStuckThresholdSeconds(stuckThresholdSeconds);
         config.setMaxSpans(maxSpans);
-        config.setSnapshotExpirationHours(snapshotExpirationHours);
-        config.setRollingSizeMb(rollingSizeMb);
         config.setWarnOnSpanOutsideTrace(warnOnSpanOutsideTrace);
         return config;
     }
