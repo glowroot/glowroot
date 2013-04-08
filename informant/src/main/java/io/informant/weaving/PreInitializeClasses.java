@@ -307,6 +307,7 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.pattern.color.BoldYellowCompositeConverter");
         types.add("ch.qos.logback.core.pattern.color.CyanCompositeConverter");
         types.add("ch.qos.logback.core.pattern.color.ForegroundCompositeConverterBase");
+        types.add("ch.qos.logback.core.pattern.color.GrayCompositeConverter");
         types.add("ch.qos.logback.core.pattern.color.GreenCompositeConverter");
         types.add("ch.qos.logback.core.pattern.color.MagentaCompositeConverter");
         types.add("ch.qos.logback.core.pattern.color.RedCompositeConverter");

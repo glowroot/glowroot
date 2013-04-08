@@ -29,13 +29,13 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>1.7.9</version>
+      <version>1.7.12</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
       <!-- netty 4.x requires jdk 6 -->
-      <version>3.6.2.Final</version>
+      <version>3.6.4.Final</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -48,6 +48,11 @@
       <version>2.1.4</version>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.1.4</version>
+    </dependency>
+    <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
       <version>1.6.1</version>
@@ -55,14 +60,14 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.2</version>
+      <version>1.7.5</version>
     </dependency>
     <dependency>
       <!-- logback is needed in order to compile the optional SpyConsoleAppender, testkit users can
         still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.0.9</version>
+      <version>1.0.11</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -70,13 +75,13 @@
         still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.9</version>
+      <version>1.0.11</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-reflect</artifactId>
-      <version>1.4</version>
+      <version>1.4.1</version>
     </dependency>
     <dependency>
       <!-- using org.junit.runner.notification.RunListener -->
