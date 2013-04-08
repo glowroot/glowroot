@@ -192,9 +192,6 @@ public class ServletAspect {
      * ================== Http Servlet Request Parameters ==================
      */
 
-    private static final ThreadLocal<Boolean> inRequestGetParameterPointcut =
-            new BooleanThreadLocal();
-
     @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodArgs = {".."}, captureNested = false)
     public static class GetParameterAdvice {
@@ -204,24 +201,14 @@ public class ServletAspect {
         }
         @OnAfter
         public static void onAfter(@BindTarget Object realRequest) {
-            if (inRequestGetParameterPointcut.get()) {
-                return;
-            }
-            inRequestGetParameterPointcut.set(true);
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
-            try {
-                ServletMessageSupplier messageSupplier = topLevel.get();
-                if (messageSupplier != null && !messageSupplier.isRequestParameterMapCaptured()) {
-                    // this request is being traced and the request parameter map hasn't been
-                    // captured yet
-                    HttpServletRequest request = HttpServletRequest.from(realRequest);
-                    messageSupplier.captureRequestParameterMap(request.getParameterMap());
-                }
-            } finally {
-                // taking no chances on re-setting thread local
-                inRequestGetParameterPointcut.set(false);
+            ServletMessageSupplier messageSupplier = topLevel.get();
+            if (messageSupplier != null && !messageSupplier.isRequestParameterMapCaptured()) {
+                // the request is being traced and the parameter map hasn't been captured yet
+                HttpServletRequest request = HttpServletRequest.from(realRequest);
+                messageSupplier.captureRequestParameterMap(request.getParameterMap());
             }
         }
     }
