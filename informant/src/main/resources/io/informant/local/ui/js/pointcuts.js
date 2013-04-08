@@ -93,7 +93,8 @@
       var url = 'pointcut/matching-methods?type-name=' + $('#pointcutTypeName_' + pointcutNum).val()
           + '&method-name=' + methodName;
       $.getJSON(url, function (signatures) {
-        $('#pointcutMethodSignatures_' + pointcutNum).html('');
+        var $pointcutMethodSignatures = $('#pointcutMethodSignatures_' + pointcutNum);
+        $pointcutMethodSignatures.html('');
         $('#pointcutSpanTemplate_' + pointcutNum).val('');
         var html = '<div style="padding-top: 20px;">';
         var i;
@@ -107,8 +108,8 @@
               + '<br></div></div>';
         }
         html += '</div>';
-        $('#pointcutMethodSignatures_' + pointcutNum).append(html);
-        $('#pointcutMethodSignatures_' + pointcutNum).data('signatures', signatures);
+        $pointcutMethodSignatures.append(html);
+        $pointcutMethodSignatures.data('signatures', signatures);
         var $pointcutMethodSignatureRadio =
             $('input[type=radio][name=pointcutMethodSignature_' + pointcutNum + ']');
         $pointcutMethodSignatureRadio.change(function () {
@@ -132,8 +133,9 @@
       // which case change event and typeahead event are called and this condition ensures that the
       // typeahead wins (because it runs first due to manually inserted delay in change event
       // handler)
-      if (methodName !== $('#pointcutMethodName_' + pointcutNum).data('selectedValue')) {
-        $('#pointcutMethodName_' + pointcutNum).data('selectedValue', methodName);
+      var $pointcutMethodName = $('#pointcutMethodName_' + pointcutNum);
+      if (methodName !== $pointcutMethodName.data('selectedValue')) {
+        $pointcutMethodName.data('selectedValue', methodName);
         matchingMethods(methodName);
       }
       return methodName;
@@ -143,23 +145,26 @@
       var metric = $('#pointcutCaptureMetric_' + pointcutNum).is(':checked');
       var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked');
       var trace = $('#pointcutCaptureTrace_' + pointcutNum).is(':checked');
+      var $pointcutMetricSection = $('#pointcutMetricSection_' + pointcutNum);
       if (metric) {
-        $('#pointcutMetricSection_' + pointcutNum).removeClass('hide');
+        $pointcutMetricSection.removeClass('hide');
       } else {
-        $('#pointcutMetricSection_' + pointcutNum).addClass('hide');
+        $pointcutMetricSection.addClass('hide');
       }
+      var $pointcutSpanSection = $('#pointcutSpanSection_' + pointcutNum);
       if (span || trace) {
-        $('#pointcutSpanSection_' + pointcutNum).removeClass('hide');
+        $pointcutSpanSection.removeClass('hide');
       } else {
-        $('#pointcutSpanSection_' + pointcutNum).addClass('hide');
+        $pointcutSpanSection.addClass('hide');
       }
-      if (span && $('#pointcutSpanTemplate_' + pointcutNum).val() === '') {
+      var $pointcutSpanTemplate = $('#pointcutSpanTemplate_' + pointcutNum);
+      if (span && $pointcutSpanTemplate.val() === '') {
         // populate default template value on selecting span
         updateSpanTemplate();
       }
       if (!span) {
         // clear template value on de-selecting span
-        $('#pointcutSpanTemplate_' + pointcutNum).val('');
+        $pointcutSpanTemplate.val('');
       }
     }
 
@@ -220,15 +225,18 @@
     }
 
     function fixLabels() {
+      var $pointcutHeader = $('#pointcutHeader_' + pointcutNum);
+      var $pointcutSaveButton = $('#pointcutSaveButton_' + pointcutNum);
+      var $pointcutSaveComplete = $('#pointcutSaveComplete_' + pointcutNum);
       if (pointcut.version) {
-        $('#pointcutHeader_' + pointcutNum).text(pointcut.typeName + '.' + pointcut.methodName
+        $pointcutHeader.text(pointcut.typeName + '.' + pointcut.methodName
             + '(' + pointcut.methodArgTypeNames.join(', ') + ')');
-        $('#pointcutSaveButton_' + pointcutNum).text('Save');
-        $('#pointcutSaveComplete_' + pointcutNum).text('Saved');
+        $pointcutSaveButton.text('Save');
+        $pointcutSaveComplete.text('Saved');
       } else {
-        $('#pointcutHeader_' + pointcutNum).text('<New Pointcut>');
-        $('#pointcutSaveButton_' + pointcutNum).text('Add');
-        $('#pointcutSaveComplete_' + pointcutNum).text('Added');
+        $pointcutHeader.text('<New Pointcut>');
+        $pointcutSaveButton.text('Add');
+        $pointcutSaveComplete.text('Added');
       }
     }
 
@@ -236,52 +244,56 @@
       $('#pointcutCaptureMetric_' + pointcutNum).click(updateSectionHiding);
       $('#pointcutCaptureSpan_' + pointcutNum).click(updateSectionHiding);
       $('#pointcutCaptureTrace_' + pointcutNum).click(updateSectionHiding);
-      $('#pointcutTypeName_' + pointcutNum).typeahead({ source: matchingTypeNames });
+      var $pointcutTypeName = $('#pointcutTypeName_' + pointcutNum);
+      $pointcutTypeName.typeahead({ source: matchingTypeNames });
       // important to bind typeahead event handler before change handler below since handler logic
       // relies on it running first
-      $('#pointcutMethodName_' + pointcutNum).typeahead({
+      var $pointcutMethodName = $('#pointcutMethodName_' + pointcutNum);
+      $pointcutMethodName.typeahead({
         source: matchingMethodNames,
         updater: selectMethodName
       });
-      $('#pointcutTypeName_' + pointcutNum).change(function () {
+      $pointcutTypeName.change(function () {
         // check if the value has really changed (e.g. that a user didn't start altering text and
         // then changed mind and put the previous value back)
-        if ($(this).val() !== $(this).data('value')) {
-          $(this).data('value', $(this).val());
-          $('#pointcutMethodName_' + pointcutNum).val('');
+        var $this = $(this);
+        if ($this.val() !== $this.data('value')) {
+          $this.data('value', $this.val());
+          $pointcutMethodName.val('');
           $('#pointcutMethodSignatures_' + pointcutNum).html('');
           $('#pointcutSpanTemplate_' + pointcutNum).val('');
         }
       });
-      $('#pointcutMethodName_' + pointcutNum).change(function () {
+      $pointcutMethodName.change(function () {
         // just in case user types in a value and doesn't select from typeahead
         // but this also gets called if user selects typeahead with mouse (when the field loses
         // focus, before the typeahead gains input control)
         // so delay this action so that it runs after the typeahead in this case, at which time
-        // $('#pointcutMethodName_' + pointcutNum).val() will be the value selected in the typeahead
-        // instead of the partial value that the user typed
+        // $pointcutMethodName.val() will be the value selected in the typeahead instead of the
+        // the partial value that the user typed
         setTimeout(function () {
-          selectMethodName($('#pointcutMethodName_' + pointcutNum).val());
+          selectMethodName($pointcutMethodName.val());
         }, 250);
       });
       $('#pointcutSaveButton_' + pointcutNum).click(function () {
         savePointcut();
       });
       $('#pointcutDeleteButton_' + pointcutNum).click(function () {
+        var $pointcutForm = $('#pointcutForm_' + pointcutNum);
         if (pointcut.version) {
           $.post('/config/pointcut/-', JSON.stringify(pointcut.version), function () {
             // collapsing using accordion function, then removing completely
-            $('#pointcutForm_' + pointcutNum).one('hidden', function () {
+            $pointcutForm.one('hidden', function () {
               $('#pointcut_' + pointcutNum).remove();
             });
-            $('#pointcutForm_' + pointcutNum).collapse('hide');
+            $pointcutForm.collapse('hide');
           });
         } else {
           // collapsing using accordion function, then removing completely
-          $('#pointcutForm_' + pointcutNum).one('hidden', function () {
+          $pointcutForm.one('hidden', function () {
             $('#pointcut_' + pointcutNum).remove();
           });
-          $('#pointcutForm_' + pointcutNum).collapse('hide');
+          $pointcutForm.collapse('hide');
         }
       });
     }
@@ -289,9 +301,10 @@
     function addData() {
       $('#pointcutTypeName_' + pointcutNum).val(pointcut.typeName);
       $('#pointcutMethodName_' + pointcutNum).val(pointcut.methodName);
-      $('#pointcutMethodSignatures_' + pointcutNum).html('<div style="padding-top: 20px;">'
+      var $pointcutMethodSignatures = $('#pointcutMethodSignatures_' + pointcutNum);
+      $pointcutMethodSignatures.html('<div style="padding-top: 20px;">'
           + pointcut.methodName + '(' + pointcut.methodArgTypeNames.join(', ') + ')</div>');
-      $('#pointcutMethodSignatures_' + pointcutNum).data('signatures', [
+      $pointcutMethodSignatures.data('signatures', [
         {
           argTypeNames: pointcut.methodArgTypeNames
         }

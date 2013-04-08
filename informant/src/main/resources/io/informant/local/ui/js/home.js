@@ -36,6 +36,10 @@ $(document).ready(function () {
     colors: ['#edc240', '#cb4b4b', '#afd8f8'],
     selection: { mode: 'xy' }
   };
+
+  var $body = $('body');
+  var $chart = $('#chart');
+
   // qtip adds some code to the beginning of jquery's cleanData function which causes the trace
   // detail modal to close slowly when it has 5000 spans
   // this extra cleanup code is not needed anyways since cleanup is performed explicitly
@@ -45,14 +49,14 @@ $(document).ready(function () {
   // also, now with responsive design, body width doesn't change on every window resize event
   // so body dimensions are tracked instead of window dimensions since that is what determines
   // plot dimensions
-  var bodyWidth = $('body').width();
-  var bodyHeight = $('body').height();
+  var bodyWidth = $body.width();
+  var bodyHeight = $body.height();
   $(window).resize(function () {
     // check plot in case this is a resize before initial plot is rendered
-    if (plot && ($('body').width() !== bodyWidth || $('body').height() !== bodyHeight)) {
-      bodyWidth = $('body').width();
-      bodyHeight = $('body').height();
-      plot = $.plot($('#chart'), [normalPoints, errorPoints, activePoints], options);
+    if (plot && ($body.width() !== bodyWidth || $body.height() !== bodyHeight)) {
+      bodyWidth = $body.width();
+      bodyHeight = $body.height();
+      plot = $.plot($chart, [normalPoints, errorPoints, activePoints], options);
     }
   });
 
@@ -77,7 +81,7 @@ $(document).ready(function () {
     if (plot) {
       plot.unhighlight();
     }
-    plot = $.plot($('#chart'), [normalPoints, errorPoints, activePoints], options);
+    plot = $.plot($chart, [normalPoints, errorPoints, activePoints], options);
     if (highlightedItemId) {
       // re-highlight if possible
       highlightPoint(highlightedItemId);
@@ -86,7 +90,7 @@ $(document).ready(function () {
 
   function hideTooltip() {
     Informant.hideSpinner('#tooltipSpinner');
-    $('#chart').qtip('hide');
+    $chart.qtip('hide');
   }
 
   function filterPoints(points, from, to, low, high) {
@@ -282,14 +286,14 @@ $(document).ready(function () {
       if (spinner) {
         var html = '<div class="inlineblock" id="tooltipSpinner" style="width: 35px;'
             + ' height: 31px;"></div>';
-        $('#chart').qtip({
+        $chart.qtip({
           content: {
             text: html
           },
           position: {
             my: 'left center',
             target: [ x, y + 5 ],
-            viewport: $('#chart')
+            viewport: $chart
           },
           hide: {
             event: 'unfocus'
@@ -303,7 +307,7 @@ $(document).ready(function () {
             }
           }
         });
-        $('#chart').qtip('show');
+        $chart.qtip('show');
         spinner.spin($('#tooltipSpinner').get(0));
       }
     }
@@ -337,7 +341,7 @@ $(document).ready(function () {
             + 'show detail</button></div>';
         text = '<div class="indent1">' + html + '</div>' + showDetailHtml;
       }
-      $('#chart').qtip({
+      $chart.qtip({
         content: {
           text: text
         },
@@ -361,7 +365,7 @@ $(document).ready(function () {
           }
         }
       });
-      $('#chart').qtip('show');
+      $chart.qtip('show');
       $('#showDetail').click(function () {
         // handle crazy user clicking on the 'show detail' link
         if (id === loadDetailId) {
@@ -372,13 +376,14 @@ $(document).ready(function () {
         var summaryHtml = '<div class="indent1">' + Trace.traceSummaryTemplate(summaryTrace)
             + '</div><br><div class="indent2"><div class="button-spinner hide" id="detailSpinner"'
             + ' style="margin-left: 0px; margin-top: 30px;"></div></div>';
+        var $qtip = $('.qtip');
         var initialFixedOffset = {
-          top: $('.qtip').offset().top - $(window).scrollTop(),
-          left: $('.qtip').offset().left - $(window).scrollLeft()
+          top: $qtip.offset().top - $(window).scrollTop(),
+          left: $qtip.offset().left - $(window).scrollLeft()
         };
-        var initialWidth = $('.qtip').width();
-        var initialHeight = $('.qtip').height();
-        $('#chart').qtip('hide');
+        var initialWidth = $qtip.width();
+        var initialHeight = $qtip.height();
+        $chart.qtip('hide');
         displayModal(summaryHtml, initialFixedOffset, initialWidth, initialHeight);
         $.getJSON('trace/detail/' + id, function (response) {
           if (loadDetailId !== id) {
@@ -404,24 +409,26 @@ $(document).ready(function () {
   }
 
   function displayModal(initialHtml, initialFixedOffset, initialWidth, initialHeight) {
-    $('#modalContent').html(initialHtml);
-    $('#modal').removeClass('hide');
+    var $modalContent = $('#modalContent');
+    var $modal = $('#modal');
+    $modalContent.html(initialHtml);
+    $modal.removeClass('hide');
     // need to focus on something inside the modal, otherwise keyboard events won't be captured,
     // in particular, page up / page down won't scroll the modal
-    $('#modalContent').focus();
-    $('#modal').css('position', 'fixed');
-    $('#modal').css('top', initialFixedOffset.top);
-    $('#modal').css('left', initialFixedOffset.left);
-    $('#modal').width(initialWidth);
-    $('#modal').height(initialHeight);
-    $('#modal').css('margin', 0);
-    $('#modal').css('background-color', '#eee');
-    $('#modal').css('font-size', '12px');
-    $('#modal').css('line-height', '16px');
-    $('#modal').modal({ 'show': true, 'keyboard': false, 'backdrop': false });
+    $modalContent.focus();
+    $modal.css('position', 'fixed');
+    $modal.css('top', initialFixedOffset.top);
+    $modal.css('left', initialFixedOffset.left);
+    $modal.width(initialWidth);
+    $modal.height(initialHeight);
+    $modal.css('margin', 0);
+    $modal.css('background-color', '#eee');
+    $modal.css('font-size', '12px');
+    $modal.css('line-height', '16px');
+    $modal.modal({ 'show': true, 'keyboard': false, 'backdrop': false });
     var width = $(window).width() - 50;
     var height = $(window).height() - 50;
-    $('#modal').animate({
+    $modal.animate({
       left: '25px',
       top: '25px',
       width: width + 'px',
@@ -436,7 +443,7 @@ $(document).ready(function () {
       }
       // this is needed to prevent the background from scrolling
       // wait until animation is complete since removing scrollbar makes the background page shift
-      $('body').css('overflow', 'hidden');
+      $body.css('overflow', 'hidden');
       // hiding the flot chart is needed to prevent a strange issue in chrome that occurs when
       // expanding a section of the details to trigger vertical scrollbar to be active, then
       // scroll a little bit down, leaving the section header visible, then click the section
@@ -445,12 +452,13 @@ $(document).ready(function () {
       //
       // and without hiding flot chart there is another problem in chrome, in smaller browser
       // windows it causes the vertical scrollbar to get offset a bit left and upwards
-      $('#chart').hide();
+      $chart.hide();
     });
-    $('body').append('<div class="modal-backdrop" id="modalBackdrop"></div>');
-    $('#modalBackdrop').css('background-color', '#ddd');
-    $('#modalBackdrop').css('opacity', 0);
-    $('#modalBackdrop').animate({
+    $body.append('<div class="modal-backdrop" id="modalBackdrop"></div>');
+    var $modalBackdrop = $('#modalBackdrop');
+    $modalBackdrop.css('background-color', '#ddd');
+    $modalBackdrop.css('opacity', 0);
+    $modalBackdrop.animate({
       'opacity': 0.8
     }, 400);
   }
@@ -459,30 +467,32 @@ $(document).ready(function () {
     // just in case spinner is still showing
     Informant.hideSpinner('#detailSpinner');
     // reset overflow so the background can scroll again
-    $('body').css('overflow', '');
+    $body.css('overflow', '');
     // re-display flot chart
-    $('#chart').show();
+    $chart.show();
     // remove large dom content first since it makes animation jerky at best
     // (and need to remove it afterwards anyways to clean up the dom)
     $('#modalContent').empty();
-    $('#modal').animate({
+    var $modal = $('#modal');
+    $modal.animate({
       left: (modalVanishPoint[0] - $(window).scrollLeft()) + 'px',
       top: (modalVanishPoint[1] - $(window).scrollTop()) + 'px',
       width: 0,
       height: 0,
       backgroundColor: '#eee'
     }, 200, function () {
-      $('#modal').addClass('hide');
-      $('#modal').modal('hide');
+      $modal.addClass('hide');
+      $modal.modal('hide');
     });
-    $('#modalBackdrop').animate({
+    var $modalBackdrop = $('#modalBackdrop');
+    $modalBackdrop.animate({
       'opacity': 0
     }, 200, function () {
-      $('#modalBackdrop').remove();
+      $modalBackdrop.remove();
     });
   }
 
-  $('#chart').bind('plotzoom', function (event, plot) {
+  $chart.bind('plotzoom', function (event, plot) {
     var from = Math.floor(plot.getAxes().xaxis.min);
     var to = Math.ceil(plot.getAxes().xaxis.max);
     // convert points out of timezone-less flot values
@@ -511,7 +521,7 @@ $(document).ready(function () {
       plotResponseData(from, to);
     }
   });
-  $('#chart').mousedown(function () {
+  $chart.mousedown(function () {
     hideTooltip();
   });
   $(document).keyup(function (e) {
@@ -532,12 +542,12 @@ $(document).ready(function () {
       }
     }
   });
-  $('#chart').bind('plothover', function (event, pos, item) {
+  $chart.bind('plothover', function (event, pos, item) {
     if (plotSelecting && item && itemId(item) !== highlightedItemId) {
       plot.unhighlight(item.series, item.datapoint);
     }
   });
-  $('#chart').bind('plotclick', function (event, pos, item) {
+  $chart.bind('plotclick', function (event, pos, item) {
     if (item) {
       highlightedItemId = itemId(item);
       plot.unhighlight();
@@ -551,17 +561,17 @@ $(document).ready(function () {
     // need to reset this variable at some point, now seems good
     cancelingPlotSelection = false;
   });
-  $('#chart').bind('plotselecting', function (event, ranges) {
+  $chart.bind('plotselecting', function (event, ranges) {
     if (ranges) {
       // plotselecting events are triggered with null ranges parameter when '!selectionIsSane()'
       // (see jquery.flot.selection.js)
       plotSelecting = true;
     }
   });
-  $('#chart').bind('plotunselected', function () {
+  $chart.bind('plotunselected', function () {
     plotSelecting = false;
   });
-  $('#chart').bind('plotselected', function (event, ranges) {
+  $chart.bind('plotselected', function (event, ranges) {
     if (cancelingPlotSelection) {
       // unfortunately, plotselected is still called after plot.clearSelection() in the keyup
       // event handler for the esc key
@@ -602,12 +612,14 @@ $(document).ready(function () {
     }
   });
 
-  $('#toggleExtraFiltersButton').click(function (e) {
-    $('#extraFilters').toggleClass('hide');
-    if ($('#extraFilters').hasClass('hide')) {
-      $('#toggleExtraFiltersButton').html('more filters');
+  var $toggleExtraFiltersButton = $('#toggleExtraFiltersButton');
+  $toggleExtraFiltersButton.click(function (e) {
+    var $extraFilters = $('#extraFilters');
+    $extraFilters.toggleClass('hide');
+    if ($extraFilters.hasClass('hide')) {
+      $toggleExtraFiltersButton.html('more filters');
     } else {
-      $('#toggleExtraFiltersButton').html('less filters');
+      $toggleExtraFiltersButton.html('less filters');
     }
     // without preventDefault, click triggers form submission
     e.preventDefault();
@@ -618,20 +630,22 @@ $(document).ready(function () {
   // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
   // localized format 'moment.longDateFormat.L' both here and when parsing date
   // see https://github.com/eternicode/bootstrap-datepicker/issues/24
-  $('#dateFilter').val(moment(today).format('MM/DD/YYYY'));
-  $('#dateFilter').datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
-  $('#durationComparator').change(function () {
-    if ($('#durationComparator').val() === 'greater') {
+  var $dateFilter = $('#dateFilter');
+  $dateFilter.val(moment(today).format('MM/DD/YYYY'));
+  $dateFilter.datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
+  var $durationComparator = $('#durationComparator');
+  $durationComparator.change(function () {
+    if ($durationComparator.val() === 'greater') {
       $('#durationLowDiv').removeClass('hide');
       $('#durationAndDiv').addClass('hide');
       $('#durationHighDiv').addClass('hide');
       $('#durationHigh').val('');
-    } else if ($('#durationComparator').val() === 'less') {
+    } else if ($durationComparator.val() === 'less') {
       $('#durationLowDiv').addClass('hide');
       $('#durationLow').val('');
       $('#durationAndDiv').addClass('hide');
       $('#durationHighDiv').removeClass('hide');
-    } else if ($('#durationComparator').val() === 'between') {
+    } else if ($durationComparator.val() === 'between') {
       $('#durationLowDiv').removeClass('hide');
       $('#durationAndDiv').removeClass('hide');
       $('#durationHighDiv').removeClass('hide');

@@ -98,9 +98,11 @@
       Informant.addIntegerValidator('#storageSnapshotExpirationDays');
       $('#storageRollingSizeMb').val(storageConfig.rollingSizeMb);
       Informant.addIntegerValidator('#storageRollingSizeMb');
-      $('#offscreenMeasure').text(config.dataDir);
-      $('#storageDataDir').text(config.dataDir);
-      $('#storageDataDir').css('width', ($('#offscreenMeasure').width() + 50) + 'px');
+      var $offscreenMeasure = $('#offscreenMeasure');
+      $offscreenMeasure.text(config.dataDir);
+      var $storageDataDir = $('#storageDataDir');
+      $storageDataDir.text(config.dataDir);
+      $storageDataDir.css('width', ($offscreenMeasure.width() + 50) + 'px');
       storageConfigVersion = storageConfig.version;
       pluginDescriptors = config.pluginDescriptors;
       var i, j;
@@ -123,15 +125,15 @@
         for (j = 0; j < pluginDescriptor.properties.length; j++) {
           var propertyDescriptor = pluginDescriptor.properties[j];
           var value = pluginConfig.properties[propertyDescriptor.name];
-          var selector =
-              '#' + escapeSelector(pluginDescriptor.id + '_' + propertyDescriptor.name);
+          var $selector =
+              $('#' + escapeSelector(pluginDescriptor.id + '_' + propertyDescriptor.name));
           if (propertyDescriptor.type === 'boolean') {
-            $(selector).attr('checked', value);
+            $selector.attr('checked', value);
           } else if (propertyDescriptor.type === 'double') {
-            Informant.addDoubleValidator(selector);
-            $(selector).val(value);
+            Informant.addDoubleValidator($selector);
+            $selector.val(value);
           } else {
-            $(selector).val(value);
+            $selector.val(value);
           }
         }
       }
@@ -288,17 +290,17 @@
         continue;
       }
       var value;
-      var selector = '#' + escapeSelector(pluginDescriptor.id + '_' + propertyDescriptor.name);
+      var $selector = $('#' + escapeSelector(pluginDescriptor.id + '_' + propertyDescriptor.name));
       if (propertyDescriptor.type === 'boolean') {
-        value = $(selector).is(':checked');
+        value = $selector.is(':checked');
       } else if (propertyDescriptor.type === 'double') {
-        if (Informant.isDouble($(selector).val())) {
-          value = Informant.parseDouble($(selector).val());
+        if (Informant.isDouble($selector.val())) {
+          value = Informant.parseDouble($selector.val());
         } else {
           validationError = true;
         }
       } else {
-        value = $(selector).val();
+        value = $selector.val();
       }
       config.properties[propertyDescriptor.name] = value;
     }
@@ -314,28 +316,30 @@
   }
 
   function setStatus(selector, value, general) {
+    var $selector = $(selector);
     if (value) {
-      $(selector).removeClass('configuration-status-off');
-      $(selector).addClass('configuration-status-on');
-      $(selector).text('ON');
+      $selector.removeClass('configuration-status-off');
+      $selector.addClass('configuration-status-on');
+      $selector.text('ON');
     } else {
-      $(selector).removeClass('configuration-status-on');
-      $(selector).addClass('configuration-status-off');
-      $(selector).text('OFF');
+      $selector.removeClass('configuration-status-on');
+      $selector.addClass('configuration-status-off');
+      $selector.text('OFF');
     }
     if (!general && !$('#generalEnabled').is(':checked')) {
       // this needs to be set the first time through, at least for the plugin nodes which didn't
       // exist when setStatus was called for general the first time
-      $(selector).css('color', '#bbb');
+      $selector.css('color', '#bbb');
     }
     if (general) {
       // update other status'
+      var $configurationStatus = $('.configuration-status');
       if (value) {
-        $('.configuration-status').css('color', '');
+        $configurationStatus.css('color', '');
       } else {
-        $('.configuration-status').css('color', '#bbb');
+        $configurationStatus.css('color', '#bbb');
         // except for general
-        $(selector).css('color', '');
+        $selector.css('color', '');
       }
     }
   }
@@ -358,12 +362,13 @@
   $(document).ready(function () {
     Informant.configureAjaxError();
     $('#fineStoreThresholdOverride').change(function () {
+      var $fineStoreThresholdMillis = $('#fineStoreThresholdMillis');
       if ($('#fineStoreThresholdOverride').is(':checked')) {
-        $('#fineStoreThresholdMillis').removeAttr('readonly');
+        $fineStoreThresholdMillis.removeAttr('readonly');
       } else {
-        $('#fineStoreThresholdMillis').val('');
-        $('#fineStoreThresholdMillis').closest('.control-group').removeClass('error');
-        $('#fineStoreThresholdMillis').attr('readonly', 'readonly');
+        $fineStoreThresholdMillis.val('');
+        $fineStoreThresholdMillis.closest('.control-group').removeClass('error');
+        $fineStoreThresholdMillis.attr('readonly', 'readonly');
       }
     });
     read();

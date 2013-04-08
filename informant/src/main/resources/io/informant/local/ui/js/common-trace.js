@@ -167,13 +167,14 @@ var Trace = (function () {
   };
 
   my.toggleSpans = function () {
-    if (!$('#sps').html()) {
+    var $sps = $('#sps');
+    if (!$sps.html()) {
       // first time opening
       initSpanLineLength();
-      $('#sps').removeClass('hide');
+      $sps.removeClass('hide');
       renderNext(my.detailTrace.spans, 0);
     } else {
-      $('#sps').toggleClass('hide');
+      $sps.toggleClass('hide');
     }
   };
 
@@ -303,15 +304,16 @@ var Trace = (function () {
       return ret;
     }
 
-    if (!$(selector).hasClass('hide')) {
-      $(selector).addClass('hide');
+    var $selector = $(selector);
+    if (!$selector.hasClass('hide')) {
+      $selector.addClass('hide');
     } else {
-      if (!$(selector).find('.mst-interesting').html()) {
+      if (!$selector.find('.mst-interesting').html()) {
         // first time only, process merged stack tree and populate dropdown
         calculateMetricNameCounts(rootNode);
         // build tree
         var tree = { name: '', childNodes: {} };
-        $.each(rootNode.metricNameCounts, function (metricName, count) {
+        $.each(rootNode.metricNameCounts, function (metricName) {
           // only really need to look at leafs (' / other') to hit all nodes
           if (metricName.match(/ \/ other$/)) {
             var parts = metricName.split(' / ');
@@ -353,9 +355,9 @@ var Trace = (function () {
         // remove the root '' since all nodes are already under the single root span metric
         orderedNodes.splice(0, 1);
         // build filter dropdown
-        $(selector).find('.mst-filter').html('');
+        $selector.find('.mst-filter').html('');
         $.each(orderedNodes, function (i, node) {
-          $(selector).find('.mst-filter').append($('<option />').val(node.name)
+          $selector.find('.mst-filter').append($('<option />').val(node.name)
               .text(node.name + ' (' + rootNode.metricNameCounts[node.name] + ')'));
         });
         var i = 0;
@@ -378,20 +380,20 @@ var Trace = (function () {
           interestingRootNode = childNode;
           i++;
         }
-        $(selector).find('.mst-filter').change(function () {
+        $selector.find('.mst-filter').change(function () {
           // update merged stack tree based on filter
           var interestingHtml = curr(interestingRootNode, 0, $(this).val());
-          $(selector).find('.mst-interesting').html(interestingHtml);
+          $selector.find('.mst-interesting').html(interestingHtml);
         });
         // build initial merged stack tree
         var interestingHtml = curr(interestingRootNode, 0);
         if (uninterestingHtml) {
-          $(selector).find('.mst-common .expanded-content').html(uninterestingHtml);
-          $(selector).find('.mst-common').removeClass('hide');
+          $selector.find('.mst-common .expanded-content').html(uninterestingHtml);
+          $selector.find('.mst-common').removeClass('hide');
         }
-        $(selector).find('.mst-interesting').html(interestingHtml);
+        $selector.find('.mst-interesting').html(interestingHtml);
       }
-      $(selector).removeClass('hide');
+      $selector.removeClass('hide');
     }
   };
 

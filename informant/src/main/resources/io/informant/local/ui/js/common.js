@@ -53,21 +53,23 @@ var Informant = (function () {
   var showAndFadeMessage = function (selector, delay) {
     $(selector).each(function () {
       // handle crazy user clicking on the button
-      if ($(this).data('timeout')) {
-        clearTimeout($(this).data('timeout'));
+      var $this = $(this);
+      if ($this.data('timeout')) {
+        clearTimeout($this.data('timeout'));
       }
-      $(this).stop().animate({opacity: '100'});
-      $(this).removeClass('hide');
+      $this.stop().animate({opacity: '100'});
+      $this.removeClass('hide');
       var outerThis = this;
-      $(this).data('timeout', setTimeout(function () { fadeOut(outerThis, 1000); }, delay));
+      $this.data('timeout', setTimeout(function () { fadeOut(outerThis, 1000); }, delay));
     });
   };
 
   var fadeOut = function (selector, duration) {
     // fade out and then override jquery behavior and use hide class instead of display: none
-    $(selector).fadeOut(duration, function () {
-      $(selector).addClass('hide');
-      $(selector).css('display', '');
+    var $selector = $(selector);
+    $selector.fadeOut(duration, function () {
+      $selector.addClass('hide');
+      $selector.css('display', '');
     });
   };
 
@@ -93,12 +95,13 @@ var Informant = (function () {
 
   my.hideSpinner = function (selector) {
     $(selector).each(function () {
-      var data = $(this).data();
+      var $this = $(this);
+      var data = $this.data();
       if (data.spinner) {
         data.spinner.stop();
         delete data.spinner;
       }
-      $(this).addClass('hide');
+      $this.addClass('hide');
     });
   };
 
@@ -122,38 +125,39 @@ var Informant = (function () {
         // long to load, hit escape key to close trace detail modal before detail request completes)
         return;
       }
+      var $ajaxError = $('#ajaxError');
       if (jqxhr.status === 0) {
-        $('#ajaxError').html('Can\'t connect to server');
-        $('#ajaxErrorModal').modal('show');
+        $ajaxError.html('Can\'t connect to server');
       } else if (jqxhr.status === 200) {
-        var $ajaxError = $('#ajaxError');
         $ajaxError.html('Error parsing json: ' + exception);
         $ajaxError.append('<br><br>');
         $ajaxError.append(jqxhr.responseText);
-        $('#ajaxErrorModal').modal('show');
       } else {
-        $('#ajaxError').html('Error from server: ' + jqxhr.statusText);
-        $('#ajaxErrorModal').modal('show');
+        $ajaxError.html('Error from server: ' + jqxhr.statusText);
       }
+      $('#ajaxErrorModal').modal('show');
     });
   };
 
   my.addIntegerValidator = function (selector) {
-    $(selector).keyup(function () {
+    var $selector = $(selector);
+    $selector.keyup(function () {
       if (my.isInteger($(this).val())) {
-        $(selector).closest('.control-group').removeClass('error');
+        $selector.closest('.control-group').removeClass('error');
       } else {
-        $(selector).closest('.control-group').addClass('error');
+        $selector.closest('.control-group').addClass('error');
       }
     });
   };
 
   my.addIntegerOrEmptyValidator = function (selector) {
-    $(selector).keyup(function () {
-      if ($(this).val() === '' || my.isInteger($(this).val())) {
-        $(selector).closest('.control-group').removeClass('error');
+    var $selector = $(selector);
+    $selector.keyup(function () {
+      var $this = $(this);
+      if ($this.val() === '' || my.isInteger($this.val())) {
+        $selector.closest('.control-group').removeClass('error');
       } else {
-        $(selector).closest('.control-group').addClass('error');
+        $selector.closest('.control-group').addClass('error');
       }
     });
   };
@@ -169,11 +173,12 @@ var Informant = (function () {
   };
 
   my.addDoubleValidator = function (selector) {
-    $(selector).keyup(function () {
+    var $selector = $(selector);
+    $selector.keyup(function () {
       if (my.isDouble($(this).val())) {
-        $(selector).closest('.control-group').removeClass('error');
+        $selector.closest('.control-group').removeClass('error');
       } else {
-        $(selector).closest('.control-group').addClass('error');
+        $selector.closest('.control-group').addClass('error');
       }
     });
   };
@@ -190,11 +195,12 @@ var Informant = (function () {
   };
 
   my.addPercentageValidator = function (selector) {
-    $(selector).keyup(function () {
+    var $selector = $(selector);
+    $selector.keyup(function () {
       if (my.isPercentage($(this).val())) {
-        $(selector).closest('.control-group').removeClass('error');
+        $selector.closest('.control-group').removeClass('error');
       } else {
-        $(selector).closest('.control-group').addClass('error');
+        $selector.closest('.control-group').addClass('error');
       }
     });
   };
