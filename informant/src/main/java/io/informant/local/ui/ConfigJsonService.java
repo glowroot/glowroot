@@ -63,15 +63,13 @@ class ConfigJsonService implements JsonService {
     private final RollingFile rollingFile;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
-    private final int uiPort;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
-            PluginDescriptorCache pluginDescriptorCache, File dataDir, int uiPort) {
+            PluginDescriptorCache pluginDescriptorCache, File dataDir) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
-        this.uiPort = uiPort;
     }
 
     @JsonServiceMethod
@@ -98,7 +96,6 @@ class ConfigJsonService implements JsonService {
         jg.writeFieldName("pointcutConfigs");
         writer.writeValue(jg, configService.getPointcutConfigs());
         jg.writeStringField("dataDir", dataDir.getCanonicalPath());
-        jg.writeNumberField("uiPort", uiPort);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

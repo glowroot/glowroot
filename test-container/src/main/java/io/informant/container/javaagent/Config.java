@@ -50,7 +50,6 @@ class Config {
     private final Map<String, PluginConfig> pluginConfigs;
     private final List<PointcutConfig> pointcutConfigs;
     private final String dataDir;
-    private final int uiPort;
 
     @JsonCreator
     Config(@JsonProperty("generalConfig") @Nullable GeneralConfig generalConfig,
@@ -60,8 +59,7 @@ class Config {
             @JsonProperty("storageConfig") @Nullable StorageConfig storageConfig,
             @JsonProperty("pluginConfigs") @Nullable Map<String, PluginConfig> pluginConfigs,
             @JsonProperty("pointcutConfigs") @Nullable List<PointcutConfig> pointcutConfigs,
-            @JsonProperty("dataDir") @Nullable String dataDir,
-            @JsonProperty("uiPort") @Nullable Integer uiPort) throws JsonMappingException {
+            @JsonProperty("dataDir") @Nullable String dataDir) throws JsonMappingException {
         checkRequiredProperty(generalConfig, "generalConfig");
         checkRequiredProperty(coarseProfilingConfig, "coarseProfilingConfig");
         checkRequiredProperty(fineProfilingConfig, "fineProfilingConfig");
@@ -70,7 +68,6 @@ class Config {
         checkRequiredProperty(pluginConfigs, "pluginConfigs");
         checkRequiredProperty(pointcutConfigs, "pointcutConfigs");
         checkRequiredProperty(dataDir, "dataDir");
-        checkRequiredProperty(uiPort, "uiPort");
         this.generalConfig = generalConfig;
         this.coarseProfilingConfig = coarseProfilingConfig;
         this.fineProfilingConfig = fineProfilingConfig;
@@ -79,7 +76,6 @@ class Config {
         this.pluginConfigs = pluginConfigs;
         this.pointcutConfigs = pointcutConfigs;
         this.dataDir = dataDir;
-        this.uiPort = uiPort;
     }
 
     GeneralConfig getGeneralConfig() {
@@ -114,10 +110,6 @@ class Config {
         return dataDir;
     }
 
-    int getUiPort() {
-        return uiPort;
-    }
-
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
@@ -128,7 +120,6 @@ class Config {
                 .add("pluginConfigs", pluginConfigs)
                 .add("pointcutConfigs", pointcutConfigs)
                 .add("dataDir", dataDir)
-                .add("uiPort", uiPort)
                 .toString();
     }
 }

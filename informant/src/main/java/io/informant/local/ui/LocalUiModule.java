@@ -75,7 +75,6 @@ public class LocalUiModule {
         SnapshotTraceSink traceSink = snapshotModule.getSnapshotTraceSink();
         ParsedTypeCache parsedTypeCache = traceModule.getParsedTypeCache();
 
-        int port = getHttpServerPort(properties);
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
         TraceCommonService traceCommonService = new TraceCommonService(snapshotDao, traceRegistry,
@@ -91,7 +90,7 @@ public class LocalUiModule {
         // useful to know it was set to 0 than to display its value (which is needed to view the
         // page anyways)
         ConfigJsonService configJsonService = new ConfigJsonService(configService, rollingFile,
-                pluginDescriptorCache, dataDir, port);
+                pluginDescriptorCache, dataDir);
         PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
                 parsedTypeCache);
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
@@ -100,6 +99,7 @@ public class LocalUiModule {
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
+        int port = getHttpServerPort(properties);
         httpServer = buildHttpServer(port, numWorkerThreads, tracePointJsonService,
                 traceSummaryJsonService, snapshotHttpService, traceExportHttpService,
                 configJsonService, pointcutConfigJsonService, threadDumpJsonService,
