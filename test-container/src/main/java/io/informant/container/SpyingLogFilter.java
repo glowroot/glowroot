@@ -19,15 +19,17 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
 import com.google.common.collect.Lists;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class SpyingConsoleAppender<E> extends ConsoleAppender<E> {
+public class SpyingLogFilter extends Filter<ILoggingEvent> {
 
     public static final String NAME = "SPYING";
 
@@ -41,18 +43,19 @@ public class SpyingConsoleAppender<E> extends ConsoleAppender<E> {
     }
 
     @Override
-    protected void append(E eventObject) {
-        if (!isExpected(eventObject)) {
-            super.append(eventObject);
-            unexpectedMessageCount.getAndIncrement();
+    public FilterReply decide(ILoggingEvent event) {
+        if (!isExpected(event)) {
+            if (event.getLevel().isGreaterOrEqual(Level.WARN)) {
+                unexpectedMessageCount.getAndIncrement();
+            }
+            return FilterReply.ACCEPT;
+        } else {
+            // this is expected, so don't log it
+            return FilterReply.NEUTRAL;
         }
     }
 
-    private boolean isExpected(E eventObject) {
-        if (!(eventObject instanceof ILoggingEvent)) {
-            return false;
-        }
-        ILoggingEvent event = (ILoggingEvent) eventObject;
+    private boolean isExpected(ILoggingEvent event) {
         synchronized (expectedMessages) {
             if (expectedMessages.isEmpty()) {
                 return false;
@@ -72,14 +75,6 @@ public class SpyingConsoleAppender<E> extends ConsoleAppender<E> {
 
     public static void addExpectedMessage(String loggerName, String partialMessage) {
         expectedMessages.add(new ExpectedMessage(loggerName, partialMessage));
-    }
-
-    public static List<ExpectedMessage> getExpectedMessages() {
-        return expectedMessages;
-    }
-
-    public static int getUnexpectedMessageCount() {
-        return unexpectedMessageCount.get();
     }
 
     public static MessageCount clearMessages() {

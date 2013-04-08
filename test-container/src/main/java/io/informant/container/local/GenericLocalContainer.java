@@ -29,9 +29,9 @@ import com.google.common.collect.Lists;
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
 import io.informant.config.PluginDescriptorCache;
-import io.informant.container.SpyingAppenderCheck;
-import io.informant.container.SpyingConsoleAppender;
-import io.informant.container.SpyingConsoleAppender.MessageCount;
+import io.informant.container.SpyingLogFilter;
+import io.informant.container.SpyingLogFilter.MessageCount;
+import io.informant.container.SpyingLogFilterCheck;
 import io.informant.container.TempDirs;
 import io.informant.container.Threads;
 import io.informant.container.config.ConfigService;
@@ -97,10 +97,10 @@ public class GenericLocalContainer<T> {
     }
 
     public void addExpectedLogMessage(String loggerName, String partialMessage) {
-        if (SpyingAppenderCheck.isSpyingAppenderEnabled()) {
-            SpyingConsoleAppender.addExpectedMessage(loggerName, partialMessage);
+        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
+            SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
         } else {
-            throw new AssertionError(SpyingConsoleAppender.class.getSimpleName()
+            throw new AssertionError(SpyingLogFilter.class.getSimpleName()
                     + " is not enabled");
         }
     }
@@ -138,8 +138,8 @@ public class GenericLocalContainer<T> {
         traceService.deleteAllSnapshots();
         configService.resetAllConfig();
         // check and reset log messages
-        if (SpyingAppenderCheck.isSpyingAppenderEnabled()) {
-            MessageCount logMessageCount = SpyingConsoleAppender.clearMessages();
+        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
+            MessageCount logMessageCount = SpyingLogFilter.clearMessages();
 
             if (logMessageCount.getExpectedCount() > 0) {
                 throw new AssertionError("One or more expected messages were not logged");

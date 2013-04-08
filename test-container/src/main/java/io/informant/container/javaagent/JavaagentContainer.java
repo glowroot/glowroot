@@ -51,9 +51,9 @@ import io.informant.MainEntryPoint;
 import io.informant.container.AppUnderTest;
 import io.informant.container.ClassPath;
 import io.informant.container.Container;
-import io.informant.container.SpyingAppenderCheck;
-import io.informant.container.SpyingConsoleAppender;
-import io.informant.container.SpyingConsoleAppender.MessageCount;
+import io.informant.container.SpyingLogFilter;
+import io.informant.container.SpyingLogFilter.MessageCount;
+import io.informant.container.SpyingLogFilterCheck;
 import io.informant.container.TempDirs;
 import io.informant.container.config.ConfigService;
 import io.informant.container.trace.TraceService;
@@ -173,12 +173,11 @@ public class JavaagentContainer implements Container {
     }
 
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
-        if (SpyingAppenderCheck.isSpyingAppenderEnabled()) {
+        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
             socketCommander.sendCommand(ImmutableList.of(
                     SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName, partialMessage));
         } else {
-            throw new AssertionError(SpyingConsoleAppender.class.getSimpleName()
-                    + " is not enabled");
+            throw new AssertionError(SpyingLogFilter.class.getSimpleName() + " is not enabled");
         }
     }
 
@@ -206,7 +205,7 @@ public class JavaagentContainer implements Container {
         traceService.deleteAllSnapshots();
         configService.resetAllConfig();
         // check and reset log messages
-        if (SpyingAppenderCheck.isSpyingAppenderEnabled()) {
+        if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
             MessageCount logMessageCount = (MessageCount) socketCommander
                     .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
             if (logMessageCount.getExpectedCount() > 0) {

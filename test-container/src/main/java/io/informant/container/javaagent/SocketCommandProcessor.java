@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
 import io.informant.container.AppUnderTest;
-import io.informant.container.SpyingConsoleAppender;
+import io.informant.container.SpyingLogFilter;
 import io.informant.container.Threads;
 import io.informant.container.Threads.ThreadsException;
 import io.informant.container.javaagent.SocketCommander.CommandWrapper;
@@ -119,7 +119,7 @@ class SocketCommandProcessor implements Runnable {
                     respond(informantModule.getUiModule().getPort(), commandNum);
                 }
             } else if (command.equals(CLEAR_LOG_MESSAGES)) {
-                respond(SpyingConsoleAppender.clearMessages(), commandNum);
+                respond(SpyingLogFilter.clearMessages(), commandNum);
             } else if (command.equals(KILL_COMMAND)) {
                 System.exit(0);
             } else if (command.equals(SHUTDOWN_COMMAND)) {
@@ -144,7 +144,7 @@ class SocketCommandProcessor implements Runnable {
                 } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {
                     String loggerName = (String) argList.get(1);
                     String partialMessage = (String) argList.get(2);
-                    SpyingConsoleAppender.addExpectedMessage(loggerName, partialMessage);
+                    SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
                     respond(null, commandNum);
                 } else {
                     logger.error("unexpected command '" + commandName + "'");

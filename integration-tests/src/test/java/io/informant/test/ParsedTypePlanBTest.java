@@ -27,7 +27,6 @@ import org.junit.Test;
 import io.informant.Containers;
 import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
-import io.informant.container.javaagent.JavaagentContainer;
 import io.informant.weaving.ParsedTypeCache;
 
 /**
@@ -41,7 +40,7 @@ public class ParsedTypePlanBTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = JavaagentContainer.createWithFileDb();
+        container = Containers.create();
     }
 
     @AfterClass

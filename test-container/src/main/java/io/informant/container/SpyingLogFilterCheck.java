@@ -15,31 +15,42 @@
  */
 package io.informant.container;
 
+import java.util.Iterator;
+
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.filter.Filter;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class SpyingAppenderCheck {
+public class SpyingLogFilterCheck {
 
-    private static final boolean spyingAppenderEnabled;
+    private static final boolean spyingLogFilterEnabled;
 
     static {
-        spyingAppenderEnabled = spyingAppenderEnabled();
+        spyingLogFilterEnabled = spyingLogFilterEnabled();
     }
 
-    public static boolean isSpyingAppenderEnabled() {
-        return spyingAppenderEnabled;
+    public static boolean isSpyingLogFilterEnabled() {
+        return spyingLogFilterEnabled;
     }
 
-    private static boolean spyingAppenderEnabled() {
+    private static boolean spyingLogFilterEnabled() {
         try {
             ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
                     .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-            return root.getAppender(SpyingConsoleAppender.NAME) != null;
+            for (Iterator<Appender<ILoggingEvent>> i = root.iteratorForAppenders(); i.hasNext(); ) {
+                for (Filter<ILoggingEvent> filter : i.next().getCopyOfAttachedFiltersList()) {
+                    if (filter instanceof SpyingLogFilter) {
+                        return true;
+                    }
+                }
+            }
         } catch (Throwable t) {
-            return false;
         }
+        return false;
     }
 }
