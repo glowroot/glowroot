@@ -16,12 +16,16 @@
 package io.informant.plugin.servlet;
 
 import java.util.Enumeration;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 
 import io.informant.api.UnresolvedMethod;
+import io.informant.shaded.google.common.base.Strings;
+import io.informant.shaded.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -64,7 +68,62 @@ class HttpSession {
         return (Boolean) isNewMethod.invoke(realSession, false);
     }
 
-    Enumeration<?> getAttributeNames() {
+    @Nullable
+    ImmutableMap<String, String> getSessionAttributes() {
+        Set<String> capturePaths = ServletPluginProperties.captureSessionAttributePaths();
+        if (capturePaths.isEmpty()) {
+            return null;
+        }
+        ImmutableMap.Builder<String, String> captureMap = ImmutableMap.builder();
+        // dump only http session attributes in list
+        for (String capturePath : capturePaths) {
+            if (capturePath.equals("*")) {
+                for (Enumeration<?> e = getAttributeNames(); e.hasMoreElements();) {
+                    String attributeName = (String) e.nextElement();
+                    Object value = getAttribute(attributeName);
+                    // value shouldn't be null, but its (remotely) possible that a concurrent
+                    // request for the same session just removed the attribute
+                    String valueString = value == null ? "" : value.toString();
+                    // taking no chances on value.toString() possibly returning null
+                    captureMap.put(attributeName, Strings.nullToEmpty(valueString));
+                }
+            } else if (capturePath.endsWith(".*")) {
+                capturePath = capturePath.substring(0, capturePath.length() - 2);
+                Object value = getSessionAttribute(capturePath);
+                if (value != null) {
+                    for (Entry<String, String> entry : Beans.propertiesAsText(value).entrySet()) {
+                        captureMap.put(capturePath + "." + entry.getKey(), entry.getValue());
+                    }
+                }
+            } else {
+                String value = getSessionAttributeTextValue(capturePath);
+                if (value != null) {
+                    captureMap.put(capturePath, value);
+                }
+            }
+        }
+        return captureMap.build();
+    }
+
+    @Nullable
+    String getSessionAttributeTextValue(String attributePath) {
+        Object value = getSessionAttribute(attributePath);
+        return (value == null) ? null : value.toString();
+    }
+
+    @Nullable
+    Object getSessionAttribute(String attributePath) {
+        if (attributePath.indexOf('.') == -1) {
+            // fast path
+            return getAttribute(attributePath);
+        } else {
+            String[] path = attributePath.split("\\.");
+            Object curr = getAttribute(path[0]);
+            return Beans.value(curr, path, 1);
+        }
+    }
+
+    private Enumeration<?> getAttributeNames() {
         Enumeration<?> attributeNames =
                 (Enumeration<?>) getAttributeNamesMethod.invoke(realSession, null);
         if (attributeNames == null) {
@@ -75,7 +134,7 @@ class HttpSession {
     }
 
     @Nullable
-    Object getAttribute(String name) {
+    private Object getAttribute(String name) {
         return getAttributeMethod.invoke(realSession, name,
                 "<error calling HttpSession.getAttribute()>");
     }

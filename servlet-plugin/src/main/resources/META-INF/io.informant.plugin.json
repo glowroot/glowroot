@@ -64,6 +64,9 @@
     }
   ],
   "aspects": [
-    "io.informant.plugin.servlet.ServletAspect"
+    "io.informant.plugin.servlet.ServletAspect",
+    "io.informant.plugin.servlet.RequestParameterAspect",
+    "io.informant.plugin.servlet.SessionAspect",
+    "io.informant.plugin.servlet.ServletInitAspect"
   ]
 }
