@@ -24,7 +24,6 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
-import io.informant.config.ConfigModule;
 import io.informant.container.config.CoarseProfilingConfig;
 import io.informant.container.config.ConfigService;
 import io.informant.container.config.FineProfilingConfig;
@@ -36,7 +35,6 @@ import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
 import io.informant.local.store.DataSource;
-import io.informant.local.store.DataSourceModule;
 import io.informant.markers.ThreadSafe;
 
 /**
@@ -50,10 +48,8 @@ class LocalConfigService implements ConfigService {
     private final DataSource dataSource;
 
     LocalConfigService(InformantModule informantModule) {
-        ConfigModule configModule = informantModule.getConfigModule();
-        DataSourceModule dataSourceModule = informantModule.getDataSourceModule();
-        configService = configModule.getConfigService();
-        dataSource = dataSourceModule.getDataSource();
+        configService = informantModule.getConfigModule().getConfigService();
+        dataSource = informantModule.getStorageModule().getDataSource();
     }
 
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {

@@ -17,8 +17,11 @@ package io.informant.local.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
+import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,19 +42,30 @@ public class StorageModule {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
+    private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final SnapshotDao snapshotDao;
 
-    public StorageModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
-            DataSourceModule dataSourceModule, ScheduledExecutorService scheduledExecutor)
+    public StorageModule(File dataDir, @ReadOnly Map<String, String> properties, Ticker ticker,
+            Clock clock, ConfigModule configModule, ScheduledExecutorService scheduledExecutor)
             throws Exception {
+        // mem db is only used for testing (by informant-test-container)
+        String h2MemDb = properties.get("internal.h2.memdb");
+        if (Boolean.parseBoolean(h2MemDb)) {
+            dataSource = new DataSource();
+        } else {
+            dataSource = new DataSource(new File(dataDir, "informant.h2.db"));
+        }
         ConfigService configService = configModule.getConfigService();
         int rollingSizeMb = configService.getStorageConfig().getRollingSizeMb();
-        DataSource dataSource = dataSourceModule.getDataSource();
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);
         snapshotDao = new SnapshotDao(dataSource, rollingFile, clock);
         new SnapshotReaper(configService, snapshotDao, clock).start(scheduledExecutor);
+    }
+
+    public DataSource getDataSource() {
+        return dataSource;
     }
 
     public RollingFile getRollingFile() {
@@ -72,6 +86,12 @@ public class StorageModule {
         try {
             rollingFile.close();
         } catch (IOException e) {
+            // warning only since it occurs during shutdown anyways
+            logger.warn(e.getMessage(), e);
+        }
+        try {
+            dataSource.close();
+        } catch (SQLException e) {
             // warning only since it occurs during shutdown anyways
             logger.warn(e.getMessage(), e);
         }

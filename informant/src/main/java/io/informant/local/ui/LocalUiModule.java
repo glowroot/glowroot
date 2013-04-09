@@ -33,7 +33,6 @@ import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.config.PluginDescriptorCache;
 import io.informant.local.store.DataSource;
-import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.RollingFile;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.StorageModule;
@@ -62,14 +61,13 @@ public class LocalUiModule {
     private final HttpServer httpServer;
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
-            DataSourceModule dataSourceModule, StorageModule storageModule,
-            SnapshotModule snapshotModule, TraceModule traceModule,
+            StorageModule storageModule, SnapshotModule snapshotModule, TraceModule traceModule,
             @ReadOnly Map<String, String> properties) throws Exception {
 
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();
 
-        DataSource dataSource = dataSourceModule.getDataSource();
+        DataSource dataSource = storageModule.getDataSource();
         RollingFile rollingFile = storageModule.getRollingFile();
         SnapshotDao snapshotDao = storageModule.getSnapshotDao();
         SnapshotTraceSink traceSink = snapshotModule.getSnapshotTraceSink();

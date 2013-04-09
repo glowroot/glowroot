@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import io.informant.api.PluginServices;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
-import io.informant.local.store.DataSourceModule;
 import io.informant.local.store.StorageModule;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.markers.OnlyUsedByTests;
@@ -50,48 +49,30 @@ public class InformantModule {
 
     private static final Logger logger = LoggerFactory.getLogger(InformantModule.class);
 
-    private final Ticker ticker;
-    private final Clock clock;
-    private final File dataDir;
-
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigModule configModule;
-    private final DataSourceModule dataSourceModule;
     private final StorageModule storageModule;
     private final SnapshotModule snapshotModule;
     private final TraceModule traceModule;
     private final LocalUiModule uiModule;
 
     InformantModule(@ReadOnly Map<String, String> properties) throws Exception {
-        ticker = Ticker.systemTicker();
-        clock = Clock.systemClock();
-        dataDir = DataDir.getDataDir(properties);
+        Ticker ticker = Ticker.systemTicker();
+        Clock clock = Clock.systemClock();
+        File dataDir = DataDir.getDataDir(properties);
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Informant-Background").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
         configModule = new ConfigModule(dataDir);
-        dataSourceModule = new DataSourceModule(dataDir, properties);
-        storageModule = new StorageModule(ticker, clock, dataDir, configModule, dataSourceModule,
+        storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                 scheduledExecutor);
         snapshotModule = new SnapshotModule(ticker, configModule, storageModule.getSnapshotSink(),
                 scheduledExecutor);
         traceModule = new TraceModule(ticker, clock, configModule,
                 snapshotModule.getSnapshotTraceSink(), scheduledExecutor);
-        uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, dataSourceModule,
-                storageModule, snapshotModule, traceModule, properties);
-    }
-
-    public Ticker getTicker() {
-        return ticker;
-    }
-
-    public Clock getClock() {
-        return clock;
-    }
-
-    public File getDataDir() {
-        return dataDir;
+        uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, storageModule,
+                snapshotModule, traceModule, properties);
     }
 
     ClassFileTransformer createWeavingClassFileTransformer() {
@@ -105,11 +86,6 @@ public class InformantModule {
     @OnlyUsedByTests
     public ConfigModule getConfigModule() {
         return configModule;
-    }
-
-    @OnlyUsedByTests
-    public DataSourceModule getDataSourceModule() {
-        return dataSourceModule;
     }
 
     @OnlyUsedByTests
@@ -138,7 +114,6 @@ public class InformantModule {
         uiModule.close();
         traceModule.close();
         storageModule.close();
-        dataSourceModule.close();
         scheduledExecutor.shutdownNow();
     }
 }
