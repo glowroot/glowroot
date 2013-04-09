@@ -42,23 +42,13 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
         remapEntries(nStack, stack);
     }
 
-    private Object[] remapEntries(int n, Object[] entries) {
+    private void remapEntries(int n, Object[] entries) {
         for (int i = 0; i < n; i++) {
-            if (entries[i] instanceof String) {
-                Object[] newEntries = new Object[n];
-                if (i > 0) {
-                    System.arraycopy(entries, 0, newEntries, 0, i);
-                }
-                do {
-                    Object t = entries[i];
-                    newEntries[i++] = t instanceof String
-                            ? remapper.mapType((String) t)
-                            : t;
-                } while (i < n);
-                return newEntries;
+            Object entry = entries[i++];
+            if (entry instanceof String) {
+                remapper.mapType((String) entry);
             }
         }
-        return entries;
     }
 
     @Override

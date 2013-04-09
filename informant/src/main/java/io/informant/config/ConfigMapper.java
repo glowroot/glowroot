@@ -17,7 +17,6 @@ package io.informant.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -189,9 +188,9 @@ class ConfigMapper {
             return ImmutableMap.of();
         }
         Map<String, ObjectNode> pluginNodes = Maps.newHashMap();
-        for (Iterator<JsonNode> i = pluginsNode.iterator(); i.hasNext();) {
-            ObjectNode pluginNode = (ObjectNode) i.next();
-            JsonNode groupId = pluginNode.get("groupId");
+        for (JsonNode pluginNode : pluginsNode) {
+            ObjectNode pluginObjectNode = (ObjectNode) pluginNode;
+            JsonNode groupId = pluginObjectNode.get("groupId");
             if (groupId == null) {
                 logger.warn("error in config.json file, groupId is missing");
                 continue;
@@ -200,7 +199,7 @@ class ConfigMapper {
                 logger.warn("error in config.json file, groupId is not a string");
                 continue;
             }
-            JsonNode artifactId = pluginNode.get("artifactId");
+            JsonNode artifactId = pluginObjectNode.get("artifactId");
             if (artifactId == null) {
                 logger.warn("error in config.json file, artifactId is missing");
                 continue;
@@ -209,7 +208,7 @@ class ConfigMapper {
                 logger.warn("error in config.json file, artifactId is not a string");
                 continue;
             }
-            pluginNodes.put(groupId.asText() + ":" + artifactId.asText(), pluginNode);
+            pluginNodes.put(groupId.asText() + ":" + artifactId.asText(), pluginObjectNode);
         }
         return pluginNodes;
     }
@@ -238,9 +237,9 @@ class ConfigMapper {
             return ImmutableList.of();
         }
         ImmutableList.Builder<PointcutConfig> pointcutConfigs = ImmutableList.builder();
-        for (Iterator<JsonNode> i = pointcutsNode.iterator(); i.hasNext();) {
+        for (JsonNode pointcutNode : pointcutsNode) {
             PointcutConfig pointcutConfig =
-                    ObjectMappers.treeToRequiredValue(mapper, i.next(), PointcutConfig.class);
+                    ObjectMappers.treeToRequiredValue(mapper, pointcutNode, PointcutConfig.class);
             pointcutConfigs.add(pointcutConfig);
         }
         return pointcutConfigs.build();

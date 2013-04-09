@@ -46,7 +46,7 @@ class DetailMapWriter {
         writeMap(detail);
     }
 
-    private void writeMap(@ReadOnly Map<?, ? extends Object> detail) throws IOException,
+    private void writeMap(@ReadOnly Map<?, ?> detail) throws IOException,
             JsonGenerationException {
         jg.writeStartObject();
         for (Entry<?, ?> entry : detail.entrySet()) {

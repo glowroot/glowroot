@@ -179,32 +179,31 @@ public class Trace {
     public List<TraceAttribute> getAttributes() {
         if (attributes == null) {
             return ImmutableList.of();
-        } else {
-            List<TraceAttribute> attributes;
-            synchronized (this.attributes) {
-                attributes = ImmutableList.copyOf(this.attributes);
-            }
-            // filter out duplicates (last one wins) and order so that each plugin's attributes
-            // are together (and the plugins are ordered by the order they added their first
-            // attribute to this trace)
-            Map<String, Map<String, TraceAttribute>> attributeMap = Maps.newLinkedHashMap();
-            for (TraceAttribute attribute : attributes) {
-                Map<String, TraceAttribute> pluginAttributeMap =
-                        attributeMap.get(attribute.getPluginId());
-                if (pluginAttributeMap == null) {
-                    pluginAttributeMap = Maps.newLinkedHashMap();
-                    attributeMap.put(attribute.getPluginId(), pluginAttributeMap);
-                }
-                pluginAttributeMap.put(attribute.getName(), attribute);
-            }
-            List<TraceAttribute> orderedAttributes = Lists.newArrayList();
-            for (Map<String, TraceAttribute> pluginAttributeMap : attributeMap.values()) {
-                for (TraceAttribute attribute : pluginAttributeMap.values()) {
-                    orderedAttributes.add(attribute);
-                }
-            }
-            return orderedAttributes;
         }
+        List<TraceAttribute> attributes;
+        synchronized (this.attributes) {
+            attributes = ImmutableList.copyOf(this.attributes);
+        }
+        // filter out duplicates (last one wins) and order so that each plugin's attributes are
+        // together (and the plugins are ordered by the order they added their first attribute to
+        // this trace)
+        Map<String, Map<String, TraceAttribute>> attributeMap = Maps.newLinkedHashMap();
+        for (TraceAttribute attribute : attributes) {
+            Map<String, TraceAttribute> pluginAttributeMap =
+                    attributeMap.get(attribute.getPluginId());
+            if (pluginAttributeMap == null) {
+                pluginAttributeMap = Maps.newLinkedHashMap();
+                attributeMap.put(attribute.getPluginId(), pluginAttributeMap);
+            }
+            pluginAttributeMap.put(attribute.getName(), attribute);
+        }
+        List<TraceAttribute> orderedAttributes = Lists.newArrayList();
+        for (Map<String, TraceAttribute> pluginAttributeMap : attributeMap.values()) {
+            for (TraceAttribute attribute : pluginAttributeMap.values()) {
+                orderedAttributes.add(attribute);
+            }
+        }
+        return orderedAttributes;
     }
 
     @Nullable
@@ -331,15 +330,14 @@ public class Trace {
         this.stuckScheduledFuture = scheduledFuture;
     }
 
-    public Span pushSpan(MetricNameImpl metricName, MessageSupplier messageSupplier,
-            boolean spanLimitBypass) {
+    public Span pushSpan(MetricNameImpl metricName, MessageSupplier messageSupplier) {
         long startTick = ticker.read();
         Metric metric = metricName.get();
         if (metric == null) {
             metric = addMetric(metricName);
         }
         metric.start(startTick);
-        return rootSpan.pushSpan(startTick, messageSupplier, metric, spanLimitBypass);
+        return rootSpan.pushSpan(startTick, messageSupplier, metric);
     }
 
     public Span addSpan(@Nullable MessageSupplier messageSupplier,

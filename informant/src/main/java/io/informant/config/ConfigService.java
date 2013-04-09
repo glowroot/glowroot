@@ -361,6 +361,7 @@ public class ConfigService {
             File copy = new File(configFile.getParentFile(), configFile.getName() + ".invalid");
             Files.copy(configFile, copy);
         } catch (IOException e) {
+            logger.warn("error making copy of invalid config file before overwriting", e);
         }
     }
 

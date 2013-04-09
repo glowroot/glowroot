@@ -96,9 +96,8 @@ class RootSpan {
         return endTick != 0;
     }
 
-    Span pushSpan(long startTick, MessageSupplier messageSupplier, Metric metric,
-            boolean spanLimitBypass) {
-        Span span = createSpan(startTick, messageSupplier, null, metric, spanLimitBypass);
+    Span pushSpan(long startTick, MessageSupplier messageSupplier, Metric metric) {
+        Span span = createSpan(startTick, messageSupplier, null, metric, false);
         pushSpanInternal(span);
         return span;
     }

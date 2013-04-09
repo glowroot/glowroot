@@ -31,7 +31,7 @@ import com.google.common.base.Strings;
  * @since 0.5
  */
 @Immutable
-public class TraceUniqueId {
+class TraceUniqueId {
 
     // used to populate id (below)
     @Mutable

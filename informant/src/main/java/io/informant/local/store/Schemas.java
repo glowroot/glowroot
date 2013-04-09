@@ -128,7 +128,9 @@ class Schemas {
             Connection connection) throws SQLException {
 
         StringBuilder sql = new StringBuilder();
-        sql.append("create table " + tableName + " (");
+        sql.append("create table ");
+        sql.append(tableName);
+        sql.append(" (");
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
                 sql.append(", ");
@@ -231,7 +233,11 @@ class Schemas {
             throws SQLException {
 
         StringBuilder sql = new StringBuilder();
-        sql.append("create index " + index.getName() + " on " + tableName + " (");
+        sql.append("create index ");
+        sql.append(index.getName());
+        sql.append(" on ");
+        sql.append(tableName);
+        sql.append(" (");
         for (int i = 0; i < index.getColumns().size(); i++) {
             if (i > 0) {
                 sql.append(", ");

@@ -34,9 +34,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>
  * An {@literal @}{@code OnBefore} method may return {@code void} or a non-{@code void} type. If it
  * returns a non-{@code void} type, the value returned by the {@literal @}{@code OnBefore} method is
- * called the <em>traveler</em>, and is available as input to subsequent {@literal @}
- * {@link OnReturn}, {@literal @}{@link OnThrow} and {@literal @}{@link OnAfter} methods by
- * annotating a parameter on any of these methods with {@literal @}{@link BindTraveler}.
+ * called the <em>traveler</em>, and is available as input to subsequent
+ * 
+ * {@literal @}{@link OnReturn}, {@literal @}{@link OnThrow} and {@literal @}{@link OnAfter} methods
+ * by annotating a parameter on any of these methods with {@literal @}{@link BindTraveler}.
+ * 
+ * Note: {@literal @}{@code OnBefore} is not supported on {@link Pointcut} classes that pick out
+ * constructor executions ({@link Pointcut#methodName} = "<init>").
  * 
  * @author Trask Stalnaker
  * @since 0.5

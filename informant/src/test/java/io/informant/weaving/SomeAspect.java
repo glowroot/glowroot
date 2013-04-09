@@ -42,17 +42,17 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1|execute2")
     public static class BasicAdvice {
-        public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
             protected Boolean initialValue() {
                 return true;
             }
         };
-        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -92,17 +92,17 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.BasicMisc", methodName = "<init>")
     public static class BasicMiscConstructorAdvice {
-        public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
             protected Boolean initialValue() {
                 return true;
             }
         };
-        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -143,17 +143,17 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.BasicMisc", methodName = "withInnerArg",
             methodArgs = {"io.informant.weaving.BasicMisc.Inner"})
     public static class BasicWithInnerClassArgAdvice {
-        public static ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
             protected Boolean initialValue() {
                 return true;
             }
         };
-        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled() {
             enabledCount.increment();
@@ -193,11 +193,11 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
     public static class BindTargetAdvice {
-        public static ThreadLocal<Misc> isEnabledTarget = new ThreadLocal<Misc>();
-        public static ThreadLocal<Misc> onBeforeTarget = new ThreadLocal<Misc>();
-        public static ThreadLocal<Misc> onReturnTarget = new ThreadLocal<Misc>();
-        public static ThreadLocal<Misc> onThrowTarget = new ThreadLocal<Misc>();
-        public static ThreadLocal<Misc> onAfterTarget = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> isEnabledTarget = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onBeforeTarget = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onReturnTarget = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onThrowTarget = new ThreadLocal<Misc>();
+        public static final ThreadLocal<Misc> onAfterTarget = new ThreadLocal<Misc>();
         @IsEnabled
         public static boolean isEnabled(@BindTarget Misc target) {
             isEnabledTarget.set(target);
@@ -231,11 +231,11 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int"})
     public static class BindMethodArgAdvice {
-        public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodArg String one, @BindMethodArg int two) {
             isEnabledParams.set(new Object[] {one, two});
@@ -269,11 +269,11 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int"})
     public static class BindMethodArgArrayAdvice {
-        public static ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
-        public static ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> isEnabledParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onBeforeParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onReturnParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onThrowParams = new ThreadLocal<Object[]>();
+        public static final ThreadLocal<Object[]> onAfterParams = new ThreadLocal<Object[]>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodArgArray Object[] args) {
             isEnabledParams.set(args);
@@ -306,9 +306,9 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
     public static class BindTravelerAdvice {
-        public static ThreadLocal<String> onReturnTraveler = new ThreadLocal<String>();
-        public static ThreadLocal<String> onThrowTraveler = new ThreadLocal<String>();
-        public static ThreadLocal<String> onAfterTraveler = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onReturnTraveler = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onThrowTraveler = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onAfterTraveler = new ThreadLocal<String>();
         @OnBefore
         public static String onBefore() {
             return "a traveler";
@@ -334,9 +334,9 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveTravelerAdvice {
-        public static ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
-        public static ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
-        public static ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
+        public static final ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
+        public static final ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
+        public static final ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
         @OnBefore
         public static int onBefore() {
             return 3;
@@ -362,9 +362,9 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
     public static class BindPrimitiveBooleanTravelerAdvice {
-        public static ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
-        public static ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
-        public static ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
+        public static final ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
+        public static final ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
+        public static final ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
         @OnBefore
         public static boolean onBefore() {
             return true;
@@ -390,7 +390,7 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn")
     public static class BindReturnAdvice {
-        public static ThreadLocal<String> returnValue = new ThreadLocal<String>();
+        public static final ThreadLocal<String> returnValue = new ThreadLocal<String>();
         @OnReturn
         public static void onReturn(@BindReturn String value) {
             returnValue.set(value);
@@ -403,7 +403,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindPrimitiveReturnAdvice {
-        public static ThreadLocal<Integer> returnValue = new ThreadLocal<Integer>();
+        public static final ThreadLocal<Integer> returnValue = new ThreadLocal<Integer>();
         @OnReturn
         public static void onReturn(@BindReturn int value) {
             returnValue.set(value);
@@ -416,7 +416,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc",
             methodName = "executeWithIntReturn")
     public static class BindAutoboxedReturnAdvice {
-        public static ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
+        public static final ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
         @OnReturn
         public static void onReturn(@BindReturn Object value) {
             returnValue.set(value);
@@ -428,7 +428,7 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
     public static class BindThrowableAdvice {
-        public static ThreadLocal<Throwable> throwable = new ThreadLocal<Throwable>();
+        public static final ThreadLocal<Throwable> throwable = new ThreadLocal<Throwable>();
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t) {
             throwable.set(t);
@@ -441,11 +441,11 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1",
             metricName = "efg")
     public static class BindMethodNameAdvice {
-        public static ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
-        public static ThreadLocal<String> onBeforeMethodName = new ThreadLocal<String>();
-        public static ThreadLocal<String> onReturnMethodName = new ThreadLocal<String>();
-        public static ThreadLocal<String> onThrowMethodName = new ThreadLocal<String>();
-        public static ThreadLocal<String> onAfterMethodName = new ThreadLocal<String>();
+        public static final ThreadLocal<String> isEnabledMethodName = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onBeforeMethodName = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onReturnMethodName = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onThrowMethodName = new ThreadLocal<String>();
+        public static final ThreadLocal<String> onAfterMethodName = new ThreadLocal<String>();
         @IsEnabled
         public static boolean isEnabled(@BindMethodName String methodName) {
             isEnabledMethodName.set(methodName);
@@ -491,7 +491,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {".."})
     public static class MethodArgsDotDotAdvice1 {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -504,7 +504,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", ".."})
     public static class MethodArgsDotDotAdvice2 {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -517,7 +517,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int", ".."})
     public static class MethodArgsDotDotAdvice3 {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -588,10 +588,10 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1",
             captureNested = false)
     public static class NotNestingWithNoIsEnabledAdvice {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -652,7 +652,7 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.StaticMisc", methodName = "executeStatic")
     public static class StaticBindTargetClassAdvice {
-        public static ThreadLocal<Class<?>> onBeforeCount = new ThreadLocal<Class<?>>();
+        public static final ThreadLocal<Class<?>> onBeforeCount = new ThreadLocal<Class<?>>();
         @OnBefore
         public static void onBefore(@BindTarget Class<?> type) {
             onBeforeCount.set(type);
@@ -669,8 +669,8 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc", methodName = "executePrimitive",
             methodArgs = {"int", "double", "*", ".."})
     public static class PrimitiveWithWildcardAdvice {
-        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg int x) {
             enabledCount.increment();
@@ -689,7 +689,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc", methodName = "executePrimitive",
             methodArgs = {"int", "double", "*", ".."})
     public static class PrimitiveWithAutoboxAdvice {
-        public static IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
         @IsEnabled
         public static boolean isEnabled(@SuppressWarnings("unused") @BindMethodArg Object x) {
             enabledCount.increment();
@@ -719,9 +719,9 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int"})
     public static class VeryBadAdvice {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnBefore
         public static Object onBefore() {
             onBeforeCount.increment();
@@ -747,9 +747,9 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithArgs",
             methodArgs = {"java.lang.String", "int"})
     public static class MoreVeryBadAdvice {
-        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnReturn
         public static void onReturn() {
             onReturnCount.increment();
@@ -775,9 +775,9 @@ public class SomeAspect {
     // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn")
     public static class MoreVeryBadAdvice2 {
-        public static IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
-        public static IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
         @OnReturn
         public static void onReturn() {
             onReturnCount.increment();
@@ -803,7 +803,7 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc3", methodName = "identity",
             methodArgs = {"io.informant.weaving.BasicMisc"})
     public static class CircularClassDependencyAdvice {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();
@@ -815,7 +815,7 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
     public static class InterfaceAppearsTwiceInHierarchyAdvice {
-        public static IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
         @OnBefore
         public static void onBefore() {
             onBeforeCount.increment();

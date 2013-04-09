@@ -125,7 +125,7 @@ public abstract class PropertyDescriptor {
 
     @Immutable
     public enum PropertyType {
-        STRING, BOOLEAN, DOUBLE;
+        STRING, BOOLEAN, DOUBLE
     }
 
     @Immutable

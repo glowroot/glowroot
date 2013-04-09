@@ -130,7 +130,7 @@ public class RollingFile {
 
         @Override
         public Reader openStream() throws IOException {
-            if (!out.stillExists(block)) {
+            if (out.isRolledOver(block)) {
                 return CharStreams.asCharSource(rolledOverResponse).openStream();
             }
             // it's important to wrap FileBlockInputStream in a BufferedInputStream to prevent lots
@@ -158,8 +158,8 @@ public class RollingFile {
                 return -1;
             }
             synchronized (lock) {
-                if (!out.stillExists(block)) {
-                    throw new IOException("Block rolled out mid-read");
+                if (out.isRolledOver(block)) {
+                    throw new IOException("Block rolled over mid-read");
                 }
                 long filePosition = out.convertToFilePosition(block.getStartIndex() + blockIndex);
                 inFile.seek(RollingOutputStream.HEADER_SKIP_BYTES + filePosition);

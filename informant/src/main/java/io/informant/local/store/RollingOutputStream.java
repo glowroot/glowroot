@@ -56,8 +56,8 @@ class RollingOutputStream extends OutputStream {
     // currIndex is ever-increasing even over rolling boundary
     // (btw it would take writing 2.9g per second for 100 years for currIndex to hit Long.MAX_VALUE)
     private long currIndex;
-    // lastCompactionBaseIndex is the smallest currIndex saved during the last compaction
-    private long lastCompactionBaseIndex;
+    // lastResizeBaseIndex is the smallest currIndex saved during the last resize
+    private long lastResizeBaseIndex;
     // currPosition is the current position in the file
     private long currPosition;
     // rollingSizeKb is volatile so it can be read outside of the external synchronization around
@@ -81,18 +81,18 @@ class RollingOutputStream extends OutputStream {
             currIndex = 0;
             rollingSizeKb = requestedRollingSizeKb;
             rollingSizeBytes = rollingSizeKb * 1024L;
-            lastCompactionBaseIndex = 0;
+            lastResizeBaseIndex = 0;
             out.writeLong(currIndex);
             out.writeInt(rollingSizeKb);
-            out.writeLong(lastCompactionBaseIndex);
+            out.writeLong(lastResizeBaseIndex);
         } else {
             currIndex = out.readLong();
             // have to ignore requested fixedLength for existing files, must explicitly call
             // resize() since this can be an expensive operation
             rollingSizeKb = out.readInt();
             rollingSizeBytes = rollingSizeKb * 1024L;
-            lastCompactionBaseIndex = out.readLong();
-            currPosition = (currIndex - lastCompactionBaseIndex) % rollingSizeBytes;
+            lastResizeBaseIndex = out.readLong();
+            currPosition = (currIndex - lastResizeBaseIndex) % rollingSizeBytes;
             out.seek(HEADER_SKIP_BYTES + currPosition);
         }
         fsyncFuture = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
@@ -122,10 +122,11 @@ class RollingOutputStream extends OutputStream {
         return FileBlock.from(blockStartIndex, currIndex - blockStartIndex);
     }
 
-    boolean stillExists(FileBlock block) {
-        // must be more recent than the last compaction base and also not have been rolled over
-        return block.getStartIndex() >= lastCompactionBaseIndex
-                && currIndex - block.getStartIndex() <= rollingSizeBytes;
+    boolean isRolledOver(FileBlock block) {
+        // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
+        // currIndex - rollingSizeBytes would be less than lastResizeBaseIndex
+        return block.getStartIndex() < lastResizeBaseIndex
+                || block.getStartIndex() < currIndex - rollingSizeBytes;
     }
 
     // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()
@@ -134,7 +135,7 @@ class RollingOutputStream extends OutputStream {
     }
 
     long convertToFilePosition(long index) {
-        return (index - lastCompactionBaseIndex) % rollingSizeBytes;
+        return (index - lastResizeBaseIndex) % rollingSizeBytes;
     }
 
     // perform resize in-place to avoid using extra disk space
@@ -144,15 +145,15 @@ class RollingOutputStream extends OutputStream {
         }
         long newRollingSizeBytes = newRollingSizeKb * 1024L;
         if (newRollingSizeKb < rollingSizeKb
-                && currIndex - lastCompactionBaseIndex < newRollingSizeBytes) {
-            // resizing smaller and on first "loop" after a compaction and haven't written up to the
+                && currIndex - lastResizeBaseIndex < newRollingSizeBytes) {
+            // resizing smaller and on first "loop" after a resize and haven't written up to the
             // new smaller size yet
             rollingSizeKb = newRollingSizeKb;
             rollingSizeBytes = newRollingSizeBytes;
             return;
         } else if (newRollingSizeKb > rollingSizeKb
-                && currIndex - lastCompactionBaseIndex < rollingSizeBytes) {
-            // resizing larger and on first "loop" after a compaction
+                && currIndex - lastResizeBaseIndex < rollingSizeBytes) {
+            // resizing larger and on first "loop" after a resize
             rollingSizeKb = newRollingSizeKb;
             rollingSizeBytes = newRollingSizeBytes;
             return;
@@ -163,12 +164,12 @@ class RollingOutputStream extends OutputStream {
         // at this point, because of the two shortcut conditionals above, currIndex must be >=
         // either the current or new rolling size (numKeepBytes)
         long startPosition = convertToFilePosition(currIndex - numKeepBytes);
-        lastCompactionBaseIndex = currIndex - numKeepBytes;
+        lastResizeBaseIndex = currIndex - numKeepBytes;
         File tmpRollingFile = new File(file.getPath() + ".resizing.tmp");
         RandomAccessFile tmpOut = new RandomAccessFile(tmpRollingFile, "rw");
         tmpOut.writeLong(currIndex);
         tmpOut.writeInt(newRollingSizeKb);
-        tmpOut.writeLong(lastCompactionBaseIndex);
+        tmpOut.writeLong(lastResizeBaseIndex);
         long remaining = rollingSizeBytes - startPosition;
         if (numKeepBytes > remaining) {
             out.seek(HEADER_SKIP_BYTES + startPosition);

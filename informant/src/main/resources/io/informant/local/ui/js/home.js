@@ -172,7 +172,7 @@ $(document).ready(function () {
     var headlineComparator = $('#headlineComparator').val();
     var headline = $('#headlineFilter').val();
     if (headline) {
-      queryString += '&headlineComparator=' + headlineComparator;
+      queryString += '&headline-comparator=' + headlineComparator;
       queryString += '&headline=' + headline;
     }
     var userIdComparator = $('#userIdComparator').val();

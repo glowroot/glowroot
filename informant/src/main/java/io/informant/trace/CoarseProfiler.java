@@ -151,8 +151,6 @@ class CoarseProfiler implements Runnable {
     private static long getInitialDelayForCommand(long startTick, long currentTick,
             CoarseProfilingConfig config) {
         long traceDurationMillis = NANOSECONDS.toMillis(currentTick - startTick);
-        long initialDelayRemainingMillis = Math.max(0, config.getInitialDelayMillis()
-                - traceDurationMillis);
-        return initialDelayRemainingMillis;
+        return Math.max(0, config.getInitialDelayMillis() - traceDurationMillis);
     }
 }

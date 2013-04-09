@@ -157,6 +157,6 @@ public class PointcutConfig {
 
     @Immutable
     public enum CaptureItem {
-        METRIC, SPAN, TRACE;
+        METRIC, SPAN, TRACE
     }
 }

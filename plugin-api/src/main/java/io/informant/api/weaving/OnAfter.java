@@ -23,9 +23,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Annotates a method in a {@literal @}{@link Pointcut} class that should be run just after each
- * method execution picked out by the {@link Pointcut}, whether the method picked out by the
- * {@link Pointcut} returns successfully or throws an {@code Exception}. Only one method in a
- * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnAfter}.
+ * method (or constructor) execution picked out by the {@link Pointcut}, whether the method picked
+ * out by the {@link Pointcut} returns successfully or throws an {@code Exception}. Only one method
+ * in a {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnAfter}.
  * <p>
  * An {@literal @}{@link OnAfter} method is run after the {@literal @}{@link OnReturn} and
  * {@literal @}{@link OnThrow} methods, if either of those are present.

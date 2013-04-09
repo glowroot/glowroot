@@ -17,7 +17,6 @@ package io.informant.weaving;
 
 import java.io.IOException;
 import java.security.CodeSource;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -195,10 +194,10 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
-        for (int i = 0; i < matchedMixinTypes.size(); i++) {
+        for (MixinType mixinType : matchedMixinTypes) {
             ClassReader cr;
             try {
-                cr = new ClassReader(matchedMixinTypes.get(i).getImplementation().getName());
+                cr = new ClassReader(mixinType.getImplementation().getName());
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 continue;
@@ -208,15 +207,14 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             // SuppressWarnings because generics are explicitly removed from asm binaries
             // see http://forge.ow2.org/tracker/?group_id=23&atid=100023&func=detail&aid=316377
             @SuppressWarnings("unchecked")
-            Iterator<FieldNode> fieldNodes = cn.fields.iterator();
-            while (fieldNodes.hasNext()) {
-                fieldNodes.next().accept(this);
+            List<FieldNode> fieldNodes = cn.fields;
+            for (FieldNode fieldNode : fieldNodes) {
+                fieldNode.accept(this);
             }
             // SuppressWarnings because generics are explicitly removed from asm binaries
             @SuppressWarnings("unchecked")
-            Iterator<MethodNode> methodNodes = cn.methods.iterator();
-            while (methodNodes.hasNext()) {
-                MethodNode mn = methodNodes.next();
+            List<MethodNode> methodNodes = cn.methods;
+            for (MethodNode mn : methodNodes) {
                 if (mn.name.equals("<init>")) {
                     continue;
                 }
@@ -404,7 +402,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         private final Type type;
         private boolean cascadingConstructor;
 
-        protected InitMixins(MethodVisitor mv, int access, String name, String desc,
+        InitMixins(MethodVisitor mv, int access, String name, String desc,
                 @ReadOnly List<MixinType> matchedMixinTypes, Type type) {
             super(ASM4, mv, access, name, desc);
             this.matchedMixinTypes = matchedMixinTypes;
@@ -426,8 +424,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 // constructors
                 return;
             }
-            for (int i = 0; i < matchedMixinTypes.size(); i++) {
-                String initMethodName = matchedMixinTypes.get(i).getInitMethodName();
+            for (MixinType mixinType : matchedMixinTypes) {
+                String initMethodName = mixinType.getInitMethodName();
                 if (initMethodName != null) {
                     loadThis();
                     invokeVirtual(type, new Method(initMethodName, "()V"));
@@ -438,7 +436,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private class InitThreadLocals extends AdviceAdapter {
 
-        protected InitThreadLocals(MethodVisitor mv, int access, String name, String desc) {
+        InitThreadLocals(MethodVisitor mv, int access, String name, String desc) {
             super(ASM4, mv, access, name, desc);
         }
 

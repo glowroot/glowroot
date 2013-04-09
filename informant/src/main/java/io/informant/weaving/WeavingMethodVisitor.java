@@ -81,9 +81,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
-    protected WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc,
-            Type owner, @ReadOnly List<Advice> advisors,
-            @ReadOnly Map<Advice, Integer> adviceFlowOuterHolderNums) {
+    WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
+            @ReadOnly List<Advice> advisors, @ReadOnly Map<Advice,
+            Integer> adviceFlowOuterHolderNums) {
         super(ASM4, mv, access, name, desc);
         this.access = access;
         this.name = name;
@@ -107,8 +107,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         visitLabel(methodStartLabel);
         // enabled and traveler locals must be defined outside of the try block so they will be
         // accessible in the catch block
-        for (int i = 0; i < advisors.size(); i++) {
-            Advice advice = advisors.get(i);
+        for (Advice advice : advisors) {
             defineAndEvaluateEnabledLocalVar(advice);
             defineTravelerLocalVar(advice);
         }
@@ -465,8 +464,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void resetAdviceFlowIfNecessary() {
-        for (int i = 0; i < advisors.size(); i++) {
-            Advice advice = advisors.get(i);
+        for (Advice advice : advisors) {
             if (!advice.getPointcut().captureNested()) {
                 Label setAdviceFlowBlockEnd = newLabel();
                 loadLocal(enabledLocals.get(advice));
@@ -564,31 +562,30 @@ class WeavingMethodVisitor extends AdviceAdapter {
         switch (travelerType.getSort()) {
             case Type.BOOLEAN:
                 push(false);
-                return;
+                break;
             case Type.CHAR:
                 push(0);
-                return;
+                break;
             case Type.BYTE:
                 push(0);
-                return;
+                break;
             case Type.SHORT:
                 push(0);
-                return;
+                break;
             case Type.INT:
                 push(0);
-                return;
+                break;
             case Type.FLOAT:
                 push(0f);
-                return;
+                break;
             case Type.LONG:
                 push(0L);
-                return;
+                break;
             case Type.DOUBLE:
                 push(0.0);
-                return;
+                break;
             default:
                 visitInsn(ACONST_NULL);
-                return;
         }
     }
 

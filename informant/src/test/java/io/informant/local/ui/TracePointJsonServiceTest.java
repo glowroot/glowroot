@@ -100,7 +100,7 @@ public class TracePointJsonServiceTest {
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
-        pendingTraces.add(mockPendingTrace("id1", 500, true));
+        pendingTraces.add(mockPendingTrace("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
@@ -119,7 +119,7 @@ public class TracePointJsonServiceTest {
         // given
         List<Trace> activeTraces = Lists.newArrayList();
         List<Trace> pendingTraces = Lists.newArrayList();
-        pendingTraces.add(mockPendingTrace("id1", 500, true));
+        pendingTraces.add(mockPendingTrace("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 10001, 500, true));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
@@ -142,7 +142,7 @@ public class TracePointJsonServiceTest {
         }
         List<Trace> pendingTraces = Lists.newArrayList();
         for (int i = 100; i < 200; i++) {
-            pendingTraces.add(mockPendingTrace("id" + i, random.nextInt(1000), true));
+            pendingTraces.add(mockPendingTrace("id" + i, random.nextInt(1000)));
         }
         List<TracePoint> points = Lists.newArrayList();
         for (int i = 200; i < 300; i++) {
@@ -196,7 +196,7 @@ public class TracePointJsonServiceTest {
             long currentTick) {
 
         Ordering<TracePoint> durationDescOrdering = Ordering.natural().reverse()
-                .onResultOf(new Function<TracePoint, Double>() {
+                .onResultOf(new Function<TracePoint, Comparable>() {
                     public Double apply(TracePoint trace) {
                         return trace.getDuration();
                     }
@@ -232,11 +232,11 @@ public class TracePointJsonServiceTest {
         return trace;
     }
 
-    private static Trace mockPendingTrace(String id, long durationMillis, boolean completed) {
+    private static Trace mockPendingTrace(String id, long durationMillis) {
         Trace trace = mock(Trace.class);
         when(trace.getId()).thenReturn(id);
         when(trace.getDuration()).thenReturn(MILLISECONDS.toNanos(durationMillis));
-        when(trace.isCompleted()).thenReturn(completed);
+        when(trace.isCompleted()).thenReturn(true);
         return trace;
     }
 

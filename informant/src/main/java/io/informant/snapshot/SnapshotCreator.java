@@ -433,7 +433,7 @@ public class SnapshotCreator {
 
         @Immutable
         private static enum JsonGeneratorOp {
-            END_OBJECT, END_ARRAY, POP_METRIC_NAME;
+            END_OBJECT, END_ARRAY, POP_METRIC_NAME
         }
     }
 

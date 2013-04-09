@@ -95,12 +95,17 @@ class AdviceMatcher {
     }
 
     private boolean isMethodNameMatch(String name) {
+        if (name.equals("<clinit>")) {
+            // static initializers are not supported
+            return false;
+        }
+        if (name.equals("<init>")) {
+            // constructors only match by exact name (don't want patterns to match constructors)
+            return advice.getPointcut().methodName().equals("<init>");
+        }
         Pattern pointcutMethodPattern = advice.getPointcutMethodPattern();
         if (pointcutMethodPattern == null) {
             return advice.getPointcut().methodName().equals(name);
-        } else if (name.equals("<init>") || name.equals("<clinit>")) {
-            // constructors and static initializers are not supported (yet)
-            return false;
         } else {
             return pointcutMethodPattern.matcher(name).matches();
         }
@@ -134,11 +139,7 @@ class AdviceMatcher {
 
     private boolean isMethodReturnMatch(String returnTypeName) {
         String pointcutMethodReturn = advice.getPointcut().methodReturn();
-        if (pointcutMethodReturn.equals("")) {
-            return true;
-        } else {
-            return pointcutMethodReturn.equals(returnTypeName);
-        }
+        return pointcutMethodReturn.equals("") || pointcutMethodReturn.equals(returnTypeName);
     }
 
     private boolean isMethodModifiersMatch(int modifiers) {

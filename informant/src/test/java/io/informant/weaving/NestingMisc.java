@@ -21,7 +21,7 @@ package io.informant.weaving;
  */
 public class NestingMisc implements Misc {
 
-    private static String yes;
+    private static final String yes;
 
     private final boolean stopNesting;
 

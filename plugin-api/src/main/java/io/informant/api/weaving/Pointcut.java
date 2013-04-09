@@ -37,6 +37,9 @@ public @interface Pointcut {
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
      * starting and ending methodName with /.
      */
+    // use "<init>" to weave constructors
+    // (note: patterns never match constructors, and @OnBefore is not supported for constructors)
+    // static initializers ("<clinit>") are not supported
     String methodName();
     String[] methodArgs() default {};
     String methodReturn() default "";

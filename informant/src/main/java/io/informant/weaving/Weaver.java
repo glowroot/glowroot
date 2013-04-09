@@ -71,7 +71,7 @@ class Weaver implements Opcodes {
     }
 
     byte[] weave(byte[] classBytes, String className) {
-        return weave$informant$metric$informant$weaving$0(classBytes, (CodeSource) null, className);
+        return weave$informant$metric$informant$weaving$0(classBytes, null, className);
     }
 
     byte[] weave(byte[] classBytes, ProtectionDomain protectionDomain, String className) {

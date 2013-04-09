@@ -78,7 +78,7 @@ public class PluginDescriptorCache {
                     advisors.addAll(getAdvisors(aspectClass));
                     mixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
-                    continue;
+                    logger.warn("aspect not found: {}", aspect);
                 }
             }
         }
@@ -121,7 +121,6 @@ public class PluginDescriptorCache {
             } catch (JsonProcessingException e) {
                 // no need to log stack trace
                 logger.error("syntax error in file {}: {}", url.toExternalForm(), e.getMessage());
-                continue;
             }
         }
         return plugins;

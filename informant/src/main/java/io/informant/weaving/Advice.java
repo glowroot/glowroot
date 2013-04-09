@@ -234,7 +234,7 @@ public class Advice {
     @Immutable
     enum ParameterKind {
         TARGET, METHOD_ARG, PRIMITIVE_METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN,
-        PRIMITIVE_RETURN, THROWABLE, TRAVELER;
+        PRIMITIVE_RETURN, THROWABLE, TRAVELER
     }
 
     @SuppressWarnings("serial")

@@ -35,8 +35,8 @@ public class AdviceFlowOuterHolder {
     // a given AdviceFlowThreadLocal is shared across all of a given advice's pointcuts.
     // the call to getSharedInstance() is cached in a woven class's static initializer in order to
     // minimize the semi-expensive cache lookup
-    private static LoadingCache<Class<?>, AdviceFlowOuterHolder> sharedThreadLocals = CacheBuilder
-            .newBuilder().build(new CacheLoader<Class<?>, AdviceFlowOuterHolder>() {
+    private static final LoadingCache<Class<?>, AdviceFlowOuterHolder> sharedThreadLocals =
+            CacheBuilder.newBuilder().build(new CacheLoader<Class<?>, AdviceFlowOuterHolder>() {
                 @Override
                 public AdviceFlowOuterHolder load(Class<?> key) {
                     return new AdviceFlowOuterHolder();

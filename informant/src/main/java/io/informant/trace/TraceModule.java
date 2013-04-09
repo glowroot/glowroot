@@ -53,7 +53,6 @@ public class TraceModule {
     private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
     private final MetricCache metricCache;
-    private final Random random;
 
     private final StuckTraceCollector stuckTraceCollector;
     private final CoarseProfiler coarseProfiler;
@@ -81,9 +80,8 @@ public class TraceModule {
         weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
         metricCache = new MetricCache(ticker);
-        random = new Random();
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
-                random);
+                new Random());
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
                 configService, ticker);
         coarseProfiler = new CoarseProfiler(scheduledExecutor, traceRegistry, configService,

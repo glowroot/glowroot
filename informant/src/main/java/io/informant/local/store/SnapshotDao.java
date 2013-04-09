@@ -142,9 +142,8 @@ public class SnapshotDao implements SnapshotSink {
             logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
                     + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
                     + " headlineComparator={}, headline={}, userIdComparator={}, userId={}",
-                    new Object[] {capturedFrom, capturedTo, durationLow, durationHigh, background,
-                            errorOnly, fineOnly, headlineComparator, headline, userIdComparator,
-                            userId});
+                    capturedFrom, capturedTo, durationLow, durationHigh, background, errorOnly,
+                    fineOnly, headlineComparator, headline, userIdComparator, userId);
         }
         try {
             // all of these columns should be in the same index so h2 can return result set directly
@@ -244,13 +243,12 @@ public class SnapshotDao implements SnapshotSink {
         }
     }
 
-    int deleteSnapshotsBefore(long capturedAt) {
+    void deleteSnapshotsBefore(long capturedAt) {
         logger.debug("deleteSnapshotsBefore(): capturedAt={}", capturedAt);
         try {
-            return dataSource.update("delete from snapshot where captured_at <= ?", capturedAt);
+            dataSource.update("delete from snapshot where captured_at <= ?", capturedAt);
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
-            return 0;
         }
     }
 

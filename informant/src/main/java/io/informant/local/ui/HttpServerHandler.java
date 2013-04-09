@@ -163,7 +163,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
                     if (resourcePath.endsWith(".html")) {
-                        return handleStaticHtmlTemplate(resourcePath, channel);
+                        handleStaticHtmlTemplate(resourcePath, channel);
+                        // return null to indicate streaming
+                        return null;
                     }
                     return handleStaticResource(resourcePath);
                 }
@@ -185,16 +187,13 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
-    private HttpResponse handleStaticHtmlTemplate(String resourcePath,
-            Channel channel) throws IOException {
+    private void handleStaticHtmlTemplate(String resourcePath, Channel channel) throws IOException {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
         response.setChunked(true);
         channel.write(response);
         channel.write(new ReaderChunkedInput(HtmlTemplates.processTemplate(resourcePath)
                 .openStream()));
-        // return null to indicate streaming
-        return null;
     }
 
     private static HttpResponse handleStaticResource(String path) throws IOException {
@@ -259,7 +258,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             String serviceMethodName, String[] args, String requestText) {
 
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
-                new Object[] {serviceMethodName, args, requestText});
+                serviceMethodName, args, requestText);
         Object responseText;
         try {
             responseText = callMethod(jsonService, serviceMethodName, args, requestText);
@@ -350,13 +349,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 }
             }
             return mapper.writeValueAsString(parameters);
-        }
-    }
-
-    @SuppressWarnings("serial")
-    private static class ResourceNotFound extends IOException {
-        private ResourceNotFound(String message) {
-            super(message);
         }
     }
 

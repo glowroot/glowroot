@@ -215,10 +215,9 @@ public class MergedStackTree {
             // only consider thread state when matching the leaf node
             return stackTraceElement.equals(childNode.getStackTraceElement())
                     && threadState == leafThreadState;
-        } else if (leafThreadState == null && !leaf) {
-            return stackTraceElement.equals(childNode.getStackTraceElement());
         } else {
-            return false;
+            return leafThreadState == null && !leaf
+                    && stackTraceElement.equals(childNode.getStackTraceElement());
         }
     }
 

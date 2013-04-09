@@ -21,7 +21,7 @@ package io.informant.weaving;
  */
 public class NestingAnotherMisc implements Misc {
 
-    private static String yes;
+    private static final String yes;
 
     // test with static initializer present to verify static initializer merging
     static {

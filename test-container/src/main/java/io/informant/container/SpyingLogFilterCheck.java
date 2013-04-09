@@ -42,7 +42,7 @@ public class SpyingLogFilterCheck {
         try {
             ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
                     .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-            for (Iterator<Appender<ILoggingEvent>> i = root.iteratorForAppenders(); i.hasNext(); ) {
+            for (Iterator<Appender<ILoggingEvent>> i = root.iteratorForAppenders(); i.hasNext();) {
                 for (Filter<ILoggingEvent> filter : i.next().getCopyOfAttachedFiltersList()) {
                     if (filter instanceof SpyingLogFilter) {
                         return true;

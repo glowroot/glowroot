@@ -185,7 +185,7 @@ class TracePointJsonService implements JsonService {
                 }
             }
             Collections.sort(activeTraces,
-                    Ordering.natural().onResultOf(new Function<Trace, Long>() {
+                    Ordering.natural().onResultOf(new Function<Trace, Comparable>() {
                         public Long apply(@Nullable Trace trace) {
                             checkNotNull(trace, "Ordering of non-null elements only");
                             return trace.getStartTick();
@@ -236,11 +236,14 @@ class TracePointJsonService implements JsonService {
                 case BEGINS:
                     return traceHeadline.toUpperCase(Locale.ENGLISH)
                             .startsWith(headline.toUpperCase(Locale.ENGLISH));
+                case EQUALS:
+                    return traceHeadline.equalsIgnoreCase(headline);
+                case ENDS:
+                    return traceHeadline.toUpperCase(Locale.ENGLISH)
+                            .endsWith(headline.toUpperCase(Locale.ENGLISH));
                 case CONTAINS:
                     return traceHeadline.toUpperCase(Locale.ENGLISH)
                             .contains(headline.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceHeadline.equalsIgnoreCase(headline);
                 default:
                     throw new IllegalStateException("Unexpected headline comparator: "
                             + headlineComparator);
@@ -260,11 +263,14 @@ class TracePointJsonService implements JsonService {
                 case BEGINS:
                     return traceUserId.toUpperCase(Locale.ENGLISH)
                             .startsWith(userId.toUpperCase(Locale.ENGLISH));
+                case EQUALS:
+                    return traceUserId.equalsIgnoreCase(userId);
+                case ENDS:
+                    return traceUserId.toUpperCase(Locale.ENGLISH)
+                            .endsWith(userId.toUpperCase(Locale.ENGLISH));
                 case CONTAINS:
                     return traceUserId.toUpperCase(Locale.ENGLISH)
                             .contains(userId.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceUserId.equalsIgnoreCase(userId);
                 default:
                     throw new IllegalStateException("Unexpected user id comparator: "
                             + userIdComparator);

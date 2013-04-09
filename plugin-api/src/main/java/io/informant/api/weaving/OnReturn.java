@@ -23,9 +23,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Annotates a method in a {@literal @}{@link Pointcut} class that should be run just after each
- * method execution picked out by the {@link Pointcut}, but only if the method picked out by the
- * {@link Pointcut} returns successfully (does not throw an {@code Exception}). Only one method in a
- * {@literal @}{@code Pointcut} class may be annotated with {@literal @}{@code OnReturn}.
+ * method (or constructor) execution picked out by the {@link Pointcut}, but only if the method
+ * picked out by the {@link Pointcut} returns successfully (does not throw an {@code Exception}).
+ * Only one method in a {@literal @}{@code Pointcut} class may be annotated with
+ * 
+ * {@literal @}{@code OnReturn}.
  * <p>
  * An {@literal @}{@code OnReturn} method can accept parameters annotated with any of the following:
  * {@literal @}{@link BindTarget}, {@literal @}{@link BindMethodArg},

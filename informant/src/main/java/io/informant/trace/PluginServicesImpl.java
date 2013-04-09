@@ -143,11 +143,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.warn("getBooleanProperty(): argument 'name' must be non-null");
             return false;
         }
-        if (pluginConfig == null) {
-            return false;
-        } else {
-            return pluginConfig.getBooleanProperty(name);
-        }
+        return pluginConfig != null && pluginConfig.getBooleanProperty(name);
     }
 
     @Override
@@ -315,7 +311,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             metric.start(startTick);
             return new TimerWrappedInSpan(metric, startTick, trace, messageSupplier);
         } else {
-            return new SpanImpl(trace.pushSpan(metricName, messageSupplier, false), trace);
+            return new SpanImpl(trace.pushSpan(metricName, messageSupplier), trace);
         }
     }
 

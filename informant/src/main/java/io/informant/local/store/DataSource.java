@@ -152,23 +152,20 @@ public class DataSource {
                 return ImmutableList.of();
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
-            try {
-                for (int i = 0; i < args.size(); i++) {
-                    preparedStatement.setObject(i + 1, args.get(i));
-                }
-                ResultSet resultSet = preparedStatement.executeQuery();
-                try {
-                    List<T> mappedRows = Lists.newArrayList();
-                    while (resultSet.next()) {
-                        mappedRows.add(rowMapper.mapRow(resultSet));
-                    }
-                    return mappedRows;
-                } finally {
-                    resultSet.close();
-                }
-            } finally {
-                closeStatement(preparedStatement);
+            for (int i = 0; i < args.size(); i++) {
+                preparedStatement.setObject(i + 1, args.get(i));
             }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            try {
+                List<T> mappedRows = Lists.newArrayList();
+                while (resultSet.next()) {
+                    mappedRows.add(rowMapper.mapRow(resultSet));
+                }
+                return mappedRows;
+            } finally {
+                resultSet.close();
+            }
+            // don't need to close statement since they are all cached and used under lock
         }
     }
 
@@ -184,14 +181,11 @@ public class DataSource {
                 return 0;
             }
             PreparedStatement preparedStatement = prepareStatement(sql);
-            try {
-                for (int i = 0; i < args.length; i++) {
-                    preparedStatement.setObject(i + 1, args[i]);
-                }
-                return preparedStatement.executeUpdate();
-            } finally {
-                closeStatement(preparedStatement);
+            for (int i = 0; i < args.length; i++) {
+                preparedStatement.setObject(i + 1, args[i]);
             }
+            return preparedStatement.executeUpdate();
+            // don't need to close statement since they are all cached and used under lock
         }
     }
 
@@ -224,10 +218,7 @@ public class DataSource {
 
     boolean tableExists(String tableName) throws SQLException {
         synchronized (lock) {
-            if (closing) {
-                return false;
-            }
-            return Schemas.tableExists(tableName, connection);
+            return !closing && Schemas.tableExists(tableName, connection);
         }
     }
 
@@ -248,19 +239,16 @@ public class DataSource {
     private <T> T queryUnderLock(String sql, Object[] args, ResultSetExtractor<T> rse)
             throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
-        try {
-            for (int i = 0; i < args.length; i++) {
-                preparedStatement.setObject(i + 1, args[i]);
-            }
-            ResultSet resultSet = preparedStatement.executeQuery();
-            try {
-                return rse.extractData(resultSet);
-            } finally {
-                resultSet.close();
-            }
-        } finally {
-            closeStatement(preparedStatement);
+        for (int i = 0; i < args.length; i++) {
+            preparedStatement.setObject(i + 1, args[i]);
         }
+        ResultSet resultSet = preparedStatement.executeQuery();
+        try {
+            return rse.extractData(resultSet);
+        } finally {
+            resultSet.close();
+        }
+        // don't need to close statement since they are all cached and used under lock
     }
 
     private PreparedStatement prepareStatement(String sql) throws SQLException {
@@ -276,11 +264,6 @@ public class DataSource {
             f.initCause(e);
             throw f;
         }
-    }
-
-    @SuppressWarnings("unused")
-    private void closeStatement(PreparedStatement preparedStatement) throws SQLException {
-        // does nothing since all prepared statements are pooled
     }
 
     public static boolean tryUnlockDatabase(File dbFile) {
