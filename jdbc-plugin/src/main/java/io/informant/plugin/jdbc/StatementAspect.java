@@ -17,11 +17,7 @@ package io.informant.plugin.jdbc;
 
 import java.io.InputStream;
 import java.io.Reader;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,14 +25,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import checkers.nullness.quals.Nullable;
 
 import io.informant.api.ErrorMessage;
-import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.MetricTimer;
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.Span;
 import io.informant.api.weaving.BindMethodArg;
-import io.informant.api.weaving.BindMethodName;
 import io.informant.api.weaving.BindReturn;
 import io.informant.api.weaving.BindTarget;
 import io.informant.api.weaving.BindThrowable;
@@ -57,17 +51,14 @@ import io.informant.shaded.slf4j.LoggerFactory;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * Defines pointcuts to capture data on {@link Statement}, {@link PreparedStatement},
- * {@link CallableStatement} and {@link ResultSet} calls.
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
 // many of the pointcuts are not restricted to pluginServices.isEnabled() because StatementMirrors
 // must be tracked for their entire life
-public class JdbcAspect {
+public class StatementAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger(JdbcAspect.class);
+    private static final Logger logger = LoggerFactory.getLogger(StatementAspect.class);
 
     private static final PluginServices pluginServices =
             PluginServices.get("io.informant.plugins:jdbc-plugin");
@@ -117,35 +108,34 @@ public class JdbcAspect {
 
     // capture the sql used to create the PreparedStatement
     @Pointcut(typeName = "java.sql.Connection", methodName = "prepare*",
-            methodArgs = {"java.lang.String", ".."}, captureNested = false)
-    public static class PrepareStatementTrackingAdvice {
+            methodArgs = {"java.lang.String", ".."}, captureNested = false,
+            metricName = "jdbc prepare")
+    public static class PrepareAdvice {
+        private static final MetricName metricName =
+                pluginServices.getMetricName(PrepareAdvice.class);
+        @OnBefore
+        @Nullable
+        public static MetricTimer onBefore() {
+            // don't capture if implementation detail of a DatabaseMetaData method
+            // (can't use @IsEnabled since need @OnReturn to always execute)
+            if (pluginServices.isEnabled()
+                    && !DatabaseMetaDataAspect.isCurrentlyExecuting()) {
+                return pluginServices.startMetricTimer(metricName);
+            } else {
+                return null;
+            }
+        }
         @OnReturn
         public static void onReturn(@BindReturn PreparedStatement preparedStatement,
                 @BindMethodArg String sql) {
             ((HasStatementMirror) preparedStatement)
                     .setInformantStatementMirror(new PreparedStatementMirror(sql));
         }
-    }
-
-    @Pointcut(typeName = "java.sql.Connection", methodName = "prepare*",
-            methodArgs = {"java.lang.String", ".."}, captureNested = false,
-            metricName = "jdbc prepare")
-    public static class PrepareStatementTimingAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(PrepareStatementTimingAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return pluginServices.isEnabled()
-                    && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
-        }
-        @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metricName);
-        }
         @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
+        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
+            if (metricTimer != null) {
+                metricTimer.stop();
+            }
         }
     }
 
@@ -156,7 +146,7 @@ public class JdbcAspect {
     // see special case below to handle setNull()
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
             methodArgs = {"int", "*", ".."}, captureNested = false)
-    public static class PreparedStatementSetXAdvice {
+    public static class SetXAdvice {
         @OnReturn
         public static void onReturn(@BindTarget PreparedStatement preparedStatement,
                 @BindMethodArg int parameterIndex, @BindMethodArg Object x) {
@@ -176,7 +166,7 @@ public class JdbcAspect {
 
     @Pointcut(typeName = "java.sql.PreparedStatement", methodName = "setNull",
             methodArgs = {"int", "int", ".."}, captureNested = false)
-    public static class PreparedStatementSetNullAdvice {
+    public static class SetNullAdvice {
         @OnReturn
         public static void onReturn(@BindTarget PreparedStatement preparedStatement,
                 @BindMethodArg int parameterIndex) {
@@ -209,7 +199,7 @@ public class JdbcAspect {
     // Statement.clearBatch() can be used to re-initiate a prepared statement
     // that has been cached from a previous usage
     @Pointcut(typeName = "java.sql.Statement", methodName = "clearBatch")
-    public static class StatementClearBatchAdvice {
+    public static class ClearBatchAdvice {
         @OnReturn
         public static void onReturn(@BindTarget Statement statement) {
             StatementMirror mirror = getStatementMirror(statement);
@@ -228,7 +218,7 @@ public class JdbcAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+            return !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
         @Nullable
@@ -276,7 +266,7 @@ public class JdbcAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+            return !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
         @Nullable
@@ -327,7 +317,7 @@ public class JdbcAspect {
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+            return !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
         @Nullable
@@ -390,178 +380,18 @@ public class JdbcAspect {
         }
     }
 
-    // ========= ResultSet =========
-
-    // TODO support ResultSet.relative(), absolute() and last()
-
-    // capture the row number any time the cursor is moved through the result set
-
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "next", captureNested = false,
-            metricName = "jdbc resultset next")
-    public static class ResultSetNextAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ResultSetNextAdvice.class);
-        private static volatile boolean pluginEnabled;
-        // plugin configuration property captureResultSetNext is cached to limit map lookups
-        private static volatile boolean metricEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                public void onChange() {
-                    pluginEnabled = pluginServices.isEnabled();
-                    metricEnabled = pluginEnabled
-                            && pluginServices.getBooleanProperty("captureResultSetNext");
-                }
-            });
-            pluginEnabled = pluginServices.isEnabled();
-            metricEnabled = pluginEnabled
-                    && pluginServices.getBooleanProperty("captureResultSetNext");
-        }
-        @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return pluginEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
-        }
-        @OnBefore
-        @Nullable
-        public static MetricTimer onBefore() {
-            if (metricEnabled) {
-                return pluginServices.startMetricTimer(metricName);
-            } else {
-                return null;
-            }
-        }
-        @OnReturn
-        public static void onReturn(@BindReturn boolean currentRowValid,
-                @BindTarget ResultSet resultSet) {
-            try {
-                Statement statement = resultSet.getStatement();
-                if (statement == null) {
-                    // this is not a statement execution, it is some other execution of
-                    // ResultSet.next(), e.g. Connection.getMetaData().getTables().next()
-                    return;
-                }
-                StatementMirror mirror = getStatementMirror(statement);
-                JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
-                if (lastJdbcMessageSupplier == null) {
-                    // tracing must be disabled (e.g. exceeded span limit per trace)
-                    return;
-                }
-                if (currentRowValid) {
-                    lastJdbcMessageSupplier.setNumRows(resultSet.getRow());
-                    // TODO also record time spent in next() into JdbcMessageSupplier
-                } else {
-                    lastJdbcMessageSupplier.setHasPerformedNext();
-                }
-            } catch (SQLException e) {
-                logger.warn(e.getMessage(), e);
-            }
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler @Nullable MetricTimer metricTimer) {
-            if (metricTimer != null) {
-                metricTimer.stop();
-            }
-        }
-    }
-
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*", methodArgs = {"int", ".."},
-            metricName = "jdbc resultset value")
-    public static class ResultSetValueAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ResultSetValueAdvice.class);
-        // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean metricEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                public void onChange() {
-                    metricEnabled = pluginServices.isEnabled()
-                            && pluginServices.getBooleanProperty("captureResultSetGet");
-                }
-            });
-            metricEnabled = pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty("captureResultSetGet");
-        }
-        @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
-        }
-        @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metricName);
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
-        }
-    }
-
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "get*",
-            methodArgs = {"java.lang.String", ".."}, metricName = "jdbc resultset value")
-    public static class ResultSetValueAdvice2 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ResultSetValueAdvice2.class);
-        // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean metricEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                public void onChange() {
-                    metricEnabled = pluginServices.isEnabled()
-                            && pluginServices.getBooleanProperty("captureResultSetGet");
-                }
-            });
-            metricEnabled = pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty("captureResultSetGet");
-        }
-        @IsEnabled
-        public static boolean isEnabled() {
-            // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
-        }
-        @OnBefore
-        public static MetricTimer onBefore() {
-            return pluginServices.startMetricTimer(metricName);
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler MetricTimer metricTimer) {
-            metricTimer.stop();
-        }
-    }
-
-    // ========= Transactions =========
-
-    @Pointcut(typeName = "java.sql.Connection", methodName = "commit", captureNested = false,
-            metricName = "jdbc commit")
-    public static class ConnectionCommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ConnectionCommitAdvice.class);
-        @IsEnabled
-        public static boolean isEnabled() {
-            return pluginServices.isEnabled();
-        }
-        @OnBefore
-        public static Span onBefore(@BindTarget Connection connection) {
-            return pluginServices.startSpan(MessageSupplier.from("jdbc commit [connection: {}]",
-                    Integer.toHexString(connection.hashCode())), metricName);
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler Span span) {
-            span.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
-        }
-    }
-
     // ================== Statement Closing ==================
 
     @Pointcut(typeName = "java.sql.Statement", methodName = "close", captureNested = false,
             metricName = "jdbc statement close")
-    public static class StatementCloseAdvice {
+    public static class CloseAdvice {
         private static final MetricName metricName =
-                pluginServices.getMetricName(StatementCloseAdvice.class);
+                pluginServices.getMetricName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // don't capture if implementation detail of a DatabaseMetaData method
             return pluginServices.isEnabled()
-                    && DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get() == null;
+                    && !DatabaseMetaDataAspect.isCurrentlyExecuting();
         }
         @OnBefore
         public static MetricTimer onBefore(@BindTarget Statement statement) {
@@ -574,69 +404,6 @@ public class JdbcAspect {
         @OnAfter
         public static void onAfter(@BindTraveler MetricTimer metricTimer) {
             metricTimer.stop();
-        }
-    }
-
-    // ================== Metadata ==================
-
-    @Pointcut(typeName = "java.sql.DatabaseMetaData", methodName = "*", methodArgs = {".."},
-            captureNested = false, metricName = "jdbc metadata")
-    public static class DatabaseMetaDataAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(DatabaseMetaDataAdvice.class);
-        // DatabaseMetaData method timings are captured below, so this thread local is used to
-        // avoid capturing driver-specific java.sql.Statement executions used to implement the
-        // method internally (especially since it is haphazard whether a particular driver
-        // internally uses a java.sql API that is woven, or an internal API, or even a mis-matched
-        // combination like using a PreparedStatement but not creating it via
-        // Connection.prepareStatement())
-        private static final ThreadLocal</*@Nullable*/String> inDatabaseMetataDataMethod =
-                new ThreadLocal</*@Nullable*/String>();
-        // plugin configuration property captureDatabaseMetaDataSpans is cached to limit map lookups
-        private static volatile boolean pluginEnabled;
-        private static volatile boolean spanEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                public void onChange() {
-                    pluginEnabled = pluginServices.isEnabled();
-                    spanEnabled = pluginEnabled
-                            && pluginServices.getBooleanProperty("captureDatabaseMetaDataSpans");
-                }
-            });
-            pluginEnabled = pluginServices.isEnabled();
-            spanEnabled = pluginEnabled
-                    && pluginServices.getBooleanProperty("captureDatabaseMetaDataSpans");
-        }
-        @OnBefore
-        @Nullable
-        public static Object onBefore(@BindTarget DatabaseMetaData databaseMetaData,
-                @BindMethodName String methodName) {
-            inDatabaseMetataDataMethod.set(methodName);
-            if (pluginServices.isEnabled()) {
-                if (spanEnabled) {
-                    return pluginServices.startSpan(MessageSupplier.from("jdbc metadata:"
-                            + " DatabaseMetaData.{}() [connection: {}]", methodName,
-                            getConnectionHashCode(databaseMetaData)), metricName);
-                } else {
-                    return pluginServices.startMetricTimer(metricName);
-                }
-            } else {
-                return null;
-            }
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Object spanOrTimer) {
-            // don't need to track prior value and reset to that value, since
-            // @Pointcut.captureNested = false prevents re-entrant calls
-            inDatabaseMetataDataMethod.remove();
-            if (spanOrTimer == null) {
-                return;
-            }
-            if (spanOrTimer instanceof Span) {
-                ((Span) spanOrTimer).end();
-            } else {
-                ((MetricTimer) spanOrTimer).stop();
-            }
         }
     }
 
@@ -654,11 +421,12 @@ public class JdbcAspect {
         PreparedStatementMirror mirror = (PreparedStatementMirror)
                 ((HasStatementMirror) preparedStatement).getInformantStatementMirror();
         if (mirror == null) {
-            String methodName = DatabaseMetaDataAdvice.inDatabaseMetataDataMethod.get();
-            if (methodName != null) {
+            String databaseMetaDataMethodName =
+                    DatabaseMetaDataAspect.getCurrentlyExecutingMethodName();
+            if (databaseMetaDataMethodName != null) {
                 // wrapping description in sql comment (/* */)
                 mirror = new PreparedStatementMirror("/* internal prepared statement generated by"
-                        + " java.sql.DatabaseMetaData." + methodName + "() */");
+                        + " java.sql.DatabaseMetaData." + databaseMetaDataMethodName + "() */");
                 ((HasStatementMirror) preparedStatement).setInformantStatementMirror(mirror);
             } else {
                 // wrapping description in sql comment (/* */)
@@ -686,15 +454,6 @@ public class JdbcAspect {
         } catch (SQLException e) {
             logger.warn(e.getMessage(), e);
             return null;
-        }
-    }
-
-    private static String getConnectionHashCode(DatabaseMetaData databaseMetaData) {
-        try {
-            return Integer.toHexString(databaseMetaData.getConnection().hashCode());
-        } catch (SQLException e) {
-            logger.warn(e.getMessage(), e);
-            return "???";
         }
     }
 }

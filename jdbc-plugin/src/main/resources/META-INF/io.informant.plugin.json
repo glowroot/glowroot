@@ -57,6 +57,9 @@
     }
   ],
   "aspects": [
-    "io.informant.plugin.jdbc.JdbcAspect"
+    "io.informant.plugin.jdbc.DatabaseMetaDataAspect",
+    "io.informant.plugin.jdbc.StatementAspect",
+    "io.informant.plugin.jdbc.ResultSetAspect",
+    "io.informant.plugin.jdbc.ConnectionAspect"
   ]
 }
