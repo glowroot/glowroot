@@ -54,7 +54,8 @@ import io.informant.markers.Singleton;
  * @since 0.5
  */
 @Singleton
-class ConfigJsonService implements JsonService {
+@JsonService
+class ConfigJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();

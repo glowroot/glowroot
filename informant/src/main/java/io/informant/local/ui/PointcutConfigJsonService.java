@@ -45,7 +45,8 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
  * @since 0.5
  */
 @Singleton
-class PointcutConfigJsonService implements JsonService {
+@JsonService
+class PointcutConfigJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
     @ReadOnly

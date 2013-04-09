@@ -30,7 +30,8 @@ import io.informant.markers.Singleton;
  * @since 0.5
  */
 @Singleton
-class TraceSummaryJsonService implements JsonService {
+@JsonService
+class TraceSummaryJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceSummaryJsonService.class);
 

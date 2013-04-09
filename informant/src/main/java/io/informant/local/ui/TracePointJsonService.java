@@ -54,7 +54,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @since 0.5
  */
 @Singleton
-class TracePointJsonService implements JsonService {
+@JsonService
+class TracePointJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
     @ReadOnly

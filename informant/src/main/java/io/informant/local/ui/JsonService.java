@@ -19,8 +19,8 @@ package io.informant.local.ui;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// marker interface
-interface JsonService {}
+// marker annotation
+@interface JsonService {}
 
 // marker annotation
 @interface JsonServiceMethod {}

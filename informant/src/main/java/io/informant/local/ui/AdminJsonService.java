@@ -37,7 +37,8 @@ import io.informant.trace.TraceRegistry;
  * @since 0.5
  */
 @Singleton
-class AdminJsonService implements JsonService {
+@JsonService
+class AdminJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 

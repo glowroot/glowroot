@@ -254,8 +254,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
     }
 
-    private static HttpResponse handleJsonRequest(JsonService jsonService,
-            String serviceMethodName, String[] args, String requestText) {
+    private static HttpResponse handleJsonRequest(Object jsonService, String serviceMethodName,
+            String[] args, String requestText) {
 
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
                 serviceMethodName, args, requestText);
@@ -354,9 +354,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     static class JsonServiceMapping {
         private final Pattern pattern;
-        private final JsonService service;
+        private final Object service;
         private final String methodName;
-        JsonServiceMapping(String pattern, JsonService service, String methodName) {
+        JsonServiceMapping(String pattern, Object service, String methodName) {
             this.pattern = Pattern.compile(pattern);
             this.service = service;
             this.methodName = methodName;
