@@ -28,6 +28,8 @@ import com.google.common.collect.MapMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Calling methods on 3rd party libraries from a plugin can be difficult. Plugins are loaded by the
  * system class loader ({@link ClassLoader#getSystemClassLoader()}). This means plugins don't have
@@ -105,6 +107,8 @@ public class UnresolvedMethod {
      * @return an {@code UnresolvedMethod} for the specified {@code typeName} and {@code methodName}
      */
     public static UnresolvedMethod from(String typeName, String methodName) {
+        checkNotNull(typeName);
+        checkNotNull(methodName);
         return new UnresolvedMethod(typeName, methodName, ImmutableList.<Class<?>>of(), null);
     }
 
@@ -119,6 +123,9 @@ public class UnresolvedMethod {
      */
     public static UnresolvedMethod from(String typeName, String methodName,
             Class<?>... parameterTypes) {
+        checkNotNull(typeName);
+        checkNotNull(methodName);
+        checkNotNull(parameterTypes);
         return new UnresolvedMethod(typeName, methodName, ImmutableList.copyOf(parameterTypes),
                 null);
     }
@@ -135,6 +142,9 @@ public class UnresolvedMethod {
      */
     public static UnresolvedMethod from(String typeName, String methodName,
             String... parameterTypeNames) {
+        checkNotNull(typeName);
+        checkNotNull(methodName);
+        checkNotNull(parameterTypeNames);
         return new UnresolvedMethod(typeName, methodName, null,
                 ImmutableList.copyOf(parameterTypeNames));
     }

@@ -116,6 +116,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public MetricName getMetricName(Class<?> adviceClass) {
+        if (adviceClass == null) {
+            logger.error("getMetricName(): argument 'adviceClass' must be non-null");
+            // all methods that take MetricName check for null, so ok to return null under duress
+            return null;
+        }
         return metricCache.getMetricName(adviceClass);
     }
 
@@ -127,7 +132,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public String getStringProperty(String name) {
         if (name == null) {
-            logger.warn("getStringProperty(): argument 'name' must be non-null");
+            logger.error("getStringProperty(): argument 'name' must be non-null");
             return "";
         }
         if (pluginConfig == null) {
@@ -140,7 +145,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public boolean getBooleanProperty(String name) {
         if (name == null) {
-            logger.warn("getBooleanProperty(): argument 'name' must be non-null");
+            logger.error("getBooleanProperty(): argument 'name' must be non-null");
             return false;
         }
         return pluginConfig != null && pluginConfig.getBooleanProperty(name);
@@ -150,7 +155,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Nullable
     public Double getDoubleProperty(String name) {
         if (name == null) {
-            logger.warn("getDoubleProperty(): argument 'name' must be non-null");
+            logger.error("getDoubleProperty(): argument 'name' must be non-null");
             return null;
         }
         if (pluginConfig == null) {
@@ -163,7 +168,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public void registerConfigListener(ConfigListener listener) {
         if (listener == null) {
-            logger.warn("registerConfigListener(): argument 'listener' must be non-null");
+            logger.error("registerConfigListener(): argument 'listener' must be non-null");
             return;
         }
         configService.addPluginConfigListener(pluginId, listener);
@@ -182,11 +187,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private Span startTrace(MessageSupplier messageSupplier, MetricName metricName,
             boolean background) {
         if (messageSupplier == null) {
-            logger.warn("startTrace(): argument 'messageSupplier' must be non-null");
+            logger.error("startTrace(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
         }
         if (metricName == null) {
-            logger.warn("startTrace(): argument 'metricName' must be non-null");
+            logger.error("startTrace(): argument 'metricName' must be non-null");
             return new NopSpan(messageSupplier);
         }
         Trace trace = traceRegistry.getCurrentTrace();
@@ -205,11 +210,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
         if (messageSupplier == null) {
-            logger.warn("startSpan(): argument 'messageSupplier' must be non-null");
+            logger.error("startSpan(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
         }
         if (metricName == null) {
-            logger.warn("startSpan(): argument 'metricName' must be non-null");
+            logger.error("startSpan(): argument 'metricName' must be non-null");
             return new NopSpan(messageSupplier);
         }
         Trace trace = traceRegistry.getCurrentTrace();
@@ -223,7 +228,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public MetricTimer startMetricTimer(MetricName metricName) {
         if (metricName == null) {
-            logger.warn("startTimer(): argument 'metricName' must be non-null");
+            logger.error("startTimer(): argument 'metricName' must be non-null");
             return NopMetricTimer.INSTANCE;
         }
         // don't call MetricImpl.start() in case this method returns NopTimer.INSTANCE below
@@ -243,7 +248,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public CompletedSpan addSpan(MessageSupplier messageSupplier) {
         if (messageSupplier == null) {
-            logger.warn("addSpan(): argument 'messageSupplier' must be non-null");
+            logger.error("addSpan(): argument 'messageSupplier' must be non-null");
             return NopCompletedSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
@@ -257,7 +262,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public CompletedSpan addErrorSpan(ErrorMessage errorMessage) {
         if (errorMessage == null) {
-            logger.warn("addErrorSpan(): argument 'errorMessage' must be non-null");
+            logger.error("addErrorSpan(): argument 'errorMessage' must be non-null");
             return NopCompletedSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
@@ -282,7 +287,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public void setTraceAttribute(String name, @Nullable String value) {
         if (name == null) {
-            logger.warn("setTraceAttribute(): argument 'name' must be non-null");
+            logger.error("setTraceAttribute(): argument 'name' must be non-null");
             return;
         }
         Trace trace = traceRegistry.getCurrentTrace();
@@ -351,7 +356,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         public CompletedSpan endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
-                logger.warn("endWithError(): argument 'errorMessage' must be non-null");
+                logger.error("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
                 return end();
             } else {
@@ -439,7 +444,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         public CompletedSpan endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
-                logger.warn("endWithError(): argument 'errorMessage' must be non-null");
+                logger.error("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
                 return end();
             }

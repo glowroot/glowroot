@@ -20,6 +20,9 @@ import java.util.Map;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.informant.api.internal.ExceptionInfo;
 import io.informant.api.internal.ReadableErrorMessage;
@@ -42,15 +45,27 @@ import io.informant.api.internal.ReadableErrorMessage;
  */
 public abstract class ErrorMessage {
 
+    private static final Logger logger = LoggerFactory.getLogger(ErrorMessage.class);
+
     public static ErrorMessage from(Throwable t) {
+        if (t == null) {
+            logger.error("from(): argument 't' must be non-null");
+            return new ErrorMessageImpl("", null, null);
+        }
         return new ErrorMessageImpl(getRootCause(t).toString(), null, ExceptionInfo.from(t));
     }
 
-    public static ErrorMessage from(String message, Throwable t) {
+    // accepts null message so callers don't have to check if passing it in from elsewhere
+    public static ErrorMessage from(@Nullable String message, Throwable t) {
+        if (t == null) {
+            logger.error("from(): argument 't' must be non-null");
+            return from(message);
+        }
         return new ErrorMessageImpl(message, null, ExceptionInfo.from(t));
     }
 
-    public static ErrorMessage from(String message) {
+    // accepts null message so callers don't have to check if passing it in from elsewhere
+    public static ErrorMessage from(@Nullable String message) {
         return new ErrorMessageImpl(message, null, null);
     }
 
@@ -68,6 +83,7 @@ public abstract class ErrorMessage {
     // making it (obviously) accessible to plugin implementations
     private static class ErrorMessageImpl extends ErrorMessage implements ReadableErrorMessage {
 
+        @Nullable
         private final String text;
         @ReadOnly
         @Nullable
@@ -75,7 +91,7 @@ public abstract class ErrorMessage {
         @Nullable
         private final ExceptionInfo exceptionInfo;
 
-        private ErrorMessageImpl(String text,
+        private ErrorMessageImpl(@Nullable String text,
                 @ReadOnly @Nullable Map<String, ? extends /*@Nullable*/Object> detail,
                 @Nullable ExceptionInfo exceptionInfo) {
             this.text = text;
@@ -84,7 +100,7 @@ public abstract class ErrorMessage {
         }
 
         public String getText() {
-            return text;
+            return Strings.nullToEmpty(text);
         }
 
         @ReadOnly

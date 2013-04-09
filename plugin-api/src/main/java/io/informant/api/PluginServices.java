@@ -81,6 +81,10 @@ public abstract class PluginServices {
      * @return the {@code PluginServices} instance for the specified {@code pluginId}
      */
     public static PluginServices get(String pluginId) {
+        if (pluginId == null) {
+            logger.error("get(): argument 'pluginId' must be non-null");
+            return PluginServicesNop.INSTANCE;
+        }
         return getPluginServices(pluginId);
     }
 
@@ -313,33 +317,33 @@ public abstract class PluginServices {
                 // this really really really shouldn't happen
                 logger.error(MAIN_ENTRY_POINT_CLASS_NAME + "." + GET_PLUGIN_SERVICES_METHOD_NAME
                         + "(" + pluginId + ") returned null");
-                return new PluginServicesNop();
+                return PluginServicesNop.INSTANCE;
             }
             return pluginServices;
         } catch (ClassNotFoundException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new PluginServicesNop();
+            return PluginServicesNop.INSTANCE;
         } catch (SecurityException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new PluginServicesNop();
+            return PluginServicesNop.INSTANCE;
         } catch (NoSuchMethodException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new PluginServicesNop();
+            return PluginServicesNop.INSTANCE;
         } catch (IllegalArgumentException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new PluginServicesNop();
+            return PluginServicesNop.INSTANCE;
         } catch (IllegalAccessException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new PluginServicesNop();
+            return PluginServicesNop.INSTANCE;
         } catch (InvocationTargetException e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
-            return new PluginServicesNop();
+            return PluginServicesNop.INSTANCE;
         }
     }
 
@@ -351,6 +355,7 @@ public abstract class PluginServices {
     }
 
     private static class PluginServicesNop extends PluginServices {
+        private static final PluginServicesNop INSTANCE = new PluginServicesNop();
         @Override
         public MetricName getMetricName(Class<?> adviceClass) {
             return NopMetric.INSTANCE;

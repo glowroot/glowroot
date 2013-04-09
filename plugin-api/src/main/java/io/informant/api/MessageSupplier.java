@@ -62,7 +62,7 @@ public abstract class MessageSupplier {
      * @param args
      * @return a {@code MessageSupplier} created for the specified {@code template} and {@code args}
      */
-    public static MessageSupplier from(final String template, final String... args) {
+    public static MessageSupplier from(final String template, final @Nullable String... args) {
         return new MessageSupplier() {
             @Override
             public Message get() {
