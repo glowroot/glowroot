@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+$(document).ready(function () {
   'use strict';
 
-  Handlebars.registerHelper('ifBlocked', function(state, options) {
+  var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html());
+
+  Handlebars.registerHelper('ifBlocked', function (state, options) {
     if (state === 'BLOCKED') {
       return options.fn(this);
     } else {
@@ -24,7 +26,7 @@
     }
   });
 
-  Handlebars.registerHelper('ifWaiting', function(state, options) {
+  Handlebars.registerHelper('ifWaiting', function (state, options) {
     if (state === 'WAITING' || state === 'TIMED_WAITING') {
       return options.fn(this);
     } else {
@@ -32,27 +34,25 @@
     }
   });
 
-  $(document).ready(function() {
-    Informant.configureAjaxError();
-    var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html());
-    function refresh(scroll) {
-      $.getJSON('threads/dump', function(threads) {
-        // $.trim() is needed because this template is sensitive to surrounding spaces
-        var html = $.trim(threadDumpTemplate(threads));
-        $('#threadDump').html(html);
-        if (scroll) {
-          $(window).scrollTop(document.body.scrollHeight);
-        }
-      });
-    }
-    $('#refreshButton1').click(function() {
-      refresh.bind(false);
-      Informant.showAndFadeSuccessMessage('#refresh1SuccessMessage');
+  function refresh(scroll) {
+    $.getJSON('threads/dump', function (threads) {
+      // $.trim() is needed because this template is sensitive to surrounding spaces
+      var html = $.trim(threadDumpTemplate(threads));
+      $('#threadDump').html(html);
+      if (scroll) {
+        $(window).scrollTop(document.body.scrollHeight);
+      }
     });
-    $('#refreshButton2').click(function() {
-      refresh.bind(true);
-      Informant.showAndFadeSuccessMessage('#refresh2SuccessMessage');
-    });
-    refresh(false);
+  }
+
+  Informant.configureAjaxError();
+  $('#refreshButton1').click(function () {
+    refresh.bind(false);
+    Informant.showAndFadeSuccessMessage('#refresh1SuccessMessage');
   });
-}());
+  $('#refreshButton2').click(function () {
+    refresh.bind(true);
+    Informant.showAndFadeSuccessMessage('#refresh2SuccessMessage');
+  });
+  refresh(false);
+});

@@ -284,8 +284,8 @@ $(document).ready(function () {
 
     function displaySpinner() {
       if (spinner) {
-        var html = '<div class="inlineblock" id="tooltipSpinner" style="width: 35px;'
-            + ' height: 31px;"></div>';
+        var html = '<div id="tooltipSpinner" style="width: 36px;'
+            + ' height: 36px;"></div>';
         $chart.qtip({
           content: {
             text: html

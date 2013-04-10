@@ -14,45 +14,50 @@
  * limitations under the License.
  */
 
+/* TODO override datepicker colors by compiling datepicker css with LESS */
 .datepicker td.today {
-  /* override bootstrap-datepicker styling */
-  background-color: #ccc !important;
+  background-color: transparent !important;
   background-image: none !important;
-}
-
-.datepicker td.today:hover {
-  /* override bootstrap-datepicker styling */
-  /* placed after '.datepicker td.today' to override that style when today is hovered */
-  background-color: #eee !important;
-  background-image: none !important;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #ccc !important;
 }
 
 .datepicker td.active,
-.datepicker td.active:hover {
-  /* override bootstrap-datepicker styling */
+.datepicker td.day.active:hover {
   /* placed after '.datepicker td.today' to override that style when today is active */
-  background-color: transparent !important;
+  background-color: #4286bd !important;
   background-image: none !important;
-  color: inherit !important;
+  color: #fff !important;
   text-shadow: none;
-  font-weight: bold;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #b12930;
-  border-radius: 4px !important;
-  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
-  border-collapse: separate !important;
+  border: none;
 }
 
-.datepicker td.active:hover {
-  /* placed after '.datepicker td.active:hover' to override that style when active is hovered */
-  background-color: #eee !important;
+.datepicker table tr td span.active,
+.datepicker table tr td span.active:hover {
+  background-color: #4286bd !important;
+  background-image: none !important;
+}
+
+.datepicker td.day:hover,
+.datepicker td.today:hover,
+.datepicker thead tr:first-child th:hover,
+.datepicker table tr td span:hover {
+  /* placed after '.datepicker td.today and '.datepicker td.active:hover' to override that style
+     when today or active is hovered */
+  background-color: #ddd !important;
 }
 
 .datepicker table {
-  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
+  /* otherwise border radius doesn't cause curved corners */
   border-collapse: separate !important;
 }
+
+.datepicker table tr td.today.active,
+.datepicker table tr td.today.active:hover {
+  color: #fff !important;
+}
+
 
 .qtip-override {
   max-width: 500px;
@@ -61,8 +66,8 @@
   background-color: #eee;
 }
 
-.qtip-override .qtip-content {
-  padding: 1em 0.5em 0.75em 0.5em;
+.qtip-content {
+  padding: 1em 1.5em;
 }
 
 .qtip-border-color-0 {
@@ -117,4 +122,12 @@
   padding: 4px 35px;
   background-color: #eee;
   border-radius: 6px;
+}
+
+.input-medium0 {
+  width: 135px;
+}
+
+.input-xlarge0 {
+  width: 270px;
 }

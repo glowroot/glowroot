@@ -17,17 +17,6 @@ var Informant = (function () {
   'use strict';
 
   $(document).ready(function () {
-    var onEnterClick = function (e) {
-      if (e.keyCode === 13) {
-        // enter key, for clicking when focus is on .clickable
-        // pass extra arg to click handler in case click handler wants to treat keyboard clicks
-        // differently from mouse clicks
-        $(this).trigger('click', true);
-      }
-    };
-    $(document).on('keydown', '.clickable, .lightbtn, .unexpanded-content, .expanded-content',
-        onEnterClick);
-
     // bootstrap-dropdown already closes the menu on esc key, this is just adding handling for tab
     // key to close menu also, e.g. user is looking at menu and then tabs away
     var onTabCloseMenu = function (e) {

@@ -14,34 +14,7 @@
  * limitations under the License.
  */
 
-.configuration-status {
-  margin-left: 40px;
-}
-
-.configuration-status-on {
-  color: green;
-}
-
-.configuration-status-off {
-  color: red;
-}
-
-.accordion.accordion-body {
-  /* accordion body that is also an accordion itself */
-  background-color: #fff;
-  margin-left: 40px;
-  margin-bottom: 0;
-}
-
-.accordion-group.outer-accordion-group {
-  border: none;
-  margin-bottom: 0;
-}
-
-.accordion-heading.outer-accordion-heading {
-  border: 1px solid #e5e5e5;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  margin-bottom: 6px;
+.header-logo-export {
+  font-family: 'Special Elite';
+  color: #b12930;
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function () {
+$(document).ready(function () {
   'use strict';
 
   var pointcutTemplate = Handlebars.compile($('#pointcutTemplate').html());
@@ -336,11 +336,9 @@
     }
   }
 
-  $(document).ready(function () {
-    Informant.configureAjaxError();
-    read();
-    $('#pointcutNewButton button').click(function () {
-      applyPointcutEditTemplate({});
-    });
+  Informant.configureAjaxError();
+  read();
+  $('#pointcutNewButton button').click(function () {
+    applyPointcutEditTemplate({});
   });
-}());
+});

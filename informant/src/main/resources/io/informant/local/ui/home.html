@@ -26,6 +26,7 @@
       type="text/css"/>
 <link rel="stylesheet" href="libs/qtip/2.0.1/jquery.qtip.min.css" type="text/css"/>
 <link rel="stylesheet" href="css/common.css" type="text/css"/>
+<link rel="stylesheet" href="css/common-trace.css" type="text/css"/>
 <link rel="stylesheet" href="css/home.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.1/jquery.min.js"></script>
 <!-- jquery-migrate is needed until qtip is jquery 1.9 compatible,
@@ -46,6 +47,9 @@
 <script type="text/javascript" src="libs/spin/1.3.0/spin.min.js"></script>
 <script type="text/javascript" src="libs/qtip/2.0.1/jquery.qtip.min.js"></script>
 <script type="text/javascript" src="libs/jquery-color/2.1.2/jquery.color.min.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/common-trace.js"></script>
+<script type="text/javascript" src="js/home.js"></script>
 <script type="text/x-handlebars-template" id="traceSummaryTemplate">
   /*#include "template/trace-summary.html" */
 </script>
@@ -55,9 +59,6 @@
 <script type="text/x-handlebars-template" id="traceSpanTemplate">
   /*#include "template/trace-span.html" */
 </script>
-<script type="text/javascript" src="js/common.js"></script>
-<script type="text/javascript" src="js/common-trace.js"></script>
-<script type="text/javascript" src="js/home.js"></script>
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">
@@ -219,7 +220,7 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <span tabindex="0" class="btn clickable" id="refreshButton">Refresh</span>
+          <button type="button" class="btn" id="refreshButton">Refresh</button>
           <span class="button-success-message hide" id="refreshSuccessMessage">Refreshed</span>
         </div>
       </div>

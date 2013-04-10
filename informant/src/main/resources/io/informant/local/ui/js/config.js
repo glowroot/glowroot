@@ -13,29 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function () {
+$(document).ready(function () {
   'use strict';
+
+  var pluginTemplate = Handlebars.compile($('#pluginTemplate').html());
+
   Handlebars.registerHelper('ifString', function (type, options) {
     if (type === 'string') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
+
   Handlebars.registerHelper('ifBoolean', function (type, options) {
     if (type === 'boolean') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
+
   Handlebars.registerHelper('ifDouble', function (type, options) {
     if (type === 'double') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
+
   Handlebars.registerHelper('escapeSelector', escapeSelector);
 
-  var pluginTemplate = Handlebars.compile($('#pluginTemplate').html());
   var generalConfigVersion;
   var coarseConfigVersion;
   var fineConfigVersion;
@@ -159,13 +164,9 @@
     };
     $.post('config/general', JSON.stringify(config), function (response) {
       generalConfigVersion = response;
-      Informant.hideSpinner('#saveGeneralButtonSpinner');
       Informant.showAndFadeSuccessMessage('#generalSaveComplete');
       setStatus('#generalStatus', config.enabled, true);
     });
-    // in case button is clicked again before success message is hidden
-    $('#saveGeneralComplete').addClass('hide');
-    Informant.showSpinner('#saveGeneralButtonSpinner');
   }
 
   function saveCoarseConfig() {
@@ -359,42 +360,40 @@
     return id.replace(/\./g, '\\.').replace(/:/g, '\\:');
   }
 
-  $(document).ready(function () {
-    Informant.configureAjaxError();
-    $('#fineStoreThresholdOverride').change(function () {
-      var $fineStoreThresholdMillis = $('#fineStoreThresholdMillis');
-      if ($('#fineStoreThresholdOverride').is(':checked')) {
-        $fineStoreThresholdMillis.removeAttr('readonly');
-      } else {
-        $fineStoreThresholdMillis.val('');
-        $fineStoreThresholdMillis.closest('.control-group').removeClass('error');
-        $fineStoreThresholdMillis.attr('readonly', 'readonly');
-      }
-    });
-    read();
-    $('#saveGeneralButton').click(saveGeneralConfig);
-    $('#saveCoarseButton').click(saveCoarseConfig);
-    $('#saveFineButton').click(saveFineConfig);
-    $('#saveUserButton').click(saveUserConfig);
-    $('#saveStorageButton').click(saveStorageConfig);
-    $('#plugins').on('click', '.save-plugin-button', function () {
-      savePluginConfig($(this).data('plugin-id'));
-    });
-    var postingDeleteAll = false;
-    $('#deleteAllButton').click(function () {
-      // handle crazy user clicking on the button
-      if (postingDeleteAll) {
-        return;
-      }
-      postingDeleteAll = true;
-      $.post('admin/data/delete-all', function () {
-        postingDeleteAll = false;
-        Informant.hideSpinner('#deleteAllSpinner');
-        Informant.showAndFadeSuccessMessage('#deleteAllSuccessMessage');
-      });
-      // in case button is clicked again before success message is hidden
-      $('#deleteAllSuccessMessage').addClass('hide');
-      Informant.showSpinner('#deleteAllSpinner');
-    });
+  Informant.configureAjaxError();
+  $('#fineStoreThresholdOverride').change(function () {
+    var $fineStoreThresholdMillis = $('#fineStoreThresholdMillis');
+    if ($('#fineStoreThresholdOverride').is(':checked')) {
+      $fineStoreThresholdMillis.removeAttr('readonly');
+    } else {
+      $fineStoreThresholdMillis.val('');
+      $fineStoreThresholdMillis.closest('.control-group').removeClass('error');
+      $fineStoreThresholdMillis.attr('readonly', 'readonly');
+    }
   });
-}());
+  read();
+  $('#saveGeneralButton').click(saveGeneralConfig);
+  $('#saveCoarseButton').click(saveCoarseConfig);
+  $('#saveFineButton').click(saveFineConfig);
+  $('#saveUserButton').click(saveUserConfig);
+  $('#saveStorageButton').click(saveStorageConfig);
+  $('#plugins').on('click', '.save-plugin-button', function () {
+    savePluginConfig($(this).data('plugin-id'));
+  });
+  var postingDeleteAll = false;
+  $('#deleteAllButton').click(function () {
+    // handle crazy user clicking on the button
+    if (postingDeleteAll) {
+      return;
+    }
+    postingDeleteAll = true;
+    $.post('admin/data/delete-all', function () {
+      postingDeleteAll = false;
+      Informant.hideSpinner('#deleteAllSpinner');
+      Informant.showAndFadeSuccessMessage('#deleteAllSuccessMessage');
+    });
+    // in case button is clicked again before success message is hidden
+    $('#deleteAllSuccessMessage').addClass('hide');
+    Informant.showSpinner('#deleteAllSpinner');
+  });
+});

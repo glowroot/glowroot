@@ -1,0 +1,122 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.metrics-table td {
+  padding-left: 0px;
+  padding-right: 16px;
+  text-align: right;
+}
+
+.lightbtn {
+  display: inline-block;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.lightbtn:hover,
+.lightbtn:focus {
+  background-color: #ddd;
+}
+
+.unexpanded-content,
+.expanded-content {
+  cursor: pointer;
+  padding: 2px 1em 2px 1em;
+  border-radius: 4px;
+  /* margin-right is used (instead of padding-right on the container) so that stack traces which
+     require horizontal scrolling still have padding to their right */
+  margin-right: 20px;
+}
+
+.unexpanded-content:hover,
+.unexpanded-content:focus,
+.expanded-content:hover,
+.expanded-content:focus {
+  background-color: #ddd;
+}
+
+.unexpanded-content {
+  /* these are spans, giving them inline-block increases the vertical padding
+     making them look more substantial as 'buttons' */
+  display: inline-block;
+}
+
+.expanded-content {
+  background-color: #eee;
+  /* margin for white space between successive expanded elements, at the bottom so that
+     expanding doesn't create jitter/shift down of expanding section */
+  margin-bottom: 4px;
+}
+
+span.expanded-content {
+  /* normally expanded-content are divs, but if they are spans they should be inline-block */
+  display: inline-block;
+}
+
+.unexpanded-padding {
+  /* some elements need the same padding as expanding elements */
+  padding: 2px 1em 2px 1em;
+}
+
+.unexpanded-vertical-padding {
+  /* some elements need the same vertical padding as expanding elements */
+  padding: 2px 0 2px 0;
+}
+
+div:focus,
+span:focus,
+a:focus {
+  /* these elements change their background color to indicate focus */
+  outline: 0;
+}
+
+.indent1 {
+  margin-left: 1em;
+}
+
+.indent2 {
+  margin-left: 2em;
+}
+
+.pad1 {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+.rounded4 {
+  border-radius: 4px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.breakword {
+  word-wrap: break-word;
+}
+
+.textindent1 {
+  text-indent: -1em;
+  margin-left: 1em;
+}
+
+.second-line-indent {
+  padding-left: 20px;
+  text-indent: -20px;
+}
+
+.inlineblock {
+  display: inline-block;
+}

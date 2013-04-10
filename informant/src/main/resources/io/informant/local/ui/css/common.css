@@ -53,11 +53,6 @@ body {
   background-color: #eee;
 }
 
-.header-logo-export {
-  font-family: 'Special Elite';
-  color: #b12930;
-}
-
 .header-page-name {
   color: #555;
   padding-left: 14px;
@@ -93,41 +88,43 @@ body {
   display: block;
 }
 
-.dropdown-menu li > a:hover,
-.dropdown-menu li > a:focus {
-  /* override bootstrap styling */
-  color: #333 !important;
-  background-color: #eee !important;
-  background-image: none !important;
+.header-see-also .dropdown-menu li > a:hover,
+.header-see-also .dropdown-menu li > a:focus {
+  color: #333;
+  background-color: #eee;
+  background-image: none;
   border-radius: 6px;
 }
 
-.dropdown-menu li > a:active {
-  background-color: #f6f6f6 !important;
+.header-see-also .dropdown-menu li > a:active {
+  background-color: #f6f6f6;
 }
 
-.dropdown-menu li > a {
-  /* override bootstrap styling */
+.header-see-also .dropdown-menu li > a {
   padding: 7px 24px;
 }
 
-.dropdown-menu {
-  background-color: #ddd !important;
-  -webkit-box-shadow: none !important;
-  -moz-box-shadow: none !important;
-  box-shadow: none !important;
-  border: none !important;
+.header-see-also .dropdown-menu {
+  background-color: #ddd;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  border: none;
 }
 
 input:focus {
-  /* override bootstrap-datepicker styling with slightly darker blue focus border */
+  /* override bootstrap-datepicker styling with slightly darker blue focus border
+     !important is needed because bootstrap lists each input type separately
+     TODO override bootstrap colors by compiling bootstrap css with LESS */
+  /* note: this same color is used (in hex form #4286BD) for datepicker styling in home.css */
   border-color: rgba(66, 134, 189, 0.8) !important;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(66, 134, 189, 0.6) !important;
 }
 
 .control-group.error input:focus {
   /* need to force border on error to bootstrap default (without this, default red is overridden by
-     darker blue color in above selector) */
+     darker blue color in above selector)
+     TODO override bootstrap colors by compiling bootstrap css with LESS */
   border-color: #953B39 !important;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #D59392 !important;
 }
@@ -140,24 +137,10 @@ input:focus {
   vertical-align: middle;
 }
 
-.button-error-message {
-  display: inline-block;
-  color: red;
-  font-size: 16px;
-  margin-left: 10px;
-  vertical-align: middle;
-}
-
 .button-spinner {
   display: inline-block;
   margin-left: 30px;
   vertical-align: middle;
-}
-
-.metrics-table td {
-  padding-left: 0px;
-  padding-right: 16px;
-  text-align: right;
 }
 
 a {
@@ -176,35 +159,6 @@ a:active {
   background-color: #ccc;
 }
 
-.inline-anchor {
-  /* extra vertical padding only applies if line-height accommodates it */
-  padding: 4px 4px;
-  /* this is for links inside of other text, so negative margin so that padding doesn't create gap
-     before or after the link */
-  margin: 0 -4px;
-  border-radius: 4px;
-}
-
-.input-medium0 {
-  width: 135px;
-}
-
-.input-xlarge0 {
-  width: 270px;
-}
-
-.second-line-indent {
-  padding-left: 20px;
-  text-indent: -20px;
-}
-
-.lightbtn {
-  display: inline-block;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
 .realbtn {
   /* upside to real button: mouse click does not focus on button, can use :active to provide
                             feedback on clicking already focused button
@@ -221,8 +175,6 @@ a:active {
   vertical-align: bottom;
 }
 
-.lightbtn:hover,
-.lightbtn:focus,
 .realbtn:hover,
 .realbtn:focus {
   background-color: #ddd;
@@ -232,101 +184,12 @@ a:active {
   background-color: #ccc;
 }
 
-.unexpanded-content,
-.expanded-content {
-  cursor: pointer;
-  padding: 2px 1em 2px 1em;
-  border-radius: 4px;
-  /* margin-right is used (instead of padding-right on the container) so that stack traces which
-     require horizontal scrolling still have padding to their right */
-  margin-right: 20px;
-}
-
-.unexpanded-content:hover,
-.unexpanded-content:focus,
-.expanded-content:hover,
-.expanded-content:focus {
-  background-color: #ddd;
-}
-
-.unexpanded-content {
-  /* these are spans, giving them inline-block increases the vertical padding
-     making them look more substantial as 'buttons' */
-  display: inline-block;
-}
-
-.expanded-content {
-  background-color: #eee;
-  /* margin for white space between successive expanded elements, at the bottom so that
-     expanding doesn't create jitter/shift down of expanding section */
-  margin-bottom: 4px;
-}
-
-span.expanded-content {
-  /* normally expanded-content are divs, but if they are spans they should be inline-block */
-  display: inline-block;
-}
-
-.unexpanded-padding {
-  /* some elements need the same padding as expanding elements */
-  padding: 2px 1em 2px 1em;
-}
-
-.unexpanded-vertical-padding {
-  /* some elements need the same vertical padding as expanding elements */
-  padding: 2px 0 2px 0;
-}
-
-div:focus,
-span:focus,
-a:focus {
-  /* these elements change their background color to indicate focus */
-  outline: 0;
-}
-
 .red {
   color: #b12930;
 }
 
-.indent1 {
-  margin-left: 1em;
-}
-
-.indent2 {
-  margin-left: 2em;
-}
-
-.pad1 {
-  padding-left: 1em;
-  padding-right: 1em;
-}
-
-.rounded4 {
-  border-radius: 4px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
 .nowrap {
   white-space: nowrap;
-}
-
-.breakword {
-  word-wrap: break-word;
-}
-
-.textindent1 {
-  text-indent: -1em;
-  margin-left: 1em;
-}
-
-.nav-tabs > li > a:hover {
-  /* slightly darken bootstrap tabs to match .lightbtn */
-  border-color: #ddd #ddd #ccc;
-}
-
-.nav > li > a:hover {
-  background-color: #ddd;
 }
 
 .accordion-heading {
@@ -344,93 +207,35 @@ a:focus {
 }
 
 .accordion-group {
-  /* override bootstrap styling */
   margin-bottom: 6px;
-}
-
-.section-header:hover,
-.section-header:focus {
-  background-color: #ddd;
-}
-
-.section-body {
-  /* sometimes need no padding since save footer needs to extend to both right and left edge */
-  border-radius: 8px;
-  margin: 0 0 20px 40px;
 }
 
 .accordion-body {
-  /* override bootstrap styling */
   background-color: #f8f8f8;
 }
 
-.accordion.accordion-body {
-  /* accordion body that is also an accordion itself */
-  background-color: #fff;
-  margin-left: 40px;
-  margin-bottom: 0;
-}
-
-.accordion-group.outer-accordion-group {
-  border: none;
-  margin-bottom: 0;
-}
-
-.accordion-heading.outer-accordion-heading {
-  border: 1px solid #e5e5e5;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  margin-bottom: 6px;
-}
-
 .accordion-inner {
-  /* override bootstrap styling */
   padding: 0px;
 }
 
-.section-body-padding {
-  padding: 30px 24px 24px 24px;
-}
-
-.inner-section-body {
-  background-color: #f5f5f5;
-  border-radius: 6px;
-  margin: 20px;
-}
-
-.inner-section-body-padding {
-  padding: 30px 20px 20px 20px;
-}
-
-.inner-section-body-separator {
-  border-top-color: #ddd;
-  border-bottom: none;
-  margin: 30px 0 5px 0;
-}
-
-.form-horizontal .section-body-padding {
+.accordion-form-padding {
   /* the bottom of the form already has extra padding from margin-bottom on control-group */
-  padding-bottom: 16px;
+  padding: 30px 24px 16px 24px;
 }
 
 .form-horizontal .form-actions {
-  /* override bootstrap style to make button line up under form controls */
-  padding-left: 200px !important;
+  /* make button line up under form controls */
+  padding-left: 200px;
 }
 
 .accordion-inner.form-horizontal {
   margin: 0;
 }
 
-.section-body-save {
+.accordion-body .form-actions {
   margin-top: 0;
   margin-bottom: 0;
   background-color: #f8f8f8;
-}
-
-.inlineblock {
-  display: inline-block;
 }
 
 .hide {
