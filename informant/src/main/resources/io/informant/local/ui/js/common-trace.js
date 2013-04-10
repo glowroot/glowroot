@@ -180,9 +180,16 @@ var Trace = (function () {
 
   var renderNext = function (spans, start) {
     // large numbers of spans (e.g. 20,000) render much faster when grouped into sub-divs
+    if (start === 0) {
+      // first batch size is smaller to make the records show up on screen right away
+      var batchSize = 100;
+    } else {
+      // rest of batches are optimized for total throughput
+      var batchSize = 500;
+    }
     var html = '<div id="block' + start + '">';
     var i;
-    for (i = start; i < Math.min(start + 100, spans.length); i++) {
+    for (i = start; i < Math.min(start + batchSize, spans.length); i++) {
       var maxDurationMillis = (spans[0].duration / 1000000).toFixed(1);
       spans[i].offsetColumnWidth = maxDurationMillis.length / 2 + 1;
       html += my.spanTemplate(spans[i]);
@@ -190,7 +197,7 @@ var Trace = (function () {
     html += '</div>';
     $('#sps').append(html);
     if (start + 100 < spans.length) {
-      setTimeout(function () { renderNext(spans, start + 100); }, 10);
+      setTimeout(function () { renderNext(spans, start + batchSize); }, 10);
     }
   };
 
