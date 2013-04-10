@@ -141,7 +141,6 @@ var Trace = (function () {
   var my = {};
 
   var spanLineLength;
-  var smartToggleTimer;
   var mousedownSpanPageX, mousedownSpanPageY;
   $(document).ready(function () {
     my.traceSummaryTemplate = Handlebars.compile($('#traceSummaryTemplate').html());
@@ -222,29 +221,8 @@ var Trace = (function () {
       // not a simple single click, probably highlighting text
       return;
     }
-    if (smartToggleTimer) {
-      // double click, probably highlighting text
-      clearTimeout(smartToggleTimer);
-      smartToggleTimer = undefined;
-      return;
-    }
-    var expanded = parent.find('.expanded-content');
-    var unexpanded = parent.find('.unexpanded-content');
-    if (unexpanded.hasClass('hide')) {
-      // slight delay on hiding in order to not contract on double click text highlighting
-      smartToggleTimer = setTimeout(function () {
-        unexpanded.removeClass('hide');
-        expanded.addClass('hide');
-        smartToggleTimer = undefined;
-      }, 250);
-    } else {
-      // no delay on expanding because it makes it feel sluggish
-      // (at the expense of double click text highlighting also expanding the span)
-      unexpanded.addClass('hide');
-      expanded.removeClass('hide');
-      // but still create smartToggleTimer to prevent double click from expanding and contracting
-      smartToggleTimer = setTimeout(function () { smartToggleTimer = undefined; }, 500);
-    }
+    parent.find('.expanded-content').toggleClass('hide');
+    parent.find('.unexpanded-content').toggleClass('hide');
   };
 
   my.toggleCoarseMergedStackTree = function () {
