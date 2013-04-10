@@ -23,60 +23,15 @@
 <link rel="stylesheet" href="libs/bootstrap/2.3.1/css/bootstrap-responsive.min.css"
       type="text/css"/>
 <link rel="stylesheet" href="css/common.css" type="text/css"/>
+<link rel="stylesheet" href="css/threaddump.css" type="text/css"/>
 <script type="text/javascript" src="libs/jquery/1.9.1/jquery.min.js"></script>
 <!-- bootstrap.min.js is used by ajax error handler to throw up modal dialog -->
 <script type="text/javascript" src="libs/bootstrap/2.3.1/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="libs/handlebars/1.0.0-rc.3/handlebars.runtime.js"></script>
 <script type="text/javascript" src="js/common.js"></script>
-<script type="text/x-handlebars-template" id="threadDumpTemplate">{{#each .}}"{{name}}"
-  java.lang.Thread.State: {{state}}
-  {{#ifBlocked state}} - blocked on {{lockName}}
-  {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}} - waiting on {{lockName}}
-  {{/if}}{{/ifWaiting}}{{#each stackTrace}} {{.}}
-  {{/each}}
-  {{/each}}
-</script>
-<script type="text/javascript">
-  (function () {
-    'use strict';
-    Handlebars.registerHelper('ifBlocked', function (state, options) {
-      if (state === 'BLOCKED') {
-        return options.fn(this);
-      } else {
-        return options.inverse(this);
-      }
-    });
-    Handlebars.registerHelper('ifWaiting', function (state, options) {
-      if (state === 'WAITING' || state === 'TIMED_WAITING') {
-        return options.fn(this);
-      } else {
-        return options.inverse(this);
-      }
-    });
-    var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html());
-    $(document).ready(function () {
-      Informant.configureAjaxError();
-      function refresh(scroll) {
-        $.getJSON('threads/dump', function (threads) {
-          var html = threadDumpTemplate(threads);
-          $('#threadDump').html(html);
-          if (scroll) {
-            $(window).scrollTop(document.body.scrollHeight);
-          }
-        });
-      }
-
-      $('#refreshButton1').click(function () {
-        refresh.bind(false);
-        Informant.showAndFadeSuccessMessage('#refresh1SuccessMessage');
-      });
-      $('#refreshButton2').click(function () {
-        refresh.bind(true);
-        Informant.showAndFadeSuccessMessage('#refresh2SuccessMessage');
-      });
-      refresh(false);
-    });
-  })();
+<script type="text/javascript" src="js/threaddump.js"></script>
+<script type="text/x-handlebars-template" id="threadDumpTemplate">
+  /*#include "template/threaddump.html" */
 </script>
 </head>
 <body class="container">
@@ -91,15 +46,13 @@
        min-width: 100% so the section is at least flush-right with the container -->
   <span class="section-body inlineblock"
         style="margin-left: 0; margin-right: 20px; min-width: 100%;">
-    <span class="section-body-padding inlineblock">
-      <button type="button" class="btn" id="refreshButton1" style="margin: 10px;">Refresh</button>
-      <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
-      <br>
-      <span class="flat-pre" id="threadDump"></span>
-      <br>
-      <button type="button" class="btn" id="refreshButton2" style="margin: 10px;">Refresh</button>
-      <span class="button-success-message hide" id="refresh2SuccessMessage">Refreshed</span>
-    </span>
+    <button type="button" class="btn" id="refreshButton1" style="margin: 10px;">Refresh</button>
+    <span class="button-success-message hide" id="refresh1SuccessMessage">Refreshed</span>
+    <br>
+    <span class="flat-pre" id="threadDump"></span>
+    <br>
+    <button type="button" class="btn" id="refreshButton2" style="margin: 10px;">Refresh</button>
+    <span class="button-success-message hide" id="refresh2SuccessMessage">Refreshed</span>
   </span>
 </body>
 </html>

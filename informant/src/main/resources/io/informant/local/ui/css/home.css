@@ -1,0 +1,120 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.datepicker td.today {
+  /* override bootstrap-datepicker styling */
+  background-color: #ccc !important;
+  background-image: none !important;
+}
+
+.datepicker td.today:hover {
+  /* override bootstrap-datepicker styling */
+  /* placed after '.datepicker td.today' to override that style when today is hovered */
+  background-color: #eee !important;
+  background-image: none !important;
+}
+
+.datepicker td.active,
+.datepicker td.active:hover {
+  /* override bootstrap-datepicker styling */
+  /* placed after '.datepicker td.today' to override that style when today is active */
+  background-color: transparent !important;
+  background-image: none !important;
+  color: inherit !important;
+  text-shadow: none;
+  font-weight: bold;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #b12930;
+  border-radius: 4px !important;
+  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
+  border-collapse: separate !important;
+}
+
+.datepicker td.active:hover {
+  /* placed after '.datepicker td.active:hover' to override that style when active is hovered */
+  background-color: #eee !important;
+}
+
+.datepicker table {
+  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
+  border-collapse: separate !important;
+}
+
+.qtip-override {
+  max-width: 500px;
+  font-size: 12px;
+  line-height: 16px;
+  background-color: #eee;
+}
+
+.qtip-override .qtip-content {
+  padding: 1em 0.5em 0.75em 0.5em;
+}
+
+.qtip-border-color-0 {
+  border-color: #edc240;
+}
+
+.qtip-border-color-1 {
+  border-color: #cb4b4b;
+}
+
+.qtip-border-color-2 {
+  border-color: #afd8f8;
+}
+
+.modal {
+  overflow-y: scroll;
+  -webkit-border-radius: 6px 0 0 6px !important;
+  -moz-border-radius: 6px 0 0 6px !important;
+  border-radius: 6px 0 0 6px !important;
+}
+
+.modal-content {
+  /* any change to this must also be made in the calculation of contentHeight and contentWidth
+     in displayModal() function in home.html */
+  padding: 20px 0 20px 20px;
+}
+
+.modal .close {
+  opacity: .5;
+}
+
+.modal .close:hover {
+  opacity: .8;
+}
+
+.explorer-chart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.explorer-limit-exceeded {
+  padding: 10px 35px;
+  color: #B94A48;
+  background-color: #F2DEDE;
+  border-color: #EED3D7;
+}
+
+.explorer-guide {
+  padding: 4px 35px;
+  background-color: #eee;
+  border-radius: 6px;
+}

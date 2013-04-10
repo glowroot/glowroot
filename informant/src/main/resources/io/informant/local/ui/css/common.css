@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 body {
   padding: 32px 0px;
 }
@@ -131,46 +132,6 @@ input:focus {
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #D59392 !important;
 }
 
-.datepicker td.today {
-  /* override bootstrap-datepicker styling */
-  background-color: #ccc !important;
-  background-image: none !important;
-}
-
-.datepicker td.today:hover {
-  /* override bootstrap-datepicker styling */
-  /* placed after '.datepicker td.today' to override that style when today is hovered */
-  background-color: #eee !important;
-  background-image: none !important;
-}
-
-.datepicker td.active,
-.datepicker td.active:hover {
-  /* override bootstrap-datepicker styling */
-  /* placed after '.datepicker td.today' to override that style when today is active */
-  background-color: transparent !important;
-  background-image: none !important;
-  color: inherit !important;
-  text-shadow: none;
-  font-weight: bold;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #b12930;
-  border-radius: 4px !important;
-  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
-  border-collapse: separate !important;
-}
-
-.datepicker td.active:hover {
-  /* placed after '.datepicker td.active:hover' to override that style when active is hovered */
-  background-color: #eee !important;
-}
-
-.datepicker table {
-  /* override bootstrap styling, otherwise border radius doesn't cause curved corners */
-  border-collapse: separate !important;
-}
-
 .button-success-message {
   display: inline-block;
   color: green;
@@ -230,50 +191,6 @@ a:active {
 
 .input-xlarge0 {
   width: 270px;
-}
-
-.qtip-override {
-  max-width: 500px;
-  font-size: 12px;
-  line-height: 16px;
-  background-color: #eee;
-}
-
-.qtip-override .ui-tooltip-content {
-  padding: 1em 0.5em 0.75em 0.5em;
-}
-
-.qtip-border-color-0 {
-  border-color: #edc240;
-}
-
-.qtip-border-color-1 {
-  border-color: #cb4b4b;
-}
-
-.qtip-border-color-2 {
-  border-color: #afd8f8;
-}
-
-.modal {
-  overflow-y: scroll;
-  -webkit-border-radius: 6px 0 0 6px !important;
-  -moz-border-radius: 6px 0 0 6px !important;
-  border-radius: 6px 0 0 6px !important;
-}
-
-.modal-content {
-  /* any change to this must also be made in the calculation of contentHeight and contentWidth
-     in displayModal() function in home.html */
-  padding: 20px 0 20px 20px;
-}
-
-.modal .close {
-  opacity: .5;
-}
-
-.modal .close:hover {
-  opacity: .8;
 }
 
 .second-line-indent {
@@ -360,11 +277,6 @@ span.expanded-content {
   padding: 2px 0 2px 0;
 }
 
-.offscreen {
-  position: absolute;
-  left: -999em;
-}
-
 div:focus,
 span:focus,
 a:focus {
@@ -436,39 +348,9 @@ a:focus {
   margin-bottom: 6px;
 }
 
-.new-pointcut-header {
-  display: block;
-  padding: 7px 1em;
-  border: 1px solid #e5e5e5;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  background-color: #eee;
-  vertical-align: middle;
-  font-size: 19px;
-  line-height: normal;
-}
-
 .section-header:hover,
 .section-header:focus {
   background-color: #ddd;
-}
-
-.pointcut-header:hover,
-.pointcut-header:focus {
-  background-color: #ddd;
-}
-
-.configuration-status {
-  margin-left: 40px;
-}
-
-.configuration-status-on {
-  color: green;
-}
-
-.configuration-status-off {
-  color: red;
 }
 
 .section-body {
@@ -547,23 +429,6 @@ a:focus {
   background-color: #f8f8f8;
 }
 
-.flat-pre {
-  /* slightly modified version of bootstrap's pre */
-  /* intentionally not breaking long single-words for stack trace formatting, though this requires
-     that the container has overflow: visible */
-  display: inline-block;
-  font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
-  color: #333;
-  padding: 9.5px;
-  margin: 0 0 10px;
-  font-size: 13px;
-  line-height: 20px;
-  word-break: break-all;
-  white-space: pre;
-  background-color: #eee;
-  border-radius: 8px;
-}
-
 .inlineblock {
   display: inline-block;
 }
@@ -572,56 +437,7 @@ a:focus {
   display: none !important;
 }
 
-.explorer-chart {
+.offscreen {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.explorer-limit-exceeded {
-  padding: 10px 35px;
-  color: #B94A48;
-  background-color: #F2DEDE;
-  border-color: #EED3D7;
-}
-
-.explorer-guide {
-  padding: 4px 35px;
-  background-color: #eee;
-  border-radius: 6px;
-}
-
-.adhoc-pointcut-heading {
-  margin-left: 20px;
-  margin-bottom: 20px;
-  /*font-weight: bold;*/
-  font-size: 16px;
-}
-
-.adhoc-pointcut-group {
-  margin-bottom: 10px;
-  clear: both;
-}
-
-.adhoc-pointcut-label {
-  font-weight: bold;
-  width: 240px;
-  float: left;
-  text-align: right;
-}
-
-.adhoc-pointcut-value {
-  margin-left: 260px;
-}
-
-.adhoc-pointcut-actions {
-  margin-left: 260px;
-  margin-top: 20px;
-}
-
-.adhoc-pointcut-actions button {
-  /* small padding between edit and delete buttons */
-  margin-right: 5px;
+  left: -999em;
 }
