@@ -17,7 +17,7 @@ limitations under the License.
 {{#ifRolledOver spans}}
 <div>spans <em>rolled over</em></div>
 {{^}}
-<span class="lightbtn pad1" onclick="Trace.toggleSpans()">
+<span class="lightbtn pad1 sps-toggle">
   <span class="red">spans</span> ({{spans.length}})
 </span>
 <br>
@@ -29,7 +29,7 @@ limitations under the License.
 {{#ifRolledOver coarseMergedStackTree}}
 <div>coarse-grained profile <em>rolled over</em></div>
 {{^}}
-<span class="lightbtn pad1" onclick="Trace.toggleCoarseMergedStackTree()">
+<span class="lightbtn pad1 mst-coarse-toggle">
   <span class="red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
 </span>
 <br>
@@ -50,7 +50,7 @@ limitations under the License.
 {{#ifRolledOver fineMergedStackTree}}
 <div>fine-grained profile <em>rolled over</em></div>
 {{^}}
-<span class="lightbtn pad1" onclick="Trace.toggleFineMergedStackTree()">
+<span class="lightbtn pad1 mst-fine-toggle">
   <span class="red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
 </span>
 <br>

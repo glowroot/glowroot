@@ -21,7 +21,7 @@
 <link rel="shortcut icon" href="http://informant.io/img/favicon.ico" type="image/x-icon"/>
 <link href='http://fonts.googleapis.com/css?family=Special+Elite' rel='stylesheet' type='text/css'>
 <style type="text/css">
-    /*#include "libs/bootstrap/2.3.1/css/bootstrap.css" */
+    /*#include "lib/bootstrap/css/bootstrap.css" */
 </style>
 <style type="text/css">
     /*#include "css/common.css" */
@@ -30,19 +30,27 @@
     /*#include "css/common-trace.css" */
 </style>
 <style type="text/css">
-    /*#include "css/export.css" */
+  .header-logo-export {
+    font-family: 'Special Elite';
+    color: #b12930;
+  }
 </style>
 <script type="text/javascript">
-  /*#include "libs/jquery/1.9.1/jquery.js" */
+  /*#include "lib/requirejs/require.js" */
 </script>
 <script type="text/javascript">
-  /*#include "libs/moment/2.0.0/moment.js" */
+  /*#include "lib/jquery/jquery.js" */
 </script>
 <script type="text/javascript">
-  /*#include "libs/handlebars/1.0.0-rc.3/handlebars.runtime.js" */
+  /*#include "lib/moment/moment.js" */
 </script>
 <script type="text/javascript">
-  /*#include "js/common.js" */
+  // handlebars needs to be defined as amd module since common-trace.js below expects it as an amd
+  // dependency
+  define('handlebars', function() {
+    /*#include "lib/handlebars/handlebars.runtime.js" */
+    return Handlebars;
+  });
 </script>
 <script type="text/javascript">
   /*#include "js/common-trace.js" */
@@ -60,18 +68,13 @@
   /*#include "template/trace-span.html" */
 </script>
 <script type="text/javascript">
-  (function () {
+  require(['trace'], function (Trace) {
     'use strict';
-    Trace.detailTrace = JSON.parse($('#detailTraceJson').html());
     $(document).ready(function () {
-      var html = Trace.traceSummaryTemplate(Trace.detailTrace);
-      var detailHtml = Trace.traceDetailTemplate(Trace.detailTrace);
-      var $detailTrace = $('#detailTrace');
-      $detailTrace.html(html);
-      $detailTrace.append('<br>');
-      $detailTrace.append(detailHtml);
+      var detailTrace = JSON.parse($('#detailTraceJson').html());
+      Trace.renderDetail(detailTrace, '#detailTrace');
     });
-  }());
+  });
 </script>
 </head>
 <!-- export body needs explicit horizontal padding since it does not use the boostrap container

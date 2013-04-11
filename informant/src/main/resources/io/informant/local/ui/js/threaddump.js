@@ -13,8 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-$(document).ready(function () {
+
+require.config({
+  paths: {
+    'informant': 'common',
+    'handlebars': '../lib/handlebars/handlebars.runtime',
+    'jquery': '../lib/jquery/jquery',
+    'spin': '../lib/spin/spin'
+  },
+  shim: {
+    'handlebars': {
+      exports: 'Handlebars'
+    },
+    'spin': {
+      exports: 'Spinner'
+    }
+  }
+});
+
+define(function (require) {
   'use strict';
+  var $ = require('jquery');
+  var Handlebars = require('handlebars');
+  var Informant = require('informant');
 
   var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html());
 
@@ -45,14 +66,16 @@ $(document).ready(function () {
     });
   }
 
-  Informant.configureAjaxError();
-  $('#refreshButton1').click(function () {
-    refresh.bind(false);
-    Informant.showAndFadeSuccessMessage('#refresh1SuccessMessage');
+  $(document).ready(function () {
+    Informant.configureAjaxError();
+    $('#refreshButton1').click(function () {
+      refresh.bind(false);
+      Informant.showAndFadeSuccessMessage('#refresh1SuccessMessage');
+    });
+    $('#refreshButton2').click(function () {
+      refresh.bind(true);
+      Informant.showAndFadeSuccessMessage('#refresh2SuccessMessage');
+    });
+    refresh(false);
   });
-  $('#refreshButton2').click(function () {
-    refresh.bind(true);
-    Informant.showAndFadeSuccessMessage('#refresh2SuccessMessage');
-  });
-  refresh(false);
 });

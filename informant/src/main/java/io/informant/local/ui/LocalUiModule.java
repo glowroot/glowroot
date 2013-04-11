@@ -161,7 +161,7 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/img/(.*)$"), "io/informant/local/ui/img/$1");
         uriMappings.put(Pattern.compile("^/css/(.*)$"), "io/informant/local/ui/css/$1");
         uriMappings.put(Pattern.compile("^/js/(.*)$"), "io/informant/local/ui/js/$1");
-        uriMappings.put(Pattern.compile("^/libs/(.*)$"), "io/informant/local/ui/libs/$1");
+        uriMappings.put(Pattern.compile("^/lib/(.*)$"), "io/informant/local/ui/lib/$1");
         // services
         uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/trace/detail/.*$"), snapshotHttpService);

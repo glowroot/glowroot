@@ -13,8 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-$(document).ready(function () {
+
+require.config({
+  paths: {
+    'informant': 'common',
+    'bootstrap': '../lib/bootstrap/js/bootstrap',
+    'handlebars': '../lib/handlebars/handlebars.runtime',
+    'jquery': '../lib/jquery/jquery',
+    'spin': '../lib/spin/spin'
+  },
+  shim: {
+    'bootstrap': ['jquery'],
+    'handlebars': {
+      exports: 'Handlebars'
+    },
+    'spin': {
+      exports: 'Spinner'
+    }
+  }
+});
+
+define(function (require) {
   'use strict';
+  var $ = require('jquery');
+  var Handlebars = require('handlebars');
+  var Informant = require('informant');
+  require('bootstrap');
 
   var pointcutTemplate = Handlebars.compile($('#pointcutTemplate').html());
 
@@ -336,9 +360,11 @@ $(document).ready(function () {
     }
   }
 
-  Informant.configureAjaxError();
-  read();
-  $('#pointcutNewButton button').click(function () {
-    applyPointcutEditTemplate({});
+  $(document).ready(function () {
+    Informant.configureAjaxError();
+    read();
+    $('#pointcutNewButton button').click(function () {
+      applyPointcutEditTemplate({});
+    });
   });
 });

@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Informant = (function () {
+
+define(function (require) {
   'use strict';
+  var $ = require('jquery');
+  var Spinner = require('spin');
 
   $(document).ready(function () {
     // bootstrap-dropdown already closes the menu on esc key, this is just adding handling for tab
@@ -209,4 +212,4 @@ var Informant = (function () {
   };
 
   return my;
-}());
+});

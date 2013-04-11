@@ -13,8 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Trace = (function () {
+
+// module needs a name since it is inlined into export.html
+define('trace', function (require) {
   'use strict';
+  var $ = require('jquery');
+  var Handlebars = require('handlebars');
 
   Handlebars.registerHelper('eachKeyValuePair', function (map, options) {
     var buffer = '';
@@ -138,22 +142,31 @@ var Trace = (function () {
     return html;
   });
 
-  var my = {};
-
   var spanLineLength;
   var mousedownSpanPageX, mousedownSpanPageY;
-  $(document).ready(function () {
-    my.traceSummaryTemplate = Handlebars.compile($('#traceSummaryTemplate').html());
-    my.traceDetailTemplate = Handlebars.compile($('#traceDetailTemplate').html());
-    my.spanTemplate = Handlebars.compile($('#traceSpanTemplate').html());
-    $(document).mousedown(function (e) {
-      mousedownSpanPageX = e.pageX;
-      mousedownSpanPageY = e.pageY;
-    });
-    $(document).on('click', '.unexpanded-content, .expanded-content', function (e, keyboard) {
-      smartToggle($(this).parent(), e, keyboard);
-    });
+  $(document).mousedown(function (e) {
+    mousedownSpanPageX = e.pageX;
+    mousedownSpanPageY = e.pageY;
   });
+  $(document).on('click', '.unexpanded-content, .expanded-content', function (e, keyboard) {
+    smartToggle($(this).parent(), e, keyboard);
+  });
+  $(document).on('click', '.sps-toggle', function () {
+    var detailTrace = $(this).parents('.trace-parent').data('trace');
+    toggleSpans(detailTrace);
+  })
+  $(document).on('click', '.mst-coarse-toggle', function () {
+    var detailTrace = $(this).parents('.trace-parent').data('trace');
+    toggleMergedStackTree(detailTrace.coarseMergedStackTree, $('#mstCoarseOuter'));
+  });
+  $(document).on('click', '.mst-fine-toggle', function () {
+    var detailTrace = $(this).parents('.trace-parent').data('trace');
+    toggleMergedStackTree(detailTrace.fineMergedStackTree, $('#mstFineOuter'));
+  });
+
+  var traceSummaryTemplate = Handlebars.compile($('#traceSummaryTemplate').html());
+  var traceDetailTemplate = Handlebars.compile($('#traceDetailTemplate').html());
+  var spanTemplate = Handlebars.compile($('#traceSpanTemplate').html());
 
   var initSpanLineLength = function () {
     // using an average character (width-wise) 'o'
@@ -165,13 +178,13 @@ var Trace = (function () {
     spanLineLength = Math.max(spanLineLength, 80);
   };
 
-  my.toggleSpans = function () {
+  var toggleSpans = function (detailTrace) {
     var $sps = $('#sps');
     if (!$sps.html()) {
       // first time opening
       initSpanLineLength();
       $sps.removeClass('hide');
-      renderNext(my.detailTrace.spans, 0);
+      renderNext(detailTrace.spans, 0);
     } else {
       $sps.toggleClass('hide');
     }
@@ -191,7 +204,7 @@ var Trace = (function () {
     for (i = start; i < Math.min(start + batchSize, spans.length); i++) {
       var maxDurationMillis = (spans[0].duration / 1000000).toFixed(1);
       spans[i].offsetColumnWidth = maxDurationMillis.length / 2 + 1;
-      html += my.spanTemplate(spans[i]);
+      html += spanTemplate(spans[i]);
     }
     html += '</div>';
     $('#sps').append(html);
@@ -223,14 +236,6 @@ var Trace = (function () {
     }
     parent.find('.expanded-content').toggleClass('hide');
     parent.find('.unexpanded-content').toggleClass('hide');
-  };
-
-  my.toggleCoarseMergedStackTree = function () {
-    toggleMergedStackTree(my.detailTrace.coarseMergedStackTree, $('#mstCoarseOuter'));
-  };
-
-  my.toggleFineMergedStackTree = function () {
-    toggleMergedStackTree(my.detailTrace.fineMergedStackTree, $('#mstFineOuter'));
   };
 
   var toggleMergedStackTree = function (rootNode, selector) {
@@ -414,5 +419,17 @@ var Trace = (function () {
     return mergedCounts;
   };
 
-  return my;
-}());
+  return {
+    renderSummary: function (summaryTrace) {
+      return traceSummaryTemplate(summaryTrace);
+    },
+    renderDetail: function (detailTrace, selector) {
+      var $selector = $(selector);
+      var html = '<div class="indent1">' + traceSummaryTemplate(detailTrace) + '</div><br>'
+          + traceDetailTemplate(detailTrace);
+      $selector.html(html);
+      $selector.addClass('trace-parent');
+      $selector.data('trace', detailTrace);
+    }
+  };
+});

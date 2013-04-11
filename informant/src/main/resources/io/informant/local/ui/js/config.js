@@ -13,8 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-$(document).ready(function () {
+
+require.config({
+  paths: {
+    'informant': 'common',
+    'bootstrap': '../lib/bootstrap/js/bootstrap',
+    'handlebars': '../lib/handlebars/handlebars.runtime',
+    'jquery': '../lib/jquery/jquery',
+    'spin': '../lib/spin/spin'
+  },
+  shim: {
+    'bootstrap': ['jquery'],
+    'handlebars': {
+      exports: 'Handlebars'
+    },
+    'spin': {
+      exports: 'Spinner'
+    }
+  }
+});
+
+define(function (require) {
   'use strict';
+  var $ = require('jquery');
+  var Handlebars = require('handlebars');
+  var Informant = require('informant');
+  require('bootstrap');
 
   var pluginTemplate = Handlebars.compile($('#pluginTemplate').html());
 
@@ -360,40 +384,42 @@ $(document).ready(function () {
     return id.replace(/\./g, '\\.').replace(/:/g, '\\:');
   }
 
-  Informant.configureAjaxError();
-  $('#fineStoreThresholdOverride').change(function () {
-    var $fineStoreThresholdMillis = $('#fineStoreThresholdMillis');
-    if ($('#fineStoreThresholdOverride').is(':checked')) {
-      $fineStoreThresholdMillis.removeAttr('readonly');
-    } else {
-      $fineStoreThresholdMillis.val('');
-      $fineStoreThresholdMillis.closest('.control-group').removeClass('error');
-      $fineStoreThresholdMillis.attr('readonly', 'readonly');
-    }
-  });
-  read();
-  $('#saveGeneralButton').click(saveGeneralConfig);
-  $('#saveCoarseButton').click(saveCoarseConfig);
-  $('#saveFineButton').click(saveFineConfig);
-  $('#saveUserButton').click(saveUserConfig);
-  $('#saveStorageButton').click(saveStorageConfig);
-  $('#plugins').on('click', '.save-plugin-button', function () {
-    savePluginConfig($(this).data('plugin-id'));
-  });
-  var postingDeleteAll = false;
-  $('#deleteAllButton').click(function () {
-    // handle crazy user clicking on the button
-    if (postingDeleteAll) {
-      return;
-    }
-    postingDeleteAll = true;
-    $.post('admin/data/delete-all', function () {
-      postingDeleteAll = false;
-      Informant.hideSpinner('#deleteAllSpinner');
-      Informant.showAndFadeSuccessMessage('#deleteAllSuccessMessage');
+  $(document).ready(function () {
+    Informant.configureAjaxError();
+    $('#fineStoreThresholdOverride').change(function () {
+      var $fineStoreThresholdMillis = $('#fineStoreThresholdMillis');
+      if ($('#fineStoreThresholdOverride').is(':checked')) {
+        $fineStoreThresholdMillis.removeAttr('readonly');
+      } else {
+        $fineStoreThresholdMillis.val('');
+        $fineStoreThresholdMillis.closest('.control-group').removeClass('error');
+        $fineStoreThresholdMillis.attr('readonly', 'readonly');
+      }
     });
-    // in case button is clicked again before success message is hidden
-    $('#deleteAllSuccessMessage').addClass('hide');
-    Informant.showSpinner('#deleteAllSpinner');
+    read();
+    $('#saveGeneralButton').click(saveGeneralConfig);
+    $('#saveCoarseButton').click(saveCoarseConfig);
+    $('#saveFineButton').click(saveFineConfig);
+    $('#saveUserButton').click(saveUserConfig);
+    $('#saveStorageButton').click(saveStorageConfig);
+    $('#plugins').on('click', '.save-plugin-button', function () {
+      savePluginConfig($(this).data('plugin-id'));
+    });
+    var postingDeleteAll = false;
+    $('#deleteAllButton').click(function () {
+      // handle crazy user clicking on the button
+      if (postingDeleteAll) {
+        return;
+      }
+      postingDeleteAll = true;
+      $.post('admin/data/delete-all', function () {
+        postingDeleteAll = false;
+        Informant.hideSpinner('#deleteAllSpinner');
+        Informant.showAndFadeSuccessMessage('#deleteAllSuccessMessage');
+      });
+      // in case button is clicked again before success message is hidden
+      $('#deleteAllSuccessMessage').addClass('hide');
+      Informant.showSpinner('#deleteAllSpinner');
+    });
   });
 });

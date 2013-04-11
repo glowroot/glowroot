@@ -222,7 +222,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
-        if (path.startsWith("io/informant/local/ui/libs/")) {
+        if (path.startsWith("io/informant/local/ui/lib/")) {
             // these are all third-party versioned resources and can be safely cached forever
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
         }
