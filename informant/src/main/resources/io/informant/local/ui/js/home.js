@@ -19,6 +19,7 @@ require.config({
     'informant': 'common',
     'trace': 'common-trace',
     'bootstrap-transition': '../lib/bootstrap/js/bootstrap-transition',
+    'bootstrap-collapse': '../lib/bootstrap/js/bootstrap-collapse',
     'bootstrap-modal': '../lib/bootstrap/js/bootstrap-modal',
     'bootstrap-datepicker': '../lib/bootstrap-datepicker/js/bootstrap-datepicker',
     'handlebars': '../lib/handlebars/handlebars.runtime',
@@ -35,6 +36,7 @@ require.config({
   },
   shim: {
     'bootstrap-transition': ['jquery'],
+    'bootstrap-collapse': ['jquery'],
     'bootstrap-modal': ['jquery'],
     'bootstrap-datepicker': ['jquery'],
     'handlebars': {
@@ -67,6 +69,7 @@ define(function (require) {
   var Informant = require('informant');
   var Trace = require('trace');
   require('bootstrap-transition');
+  require('bootstrap-collapse');
   require('bootstrap-modal');
   require('bootstrap-datepicker');
   require('jquery.color');
@@ -673,10 +676,11 @@ define(function (require) {
     var $toggleExtraFiltersButton = $('#toggleExtraFiltersButton');
     $toggleExtraFiltersButton.click(function (e) {
       var $extraFilters = $('#extraFilters');
-      $extraFilters.toggleClass('hide');
-      if ($extraFilters.hasClass('hide')) {
+      if ($extraFilters.hasClass('in')) {
+        $extraFilters.collapse('hide');
         $toggleExtraFiltersButton.html('more filters');
       } else {
+        $extraFilters.collapse('show');
         $toggleExtraFiltersButton.html('less filters');
       }
       // without preventDefault, click triggers form submission
