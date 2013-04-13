@@ -237,6 +237,8 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return "application/javascript; charset=UTF-8";
         } else if (extension.equals("css")) {
             return "text/css; charset=UTF-8";
+        } else if (extension.equals("less")) {
+            return "text/css; charset=UTF-8";
         } else if (extension.equals("png")) {
             return "image/png";
         } else if (extension.equals("ico")) {
