@@ -17,13 +17,17 @@
 require.config({
   paths: {
     'informant': 'common',
-    'bootstrap': '../lib/bootstrap/js/bootstrap',
+    'bootstrap-transition': '../lib/bootstrap/js/bootstrap-transition',
+    'bootstrap-collapse': '../lib/bootstrap/js/bootstrap-collapse',
+    'bootstrap-typeahead': '../lib/bootstrap/js/bootstrap-typeahead',
     'handlebars': '../lib/handlebars/handlebars.runtime',
     'jquery': '../lib/jquery/jquery',
     'spin': '../lib/spin/spin'
   },
   shim: {
-    'bootstrap': ['jquery'],
+    'bootstrap-transition': ['jquery'],
+    'bootstrap-collapse': ['jquery'],
+    'bootstrap-typeahead': ['jquery'],
     'handlebars': {
       exports: 'Handlebars'
     },
@@ -38,7 +42,9 @@ define(function (require) {
   var $ = require('jquery');
   var Handlebars = require('handlebars');
   var Informant = require('informant');
-  require('bootstrap');
+  require('bootstrap-transition');
+  require('bootstrap-collapse');
+  require('bootstrap-typeahead');
 
   var pointcutTemplate = Handlebars.compile($('#pointcutTemplate').html());
 

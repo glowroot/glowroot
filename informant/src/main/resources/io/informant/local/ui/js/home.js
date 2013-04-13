@@ -18,7 +18,8 @@ require.config({
   paths: {
     'informant': 'common',
     'trace': 'common-trace',
-    'bootstrap': '../lib/bootstrap/js/bootstrap',
+    'bootstrap-transition': '../lib/bootstrap/js/bootstrap-transition',
+    'bootstrap-modal': '../lib/bootstrap/js/bootstrap-modal',
     'bootstrap-datepicker': '../lib/bootstrap-datepicker/js/bootstrap-datepicker',
     'handlebars': '../lib/handlebars/handlebars.runtime',
     'jquery': '../lib/jquery/jquery',
@@ -33,7 +34,8 @@ require.config({
     'spin': '../lib/spin/spin'
   },
   shim: {
-    'bootstrap': ['jquery'],
+    'bootstrap-transition': ['jquery'],
+    'bootstrap-modal': ['jquery'],
     'bootstrap-datepicker': ['jquery'],
     'handlebars': {
       exports: 'Handlebars'
@@ -64,7 +66,8 @@ define(function (require) {
   var Spinner = require('spin');
   var Informant = require('informant');
   var Trace = require('trace');
-  require('bootstrap');
+  require('bootstrap-transition');
+  require('bootstrap-modal');
   require('bootstrap-datepicker');
   require('jquery.color');
   require('jquery.flot');
