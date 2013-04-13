@@ -22,6 +22,7 @@
 @import "../lib/bootstrap/less/layouts.less";
 
 @import "../lib/bootstrap/less/forms.less";
+@import "../lib/bootstrap/less/sprites.less";
 @import "../lib/bootstrap/less/dropdowns.less";
 @import "../lib/bootstrap/less/component-animations.less";
 @import "../lib/bootstrap/less/close.less";
@@ -29,56 +30,20 @@
 @import "../lib/bootstrap/less/modals.less";
 @import "../lib/bootstrap/less/utilities.less";
 
-@import "../lib/bootstrap-datepicker/css/datepicker.css";
 @import "../lib/qtip/jquery.qtip.css";
 
+@import "bootstrap-form-overrides.less";
+@import "bootstrap-datepicker.less";
 @import "common.less";
 @import "common-trace.less";
 
-/* TODO override datepicker colors by compiling datepicker css with LESS */
-.datepicker td.today {
-  background-color: transparent !important;
-  background-image: none !important;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #ccc !important;
-}
+// flot default point color, just for documenting where @tracePointNormal is derived from
+@flotDefaultColor: #edc240;
+@tracePointNormal: darken(@flotDefaultColor, 10);
+@tracePointActive: lighten(@informantBlue, 20);
+@tracePointError: @informantRed;
 
-.datepicker td.active,
-.datepicker td.day.active:hover {
-  /* placed after '.datepicker td.today' to override that style when today is active */
-  background-color: #4286bd !important;
-  background-image: none !important;
-  color: #fff !important;
-  text-shadow: none;
-  border: none;
-}
-
-.datepicker table tr td span.active,
-.datepicker table tr td span.active:hover {
-  background-color: #4286bd !important;
-  background-image: none !important;
-}
-
-.datepicker td.day:hover,
-.datepicker td.today:hover,
-.datepicker thead tr:first-child th:hover,
-.datepicker table tr td span:hover {
-  /* placed after '.datepicker td.today and '.datepicker td.active:hover' to override that style
-     when today or active is hovered */
-  background-color: #ddd !important;
-}
-
-.datepicker table {
-  /* otherwise border radius doesn't cause curved corners */
-  border-collapse: separate !important;
-}
-
-.datepicker table tr td.today.active,
-.datepicker table tr td.today.active:hover {
-  color: #fff !important;
-}
-
+@informantLightRedBackground: #f2dede;
 
 .qtip-override {
   max-width: 500px;
@@ -92,28 +57,24 @@
 }
 
 .qtip-border-color-0 {
-  border-color: #edc240;
+  border-color: @tracePointNormal;
 }
 
 .qtip-border-color-1 {
-  border-color: #cb4b4b;
+  border-color: @tracePointError;
 }
 
 .qtip-border-color-2 {
-  border-color: #afd8f8;
+  border-color: @tracePointActive;
 }
 
 .modal {
   overflow-y: scroll;
-  -webkit-border-radius: 6px 0 0 6px !important;
-  -moz-border-radius: 6px 0 0 6px !important;
-  border-radius: 6px 0 0 6px !important;
+  .border-right-radius(0);
 }
 
 .modal-content {
-  /* any change to this must also be made in the calculation of contentHeight and contentWidth
-     in displayModal() function in home.html */
-  padding: 20px 0 20px 20px;
+  padding: 20px 0 20px 30px;
 }
 
 .modal .close {
@@ -134,15 +95,16 @@
 
 .explorer-limit-exceeded {
   padding: 10px 35px;
-  color: #B94A48;
-  background-color: #F2DEDE;
-  border-color: #EED3D7;
+  color: @informantRed;
+  background-color: @informantLightRedBackground;
+  margin-bottom: 6px;
+  .border-radius(6px);
 }
 
 .explorer-guide {
   padding: 4px 35px;
   background-color: #eee;
-  border-radius: 6px;
+  .border-radius(6px);
 }
 
 .input-medium0 {

@@ -39,7 +39,9 @@
         Informant</span><span class="header-page-name">Traces</span>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
-      <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
+      <a href="#" class="dropdown-toggle informant-red" role="button" data-toggle="dropdown">
+        see also:
+      </a>
       <ul class="dropdown-menu" role="menu" style="margin: 0;">
         <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
         <li role="menuitem"><a tabindex="-1" href="pointcuts.html">pointcuts</a></li>
@@ -72,7 +74,8 @@
         <li>drag over a region to zoom in</li>
         <li>double click to zoom in</li>
         <li>
-          <button class="realbtn red" id="zoomOut" style="margin-left: -4px; padding: 0 4px;">
+          <button class="flat-btn informant-red" id="zoomOut"
+            style="margin-left: -4px; padding: 0 4px;">
             click here to zoom out
           </button>
           <br>
@@ -185,7 +188,8 @@
       </div>
       <div class="control-group">
         <div class="controls">
-          <button class="realbtn pad1 red" id="toggleExtraFiltersButton" style="margin-left: -1em;">
+          <button class="flat-btn pad1 informant-red" id="toggleExtraFiltersButton"
+                  style="margin-left: -1em;">
             more filters
           </button>
         </div>
@@ -202,7 +206,10 @@
     <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">
       &times;
     </button>
-    <div class="modal-content" id="modalContent" tabindex="0"></div>
+    <div class="modal-content" id="modalContent"></div>
   </div>
+  <span class="qtip-border-color-0 offscreen" id="offscreenNormalColor"></span>
+  <span class="qtip-border-color-1 offscreen" id="offscreenErrorColor"></span>
+  <span class="qtip-border-color-2 offscreen" id="offscreenActiveColor"></span>
 </body>
 </html>

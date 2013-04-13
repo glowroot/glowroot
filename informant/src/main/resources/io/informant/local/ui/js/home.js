@@ -98,7 +98,11 @@ define(function (require) {
       xaxis: { mode: 'time' },
       yaxis: { ticks: 10, zoomRange: false },
       zoom: { interactive: true, amount: 1.5 },
-      colors: ['#edc240', '#cb4b4b', '#afd8f8'],
+      colors: [
+        $('#offscreenNormalColor').css('border-color'),
+        $('#offscreenErrorColor').css('border-color'),
+        $('#offscreenActiveColor').css('border-color')
+      ],
       selection: { mode: 'xy' }
     };
 
@@ -402,8 +406,8 @@ define(function (require) {
           summaryTrace = response;
           var html = Trace.renderSummary(summaryTrace);
           var showDetailHtml = '<div style="margin-top: 0.5em;">'
-              + '<button class="realbtn red pad1" id="showDetail" style="font-size: 12px;">'
-              + 'show detail</button></div>';
+              + '<button class="flat-btn informant-red pad1" id="showDetail"'
+              + ' style="font-size: 12px;">show detail</button></div>';
           text = '<div class="indent1">' + html + '</div>' + showDetailHtml;
         }
         $chart.qtip({
@@ -439,8 +443,8 @@ define(function (require) {
           loadDetailId = id;
           summaryTrace.showExport = true;
           var summaryHtml = '<div class="indent1">' + Trace.renderSummary(summaryTrace)
-              + '</div><br><div class="indent2"><div class="button-spinner hide" id="detailSpinner"'
-              + ' style="margin-left: 0px; margin-top: 30px;"></div></div>';
+              + '</div><br><div class="indent2"><span class="button-spinner inline-block hide"'
+              + ' id="detailSpinner" style="margin-left: 0px; margin-top: 30px;"></span></div>';
           var $qtip = $('.qtip');
           var initialFixedOffset = {
             top: $qtip.offset().top - $(window).scrollTop(),

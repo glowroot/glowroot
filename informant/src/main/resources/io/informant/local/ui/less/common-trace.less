@@ -14,32 +14,35 @@
  * limitations under the License.
  */
 
+// @indent1 must be sync'd with indent1 javascript variable in common-trace.js
+@indent1: 1em;
+@horizontalPadding: 1em;
+// by default using flatButtonVerticalPadding, but these are really independent vars
+@verticalPadding: @flatButtonVerticalPadding;
+
+.content-detail {
+  margin-left: (2 * @indent1);
+}
+
 .metrics-table td {
   padding-left: 0px;
   padding-right: 16px;
   text-align: right;
 }
 
-.lightbtn {
-  display: inline-block;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
-.lightbtn:hover,
-.lightbtn:focus {
-  background-color: #ddd;
+.content-padding {
+  // some elements need the same padding as expanding elements
+  padding: @verticalPadding @horizontalPadding;
 }
 
 .unexpanded-content,
 .expanded-content {
   cursor: pointer;
-  padding: 2px 1em 2px 1em;
-  border-radius: 4px;
-  /* margin-right is used (instead of padding-right on the container) so that stack traces which
-     require horizontal scrolling still have padding to their right */
+  // margin-right is used (instead of padding-right on the container) so that stack traces which
+  // require horizontal scrolling still have padding to their right
   margin-right: 20px;
+  .content-padding;
+  .border-radius(4px);
 }
 
 .unexpanded-content:hover,
@@ -49,74 +52,43 @@
   background-color: #ddd;
 }
 
-.unexpanded-content {
-  /* these are spans, giving them inline-block increases the vertical padding
-     making them look more substantial as 'buttons' */
-  display: inline-block;
-}
-
 .expanded-content {
   background-color: #eee;
-  /* margin for white space between successive expanded elements, at the bottom so that
-     expanding doesn't create jitter/shift down of expanding section */
+  // margin for white space between successive expanded elements, at the bottom so that
+  // expanding doesn't create jitter/shift down of expanding section
   margin-bottom: 4px;
 }
 
-span.expanded-content {
-  /* normally expanded-content are divs, but if they are spans they should be inline-block */
-  display: inline-block;
-}
-
-.unexpanded-padding {
-  /* some elements need the same padding as expanding elements */
-  padding: 2px 1em 2px 1em;
-}
-
-.unexpanded-vertical-padding {
-  /* some elements need the same vertical padding as expanding elements */
-  padding: 2px 0 2px 0;
-}
-
-div:focus,
-span:focus,
-a:focus {
-  /* these elements change their background color to indicate focus */
-  outline: 0;
+.left-numeric-column {
+  float: left;
+  text-align: right;
+  // needs the same vertical padding as content
+  padding: @verticalPadding 0;
 }
 
 .indent1 {
-  margin-left: 1em;
+  margin-left: @indent1;
 }
 
 .indent2 {
-  margin-left: 2em;
+  margin-left: (2 * @indent1);
 }
 
 .pad1 {
-  padding-left: 1em;
-  padding-right: 1em;
+  padding-left: @horizontalPadding;
+  padding-right: @horizontalPadding;
 }
 
-.rounded4 {
-  border-radius: 4px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-.breakword {
-  word-wrap: break-word;
-}
-
-.textindent1 {
-  text-indent: -1em;
-  margin-left: 1em;
+.pad1aligned {
+  margin-left: -@horizontalPadding;
+  .pad1;
 }
 
 .second-line-indent {
-  padding-left: 20px;
-  text-indent: -20px;
+  padding-left: (2 * @indent1);
+  text-indent: -(2 * @indent1);
 }
 
-.inlineblock {
-  display: inline-block;
+.break-word {
+  word-wrap: break-word;
 }

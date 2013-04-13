@@ -29,9 +29,9 @@ limitations under the License.
 <div class="second-line-indent">
   {{headline}}
   {{#if showExport}}
-  {{! unfortunately vertical padding isn't applied to inline elements, so "button" is a little
-      small but it seems worth keeping this inline and it is a less used "button" anyways }}
-  <a class="indent1 pad1 rounded4" href="trace/export/{{id}}">export</a>
+  <button class="flat-btn indent1 pad1 informant-red download-trace" data-trace-id="{{id}}">
+    export
+  </button>
   {{/if}}
 </div>
 start: {{date start}}

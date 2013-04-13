@@ -28,6 +28,7 @@
 @import "../lib/bootstrap/less/accordion.less";
 @import "../lib/bootstrap/less/utilities.less";
 
+@import "bootstrap-form-overrides.less";
 @import "common.less";
 
 .configuration-status {
@@ -35,15 +36,15 @@
 }
 
 .configuration-status-on {
-  color: green;
+  color: @informantGreen;
 }
 
 .configuration-status-off {
-  color: red;
+  color: @informantRed;
 }
 
 .accordion.accordion-body {
-  /* accordion body that is also an accordion itself */
+  // accordion body that is also an accordion itself
   background-color: #fff;
   margin-left: 40px;
   margin-bottom: 0;
@@ -56,8 +57,6 @@
 
 .accordion-heading.outer-accordion-heading {
   border: 1px solid #e5e5e5;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
   margin-bottom: 6px;
+  .border-radius(4px);
 }

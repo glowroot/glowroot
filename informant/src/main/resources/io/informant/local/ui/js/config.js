@@ -148,7 +148,7 @@ define(function (require) {
           }
         }
         pluginDescriptor.properties = propertyDescriptors;
-        $('#plugins').append(pluginTemplate(pluginDescriptor));
+        $('#pluginAccordion').append(pluginTemplate(pluginDescriptor));
         var pluginConfig = config.pluginConfigs[pluginDescriptor.id];
         pluginConfigVersions[pluginDescriptor.id] = pluginConfig.version;
         var enabled = pluginConfig.enabled;
@@ -405,7 +405,7 @@ define(function (require) {
     $('#saveFineButton').click(saveFineConfig);
     $('#saveUserButton').click(saveUserConfig);
     $('#saveStorageButton').click(saveStorageConfig);
-    $('#plugins').on('click', '.save-plugin-button', function () {
+    $('#pluginAccordion').on('click', '.save-plugin-button', function () {
       savePluginConfig($(this).data('plugin-id'));
     });
     var postingDeleteAll = false;

@@ -14,25 +14,39 @@
  * limitations under the License.
  */
 
+@informantRed: #b12930;
+@informantBlue: darken(#4286bd, 2);
+@informantGreen: darken(green, 4);
+
+@flatButtonVerticalPadding: 2px;
+
+// override bootstrap sprite paths
+@iconSpritePath:          "../lib/bootstrap/img/glyphicons-halflings.png";
+@iconWhiteSpritePath:     "../lib/bootstrap/img/glyphicons-halflings-white.png";
+
 body {
   padding: 32px 0px;
 }
 
-@font-face {
-  font-family: 'SpecialElite-Regular';
-  src: url('../lib/specialelite/specialelite.eot');
-  src: url('../lib/specialelite/specialelite.eot?#iefix') format('embedded-opentype'),
-       url('../lib/specialelite/specialelite.woff') format('woff'),
-       url('../lib/specialelite/specialelite.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
+.pin-vertical-scrollbar {
+  // always display vertical scrollbar so content doesn't shift horizontally when the vertical
+  // scrollbar shows up because the page dynamically expanded greater than a single screen, or
+  // contracted down to a single screen, e.g. when showing or hiding content
+  overflow-y: scroll;
 }
 
-.pin-vertical-scrollbar {
-  /* always display vertical scrollbar so content doesn't shift horizontally when the vertical
-     scrollbar shows up because the page dynamically expanded greater than a single screen, or
-     contracted down to a single screen, e.g. when showing or hiding content */
-  overflow-y: scroll;
+// ------
+// header
+// ------
+
+@font-face {
+  font-family: SpecialElite-Regular;
+  src: url(../lib/specialelite/specialelite.eot);
+  src: url(../lib/specialelite/specialelite.eot?#iefix) format("embedded-opentype"),
+       url(../lib/specialelite/specialelite.woff) format("woff"),
+       url(../lib/specialelite/specialelite.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
 }
 
 .header {
@@ -44,13 +58,13 @@ body {
 }
 
 .header-logo {
-  font-family: 'SpecialElite-Regular';
+  font-family: SpecialElite-Regular;
   font-size: 38px;
   padding: 8px 20px 1px 20px;
   vertical-align: 1px;
-  border-radius: 8px;
-  color: #b12930;
+  color: @informantRed;
   background-color: #eee;
+  .border-radius(8px);
 }
 
 .header-page-name {
@@ -64,14 +78,14 @@ body {
 
 .header-see-also .dropdown-toggle {
   background-color: #eee;
-  border-radius: 6px;
   padding: 3px 28px 6px 28px;
   cursor: pointer;
+  .border-radius(6px);
 }
 
 .header-see-also .dropdown-toggle:hover,
 .header-see-also .dropdown-toggle:focus {
-  /* need to indicate focus for keyboard nav */
+  // need to indicate focus for keyboard nav
   background-color: #ddd;
 }
 
@@ -93,7 +107,7 @@ body {
   color: #333;
   background-color: #eee;
   background-image: none;
-  border-radius: 6px;
+  .border-radius(6px);
 }
 
 .header-see-also .dropdown-menu li > a:active {
@@ -112,98 +126,63 @@ body {
   border: none;
 }
 
-input:focus {
-  /* override bootstrap-datepicker styling with slightly darker blue focus border
-     !important is needed because bootstrap lists each input type separately
-     TODO override bootstrap colors by compiling bootstrap css with LESS */
-  /* note: this same color is used (in hex form #4286BD) for datepicker styling in home.css */
-  border-color: rgba(66, 134, 189, 0.8) !important;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(66, 134, 189, 0.6) !important;
-}
-
-.control-group.error input:focus {
-  /* need to force border on error to bootstrap default (without this, default red is overridden by
-     darker blue color in above selector)
-     TODO override bootstrap colors by compiling bootstrap css with LESS */
-  border-color: #953B39 !important;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #D59392 !important;
-}
-
-.button-success-message {
-  display: inline-block;
-  color: green;
-  font-size: 16px;
-  margin-left: 10px;
-  vertical-align: middle;
-}
-
-.button-spinner {
-  display: inline-block;
-  margin-left: 30px;
-  vertical-align: middle;
-}
-
-a {
+.header-see-also a {
   text-decoration: none;
-  color: #b12930;
+  color: @informantRed;
 }
 
-a:hover,
-a:focus {
+.header-see-also a:hover,
+.header-see-also a:focus {
   text-decoration: none;
-  color: #b12930;
+  color: @informantRed;
   background-color: #ddd;
 }
 
-a:active {
+.header-see-also a:active {
   background-color: #ccc;
 }
 
-.realbtn {
-  /* upside to real button: mouse click does not focus on button, can use :active to provide
-                            feedback on clicking already focused button
-     downside to real button: button text is not selectable */
-  display: inline-block;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  /* remove border, background-color and other default browser button styling
-     so this class can be applied to <button> */
+// --------
+// flat-btn
+// --------
+
+.flat-btn {
+  // upside to using a real button: mouse click does not focus on button, can use :active to provide
+  // feedback on clicking already focused button
+  // also good keyboard navigation, can be selected by tabbing and activated by <enter>
+  // downside to real button: button text is not selectable
   border: none;
   background-color: transparent;
-  text-align: left;
-  vertical-align: bottom;
+  // inherit vertical-align so it can be used inline with other text
+  vertical-align: inherit;
+  // add a bit of padding and rounded corners
+  padding: @flatButtonVerticalPadding 4px;
+  .border-radius(4px);
 }
 
-.realbtn:hover,
-.realbtn:focus {
+.flat-btn:hover,
+.flat-btn:focus {
   background-color: #ddd;
 }
 
-.realbtn:active {
+.flat-btn:active {
   background-color: #ccc;
 }
 
-.red {
-  color: #b12930;
-}
-
-.nowrap {
-  white-space: nowrap;
-}
+// ---------
+// accordion
+// ---------
 
 .accordion-heading {
   background-color: #eee;
 }
 
-.accordion-heading-button {
+.accordion-heading > button {
+  text-align: left;
   width: 100%;
   padding: 12px 1em;
   font-size: 19px;
-}
-
-.accordion-heading-button.realbtn {
-  border-radius: 0;
+  .border-radius(0);
 }
 
 .accordion-group {
@@ -218,28 +197,58 @@ a:active {
   padding: 0px;
 }
 
+@accordionFormSidePadding: 24px;
+
 .accordion-form-padding {
-  /* the bottom of the form already has extra padding from margin-bottom on control-group */
-  padding: 30px 24px 16px 24px;
+  // the bottom of the form already has extra padding from margin-bottom on control-group
+  padding: 30px @accordionFormSidePadding 16px @accordionFormSidePadding;
 }
 
-.form-horizontal .form-actions {
-  /* make button line up under form controls */
-  padding-left: 200px;
+.accordion-inner .form-actions {
+  // make button line up under form controls
+  padding-left: (@accordionFormSidePadding + @horizontalComponentOffset);
 }
 
-.accordion-inner.form-horizontal {
+.accordion-inner {
   margin: 0;
 }
 
-.accordion-body .form-actions {
+.accordion-inner .form-actions {
   margin-top: 0;
   margin-bottom: 0;
   background-color: #f8f8f8;
 }
 
-.hide {
-  display: none !important;
+// ---------
+// utilities
+// ---------
+
+.button-success-message {
+  color: @informantGreen;
+  font-size: 16px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.button-spinner {
+  margin-left: 30px;
+  vertical-align: middle;
+}
+
+.informant-red {
+  color: @informantRed;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.inline-block.hide {
+  display: none;
 }
 
 .offscreen {

@@ -33,7 +33,9 @@
         Informant</span><span class="header-page-name">Configuration</span>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
-      <a href="#" class="dropdown-toggle red" role="button" data-toggle="dropdown">see also:</a>
+      <a href="#" class="dropdown-toggle informant-red" role="button" data-toggle="dropdown">
+        see also:
+      </a>
       <ul class="dropdown-menu" role="menu" style="margin: 0;">
         <li role="menuitem"><a tabindex="-1" href="..">traces</a></li>
         <li role="menuitem"><a tabindex="-1" href="pointcuts.html">pointcuts</a></li>
@@ -44,17 +46,17 @@
   <div class="accordion" id="outerAccordion">
     <div class="accordion-group outer-accordion-group">
       <div class="accordion-heading outer-accordion-heading">
-        <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                data-parent="#outerAccordion" data-target="#generalAccordion">
-          General
+        <button class="flat-btn" data-toggle="collapse" data-parent="#outerAccordion"
+                data-target="#generalAccordion">
+          Trace Capture
         </button>
       </div>
       <div class="accordion accordion-body collapse in" id="generalAccordion">
         <div class="accordion-group">
           <div class="accordion-heading">
-            <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                    data-parent="#generalAccordion" data-target="#generalForm">
-              Trace Capture <span class="configuration-status" id="generalStatus"></span>
+            <button class="flat-btn" data-toggle="collapse" data-parent="#generalAccordion"
+                    data-target="#generalForm">
+              General <span class="configuration-status" id="generalStatus"></span>
             </button>
           </div>
           <div class="accordion-body collapse in" id="generalForm">
@@ -77,10 +79,10 @@
                         <span class="add-on">milliseconds</span>
                         <span class="help-inline">Invalid input</span>
                       </div>
-                  <span class="help-block">
-                    Any trace that exceeds this amount of time will be viewable immediately as an
-                    active trace and will be stored to disk at its completion.
-                  </span>
+                      <span class="help-block">
+                        Any trace that exceeds this amount of time will be viewable immediately as
+                        an active trace and will be stored to disk at its completion.
+                      </span>
                     </div>
                   </div>
                   <div class="control-group">
@@ -123,8 +125,8 @@
         </div>
         <div class="accordion-group">
           <div class="accordion-heading">
-            <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                    data-parent="#generalAccordion" data-target="#coarseForm">
+            <button class="flat-btn" data-toggle="collapse" data-parent="#generalAccordion"
+                    data-target="#coarseForm">
               Coarse-Grained Profiling <span class="configuration-status" id="coarseStatus"></span>
             </button>
           </div>
@@ -199,8 +201,8 @@
         </div>
         <div class="accordion-group">
           <div class="accordion-heading">
-            <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                    data-parent="#generalAccordion" data-target="#fineForm">
+            <button class="flat-btn" data-toggle="collapse" data-parent="#generalAccordion"
+                    data-target="#fineForm">
               Fine-Grained Profiling <span class="configuration-status" id="fineStatus"></span>
             </button>
           </div>
@@ -291,8 +293,8 @@
         </div>
         <div class="accordion-group">
           <div class="accordion-heading">
-            <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                    data-parent="#generalAccordion" data-target="#userForm">
+            <button class="flat-btn" data-toggle="collapse" data-parent="#generalAccordion"
+                    data-target="#userForm">
               User-Specific Overrides <span class="configuration-status" id="userStatus"></span>
             </button>
           </div>
@@ -357,8 +359,8 @@
         </div>
         <div class="accordion-group">
           <div class="accordion-heading">
-            <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                    data-parent="#generalAccordion" data-target="#storageForm">
+            <button class="flat-btn" data-toggle="collapse" data-parent="#generalAccordion"
+                    data-target="#storageForm">
               Storage
             </button>
           </div>
@@ -375,15 +377,15 @@
                         <input type="text" id="storageSnapshotExpirationDays" style="width: 5em;">
                         <span class="add-on">days</span>
                       </div>
-                  <span>
-                    <button type="button" class="btn" id="deleteAllButton"
-                            style="margin-left: 20px;">
-                      Delete All
-                    </button>
-                    <span class="button-spinner hide" id="deleteAllSpinner"></span>
-                    <span class="button-success-message hide"
-                          id="deleteAllSuccessMessage">Deleted</span>
-                  </span>
+                      <div class="inline-block">
+                        <button type="button" class="btn" id="deleteAllButton"
+                                style="margin-left: 20px;">
+                          Delete All
+                        </button>
+                        <span class="button-spinner inline-block hide" id="deleteAllSpinner"></span>
+                        <span class="button-success-message hide"
+                              id="deleteAllSuccessMessage">Deleted</span>
+                      </div>
                       <div class="help-block" style="margin-top: 10px;">
                         Defines how long the trace snapshots should be retained in the H2 data file.
                         <em>Delete All</em> will clear all trace snapshots from the H2 data file.
@@ -426,7 +428,8 @@
                   <button type="button" class="btn" id="saveStorageButton">Save changes</button>
                   <!-- spinner because updating storage config can take a while if resizing rolling
                        file or changing trace snapshot expiration -->
-                  <span class="button-spinner hide" id="saveStorageButtonSpinner"></span>
+                  <span class="button-spinner inline-block hide" id="saveStorageButtonSpinner">
+                  </span>
                   <span class="button-success-message hide" id="storageSaveComplete">Saved</span>
                 </div>
               </fieldset>
@@ -437,16 +440,14 @@
     </div>
     <div class="accordion-group outer-accordion-group">
       <div class="accordion-heading outer-accordion-heading">
-        <button class="realbtn accordion-heading-button" data-toggle="collapse"
-                data-parent="#outerAccordion" data-target="#pluginAccordion">
+        <button class="flat-btn" data-toggle="collapse" data-parent="#outerAccordion"
+                data-target="#pluginAccordion">
           Plugins
         </button>
       </div>
-      <div class="accordion accordion-body collapse" id="pluginAccordion">
-        <div id="plugins"></div>
-      </div>
+      <div class="accordion accordion-body collapse" id="pluginAccordion"></div>
     </div>
   </div>
-  <span id="offscreenMeasure" style="position: absolute; left: -10000px; top: 0;"></span>
+  <span class="offscreen" id="offscreenMeasure"></span>
 </body>
 </html>

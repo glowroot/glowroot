@@ -20,6 +20,9 @@ define('trace', function (require) {
   var $ = require('jquery');
   var Handlebars = require('handlebars');
 
+  // indent1 must be sync'd with @indent1 less variable in trace-span.less
+  var indent1 = 1; // em
+
   Handlebars.registerHelper('eachKeyValuePair', function (map, options) {
     var buffer = '';
     if (map) {
@@ -56,7 +59,8 @@ define('trace', function (require) {
         if (propVal !== null && typeof propVal === 'object') {
           ret += propName + ':<br><div class="indent1">' + messageDetailHtml(propVal) + '</div>';
         } else {
-          ret += '<div class="breakword textindent1">' + propName + ': ' + propVal + '</div>';
+          ret += '<div class="break-word second-line-indent">' + propName + ': ' + propVal
+              + '</div>';
         }
       });
       return ret;
@@ -92,15 +96,15 @@ define('trace', function (require) {
     return options.inverse(this);
   });
 
-  Handlebars.registerHelper('add', function (x, y) {
-    return x + y;
+  Handlebars.registerHelper('addIndent2', function (width) {
+    return width + 2 * indent1;
   });
 
   Handlebars.registerHelper('spanIndent', function (span) {
     if (span.beyondLimit) {
-      return 1;
+      return indent1;
     }
-    return 1 + span.nestingLevel + span.offsetColumnWidth;
+    return indent1 * (1 + span.nestingLevel) + span.offsetColumnWidth;
   });
 
   Handlebars.registerHelper('firstPart', function (message) {
@@ -119,8 +123,7 @@ define('trace', function (require) {
       html += exception.display + '</strong><br>';
       var i;
       for (i = 0; i < exception.stackTrace.length; i++) {
-        html += '<span class="inlineblock" style="width: 4em;"></span>at '
-            + exception.stackTrace[i] + '<br>';
+        html += '<div class="stack-trace-element">at ' + exception.stackTrace[i] + '</div>';
       }
       if (exception.framesInCommon) {
         html += '... ' + exception.framesInCommon + ' more<br>';
@@ -142,7 +145,9 @@ define('trace', function (require) {
     return html;
   });
 
-  var spanLineLength;
+  $(document).on('click', 'button.download-trace', function() {
+    window.location = '/trace/export/' + $(this).data('trace-id');
+  });
   var mousedownSpanPageX, mousedownSpanPageY;
   $(document).mousedown(function (e) {
     mousedownSpanPageX = e.pageX;
@@ -168,6 +173,7 @@ define('trace', function (require) {
   var traceDetailTemplate = Handlebars.compile($('#traceDetailTemplate').html());
   var spanTemplate = Handlebars.compile($('#traceSpanTemplate').html());
 
+  var spanLineLength;
   var initSpanLineLength = function () {
     // using an average character (width-wise) 'o'
     $('body').prepend('<span class="offscreen" id="bodyFontCharWidth">o</span>');
@@ -203,7 +209,7 @@ define('trace', function (require) {
     var i;
     for (i = start; i < Math.min(start + batchSize, spans.length); i++) {
       var maxDurationMillis = (spans[0].duration / 1000000).toFixed(1);
-      spans[i].offsetColumnWidth = maxDurationMillis.length / 2 + 1;
+      spans[i].offsetColumnWidth = maxDurationMillis.length / 2 + indent1;
       html += spanTemplate(spans[i]);
     }
     html += '</div>';
@@ -259,7 +265,7 @@ define('trace', function (require) {
       if (nodeSampleCount < rootNodeSampleCount) {
         level++;
       }
-      var ret = '<span class="inlineblock" style="width: 4em; margin-left: ' + ((level / 3))
+      var ret = '<span class="inline-block" style="width: 4em; margin-left: ' + ((level / 3))
           + 'em;">';
       var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100;
       ret += samplePercentage.toFixed(1);
@@ -271,7 +277,7 @@ define('trace', function (require) {
       ret += escapeHtml(node.stackTraceElement) + '<br>';
       if (node.leafThreadState) {
         // each indent is 1/3em, so adding extra .333em to indent thread state
-        ret += '<span class="inlineblock" style="width: 4.333em; margin-left: ' + ((level / 3))
+        ret += '<span class="inline-block" style="width: 4.333em; margin-left: ' + ((level / 3))
             + 'em;">';
         ret += '</span>';
         ret += escapeHtml(node.leafThreadState);
@@ -365,7 +371,7 @@ define('trace', function (require) {
           // elements in the ui and copy pasting into the eclipse java stack trace console, because
           // the space gives separation between the percentage and the stack trace element and so
           // eclipse is still able to understand the stack trace
-          uninterestingHtml += '<span class="inlineblock" style="width: 4em;">100.0% </span>'
+          uninterestingHtml += '<span class="inline-block" style="width: 4em;">100.0% </span>'
               + interestingRootNode.stackTraceElement + '<br>';
           interestingRootNode = childNode;
           i++;
@@ -425,8 +431,7 @@ define('trace', function (require) {
     },
     renderDetail: function (detailTrace, selector) {
       var $selector = $(selector);
-      var html = '<div class="indent1">' + traceSummaryTemplate(detailTrace) + '</div><br>'
-          + traceDetailTemplate(detailTrace);
+      var html = traceSummaryTemplate(detailTrace) + '<br>' + traceDetailTemplate(detailTrace);
       $selector.html(html);
       $selector.addClass('trace-parent');
       $selector.data('trace', detailTrace);

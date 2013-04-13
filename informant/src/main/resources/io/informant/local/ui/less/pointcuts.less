@@ -28,55 +28,15 @@
 @import "../lib/bootstrap/less/accordion.less";
 @import "../lib/bootstrap/less/utilities.less";
 
+@import "bootstrap-form-overrides.less";
 @import "common.less";
 
 .new-pointcut-header {
-  display: block;
   padding: 7px 1em;
   border: 1px solid #e5e5e5;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
   background-color: #eee;
   vertical-align: middle;
   font-size: 19px;
   line-height: normal;
-}
-
-.pointcut-header:hover,
-.pointcut-header:focus {
-  background-color: #ddd;
-}
-
-.adhoc-pointcut-heading {
-  margin-left: 20px;
-  margin-bottom: 20px;
-  /*font-weight: bold;*/
-  font-size: 16px;
-}
-
-.adhoc-pointcut-group {
-  margin-bottom: 10px;
-  clear: both;
-}
-
-.adhoc-pointcut-label {
-  font-weight: bold;
-  width: 240px;
-  float: left;
-  text-align: right;
-}
-
-.adhoc-pointcut-value {
-  margin-left: 260px;
-}
-
-.adhoc-pointcut-actions {
-  margin-left: 260px;
-  margin-top: 20px;
-}
-
-.adhoc-pointcut-actions button {
-  /* small padding between edit and delete buttons */
-  margin-right: 5px;
+  .border-radius(4px);
 }
