@@ -19,9 +19,9 @@ define('trace', function (require) {
   'use strict';
   var $ = require('jquery');
   var Handlebars = require('handlebars');
-  var traceSummaryTemplate = require('hbs!../template/trace-summary');
-  var traceDetailTemplate = require('hbs!../template/trace-detail');
-  var spanTemplate = require('hbs!../template/trace-span');
+  var traceSummaryTemplate = require('hbs!template/trace-summary');
+  var traceDetailTemplate = require('hbs!template/trace-detail');
+  var spanTemplate = require('hbs!template/trace-span');
 
   // indent1 must be sync'd with @indent1 less variable in trace-span.less
   var indent1 = 1; // em

@@ -16,36 +16,21 @@
 
 require.config({
   paths: {
-    'informant': 'common',
-    'trace': 'common-trace',
-    'bootstrap-transition': '../lib/bootstrap/js/bootstrap-transition',
-    'bootstrap-collapse': '../lib/bootstrap/js/bootstrap-collapse',
-    'bootstrap-modal': '../lib/bootstrap/js/bootstrap-modal',
-    'bootstrap-datepicker': '../lib/bootstrap-datepicker/js/bootstrap-datepicker',
-    'handlebars': '../lib/handlebars/handlebars.runtime',
-    'jquery': '../lib/jquery/jquery',
-    'jquery.color': '../lib/jquery/jquery.color',
-    'jquery.flot': '../lib/flot/jquery.flot',
-    'jquery.flot.time': '../lib/flot/jquery.flot.time',
-    'jquery.flot.selection': '../lib/flot/jquery.flot.selection',
-    'jquery.flot.navigate': '../lib/flot/jquery.flot.navigate',
-    'jquery.qtip': '../lib/qtip/jquery.qtip',
-    'jquery-migrate': '../lib/jquery/jquery-migrate',
-    'moment': '../lib/moment/moment',
-    'spin': '../lib/spin/spin',
-    'hbs': '../lib/hbs/hbs',
-    'underscore': '../lib/hbs/underscore',
-    'json2': '../lib/hbs/json2',
-    'i18nprecompile': '../lib/hbs/i18nprecompile'
+    'trace': 'js/common-trace',
+    'bootstrap-modal': 'lib/bootstrap/js/bootstrap-modal',
+    'bootstrap-datepicker': 'lib/bootstrap-datepicker/js/bootstrap-datepicker',
+    'jquery.color': 'lib/jquery/jquery.color',
+    'jquery.flot': 'lib/flot/jquery.flot',
+    'jquery.flot.time': 'lib/flot/jquery.flot.time',
+    'jquery.flot.selection': 'lib/flot/jquery.flot.selection',
+    'jquery.flot.navigate': 'lib/flot/jquery.flot.navigate',
+    'jquery.qtip': 'lib/qtip/jquery.qtip',
+    'jquery-migrate': 'lib/jquery/jquery-migrate',
+    'moment': 'lib/moment/moment'
   },
   shim: {
-    'bootstrap-transition': ['jquery'],
-    'bootstrap-collapse': ['jquery'],
     'bootstrap-modal': ['jquery'],
     'bootstrap-datepicker': ['jquery'],
-    'handlebars': {
-      exports: 'Handlebars'
-    },
     'jquery.color': ['jquery'],
     'jquery.flot': ['jquery'],
     'jquery.flot.time': ['jquery', 'jquery.flot'],
@@ -57,15 +42,7 @@ require.config({
     'jquery-migrate': ['jquery'],
     'moment': {
       exports: 'moment'
-    },
-    'spin': {
-      exports: 'Spinner'
     }
-  },
-  hbs: {
-    disableI18n: true,
-    disableHelpers: true,
-    templateExtension: 'html'
   }
 });
 

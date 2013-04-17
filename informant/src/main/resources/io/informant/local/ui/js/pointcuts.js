@@ -16,33 +16,10 @@
 
 require.config({
   paths: {
-    'informant': 'common',
-    'bootstrap-transition': '../lib/bootstrap/js/bootstrap-transition',
-    'bootstrap-collapse': '../lib/bootstrap/js/bootstrap-collapse',
-    'bootstrap-typeahead': '../lib/bootstrap/js/bootstrap-typeahead',
-    'handlebars': '../lib/handlebars/handlebars.runtime',
-    'jquery': '../lib/jquery/jquery',
-    'spin': '../lib/spin/spin',
-    'hbs': '../lib/hbs/hbs',
-    'underscore': '../lib/hbs/underscore',
-    'json2': '../lib/hbs/json2',
-    'i18nprecompile': '../lib/hbs/i18nprecompile'
+    'bootstrap-typeahead': 'lib/bootstrap/js/bootstrap-typeahead'
   },
   shim: {
-    'bootstrap-transition': ['jquery'],
-    'bootstrap-collapse': ['jquery'],
-    'bootstrap-typeahead': ['jquery'],
-    'handlebars': {
-      exports: 'Handlebars'
-    },
-    'spin': {
-      exports: 'Spinner'
-    }
-  },
-  hbs: {
-    disableI18n: true,
-    disableHelpers: true,
-    templateExtension: 'html'
+    'bootstrap-typeahead': ['jquery']
   }
 });
 
@@ -51,7 +28,7 @@ define(function (require) {
   var $ = require('jquery');
   var Handlebars = require('handlebars');
   var Informant = require('informant');
-  var pointcutTemplate = require('hbs!../template/pointcut');
+  var pointcutTemplate = require('hbs!template/pointcut');
   require('bootstrap-transition');
   require('bootstrap-collapse');
   require('bootstrap-typeahead');

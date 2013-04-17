@@ -14,42 +14,12 @@
  * limitations under the License.
  */
 
-require.config({
-  paths: {
-    'informant': 'common',
-    'bootstrap-transition': '../lib/bootstrap/js/bootstrap-transition',
-    'bootstrap-collapse': '../lib/bootstrap/js/bootstrap-collapse',
-    'handlebars': '../lib/handlebars/handlebars.runtime',
-    'jquery': '../lib/jquery/jquery',
-    'spin': '../lib/spin/spin',
-    'hbs': '../lib/hbs/hbs',
-    'underscore': '../lib/hbs/underscore',
-    'json2': '../lib/hbs/json2',
-    'i18nprecompile': '../lib/hbs/i18nprecompile'
-  },
-  shim: {
-    'bootstrap-transition': ['jquery'],
-    'bootstrap-collapse': ['jquery'],
-    'handlebars': {
-      exports: 'Handlebars'
-    },
-    'spin': {
-      exports: 'Spinner'
-    }
-  },
-  hbs: {
-    disableI18n: true,
-    disableHelpers: true,
-    templateExtension: 'html'
-  }
-});
-
 define(function (require) {
   'use strict';
   var $ = require('jquery');
   var Handlebars = require('handlebars');
   var Informant = require('informant');
-  var pluginTemplate = require('hbs!../template/config-plugin');
+  var pluginTemplate = require('hbs!template/config-plugin');
   require('bootstrap-transition');
   require('bootstrap-collapse');
 

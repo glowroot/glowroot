@@ -21,7 +21,12 @@
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
 <link rel="stylesheet/less" href="less/pointcuts.less" />
 <script src="lib/less/less.js"></script>
-<script data-main="js/pointcuts" src="lib/requirejs/require.js"></script>
+<script src="lib/requirejs/require.js"></script>
+<script>
+  require(['js/common'], function () {
+    require(['js/pointcuts']);
+  });
+</script>
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">
