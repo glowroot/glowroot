@@ -19,7 +19,11 @@ require.config({
     'informant': 'common',
     'handlebars': '../lib/handlebars/handlebars.runtime',
     'jquery': '../lib/jquery/jquery',
-    'spin': '../lib/spin/spin'
+    'spin': '../lib/spin/spin',
+    'hbs': '../lib/hbs/hbs',
+    'underscore': '../lib/hbs/underscore',
+    'json2': '../lib/hbs/json2',
+    'i18nprecompile': '../lib/hbs/i18nprecompile'
   },
   shim: {
     'handlebars': {
@@ -28,6 +32,11 @@ require.config({
     'spin': {
       exports: 'Spinner'
     }
+  },
+  hbs: {
+    disableI18n: true,
+    disableHelpers: true,
+    templateExtension: 'html'
   }
 });
 
@@ -36,8 +45,7 @@ define(function (require) {
   var $ = require('jquery');
   var Handlebars = require('handlebars');
   var Informant = require('informant');
-
-  var threadDumpTemplate = Handlebars.compile($('#threadDumpTemplate').html());
+  var threadDumpTemplate = require('hbs!../template/threaddump');
 
   Handlebars.registerHelper('ifBlocked', function (state, options) {
     if (state === 'BLOCKED') {

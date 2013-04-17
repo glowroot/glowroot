@@ -32,7 +32,11 @@ require.config({
     'jquery.qtip': '../lib/qtip/jquery.qtip',
     'jquery-migrate': '../lib/jquery/jquery-migrate',
     'moment': '../lib/moment/moment',
-    'spin': '../lib/spin/spin'
+    'spin': '../lib/spin/spin',
+    'hbs': '../lib/hbs/hbs',
+    'underscore': '../lib/hbs/underscore',
+    'json2': '../lib/hbs/json2',
+    'i18nprecompile': '../lib/hbs/i18nprecompile'
   },
   shim: {
     'bootstrap-transition': ['jquery'],
@@ -57,6 +61,11 @@ require.config({
     'spin': {
       exports: 'Spinner'
     }
+  },
+  hbs: {
+    disableI18n: true,
+    disableHelpers: true,
+    templateExtension: 'html'
   }
 });
 

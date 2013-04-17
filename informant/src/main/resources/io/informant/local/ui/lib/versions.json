@@ -4,6 +4,7 @@
   'flashcanvas': '20110201',
   'flot': '0.8-beta+patch.1',
   'handlebars.js': '1.0.0-rc.3',
+  'hbs': '0.4.0',
   'jquery': '1.9.1',
   'jquery-color': '2.1.1',
   'jquery-migrate': '1.1.1',

@@ -162,6 +162,8 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/less/(.*)$"), "io/informant/local/ui/less/$1");
         uriMappings.put(Pattern.compile("^/js/(.*)$"), "io/informant/local/ui/js/$1");
         uriMappings.put(Pattern.compile("^/lib/(.*)$"), "io/informant/local/ui/lib/$1");
+        // used in dev mode by require-handlebars-plugin
+        uriMappings.put(Pattern.compile("^/template/(.*)$"), "io/informant/local/ui/template/$1");
         // services
         uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/trace/detail/.*$"), snapshotHttpService);

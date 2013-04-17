@@ -22,7 +22,11 @@ require.config({
     'bootstrap-typeahead': '../lib/bootstrap/js/bootstrap-typeahead',
     'handlebars': '../lib/handlebars/handlebars.runtime',
     'jquery': '../lib/jquery/jquery',
-    'spin': '../lib/spin/spin'
+    'spin': '../lib/spin/spin',
+    'hbs': '../lib/hbs/hbs',
+    'underscore': '../lib/hbs/underscore',
+    'json2': '../lib/hbs/json2',
+    'i18nprecompile': '../lib/hbs/i18nprecompile'
   },
   shim: {
     'bootstrap-transition': ['jquery'],
@@ -34,6 +38,11 @@ require.config({
     'spin': {
       exports: 'Spinner'
     }
+  },
+  hbs: {
+    disableI18n: true,
+    disableHelpers: true,
+    templateExtension: 'html'
   }
 });
 
@@ -42,11 +51,10 @@ define(function (require) {
   var $ = require('jquery');
   var Handlebars = require('handlebars');
   var Informant = require('informant');
+  var pointcutTemplate = require('hbs!../template/pointcut');
   require('bootstrap-transition');
   require('bootstrap-collapse');
   require('bootstrap-typeahead');
-
-  var pointcutTemplate = Handlebars.compile($('#pointcutTemplate').html());
 
   function read() {
     Informant.showSpinner('#initialLoadSpinner');
