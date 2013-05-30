@@ -53,12 +53,28 @@
   /*#include "lib/requirejs/require.js" */
   /*#include "lib/jquery/jquery.js" */
   /*#include "lib/moment/moment.js" */
-  // handlebars needs to be defined as amd module since common-trace.js below expects it as an amd
-  // dependency
+  // handlebars and json2 need to be defined as amd modules
   define('handlebars', function() {
     /*#include "lib/handlebars/handlebars.runtime.js" */
     return Handlebars;
   });
+  define('json2', function() {
+    /*#include "lib/hbs/json2.js" */
+    return JSON;
+  });
+  define('hbs!template/trace-summary', ['handlebars'], function(Handlebars) {
+    return Handlebars.compile($('#traceSummaryTemplate').html());
+  });
+  define('hbs!template/trace-detail', ['handlebars'], function(Handlebars) {
+    return Handlebars.compile($('#traceDetailTemplate').html());
+  });
+  define('hbs!template/trace-span', ['handlebars'], function(Handlebars) {
+    return Handlebars.compile($('#traceSpanTemplate').html());
+  });
+  define('i18nprecompile', function() {
+  });
+  /*#include "lib/hbs/underscore.js" */
+  /*#include "lib/hbs/hbs.js" */
   /*#include "js/common-trace.js" */
   require(['trace'], function (Trace) {
     'use strict';
