@@ -43,7 +43,10 @@ public class MixinType {
 
     public static MixinType from(Mixin mixin, Class<?> implementation) {
         ImmutableList<String> targets = ImmutableList.copyOf(mixin.target());
-        ImmutableList<Class<?>> interfaces = ImmutableList.copyOf(implementation.getInterfaces());
+        // Class.getInterfaces() returns Class[] in jdk 5 so must be casted to Class<?>[]
+        // (this method was corrected in jdk 6 to return Class<?>[])
+        ImmutableList<Class<?>> interfaces =
+                ImmutableList.copyOf((Class<?>[]) implementation.getInterfaces());
         String initMethodName = null;
         for (Method method : implementation.getDeclaredMethods()) {
             if (method.getAnnotation(MixinInit.class) != null) {

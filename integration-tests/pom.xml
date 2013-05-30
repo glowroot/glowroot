@@ -28,7 +28,7 @@
         makes the tests run measurably faster) -->
       <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
-      <version>14.0.1-SNAPSHOT</version>
+      <version>14.0.1-rc1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -44,14 +44,15 @@
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>14.0.1</version>
+      <artifactId>guava-jdk5</artifactId>
+      <version>14.0.1-rc1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-assert-core</artifactId>
-      <version>2.0M10</version>
+      <!-- 2.0M7 is the last version of fest-assert-core that supports jdk 5 -->
+      <version>2.0M7</version>
       <scope>test</scope>
     </dependency>
     <dependency>

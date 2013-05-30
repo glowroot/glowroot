@@ -23,8 +23,8 @@
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>14.0</version>
+      <artifactId>guava-jdk5</artifactId>
+      <version>14.0.1-rc1</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
@@ -81,7 +81,8 @@
     <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-reflect</artifactId>
-      <version>1.4.1</version>
+      <!-- 1.4 is the last version of fest-reflect that supports jdk 5 -->
+      <version>1.4</version>
     </dependency>
     <dependency>
       <!-- using org.junit.runner.notification.RunListener -->
