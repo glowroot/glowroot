@@ -51,6 +51,8 @@ public class Trace {
     @Nullable
     private List<Metric> metrics;
     @Nullable
+    private JvmInfo jvmInfo;
+    @Nullable
     private List<Span> spans;
     @Nullable
     private MergedStackTreeNode coarseMergedStackTree;
@@ -131,6 +133,11 @@ public class Trace {
     }
 
     @Nullable
+    public JvmInfo getJvmInfo() {
+        return jvmInfo;
+    }
+
+    @Nullable
     public List<Span> getSpans() {
         if (summary) {
             throw new IllegalStateException("Use Informant.getLastTrace() instead of"
@@ -194,6 +201,7 @@ public class Trace {
                 .add("userId", userId)
                 .add("error", error)
                 .add("metrics", metrics)
+                .add("jvmInfo", jvmInfo)
                 .add("spans", spans)
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)

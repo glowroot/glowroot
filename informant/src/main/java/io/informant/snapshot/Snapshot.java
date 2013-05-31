@@ -51,6 +51,8 @@ public class Snapshot {
     private final String exception; // json data
     @Nullable
     private final String metrics; // json data
+    @Nullable
+    private final String jvmInfo; // json data
     // using CharSource so these potentially very large strings can be streamed without consuming
     // large amounts of memory
     @Nullable
@@ -63,7 +65,7 @@ public class Snapshot {
     private Snapshot(String id, long start, long duration, boolean stuck, boolean completed,
             boolean background, String headline, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
-            @Nullable String exception, @Nullable String metrics,
+            @Nullable String exception, @Nullable String metrics, @Nullable String jvmInfo,
             @Immutable @Nullable CharSource spans,
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree) {
@@ -80,6 +82,7 @@ public class Snapshot {
         this.errorDetail = errorDetail;
         this.exception = exception;
         this.metrics = metrics;
+        this.jvmInfo = jvmInfo;
         this.spans = spans;
         this.coarseMergedStackTree = coarseMergedStackTree;
         this.fineMergedStackTree = fineMergedStackTree;
@@ -141,6 +144,11 @@ public class Snapshot {
     @Nullable
     public String getMetrics() {
         return metrics;
+    }
+
+    @Nullable
+    public String getJvmInfo() {
+        return jvmInfo;
     }
 
     @Immutable
@@ -209,6 +217,8 @@ public class Snapshot {
         private String exception;
         @Nullable
         private String metrics;
+        @Nullable
+        private String jvmInfo;
         @Immutable
         @Nullable
         private CharSource spans;
@@ -286,6 +296,11 @@ public class Snapshot {
             return this;
         }
 
+        public Builder jvmInfo(@Nullable String jvmInfo) {
+            this.jvmInfo = jvmInfo;
+            return this;
+        }
+
         public Builder spans(@Immutable @Nullable CharSource spans) {
             this.spans = spans;
             return this;
@@ -313,7 +328,7 @@ public class Snapshot {
             }
             return new Snapshot(id, start, duration, stuck, completed, background,
                     headline, attributes, userId, errorText, errorDetail, exception,
-                    metrics, spans, coarseMergedStackTree, fineMergedStackTree);
+                    metrics, jvmInfo, spans, coarseMergedStackTree, fineMergedStackTree);
         }
     }
 }

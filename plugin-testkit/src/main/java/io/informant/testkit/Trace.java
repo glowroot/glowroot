@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
+import io.informant.container.trace.JvmInfo;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -51,6 +53,8 @@ public class Trace {
     private TraceError error;
     @Nullable
     private List<Metric> metrics;
+    @Nullable
+    private JvmInfo jvmInfo;
     @Nullable
     private List<Span> spans;
 
@@ -125,6 +129,11 @@ public class Trace {
     }
 
     @Nullable
+    public JvmInfo getJvmInfo() {
+        return jvmInfo;
+    }
+
+    @Nullable
     public List<Span> getSpans() {
         return spans;
     }
@@ -144,6 +153,7 @@ public class Trace {
                 .add("userId", userId)
                 .add("error", error)
                 .add("metrics", metrics)
+                .add("jvmInfo", jvmInfo)
                 .add("spans", spans)
                 .toString();
     }

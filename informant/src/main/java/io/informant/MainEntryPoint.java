@@ -17,6 +17,7 @@ package io.informant;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -99,6 +100,9 @@ public class MainEntryPoint {
 
     private static InformantModule start(@ReadOnly Map<String, String> properties,
             @Nullable Instrumentation instrumentation) throws Exception {
+        // TODO make this configurable
+        ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
+        ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         informantModule = new InformantModule(properties);
         if (instrumentation != null) {
             instrumentation.addTransformer(informantModule.createWeavingClassFileTransformer());

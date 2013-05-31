@@ -49,7 +49,7 @@ duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 {{/if}}
 breakdown (in milliseconds):
 <br>
-<table class="metrics-table indent1" style="border-spacing: 0;">
+<table class="metrics-table indent2" style="border-spacing: 0;">
   <thead>
   <tr>
     <td></td>
@@ -71,3 +71,20 @@ breakdown (in milliseconds):
   {{/eachMetricOrdered}}
   </tbody>
 </table>
+thread info
+<br>
+<div class="indent2">
+  cpu time: {{nanosToMillis jvmInfo.threadCpuTime}} milliseconds
+</div>
+<div class="indent2">blocked time: {{jvmInfo.threadBlockedTime}} milliseconds</div>
+<div class="indent2">waited time: {{jvmInfo.threadWaitedTime}} milliseconds</div>
+{{#if jvmInfo.garbageCollectorInfos}}
+gc info
+<br>
+{{#eachGarbageCollectorInfoOrdered jvmInfo.garbageCollectorInfos}}
+<div class="indent2">
+  {{name}}: {{collectionTime}} milliseconds ({{collectionCount}}
+  collection{{#ifMoreThanOne collectionCount}}s{{/ifMoreThanOne}})
+</div>
+{{/eachGarbageCollectorInfoOrdered}}
+{{/if}}

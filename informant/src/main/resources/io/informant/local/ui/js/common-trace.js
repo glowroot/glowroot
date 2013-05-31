@@ -47,6 +47,23 @@ define('trace', function (require) {
     return buffer;
   });
 
+  Handlebars.registerHelper('eachGarbageCollectorInfoOrdered', function (gcInfos, options) {
+    // mutating original list seems fine here
+    gcInfos.sort(function (a, b) { return b.collectionTime - a.collectionTime; });
+    var buffer = '';
+    $.each(gcInfos, function (index, gcInfo) {
+      buffer += options.fn(gcInfo);
+    });
+    return buffer;
+  });
+
+  Handlebars.registerHelper('ifMoreThanOne', function (num, options) {
+    if (num > 1) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
   Handlebars.registerHelper('date', function (timestamp) {
     return moment(timestamp).format('L h:mm:ss A (Z)');
   });

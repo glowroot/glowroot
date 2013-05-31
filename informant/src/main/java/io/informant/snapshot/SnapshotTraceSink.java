@@ -94,6 +94,8 @@ public class SnapshotTraceSink implements TraceSink {
 
     public void onCompletedTrace(final Trace trace) {
         if (shouldStore(trace)) {
+            // onCompleteAndShouldStore must be called by the trace thread
+            trace.onCompleteAndShouldStore();
             if (pendingCompleteTraces.size() >= PENDING_LIMIT) {
                 logPendingLimitWarning();
                 return;

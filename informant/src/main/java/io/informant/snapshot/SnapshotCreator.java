@@ -90,6 +90,7 @@ public class SnapshotCreator {
         builder.attributes(writeAttributesAsString(trace.getAttributes()));
         builder.userId(trace.getUserId());
         builder.metrics(writeMetricsAsString(trace.getMetrics()));
+        builder.jvmInfo(trace.getJvmInfoJson());
         if (!summary) {
             builder.spans(new SpansCharSource(trace.getSpans(), captureTick));
             builder.coarseMergedStackTree(createCharSource(trace.getCoarseMergedStackTree()));

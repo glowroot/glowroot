@@ -52,16 +52,20 @@ public class UpgradeTest {
         // when
         Trace trace = container.getTraceService().getLastTrace();
         // then
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getSpans()).hasSize(3);
-        Span span1 = trace.getSpans().get(0);
-        assertThat(span1.getMessage().getText()).isEqualTo("Level One");
-        Span span2 = trace.getSpans().get(1);
-        assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
-        Span span3 = trace.getSpans().get(2);
-        assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
-        // cleanup
-        container.close();
+        try {
+            assertThat(trace.getHeadline()).isEqualTo("Level One");
+            assertThat(trace.getSpans()).hasSize(3);
+            Span span1 = trace.getSpans().get(0);
+            assertThat(span1.getMessage().getText()).isEqualTo("Level One");
+            Span span2 = trace.getSpans().get(1);
+            assertThat(span2.getMessage().getText()).isEqualTo("Level Two");
+            Span span3 = trace.getSpans().get(2);
+            assertThat(span3.getMessage().getText()).isEqualTo("Level Three");
+        } finally {
+            // cleanup
+            container.checkAndReset();
+            container.close();
+        }
     }
 
     // create initial database for upgrade test

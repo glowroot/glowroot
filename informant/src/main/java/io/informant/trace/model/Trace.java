@@ -18,7 +18,6 @@ package io.informant.trace.model;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -91,6 +90,8 @@ public class Trace {
     // this doesn't need to be thread safe as it is only accessed by the trace thread
     private final List<MetricNameImpl> metricNames = Lists.newArrayList();
 
+    private final JvmInfo jvmInfo;
+
     // root span for this trace
     private final RootSpan rootSpan;
 
@@ -101,11 +102,7 @@ public class Trace {
     @LazyNonNull
     private volatile MergedStackTree fineMergedStackTree;
 
-    // the thread is needed so that stack traces can be taken from a different thread
-    // a weak reference is used just to be safe and make sure it can't accidentally prevent a thread
-    // from being garbage collected
-    private final WeakReference<Thread> threadHolder = new WeakReference<Thread>(
-            Thread.currentThread());
+    private final long threadId;
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
@@ -139,6 +136,8 @@ public class Trace {
         // and getMetricSnapshots())
         weavingMetric = weavingMetricName.create();
         this.weavingMetricName = weavingMetricName;
+        threadId = Thread.currentThread().getId();
+        jvmInfo = new JvmInfo();
     }
 
     public long getStart() {
@@ -231,6 +230,11 @@ public class Trace {
             copyOfMetrics.add(weavingMetric);
         }
         return copyOfMetrics;
+    }
+
+    // can be called from a non-trace thread
+    public String getJvmInfoJson() {
+        return jvmInfo.writeValueAsString();
     }
 
     public Span getRootSpan() {
@@ -380,35 +384,37 @@ public class Trace {
     }
 
     public void captureStackTrace(boolean fine) {
-        Thread thread = threadHolder.get();
-        if (thread != null) {
-            ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-            ThreadInfo threadInfo = threadBean.getThreadInfo(thread.getId(), Integer.MAX_VALUE);
-            if (threadInfo == null) {
-                // thread is no longer alive
-                return;
-            }
-            // check if trace is completed to avoid small window between trace completion and
-            // canceling the scheduled command that invokes this method
-            if (rootSpan.isCompleted()) {
-                return;
-            }
-            if (fine) {
-                if (fineMergedStackTree == null) {
-                    // initialization possible race condition is ok, worst case scenario it misses
-                    // an almost simultaneously captured stack trace
-                    fineMergedStackTree = new MergedStackTree();
-                }
-                fineMergedStackTree.addStackTrace(threadInfo);
-            } else {
-                if (coarseMergedStackTree == null) {
-                    // initialization possible race condition is ok, worst case scenario it misses
-                    // an almost simultaneously captured stack trace
-                    coarseMergedStackTree = new MergedStackTree();
-                }
-                coarseMergedStackTree.addStackTrace(threadInfo);
-            }
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+        if (threadInfo == null) {
+            // thread is no longer alive
+            return;
         }
+        // check if trace is completed to avoid small window between trace completion and
+        // canceling the scheduled command that invokes this method
+        if (rootSpan.isCompleted()) {
+            return;
+        }
+        if (fine) {
+            if (fineMergedStackTree == null) {
+                // initialization possible race condition is ok, worst case scenario it misses
+                // an almost simultaneously captured stack trace
+                fineMergedStackTree = new MergedStackTree();
+            }
+            fineMergedStackTree.addStackTrace(threadInfo);
+        } else {
+            if (coarseMergedStackTree == null) {
+                // initialization possible race condition is ok, worst case scenario it misses
+                // an almost simultaneously captured stack trace
+                coarseMergedStackTree = new MergedStackTree();
+            }
+            coarseMergedStackTree.addStackTrace(threadInfo);
+        }
+    }
+
+    // called by the trace thread
+    public void onCompleteAndShouldStore() {
+        jvmInfo.onTraceComplete();
     }
 
     @Override
@@ -421,6 +427,7 @@ public class Trace {
                 .add("attributes", attributes)
                 .add("userId", userId)
                 .add("metrics", metrics)
+                .add("jvmInfo", jvmInfo)
                 .add("rootSpan", rootSpan)
                 .add("coarseMergedStackTree", coarseMergedStackTree)
                 .add("fineMergedStackTree", fineMergedStackTree)

@@ -70,6 +70,8 @@ public class SnapshotWriter {
         writeUserId(snapshot);
         writeError(snapshot);
         writeMetrics(snapshot);
+        sb.append(",\"jvmInfo\":");
+        sb.append(snapshot.getJvmInfo());
         writeCharSource("spans", snapshot.getSpans());
         writeCharSource("coarseMergedStackTree", snapshot.getCoarseMergedStackTree());
         writeCharSource("fineMergedStackTree", snapshot.getFineMergedStackTree());

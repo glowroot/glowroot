@@ -34,10 +34,10 @@
     "artifactId" : "informant-integration-tests",
     "enabled" : true,
     "properties" : {
-      "starredHeadline" : false,
-      "alternateHeadline" : "",
+      "captureSpanStackTraces" : false,
       "hasDefaultVal" : "one",
-      "captureSpanStackTraces" : false
+      "starredHeadline" : false,
+      "alternateHeadline" : ""
     }
   }, {
     "groupId" : "io.informant",

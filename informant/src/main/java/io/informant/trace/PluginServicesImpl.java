@@ -385,8 +385,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // from the registry and storing it
                 traceSink.onCompletedTrace(trace);
                 traceRegistry.removeTrace(trace);
-                // if the thread local metrics are still needed they should have been promoted
-                // by TraceSink.onCompletedTrace() above (via Trace.promoteMetrics())
                 trace.clearThreadLocalMetrics();
             }
             return new CompletedSpanImpl(span);
