@@ -85,9 +85,9 @@ define(function (require) {
       yaxis: { ticks: 10, zoomRange: false },
       zoom: { interactive: true, amount: 1.5 },
       colors: [
-        $('#offscreenNormalColor').css('border-color'),
-        $('#offscreenErrorColor').css('border-color'),
-        $('#offscreenActiveColor').css('border-color')
+        $('#offscreenNormalColor').css('border-top-color'),
+        $('#offscreenErrorColor').css('border-top-color'),
+        $('#offscreenActiveColor').css('border-top-color')
       ],
       selection: { mode: 'xy' }
     };
