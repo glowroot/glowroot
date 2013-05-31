@@ -85,10 +85,13 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
 
+    private final boolean devMode;
+
     HttpServerHandler(ImmutableMap<Pattern, Object> uriMappings,
-            ImmutableList<JsonServiceMapping> jsonServiceMappings) {
+            ImmutableList<JsonServiceMapping> jsonServiceMappings, boolean devMode) {
         this.uriMappings = uriMappings;
         this.jsonServiceMappings = jsonServiceMappings;
+        this.devMode = devMode;
         allChannels = new DefaultChannelGroup();
     }
 
@@ -163,7 +166,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
                     if (resourcePath.endsWith(".html")) {
-                        handleStaticHtmlTemplate(resourcePath, channel);
+                        handleStaticHtmlPage(resourcePath, channel);
                         // return null to indicate streaming
                         return null;
                     }
@@ -187,13 +190,12 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
-    private void handleStaticHtmlTemplate(String resourcePath, Channel channel) throws IOException {
+    private void handleStaticHtmlPage(String resourcePath, Channel channel) throws IOException {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
         response.setChunked(true);
         channel.write(response);
-        channel.write(new ReaderChunkedInput(HtmlTemplates.processTemplate(resourcePath)
-                .openStream()));
+        channel.write(new ReaderChunkedInput(HtmlPages.render(resourcePath, devMode).openStream()));
     }
 
     private static HttpResponse handleStaticResource(String path) throws IOException {

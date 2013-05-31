@@ -56,6 +56,12 @@ public class LocalUiModule {
 
     private static final int DEFAULT_UI_PORT = 4000;
 
+    private static final boolean devMode;
+
+    static {
+        devMode = Boolean.getBoolean("informant.internal.ui.devMode");
+    }
+
     private final TraceExportHttpService traceExportHttpService;
     @Nullable
     private final HttpServer httpServer;
@@ -82,7 +88,7 @@ public class LocalUiModule {
         TraceSummaryJsonService traceSummaryJsonService = new TraceSummaryJsonService(
                 traceCommonService);
         SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
-        traceExportHttpService = new TraceExportHttpService(traceCommonService);
+        traceExportHttpService = new TraceExportHttpService(traceCommonService, devMode);
         // when port is 0, intentionally passing it as 0 instead of its resolved value since the
         // port is just displayed on config page for its documentation value anyways, and more
         // useful to know it was set to 0 than to display its value (which is needed to view the
@@ -101,7 +107,7 @@ public class LocalUiModule {
         httpServer = buildHttpServer(port, numWorkerThreads, tracePointJsonService,
                 traceSummaryJsonService, snapshotHttpService, traceExportHttpService,
                 configJsonService, pointcutConfigJsonService, threadDumpJsonService,
-                adminJsonService);
+                adminJsonService, devMode);
     }
 
     @OnlyUsedByTests
@@ -147,23 +153,40 @@ public class LocalUiModule {
             SnapshotHttpService snapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
-            ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
+            ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService,
+            boolean devMode) {
+
+        String resourceBase = devMode ? "io/informant/local/ui" : "io/informant/local/ui-build";
 
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
-        uriMappings.put(Pattern.compile("^/$"), "io/informant/local/ui/home.html");
-        uriMappings.put(Pattern.compile("^/config.html$"), "io/informant/local/ui/config.html");
-        uriMappings.put(Pattern.compile("^/pointcuts.html$"),
-                "io/informant/local/ui/pointcuts.html");
-        uriMappings.put(Pattern.compile("^/threaddump.html$"),
-                "io/informant/local/ui/threaddump.html");
+        uriMappings.put(Pattern.compile("^/$"), resourceBase + "/home.html");
+        uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/config.html");
+        uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/pointcuts.html");
+        uriMappings.put(Pattern.compile("^/threaddump.html$"), resourceBase + "/threaddump.html");
         // internal resources
-        uriMappings.put(Pattern.compile("^/img/(.*)$"), "io/informant/local/ui/img/$1");
-        uriMappings.put(Pattern.compile("^/less/(.*)$"), "io/informant/local/ui/less/$1");
-        uriMappings.put(Pattern.compile("^/js/(.*)$"), "io/informant/local/ui/js/$1");
-        uriMappings.put(Pattern.compile("^/lib/(.*)$"), "io/informant/local/ui/lib/$1");
-        // used in dev mode by require-handlebars-plugin
-        uriMappings.put(Pattern.compile("^/template/(.*)$"), "io/informant/local/ui/template/$1");
+        uriMappings.put(Pattern.compile("^/img/(.*)$"), resourceBase + "/img/$1");
+        uriMappings.put(Pattern.compile("^/js/(.*)$"), resourceBase + "/js/$1");
+        if (devMode) {
+            uriMappings.put(Pattern.compile("^/less/(.*)$"), resourceBase + "/less/$1");
+            uriMappings.put(Pattern.compile("^/template/(.*)$"), resourceBase + "/template/$1");
+            uriMappings.put(Pattern.compile("^/lib/(.*)$"), resourceBase + "/lib/$1");
+        } else {
+            uriMappings.put(Pattern.compile("^/css/(.*)$"), resourceBase + "/css/$1");
+            uriMappings.put(Pattern.compile("^/lib/requirejs/require.js$"),
+                    resourceBase + "/lib/requirejs/require.js");
+            uriMappings.put(Pattern.compile("^/lib/bootstrap/img/(.*)$"),
+                    resourceBase + "/lib/bootstrap/img/$1");
+            uriMappings.put(Pattern.compile("^/lib/specialelite/(.*)$"),
+                    resourceBase + "/lib/specialelite/$1");
+            uriMappings.put(Pattern.compile("^/lib/flashcanvas/flashcanvas.swf$"),
+                    resourceBase + "/lib/flashcanvas/flashcanvas.swf");
+            // TODO after upgrading to less 1.4.0, this css file can be bundled during the less
+            // process, see http://stackoverflow.com/a/16830938/295416
+            // (also see home.less and informant/pom.xml)
+            uriMappings.put(Pattern.compile("^/lib/qtip/jquery.qtip.css"),
+                    resourceBase + "/lib/qtip/jquery.qtip.css");
+        }
         // services
         uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/trace/detail/.*$"), snapshotHttpService);
@@ -218,7 +241,7 @@ public class LocalUiModule {
                 adminJsonService, "getNumActiveTraces"));
         try {
             return new HttpServer(port, numWorkerThreads, uriMappings.build(),
-                    jsonServiceMappings.build());
+                    jsonServiceMappings.build(), devMode);
         } catch (ChannelException e) {
             // don't rethrow, allow everything else to proceed normally, but informant ui will not
             // be available

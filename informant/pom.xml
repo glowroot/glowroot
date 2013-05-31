@@ -178,6 +178,129 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>add-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/local-ui-build</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.skwakman.nodejs-maven-plugin</groupId>
+        <artifactId>nodejs-maven-plugin</artifactId>
+        <version>1.0.2</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>extract</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <targetDirectory>${project.build.directory}/nodejs</targetDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.github.mcheely</groupId>
+        <artifactId>requirejs-maven-plugin</artifactId>
+        <version>2.0.0</version>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>optimize</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <configFile>src/main/resources/io/informant/local/ui/js/app.build.js</configFile>
+          <nodeExecutable>${project.build.directory}/nodejs/node</nodeExecutable>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.lesscss</groupId>
+        <artifactId>lesscss-maven-plugin</artifactId>
+        <version>1.3.3</version>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <sourceDirectory>
+            ${project.basedir}/src/main/resources/io/informant/local/ui/less
+          </sourceDirectory>
+          <outputDirectory>
+            ${project.build.directory}/local-ui-build/io/informant/local/ui-build/css
+          </outputDirectory>
+          <includes>
+            <include>home.less</include>
+            <include>export.less</include>
+            <include>config.less</include>
+            <include>pointcuts.less</include>
+            <include>threaddump.less</include>
+          </includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- remove unneeded files that were copied over as part of requirejs optimization above -->
+        <artifactId>maven-clean-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <configuration>
+              <excludeDefaultDirectories>true</excludeDefaultDirectories>
+              <filesets>
+                <fileset>
+                  <directory>
+                    ${project.build.directory}/local-ui-build/io/informant/local/ui-build/lib
+                  </directory>
+                  <excludes>
+                    <exclude>requirejs/require.js</exclude>
+                    <exclude>bootstrap/img/**</exclude>
+                    <exclude>specialelite/**</exclude>
+                    <exclude>flashcanvas/flashcanvas.swf</exclude>
+                    <!-- TODO after upgrading to less 1.4.0, this css file can be bundled during the
+                         less process, see http://stackoverflow.com/a/16830938/295416
+                         (also see LocalUiModule.java and home.less) -->
+                    <exclude>qtip/jquery.qtip.css</exclude>
+                    <exclude>js/app.build.js</exclude>
+                  </excludes>
+                </fileset>
+                <fileset>
+                  <directory>
+                    ${project.build.directory}/local-ui-build/io/informant/local/ui-build/less
+                  </directory>
+                </fileset>
+                <fileset>
+                  <directory>
+                    ${project.build.directory}/local-ui-build/io/informant/local/ui-build/template
+                  </directory>
+                </fileset>
+              </filesets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <testExcludes>
@@ -197,6 +320,14 @@
               <Can-Redefine-Classes>true</Can-Redefine-Classes>
             </manifestEntries>
           </archive>
+          <excludes>
+            <exclude>io/informant/local/ui/img/**</exclude>
+            <exclude>io/informant/local/ui/js/**</exclude>
+            <exclude>io/informant/local/ui/less/**</exclude>
+            <exclude>io/informant/local/ui/lib/**</exclude>
+            <exclude>io/informant/local/ui/template/**</exclude>
+            <exclude>io/informant/local/ui/*.html</exclude>
+          </excludes>
         </configuration>
       </plugin>
       <plugin>

@@ -20,6 +20,7 @@
 <title>Informant | Traces</title>
 <link rel="shortcut icon" href="http://informant.io/img/favicon.ico" type="image/x-icon"/>
 <link href='http://fonts.googleapis.com/css?family=Special+Elite' rel='stylesheet' type='text/css'>
+<!--#ifDevMode -->
 <style type="text/less">
   /*#include "lib/bootstrap/less/variables.less" */
   /*#include "lib/bootstrap/less/mixins.less" */
@@ -84,6 +85,26 @@
     });
   });
 </script>
+<!--#else -->
+<style type="text/css">
+  /*#include "css/export.css" */
+</style>
+<script type="text/json" id="detailTraceJson">
+  /*#include "trace/detail" */
+</script>
+<script>
+  /*#include "lib/requirejs/require.js" */
+  /*#include "js/export.js" */
+  require(['js/export'], function () {
+    var $ = require('jquery');
+    var Trace = require('trace');
+    $(document).ready(function () {
+      var detailTrace = JSON.parse($('#detailTraceJson').html());
+      Trace.renderDetail(detailTrace, '#detailTrace');
+    });
+  });
+</script>
+<!--#endif -->
 </head>
 <!-- export body needs explicit horizontal padding since it does not use the boostrap container
      class like other pages -->

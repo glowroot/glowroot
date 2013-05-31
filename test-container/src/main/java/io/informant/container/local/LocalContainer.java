@@ -31,13 +31,13 @@ import io.informant.markers.ThreadSafe;
 @ThreadSafe
 public class LocalContainer extends GenericLocalContainer<AppUnderTest> implements Container {
 
+    public static Container createWithFileDb(File dataDir) throws Exception {
+        return new LocalContainer(dataDir, 0, true, false);
+    }
+
     public static Container createWithFileDb(int uiPort) throws Exception {
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
         return new LocalContainer(dataDir, uiPort, true, false);
-    }
-
-    public static Container createWithFileDb(File dataDir) throws Exception {
-        return new LocalContainer(dataDir, 0, true, false);
     }
 
     public LocalContainer(@Nullable File dataDir, int uiPort, boolean useFileDb, boolean shared)

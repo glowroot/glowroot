@@ -33,9 +33,17 @@ import io.informant.container.local.LocalContainer;
 public class UiTestingMain {
 
     private static final boolean useJavaagent = false;
+    // r.js optimization and less compilation steps aren't needed in ui dev mode
+    private static final boolean useUiDevMode = true;
     private static final int UI_PORT = 4000;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
+
+    static {
+        if (useUiDevMode) {
+            System.setProperty("informant.internal.ui.devMode", "true");
+        }
+    }
 
     private UiTestingMain() {}
 

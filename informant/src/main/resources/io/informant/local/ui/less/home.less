@@ -30,6 +30,9 @@
 @import "../lib/bootstrap/less/modals.less";
 @import "../lib/bootstrap/less/utilities.less";
 
+// TODO after upgrading to less 1.4.0, this css file can be bundled during the less
+// process, see http://stackoverflow.com/a/16830938/295416
+// (also see LocalUiModule.java and informant/pom.xml)
 @import "../lib/qtip/jquery.qtip.css";
 
 @import "bootstrap-form-overrides.less";

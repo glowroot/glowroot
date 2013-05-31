@@ -288,7 +288,9 @@ public class JavaagentContainer implements Container {
         }
         command.add("-Dinformant.data.dir=" + dataDir.getAbsolutePath());
         command.add("-Dinformant.ui.port=" + uiPort);
-        command.add("-Dinternal.h2.memdb=" + !useFileDb);
+        if (!useFileDb) {
+            command.add("-Dinternal.h2.memdb=true");
+        }
         command.add(JavaagentContainer.class.getName());
         command.add(Integer.toString(containerPort));
         return command;

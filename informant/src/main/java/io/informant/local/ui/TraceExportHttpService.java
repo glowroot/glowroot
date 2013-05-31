@@ -61,8 +61,11 @@ public class TraceExportHttpService implements HttpService {
 
     private final TraceCommonService traceCommonService;
 
-    TraceExportHttpService(TraceCommonService traceCommonService) {
+    private final boolean devMode;
+
+    TraceExportHttpService(TraceCommonService traceCommonService, boolean devMode) {
         this.traceCommonService = traceCommonService;
+        this.devMode = devMode;
     }
 
     @Nullable
@@ -94,8 +97,10 @@ public class TraceExportHttpService implements HttpService {
         if (traceCharSource == null) {
             return null;
         }
-        CharSource charSource = HtmlTemplates.processTemplate("io/informant/local/ui/export.html",
-                ImmutableMap.of("trace/detail", traceCharSource));
+        String exportHtml = devMode ? "io/informant/local/ui/export.html" :
+                "io/informant/local/ui-build/export.html";
+        CharSource charSource = HtmlPages.render(exportHtml,
+                ImmutableMap.of("trace/detail", traceCharSource), devMode);
         return new ExportChunkedInput(charSource.openStream(), getFilename(id));
     }
 

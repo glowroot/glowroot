@@ -19,8 +19,12 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Pointcuts</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
-<link rel="stylesheet/less" href="less/pointcuts.less" />
+<!--#ifDevMode -->
+<link rel="stylesheet/less" type="text/css" href="less/pointcuts.less" />
 <script src="lib/less/less.js"></script>
+<!--#else -->
+<link rel="stylesheet" type="text/css" href="css/pointcuts.css" />
+<!--#endif -->
 <script src="lib/requirejs/require.js"></script>
 <script>
   require(['js/common'], function () {

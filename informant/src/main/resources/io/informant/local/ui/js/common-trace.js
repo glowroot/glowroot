@@ -19,6 +19,7 @@ define('trace', function (require) {
   'use strict';
   var $ = require('jquery');
   var Handlebars = require('handlebars');
+  var moment = require('moment');
   var traceSummaryTemplate = require('hbs!template/trace-summary');
   var traceDetailTemplate = require('hbs!template/trace-detail');
   var spanTemplate = require('hbs!template/trace-span');

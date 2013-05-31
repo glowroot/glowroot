@@ -66,14 +66,7 @@ public class JarFileShadingTest {
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
             JarEntry jarEntry = e.nextElement();
-            boolean acceptable = false;
-            for (String acceptableEntry : acceptableEntries) {
-                if (jarEntry.getName().matches(acceptableEntry)) {
-                    acceptable = true;
-                    break;
-                }
-            }
-            if (!acceptable) {
+            if (!acceptableJarEntry(jarEntry, acceptableEntries)) {
                 unacceptableEntries.add(jarEntry.getName());
             }
         }
@@ -99,5 +92,14 @@ public class JarFileShadingTest {
         } else {
             throw new IllegalStateException("More than one possible match found for informant.jar");
         }
+    }
+
+    private static boolean acceptableJarEntry(JarEntry jarEntry, List<String> acceptableEntries) {
+        for (String acceptableEntry : acceptableEntries) {
+            if (jarEntry.getName().matches(acceptableEntry)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

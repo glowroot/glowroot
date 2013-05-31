@@ -17,7 +17,7 @@
 ({
   appDir: '..',
   baseUrl: '.',
-  dir: '../../ui-build',
+  dir: '../../../../../../../../target/local-ui-build/io/informant/local/ui-build',
   modules: [
     {
       name: 'informant',
@@ -36,6 +36,9 @@
     {
       name: 'js/home',
       exclude: ['informant']
+    },
+    {
+      name: 'js/export'
     },
     {
       name: 'js/config',

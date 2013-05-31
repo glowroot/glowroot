@@ -23,8 +23,8 @@ import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
@@ -72,9 +72,12 @@ public class GenericLocalContainer<T> {
         }
         this.shared = shared;
         preExistingThreads = Threads.currentThreads();
-        Map<String, String> properties = ImmutableMap.of("data.dir",
-                this.dataDir.getAbsolutePath(), "ui.port", Integer.toString(uiPort),
-                "internal.h2.memdb", Boolean.toString(!useFileDb));
+        Map<String, String> properties = Maps.newHashMap();
+        properties.put("data.dir", this.dataDir.getAbsolutePath());
+        properties.put("ui.port", Integer.toString(uiPort));
+        if (!useFileDb) {
+            properties.put("internal.h2.memdb", "true");
+        }
         informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache = new PluginDescriptorCache();
