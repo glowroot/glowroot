@@ -75,6 +75,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
+    private static final long FIVE_MINUTES = 5 * 60 * 1000L;
 
     private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
             "An existing connection was forcibly closed by the remote host",
@@ -155,6 +156,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
+        boolean fingerprinted = decoder.getParameters().containsKey("fingerprint");
         logger.debug("handleRequest(): path={}", path);
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
@@ -170,7 +172,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                         // return null to indicate streaming
                         return null;
                     }
-                    return handleStaticResource(resourcePath);
+                    return handleStaticResource(resourcePath, fingerprinted);
                 }
             }
         }
@@ -193,12 +195,17 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private void handleStaticHtmlPage(String resourcePath, Channel channel) throws IOException {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
+        if (!devMode) {
+            // cache for a few minutes
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
+        }
         response.setChunked(true);
         channel.write(response);
         channel.write(new ReaderChunkedInput(HtmlPages.render(resourcePath, devMode).openStream()));
     }
 
-    private static HttpResponse handleStaticResource(String path) throws IOException {
+    private HttpResponse handleStaticResource(String path, boolean fingerprinted)
+            throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
             logger.warn("missing extension '{}'", path);
@@ -224,8 +231,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
-        if (path.startsWith("io/informant/local/ui/lib/")) {
-            // these are all third-party versioned resources and can be safely cached forever
+        if (path.matches("^io/informant/local/(ui|ui-build)/lib/.*$") || fingerprinted) {
+            // these are all third-party versioned resources or fingerprinted resources and can be
+            // safely cached forever
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
         }
         return response;

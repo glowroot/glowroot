@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.hash.Hashing;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
@@ -58,7 +59,8 @@ class HtmlPages {
                 "/\\*#include \"([^\"]+)\" \\*/"
                         + "|<!--#ifDevMode -->"
                         + "|<!--#else -->"
-                        + "|<!--#endif -->");
+                        + "|<!--#endif -->"
+                        + "|\\{\\{fingerprint ([^ ]+)\\}\\}");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<CharSource> charSources = Lists.newArrayList();
@@ -87,6 +89,20 @@ class HtmlPages {
                         charSources.add(Resources.asCharSource(resource, Charsets.UTF_8));
                     } else {
                         charSources.add(charSource);
+                    }
+                }
+            } else if (match.startsWith("{{fingerprint ")) {
+                if (render) {
+                    String href = matcher.group(2);
+                    if (devMode) {
+                        charSources.add(CharStreams.asCharSource(href));
+                    } else {
+                        // TODO cache the fingerprint
+                        URL resource = Resources.getResource("io/informant/local/ui-build/" + href);
+                        String fingerprint = Hashing.md5()
+                                .hashBytes(Resources.toByteArray(resource)).toString();
+                        charSources.add(CharStreams.asCharSource(href + "?fingerprint="
+                                + fingerprint));
                     }
                 }
             } else {

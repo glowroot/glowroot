@@ -22,15 +22,27 @@
 <!--#ifDevMode -->
 <link rel="stylesheet/less" type="text/css" href="less/config.less" />
 <script src="lib/less/less.js"></script>
-<!--#else -->
-<link rel="stylesheet" type="text/css" href="css/config.css" />
-<!--#endif -->
 <script src="lib/requirejs/require.js"></script>
 <script>
   require(['js/common'], function () {
     require(['js/config']);
   });
 </script>
+<!--#else -->
+<link rel="stylesheet" type="text/css" href="{{fingerprint css/config.css}}" />
+<script src="lib/requirejs/require.js"></script>
+<script>
+  require.config({
+    paths: {
+      'js/common': '{{fingerprint js/common.js}}',
+      'js/config': '{{fingerprint js/config.js}}'
+    }
+  });
+  require(['js/common'], function () {
+    require(['js/config']);
+  });
+</script>
+<!--#endif -->
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">

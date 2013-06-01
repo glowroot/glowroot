@@ -22,15 +22,27 @@
 <!--#ifDevMode -->
 <link rel="stylesheet/less" type="text/css" href="less/pointcuts.less" />
 <script src="lib/less/less.js"></script>
-<!--#else -->
-<link rel="stylesheet" type="text/css" href="css/pointcuts.css" />
-<!--#endif -->
 <script src="lib/requirejs/require.js"></script>
 <script>
   require(['js/common'], function () {
     require(['js/pointcuts']);
   });
 </script>
+<!--#else -->
+<link rel="stylesheet" type="text/css" href="{{fingerprint css/pointcuts.css}}" />
+<script src="lib/requirejs/require.js"></script>
+<script>
+  require.config({
+    paths: {
+      'js/common': '{{fingerprint js/common.js}}',
+      'js/pointcuts': '{{fingerprint js/pointcuts.js}}'
+    }
+  });
+  require(['js/common'], function () {
+    require(['js/pointcuts']);
+  });
+</script>
+<!--#endif -->
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">

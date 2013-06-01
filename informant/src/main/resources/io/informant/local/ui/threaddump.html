@@ -22,15 +22,27 @@
 <!--#ifDevMode -->
 <link rel="stylesheet/less" type="text/css" href="less/threaddump.less" />
 <script src="lib/less/less.js"></script>
-<!--#else -->
-<link rel="stylesheet" type="text/css" href="css/threaddump.css" />
-<!--#endif -->
 <script src="lib/requirejs/require.js"></script>
 <script>
   require(['js/common'], function () {
     require(['js/threaddump']);
   });
 </script>
+<!--#else -->
+<link rel="stylesheet" type="text/css" href="{{fingerprint css/threaddump.css}}" />
+<script src="lib/requirejs/require.js"></script>
+<script>
+  require.config({
+    paths: {
+      'js/common': '{{fingerprint js/common.js}}',
+      'js/threaddump': '{{fingerprint js/threaddump.js}}'
+    }
+  });
+  require(['js/common'], function () {
+    require(['js/threaddump']);
+  });
+</script>
+<!--#endif -->
 </head>
 <body class="container">
   <div class="header">
