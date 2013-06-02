@@ -56,7 +56,9 @@
   /*#include "lib/moment/moment.js" */
   // handlebars and json2 need to be defined as amd modules
   define('handlebars', function() {
-    /*#include "lib/handlebars/handlebars.runtime.js" */
+    // need to include full handlebars (not only handlebars.runtime) in order to use
+    // Handlebars.compile() below
+    /*#include "lib/handlebars/handlebars.js" */
     return Handlebars;
   });
   define('json2', function() {

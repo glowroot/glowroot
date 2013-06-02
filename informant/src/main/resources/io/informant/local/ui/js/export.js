@@ -16,7 +16,7 @@
 
 require.config({
   paths: {
-    'handlebars': 'lib/handlebars/handlebars.runtime',
+    'handlebars': 'lib/handlebars/handlebars',
     'jquery': 'lib/jquery/jquery',
     'hbs': 'lib/hbs/hbs',
     'underscore': 'lib/hbs/underscore',

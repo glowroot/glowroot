@@ -18,7 +18,7 @@ require.config({
   paths: {
     'bootstrap-transition': 'lib/bootstrap/js/bootstrap-transition',
     'bootstrap-collapse': 'lib/bootstrap/js/bootstrap-collapse',
-    'handlebars': 'lib/handlebars/handlebars.runtime',
+    'handlebars': 'lib/handlebars/handlebars',
     'jquery': 'lib/jquery/jquery',
     'spin': 'lib/spin/spin',
     'hbs': 'lib/hbs/hbs',
