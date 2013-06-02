@@ -57,10 +57,10 @@ class HtmlPages {
         String templateContent = Resources.toString(url, Charsets.UTF_8);
         Pattern pattern = Pattern.compile(
                 "/\\*#include \"([^\"]+)\" \\*/"
-                        + "|<!--#ifDevMode -->"
-                        + "|<!--#else -->"
-                        + "|<!--#endif -->"
-                        + "|\\{\\{fingerprint ([^ ]+)\\}\\}");
+                        + "|\\{\\{#if devMode}}"
+                        + "|\\{\\{\\^}}"
+                        + "|\\{\\{/if}}"
+                        + "|\\{\\{fingerprint ([^ ]+)}}");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<CharSource> charSources = Lists.newArrayList();
@@ -72,11 +72,11 @@ class HtmlPages {
             }
             curr = matcher.end();
             String match = matcher.group();
-            if (match.startsWith("<!--#ifDevMode -->")) {
+            if (match.equals("{{#if devMode}}")) {
                 render = devMode;
-            } else if (match.equals("<!--#else -->")) {
+            } else if (match.equals("{{^}}")) {
                 render = !devMode;
-            } else if (match.equals("<!--#endif -->")) {
+            } else if (match.equals("{{/if}}")) {
                 render = true;
             } else if (match.startsWith("/*#include ")) {
                 if (render) {

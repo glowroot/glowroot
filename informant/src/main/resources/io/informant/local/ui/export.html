@@ -20,7 +20,7 @@
 <title>Informant | Traces</title>
 <link rel="shortcut icon" href="http://informant.io/img/favicon.ico" type="image/x-icon"/>
 <link href='http://fonts.googleapis.com/css?family=Special+Elite' rel='stylesheet' type='text/css'>
-<!--#ifDevMode -->
+{{#if devMode}}
 <style type="text/less">
   /*#include "lib/bootstrap/less/variables.less" */
   /*#include "lib/bootstrap/less/mixins.less" */
@@ -85,7 +85,7 @@
     });
   });
 </script>
-<!--#else -->
+{{^}}
 <style type="text/css">
   /*#include "css/export.css" */
 </style>
@@ -104,7 +104,7 @@
     });
   });
 </script>
-<!--#endif -->
+{{/if}}
 </head>
 <!-- export body needs explicit horizontal padding since it does not use the boostrap container
      class like other pages -->

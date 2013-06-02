@@ -19,7 +19,7 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>Informant | Configuration</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
-<!--#ifDevMode -->
+{{#if devMode}}
 <link rel="stylesheet/less" type="text/css" href="less/config.less" />
 <script src="lib/less/less.js"></script>
 <script src="lib/requirejs/require.js"></script>
@@ -28,7 +28,7 @@
     require(['js/config']);
   });
 </script>
-<!--#else -->
+{{^}}
 <link rel="stylesheet" type="text/css" href="{{fingerprint css/config.css}}" />
 <script src="lib/requirejs/require.js"></script>
 <script>
@@ -42,7 +42,7 @@
     require(['js/config']);
   });
 </script>
-<!--#endif -->
+{{/if}}
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">

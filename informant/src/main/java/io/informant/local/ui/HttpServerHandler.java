@@ -167,7 +167,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
-                    if (resourcePath.endsWith(".html")) {
+                    if (resourcePath.matches("io/informant/local/(ui|ui-build)/[^/]*\\.html")) {
                         handleStaticHtmlPage(resourcePath, channel);
                         // return null to indicate streaming
                         return null;
