@@ -29,7 +29,7 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>1.7.12</version>
+      <version>1.7.17</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -40,17 +40,20 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.1.4</version>
+      <!-- jackson 2.2 requires jdk 6 -->
+      <version>2.1.5</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.1.4</version>
+      <!-- jackson 2.2 requires jdk 6 -->
+      <version>2.1.5</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.1.4</version>
+      <!-- jackson 2.2 requires jdk 6 -->
+      <version>2.1.5</version>
     </dependency>
     <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
@@ -67,7 +70,7 @@
         still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.0.11</version>
+      <version>1.0.13</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -75,7 +78,7 @@
         still choose their own slf4j implementation if SpyConsoleAppender is not needed -->
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.11</version>
+      <version>1.0.13</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

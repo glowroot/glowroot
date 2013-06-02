@@ -103,6 +103,7 @@ class PreInitializeClasses {
     private static List<String> getLogbackUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("ch.qos.logback.classic.BasicConfigurator");
+        types.add("ch.qos.logback.classic.ClassicConstants");
         types.add("ch.qos.logback.classic.Level");
         types.add("ch.qos.logback.classic.Logger");
         types.add("ch.qos.logback.classic.LoggerContext");
@@ -126,8 +127,10 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.classic.joran.action.LevelAction");
         types.add("ch.qos.logback.classic.joran.action.LoggerAction");
         types.add("ch.qos.logback.classic.joran.action.LoggerContextListenerAction");
+        types.add("ch.qos.logback.classic.joran.action.ReceiverAction");
         types.add("ch.qos.logback.classic.joran.action.RootLoggerAction");
         types.add("ch.qos.logback.classic.net.LoggingEventPreSerializationTransformer");
+        types.add("ch.qos.logback.classic.net.ReceiverBase");
         types.add("ch.qos.logback.classic.net.SocketAppender");
         types.add("ch.qos.logback.classic.pattern.Abbreviator");
         types.add("ch.qos.logback.classic.pattern.CallerDataConverter");
@@ -160,7 +163,7 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.classic.selector.ContextJNDISelector");
         types.add("ch.qos.logback.classic.selector.ContextSelector");
         types.add("ch.qos.logback.classic.selector.DefaultContextSelector");
-        types.add("ch.qos.logback.classic.sift.AppenderFactory");
+        types.add("ch.qos.logback.classic.sift.AppenderFactoryUsingJoran");
         types.add("ch.qos.logback.classic.sift.SiftAction");
         types.add("ch.qos.logback.classic.sift.SiftingAppender");
         types.add("ch.qos.logback.classic.sift.SiftingJoranConfigurator");
@@ -170,7 +173,6 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.classic.spi.IThrowableProxy");
         types.add("ch.qos.logback.classic.spi.LoggerContextListener");
         types.add("ch.qos.logback.classic.spi.LoggerContextVO");
-        types.add("ch.qos.logback.classic.spi.LoggerRemoteView");
         types.add("ch.qos.logback.classic.spi.LoggingEvent");
         types.add("ch.qos.logback.classic.spi.LoggingEventVO");
         types.add("ch.qos.logback.classic.spi.PackagingDataCalculator");
@@ -201,6 +203,7 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.CoreConstants");
         types.add("ch.qos.logback.core.Layout");
         types.add("ch.qos.logback.core.LayoutBase");
+        types.add("ch.qos.logback.core.LifeCycleManager");
         types.add("ch.qos.logback.core.LogbackException");
         types.add("ch.qos.logback.core.OutputStreamAppender");
         types.add("ch.qos.logback.core.UnsynchronizedAppenderBase");
@@ -267,6 +270,8 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.joran.spi.ConsoleTarget$2");
         types.add("ch.qos.logback.core.joran.spi.DefaultClass");
         types.add("ch.qos.logback.core.joran.spi.DefaultNestedComponentRegistry");
+        types.add("ch.qos.logback.core.joran.spi.ElementPath");
+        types.add("ch.qos.logback.core.joran.spi.ElementSelector");
         types.add("ch.qos.logback.core.joran.spi.EventPlayer");
         types.add("ch.qos.logback.core.joran.spi.HostClassAndPropertyDouble");
         types.add("ch.qos.logback.core.joran.spi.InterpretationContext");
@@ -274,15 +279,27 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.joran.spi.JoranException");
         types.add("ch.qos.logback.core.joran.spi.NoAutoStart");
         types.add("ch.qos.logback.core.joran.spi.NoAutoStartUtil");
-        types.add("ch.qos.logback.core.joran.spi.Pattern");
         types.add("ch.qos.logback.core.joran.spi.RuleStore");
         types.add("ch.qos.logback.core.joran.spi.SimpleRuleStore");
         types.add("ch.qos.logback.core.joran.util.ConfigurationWatchListUtil");
         types.add("ch.qos.logback.core.joran.util.PropertySetter");
         types.add("ch.qos.logback.core.joran.util.PropertySetter$1");
         types.add("ch.qos.logback.core.joran.util.StringToObjectConverter");
-        types.add("ch.qos.logback.core.net.SocketAppenderBase");
-        types.add("ch.qos.logback.core.net.SocketAppenderBase$Connector");
+        types.add("ch.qos.logback.core.net.AbstractSocketAppender");
+        types.add("ch.qos.logback.core.net.DefaultSocketConnector");
+        types.add("ch.qos.logback.core.net.DefaultSocketConnector$1");
+        types.add("ch.qos.logback.core.net.DefaultSocketConnector$ConsoleExceptionHandler");
+        types.add("ch.qos.logback.core.net.SocketConnector");
+        types.add("ch.qos.logback.core.net.SocketConnector$ExceptionHandler");
+        types.add("ch.qos.logback.core.net.ssl.KeyManagerFactoryFactoryBean");
+        types.add("ch.qos.logback.core.net.ssl.KeyStoreFactoryBean");
+        types.add("ch.qos.logback.core.net.ssl.SSLComponent");
+        types.add("ch.qos.logback.core.net.ssl.SSLConfiguration");
+        types.add("ch.qos.logback.core.net.ssl.SSLContextFactoryBean");
+        types.add("ch.qos.logback.core.net.ssl.SSLNestedComponentRegistryRules");
+        types.add("ch.qos.logback.core.net.ssl.SSLParametersConfiguration");
+        types.add("ch.qos.logback.core.net.ssl.SecureRandomFactoryBean");
+        types.add("ch.qos.logback.core.net.ssl.TrustManagerFactoryFactoryBean");
         types.add("ch.qos.logback.core.pattern.CompositeConverter");
         types.add("ch.qos.logback.core.pattern.Converter");
         types.add("ch.qos.logback.core.pattern.ConverterUtil");
@@ -328,15 +345,21 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.pattern.util.IEscapeUtil");
         types.add("ch.qos.logback.core.pattern.util.RegularEscapeUtil");
         types.add("ch.qos.logback.core.pattern.util.RestrictedEscapeUtil");
-        types.add("ch.qos.logback.core.sift.AppenderFactoryBase");
+        types.add("ch.qos.logback.core.sift.AbstractAppenderFactoryUsingJoran");
+        types.add("ch.qos.logback.core.sift.AppenderFactory");
         types.add("ch.qos.logback.core.sift.AppenderTracker");
-        types.add("ch.qos.logback.core.sift.AppenderTrackerImpl");
-        types.add("ch.qos.logback.core.sift.AppenderTrackerImpl$Entry");
         types.add("ch.qos.logback.core.sift.Discriminator");
         types.add("ch.qos.logback.core.sift.SiftingAppenderBase");
         types.add("ch.qos.logback.core.sift.SiftingJoranConfiguratorBase");
+        types.add("ch.qos.logback.core.spi.AbstractComponentTracker");
+        types.add("ch.qos.logback.core.spi.AbstractComponentTracker$1");
+        types.add("ch.qos.logback.core.spi.AbstractComponentTracker$2");
+        types.add("ch.qos.logback.core.spi.AbstractComponentTracker$3");
+        types.add("ch.qos.logback.core.spi.AbstractComponentTracker$Entry");
+        types.add("ch.qos.logback.core.spi.AbstractComponentTracker$RemovalPredicator");
         types.add("ch.qos.logback.core.spi.AppenderAttachable");
         types.add("ch.qos.logback.core.spi.AppenderAttachableImpl");
+        types.add("ch.qos.logback.core.spi.ComponentTracker");
         types.add("ch.qos.logback.core.spi.ContextAware");
         types.add("ch.qos.logback.core.spi.ContextAwareBase");
         types.add("ch.qos.logback.core.spi.ContextAwareImpl");
@@ -359,7 +382,6 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.status.OnPrintStreamStatusListenerBase");
         types.add("ch.qos.logback.core.status.Status");
         types.add("ch.qos.logback.core.status.StatusBase");
-        types.add("ch.qos.logback.core.status.StatusChecker");
         types.add("ch.qos.logback.core.status.StatusListener");
         types.add("ch.qos.logback.core.status.StatusManager");
         types.add("ch.qos.logback.core.status.StatusUtil");
@@ -378,10 +400,14 @@ class PreInitializeClasses {
         types.add("ch.qos.logback.core.subst.Tokenizer$TokenizerState");
         types.add("ch.qos.logback.core.util.AggregationType");
         types.add("ch.qos.logback.core.util.CachingDateFormatter");
+        types.add("ch.qos.logback.core.util.CloseUtil");
         types.add("ch.qos.logback.core.util.ContextUtil");
+        types.add("ch.qos.logback.core.util.DelayStrategy");
         types.add("ch.qos.logback.core.util.Duration");
         types.add("ch.qos.logback.core.util.DynamicClassLoadingException");
         types.add("ch.qos.logback.core.util.EnvUtil");
+        types.add("ch.qos.logback.core.util.ExecutorServiceUtil");
+        types.add("ch.qos.logback.core.util.FixedDelay");
         types.add("ch.qos.logback.core.util.IncompatibleClassException");
         types.add("ch.qos.logback.core.util.Loader");
         types.add("ch.qos.logback.core.util.Loader$1");
@@ -772,10 +798,14 @@ class PreInitializeClasses {
     private static List<String> getSlf4jUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("org.slf4j.ILoggerFactory");
+        types.add("org.slf4j.IMarkerFactory");
         types.add("org.slf4j.Logger");
         types.add("org.slf4j.LoggerFactory");
         types.add("org.slf4j.MDC");
         types.add("org.slf4j.Marker");
+        types.add("org.slf4j.MarkerFactory");
+        types.add("org.slf4j.helpers.BasicMarker");
+        types.add("org.slf4j.helpers.BasicMarkerFactory");
         types.add("org.slf4j.helpers.FormattingTuple");
         types.add("org.slf4j.helpers.MarkerIgnoringBase");
         types.add("org.slf4j.helpers.MessageFormatter");
@@ -787,12 +817,14 @@ class PreInitializeClasses {
         types.add("org.slf4j.helpers.Util");
         types.add("org.slf4j.impl.StaticLoggerBinder");
         types.add("org.slf4j.impl.StaticMDCBinder");
+        types.add("org.slf4j.impl.StaticMarkerBinder");
         types.add("org.slf4j.spi.LocationAwareLogger");
         // LoggerFactoryBinder interface stripped by proguard, see method comment
         if (exists("org.slf4j.spi.LoggerFactoryBinder")) {
             types.add("org.slf4j.spi.LoggerFactoryBinder");
         }
         types.add("org.slf4j.spi.MDCAdapter");
+        types.add("org.slf4j.spi.MarkerFactoryBinder");
         if (exists("io.informant.shaded.logback.slf4j.Logger")) {
             types.add("io.informant.shaded.logback.slf4j.ILoggerFactory");
             types.add("io.informant.shaded.logback.slf4j.Logger");
