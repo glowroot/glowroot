@@ -290,7 +290,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(typeName = "io.informant.testing.ui.ExpensiveCall", methodName = "execute9",
-            metricName = "expensive 9")
+            metricName = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice9.class);

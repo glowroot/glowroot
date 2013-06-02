@@ -61,8 +61,10 @@ breakdown (in milliseconds):
   </thead>
   <tbody>
   {{#eachMetricOrdered metrics}}
-  <tr>
-    <td style="text-align: left;">{{name}}</td>
+  <tr class="align-top">
+    <td style="text-align: left;">
+      <div class="second-line-indent">{{name}}</div>
+    </td>
     <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
     <td>{{nanosToMillis min}}{{#if minActive}}..{{/if}}</td>
     <td>{{nanosToMillis max}}{{#if maxActive}}..{{/if}}</td>
