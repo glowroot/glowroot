@@ -37,9 +37,9 @@ public class ParsedMethod {
             int modifiers) {
         ImmutableList.Builder<String> argTypeNames = ImmutableList.builder();
         for (Type argType : argTypes) {
-            argTypeNames.add(argType.getClassName().replace('$', '.'));
+            argTypeNames.add(argType.getClassName());
         }
-        String returnTypeName = returnType.getClassName().replace('$', '.');
+        String returnTypeName = returnType.getClassName();
         return new ParsedMethod(name, argTypeNames.build(), returnTypeName, modifiers);
     }
 

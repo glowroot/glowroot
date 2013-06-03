@@ -22,6 +22,7 @@ import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.weaving.SomeAspect.BasicAdvice;
 import io.informant.weaving.SomeAspect.BasicMiscConstructorAdvice;
+import io.informant.weaving.SomeAspect.BasicWithInnerClassAdvice;
 import io.informant.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import io.informant.weaving.SomeAspect.BindAutoboxedReturnAdvice;
 import io.informant.weaving.SomeAspect.BindMethodArgAdvice;
@@ -753,6 +754,22 @@ public class WeaverTest {
         assertThat(BasicWithInnerClassArgAdvice.onReturnCount.get()).isEqualTo(1);
         assertThat(BasicWithInnerClassArgAdvice.onThrowCount.get()).isEqualTo(0);
         assertThat(BasicWithInnerClassArgAdvice.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldHandleInnerClass() throws Exception {
+        // given
+        BasicWithInnerClassAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.InnerMisc.class, Misc.class,
+                BasicWithInnerClassAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(BasicWithInnerClassAdvice.enabledCount.get()).isEqualTo(1);
+        assertThat(BasicWithInnerClassAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(BasicWithInnerClassAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(BasicWithInnerClassAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(BasicWithInnerClassAdvice.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test

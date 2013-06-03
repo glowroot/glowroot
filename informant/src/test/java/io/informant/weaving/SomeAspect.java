@@ -141,8 +141,58 @@ public class SomeAspect {
     }
 
     @Pointcut(typeName = "io.informant.weaving.BasicMisc", methodName = "withInnerArg",
-            methodArgs = {"io.informant.weaving.BasicMisc.Inner"})
+            methodArgs = {"io.informant.weaving.BasicMisc$Inner"})
     public static class BasicWithInnerClassArgAdvice {
+        public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
+            @Override
+            protected Boolean initialValue() {
+                return true;
+            }
+        };
+        public static final IntegerThreadLocal enabledCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onBeforeCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onReturnCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onThrowCount = new IntegerThreadLocal();
+        public static final IntegerThreadLocal onAfterCount = new IntegerThreadLocal();
+        @IsEnabled
+        public static boolean isEnabled() {
+            enabledCount.increment();
+            return enabled.get();
+        }
+        @OnBefore
+        public static void onBefore() {
+            onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            onAfterCount.increment();
+        }
+        public static void resetThreadLocals() {
+            enabled.set(true);
+            enabledCount.set(0);
+            onBeforeCount.set(0);
+            onReturnCount.set(0);
+            onThrowCount.set(0);
+            onAfterCount.set(0);
+        }
+        public static void enable() {
+            enabled.set(true);
+        }
+        public static void disable() {
+            enabled.set(false);
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.weaving.BasicMisc$InnerMisc", methodName = "execute1")
+    public static class BasicWithInnerClassAdvice {
         public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override
             protected Boolean initialValue() {

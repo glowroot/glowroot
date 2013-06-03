@@ -54,4 +54,16 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
     private void withInnerArg(@SuppressWarnings("unused") @Nullable Inner inner) {}
 
     private static class Inner {}
+
+    public static class InnerMisc implements Misc {
+
+        public void execute1() {}
+
+        @Nullable
+        public String executeWithReturn() {
+            return null;
+        }
+
+        public void executeWithArgs(String one, int two) {}
+    }
 }
