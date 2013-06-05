@@ -17,9 +17,11 @@ package io.informant.weaving;
 
 import checkers.nullness.quals.Nullable;
 
+import io.informant.api.OptionalReturn;
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindMethodArgArray;
 import io.informant.api.weaving.BindMethodName;
+import io.informant.api.weaving.BindOptionalReturn;
 import io.informant.api.weaving.BindReturn;
 import io.informant.api.weaving.BindTarget;
 import io.informant.api.weaving.BindThrowable;
@@ -470,6 +472,20 @@ public class SomeAspect {
         @OnReturn
         public static void onReturn(@BindReturn Object value) {
             returnValue.set(value);
+        }
+        public static void resetThreadLocals() {
+            returnValue.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn")
+    public static class BindOptionalReturnAdvice {
+        public static final ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
+        @OnReturn
+        public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
+            if (!optionalReturn.isVoid()) {
+                returnValue.set(optionalReturn.getValue());
+            }
         }
         public static void resetThreadLocals() {
             returnValue.remove();

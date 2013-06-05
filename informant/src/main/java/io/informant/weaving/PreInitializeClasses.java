@@ -662,6 +662,7 @@ class PreInitializeClasses {
         types.add("io.informant.api.weaving.BindMethodArg");
         types.add("io.informant.api.weaving.BindMethodArgArray");
         types.add("io.informant.api.weaving.BindMethodName");
+        types.add("io.informant.api.weaving.BindOptionalReturn");
         types.add("io.informant.api.weaving.BindReturn");
         types.add("io.informant.api.weaving.BindTarget");
         types.add("io.informant.api.weaving.BindThrowable");

@@ -18,6 +18,7 @@ package io.informant.weaving;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
+import io.informant.api.OptionalReturn;
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.weaving.SomeAspect.BasicAdvice;
@@ -28,6 +29,7 @@ import io.informant.weaving.SomeAspect.BindAutoboxedReturnAdvice;
 import io.informant.weaving.SomeAspect.BindMethodArgAdvice;
 import io.informant.weaving.SomeAspect.BindMethodArgArrayAdvice;
 import io.informant.weaving.SomeAspect.BindMethodNameAdvice;
+import io.informant.weaving.SomeAspect.BindOptionalReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
@@ -346,6 +348,20 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(BindAutoboxedReturnAdvice.returnValue.get()).isEqualTo(4);
+    }
+
+    // ===================== @BindOptionalReturn =====================
+
+    @Test
+    public void shouldBindOptionalReturn() throws Exception {
+        // given
+        BindOptionalReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindOptionalReturnAdvice.class,
+                OptionalReturn.class);
+        // when
+        test.executeWithReturn();
+        // then
+        assertThat(BindOptionalReturnAdvice.returnValue.get()).isEqualTo("xyz");
     }
 
     // ===================== @BindThrowable =====================

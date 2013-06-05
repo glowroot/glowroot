@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindMethodArgArray;
 import io.informant.api.weaving.BindMethodName;
+import io.informant.api.weaving.BindOptionalReturn;
 import io.informant.api.weaving.BindReturn;
 import io.informant.api.weaving.BindTarget;
 import io.informant.api.weaving.BindThrowable;
@@ -66,7 +67,7 @@ public class Advice {
     private static final ImmutableList<ParameterKind> onReturnValidParameterKinds =
             ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
                     ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
-                    ParameterKind.RETURN, ParameterKind.TRAVELER);
+                    ParameterKind.RETURN, ParameterKind.OPTIONAL_RETURN, ParameterKind.TRAVELER);
     private static final ImmutableList<ParameterKind> onThrowValidParameterKinds =
             ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
                     ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
@@ -83,6 +84,7 @@ public class Advice {
                     .put(BindMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
                     .put(BindMethodName.class, ParameterKind.METHOD_NAME)
                     .put(BindReturn.class, ParameterKind.RETURN)
+                    .put(BindOptionalReturn.class, ParameterKind.OPTIONAL_RETURN)
                     .put(BindThrowable.class, ParameterKind.THROWABLE)
                     .put(BindTraveler.class, ParameterKind.TRAVELER).build();
 
@@ -234,7 +236,7 @@ public class Advice {
     @Immutable
     enum ParameterKind {
         TARGET, METHOD_ARG, PRIMITIVE_METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN,
-        PRIMITIVE_RETURN, THROWABLE, TRAVELER
+        OPTIONAL_RETURN, PRIMITIVE_RETURN, THROWABLE, TRAVELER
     }
 
     @SuppressWarnings("serial")
@@ -365,6 +367,10 @@ public class Advice {
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.RETURN) {
                     logger.warn("@BindReturn must be the first argument to @OnReturn");
+                    return;
+                }
+                if (parameterKinds.get(i) == ParameterKind.OPTIONAL_RETURN) {
+                    logger.warn("@BindOptionalReturn must be the first argument to @OnReturn");
                     return;
                 }
             }

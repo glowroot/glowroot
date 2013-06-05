@@ -369,12 +369,50 @@ class WeavingMethodVisitor extends AdviceAdapter {
             int startIndex = 0;
             if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.RETURN) {
                 // @BindReturn must be the first argument to @OnReturn (if present)
-                loadReturnValue(opcode, false);
+                if (opcode == RETURN) {
+                    logger.warn("cannot use @BindReturn on a @Pointcut returning void");
+                    visitInsn(ACONST_NULL);
+                } else {
+                    loadReturnValue(opcode, false);
+                }
+                startIndex = 1;
+            }
+            if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.OPTIONAL_RETURN) {
+                // @BindOptionalReturn must be the first argument to @OnReturn (if present)
+                if (opcode == RETURN) {
+                    // void
+                    mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/OptionalReturn",
+                            "fromVoid", "()Lio/informant/api/OptionalReturn;");
+                } else {
+                    loadReturnValue(opcode, false);
+                    mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/OptionalReturn",
+                            "fromValue", "(Ljava/lang/Object;)Lio/informant/api/OptionalReturn;");
+                }
                 startIndex = 1;
             }
             if (advice.getOnReturnParameterKinds().get(0) == ParameterKind.PRIMITIVE_RETURN) {
                 // @BindReturn must be the first argument to @OnReturn (if present)
-                loadReturnValue(opcode, true);
+                if (opcode == RETURN) {
+                    logger.warn("cannot use @BindReturn on a @Pointcut returning void");
+                    switch (opcode) {
+                        case IRETURN:
+                            visitInsn(ICONST_0);
+                            break;
+                        case LRETURN:
+                            visitInsn(LCONST_0);
+                            break;
+                        case FRETURN:
+                            visitInsn(FCONST_0);
+                            break;
+                        case DRETURN:
+                            visitInsn(DCONST_0);
+                            break;
+                        default:
+                            logger.error("no fallback for unexpected opcode: {}", opcode);
+                    }
+                } else {
+                    loadReturnValue(opcode, true);
+                }
                 startIndex = 1;
             }
             loadMethodArgs(advice.getOnReturnParameterKinds(), startIndex,
@@ -390,12 +428,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     private void loadReturnValue(int opcode, boolean primitive) {
-        if (opcode == RETURN) {
-            logger.error("cannot use @BindReturn on a @Pointcut returning void");
-            // try to pass null, but this will fail anyways if @BindReturn is primitive arg
-            // TODO handle primitive args, then reduce logger from error to warn
-            visitInsn(ACONST_NULL);
-        } else if (opcode == ARETURN || opcode == ATHROW) {
+        if (opcode == ARETURN || opcode == ATHROW) {
             dup();
         } else {
             if (opcode == LRETURN || opcode == DRETURN) {
