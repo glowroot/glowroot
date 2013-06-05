@@ -56,15 +56,30 @@ class AdviceMatcher {
     }
 
     boolean isMethodLevelMatch(int access, ParsedMethod parsedMethod) {
-        if (!isMethodMatch(parsedMethod)) {
+        if (!isMethodNameMatch(parsedMethod.getName())
+                || !isMethodArgTypesMatch(parsedMethod.getArgTypeNames())) {
             return false;
         }
-        if ((access & Opcodes.ACC_STATIC) == 0) {
-            return isMethodOverrideMatch(parsedMethod);
-        } else {
-            // static methods only match at the target type (no inheritance worries)
-            return targetTypeMatch;
+        if (targetTypeMatch && isMethodReturnMatch(parsedMethod.getReturnTypeName())
+                && isMethodModifiersMatch(parsedMethod.getModifiers())) {
+            return true;
         }
+        // non-static methods must be tested against matching super types
+        if ((access & Opcodes.ACC_STATIC) == 0) {
+            // need to test return match and modifiers match against overridden method
+            for (ParsedType type : preMatchedSuperTypes) {
+                ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
+                if (overriddenParsedMethod != null) {
+                    // found overridden method in a matching super type
+                    if (isMethodReturnMatch(overriddenParsedMethod.getReturnTypeName())
+                            && isMethodModifiersMatch(overriddenParsedMethod.getModifiers())) {
+                        return true;
+                    }
+                    // need to search all matching super types
+                }
+            }
+        }
+        return false;
     }
 
     Advice getAdvice() {
@@ -79,19 +94,6 @@ class AdviceMatcher {
             }
         }
         return builder.build();
-    }
-
-    private boolean isMethodMatch(ParsedMethod parsedMethod) {
-        if (!isMethodNameMatch(parsedMethod.getName())) {
-            return false;
-        } else if (!isMethodArgTypesMatch(parsedMethod.getArgTypeNames())) {
-            return false;
-        } else if (!isMethodReturnMatch(parsedMethod.getReturnTypeName())) {
-            return false;
-        } else if (!isMethodModifiersMatch(parsedMethod.getModifiers())) {
-            return false;
-        }
-        return true;
     }
 
     private boolean isMethodNameMatch(String name) {
@@ -166,19 +168,6 @@ class AdviceMatcher {
                 return Modifier.isStatic(modifiers);
             case NOT_STATIC:
                 return !Modifier.isStatic(modifiers);
-        }
-        return false;
-    }
-
-    private boolean isMethodOverrideMatch(ParsedMethod parsedMethod) {
-        if (targetTypeMatch) {
-            return true;
-        }
-        for (ParsedType type : preMatchedSuperTypes) {
-            if (type.getMethod(parsedMethod) != null) {
-                // found overridden method in one of the matching super types
-                return true;
-            }
         }
         return false;
     }

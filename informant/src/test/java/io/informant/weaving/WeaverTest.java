@@ -49,6 +49,7 @@ import io.informant.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice1;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice2;
 import io.informant.weaving.SomeAspect.MethodArgsDotDotAdvice3;
+import io.informant.weaving.SomeAspect.MethodReturnCharSequenceAdvice;
 import io.informant.weaving.SomeAspect.MethodReturnStringAdvice;
 import io.informant.weaving.SomeAspect.MethodReturnVoidAdvice;
 import io.informant.weaving.SomeAspect.MoreVeryBadAdvice;
@@ -404,7 +405,7 @@ public class WeaverTest {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class, ChangeReturnAdvice.class);
         // when
-        String returnValue = test.executeWithReturn();
+        CharSequence returnValue = test.executeWithReturn();
         // then
         assertThat(returnValue).isEqualTo("modified xyz");
     }
@@ -590,10 +591,11 @@ public class WeaverTest {
         // given
         Misc test = newWovenObject(InnerMethodMisc.class, Misc.class, InnerMethodAdvice.class);
         // when
-        String methodName = test.executeWithReturn();
+        CharSequence methodName = test.executeWithReturn();
         // then
         assertThat(methodName).isNotNull();
-        assertThat(methodName).matches("executeWithReturn\\$informant\\$metric\\$abc\\$xyz\\$\\d+");
+        assertThat(methodName.toString())
+                .matches("executeWithReturn\\$informant\\$metric\\$abc\\$xyz\\$\\d+");
     }
 
     // ===================== static pointcuts =====================
@@ -700,15 +702,28 @@ public class WeaverTest {
     }
 
     @Test
-    public void shouldMatchMethodReturningString() throws Exception {
+    public void shouldMatchMethodReturningCharSequence() throws Exception {
+        // given
+        MethodReturnStringAdvice.resetThreadLocals();
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MethodReturnCharSequenceAdvice.class);
+        // when
+        test.executeWithReturn();
+        // then
+        assertThat(MethodReturnStringAdvice.onBeforeCount.get()).isEqualTo(1);
+        assertThat(MethodReturnStringAdvice.onReturnCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotMatchMethodReturningString() throws Exception {
         // given
         MethodReturnStringAdvice.resetThreadLocals();
         Misc test = newWovenObject(BasicMisc.class, Misc.class, MethodReturnStringAdvice.class);
         // when
         test.executeWithReturn();
         // then
-        assertThat(MethodReturnStringAdvice.onBeforeCount.get()).isEqualTo(1);
-        assertThat(MethodReturnStringAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(MethodReturnStringAdvice.onBeforeCount.get()).isEqualTo(0);
+        assertThat(MethodReturnStringAdvice.onReturnCount.get()).isEqualTo(0);
     }
 
     @Test

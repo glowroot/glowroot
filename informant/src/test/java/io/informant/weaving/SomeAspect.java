@@ -705,6 +705,10 @@ public class SomeAspect {
     public static class MethodReturnVoidAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn",
+            methodReturn = "java.lang.CharSequence")
+    public static class MethodReturnCharSequenceAdvice extends BasicAdvice {}
+
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn",
             methodReturn = "java.lang.String")
     public static class MethodReturnStringAdvice extends BasicAdvice {}
 
@@ -715,6 +719,10 @@ public class SomeAspect {
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn",
             methodReturn = "java.lang.Number")
     public static class NonMatchingMethodReturnAdvice2 extends BasicAdvice {}
+
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn",
+            methodReturn = "java.lang.")
+    public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
 
     @Pointcut(typeName = "io.informant.weaving.StaticMisc", methodName = "executeStatic")
     public static class StaticBindTargetClassAdvice {
