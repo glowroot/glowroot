@@ -54,39 +54,88 @@ public class RollingFileResizeTest {
     }
 
     @Test
-    public void shouldWrapAndResizeSmaller() throws Exception {
+    public void shouldWrapAndThenResizeSmaller() throws Exception {
         shouldWrapAndResize(rollingFile, 1);
     }
 
     @Test
-    public void shouldWrapAndResizeSameSize() throws Exception {
+    public void shouldWrapAndThenResizeSameSize() throws Exception {
         shouldWrapAndResize(rollingFile, 2);
     }
 
     @Test
-    public void shouldWrapAndResizeLarger() throws Exception {
+    public void shouldWrapAndThenResizeLarger() throws Exception {
         shouldWrapAndResize(rollingFile, 3);
     }
 
-    private static void shouldWrapAndResize(RollingFile rollingFile, int newRollingSizeKb)
+    @Test
+    public void shouldResizeSmallerAndThenWrap() throws Exception {
+        shouldResizeAndWrap(rollingFile, 1);
+    }
+
+    @Test
+    public void shouldResizeSameSizeAndThenWrap() throws Exception {
+        shouldResizeAndWrap(rollingFile, 2);
+    }
+
+    @Test
+    public void shouldResizeLargerAndThenWrap() throws Exception {
+        shouldResizeAndWrap(rollingFile, 3);
+    }
+
+    private void shouldWrapAndResize(RollingFile rollingFile, int newRollingSizeKb)
             throws Exception {
 
         // given
+        // when
         // because of compression, use somewhat random text and loop until wrap occurs
+        String text = createRandomText();
+        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharStreams.asCharSource(text));
+        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.resize(newRollingSizeKb);
+        // then
+        String text2 = rollingFile.read(block, "").read();
+        assertThat(text2).isEqualTo(text);
+
+        // also test close and re-open
+        rollingFile.close();
+        rollingFile = new RollingFile(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
+        text2 = rollingFile.read(block, "").read();
+        assertThat(text2).isEqualTo(text);
+    }
+
+    private void shouldResizeAndWrap(RollingFile rollingFile, int newRollingSizeKb)
+            throws Exception {
+
+        // given
+        // when
+        rollingFile.resize(newRollingSizeKb);
+        // because of compression, use somewhat random text and loop until wrap occurs
+        String text = createRandomText();
+        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharStreams.asCharSource(text));
+        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        // then
+        String text2 = rollingFile.read(block, "").read();
+        assertThat(text2).isEqualTo(text);
+
+        // also test close and re-open
+        rollingFile.close();
+        rollingFile = new RollingFile(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
+        text2 = rollingFile.read(block, "").read();
+        assertThat(text2).isEqualTo(text);
+    }
+
+    private String createRandomText() {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 600; i++) {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
-        // when
-        rollingFile.resize(newRollingSizeKb);
-        // then
-        String text2 = rollingFile.read(block, "").read();
-        assertThat(text2).isEqualTo(text);
+        return text;
     }
 }

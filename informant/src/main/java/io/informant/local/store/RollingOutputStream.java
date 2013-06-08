@@ -148,12 +148,16 @@ class RollingOutputStream extends OutputStream {
                 && currIndex - lastResizeBaseIndex < newRollingSizeBytes) {
             // resizing smaller and on first "loop" after a resize and haven't written up to the
             // new smaller size yet
+            out.seek(8);
+            out.writeInt(newRollingSizeKb);
             rollingSizeKb = newRollingSizeKb;
             rollingSizeBytes = newRollingSizeBytes;
             return;
         } else if (newRollingSizeKb > rollingSizeKb
                 && currIndex - lastResizeBaseIndex < rollingSizeBytes) {
             // resizing larger and on first "loop" after a resize
+            out.seek(8);
+            out.writeInt(newRollingSizeKb);
             rollingSizeKb = newRollingSizeKb;
             rollingSizeBytes = newRollingSizeBytes;
             return;
