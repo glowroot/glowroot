@@ -56,8 +56,8 @@ public class ServletInitAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindTarget Object listener) {
-            return pluginServices.startTrace(MessageSupplier.from("servlet context initialized"
-                    + " ({})", listener.getClass().getName()), metricName);
+            return pluginServices.startBackgroundTrace(MessageSupplier.from(
+                    "servlet context initialized ({})", listener.getClass().getName()), metricName);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
@@ -80,7 +80,7 @@ public class ServletInitAspect {
         }
         @OnBefore
         public static Span onBefore(@BindTarget Object servlet) {
-            return pluginServices.startTrace(MessageSupplier.from("servlet init ({})",
+            return pluginServices.startBackgroundTrace(MessageSupplier.from("servlet init ({})",
                     servlet.getClass().getName()), metricName);
         }
         @OnThrow
@@ -104,7 +104,7 @@ public class ServletInitAspect {
         }
         @OnBefore
         public static Span onBefore(@BindTarget Object filter) {
-            return pluginServices.startTrace(MessageSupplier.from("filter init ({})",
+            return pluginServices.startBackgroundTrace(MessageSupplier.from("filter init ({})",
                     filter.getClass().getName()), metricName);
         }
         @OnThrow
