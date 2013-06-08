@@ -69,7 +69,7 @@ public class Trace {
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
-    private volatile boolean background;
+    private final boolean background;
 
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
@@ -117,9 +117,10 @@ public class Trace {
     private final WeavingMetricNameImpl weavingMetricName;
     private final Metric weavingMetric;
 
-    public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, long start,
-            Ticker ticker, WeavingMetricNameImpl weavingMetricName) {
+    public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, boolean background,
+            long start, Ticker ticker, WeavingMetricNameImpl weavingMetricName) {
         this.start = start;
+        this.background = background;
         this.ticker = ticker;
         id = new TraceUniqueId(start);
         long startTick = ticker.read();
@@ -288,10 +289,6 @@ public class Trace {
     // returns previous value
     public boolean setStuck() {
         return stuck.getAndSet(true);
-    }
-
-    public void setBackground(boolean background) {
-        this.background = background;
     }
 
     public void setUserId(@Nullable String userId) {

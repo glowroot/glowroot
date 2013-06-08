@@ -201,9 +201,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            trace = new Trace((MetricNameImpl) metricName, messageSupplier,
+            trace = new Trace((MetricNameImpl) metricName, messageSupplier, background,
                     clock.currentTimeMillis(), ticker, weavingMetricName);
-            trace.setBackground(background);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
