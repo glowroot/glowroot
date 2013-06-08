@@ -63,14 +63,14 @@ public class PluginConfigTest {
         String randomText = "Level " + random.nextLong();
         boolean randomBoolean = random.nextBoolean();
         PluginConfig randomPluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        randomPluginConfig.setProperty("alternateHeadline", randomText);
-        randomPluginConfig.setProperty("starredHeadline", randomBoolean);
+        randomPluginConfig.setProperty("alternateGrouping", randomText);
+        randomPluginConfig.setProperty("starredGrouping", randomBoolean);
         container.getConfigService().updatePluginConfig(PLUGIN_ID, randomPluginConfig);
         // when
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo(randomText);
-        assertThat(pluginConfig.getProperty("starredHeadline")).isEqualTo(randomBoolean);
+        assertThat(pluginConfig.getProperty("alternateGrouping")).isEqualTo(randomText);
+        assertThat(pluginConfig.getProperty("starredGrouping")).isEqualTo(randomBoolean);
     }
 
     @Test
@@ -85,58 +85,58 @@ public class PluginConfigTest {
     public void shouldSetNullPropertyValueAsEmptyString() throws Exception {
         // given
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", "");
+        pluginConfig.setProperty("alternateGrouping", "");
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         PluginConfig updatedPluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // then
-        assertThat(updatedPluginConfig.getProperty("alternateHeadline")).isEqualTo("");
-        assertThat(updatedPluginConfig.hasProperty("alternateHeadline")).isTrue();
+        assertThat(updatedPluginConfig.getProperty("alternateGrouping")).isEqualTo("");
+        assertThat(updatedPluginConfig.hasProperty("alternateGrouping")).isTrue();
     }
 
     @Test
     public void shouldClearPluginProperty() throws Exception {
         // given
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", "a non-null value");
+        pluginConfig.setProperty("alternateGrouping", "a non-null value");
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", "");
+        pluginConfig.setProperty("alternateGrouping", "");
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // then
         pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        assertThat(pluginConfig.getProperty("alternateHeadline")).isEqualTo("");
+        assertThat(pluginConfig.getProperty("alternateGrouping")).isEqualTo("");
     }
 
     @Test
-    public void shouldReadAlternateHeadline() throws Exception {
+    public void shouldReadAlternateGrouping() throws Exception {
         // given
         container.getConfigService().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", "Level 1");
-        pluginConfig.setProperty("starredHeadline", false);
+        pluginConfig.setProperty("alternateGrouping", "Level 1");
+        pluginConfig.setProperty("starredGrouping", false);
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
         Trace trace = container.getTraceService().getLastTraceSummary();
-        assertThat(trace.getHeadline()).isEqualTo("Level 1");
+        assertThat(trace.getGrouping()).isEqualTo("Level 1");
     }
 
     @Test
-    public void shouldReadStarredHeadline() throws Exception {
+    public void shouldReadStarredGrouping() throws Exception {
         // given
         container.getConfigService().setStoreThresholdMillis(0);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("alternateHeadline", "");
-        pluginConfig.setProperty("starredHeadline", true);
+        pluginConfig.setProperty("alternateGrouping", "");
+        pluginConfig.setProperty("starredGrouping", true);
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
         Trace trace = container.getTraceService().getLastTraceSummary();
-        assertThat(trace.getHeadline()).isEqualTo("Level One*");
+        assertThat(trace.getGrouping()).isEqualTo("Level One*");
     }
 
     public static class SimpleApp implements AppUnderTest {

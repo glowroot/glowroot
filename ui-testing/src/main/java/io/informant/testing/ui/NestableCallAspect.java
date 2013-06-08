@@ -62,10 +62,14 @@ public class NestableCallAspect {
         public static Span onBefore() {
             int count = counter.getAndIncrement();
             Span span;
+            String grouping = "Nestable with a very long trace grouping to test wrapping"
+                    + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
             if (count % 2 == 0) {
-                span = pluginServices.startTrace(getRootMessageSupplier(), metricName);
+                span = pluginServices.startTrace(grouping, getRootMessageSupplier(grouping),
+                        metricName);
             } else {
-                span = pluginServices.startBackgroundTrace(getRootMessageSupplier(), metricName);
+                span = pluginServices.startBackgroundTrace(grouping,
+                        getRootMessageSupplier(grouping), metricName);
             }
             int index = count % (USER_IDS.size() + 1);
             if (index < USER_IDS.size()) {
@@ -111,7 +115,7 @@ public class NestableCallAspect {
         }
     }
 
-    private static MessageSupplier getRootMessageSupplier() {
+    private static MessageSupplier getRootMessageSupplier(final String spanText) {
         return new MessageSupplier() {
             @Override
             public Message get() {
@@ -120,8 +124,7 @@ public class NestableCallAspect {
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", getLongDetailValue(true),
                                 "attr33", getLongDetailValue(false)));
-                return Message.withDetail("Nestable with a very long headline to test wrapping"
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz", detail);
+                return Message.withDetail(spanText, detail);
             }
         };
     }

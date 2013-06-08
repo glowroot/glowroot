@@ -63,7 +63,7 @@ public class SnapshotDao implements SnapshotSink {
             new Column("background", Types.BOOLEAN),
             new Column("error", Types.BOOLEAN),
             new Column("fine", Types.BOOLEAN), // for searching only
-            new Column("headline", Types.VARCHAR),
+            new Column("grouping", Types.VARCHAR),
             new Column("attributes", Types.VARCHAR), // json data
             new Column("user_id", Types.VARCHAR),
             new Column("error_text", Types.VARCHAR),
@@ -116,14 +116,14 @@ public class SnapshotDao implements SnapshotSink {
         }
         try {
             dataSource.update("merge into snapshot (id, captured_at, start_at, duration, stuck,"
-                    + " completed, background, error, fine, headline, attributes, user_id,"
+                    + " completed, background, error, fine, grouping, attributes, user_id,"
                     + " error_text, error_detail, exception, metrics, jvm_info, spans,"
                     + " coarse_merged_stack_tree, fine_merged_stack_tree) values (?, ?, ?, ?, ?,"
                     + "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", snapshot.getId(), capturedAt,
                     snapshot.getStart(), snapshot.getDuration(), snapshot.isStuck(),
                     snapshot.isCompleted(), snapshot.isBackground(),
                     snapshot.getErrorText() != null, fineMergedStackTreeBlockId != null,
-                    snapshot.getHeadline(), snapshot.getAttributes(), snapshot.getUserId(),
+                    snapshot.getGrouping(), snapshot.getAttributes(), snapshot.getUserId(),
                     snapshot.getErrorText(), snapshot.getErrorDetail(), snapshot.getException(),
                     snapshot.getMetrics(), snapshot.getJvmInfo(), spansBlockId,
                     coarseMergedStackTreeBlockId, fineMergedStackTreeBlockId);
@@ -135,16 +135,16 @@ public class SnapshotDao implements SnapshotSink {
     @ReadOnly
     public List<TracePoint> readPoints(long capturedFrom, long capturedTo,
             long durationLow, long durationHigh, @Nullable Boolean background,
-            boolean errorOnly, boolean fineOnly, @Nullable StringComparator headlineComparator,
-            @Nullable String headline, @Nullable StringComparator userIdComparator,
+            boolean errorOnly, boolean fineOnly, @Nullable StringComparator groupingComparator,
+            @Nullable String grouping, @Nullable StringComparator userIdComparator,
             @Nullable String userId, int limit) {
 
         if (logger.isDebugEnabled()) {
             logger.debug("readPoints(): capturedFrom={}, capturedTo={}, durationLow={},"
                     + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
-                    + " headlineComparator={}, headline={}, userIdComparator={}, userId={}",
+                    + " groupingComparator={}, grouping={}, userIdComparator={}, userId={}",
                     capturedFrom, capturedTo, durationLow, durationHigh, background, errorOnly,
-                    fineOnly, headlineComparator, headline, userIdComparator, userId);
+                    fineOnly, groupingComparator, grouping, userIdComparator, userId);
         }
         try {
             // all of these columns should be in the same index so h2 can return result set directly
@@ -174,9 +174,9 @@ public class SnapshotDao implements SnapshotSink {
                 sql += " and fine = ?";
                 args.add(true);
             }
-            if (headlineComparator != null && headline != null) {
-                sql += " and upper(headline) " + headlineComparator.getComparator() + " ?";
-                args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
+            if (groupingComparator != null && grouping != null) {
+                sql += " and upper(grouping) " + groupingComparator.getComparator() + " ?";
+                args.add(groupingComparator.formatParameter(grouping.toUpperCase(Locale.ENGLISH)));
             }
             if (userIdComparator != null && userId != null) {
                 sql += " and upper(user_id) " + userIdComparator.getComparator() + " ?";
@@ -197,7 +197,7 @@ public class SnapshotDao implements SnapshotSink {
         List<PartiallyHydratedTrace> partiallyHydratedTraces;
         try {
             partiallyHydratedTraces = dataSource.query("select id, start_at, duration, stuck,"
-                    + " completed, background, headline, attributes, user_id, error_text,"
+                    + " completed, background, grouping, attributes, user_id, error_text,"
                     + " error_detail, exception, metrics, jvm_info, spans,"
                     + " coarse_merged_stack_tree, fine_merged_stack_tree from snapshot"
                     + " where id = ?", ImmutableList.of(id), new TraceRowMapper());
@@ -220,7 +220,7 @@ public class SnapshotDao implements SnapshotSink {
         List<Snapshot> snapshots;
         try {
             snapshots = dataSource.query("select id, start_at, duration, stuck, completed,"
-                    + " background, headline, attributes, user_id, error_text, error_detail,"
+                    + " background, grouping, attributes, user_id, error_text, error_detail,"
                     + " exception, metrics, jvm_info from snapshot where id = ?",
                     ImmutableList.of(id),
                     new SnapshotRowMapper());
@@ -292,7 +292,7 @@ public class SnapshotDao implements SnapshotSink {
                 .stuck(resultSet.getBoolean(4))
                 .completed(resultSet.getBoolean(5))
                 .background(resultSet.getBoolean(6))
-                .headline(resultSet.getString(7))
+                .grouping(resultSet.getString(7))
                 .attributes(resultSet.getString(8))
                 .userId(resultSet.getString(9))
                 .errorText(resultSet.getString(10))
@@ -306,11 +306,11 @@ public class SnapshotDao implements SnapshotSink {
         if (!dataSource.tableExists("snapshot")) {
             return;
         }
-        // 'description' column renamed to 'headline'
+        // 'headline' column renamed to 'grouping'
         for (Column column : dataSource.getColumns("snapshot")) {
-            if (column.getName().equals("description")) {
-                dataSource.execute("alter table snapshot alter column description rename to"
-                        + " headline");
+            if (column.getName().equals("headline")) {
+                dataSource.execute("alter table snapshot alter column headline rename to"
+                        + " grouping");
                 break;
             }
         }

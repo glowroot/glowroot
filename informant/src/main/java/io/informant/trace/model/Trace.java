@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.api.ErrorMessage;
 import io.informant.api.MessageSupplier;
-import io.informant.api.internal.ReadableMessage;
 import io.informant.markers.PartiallyThreadSafe;
 
 /**
@@ -71,13 +70,15 @@ public class Trace {
 
     private final boolean background;
 
+    private volatile String grouping;
+
+    @Nullable
+    private volatile String userId;
+
     // lazy loaded to reduce memory when attributes are not used
     @GuardedBy("attributes")
     @LazyNonNull
     private volatile List<TraceAttribute> attributes;
-
-    @Nullable
-    private volatile String userId;
 
     // see performance comparison of synchronized ArrayList vs ConcurrentLinkedQueue in
     // ThreadSafeCollectionOfTenBenchmark
@@ -117,10 +118,11 @@ public class Trace {
     private final WeavingMetricNameImpl weavingMetricName;
     private final Metric weavingMetric;
 
-    public Trace(MetricNameImpl metricName, MessageSupplier messageSupplier, boolean background,
-            long start, Ticker ticker, WeavingMetricNameImpl weavingMetricName) {
+    public Trace(long start, boolean background, String grouping, MessageSupplier messageSupplier,
+            MetricNameImpl metricName, WeavingMetricNameImpl weavingMetricName, Ticker ticker) {
         this.start = start;
         this.background = background;
+        this.grouping = grouping;
         this.ticker = ticker;
         id = new TraceUniqueId(start);
         long startTick = ticker.read();
@@ -175,6 +177,15 @@ public class Trace {
         return background;
     }
 
+    public String getGrouping() {
+        return grouping;
+    }
+
+    @Nullable
+    public String getUserId() {
+        return userId;
+    }
+
     @ReadOnly
     public List<TraceAttribute> getAttributes() {
         if (attributes == null) {
@@ -206,11 +217,6 @@ public class Trace {
         return orderedAttributes;
     }
 
-    @Nullable
-    public String getUserId() {
-        return userId;
-    }
-
     public boolean isError() {
         return rootSpan.getRootSpan().getErrorMessage() != null;
     }
@@ -240,16 +246,6 @@ public class Trace {
 
     public Span getRootSpan() {
         return rootSpan.getRootSpan();
-    }
-
-    public String getHeadline() {
-        MessageSupplier messageSupplier = rootSpan.getRootSpan().getMessageSupplier();
-        if (messageSupplier == null) {
-            // this should be impossible for root span
-            logger.error("found root span with null message supplier in trace");
-            return "";
-        }
-        return ((ReadableMessage) messageSupplier.get()).getText();
     }
 
     public int getSpanCount() {
@@ -289,6 +285,10 @@ public class Trace {
     // returns previous value
     public boolean setStuck() {
         return stuck.getAndSet(true);
+    }
+
+    public void setGrouping(String grouping) {
+        this.grouping = grouping;
     }
 
     public void setUserId(@Nullable String userId) {

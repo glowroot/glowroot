@@ -36,8 +36,8 @@
     "properties" : {
       "captureSpanStackTraces" : false,
       "hasDefaultVal" : "one",
-      "starredHeadline" : false,
-      "alternateHeadline" : ""
+      "starredGrouping" : false,
+      "alternateGrouping" : ""
     }
   }, {
     "groupId" : "io.informant",

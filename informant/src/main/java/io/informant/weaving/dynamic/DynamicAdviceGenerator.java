@@ -93,7 +93,12 @@ public class DynamicAdviceGenerator implements Opcodes {
                 "Lio/informant/api/MetricName;", null, null)
                 .visitEnd();
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
-            cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "template",
+            cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "spanText",
+                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;", null, null)
+                    .visitEnd();
+        }
+        if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
+            cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceGrouping",
                     "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;", null, null)
                     .visitEnd();
         }
@@ -120,7 +125,16 @@ public class DynamicAdviceGenerator implements Opcodes {
                     "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",
                     "(Ljava/lang/String;)"
                             + "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
-            mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "template",
+            mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "spanText",
+                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+        }
+        if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
+            mv.visitLdcInsn(pointcutConfig.getTraceGrouping());
+            mv.visitMethodInsn(INVOKESTATIC,
+                    "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",
+                    "(Ljava/lang/String;)"
+                            + "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+            mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "traceGrouping",
                     "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
         }
         mv.visitInsn(RETURN);
@@ -154,7 +168,24 @@ public class DynamicAdviceGenerator implements Opcodes {
         mv.visitParameterAnnotation(2, "Lio/informant/api/weaving/BindMethodArgArray;", true)
                 .visitEnd();
         mv.visitCode();
-        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "template",
+        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
+                "Lio/informant/api/PluginServices;");
+        if (startTrace) {
+            mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceGrouping",
+                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitMethodInsn(INVOKESTATIC,
+                    "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier", "create",
+                    "(Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;"
+                            + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
+                            + "Lio/informant/weaving/dynamic/DynamicPointcutMessageSupplier;");
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier",
+                    "getMessageText", "()Ljava/lang/String;");
+        }
+        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "spanText",
                 "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
         mv.visitVarInsn(ALOAD, 0);
         mv.visitVarInsn(ALOAD, 1);
@@ -164,15 +195,16 @@ public class DynamicAdviceGenerator implements Opcodes {
                 "(Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;"
                         + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
                         + "Lio/informant/weaving/dynamic/DynamicPointcutMessageSupplier;");
-        mv.visitVarInsn(ASTORE, 3);
-        mv.visitFieldInsn(GETSTATIC, adviceTypeName, "pluginServices",
-                "Lio/informant/api/PluginServices;");
-        mv.visitVarInsn(ALOAD, 3);
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "metric", "Lio/informant/api/MetricName;");
-        String startMethodName = startTrace ? "startTrace" : "startSpan";
-        mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/PluginServices", startMethodName,
-                "(Lio/informant/api/MessageSupplier;Lio/informant/api/MetricName;)"
-                        + "Lio/informant/api/Span;");
+        if (startTrace) {
+            mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/PluginServices", "startTrace",
+                    "(Ljava/lang/String;Lio/informant/api/MessageSupplier;"
+                            + "Lio/informant/api/MetricName;)Lio/informant/api/Span;");
+        } else {
+            mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/PluginServices", "startSpan",
+                    "(Lio/informant/api/MessageSupplier;Lio/informant/api/MetricName;)"
+                            + "Lio/informant/api/Span;");
+        }
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

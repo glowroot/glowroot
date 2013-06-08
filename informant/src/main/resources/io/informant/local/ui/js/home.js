@@ -224,11 +224,11 @@ define(function (require) {
       if ($('#fineOnlyFilter').is(':checked')) {
         queryString += '&fine-only=true';
       }
-      var headlineComparator = $('#headlineComparator').val();
-      var headline = $('#headlineFilter').val();
-      if (headline) {
-        queryString += '&headline-comparator=' + headlineComparator;
-        queryString += '&headline=' + headline;
+      var groupingComparator = $('#groupingComparator').val();
+      var grouping = $('#groupingFilter').val();
+      if (grouping) {
+        queryString += '&grouping-comparator=' + groupingComparator;
+        queryString += '&grouping=' + grouping;
       }
       var userIdComparator = $('#userIdComparator').val();
       var userId = $('#userIdFilter').val();

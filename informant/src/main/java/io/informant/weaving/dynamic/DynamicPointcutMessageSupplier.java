@@ -81,6 +81,11 @@ public class DynamicPointcutMessageSupplier extends MessageSupplier {
 
     @Override
     public Message get() {
+        return Message.from(getMessageText());
+    }
+
+    @UsedByGeneratedBytecode
+    public String getMessageText() {
         StringBuilder sb = new StringBuilder();
         int thisPathPartIndex = 0;
         int argPathPartIndex = 0;
@@ -106,7 +111,7 @@ public class DynamicPointcutMessageSupplier extends MessageSupplier {
                     break;
             }
         }
-        return Message.from(sb.toString());
+        return sb.toString();
     }
 
     @UsedByGeneratedBytecode

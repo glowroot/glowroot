@@ -57,24 +57,25 @@ public class LevelOneAspect {
         @OnBefore
         public static Span onBefore(@BindMethodArg final String arg1,
                 @BindMethodArg final String arg2) {
+            String grouping = pluginServices.getStringProperty("alternateGrouping");
+            if (grouping.equals("")) {
+                grouping = "Level One";
+            }
+            if (pluginServices.getBooleanProperty("starredGrouping")) {
+                grouping += "*";
+            }
+            final String groupingFinal = grouping;
             MessageSupplier messageSupplier = new MessageSupplier() {
                 @Override
                 public Message get() {
-                    String traceHeadline = pluginServices.getStringProperty("alternateHeadline");
-                    if (traceHeadline.equals("")) {
-                        traceHeadline = "Level One";
-                    }
-                    if (pluginServices.getBooleanProperty("starredHeadline")) {
-                        traceHeadline += "*";
-                    }
                     Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", arg2, "nested1",
                             ImmutableMap.of("nestedkey11", arg1, "nestedkey12", arg2, "subnested1",
                                     ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2", arg2)),
                             "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22", arg2));
-                    return Message.withDetail(traceHeadline, detail);
+                    return Message.withDetail(groupingFinal, detail);
                 }
             };
-            Span span = pluginServices.startTrace(messageSupplier, metricName);
+            Span span = pluginServices.startTrace(grouping, messageSupplier, metricName);
             // several trace attributes to test ordering
             pluginServices.setTraceAttribute(arg1, arg2);
             pluginServices.setTraceAttribute("z", "zz");

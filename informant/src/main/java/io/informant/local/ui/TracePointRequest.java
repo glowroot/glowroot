@@ -33,9 +33,9 @@ class TracePointRequest {
     private boolean errorOnly;
     private boolean fineOnly;
     @Nullable
-    private String headlineComparator;
+    private String groupingComparator;
     @Nullable
-    private String headline;
+    private String grouping;
     @Nullable
     private String userIdComparator;
     @Nullable
@@ -93,21 +93,21 @@ class TracePointRequest {
     }
 
     @Nullable
-    public String getHeadlineComparator() {
-        return headlineComparator;
+    public String getGroupingComparator() {
+        return groupingComparator;
     }
 
-    public void setHeadlineComparator(@Nullable String headlineComparator) {
-        this.headlineComparator = headlineComparator;
+    public void setGroupingComparator(@Nullable String groupingComparator) {
+        this.groupingComparator = groupingComparator;
     }
 
     @Nullable
-    public String getHeadline() {
-        return headline;
+    public String getGrouping() {
+        return grouping;
     }
 
-    public void setHeadline(@Nullable String headline) {
-        this.headline = headline;
+    public void setGrouping(@Nullable String grouping) {
+        this.grouping = grouping;
     }
 
     @Nullable
@@ -154,8 +154,8 @@ class TracePointRequest {
                 .add("high", high)
                 .add("errorOnly", errorOnly)
                 .add("fineOnly", fineOnly)
-                .add("headlineComparator", headlineComparator)
-                .add("headline", headline)
+                .add("groupingComparator", groupingComparator)
+                .add("grouping", grouping)
                 .add("userIdComparator", userIdComparator)
                 .add("userId", userId)
                 .add("background", background)

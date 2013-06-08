@@ -74,8 +74,6 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee => 1 row [connection: ");
@@ -89,8 +87,6 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee where name like ? => 1 row [connection: ");
@@ -105,8 +101,6 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee"
@@ -122,8 +116,6 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
-        Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: insert into employee values (?, ?) ['jane',"
@@ -138,8 +130,6 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(3);
-        Span rootSpan = trace.getSpans().get(0);
-        assertThat(rootSpan.getMessage().getText()).isEqualTo("mock trace marker");
         Span jdbcInsertSpan = trace.getSpans().get(1);
         assertThat(jdbcInsertSpan.getMessage().getText()).startsWith(
                 "jdbc execution: insert into employee (name) values ('john doe') [connection: ");

@@ -39,7 +39,7 @@ class SnapshotTestData {
                 .duration(MILLISECONDS.toNanos(10))
                 .completed(true)
                 .background(false)
-                .headline("test headline")
+                .grouping("test grouping")
                 .userId("j")
                 .spans(CharStreams.asCharSource("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"level\":0,\"message\":{\"text\":\"Level One\","

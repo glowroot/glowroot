@@ -180,17 +180,19 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public Span startTrace(MessageSupplier messageSupplier, MetricName metricName) {
-        return startTrace(messageSupplier, metricName, false);
+    public Span startTrace(String grouping, MessageSupplier messageSupplier,
+            MetricName metricName) {
+        return startTrace(grouping, messageSupplier, metricName, false);
     }
 
     @Override
-    public Span startBackgroundTrace(MessageSupplier messageSupplier, MetricName metricName) {
-        return startTrace(messageSupplier, metricName, true);
+    public Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
+            MetricName metricName) {
+        return startTrace(grouping, messageSupplier, metricName, true);
     }
 
-    private Span startTrace(MessageSupplier messageSupplier, MetricName metricName,
-            boolean background) {
+    private Span startTrace(String grouping, MessageSupplier messageSupplier,
+            MetricName metricName, boolean background) {
         if (messageSupplier == null) {
             logger.error("startTrace(): argument 'messageSupplier' must be non-null");
             return new NopSpan(messageSupplier);
@@ -201,8 +203,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            trace = new Trace((MetricNameImpl) metricName, messageSupplier, background,
-                    clock.currentTimeMillis(), ticker, weavingMetricName);
+            trace = new Trace(clock.currentTimeMillis(), background, grouping, messageSupplier,
+                    (MetricNameImpl) metricName, weavingMetricName, ticker);
             traceRegistry.addTrace(trace);
             fineProfileScheduler.maybeScheduleFineProfilingUsingPercentage(trace);
             return new SpanImpl(trace.getRootSpan(), trace);
@@ -275,6 +277,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return new CompletedSpanImpl(trace.addSpan(null, errorMessage, true));
         }
         return NopCompletedSpan.INSTANCE;
+    }
+
+    @Override
+    public void setGrouping(String grouping) {
+        Trace trace = traceRegistry.getCurrentTrace();
+        if (trace != null) {
+            trace.setGrouping(grouping);
+        }
     }
 
     @Override

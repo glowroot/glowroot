@@ -46,8 +46,8 @@ public class ExpensiveCallAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("io.informant:informant-ui-testing");
 
-    private static final UnresolvedMethod getHeadline =
-            UnresolvedMethod.from("io.informant.testing.ui.ExpensiveCall", "getHeadline");
+    private static final UnresolvedMethod getSpanText =
+            UnresolvedMethod.from("io.informant.testing.ui.ExpensiveCall", "getSpanText");
 
     private static final Random random = new Random();
     private static final Exception nestedCause = new IllegalArgumentException(
@@ -325,7 +325,7 @@ public class ExpensiveCallAspect {
 
     private static void onAfterInternal(@Nullable Span span, int num) {
         if (span == null) {
-            pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span message",
+            pluginServices.addErrorSpan(ErrorMessage.from("randomized error with no span text",
                     new IllegalStateException("Exception in execute" + num, cause)));
             return;
         }
@@ -339,9 +339,9 @@ public class ExpensiveCallAspect {
     }
 
     private static MessageSupplier getMessageSupplier(Object expensive) {
-        String headline = (String) getHeadline.invoke(expensive,
-                "<error calling ExpensiveCall.getHeadline()>");
-        return MessageSupplier.from(headline);
+        String spanText = (String) getSpanText.invoke(expensive,
+                "<error calling ExpensiveCall.getSpanText()>");
+        return MessageSupplier.from(spanText);
     }
 
     private static MessageSupplier getMessageSupplierWithDetail(final Object expensive) {
@@ -352,9 +352,9 @@ public class ExpensiveCallAspect {
                         "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", "value311", "attr312", "value312"),
                                 "attr32", "value32", "attr33", "value33"));
-                String headline = (String) getHeadline.invoke(expensive,
-                        "<error calling ExpensiveCall.getHeadline()>");
-                return Message.withDetail(headline, detail);
+                String spanText = (String) getSpanText.invoke(expensive,
+                        "<error calling ExpensiveCall.getSpanText()>");
+                return Message.withDetail(spanText, detail);
             }
         };
     }

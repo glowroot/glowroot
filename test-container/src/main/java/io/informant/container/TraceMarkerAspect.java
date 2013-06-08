@@ -19,6 +19,7 @@ import io.informant.api.MessageSupplier;
 import io.informant.api.MetricName;
 import io.informant.api.PluginServices;
 import io.informant.api.Span;
+import io.informant.api.weaving.BindTarget;
 import io.informant.api.weaving.BindTraveler;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
@@ -47,8 +48,10 @@ public class TraceMarkerAspect {
         }
 
         @OnBefore
-        public static Span onBefore() {
-            return pluginServices.startTrace(MessageSupplier.from("mock trace marker"), metricName);
+        public static Span onBefore(@BindTarget Object target) {
+            String targetClassName = target.getClass().getName();
+            return pluginServices.startTrace("trace marker / " + targetClassName,
+                    MessageSupplier.from("{}.traceMarker()", targetClassName), metricName);
         }
 
         @OnAfter

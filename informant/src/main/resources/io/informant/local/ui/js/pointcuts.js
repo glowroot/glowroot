@@ -100,7 +100,7 @@ define(function (require) {
         return;
       }
       var template;
-      if (signature.modifiers.indexOf('abstract') != -1) {
+      if (signature.modifiers.indexOf('abstract') !== -1) {
         template = '{{this.class.name}}.';
       } else {
         template = $('#pointcutTypeName_' + pointcutNum).val() + '.';
@@ -124,6 +124,22 @@ define(function (require) {
         template += ' => {{ret}}';
       }
       $('#pointcutSpanTemplate_' + pointcutNum).val(template);
+    }
+
+    function updateTraceGrouping() {
+      var signature = getSignature();
+      if (!signature) {
+        // no radio button selected
+        return;
+      }
+      var grouping = $('#pointcutTypeName_' + pointcutNum).val() + '.';
+      if (signature.all) {
+        // 'all matching' is selected
+        grouping += '*()';
+      } else {
+        grouping += signature.name + '()';
+      }
+      $('#pointcutTraceGrouping_' + pointcutNum).val(grouping);
     }
 
     function matchingMethods(methodName) {
@@ -155,6 +171,9 @@ define(function (require) {
           if (span || trace) {
             updateSpanTemplate();
           }
+          if (trace) {
+            updateTraceGrouping();
+          }
         });
         if (signatures.length === 1) {
           $pointcutMethodSignatureRadio.attr('checked', true);
@@ -164,9 +183,9 @@ define(function (require) {
     }
 
     function selectMethodName(methodName) {
-      // since matchingMethods clears the span template, check here if the value has really
-      // changed (e.g. that a user didn't start altering text and then changed mind and put the
-      // previous value back)
+      // since matchingMethods clears the span text, check here if the value has really changed
+      // (e.g. that a user didn't start altering text and then changed mind and put the previous
+      // value back)
       // also, this condition is needed in case where user clicks on typeahead value with mouse in
       // which case change event and typeahead event are called and this condition ensures that the
       // typeahead wins (because it runs first due to manually inserted delay in change event
@@ -192,6 +211,9 @@ define(function (require) {
           if (span || trace) {
             updateSpanTemplate();
           }
+          if (trace) {
+            updateTraceGrouping();
+          }
         } else {
           matchingMethods(methodName);
         }
@@ -215,6 +237,12 @@ define(function (require) {
       } else {
         $pointcutSpanSection.addClass('hide');
       }
+      var $pointcutTraceSection = $('#pointcutTraceSection_' + pointcutNum);
+      if (trace) {
+        $pointcutTraceSection.removeClass('hide');
+      } else {
+        $pointcutTraceSection.addClass('hide');
+      }
       var $pointcutSpanTemplate = $('#pointcutSpanTemplate_' + pointcutNum);
       if ((span || trace) && $pointcutSpanTemplate.val() === '') {
         // populate default template value on selecting span/trace
@@ -223,6 +251,15 @@ define(function (require) {
       if (!span && !trace) {
         // clear template value on de-selecting span/trace
         $pointcutSpanTemplate.val('');
+      }
+      var $pointcutTraceGrouping = $('#pointcutTraceGrouping_' + pointcutNum);
+      if (trace && $pointcutTraceGrouping.val() === '') {
+        // populate default template value on selecting trace
+        updateTraceGrouping();
+      }
+      if (!trace) {
+        // clear template value on de-selecting trace
+        $pointcutTraceGrouping.val('');
       }
     }
 
@@ -272,7 +309,8 @@ define(function (require) {
         'methodReturnTypeName': signature.returnTypeName,
         'methodModifiers': signature.modifiers,
         'metricName': $('#pointcutMetricName_' + pointcutNum).val(),
-        'spanTemplate': $('#pointcutSpanTemplate_' + pointcutNum).val()
+        'spanTemplate': $('#pointcutSpanTemplate_' + pointcutNum).val(),
+        'traceGrouping': $('#pointcutTraceGrouping_' + pointcutNum).val()
       };
       var url;
       if (pointcut.version) {
@@ -403,6 +441,7 @@ define(function (require) {
       }
       $('#pointcutMetricName_' + pointcutNum).val(pointcut.metricName);
       $('#pointcutSpanTemplate_' + pointcutNum).val(pointcut.spanTemplate);
+      $('#pointcutTraceGrouping_' + pointcutNum).val(pointcut.traceGrouping);
       updateSectionHiding();
     }
 

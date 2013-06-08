@@ -38,7 +38,7 @@ public class Snapshot {
     private final boolean stuck;
     private final boolean completed;
     private final boolean background;
-    private final String headline;
+    private final String grouping;
     @Nullable
     private final String attributes; // json data
     @Nullable
@@ -63,7 +63,7 @@ public class Snapshot {
     private final CharSource fineMergedStackTree; // json data
 
     private Snapshot(String id, long start, long duration, boolean stuck, boolean completed,
-            boolean background, String headline, @Nullable String attributes,
+            boolean background, String grouping, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String exception, @Nullable String metrics, @Nullable String jvmInfo,
             @Immutable @Nullable CharSource spans,
@@ -75,7 +75,7 @@ public class Snapshot {
         this.stuck = stuck;
         this.completed = completed;
         this.background = background;
-        this.headline = headline;
+        this.grouping = grouping;
         this.attributes = attributes;
         this.userId = userId;
         this.errorText = errorText;
@@ -112,8 +112,8 @@ public class Snapshot {
         return background;
     }
 
-    public String getHeadline() {
-        return headline;
+    public String getGrouping() {
+        return grouping;
     }
 
     @Nullable
@@ -178,7 +178,7 @@ public class Snapshot {
                 .add("stuck", stuck)
                 .add("completed", completed)
                 .add("background", background)
-                .add("headline", headline)
+                .add("grouping", grouping)
                 .add("attributes", attributes)
                 .add("userId", userId)
                 .add("errorText", errorText)
@@ -204,7 +204,7 @@ public class Snapshot {
         private boolean completed;
         private boolean background;
         @LazyNonNull
-        private String headline;
+        private String grouping;
         @Nullable
         private String attributes;
         @Nullable
@@ -261,8 +261,8 @@ public class Snapshot {
             return this;
         }
 
-        public Builder headline(String headline) {
-            this.headline = headline;
+        public Builder grouping(String grouping) {
+            this.grouping = grouping;
             return this;
         }
 
@@ -320,14 +320,14 @@ public class Snapshot {
         public Snapshot build() {
             if (id == null) {
                 logger.warn("setId() must be called before build()");
-                headline = "<error: no id provided>";
+                grouping = "<error: no id provided>";
             }
-            if (headline == null) {
-                logger.warn("setHeadline() must be called before build()");
-                headline = "<error: no headline provided>";
+            if (grouping == null) {
+                logger.warn("setGrouping() must be called before build()");
+                grouping = "<error: no grouping provided>";
             }
             return new Snapshot(id, start, duration, stuck, completed, background,
-                    headline, attributes, userId, errorText, errorDetail, exception,
+                    grouping, attributes, userId, errorText, errorDetail, exception,
                     metrics, jvmInfo, spans, coarseMergedStackTree, fineMergedStackTree);
         }
     }

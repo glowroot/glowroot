@@ -63,8 +63,8 @@ public class SnapshotWriter {
         sb.append(snapshot.isCompleted());
         sb.append(",\"background\":");
         sb.append(snapshot.isBackground());
-        sb.append(",\"headline\":\"");
-        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getHeadline()));
+        sb.append(",\"grouping\":\"");
+        sb.append(JsonStringEncoder.getInstance().quoteAsString(snapshot.getGrouping()));
         sb.append("\"");
         writeAttributes(snapshot);
         writeUserId(snapshot);

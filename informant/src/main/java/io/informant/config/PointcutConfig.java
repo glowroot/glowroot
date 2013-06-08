@@ -51,13 +51,16 @@ public class PointcutConfig {
     private final String metricName;
     @Nullable
     private final String spanTemplate;
+    @Nullable
+    private final String traceGrouping;
     private final String version;
 
     @VisibleForTesting
     public PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
             String methodName, @ReadOnly List<String> methodArgTypeNames,
             String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
-            @Nullable String metricName, @Nullable String spanTemplate) {
+            @Nullable String metricName, @Nullable String spanTemplate,
+            @Nullable String traceGrouping) {
         this.captureItems = ImmutableList.copyOf(captureItems);
         this.typeName = typeName;
         this.methodName = methodName;
@@ -66,8 +69,9 @@ public class PointcutConfig {
         this.methodModifiers = ImmutableList.copyOf(methodModifiers);
         this.metricName = metricName;
         this.spanTemplate = spanTemplate;
+        this.traceGrouping = traceGrouping;
         version = VersionHashes.sha1(captureItems, typeName, methodName, methodArgTypeNames,
-                methodReturnTypeName, methodModifiers, metricName, spanTemplate);
+                methodReturnTypeName, methodModifiers, metricName, spanTemplate, traceGrouping);
     }
 
     @Immutable
@@ -107,6 +111,11 @@ public class PointcutConfig {
         return spanTemplate;
     }
 
+    @Nullable
+    public String getTraceGrouping() {
+        return traceGrouping;
+    }
+
     @JsonView(WithVersionJsonView.class)
     public String getVersion() {
         return version;
@@ -121,14 +130,15 @@ public class PointcutConfig {
             @JsonProperty("methodReturnTypeName") @Nullable String methodReturnTypeName,
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
             @JsonProperty("metricName") @Nullable String metricName,
-            @JsonProperty("spanTemplate") @Nullable String spanTemplate)
+            @JsonProperty("spanTemplate") @Nullable String spanTemplate,
+            @JsonProperty("traceGrouping") @Nullable String traceGrouping)
             throws JsonMappingException {
         checkRequiredProperty(typeName, "typeName");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
         return new PointcutConfig(orEmpty(captureItems), typeName, methodName,
                 orEmpty(methodArgTypeNames), methodReturnTypeName, orEmpty(methodModifiers),
-                metricName, spanTemplate);
+                metricName, spanTemplate, traceGrouping);
     }
 
     @ReadOnly
@@ -150,6 +160,7 @@ public class PointcutConfig {
                 .add("methodModifiers", methodModifiers)
                 .add("metricName", metricName)
                 .add("spanTemplate", spanTemplate)
+                .add("traceGrouping", traceGrouping)
                 .add("version", version)
                 .toString();
     }

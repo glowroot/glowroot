@@ -56,8 +56,10 @@ public class ServletInitAspect {
         @OnBefore
         @Nullable
         public static Span onBefore(@BindTarget Object listener) {
-            return pluginServices.startBackgroundTrace(MessageSupplier.from(
-                    "servlet context initialized ({})", listener.getClass().getName()), metricName);
+            String grouping = "servlet context initialized / " + listener.getClass().getName();
+            return pluginServices.startBackgroundTrace(grouping,
+                    MessageSupplier.from(listener.getClass().getName() + ".contextInitialized()"),
+                    metricName);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
@@ -80,8 +82,9 @@ public class ServletInitAspect {
         }
         @OnBefore
         public static Span onBefore(@BindTarget Object servlet) {
-            return pluginServices.startBackgroundTrace(MessageSupplier.from("servlet init ({})",
-                    servlet.getClass().getName()), metricName);
+            String grouping = "servlet init / " + servlet.getClass().getName();
+            return pluginServices.startBackgroundTrace(grouping,
+                    MessageSupplier.from(servlet.getClass().getName() + ".init()"), metricName);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {
@@ -104,8 +107,9 @@ public class ServletInitAspect {
         }
         @OnBefore
         public static Span onBefore(@BindTarget Object filter) {
-            return pluginServices.startBackgroundTrace(MessageSupplier.from("filter init ({})",
-                    filter.getClass().getName()), metricName);
+            String grouping = "filter init / " + filter.getClass().getName();
+            return pluginServices.startBackgroundTrace(grouping,
+                    MessageSupplier.from(filter.getClass().getName() + ".init()"), metricName);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Span span) {

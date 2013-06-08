@@ -186,11 +186,13 @@ public abstract class PluginServices {
      * If there is already an active trace, this method acts the same as
      * {@link #startSpan(MessageSupplier, MetricName)}.
      * 
+     * @param grouping
      * @param messageSupplier
      * @param metric
      * @return
      */
-    public abstract Span startTrace(MessageSupplier messageSupplier, MetricName metricName);
+    public abstract Span startTrace(String grouping, MessageSupplier messageSupplier,
+            MetricName metricName);
 
     /**
      * If there is no active trace, a new trace is started and the trace is marked as a background
@@ -200,11 +202,12 @@ public abstract class PluginServices {
      * {@link #startSpan(MessageSupplier, MetricName)} (the background flag is not modified on the
      * existing trace).
      * 
+     * @param grouping
      * @param messageSupplier
      * @param metric
      * @return
      */
-    public abstract Span startBackgroundTrace(MessageSupplier messageSupplier,
+    public abstract Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
             MetricName metricName);
 
     /**
@@ -263,6 +266,8 @@ public abstract class PluginServices {
      * @param errorMessage
      */
     public abstract CompletedSpan addErrorSpan(ErrorMessage errorMessage);
+
+    public abstract void setGrouping(String grouping);
 
     /**
      * Sets the user id attribute on the trace. This attribute is shared across all plugins, and is
@@ -380,11 +385,13 @@ public abstract class PluginServices {
         @Override
         public void registerConfigListener(ConfigListener listener) {}
         @Override
-        public Span startTrace(MessageSupplier messageSupplier, MetricName metricName) {
+        public Span startTrace(String grouping, MessageSupplier messageSupplier,
+                MetricName metricName) {
             return new NopSpan(messageSupplier);
         }
         @Override
-        public Span startBackgroundTrace(MessageSupplier messageSupplier, MetricName metricName) {
+        public Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
+                MetricName metricName) {
             return new NopSpan(messageSupplier);
         }
         @Override
@@ -403,6 +410,8 @@ public abstract class PluginServices {
         public CompletedSpan addErrorSpan(ErrorMessage errorMessage) {
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
+        public void setGrouping(String grouping) {}
         @Override
         public void setUserId(@Nullable String userId) {}
         @Override

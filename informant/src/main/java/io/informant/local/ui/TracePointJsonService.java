@@ -92,7 +92,7 @@ class TracePointJsonService {
         private long low;
         private long high;
         @LazyNonNull
-        private StringComparator headlineComparator;
+        private StringComparator groupingComparator;
         @LazyNonNull
         private StringComparator userIdComparator;
 
@@ -108,10 +108,9 @@ class TracePointJsonService {
             low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
             high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
                     * NANOSECONDS_PER_MILLISECOND);
-            String headlineText = request.getHeadlineComparator();
-            if (headlineText != null) {
-                headlineComparator = StringComparator.valueOf(headlineText
-                        .toUpperCase(Locale.ENGLISH));
+            String grouping = request.getGroupingComparator();
+            if (grouping != null) {
+                groupingComparator = StringComparator.valueOf(grouping.toUpperCase(Locale.ENGLISH));
             }
             String comparatorText = request.getUserIdComparator();
             if (comparatorText != null) {
@@ -162,7 +161,7 @@ class TracePointJsonService {
             }
             List<TracePoint> points = snapshotDao.readPoints(request.getFrom(),
                     request.getTo(), low, high, request.isBackground(), request.isErrorOnly(),
-                    request.isFineOnly(), headlineComparator, request.getHeadline(),
+                    request.isFineOnly(), groupingComparator, request.getGrouping(),
                     userIdComparator, request.getUserId(), request.getLimit() + 1);
             // create single merged and limited list of points
             List<TracePoint> combinedPoints = Lists.newArrayList(points);
@@ -179,7 +178,7 @@ class TracePointJsonService {
                         && matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesHeadline(trace)
+                        && matchesGrouping(trace)
                         && matchesUserId(trace)
                         && matchesBackground(trace)) {
                     activeTraces.add(trace);
@@ -204,7 +203,7 @@ class TracePointJsonService {
                 if (matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
-                        && matchesHeadline(trace)
+                        && matchesGrouping(trace)
                         && matchesUserId(trace)
                         && matchesBackground(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
@@ -227,27 +226,27 @@ class TracePointJsonService {
             return !request.isFineOnly() || trace.isFine();
         }
 
-        private boolean matchesHeadline(Trace trace) {
-            String headline = request.getHeadline();
-            if (headlineComparator == null || headline == null) {
+        private boolean matchesGrouping(Trace trace) {
+            String grouping = request.getGrouping();
+            if (groupingComparator == null || grouping == null) {
                 return true;
             }
-            String traceHeadline = trace.getHeadline();
-            switch (headlineComparator) {
+            String traceGrouping = trace.getGrouping();
+            switch (groupingComparator) {
                 case BEGINS:
-                    return traceHeadline.toUpperCase(Locale.ENGLISH)
-                            .startsWith(headline.toUpperCase(Locale.ENGLISH));
+                    return traceGrouping.toUpperCase(Locale.ENGLISH)
+                            .startsWith(grouping.toUpperCase(Locale.ENGLISH));
                 case EQUALS:
-                    return traceHeadline.equalsIgnoreCase(headline);
+                    return traceGrouping.equalsIgnoreCase(grouping);
                 case ENDS:
-                    return traceHeadline.toUpperCase(Locale.ENGLISH)
-                            .endsWith(headline.toUpperCase(Locale.ENGLISH));
+                    return traceGrouping.toUpperCase(Locale.ENGLISH)
+                            .endsWith(grouping.toUpperCase(Locale.ENGLISH));
                 case CONTAINS:
-                    return traceHeadline.toUpperCase(Locale.ENGLISH)
-                            .contains(headline.toUpperCase(Locale.ENGLISH));
+                    return traceGrouping.toUpperCase(Locale.ENGLISH)
+                            .contains(grouping.toUpperCase(Locale.ENGLISH));
                 default:
-                    throw new IllegalStateException("Unexpected headline comparator: "
-                            + headlineComparator);
+                    throw new IllegalStateException("Unexpected grouping comparator: "
+                            + groupingComparator);
             }
         }
 

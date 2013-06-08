@@ -31,6 +31,7 @@ import io.informant.api.weaving.OnBefore;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
 import io.informant.api.weaving.Pointcut;
+import io.informant.shaded.google.common.base.Strings;
 
 /**
  * Defines pointcuts and captures data on
@@ -80,15 +81,15 @@ public class ServletAspect {
             ServletMessageSupplier messageSupplier;
             // passing "false" so it won't create a session if the request doesn't already have one
             HttpSession session = request.getSession(false);
+            String requestUri = Strings.nullToEmpty(request.getRequestURI());
             if (session == null) {
-                messageSupplier = new ServletMessageSupplier(request.getMethod(),
-                        request.getRequestURI(), null, null);
+                messageSupplier = new ServletMessageSupplier(requestUri, null, null);
             } else {
-                messageSupplier = new ServletMessageSupplier(request.getMethod(),
-                        request.getRequestURI(), session.getId(), session.getSessionAttributes());
+                messageSupplier = new ServletMessageSupplier(requestUri, session.getId(),
+                        session.getSessionAttributes());
             }
             topLevel.set(messageSupplier);
-            Span span = pluginServices.startTrace(messageSupplier, metricName);
+            Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);
             if (session != null) {
                 String sessionUserIdAttributePath = ServletPluginProperties
                         .sessionUserIdAttributePath();

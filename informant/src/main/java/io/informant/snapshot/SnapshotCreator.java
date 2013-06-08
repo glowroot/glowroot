@@ -80,7 +80,7 @@ public class SnapshotCreator {
             builder.completed(false);
         }
         builder.background(trace.isBackground());
-        builder.headline(trace.getHeadline());
+        builder.grouping(trace.getGrouping());
         ReadableErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();
         if (errorMessage != null) {
             builder.errorText(errorMessage.getText());

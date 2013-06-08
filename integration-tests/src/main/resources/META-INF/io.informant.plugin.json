@@ -5,13 +5,13 @@
   "version": "0.5-SNAPSHOT",
   "properties": [
     {
-      "prompt": "Starred headline",
-      "name": "starredHeadline",
+      "prompt": "Starred grouping",
+      "name": "starredGrouping",
       "type": "boolean"
     },
     {
-      "prompt": "Alternate headline",
-      "name": "alternateHeadline",
+      "prompt": "Alternate grouping",
+      "name": "alternateGrouping",
       "type": "string"
     },
     {

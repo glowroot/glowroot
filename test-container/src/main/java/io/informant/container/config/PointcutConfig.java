@@ -46,6 +46,8 @@ public class PointcutConfig {
     private String metricName;
     @Nullable
     private String spanTemplate;
+    @Nullable
+    private String traceGrouping;
 
     // null for new PointcutConfig records that haven't been sent to server yet
     @Nullable
@@ -135,6 +137,15 @@ public class PointcutConfig {
         this.spanTemplate = spanTemplate;
     }
 
+    @Nullable
+    public String getTraceGrouping() {
+        return traceGrouping;
+    }
+
+    public void setTraceGrouping(@Nullable String traceGrouping) {
+        this.traceGrouping = traceGrouping;
+    }
+
     // JsonIgnore so it won't get sent to the server
     @JsonIgnore
     @Nullable
@@ -156,7 +167,8 @@ public class PointcutConfig {
                     && Objects.equal(methodReturnTypeName, that.methodReturnTypeName)
                     && Objects.equal(methodModifiers, that.methodModifiers)
                     && Objects.equal(metricName, that.metricName)
-                    && Objects.equal(spanTemplate, that.spanTemplate);
+                    && Objects.equal(spanTemplate, that.spanTemplate)
+                    && Objects.equal(traceGrouping, that.traceGrouping);
         }
         return false;
     }
@@ -167,7 +179,7 @@ public class PointcutConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(captureItems, typeName, methodName, methodArgTypeNames,
-                methodReturnTypeName, methodModifiers, metricName, spanTemplate);
+                methodReturnTypeName, methodModifiers, metricName, spanTemplate, traceGrouping);
     }
 
     @Override
@@ -181,6 +193,7 @@ public class PointcutConfig {
                 .add("methodModifiers", methodModifiers)
                 .add("metricName", metricName)
                 .add("spanTemplate", spanTemplate)
+                .add("traceGrouping", traceGrouping)
                 .add("version", version)
                 .toString();
     }
@@ -195,6 +208,7 @@ public class PointcutConfig {
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
             @JsonProperty("metricName") @Nullable String metricName,
             @JsonProperty("spanTemplate") @Nullable String spanTemplate,
+            @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(captureItems, "captureItems");
         checkRequiredProperty(typeName, "typeName");
@@ -213,6 +227,7 @@ public class PointcutConfig {
         config.setMethodModifiers(methodModifiers);
         config.setMetricName(metricName);
         config.setSpanTemplate(spanTemplate);
+        config.setTraceGrouping(traceGrouping);
         return config;
     }
 
@@ -221,6 +236,6 @@ public class PointcutConfig {
     }
 
     public enum MethodModifier {
-        PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC;
+        PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC, ABSTRACT;
     }
 }

@@ -256,6 +256,6 @@ class LocalConfigService implements ConfigService {
         return new io.informant.config.PointcutConfig(captureItems, config.getTypeName(),
                 config.getMethodName(), config.getMethodArgTypeNames(),
                 config.getMethodReturnTypeName(), methodModifiers, config.getMetricName(),
-                config.getSpanTemplate());
+                config.getSpanTemplate(), config.getTraceGrouping());
     }
 }

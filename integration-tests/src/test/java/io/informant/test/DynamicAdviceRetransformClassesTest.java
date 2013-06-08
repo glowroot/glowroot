@@ -37,10 +37,10 @@ public class DynamicAdviceRetransformClassesTest extends DynamicAdviceTest {
         }
         container = new JavaagentContainer(null, 0, false, false);
         container.executeAppUnderTest(ShouldExecute1.class);
-        addPointcutForExecute1();
-        addPointcutForExecute1MetricOnly();
-        addPointcutForExecuteWithReturn();
-        addPointcutForExecuteWithArgs();
+        addSpanPointcutForExecute1();
+        addSpanPointcutForExecute1MetricOnly();
+        addSpanPointcutForExecuteWithReturn();
+        addTracePointcutForExecuteWithArgs();
         container.getConfigService().retransformClasses();
     }
 
@@ -72,20 +72,20 @@ public class DynamicAdviceRetransformClassesTest extends DynamicAdviceTest {
 
     @Override
     @Test
-    public void shouldExecuteWithReturn() throws Exception {
+    public void shouldRenderSpanTextWithReturnValue() throws Exception {
         if (jdk5()) {
             return;
         }
-        super.shouldExecuteWithReturn();
+        super.shouldRenderSpanTextWithReturnValue();
     }
 
     @Override
     @Test
-    public void shouldExecuteWithArgs() throws Exception {
+    public void shouldRenderTraceGrouping() throws Exception {
         if (jdk5()) {
             return;
         }
-        super.shouldExecuteWithArgs();
+        super.shouldRenderTraceGrouping();
     }
 
     // not using org.junit.Assume which reports the test as ignored, since ignored tests seem like

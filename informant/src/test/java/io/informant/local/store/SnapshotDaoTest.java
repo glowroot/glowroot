@@ -81,7 +81,7 @@ public class SnapshotDaoTest {
         assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
         assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());
         assertThat(snapshot2.isCompleted()).isEqualTo(snapshot.isCompleted());
-        assertThat(snapshot2.getHeadline()).isEqualTo("test headline");
+        assertThat(snapshot2.getGrouping()).isEqualTo("test grouping");
         assertThat(snapshot2.getUserId()).isEqualTo(snapshot.getUserId());
         // TODO verify metrics, trace and mergedStackTree
     }

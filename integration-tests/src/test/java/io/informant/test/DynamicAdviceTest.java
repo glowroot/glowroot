@@ -50,10 +50,10 @@ public class DynamicAdviceTest {
     public static void setUp() throws Exception {
         dataDir = TempDirs.createTempDir("informant-test-datadir");
         container = Containers.createWithFileDb(dataDir);
-        addPointcutForExecute1();
-        addPointcutForExecute1MetricOnly();
-        addPointcutForExecuteWithReturn();
-        addPointcutForExecuteWithArgs();
+        addSpanPointcutForExecute1();
+        addSpanPointcutForExecute1MetricOnly();
+        addSpanPointcutForExecuteWithReturn();
+        addTracePointcutForExecuteWithArgs();
         // re-start now with dynamic pointcuts
         container.close();
         container = Containers.createWithFileDb(dataDir);
@@ -80,13 +80,13 @@ public class DynamicAdviceTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getSpans()).hasSize(2);
         assertThat(trace.getMetricNames()).hasSize(3);
-        assertThat(trace.getMetricNames()).contains("mock trace marker", "execute one");
-        assertThat(trace.getMetricNames()).contains("mock trace marker", "execute one metric only");
+        assertThat(trace.getMetricNames()).contains("mock trace marker", "execute one",
+                "execute one metric only");
         assertThat(trace.getSpans().get(1).getMessage().getText()).isEqualTo("execute1() => void");
     }
 
     @Test
-    public void shouldExecuteWithReturn() throws Exception {
+    public void shouldRenderSpanTextWithReturnValue() throws Exception {
         // given
         container.getConfigService().setStoreThresholdMillis(0);
         // when
@@ -101,21 +101,22 @@ public class DynamicAdviceTest {
     }
 
     @Test
-    public void shouldExecuteWithArgs() throws Exception {
+    public void shouldRenderTraceGrouping() throws Exception {
         // given
         container.getConfigService().setStoreThresholdMillis(0);
         // when
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getSpans()).hasSize(2);
-        assertThat(trace.getMetricNames()).hasSize(2);
-        assertThat(trace.getMetricNames()).contains("mock trace marker", "execute with args");
-        assertThat(trace.getSpans().get(1).getMessage().getText())
+        assertThat(trace.getGrouping()).isEqualTo("Misc / executeWithArgs");
+        assertThat(trace.getSpans()).hasSize(1);
+        assertThat(trace.getMetricNames()).hasSize(1);
+        assertThat(trace.getMetricNames().get(0)).isEqualTo("execute with args");
+        assertThat(trace.getSpans().get(0).getMessage().getText())
                 .isEqualTo("executeWithArgs(): abc, 123");
     }
 
-    protected static void addPointcutForExecute1() throws Exception {
+    protected static void addSpanPointcutForExecute1() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
@@ -128,7 +129,7 @@ public class DynamicAdviceTest {
         container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addPointcutForExecute1MetricOnly() throws Exception {
+    protected static void addSpanPointcutForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC));
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
@@ -140,7 +141,7 @@ public class DynamicAdviceTest {
         container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addPointcutForExecuteWithReturn() throws Exception {
+    protected static void addSpanPointcutForExecuteWithReturn() throws Exception {
         PointcutConfig config = new PointcutConfig();
         config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
@@ -153,9 +154,10 @@ public class DynamicAdviceTest {
         container.getConfigService().addPointcutConfig(config);
     }
 
-    protected static void addPointcutForExecuteWithArgs() throws Exception {
+    protected static void addTracePointcutForExecuteWithArgs() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
+        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN,
+                CaptureItem.TRACE));
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
         config.setMethodName("executeWithArgs");
         config.setMethodArgTypeNames(ImmutableList.of("java.lang.String", "int"));
@@ -163,6 +165,7 @@ public class DynamicAdviceTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute with args");
         config.setSpanTemplate("executeWithArgs(): {{0}}, {{1}}");
+        config.setTraceGrouping("Misc / {{methodName}}");
         container.getConfigService().addPointcutConfig(config);
     }
 
@@ -199,11 +202,8 @@ public class DynamicAdviceTest {
         }
     }
 
-    public static class ShouldExecuteWithArgs implements AppUnderTest, TraceMarker {
+    public static class ShouldExecuteWithArgs implements AppUnderTest {
         public void executeApp() {
-            traceMarker();
-        }
-        public void traceMarker() {
             new BasicMisc().executeWithArgs("abc", 123);
         }
     }

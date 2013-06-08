@@ -60,11 +60,8 @@ class ServletMessageSupplier extends MessageSupplier {
     // expired when the session attributes are stored, so instead
     // (references to) the session attributes must be stored here
 
-    @Nullable
-    private final String requestMethod;
+    private final String requestUri;
 
-    @Nullable
-    private final String requestURI;
     @LazyNonNull
     private volatile ImmutableMap<String, String[]> requestParameterMap;
 
@@ -86,12 +83,9 @@ class ServletMessageSupplier extends MessageSupplier {
     @LazyNonNull
     private volatile ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
-    ServletMessageSupplier(@Nullable String requestMethod, @Nullable String requestURI,
-            @Nullable String sessionId,
+    ServletMessageSupplier(String requestUri, @Nullable String sessionId,
             @Nullable ImmutableMap<String, String> sessionAttributeMap) {
-
-        this.requestMethod = requestMethod;
-        this.requestURI = requestURI;
+        this.requestUri = requestUri;
         this.sessionIdInitialValue = sessionId;
         if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
             this.sessionAttributeInitialValueMap = null;
@@ -105,17 +99,7 @@ class ServletMessageSupplier extends MessageSupplier {
         Map<String, Object> detail = Maps.newHashMap();
         addRequestParameterDetail(detail);
         addSessionAttributeDetail(detail);
-        String message;
-        if (requestMethod == null && requestURI == null) {
-            message = "";
-        } else if (requestMethod == null) {
-            message = Strings.nullToEmpty(requestURI);
-        } else if (requestURI == null) {
-            message = Strings.nullToEmpty(requestMethod);
-        } else {
-            message = requestMethod + " " + requestURI;
-        }
-        return Message.withDetail(message, detail);
+        return Message.withDetail(requestUri, detail);
     }
 
     boolean isRequestParameterMapCaptured() {

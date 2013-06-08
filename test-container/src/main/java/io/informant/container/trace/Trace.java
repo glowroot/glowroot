@@ -41,7 +41,7 @@ public class Trace {
     private boolean completed;
     private boolean background;
     @Nullable
-    private String headline;
+    private String grouping;
     @Nullable
     private Map<String, String> attributes;
     @Nullable
@@ -91,8 +91,8 @@ public class Trace {
     }
 
     @Nullable
-    public String getHeadline() {
-        return headline;
+    public String getGrouping() {
+        return grouping;
     }
 
     @Nullable
@@ -196,7 +196,7 @@ public class Trace {
                 .add("stuck", stuck)
                 .add("completed", completed)
                 .add("background", background)
-                .add("headline", headline)
+                .add("grouping", grouping)
                 .add("attributes", attributes)
                 .add("userId", userId)
                 .add("error", error)

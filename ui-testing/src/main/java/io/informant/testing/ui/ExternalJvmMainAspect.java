@@ -50,9 +50,9 @@ public class ExternalJvmMainAspect {
 
         @OnBefore
         public static Span onBefore(@BindTarget Class<?> target) {
-            return pluginServices.startTrace(
-                    MessageSupplier.from("ExternalJvmExecutionAdapter.main()", target.getName()),
-                    metricName);
+            return pluginServices.startTrace("javaagent container main",
+                    MessageSupplier.from("io.informant.container.javaagent.JavaagentContainer"
+                            + ".main()", target.getName()), metricName);
         }
 
         @OnAfter
