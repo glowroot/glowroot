@@ -50,6 +50,9 @@ public class PreInitializeClassesTest {
                 "io/informant/weaving/WeavingClassFileTransformer", "transform",
                 "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
                         + "Ljava/security/ProtectionDomain;[B)[B"));
+        // "call" DataSource$ShutdownHookThread.run()
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
+                "io/informant/local/store/DataSource$ShutdownHookThread", "run", "()V"));
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion

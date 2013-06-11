@@ -37,6 +37,8 @@ import io.informant.markers.Static;
  * InformantClassFileTransformer are pre-initialized (and all classes referenced from those classes,
  * etc).
  * 
+ * Class loading is also a bad idea inside of JVM shutdown hooks.
+ * 
  * @author Trask Stalnaker
  * @since 0.5
  */
@@ -94,6 +96,7 @@ class PreInitializeClasses {
         types.addAll(getLogbackUsedTypes());
         types.addAll(getGuavaUsedTypes());
         types.addAll(getInformantUsedTypes());
+        types.addAll(getH2UsedTypes());
         types.addAll(getAsmUsedTypes());
         types.addAll(getSlf4jUsedTypes());
         return types.build();
@@ -656,6 +659,9 @@ class PreInitializeClasses {
         types.add("io.informant.api.weaving.OnReturn");
         types.add("io.informant.api.weaving.OnThrow");
         types.add("io.informant.api.weaving.Pointcut");
+        types.add("io.informant.local.store.DataSource");
+        types.add("io.informant.local.store.DataSource$1");
+        types.add("io.informant.local.store.DataSource$ShutdownHookThread");
         types.add("io.informant.trace.model.Metric");
         types.add("io.informant.trace.model.MetricNameImpl");
         types.add("io.informant.trace.model.WeavingMetricNameImpl");
@@ -687,6 +693,137 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.WeavingMethodVisitor");
         types.add("io.informant.weaving.WeavingMethodVisitor$MarkerException");
         types.add("io.informant.weaving.WeavingMetric");
+        return types;
+    }
+
+    private static List<String> getH2UsedTypes() {
+        List<String> types = Lists.newArrayList();
+        types.add("org.h2.api.DatabaseEventListener");
+        types.add("org.h2.command.CommandInterface");
+        types.add("org.h2.command.CommandRemote");
+        types.add("org.h2.command.dml.SetTypes");
+        types.add("org.h2.compress.CompressDeflate");
+        types.add("org.h2.compress.CompressLZF");
+        types.add("org.h2.compress.CompressNo");
+        types.add("org.h2.compress.Compressor");
+        types.add("org.h2.constant.DbSettings");
+        types.add("org.h2.constant.ErrorCode");
+        types.add("org.h2.constant.SysProperties");
+        types.add("org.h2.engine.ConnectionInfo");
+        types.add("org.h2.engine.Constants");
+        types.add("org.h2.engine.SessionFactory");
+        types.add("org.h2.engine.SessionInterface");
+        types.add("org.h2.engine.SessionRemote");
+        types.add("org.h2.engine.SessionWithState");
+        types.add("org.h2.engine.SettingsBase");
+        types.add("org.h2.expression.ParameterInterface");
+        types.add("org.h2.expression.ParameterRemote");
+        types.add("org.h2.jdbc.JdbcArray");
+        types.add("org.h2.jdbc.JdbcBatchUpdateException");
+        types.add("org.h2.jdbc.JdbcBlob");
+        types.add("org.h2.jdbc.JdbcBlob$1");
+        types.add("org.h2.jdbc.JdbcBlob$2");
+        types.add("org.h2.jdbc.JdbcCallableStatement");
+        types.add("org.h2.jdbc.JdbcClob");
+        types.add("org.h2.jdbc.JdbcClob$1");
+        types.add("org.h2.jdbc.JdbcClob$2");
+        types.add("org.h2.jdbc.JdbcConnection");
+        types.add("org.h2.jdbc.JdbcDatabaseMetaData");
+        types.add("org.h2.jdbc.JdbcParameterMetaData");
+        types.add("org.h2.jdbc.JdbcPreparedStatement");
+        types.add("org.h2.jdbc.JdbcResultSet");
+        types.add("org.h2.jdbc.JdbcResultSetMetaData");
+        types.add("org.h2.jdbc.JdbcSQLException");
+        types.add("org.h2.jdbc.JdbcSavepoint");
+        types.add("org.h2.jdbc.JdbcStatement");
+        types.add("org.h2.message.DbException");
+        types.add("org.h2.message.Trace");
+        types.add("org.h2.message.TraceObject");
+        types.add("org.h2.message.TraceSystem");
+        types.add("org.h2.message.TraceWriter");
+        types.add("org.h2.result.ResultColumn");
+        types.add("org.h2.result.ResultInterface");
+        types.add("org.h2.result.ResultRemote");
+        types.add("org.h2.result.UpdatableRow");
+        types.add("org.h2.security.AES");
+        types.add("org.h2.security.BlockCipher");
+        types.add("org.h2.security.CipherFactory");
+        types.add("org.h2.security.Fog");
+        types.add("org.h2.security.SHA256");
+        types.add("org.h2.security.SecureFileStore");
+        types.add("org.h2.security.XTEA");
+        types.add("org.h2.store.Data");
+        types.add("org.h2.store.DataHandler");
+        types.add("org.h2.store.DataReader");
+        types.add("org.h2.store.DataReader$FastEOFException");
+        types.add("org.h2.store.FileStore");
+        types.add("org.h2.store.FileStoreInputStream");
+        types.add("org.h2.store.FileStoreOutputStream");
+        types.add("org.h2.store.LobStorage");
+        types.add("org.h2.store.LobStorage$CountingReaderInputStream");
+        types.add("org.h2.store.LobStorage$LobInputStream");
+        types.add("org.h2.store.LobStorage$RemoteInputStream");
+        types.add("org.h2.store.fs.FileBase");
+        types.add("org.h2.store.fs.FileDisk");
+        types.add("org.h2.store.fs.FilePath");
+        types.add("org.h2.store.fs.FilePathDisk");
+        types.add("org.h2.store.fs.FilePathRec");
+        types.add("org.h2.store.fs.FilePathWrapper");
+        types.add("org.h2.store.fs.FileRec");
+        types.add("org.h2.store.fs.FileUtils");
+        types.add("org.h2.store.fs.Recorder");
+        types.add("org.h2.tools.CompressTool");
+        types.add("org.h2.tools.SimpleResultSet");
+        types.add("org.h2.tools.SimpleResultSet$Column");
+        types.add("org.h2.tools.SimpleResultSet$SimpleArray");
+        types.add("org.h2.tools.SimpleRowSource");
+        types.add("org.h2.util.BitField");
+        types.add("org.h2.util.CloseWatcher");
+        types.add("org.h2.util.DateTimeUtils");
+        types.add("org.h2.util.IOUtils");
+        types.add("org.h2.util.JdbcUtils");
+        types.add("org.h2.util.MathUtils");
+        types.add("org.h2.util.MathUtils$1");
+        types.add("org.h2.util.NetUtils");
+        types.add("org.h2.util.New");
+        types.add("org.h2.util.SmallLRUCache");
+        types.add("org.h2.util.SortedProperties");
+        types.add("org.h2.util.StatementBuilder");
+        types.add("org.h2.util.StringUtils");
+        types.add("org.h2.util.Task");
+        types.add("org.h2.util.TempFileDeleter");
+        types.add("org.h2.util.Utils");
+        types.add("org.h2.util.Utils$1");
+        types.add("org.h2.value.CompareMode");
+        types.add("org.h2.value.CompareModeDefault");
+        types.add("org.h2.value.CompareModeIcu4J");
+        types.add("org.h2.value.DataType");
+        types.add("org.h2.value.Transfer");
+        types.add("org.h2.value.Value");
+        types.add("org.h2.value.Value$ValueBlob");
+        types.add("org.h2.value.Value$ValueClob");
+        types.add("org.h2.value.ValueArray");
+        types.add("org.h2.value.ValueBoolean");
+        types.add("org.h2.value.ValueByte");
+        types.add("org.h2.value.ValueBytes");
+        types.add("org.h2.value.ValueDate");
+        types.add("org.h2.value.ValueDecimal");
+        types.add("org.h2.value.ValueDouble");
+        types.add("org.h2.value.ValueFloat");
+        types.add("org.h2.value.ValueInt");
+        types.add("org.h2.value.ValueJavaObject");
+        types.add("org.h2.value.ValueLob");
+        types.add("org.h2.value.ValueLobDb");
+        types.add("org.h2.value.ValueLong");
+        types.add("org.h2.value.ValueNull");
+        types.add("org.h2.value.ValueResultSet");
+        types.add("org.h2.value.ValueShort");
+        types.add("org.h2.value.ValueString");
+        types.add("org.h2.value.ValueStringFixed");
+        types.add("org.h2.value.ValueStringIgnoreCase");
+        types.add("org.h2.value.ValueTime");
+        types.add("org.h2.value.ValueTimestamp");
+        types.add("org.h2.value.ValueUuid");
         return types;
     }
 
