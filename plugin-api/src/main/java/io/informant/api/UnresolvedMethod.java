@@ -226,7 +226,7 @@ public class UnresolvedMethod {
         try {
             return invokeInternal(method, target, parameters);
         } catch (Throwable t) {
-            logger.warn(t.getMessage(), t);
+            logger.debug("error invoking method, falling back to returnOnError value", t);
             return returnOnError;
         }
     }
@@ -294,7 +294,7 @@ public class UnresolvedMethod {
         try {
             return invokeInternal(method, null, parameters);
         } catch (Throwable t) {
-            logger.warn(t.getMessage(), t);
+            logger.debug("error invoking method, falling back to returnOnError value", t);
             return returnOnError;
         }
     }
