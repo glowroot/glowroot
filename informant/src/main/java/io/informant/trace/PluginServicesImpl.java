@@ -413,15 +413,30 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             boolean success = scheduledFuture.cancel(false);
             if (!success) {
-                // execution failed due to an error (probably programming error)
+                // execution of scheduled command failed due to an exception, need to log it to find
+                // out what happened
+
+                // if the thread is in the interrupted state, Future.get() below will immediately
+                // throw InterruptedException
+                // (via AbstractQueuedSynchronizer.acquireSharedInterruptibly())
+                //
+                // so temporarily clear the interrupted state (if it's set) so Future.get() can be
+                // called with a clean slate (it could still throw InterruptedException on its own
+                // via AbstractQueuedSynchronizer.doAcquireSharedInterruptibly())
+                boolean interrupted = Thread.interrupted();
                 try {
                     scheduledFuture.get();
                 } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
+                    // this is the trace thread, so need to be careful and re-interrupt it
+                    Thread.currentThread().interrupt();
                 } catch (ExecutionException e) {
                     if (!(e.getCause() instanceof TerminateScheduledActionException)) {
                         logger.error(e.getMessage(), e);
                     }
+                }
+                if (interrupted) {
+                    // this is the trace thread, so need to be careful and re-interrupt it
+                    Thread.currentThread().interrupt();
                 }
             }
         }
