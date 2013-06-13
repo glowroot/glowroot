@@ -15,6 +15,7 @@
  */
 package io.informant.testing.ui;
 
+import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,8 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.javaagent.JavaagentContainer;
 import io.informant.container.local.LocalContainer;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Trask Stalnaker
@@ -42,6 +45,7 @@ public class UiTestingMain {
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
     static {
+        System.setProperty("informant.internal.collector.aggregateInterval", "15");
         if (useUiDevMode) {
             System.setProperty("informant.internal.ui.devMode", "true");
         }
@@ -80,12 +84,15 @@ public class UiTestingMain {
         public void executeApp() throws InterruptedException {
             while (true) {
                 // one very short trace that will have an empty merged stack tree
-                new NestableCall(1, 10, 100).execute();
-                new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
+                Stopwatch stopwatch = new Stopwatch().start();
+                while (stopwatch.elapsed(SECONDS) < 30) {
+                    new NestableCall(1, 10, 100).execute();
+                    new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
+                    new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
+                    new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
+                    new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
+                }
                 new NestableCall(new NestableCall(5000, 50, 5000), 100, 50, 5000).execute();
-                new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
-                new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
-                new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
                 Thread.sleep(1000);
             }
         }

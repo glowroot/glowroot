@@ -54,19 +54,19 @@ class TracePointResponse {
 
     static class RawPoint implements Comparable<RawPoint> {
 
-        private final long capturedAt;
+        private final long captureTime;
         private final double durationSeconds;
         private final String id;
 
         @JsonCreator
         RawPoint(ArrayNode point) {
-            capturedAt = point.get(0).asLong();
+            captureTime = point.get(0).asLong();
             durationSeconds = point.get(1).asDouble();
             id = point.get(2).asText();
         }
 
-        long getCapturedAt() {
-            return capturedAt;
+        long getCaptureTime() {
+            return captureTime;
         }
 
         double getDurationSeconds() {

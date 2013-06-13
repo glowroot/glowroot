@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.config.AdviceCache;
 import io.informant.config.ConfigService;
 import io.informant.config.PointcutConfig;
@@ -35,7 +36,6 @@ import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
-import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
 import io.informant.weaving.dynamic.RetransformClasses;
@@ -58,20 +58,20 @@ class AdminJsonService {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
-    private final SnapshotTraceSink snapshotTraceSink;
+    private final TraceCollectorImpl traceCollector;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
             AdviceCache adviceCache, ParsedTypeCache parsedTypeCache,
-            @Nullable Instrumentation instrumentation, SnapshotTraceSink snapshotTraceSink,
+            @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
             DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.adviceCache = adviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
-        this.snapshotTraceSink = snapshotTraceSink;
+        this.traceCollector = traceCollector;
         this.dataSource = dataSource;
         this.traceRegistry = traceRegistry;
     }
@@ -129,7 +129,7 @@ class AdminJsonService {
     @JsonServiceMethod
     String getNumPendingCompleteTraces() {
         logger.debug("getNumPendingCompleteTraces()");
-        return Integer.toString(snapshotTraceSink.getPendingCompleteTraces().size());
+        return Integer.toString(traceCollector.getPendingCompleteTraces().size());
     }
 
     @OnlyUsedByTests

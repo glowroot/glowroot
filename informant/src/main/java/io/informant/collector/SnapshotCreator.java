@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.snapshot;
+package io.informant.collector;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -62,23 +62,27 @@ public class SnapshotCreator {
 
     private SnapshotCreator() {}
 
-    public static Snapshot createSnapshot(Trace trace, long captureTick, boolean summary)
+    public static Snapshot createActiveSnapshot(Trace trace, long captureTime, long captureTick,
+            boolean summary) throws IOException {
+        return createSnapshot(trace, trace.isStuck(), captureTime, captureTick, summary);
+    }
+
+    public static Snapshot createCompletedSnapshot(Trace trace, long captureTime)
             throws IOException {
+        return createSnapshot(trace, false, captureTime, trace.getEndTick(), false);
+    }
+
+    // timings for traces that are still active are normalized to the capture tick in order to
+    // *attempt* to present a picture of the trace at that exact tick
+    // (without using synchronization to block updates to the trace while it is being read)
+    private static Snapshot createSnapshot(Trace trace, boolean stuck, long captureTime,
+            long captureTick, boolean summary) throws IOException {
         Snapshot.Builder builder = Snapshot.builder();
         builder.id(trace.getId());
-        builder.start(trace.getStart());
-        builder.stuck(trace.isStuck() && !trace.isCompleted());
-        // timings for traces that are still active are normalized to the capture tick in order to
-        // *attempt* to present a picture of the trace at that exact tick
-        // (without using synchronization to block updates to the trace while it is being read)
-        long endTick = trace.getEndTick();
-        if (endTick != 0 && endTick <= captureTick) {
-            builder.duration(trace.getDuration());
-            builder.completed(true);
-        } else {
-            builder.duration(captureTick - trace.getStartTick());
-            builder.completed(false);
-        }
+        builder.stuck(stuck);
+        builder.startTime(trace.getStartTime());
+        builder.captureTime(captureTime);
+        builder.duration(captureTick - trace.getStartTick());
         builder.background(trace.isBackground());
         builder.grouping(trace.getGrouping());
         ReadableErrorMessage errorMessage = trace.getRootSpan().getErrorMessage();

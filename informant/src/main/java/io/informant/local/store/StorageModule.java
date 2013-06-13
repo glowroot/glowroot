@@ -26,12 +26,13 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.collector.AggregateRepository;
+import io.informant.collector.SnapshotRepository;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
-import io.informant.snapshot.SnapshotSink;
 
 /**
  * @author Trask Stalnaker
@@ -45,6 +46,7 @@ public class StorageModule {
     private final DataSource dataSource;
     private final RollingFile rollingFile;
     private final SnapshotDao snapshotDao;
+    private final AggregateDao aggregateDao;
 
     public StorageModule(File dataDir, @ReadOnly Map<String, String> properties, Ticker ticker,
             Clock clock, ConfigModule configModule, ScheduledExecutorService scheduledExecutor)
@@ -60,8 +62,9 @@ public class StorageModule {
         int rollingSizeMb = configService.getStorageConfig().getRollingSizeMb();
         rollingFile = new RollingFile(new File(dataDir, "informant.rolling.db"),
                 rollingSizeMb * 1024, scheduledExecutor, ticker);
-        snapshotDao = new SnapshotDao(dataSource, rollingFile, clock);
+        snapshotDao = new SnapshotDao(dataSource, rollingFile);
         new SnapshotReaper(configService, snapshotDao, clock).start(scheduledExecutor);
+        aggregateDao = new AggregateDao(dataSource);
     }
 
     public DataSource getDataSource() {
@@ -76,8 +79,16 @@ public class StorageModule {
         return snapshotDao;
     }
 
-    public SnapshotSink getSnapshotSink() {
+    public SnapshotRepository getSnapshotRepository() {
         return snapshotDao;
+    }
+
+    public AggregateRepository getAggregateRepository() {
+        return aggregateDao;
+    }
+
+    public AggregateDao getAggregateDao() {
+        return aggregateDao;
     }
 
     @OnlyUsedByTests

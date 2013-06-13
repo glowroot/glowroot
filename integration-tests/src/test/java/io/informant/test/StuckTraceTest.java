@@ -92,16 +92,15 @@ public class StuckTraceTest {
             Thread.sleep(10);
         }
         assertThat(trace).isNotNull();
-        assertThat(trace.isStuck()).isTrue();
         assertThat(trace.isActive()).isTrue();
-        assertThat(trace.isCompleted()).isFalse();
+        assertThat(trace.isStuck()).isTrue();
         // interrupt trace
         container.interruptAppUnderTest();
         future.get();
         // should now be reported as unstuck
         trace = container.getTraceService().getLastTraceSummary();
+        assertThat(trace.isActive()).isFalse();
         assertThat(trace.isStuck()).isFalse();
-        assertThat(trace.isCompleted()).isTrue();
         // cleanup
         executorService.shutdown();
     }

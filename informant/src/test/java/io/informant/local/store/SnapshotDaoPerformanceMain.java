@@ -24,7 +24,6 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.informant.common.Clock;
 import io.informant.markers.Static;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -47,8 +46,7 @@ public class SnapshotDaoPerformanceMain {
         ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         RollingFile rollingFile = new RollingFile(new File("informant.rolling.db"), 1000000,
                 scheduledExecutor, Ticker.systemTicker());
-        SnapshotDao snapshotDao = new SnapshotDao(dataSource, rollingFile,
-                Clock.systemClock());
+        SnapshotDao snapshotDao = new SnapshotDao(dataSource, rollingFile);
 
         Stopwatch stopwatch = new Stopwatch().start();
         for (int i = 0; i < 1000; i++) {

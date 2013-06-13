@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.snapshot;
+package io.informant.collector;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -51,16 +51,16 @@ public class SnapshotWriter {
             throws UnsupportedEncodingException {
         sb.append("{\"id\":\"");
         sb.append(snapshot.getId());
-        sb.append("\",\"start\":");
-        sb.append(snapshot.getStart());
-        sb.append(",\"duration\":");
-        sb.append(snapshot.getDuration());
-        sb.append(",\"active\":");
+        sb.append("\",\"active\":");
         sb.append(active);
         sb.append(",\"stuck\":");
         sb.append(snapshot.isStuck());
-        sb.append(",\"completed\":");
-        sb.append(snapshot.isCompleted());
+        sb.append(",\"startTime\":");
+        sb.append(snapshot.getStartTime());
+        sb.append(",\"captureTime\":");
+        sb.append(snapshot.getCaptureTime());
+        sb.append(",\"duration\":");
+        sb.append(snapshot.getDuration());
         sb.append(",\"background\":");
         sb.append(snapshot.isBackground());
         sb.append(",\"grouping\":\"");

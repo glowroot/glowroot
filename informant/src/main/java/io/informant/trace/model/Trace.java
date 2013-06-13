@@ -64,7 +64,7 @@ public class Trace {
 
     // timing data is tracked in nano seconds which cannot be converted into dates
     // (see javadoc for System.nanoTime()), so the start time is also tracked here
-    private final long start;
+    private final long startTime;
 
     private final AtomicBoolean stuck = new AtomicBoolean();
 
@@ -118,13 +118,14 @@ public class Trace {
     private final WeavingMetricNameImpl weavingMetricName;
     private final Metric weavingMetric;
 
-    public Trace(long start, boolean background, String grouping, MessageSupplier messageSupplier,
-            MetricNameImpl metricName, WeavingMetricNameImpl weavingMetricName, Ticker ticker) {
-        this.start = start;
+    public Trace(long startTime, boolean background, String grouping,
+            MessageSupplier messageSupplier, MetricNameImpl metricName,
+            WeavingMetricNameImpl weavingMetricName, Ticker ticker) {
+        this.startTime = startTime;
         this.background = background;
         this.grouping = grouping;
         this.ticker = ticker;
-        id = new TraceUniqueId(start);
+        id = new TraceUniqueId(startTime);
         long startTick = ticker.read();
         Metric metric = metricName.create();
         metric.start(startTick);
@@ -143,8 +144,8 @@ public class Trace {
         jvmInfo = new JvmInfo();
     }
 
-    public long getStart() {
-        return start;
+    public long getStartTime() {
+        return startTime;
     }
 
     public String getId() {
@@ -418,7 +419,7 @@ public class Trace {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("startDate", start)
+                .add("startDate", startTime)
                 .add("stuck", stuck)
                 .add("background", background)
                 .add("attributes", attributes)

@@ -35,13 +35,13 @@ import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
 import io.informant.markers.Singleton;
-import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
@@ -64,24 +64,24 @@ class TracePointJsonService {
 
     private final SnapshotDao snapshotDao;
     private final TraceRegistry traceRegistry;
-    private final SnapshotTraceSink traceSink;
+    private final TraceCollectorImpl traceCollector;
     private final Ticker ticker;
     private final Clock clock;
 
     TracePointJsonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry,
-            SnapshotTraceSink traceSink, Ticker ticker, Clock clock) {
+            TraceCollectorImpl traceCollector, Ticker ticker, Clock clock) {
         this.snapshotDao = snapshotDao;
         this.traceRegistry = traceRegistry;
-        this.traceSink = traceSink;
+        this.traceCollector = traceCollector;
         this.ticker = ticker;
         this.clock = clock;
     }
 
     @JsonServiceMethod
-    String getPoints(String message) throws IOException {
-        logger.debug("getPoints(): message={}", message);
+    String getPoints(String content) throws IOException {
+        logger.debug("getPoints(): content={}", content);
         TracePointRequest request =
-                ObjectMappers.readRequiredValue(mapper, message, TracePointRequest.class);
+                ObjectMappers.readRequiredValue(mapper, content, TracePointRequest.class);
         return new Handler(request).handle();
     }
 
@@ -119,7 +119,7 @@ class TracePointJsonService {
             }
             boolean captureActiveTraces = shouldCaptureActiveTraces();
             List<Trace> activeTraces = Lists.newArrayList();
-            long capturedAt = 0;
+            long captureTime = 0;
             long captureTick = 0;
             if (captureActiveTraces) {
                 // capture active traces first to make sure that none are missed in the transition
@@ -127,7 +127,7 @@ class TracePointJsonService {
                 activeTraces = getMatchingActiveTraces();
                 // take capture timings after the capture to make sure there are no traces captured
                 // that start after the recorded capture time (resulting in negative duration)
-                capturedAt = clock.currentTimeMillis();
+                captureTime = clock.currentTimeMillis();
                 captureTick = ticker.read();
             }
             if (request.getTo() == 0) {
@@ -141,7 +141,7 @@ class TracePointJsonService {
                 // always include all active traces
                 points = points.subList(0, request.getLimit() - activeTraces.size());
             }
-            return writeResponse(points, activeTraces, capturedAt, captureTick, limitExceeded);
+            return writeResponse(points, activeTraces, captureTime, captureTick, limitExceeded);
         }
 
         private boolean shouldCaptureActiveTraces() {
@@ -159,7 +159,7 @@ class TracePointJsonService {
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
-            List<TracePoint> points = snapshotDao.readPoints(request.getFrom(),
+            List<TracePoint> points = snapshotDao.readNonStuckPoints(request.getFrom(),
                     request.getTo(), low, high, request.isBackground(), request.isErrorOnly(),
                     request.isFineOnly(), groupingComparator, request.getGrouping(),
                     userIdComparator, request.getUserId(), request.getLimit() + 1);
@@ -174,7 +174,7 @@ class TracePointJsonService {
         private List<Trace> getMatchingActiveTraces() {
             List<Trace> activeTraces = Lists.newArrayList();
             for (Trace trace : traceRegistry.getTraces()) {
-                if (traceSink.shouldStore(trace)
+                if (traceCollector.shouldStore(trace)
                         && matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
@@ -199,7 +199,7 @@ class TracePointJsonService {
 
         private List<TracePoint> getMatchingPendingPoints() {
             List<TracePoint> points = Lists.newArrayList();
-            for (Trace trace : traceSink.getPendingCompleteTraces()) {
+            for (Trace trace : traceCollector.getPendingCompleteTraces()) {
                 if (matchesDuration(trace)
                         && matchesErrorOnly(trace)
                         && matchesFineOnly(trace)
@@ -207,7 +207,7 @@ class TracePointJsonService {
                         && matchesUserId(trace)
                         && matchesBackground(trace)) {
                     points.add(TracePoint.from(trace.getId(), clock.currentTimeMillis(),
-                            trace.getDuration(), true, trace.isError()));
+                            trace.getDuration(), trace.isError()));
                 }
             }
             return points;
@@ -303,19 +303,15 @@ class TracePointJsonService {
             }
         }
 
-        private void removeDuplicatesBetweenActiveTracesAndPoints(List<Trace> activeTraces,
-                List<TracePoint> points) {
+        private void removeDuplicatesBetweenActiveTracesAndPoints(
+                List<Trace> activeTraces, List<TracePoint> points) {
             for (Iterator<Trace> i = activeTraces.iterator(); i.hasNext();) {
                 Trace activeTrace = i.next();
                 for (Iterator<TracePoint> j = points.iterator(); j.hasNext();) {
                     TracePoint point = j.next();
                     if (activeTrace.getId().equals(point.getId())) {
-                        // prefer stored trace if it is completed, otherwise prefer active trace
-                        if (point.isCompleted()) {
-                            i.remove();
-                        } else {
-                            j.remove();
-                        }
+                        // prefer completed trace
+                        i.remove();
                         // there can be at most one duplicate per id, so ok to break to outer
                         break;
                     }
@@ -324,7 +320,7 @@ class TracePointJsonService {
         }
 
         private String writeResponse(@ReadOnly List<TracePoint> points,
-                @ReadOnly List<Trace> activeTraces, long capturedAt, long captureTick,
+                @ReadOnly List<Trace> activeTraces, long captureTime, long captureTick,
                 boolean limitExceeded) throws IOException {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -333,7 +329,7 @@ class TracePointJsonService {
             for (TracePoint point : points) {
                 if (!point.isError()) {
                     jg.writeStartArray();
-                    jg.writeNumber(point.getCapturedAt());
+                    jg.writeNumber(point.getCaptureTime());
                     jg.writeNumber(point.getDuration() / 1000000000.0);
                     jg.writeString(point.getId());
                     jg.writeEndArray();
@@ -344,7 +340,7 @@ class TracePointJsonService {
             for (TracePoint point : points) {
                 if (point.isError()) {
                     jg.writeStartArray();
-                    jg.writeNumber(point.getCapturedAt());
+                    jg.writeNumber(point.getCaptureTime());
                     jg.writeNumber(point.getDuration() / 1000000000.0);
                     jg.writeString(point.getId());
                     jg.writeEndArray();
@@ -354,7 +350,7 @@ class TracePointJsonService {
             jg.writeArrayFieldStart("activePoints");
             for (Trace activeTrace : activeTraces) {
                 jg.writeStartArray();
-                jg.writeNumber(capturedAt);
+                jg.writeNumber(captureTime);
                 jg.writeNumber((captureTick - activeTrace.getStartTick()) / 1000000000.0);
                 jg.writeString(activeTrace.getId());
                 jg.writeEndArray();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2012-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@
 // flot default point color, just for documenting where @tracePointNormal is derived from
 @flotDefaultColor: #edc240;
 @tracePointNormal: darken(@flotDefaultColor, 10);
+@tracePointActive: lighten(@informantBlue, 20);
+@tracePointError: @informantRed;
 
 @informantLightRedBackground: #f2dede;
 
@@ -59,6 +61,14 @@
 
 .qtip-border-color-0 {
   border-color: @tracePointNormal;
+}
+
+.qtip-border-color-1 {
+  border-color: @tracePointError;
+}
+
+.qtip-border-color-2 {
+  border-color: @tracePointActive;
 }
 
 .modal {
@@ -100,7 +110,10 @@
   .border-radius(6px);
 }
 
-.tooltip-label {
-  display: inline-block;
-  width: 5em;
+.input-medium0 {
+  width: 135px;
+}
+
+.input-xlarge0 {
+  width: 270px;
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.io.CharStreams;
 
-import io.informant.snapshot.Snapshot;
+import io.informant.collector.Snapshot;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -34,10 +34,10 @@ class SnapshotTestData {
     Snapshot createSnapshot() {
         return Snapshot.builder()
                 .id("abc" + counter.getAndIncrement())
-                .start(System.currentTimeMillis() - 10)
                 .stuck(false)
+                .startTime(0)
+                .captureTime(0)
                 .duration(MILLISECONDS.toNanos(10))
-                .completed(true)
                 .background(false)
                 .grouping("test grouping")
                 .userId("j")

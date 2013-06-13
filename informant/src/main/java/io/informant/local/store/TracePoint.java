@@ -26,22 +26,18 @@ import com.google.common.base.Objects;
 public class TracePoint {
 
     private final String id;
-    private final long capturedAt;
+    private final long captureTime;
     private final double duration; // nanoseconds
-    private final boolean completed;
     private final boolean error;
 
-    public static TracePoint from(String id, long capturedAt, double duration, boolean completed,
-            boolean error) {
-        return new TracePoint(id, capturedAt, duration, completed, error);
+    public static TracePoint from(String id, long captureTime, double duration, boolean error) {
+        return new TracePoint(id, captureTime, duration, error);
     }
 
-    private TracePoint(String id, long capturedAt, double duration, boolean completed,
-            boolean error) {
+    private TracePoint(String id, long captureTime, double duration, boolean error) {
         this.id = id;
-        this.capturedAt = capturedAt;
+        this.captureTime = captureTime;
         this.duration = duration;
-        this.completed = completed;
         this.error = error;
     }
 
@@ -49,16 +45,12 @@ public class TracePoint {
         return id;
     }
 
-    public long getCapturedAt() {
-        return capturedAt;
+    public long getCaptureTime() {
+        return captureTime;
     }
 
     public double getDuration() {
         return duration;
-    }
-
-    public boolean isCompleted() {
-        return completed;
     }
 
     public boolean isError() {
@@ -69,9 +61,8 @@ public class TracePoint {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("capturedAt", capturedAt)
+                .add("captureTime", captureTime)
                 .add("duration", duration)
-                .add("completed", completed)
                 .add("error", error)
                 .toString();
     }

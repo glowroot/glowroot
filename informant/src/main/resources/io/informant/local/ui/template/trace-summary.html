@@ -20,7 +20,7 @@ limitations under the License.
 <strong>ACTIVE {{#if stuck}}/ STUCK{{/if}}</strong><br>
 {{^}}
 {{#if stuck}}
-<strong>{{#if completed}}UN{{/if}}STUCK</strong><br>
+<strong>STUCK</strong><br>
 {{/if}}
 {{/if}}
 {{#if background}}
@@ -34,7 +34,7 @@ limitations under the License.
   </button>
   {{/if}}
 </div>
-start: {{date start}}
+start: {{date startTime}}
 <br>
 duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 <br>

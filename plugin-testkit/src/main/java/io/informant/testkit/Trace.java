@@ -34,14 +34,11 @@ public class Trace {
 
     @Nullable
     private String id;
-    private long start;
-    private long duration;
-    // active is slightly different from !completed because a trace is stored at the stuck threshold
-    // and the jvm may terminate before that trace completes, in which case the trace is
-    // neither active nor completed
     private boolean active;
     private boolean stuck;
-    private boolean completed;
+    private long startTime;
+    private long captureTime;
+    private long duration;
     private boolean background;
     @Nullable
     private String grouping;
@@ -63,14 +60,6 @@ public class Trace {
         return id;
     }
 
-    public long getStart() {
-        return start;
-    }
-
-    public long getDuration() {
-        return duration;
-    }
-
     public boolean isActive() {
         return active;
     }
@@ -79,8 +68,16 @@ public class Trace {
         return stuck;
     }
 
-    public boolean isCompleted() {
-        return completed;
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getCaptureTime() {
+        return captureTime;
+    }
+
+    public long getDuration() {
+        return duration;
     }
 
     public boolean isBackground() {
@@ -142,11 +139,11 @@ public class Trace {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("start", start)
-                .add("duration", duration)
                 .add("active", active)
                 .add("stuck", stuck)
-                .add("completed", completed)
+                .add("startTime", startTime)
+                .add("captureTime", captureTime)
+                .add("duration", duration)
                 .add("background", background)
                 .add("grouping", grouping)
                 .add("attributes", attributes)

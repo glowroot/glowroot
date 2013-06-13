@@ -45,7 +45,7 @@ public class TraceModule {
     private final Clock clock;
 
     private final ConfigModule configModule;
-    private final TraceSink traceSink;
+    private final TraceCollector traceCollector;
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
@@ -60,19 +60,20 @@ public class TraceModule {
             CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
                 @Override
                 public PluginServices load(String pluginId) {
-                    return new PluginServicesImpl(traceRegistry, traceSink,
+                    return new PluginServicesImpl(traceRegistry, traceCollector,
                             configModule.getConfigService(), metricCache, fineProfileScheduler,
                             ticker, clock, weavingMetricName,
                             configModule.getPluginDescriptorCache(), pluginId);
                 }
             });
 
-    public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule, TraceSink traceSink,
-            ScheduledExecutorService scheduledExecutor) throws Exception {
+    public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule,
+            TraceCollector traceCollector, ScheduledExecutorService scheduledExecutor)
+            throws Exception {
         this.ticker = ticker;
         this.clock = clock;
         this.configModule = configModule;
-        this.traceSink = traceSink;
+        this.traceCollector = traceCollector;
         ConfigService configService = configModule.getConfigService();
         parsedTypeCache = new ParsedTypeCache();
         weavingMetricName = new WeavingMetricNameImpl(ticker);
@@ -82,7 +83,8 @@ public class TraceModule {
                 configService.getPointcutConfigs());
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
                 new Random());
-        stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry, traceSink,
+        stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry,
+                traceCollector,
                 configService, ticker);
         coarseProfiler = new CoarseProfiler(scheduledExecutor, traceRegistry, configService,
                 ticker);

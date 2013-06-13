@@ -13,17 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.trace;
-
-import io.informant.trace.model.Trace;
+package io.informant.local.store;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface TraceSink {
+public class AggregatePoint {
 
-    void onCompletedTrace(Trace trace);
+    private final long captureTime;
+    private final long durationTotal;
+    private final long traceCount;
 
-    void onStuckTrace(Trace trace);
+    AggregatePoint(long captureTime, long durationTotal, long traceCount) {
+        this.captureTime = captureTime;
+        this.durationTotal = durationTotal;
+        this.traceCount = traceCount;
+    }
+
+    public long getCaptureTime() {
+        return captureTime;
+    }
+
+    public long getDurationTotal() {
+        return durationTotal;
+    }
+
+    public long getTraceCount() {
+        return traceCount;
+    }
 }

@@ -125,7 +125,7 @@ class JavaagentTraceService implements TraceService {
 
     @Nullable
     private Trace getLastTrace(boolean summary) throws Exception {
-        String content = httpClient.get("/explorer/points?from=0&to=" + Long.MAX_VALUE
+        String content = httpClient.get("/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
@@ -135,10 +135,10 @@ class JavaagentTraceService implements TraceService {
         if (points.isEmpty()) {
             return null;
         }
-        RawPoint mostRecentCapturedPoint = RawPoint.orderingByCapturedAt.max(points);
+        RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
         if (summary) {
             String traceContent =
-                    httpClient.get("/explorer/summary/" + mostRecentCapturedPoint.getId());
+                    httpClient.get("/trace/summary/" + mostRecentCapturedPoint.getId());
             Trace trace =
                     ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
             trace.setSummary(true);
@@ -152,7 +152,7 @@ class JavaagentTraceService implements TraceService {
 
     @Nullable
     private Trace getActiveTrace(boolean summary) throws Exception {
-        String content = httpClient.get("/explorer/points?from=0&to=" + Long.MAX_VALUE
+        String content = httpClient.get("/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
@@ -163,7 +163,7 @@ class JavaagentTraceService implements TraceService {
         } else {
             RawPoint point = response.getActivePoints().get(0);
             if (summary) {
-                String traceContent = httpClient.get("/explorer/summary/" + point.getId());
+                String traceContent = httpClient.get("/trace/summary/" + point.getId());
                 Trace trace = ObjectMappers.readRequiredValue(mapper, traceContent,
                         Trace.class);
                 trace.setSummary(true);

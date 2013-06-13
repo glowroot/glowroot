@@ -30,16 +30,16 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.informant.InformantModule;
+import io.informant.collector.Snapshot;
+import io.informant.collector.SnapshotCreator;
+import io.informant.collector.SnapshotWriter;
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.container.common.ObjectMappers;
 import io.informant.container.trace.Trace;
 import io.informant.container.trace.TraceService;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.ui.TraceExportHttpService;
 import io.informant.markers.ThreadSafe;
-import io.informant.snapshot.Snapshot;
-import io.informant.snapshot.SnapshotCreator;
-import io.informant.snapshot.SnapshotTraceSink;
-import io.informant.snapshot.SnapshotWriter;
 import io.informant.trace.TraceRegistry;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,14 +58,14 @@ class LocalTraceService implements TraceService {
 
     private final SnapshotDao snapshotDao;
     private final TraceExportHttpService traceExportHttpService;
-    private final SnapshotTraceSink traceSink;
+    private final TraceCollectorImpl traceCollector;
     private final TraceRegistry traceRegistry;
     private final Ticker ticker;
 
     LocalTraceService(InformantModule informantModule) {
         snapshotDao = informantModule.getStorageModule().getSnapshotDao();
         traceExportHttpService = informantModule.getUiModule().getTraceExportHttpService();
-        traceSink = informantModule.getSnapshotModule().getSnapshotTraceSink();
+        traceCollector = informantModule.getCollectorModule().getTraceCollector();
         traceRegistry = informantModule.getTraceModule().getTraceRegistry();
         // can't use ticker from Informant since it is shaded when run in mvn and unshaded in ide
         ticker = Ticker.systemTicker();
@@ -96,7 +96,7 @@ class LocalTraceService implements TraceService {
     }
 
     public int getNumPendingCompleteTraces() {
-        return traceSink.getPendingCompleteTraces().size();
+        return traceCollector.getPendingCompleteTraces().size();
     }
 
     public long getNumStoredSnapshots() {
@@ -161,8 +161,8 @@ class LocalTraceService implements TraceService {
         } else if (traces.size() > 1) {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
-            Snapshot snapshot =
-                    SnapshotCreator.createSnapshot(traces.get(0), ticker.read(), summary);
+            Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
+                    traces.get(0).getEndTick(), ticker.read(), summary);
             Trace trace = ObjectMappers.readRequiredValue(mapper,
                     SnapshotWriter.toString(snapshot, true), Trace.class);
             trace.setSummary(summary);

@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Copyright 2012-2013 the original author or authors.
+  Copyright 2013 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>Informant | Traces</title>
+<title>Informant</title>
 <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon"/>
 {{#if devMode}}
 <link rel="stylesheet/less" type="text/css" href="less/home.less" />
@@ -46,14 +46,14 @@
 </head>
 <body class="container pin-vertical-scrollbar">
   <div class="header">
-    <!-- lack of spaces on this line is important -->
-    <span class="header-logo">Informant</span><span class="header-page-name">Traces</span>
+    <a class="header-logo" href="..">Informant</a>
     <div class="header-see-also dropdown pull-right">
       <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
       <a href="#" class="dropdown-toggle informant-red" role="button" data-toggle="dropdown">
         see also:
       </a>
       <ul class="dropdown-menu" role="menu" style="margin: 0;">
+        <li role="menuitem"><a tabindex="-1" href="search.html">search</a></li>
         <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
         <li role="menuitem"><a tabindex="-1" href="pointcuts.html">pointcuts</a></li>
       </ul>
@@ -61,27 +61,17 @@
   </div>
   <br>
   <div style="position: relative; height: 300px;">
-    <div class="explorer-chart" id="chart"></div>
-    <span class="explorer-chart button-spinner hide" id="chartSpinner"
+    <div class="chart" id="chart"></div>
+    <span class="chart button-spinner hide" id="chartSpinner"
           style="pointer-events: none;">
     </span>
   </div>
   <br>
-  <div style="float: right; margin-top: 20px;">
-    <div class="hide" id="limitExceeded">
-      <div class="alert alert-error explorer-limit-exceeded">
-        <strong>
-          Specified limit exceeded,<br>
-          only displaying the slowest<br>
-          <span id="limit"></span> matching traces
-        </strong>
-      </div>
-    </div>
-    <div class="explorer-guide">
+  <div style="float: right; margin-top: 10px;">
+    <div class="chart-help">
       <div style="margin-top: 10px;"><strong>Chart navigation</strong></div>
       <ul>
-        <li>click a data point to see<br>its summary</li>
-        <li>use the mouse scroll wheel<br>to zoom in and out</li>
+        <li>use the mouse scroll wheel to zoom in and out</li>
         <li>drag over a region to zoom in</li>
         <li>double click to zoom in</li>
         <li>
@@ -89,7 +79,6 @@
             style="margin-left: -4px; padding: 0 4px;">
             click here to zoom out
           </button>
-          <br>
           (if no scroll wheel)
         </li>
       </ul>
@@ -111,101 +100,6 @@
         </div>
       </div>
       <div class="control-group">
-        <label class="control-label">Duration</label>
-        <div class="controls">
-          <select class="input-medium0" id="durationComparator">
-            <option value="greater">Greater than</option>
-            <option value="less">Less than</option>
-            <option value="between">Between</option>
-          </select>
-          <div class="input-append" id="durationLowDiv">
-            <input type="text" class="input-mini refresh-data-on-enter-key" id="durationLow">
-            <span class="add-on">seconds</span>
-          </div>
-          <div class="input-append hide" id="durationAndDiv">and</div>
-          <div class="input-append hide" id="durationHighDiv">
-            <input type="text" class="input-mini refresh-data-on-enter-key" id="durationHigh">
-            <span class="add-on">seconds</span>
-          </div>
-        </div>
-      </div>
-      <div class="control-group">
-        <div class="controls">
-          <label class="checkbox">
-            <input type="checkbox" class="input-small" id="errorOnlyFilter" value="true">
-            <span class="help-inline">Display only errors</span>
-          </label>
-        </div>
-      </div>
-      <div class="control-group">
-        <div class="controls">
-          <label class="checkbox">
-            <input type="checkbox" class="input-small" id="fineOnlyFilter" value="true">
-            <span class="help-inline">
-              Display only traces with fine-grained profiling data
-            </span>
-          </label>
-        </div>
-      </div>
-      <div class="collapse" id="extraFilters">
-        <div class="control-group">
-          <label class="control-label" for="groupingFilter">Grouping</label>
-          <div class="controls">
-            <select class="input-medium0" id="groupingComparator">
-              <option value="begins">Begins with</option>
-              <option value="equals">Equals</option>
-              <option value="ends">Ends with</option>
-              <option value="contains">Contains</option>
-            </select>
-            <input type="text" class="input-medium refresh-data-on-enter-key"
-                   id="groupingFilter">
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="userIdFilter">User ID</label>
-          <div class="controls">
-            <select class="input-medium0" id="userIdComparator">
-              <option value="begins">Begins with</option>
-              <option value="equals">Equals</option>
-              <option value="ends">Ends with</option>
-              <option value="contains">Contains</option>
-            </select>
-            <input type="text" class="input-medium refresh-data-on-enter-key" id="userIdFilter">
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="backgroundFilter">Background</label>
-          <div class="controls">
-            <select class="input-xlarge0" id="backgroundFilter">
-              <option value="" selected="selected"></option>
-              <option value="false">Exclude background traces</option>
-              <option value="true">Include only background traces</option>
-            </select>
-          </div>
-        </div>
-        <div class="control-group">
-          <label class="control-label" for="limitFilter">Limit</label>
-          <div class="controls">
-            <select class="input-small" id="limitFilter">
-              <option value="100">100</option>
-              <option value="200">200</option>
-              <option value="500" selected="selected">500</option>
-              <option value="1000">1,000</option>
-              <option value="2000">2,000</option>
-              <option value="5000">5,000</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="control-group">
-        <div class="controls">
-          <button class="flat-btn pad1 informant-red" id="toggleExtraFiltersButton"
-                  style="margin-left: -1em;">
-            more filters
-          </button>
-        </div>
-      </div>
-      <div class="control-group">
         <div class="controls">
           <button type="button" class="btn" id="refreshButton">Refresh</button>
           <span class="button-success-message hide" id="refreshSuccessMessage">Refreshed</span>
@@ -213,6 +107,8 @@
       </div>
     </fieldset>
   </form>
+  <div id="groupAggregates" style="clear: both; padding-top: 20px">
+  </div>
   <div class="modal hide" id="modal">
     <button class="close" id="modalHide" style="position: fixed; right: 65px; top:30px;">
       &times;
@@ -220,7 +116,5 @@
     <div class="modal-content" id="modalContent"></div>
   </div>
   <span class="qtip-border-color-0 offscreen" id="offscreenNormalColor"></span>
-  <span class="qtip-border-color-1 offscreen" id="offscreenErrorColor"></span>
-  <span class="qtip-border-color-2 offscreen" id="offscreenActiveColor"></span>
 </body>
 </html>

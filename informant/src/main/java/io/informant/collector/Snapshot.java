@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.snapshot;
+package io.informant.collector;
 
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.LazyNonNull;
@@ -33,10 +33,10 @@ import org.slf4j.LoggerFactory;
 public class Snapshot {
 
     private final String id;
-    private final long start; // milliseconds since 01/01/1970, 00:00:00 GMT
-    private final long duration; // nanoseconds
     private final boolean stuck;
-    private final boolean completed;
+    private final long startTime;
+    private final long captureTime;
+    private final long duration; // nanoseconds
     private final boolean background;
     private final String grouping;
     @Nullable
@@ -62,7 +62,7 @@ public class Snapshot {
     @Nullable
     private final CharSource fineMergedStackTree; // json data
 
-    private Snapshot(String id, long start, long duration, boolean stuck, boolean completed,
+    private Snapshot(String id, boolean stuck, long startTime, long captureTime, long duration,
             boolean background, String grouping, @Nullable String attributes,
             @Nullable String userId, @Nullable String errorText, @Nullable String errorDetail,
             @Nullable String exception, @Nullable String metrics, @Nullable String jvmInfo,
@@ -70,10 +70,10 @@ public class Snapshot {
             @Immutable @Nullable CharSource coarseMergedStackTree,
             @Immutable @Nullable CharSource fineMergedStackTree) {
         this.id = id;
-        this.start = start;
-        this.duration = duration;
         this.stuck = stuck;
-        this.completed = completed;
+        this.startTime = startTime;
+        this.captureTime = captureTime;
+        this.duration = duration;
         this.background = background;
         this.grouping = grouping;
         this.attributes = attributes;
@@ -92,20 +92,20 @@ public class Snapshot {
         return id;
     }
 
-    public long getStart() {
-        return start;
-    }
-
-    public long getDuration() {
-        return duration;
-    }
-
     public boolean isStuck() {
         return stuck;
     }
 
-    public boolean isCompleted() {
-        return completed;
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getCaptureTime() {
+        return captureTime;
+    }
+
+    public long getDuration() {
+        return duration;
     }
 
     public boolean isBackground() {
@@ -173,10 +173,10 @@ public class Snapshot {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("start", start)
-                .add("duration", duration)
                 .add("stuck", stuck)
-                .add("completed", completed)
+                .add("startTime", startTime)
+                .add("captureTime", captureTime)
+                .add("duration", duration)
                 .add("background", background)
                 .add("grouping", grouping)
                 .add("attributes", attributes)
@@ -198,10 +198,10 @@ public class Snapshot {
 
         @LazyNonNull
         private String id;
-        private long start;
-        private long duration;
         private boolean stuck;
-        private boolean completed;
+        private long startTime;
+        private long captureTime;
+        private long duration;
         private boolean background;
         @LazyNonNull
         private String grouping;
@@ -236,23 +236,23 @@ public class Snapshot {
             return this;
         }
 
-        public Builder start(long start) {
-            this.start = start;
-            return this;
-        }
-
-        public Builder duration(long duration) {
-            this.duration = duration;
-            return this;
-        }
-
         public Builder stuck(boolean stuck) {
             this.stuck = stuck;
             return this;
         }
 
-        public Builder completed(boolean completed) {
-            this.completed = completed;
+        public Builder startTime(long startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+
+        public Builder captureTime(long captureTime) {
+            this.captureTime = captureTime;
+            return this;
+        }
+
+        public Builder duration(long duration) {
+            this.duration = duration;
             return this;
         }
 
@@ -320,15 +320,15 @@ public class Snapshot {
         public Snapshot build() {
             if (id == null) {
                 logger.warn("setId() must be called before build()");
-                grouping = "<error: no id provided>";
+                id = "<error: no id provided>";
             }
             if (grouping == null) {
                 logger.warn("setGrouping() must be called before build()");
                 grouping = "<error: no grouping provided>";
             }
-            return new Snapshot(id, start, duration, stuck, completed, background,
-                    grouping, attributes, userId, errorText, errorDetail, exception,
-                    metrics, jvmInfo, spans, coarseMergedStackTree, fineMergedStackTree);
+            return new Snapshot(id, stuck, startTime, captureTime, duration, background, grouping,
+                    attributes, userId, errorText, errorDetail, exception, metrics, jvmInfo, spans,
+                    coarseMergedStackTree, fineMergedStackTree);
         }
     }
 }

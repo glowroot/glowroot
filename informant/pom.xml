@@ -509,12 +509,12 @@
                 <option>-dontwarn **</option>
                 <option>-keep class io.informant.* { *; }</option>
                 <option>-keep class io.informant.api.** { *; }</option>
+                <option>-keep class io.informant.collector.** { *; }</option>
                 <option>-keep class io.informant.common.** { *; }</option>
                 <option>-keep class io.informant.config.** { *; }</option>
                 <option>-keep class io.informant.local.** { *; }</option>
                 <!-- keep marker annotations so they can be used to doc tests also -->
                 <option>-keep class io.informant.markers.** { *; }</option>
-                <option>-keep class io.informant.snapshot.** { *; }</option>
                 <option>-keep class io.informant.trace.** { *; }</option>
                 <option>-keep class io.informant.weaving.** { *; }</option>
                 <!-- keep all guava classes so that plugins can use shaded-guava artifact -->

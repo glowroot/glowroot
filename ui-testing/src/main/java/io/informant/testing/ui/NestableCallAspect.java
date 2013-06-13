@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -61,9 +62,14 @@ public class NestableCallAspect {
         @OnBefore
         public static Span onBefore() {
             int count = counter.getAndIncrement();
+            String grouping;
+            if (random.nextBoolean()) {
+                grouping = "Nestable with a very long trace grouping to test wrapping"
+                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
+            } else {
+                grouping = Strings.repeat(String.valueOf((char) ('a' + random.nextInt(26))), 40);
+            }
             Span span;
-            String grouping = "Nestable with a very long trace grouping to test wrapping"
-                    + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
             if (count % 2 == 0) {
                 span = pluginServices.startTrace(grouping, getRootMessageSupplier(grouping),
                         metricName);

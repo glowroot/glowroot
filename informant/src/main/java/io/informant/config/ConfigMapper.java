@@ -49,6 +49,9 @@ class ConfigMapper {
 
     @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapper.class);
+
+    private static final String NEWLINE = System.getProperty("line.separator");
+
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -115,7 +118,8 @@ class ConfigMapper {
         jg.writeEndArray();
         jg.writeEndObject();
         jg.close();
-        return sb.toString();
+        // newline is not required, just a personal preference
+        return sb.toString() + NEWLINE;
     }
 
     private static GeneralConfig readGeneralNode(ObjectNode rootNode)

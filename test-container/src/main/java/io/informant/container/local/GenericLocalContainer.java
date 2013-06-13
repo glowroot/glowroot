@@ -84,9 +84,9 @@ public class GenericLocalContainer<T> {
         loader.setMixinTypes(adviceCache.getMixinTypes());
         loader.setAdvisors(adviceCache.getAdvisors());
         loader.addBridgeClasses(appInterface);
-        loader.addExcludePackages("io.informant.api", "io.informant.common", "io.informant.config",
-                "io.informant.local", "io.informant.snapshot", "io.informant.trace",
-                "io.informant.weaving", "io.informant.shaded");
+        loader.addExcludePackages("io.informant.api", "io.informant.collector",
+                "io.informant.common", "io.informant.config", "io.informant.local",
+                "io.informant.trace", "io.informant.weaving", "io.informant.shaded");
         loader.weavingMetric(informantModule.getTraceModule().getWeavingMetricName());
         isolatedWeavingClassLoader = loader.build();
         this.appInterface = appInterface;

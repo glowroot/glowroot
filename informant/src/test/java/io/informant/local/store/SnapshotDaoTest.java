@@ -27,11 +27,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.informant.common.Clock;
-import io.informant.snapshot.Snapshot;
+import io.informant.collector.Snapshot;
 
 import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 /**
  * @author Trask Stalnaker
@@ -55,7 +53,7 @@ public class SnapshotDaoTest {
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         rollingFile = new RollingFile(rollingDbFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());
-        snapshotDao = new SnapshotDao(dataSource, rollingFile, mock(Clock.class));
+        snapshotDao = new SnapshotDao(dataSource, rollingFile);
     }
 
     @After
@@ -72,15 +70,15 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(0, 0, 0, Long.MAX_VALUE, false,
+        List<TracePoint> points = snapshotDao.readNonStuckPoints(0, 0, 0, Long.MAX_VALUE, false,
                 false, false, null, null, null, null, 1);
         Snapshot snapshot2 = snapshotDao.readSnapshot(points.get(0).getId());
         // then
-        assertThat(snapshot2.getStart()).isEqualTo(snapshot.getStart());
-        assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
         assertThat(snapshot2.getId()).isEqualTo(snapshot.getId());
+        assertThat(snapshot2.isStuck()).isEqualTo(snapshot.isStuck());
+        assertThat(snapshot2.getStartTime()).isEqualTo(snapshot.getStartTime());
+        assertThat(snapshot2.getCaptureTime()).isEqualTo(snapshot.getCaptureTime());
         assertThat(snapshot2.getDuration()).isEqualTo(snapshot.getDuration());
-        assertThat(snapshot2.isCompleted()).isEqualTo(snapshot.isCompleted());
         assertThat(snapshot2.getGrouping()).isEqualTo("test grouping");
         assertThat(snapshot2.getUserId()).isEqualTo(snapshot.getUserId());
         // TODO verify metrics, trace and mergedStackTree
@@ -92,7 +90,7 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration(),
+        List<TracePoint> points = snapshotDao.readNonStuckPoints(0, 0, snapshot.getDuration(),
                 snapshot.getDuration(), false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).hasSize(1);
@@ -104,7 +102,7 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() + 1,
+        List<TracePoint> points = snapshotDao.readNonStuckPoints(0, 0, snapshot.getDuration() + 1,
                 snapshot.getDuration() + 2, false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).isEmpty();
@@ -116,7 +114,7 @@ public class SnapshotDaoTest {
         Snapshot snapshot = new SnapshotTestData().createSnapshot();
         snapshotDao.store(snapshot);
         // when
-        List<TracePoint> points = snapshotDao.readPoints(0, 0, snapshot.getDuration() - 2,
+        List<TracePoint> points = snapshotDao.readNonStuckPoints(0, 0, snapshot.getDuration() - 2,
                 snapshot.getDuration() - 1, false, false, false, null, null, null, null, 1);
         // then
         assertThat(points).isEmpty();
@@ -127,7 +125,7 @@ public class SnapshotDaoTest {
         // given
         snapshotDao.store(new SnapshotTestData().createSnapshot());
         // when
-        snapshotDao.deleteSnapshotsBefore(0);
+        snapshotDao.deleteSnapshotsBefore(1);
         // then
         assertThat(snapshotDao.count()).isEqualTo(0);
     }

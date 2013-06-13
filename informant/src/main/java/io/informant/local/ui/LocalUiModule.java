@@ -29,6 +29,8 @@ import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.collector.CollectorModule;
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
@@ -40,8 +42,6 @@ import io.informant.local.store.StorageModule;
 import io.informant.local.ui.HttpServerHandler.JsonServiceMapping;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
-import io.informant.snapshot.SnapshotModule;
-import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceModule;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
@@ -68,7 +68,7 @@ public class LocalUiModule {
     private final HttpServer httpServer;
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
-            StorageModule storageModule, SnapshotModule snapshotModule, TraceModule traceModule,
+            StorageModule storageModule, CollectorModule collectorModule, TraceModule traceModule,
             @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties)
             throws Exception {
 
@@ -78,17 +78,20 @@ public class LocalUiModule {
         DataSource dataSource = storageModule.getDataSource();
         RollingFile rollingFile = storageModule.getRollingFile();
         SnapshotDao snapshotDao = storageModule.getSnapshotDao();
-        SnapshotTraceSink traceSink = snapshotModule.getSnapshotTraceSink();
+        TraceCollectorImpl traceCollector = collectorModule.getTraceCollector();
         ParsedTypeCache parsedTypeCache = traceModule.getParsedTypeCache();
 
         TraceRegistry traceRegistry = traceModule.getTraceRegistry();
 
-        TraceCommonService traceCommonService = new TraceCommonService(snapshotDao, traceRegistry,
-                ticker);
+        AggregateJsonService aggregateJsonService =
+                new AggregateJsonService(storageModule.getAggregateDao(),
+                        collectorModule.getFixedAggregateIntervalSeconds());
+        TraceCommonService traceCommonService =
+                new TraceCommonService(snapshotDao, traceRegistry, clock, ticker);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(snapshotDao,
-                traceRegistry, traceSink, ticker, clock);
-        TraceSummaryJsonService traceSummaryJsonService = new TraceSummaryJsonService(
-                traceCommonService);
+                traceRegistry, traceCollector, ticker, clock);
+        TraceSummaryJsonService traceSummaryJsonService =
+                new TraceSummaryJsonService(traceCommonService);
         SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
         traceExportHttpService = new TraceExportHttpService(traceCommonService, devMode);
         // when port is 0, intentionally passing it as 0 instead of its resolved value since the
@@ -102,15 +105,15 @@ public class LocalUiModule {
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
                 configService, traceModule.getAdviceCache(), parsedTypeCache, instrumentation,
-                traceSink, dataSource, traceRegistry);
+                traceCollector, dataSource, traceRegistry);
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;
         int port = getHttpServerPort(properties);
-        httpServer = buildHttpServer(port, numWorkerThreads, tracePointJsonService,
-                traceSummaryJsonService, snapshotHttpService, traceExportHttpService,
-                configJsonService, pointcutConfigJsonService, threadDumpJsonService,
-                adminJsonService, devMode);
+        httpServer = buildHttpServer(port, numWorkerThreads, aggregateJsonService,
+                tracePointJsonService, traceSummaryJsonService, snapshotHttpService,
+                traceExportHttpService, configJsonService, pointcutConfigJsonService,
+                threadDumpJsonService, adminJsonService, devMode);
     }
 
     @OnlyUsedByTests
@@ -151,6 +154,7 @@ public class LocalUiModule {
 
     @Nullable
     private static HttpServer buildHttpServer(int port, int numWorkerThreads,
+            AggregateJsonService aggregateJsonService,
             TracePointJsonService tracePointJsonService,
             TraceSummaryJsonService traceSummaryJsonService,
             SnapshotHttpService snapshotHttpService,
@@ -164,6 +168,7 @@ public class LocalUiModule {
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
         uriMappings.put(Pattern.compile("^/$"), resourceBase + "/home.html");
+        uriMappings.put(Pattern.compile("^/search.html$"), resourceBase + "/search.html");
         uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/config.html");
         uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/pointcuts.html");
         uriMappings.put(Pattern.compile("^/threaddump.html$"), resourceBase + "/threaddump.html");
@@ -186,7 +191,7 @@ public class LocalUiModule {
                     resourceBase + "/lib/flashcanvas/flashcanvas.swf");
             // TODO after upgrading to less 1.4.0, this css file can be bundled during the less
             // process, see http://stackoverflow.com/a/16830938/295416
-            // (also see home.less and informant/pom.xml)
+            // (also see search.less and informant/pom.xml)
             uriMappings.put(Pattern.compile("^/lib/qtip/jquery.qtip.css"),
                     resourceBase + "/lib/qtip/jquery.qtip.css");
         }
@@ -195,12 +200,16 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/trace/detail/.*$"), snapshotHttpService);
 
         // the parentheses define the part of the match that is used to construct the args for
-        // calling the method in json service, e.g. /explorer/summary/abc123 below calls the method
+        // calling the method in json service, e.g. /trace/summary/abc123 below calls the method
         // getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping("^/explorer/points$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/aggregate/points$",
+                aggregateJsonService, "getPoints"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/aggregate/groupings",
+                aggregateJsonService, "getGroupings"));
+        jsonServiceMappings.add(new JsonServiceMapping("^/trace/points$",
                 tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/explorer/summary/(.+)$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/trace/summary/(.+)$",
                 traceSummaryJsonService, "getSummary"));
         jsonServiceMappings.add(new JsonServiceMapping("^/config$",
                 configJsonService, "getConfig"));

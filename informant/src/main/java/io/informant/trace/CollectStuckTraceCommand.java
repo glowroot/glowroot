@@ -36,12 +36,12 @@ class CollectStuckTraceCommand implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(CollectStuckTraceCommand.class);
 
     private final Trace trace;
-    private final TraceSink traceSink;
+    private final TraceCollector traceCollector;
     private volatile boolean tracePreviouslyCompleted;
 
-    CollectStuckTraceCommand(Trace trace, TraceSink traceSink) {
+    CollectStuckTraceCommand(Trace trace, TraceCollector traceCollector) {
         this.trace = trace;
-        this.traceSink = traceSink;
+        this.traceCollector = traceCollector;
     }
 
     public void run() {
@@ -62,7 +62,7 @@ class CollectStuckTraceCommand implements Runnable {
             // already marked as stuck
             return;
         }
-        traceSink.onStuckTrace(trace);
+        traceCollector.onStuckTrace(trace);
     }
 
     @Override

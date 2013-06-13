@@ -22,11 +22,12 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 
+import io.informant.collector.Snapshot;
+import io.informant.collector.SnapshotCreator;
+import io.informant.collector.SnapshotWriter;
+import io.informant.common.Clock;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.Singleton;
-import io.informant.snapshot.Snapshot;
-import io.informant.snapshot.SnapshotCreator;
-import io.informant.snapshot.SnapshotWriter;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
@@ -39,11 +40,14 @@ class TraceCommonService {
 
     private final SnapshotDao snapshotDao;
     private final TraceRegistry traceRegistry;
+    private final Clock clock;
     private final Ticker ticker;
 
-    TraceCommonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry, Ticker ticker) {
+    TraceCommonService(SnapshotDao snapshotDao, TraceRegistry traceRegistry, Clock clock,
+            Ticker ticker) {
         this.snapshotDao = snapshotDao;
         this.traceRegistry = traceRegistry;
+        this.clock = clock;
         this.ticker = ticker;
     }
 
@@ -55,8 +59,8 @@ class TraceCommonService {
         // after checking stored traces but before checking active traces
         for (Trace active : traceRegistry.getTraces()) {
             if (active.getId().equals(id)) {
-                Snapshot snapshot = SnapshotCreator.createSnapshot(active, ticker.read(),
-                        summary);
+                Snapshot snapshot = SnapshotCreator.createActiveSnapshot(active,
+                        clock.currentTimeMillis(), ticker.read(), summary);
                 return SnapshotWriter.toCharSource(snapshot, true);
             }
         }

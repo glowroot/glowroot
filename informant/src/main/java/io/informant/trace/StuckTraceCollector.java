@@ -24,11 +24,11 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.config.ConfigService;
 import io.informant.config.GeneralConfig;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
-import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.model.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Owns the thread (via a single threaded scheduled executor) that watches out for stuck traces.
- * When it finds a stuck trace it sends it to {@link SnapshotTraceSink#onStuckTrace(Trace)}. This
+ * When it finds a stuck trace it sends it to {@link TraceCollectorImpl#onStuckTrace(Trace)}. This
  * ensures that a trace that never ends is still captured even though normal collection occurs at
  * the end of a trace.
  * 
@@ -52,7 +52,7 @@ class StuckTraceCollector implements Runnable {
 
     private final ScheduledExecutorService scheduledExecutor;
     private final TraceRegistry traceRegistry;
-    private final TraceSink traceSink;
+    private final TraceCollector traceCollector;
     private final ConfigService configService;
     private final Ticker ticker;
 
@@ -60,10 +60,10 @@ class StuckTraceCollector implements Runnable {
     private volatile Future<?> future;
 
     StuckTraceCollector(ScheduledExecutorService scheduledExecutor, TraceRegistry traceRegistry,
-            TraceSink traceSink, ConfigService configService, Ticker ticker) {
+            TraceCollector traceCollector, ConfigService configService, Ticker ticker) {
         this.scheduledExecutor = scheduledExecutor;
         this.traceRegistry = traceRegistry;
-        this.traceSink = traceSink;
+        this.traceCollector = traceCollector;
         this.configService = configService;
         this.ticker = ticker;
     }
@@ -116,7 +116,7 @@ class StuckTraceCollector implements Runnable {
                             SECONDS.toMillis(config.getStuckThresholdSeconds()
                                     - NANOSECONDS.toMillis(trace.getDuration())));
                     CollectStuckTraceCommand command = new CollectStuckTraceCommand(trace,
-                            traceSink);
+                            traceCollector);
                     ScheduledFuture<?> scheduledFuture = scheduledExecutor.schedule(command,
                             initialDelayMillis, MILLISECONDS);
                     trace.setStuckScheduledFuture(scheduledFuture);

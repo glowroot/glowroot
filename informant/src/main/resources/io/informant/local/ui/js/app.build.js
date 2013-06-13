@@ -38,6 +38,10 @@
       exclude: ['informant']
     },
     {
+      name: 'js/search',
+      exclude: ['informant']
+    },
+    {
       name: 'js/export'
     },
     {
@@ -67,7 +71,7 @@
     'underscore': 'lib/hbs/underscore',
     'json2': 'lib/hbs/json2',
     'i18nprecompile': 'lib/hbs/i18nprecompile',
-    // home
+    // search
     'trace': 'js/common-trace',
     'bootstrap-modal': 'lib/bootstrap/js/bootstrap-modal',
     'bootstrap-datepicker': 'lib/bootstrap-datepicker/js/bootstrap-datepicker',
@@ -92,7 +96,7 @@
     'spin': {
       exports: 'Spinner'
     },
-    // home
+    // search
     'bootstrap-modal': ['jquery'],
     'bootstrap-datepicker': ['jquery'],
     'jquery.color': ['jquery'],

@@ -19,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.Strings;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -129,7 +130,11 @@ public class DynamicAdviceGenerator implements Opcodes {
                     "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
         }
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
-            mv.visitLdcInsn(pointcutConfig.getTraceGrouping());
+            if (Strings.isNullOrEmpty(pointcutConfig.getTraceGrouping())) {
+                mv.visitLdcInsn("<no grouping provided>");
+            } else {
+                mv.visitLdcInsn(pointcutConfig.getTraceGrouping());
+            }
             mv.visitMethodInsn(INVOKESTATIC,
                     "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",
                     "(Ljava/lang/String;)"

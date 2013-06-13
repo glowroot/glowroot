@@ -173,7 +173,7 @@ public class DataSource {
         if (closing) {
             // this can get called a lot inserting trace snapshots, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from TraceSinkLocal.logPendingLimitWarning())
+            // ends up generating warning messages from TraceCollectorImpl.logPendingLimitWarning())
             return 0;
         }
         synchronized (lock) {
@@ -185,6 +185,25 @@ public class DataSource {
                 preparedStatement.setObject(i + 1, args[i]);
             }
             return preparedStatement.executeUpdate();
+            // don't need to close statement since they are all cached and used under lock
+        }
+    }
+
+    int[] batchUpdate(String sql, BatchAdder batchAdder)
+            throws SQLException {
+        if (closing) {
+            // this can get called a lot inserting trace snapshots, and these can get backlogged
+            // on the lock below during jvm shutdown without pre-checking here (and backlogging
+            // ends up generating warning messages from TraceCollectorImpl.logPendingLimitWarning())
+            return new int[0];
+        }
+        synchronized (lock) {
+            if (closing) {
+                return new int[0];
+            }
+            PreparedStatement preparedStatement = prepareStatement(sql);
+            batchAdder.addBatches(preparedStatement);
+            return preparedStatement.executeBatch();
             // don't need to close statement since they are all cached and used under lock
         }
     }
@@ -291,6 +310,10 @@ public class DataSource {
             return new JdbcConnection("jdbc:h2:file:" + dbPath
                     + ";db_close_on_exit=false;compress_lob=lzf", props);
         }
+    }
+
+    interface BatchAdder {
+        void addBatches(PreparedStatement preparedStatement) throws SQLException;
     }
 
     interface RowMapper<T> {

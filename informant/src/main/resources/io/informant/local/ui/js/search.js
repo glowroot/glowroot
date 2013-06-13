@@ -67,31 +67,29 @@ define(function (require) {
 
   $(document).ready(function () {
     Informant.configureAjaxError();
-    var plot, points;
-    var fixedAggregateIntervalMillis;
+    var plot, normalPoints, errorPoints, activePoints, highlightedItemId, summaryItem;
+    var limitExceeded;
     var plotSelecting;
     // previousFrom and previousTo are needed for tracking whether scroll wheel zoom is in or out
     var previousFrom, previousTo;
+    var modalVanishPoint;
     var refreshQueryString;
+    var loadDetailId;
     var options = {
       legend: { show: false },
-      grid: {
-        hoverable: true,
-        mouseActiveRadius: 10
+      series: {
+        points: { show: true }
       },
+      grid: { hoverable: true, clickable: true },
       xaxis: { mode: 'time' },
       yaxis: { ticks: 10, zoomRange: false },
       zoom: { interactive: true, amount: 1.5 },
       colors: [
-        $('#offscreenNormalColor').css('border-top-color')
+        $('#offscreenNormalColor').css('border-top-color'),
+        $('#offscreenErrorColor').css('border-top-color'),
+        $('#offscreenActiveColor').css('border-top-color')
       ],
-      selection: { mode: 'x' },
-      series: {
-        points: {
-          radius: 10,
-          lineWidth: 0
-        }
-      }
+      selection: { mode: 'xy' }
     };
 
     var $body = $('body');
@@ -113,19 +111,11 @@ define(function (require) {
       if (plot && ($body.width() !== bodyWidth || $body.height() !== bodyHeight)) {
         bodyWidth = $body.width();
         bodyHeight = $body.height();
-        plot = $.plot($chart, [points], options);
+        plot = $.plot($chart, [normalPoints, errorPoints, activePoints], options);
       }
     });
 
     function plotResponseData(from, to) {
-      var queryString = 'from=' + from + '&to=' + to + '&limit=10';
-      $.getJSON('aggregate/groupings?' + queryString, function (response) {
-        $('#groupAggregates').html('');
-        $.each(response, function (i, grouping) {
-          var average = ((grouping.durationTotal / grouping.traceCount) / 1000000000).toFixed(2);
-          $('#groupAggregates').append('<div>' + grouping.grouping + ': ' + average + '</div>')
-        });
-      });
       // update time filter before translating range to timezone-less flot values
       updateTimeFilter(from, to);
       var fromAsDate = new Date(from);
@@ -146,14 +136,19 @@ define(function (require) {
       if (plot) {
         plot.unhighlight();
       }
-      plot = $.plot($chart, [points], options);
+      plot = $.plot($chart, [normalPoints, errorPoints, activePoints], options);
+      if (highlightedItemId) {
+        // re-highlight if possible
+        highlightPoint(highlightedItemId);
+      }
     }
 
     function hideTooltip() {
+      Informant.hideSpinner('#tooltipSpinner');
       $chart.qtip('hide');
     }
 
-    function filterPoints(points, from, to) {
+    function filterPoints(points, from, to, low, high) {
       var filteredPoints = [];
       // points are in timezone-less flot values
       from -= new Date(from).getTimezoneOffset() * 60 * 1000;
@@ -161,7 +156,7 @@ define(function (require) {
       var i;
       for (i = 0; i < points.length; i++) {
         var point = points[i];
-        if (point[0] >= from && point[0] <= to) {
+        if (point[0] >= from && point[0] <= to && point[1] >= low && point[1] <= high) {
           filteredPoints.push(point);
         }
       }
@@ -210,11 +205,46 @@ define(function (require) {
         from = date.valueOf();
         to = date.valueOf() + 24 * 60 * 60 * 1000;
       }
-      getTracePoints(from, to, true);
+      getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), true);
     }
 
-    function getTracePoints(from, to, refreshButton, delay) {
-      var fullQueryString = 'from=' + from + '&to=' + to;
+    function buildQueryString() {
+      var queryString = '';
+      var durationLow = $('#durationLow').val() * 1000;
+      if (durationLow) {
+        queryString += '&low=' + durationLow;
+      }
+      var durationHigh = $('#durationHigh').val() * 1000;
+      if (durationHigh) {
+        queryString += '&high=' + durationHigh;
+      }
+      if ($('#errorOnlyFilter').is(':checked')) {
+        queryString += '&error-only=true';
+      }
+      if ($('#fineOnlyFilter').is(':checked')) {
+        queryString += '&fine-only=true';
+      }
+      var groupingComparator = $('#groupingComparator').val();
+      var grouping = $('#groupingFilter').val();
+      if (grouping) {
+        queryString += '&grouping-comparator=' + groupingComparator;
+        queryString += '&grouping=' + grouping;
+      }
+      var userIdComparator = $('#userIdComparator').val();
+      var userId = $('#userIdFilter').val();
+      if (userId) {
+        queryString += '&user-id-comparator=' + userIdComparator;
+        queryString += '&user-id=' + userId;
+      }
+      var background = $('#backgroundFilter').val();
+      if (background) {
+        queryString += '&background=' + background;
+      }
+      return queryString;
+    }
+
+    function getTracePoints(from, to, limit, queryString, refreshButton, delay) {
+      var fullQueryString = 'from=' + from + '&to=' + to + '&limit=' + limit + queryString;
       // handle crazy user clicking on the button
       if (refreshButton && fullQueryString === refreshQueryString) {
         return;
@@ -228,12 +258,12 @@ define(function (require) {
         setTimeout(function () {
           if (refreshQueryString === fullQueryString) {
             // still the current query
-            getTracePoints(from, to, refreshButton, false);
+            getTracePoints(from, to, limit, queryString, refreshButton, false);
           }
         }, delay);
         return;
       }
-      $.getJSON('aggregate/points?' + fullQueryString, function (response) {
+      $.getJSON('trace/points?' + fullQueryString, function (response) {
         if (refreshQueryString !== fullQueryString) {
           // a different query string has been posted since this one
           // (or the refresh was 'canceled' by a zoom-in action that doesn't require data loading)
@@ -244,70 +274,192 @@ define(function (require) {
         if (refreshButton) {
           Informant.showAndFadeSuccessMessage('#refreshSuccessMessage');
         }
-        points = response.points;
-        fixedAggregateIntervalMillis = response.fixedAggregateIntervalSeconds * 1000
-        options.zoom.gridLock = fixedAggregateIntervalMillis;
-        options.selection.gridLock = fixedAggregateIntervalMillis;
+        normalPoints = response.normalPoints;
+        errorPoints = response.errorPoints;
+        activePoints = response.activePoints;
+        limitExceeded = response.limitExceeded;
+        if (response.limitExceeded) {
+          $('#limit').text(limit);
+          $('#limitExceeded').removeClass('hide');
+        } else {
+          $('#limitExceeded').addClass('hide');
+        }
         hideTooltip();
         // shift for timezone
         var i;
-        for (i = 0; i < points.length; i++) {
-          points[i][0] -= new Date(points[i][0]).getTimezoneOffset() * 60 * 1000;
+        for (i = 0; i < normalPoints.length; i++) {
+          normalPoints[i][0] -= new Date(normalPoints[i][0]).getTimezoneOffset() * 60 * 1000;
+        }
+        for (i = 0; i < errorPoints.length; i++) {
+          errorPoints[i][0] -= new Date(errorPoints[i][0]).getTimezoneOffset() * 60 * 1000;
+        }
+        for (i = 0; i < activePoints.length; i++) {
+          activePoints[i][0] -= new Date(activePoints[i][0]).getTimezoneOffset() * 60 * 1000;
         }
         plotResponseData(from, to);
       });
     }
 
+    function itemId(item) {
+      if (item.seriesIndex === 0) {
+        return normalPoints[item.dataIndex][2];
+      }
+      if (item.seriesIndex === 1) {
+        return errorPoints[item.dataIndex][2];
+      }
+      return activePoints[item.dataIndex][2];
+    }
+
+    function highlightPoint(id) {
+      var i;
+      for (i = 0; i < normalPoints.length; i++) {
+        if (normalPoints[i][2] === id) {
+          plot.highlight(0, i);
+          return;
+        }
+      }
+      for (i = 0; i < errorPoints.length; i++) {
+        if (errorPoints[i][2] === id) {
+          plot.highlight(1, i);
+          return;
+        }
+      }
+      for (i = 0; i < activePoints.length; i++) {
+        if (activePoints[i][2] === id) {
+          plot.highlight(2, i);
+          return;
+        }
+      }
+    }
+
     function showTraceDetailTooltip(item) {
       var x = item.pageX;
       var y = item.pageY;
-      var captureTime = item.datapoint[0];
-      var from = moment(captureTime - fixedAggregateIntervalMillis).format('h:mm:ss A');
-      var to = moment(captureTime).format('h:mm:ss A');
-      var traceCount = points[item.dataIndex][2];
-      var average;
-      if (traceCount == 0) {
-        average = '--';
-      } else {
-        average = item.datapoint[1].toFixed(2);
-      }
-      if (traceCount == 1) {
-        traceCount = traceCount + ' trace';
-      } else {
-        traceCount = traceCount + ' traces';
-      }
-      var text = '<span class="tooltip-label">From:</span>' + from + '<br>'
-          + '<span class="tooltip-label">To:</span>' + to + '<br>'
-          + '<span class="tooltip-label">Average:</span>' + average + ' seconds<br>'
-          + '<span class="tooltip-label"></span>(' + traceCount + ')';
-      $chart.qtip({
-        content: {
-          text: text
-        },
-        position: {
-          my: 'bottom center',
-          target: [ x, y ],
-          adjust: {
-            y: -10
-          },
-          viewport: $(window)
-        },
-        style: {
-          classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-0'
-        },
-        hide: {
-          event: false
-        },
-        show: {
-          event: false
-        },
-        events: {
-          hide: function () {
-            showingItemId = undefined;
-          }
+      var spinner = new Spinner({ lines: 10, width: 3, radius: 6, top: 2, left: 2 });
+
+      function displaySpinner() {
+        if (spinner) {
+          var html = '<div id="tooltipSpinner" style="width: 36px;'
+              + ' height: 36px;"></div>';
+          $chart.qtip({
+            content: {
+              text: html
+            },
+            position: {
+              my: 'left center',
+              target: [ x, y ],
+              viewport: $chart
+            },
+            hide: {
+              event: 'unfocus'
+            },
+            show: {
+              event: false
+            },
+            events: {
+              hide: function () {
+                summaryItem = undefined;
+              }
+            }
+          });
+          $chart.qtip('show');
+          spinner.spin($('#tooltipSpinner').get(0));
         }
+      }
+
+      // small delay so that if there is an immediate response the spinner doesn't blink
+      setTimeout(displaySpinner, 100);
+      var id = itemId(item);
+      summaryItem = item;
+      modalVanishPoint = [x, y];
+      var localSummaryItem = summaryItem;
+      $.getJSON('trace/summary/' + id, function (response) {
+        spinner.stop();
+        spinner = undefined;
+        // intentionally not using itemEquals() here to avoid edge case where user clicks on item
+        // then zooms and clicks on the same item. if the first request comes back after the second
+        // click, then itemEquals() will be true and it will pop up the correct summary, but at the
+        // incorrect location
+        if (localSummaryItem !== summaryItem) {
+          // too slow, the user has moved on to another summary already
+          return;
+        }
+        var text;
+        var summaryTrace;
+        if (response.expired) {
+          text = 'expired';
+        } else {
+          summaryTrace = response;
+          var html = Trace.renderSummary(summaryTrace);
+          var showDetailHtml = '<div style="margin-top: 0.5em;">'
+              + '<button class="flat-btn informant-red pad1" id="showDetail"'
+              + ' style="font-size: 12px;">show detail</button></div>';
+          text = '<div class="indent1">' + html + '</div>' + showDetailHtml;
+        }
+        $chart.qtip({
+          content: {
+            text: text
+          },
+          position: {
+            my: 'left center',
+            target: [ x, y ],
+            adjust: {
+              x: 5
+            },
+            viewport: $(window)
+          },
+          style: {
+            classes: 'ui-tooltip-bootstrap qtip-override qtip-border-color-' + item.seriesIndex
+          },
+          hide: {
+            event: 'unfocus'
+          },
+          show: {
+            event: false
+          },
+          events: {
+            hide: function () {
+              summaryItem = undefined;
+            }
+          }
+        });
+        $chart.qtip('show');
+        $('#showDetail').click(function () {
+          // handle crazy user clicking on the 'show detail' link
+          if (id === loadDetailId) {
+            return false;
+          }
+          loadDetailId = id;
+          summaryTrace.showExport = true;
+          var summaryHtml = '<div class="indent1">' + Trace.renderSummary(summaryTrace)
+              + '</div><br><div class="indent2"><span class="button-spinner inline-block hide"'
+              + ' id="detailSpinner" style="margin-left: 0px; margin-top: 30px;"></span></div>';
+          var $qtip = $('.qtip');
+          var initialFixedOffset = {
+            top: $qtip.offset().top - $(window).scrollTop(),
+            left: $qtip.offset().left - $(window).scrollLeft()
+          };
+          var initialWidth = $qtip.width();
+          var initialHeight = $qtip.height();
+          $chart.qtip('hide');
+          displayModal(summaryHtml, initialFixedOffset, initialWidth, initialHeight);
+          $.getJSON('trace/detail/' + id, function (response) {
+            if (loadDetailId !== id) {
+              // a different id has been posted since this one
+              return;
+            }
+            loadDetailId = undefined;
+            Informant.hideSpinner('#detailSpinner');
+            if (response.expired) {
+              $('#modalContent').html('expired');
+            } else {
+              response.showExport = true;
+              Trace.renderDetail(response, '#modalContent');
+            }
+          });
+          return false;
+        });
       });
-      $chart.qtip('show');
     }
 
     function displayModal(initialHtml, initialFixedOffset, initialWidth, initialHeight) {
@@ -402,8 +554,14 @@ define(function (require) {
       to += new Date(to).getTimezoneOffset() * 60 * 1000;
       var zoomingOut = from < previousFrom || to > previousTo;
       if (zoomingOut) {
+        // scroll zooming out, reset duration limits
+        $('#durationLow').val('');
+        $('#durationHigh').val('');
+        $('#durationComparator').val('greater').change();
+      }
+      if (limitExceeded || zoomingOut) {
         // set delay=50 to handle rapid zooming
-        getTracePoints(from, to, false, 50);
+        getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), false, 50);
       } else {
         // no need to hit server
         // cancel any refresh in action
@@ -411,7 +569,9 @@ define(function (require) {
           refreshQueryString = undefined;
           Informant.hideSpinner('#chartSpinner');
         }
-        points = filterPoints(points, from, to);
+        normalPoints = filterPoints(normalPoints, from, to, 0, Number.MAX_VALUE);
+        errorPoints = filterPoints(errorPoints, from, to, 0, Number.MAX_VALUE);
+        activePoints = filterPoints(activePoints, from, to, 0, Number.MAX_VALUE);
         plotResponseData(from, to);
       }
     });
@@ -425,27 +585,29 @@ define(function (require) {
         } else if (plotSelecting) {
           plot.clearSelection();
           cancelingPlotSelection = true;
-        } else if (showingItemId) {
-          // the tooltips have hide events that set showingItemId = undefined
-          // so showingItemId must be checked before calling hideTooltip()
+        } else if (summaryItem) {
+          // the tooltips (spinny and summary) have hide events that set summaryItem = undefined
+          // so summaryItem must be checked before calling hideTooltip()
           hideTooltip();
+        } else {
+          // hitting esc when no item
+          highlightedItemId = undefined;
+          plot.unhighlight();
         }
       }
     });
-    var showingItemId;
     $chart.bind('plothover', function (event, pos, item) {
-      if (plotSelecting && item) {
+      if (plotSelecting && item && itemId(item) !== highlightedItemId) {
         plot.unhighlight(item.series, item.datapoint);
-        return;
       }
+    });
+    $chart.bind('plotclick', function (event, pos, item) {
       if (item) {
-        var itemId = item.datapoint[0];
-        if (itemId !== showingItemId) {
-          showTraceDetailTooltip(item);
-          showingItemId = itemId;
-        }
-      } else {
-        hideTooltip();
+        highlightedItemId = itemId(item);
+        plot.unhighlight();
+        // TODO highlight with bolder or larger outline
+        plot.highlight(item.series, item.datapoint);
+        showTraceDetailTooltip(item);
       }
     });
     var cancelingPlotSelection;
@@ -475,15 +637,48 @@ define(function (require) {
       var to = Math.ceil(ranges.xaxis.to);
       from += new Date(from).getTimezoneOffset() * 60 * 1000;
       to += new Date(to).getTimezoneOffset() * 60 * 1000;
-      // cancel any refresh in action
-      if (refreshQueryString) {
-        refreshQueryString = undefined;
-        Informant.hideSpinner('#chartSpinner');
+      // round min/max to the nearest millisecond in outward direction so that they encompass the
+      // requested selection
+      var low = Math.floor(ranges.yaxis.from * 1000) / 1000;
+      var high = Math.ceil(ranges.yaxis.to * 1000) / 1000;
+      if (low === 0) {
+        $('#durationLow').val('');
+        $('#durationHigh').val(high);
+        $('#durationComparator').val('less').change();
+      } else {
+        $('#durationLow').val(low);
+        $('#durationHigh').val(high);
+        $('#durationComparator').val('between').change();
       }
-      points = filterPoints(points, from, to);
-      plotResponseData(from, to);
+      if (limitExceeded) {
+        getTracePoints(from, to, $('#limitFilter').val(), buildQueryString(), false);
+      } else {
+        // no need to hit server
+        // cancel any refresh in action
+        if (refreshQueryString) {
+          refreshQueryString = undefined;
+          Informant.hideSpinner('#chartSpinner');
+        }
+        normalPoints = filterPoints(normalPoints, from, to, low, high);
+        errorPoints = filterPoints(errorPoints, from, to, low, high);
+        activePoints = filterPoints(activePoints, from, to, low, high);
+        plotResponseData(from, to);
+      }
     });
 
+    var $toggleExtraFiltersButton = $('#toggleExtraFiltersButton');
+    $toggleExtraFiltersButton.click(function (e) {
+      var $extraFilters = $('#extraFilters');
+      if ($extraFilters.hasClass('in')) {
+        $extraFilters.collapse('hide');
+        $toggleExtraFiltersButton.html('more filters');
+      } else {
+        $extraFilters.collapse('show');
+        $toggleExtraFiltersButton.html('less filters');
+      }
+      // without preventDefault, click triggers form submission
+      e.preventDefault();
+    });
     var now = new Date();
     var today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -493,6 +688,24 @@ define(function (require) {
     var $dateFilter = $('#dateFilter');
     $dateFilter.val(moment(today).format('MM/DD/YYYY'));
     $dateFilter.datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
+    var $durationComparator = $('#durationComparator');
+    $durationComparator.change(function () {
+      if ($durationComparator.val() === 'greater') {
+        $('#durationLowDiv').removeClass('hide');
+        $('#durationAndDiv').addClass('hide');
+        $('#durationHighDiv').addClass('hide');
+        $('#durationHigh').val('');
+      } else if ($durationComparator.val() === 'less') {
+        $('#durationLowDiv').addClass('hide');
+        $('#durationLow').val('');
+        $('#durationAndDiv').addClass('hide');
+        $('#durationHighDiv').removeClass('hide');
+      } else if ($durationComparator.val() === 'between') {
+        $('#durationLowDiv').removeClass('hide');
+        $('#durationAndDiv').removeClass('hide');
+        $('#durationHighDiv').removeClass('hide');
+      }
+    });
     $('#refreshButton').click(refresh);
     $(".refresh-data-on-enter-key").keypress(function (event) {
       if (event.which === 13) {
@@ -506,6 +719,6 @@ define(function (require) {
     // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am)
     var from = Math.max(today.getTime(), now.getTime() - 105 * 60 * 1000);
     var to = from + 120 * 60 * 1000;
-    getTracePoints(from, to, false);
+    getTracePoints(from, to, 500, '', false);
   });
 });

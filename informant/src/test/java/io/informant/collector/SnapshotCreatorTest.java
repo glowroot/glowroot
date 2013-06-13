@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.snapshot;
+package io.informant.collector;
 
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -22,6 +22,7 @@ import java.util.Arrays;
 import com.google.common.io.CharSource;
 import org.junit.Test;
 
+import io.informant.collector.SnapshotCreator;
 import io.informant.trace.model.MergedStackTree;
 import io.informant.trace.model.Trace;
 

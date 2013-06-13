@@ -67,7 +67,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
 
     private final TraceRegistry traceRegistry;
-    private final TraceSink traceSink;
+    private final TraceCollector traceCollector;
     private final ConfigService configService;
     private final MetricCache metricCache;
     private final FineProfileScheduler fineProfileScheduler;
@@ -85,13 +85,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Nullable
     private volatile PluginConfig pluginConfig;
 
-    PluginServicesImpl(TraceRegistry traceRegistry, TraceSink traceSink,
+    PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
             ConfigService configService, MetricCache metricCache,
             FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
             WeavingMetricNameImpl weavingMetricName, PluginDescriptorCache pluginDescriptorCache,
             String pluginId) {
         this.traceRegistry = traceRegistry;
-        this.traceSink = traceSink;
+        this.traceCollector = traceCollector;
         this.configService = configService;
         this.metricCache = metricCache;
         this.fineProfileScheduler = fineProfileScheduler;
@@ -398,10 +398,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 cancelScheduledFuture(trace.getCoarseProfilingScheduledFuture());
                 cancelScheduledFuture(trace.getStuckScheduledFuture());
                 cancelScheduledFuture(trace.getFineProfilingScheduledFuture());
-                // send to trace sink before removing from trace registry so that trace sink
-                // can cover the gap (via TraceSink.getPendingTraces()) between removing the trace
-                // from the registry and storing it
-                traceSink.onCompletedTrace(trace);
+                // send to trace collector before removing from trace registry so that trace
+                // collector can cover the gap (via TraceCollectorImpl.getPendingCompleteTraces())
+                // between removing the trace from the registry and storing it
+                traceCollector.onCompletedTrace(trace);
                 traceRegistry.removeTrace(trace);
                 trace.clearThreadLocalMetrics();
             }

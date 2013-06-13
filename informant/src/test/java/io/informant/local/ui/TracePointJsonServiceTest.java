@@ -26,12 +26,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import org.junit.Test;
 
+import io.informant.collector.TraceCollectorImpl;
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
 import io.informant.local.store.SnapshotDao;
 import io.informant.local.store.SnapshotDao.StringComparator;
 import io.informant.local.store.TracePoint;
-import io.informant.snapshot.SnapshotTraceSink;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
@@ -59,31 +59,13 @@ public class TracePointJsonServiceTest {
     // mostly the interesting tests are when requesting to=0 so active & pending traces are included
 
     @Test
-    public void shouldReturnActivePointInPlaceOfNotCompletedStoredPoint() throws IOException {
-        // given
-        List<Trace> activeTraces = Lists.newArrayList();
-        activeTraces.add(mockActiveTrace("id1", 500));
-        List<Trace> pendingTraces = Lists.newArrayList();
-        List<TracePoint> points = Lists.newArrayList();
-        points.add(mockPoint("id1", 123, 500, false));
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
-                pendingTraces, points);
-        // when
-        String content = tracePointJsonService.getPoints("{\"from\":0,\"to\":0,\"limit\":100}");
-        // then
-        TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
-        assertThat(response.getActivePoints().size()).isEqualTo(1);
-        assertThat(response.getNormalPoints().size()).isEqualTo(0);
-    }
-
-    @Test
     public void shouldReturnCompletedStoredPointInPlaceOfActivePoint() throws IOException {
         // given
         List<Trace> activeTraces = Lists.newArrayList();
         activeTraces.add(mockActiveTrace("id1", 500));
         List<Trace> pendingTraces = Lists.newArrayList();
         List<TracePoint> points = Lists.newArrayList();
-        points.add(mockPoint("id1", 123, 500, true));
+        points.add(mockPoint("id1", 123, 500));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
         // when
@@ -112,8 +94,8 @@ public class TracePointJsonServiceTest {
         assertThat(response.getNormalPoints().size()).isEqualTo(1);
     }
 
-    // this is relevant because completed pending traces don't have firm capturedAt
-    // and non-completed pending traces don't have firm capturedAt or duration
+    // this is relevant because completed pending traces don't have firm end times
+    // and non-completed pending traces don't have firm end times or durations
     @Test
     public void shouldReturnStoredTraceInPlaceOfPendingTrace() throws IOException {
         // given
@@ -121,7 +103,7 @@ public class TracePointJsonServiceTest {
         List<Trace> pendingTraces = Lists.newArrayList();
         pendingTraces.add(mockPendingTrace("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
-        points.add(mockPoint("id1", 10001, 500, true));
+        points.add(mockPoint("id1", 10001, 500));
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points, 10000, DEFAULT_CURRENT_TICK);
         // when
@@ -130,7 +112,7 @@ public class TracePointJsonServiceTest {
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.getActivePoints().size()).isEqualTo(0);
         assertThat(response.getNormalPoints().size()).isEqualTo(1);
-        assertThat(response.getNormalPoints().get(0).getCapturedAt()).isEqualTo(10001);
+        assertThat(response.getNormalPoints().get(0).getCaptureTime()).isEqualTo(10001);
     }
 
     @Test
@@ -146,7 +128,7 @@ public class TracePointJsonServiceTest {
         }
         List<TracePoint> points = Lists.newArrayList();
         for (int i = 200; i < 300; i++) {
-            points.add(mockPoint("id" + i, 1, random.nextInt(1000), true));
+            points.add(mockPoint("id" + i, 1, random.nextInt(1000)));
         }
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTraces,
                 pendingTraces, points);
@@ -206,21 +188,21 @@ public class TracePointJsonServiceTest {
 
         SnapshotDao snapshotDao = mock(SnapshotDao.class);
         TraceRegistry traceRegistry = mock(TraceRegistry.class);
-        SnapshotTraceSink traceSink = mock(SnapshotTraceSink.class);
+        TraceCollectorImpl traceCollector = mock(TraceCollectorImpl.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(snapshotDao.readPoints(anyLong(), anyLong(), anyLong(), anyLong(), anyBoolean(),
-                anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
+        when(snapshotDao.readNonStuckPoints(anyLong(), anyLong(), anyLong(), anyLong(),
+                anyBoolean(), anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
                 any(StringComparator.class), anyString(), anyInt())).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
-        when(traceSink.shouldStore(any(Trace.class))).thenReturn(true);
-        when(traceSink.getPendingCompleteTraces()).thenReturn(pendingTraces);
+        when(traceCollector.shouldStore(any(Trace.class))).thenReturn(true);
+        when(traceCollector.getPendingCompleteTraces()).thenReturn(pendingTraces);
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);
 
-        return new TracePointJsonService(snapshotDao, traceRegistry, traceSink,
+        return new TracePointJsonService(snapshotDao, traceRegistry, traceCollector,
                 ticker, clock);
     }
 
@@ -240,9 +222,7 @@ public class TracePointJsonServiceTest {
         return trace;
     }
 
-    private TracePoint mockPoint(String id, long capturedAt, long durationMillis,
-            boolean completed) {
-        return TracePoint.from(id, capturedAt, MILLISECONDS.toNanos(durationMillis), completed,
-                false);
+    private TracePoint mockPoint(String id, long end, long durationMillis) {
+        return TracePoint.from(id, end, MILLISECONDS.toNanos(durationMillis), false);
     }
 }

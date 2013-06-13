@@ -32,13 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.api.PluginServices;
+import io.informant.collector.CollectorModule;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.local.store.StorageModule;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
-import io.informant.snapshot.SnapshotModule;
 import io.informant.trace.TraceModule;
 import io.informant.weaving.dynamic.RetransformClasses;
 
@@ -55,7 +55,7 @@ public class InformantModule {
     private final ScheduledExecutorService scheduledExecutor;
     private final ConfigModule configModule;
     private final StorageModule storageModule;
-    private final SnapshotModule snapshotModule;
+    private final CollectorModule collectorModule;
     private final TraceModule traceModule;
     private final LocalUiModule uiModule;
 
@@ -71,12 +71,13 @@ public class InformantModule {
         configModule = new ConfigModule(dataDir);
         storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
                 scheduledExecutor);
-        snapshotModule = new SnapshotModule(ticker, configModule, storageModule.getSnapshotSink(),
+        collectorModule = new CollectorModule(clock, ticker, configModule,
+                storageModule.getSnapshotRepository(), storageModule.getAggregateRepository(),
                 scheduledExecutor);
         traceModule = new TraceModule(ticker, clock, configModule,
-                snapshotModule.getSnapshotTraceSink(), scheduledExecutor);
+                collectorModule.getTraceCollector(), scheduledExecutor);
         uiModule = new LocalUiModule(ticker, clock, dataDir, configModule, storageModule,
-                snapshotModule, traceModule, instrumentation, properties);
+                collectorModule, traceModule, instrumentation, properties);
 
         ClassFileTransformer transformer = traceModule.createWeavingClassFileTransformer();
         if (instrumentation != null) {
@@ -103,8 +104,8 @@ public class InformantModule {
     }
 
     @OnlyUsedByTests
-    public SnapshotModule getSnapshotModule() {
-        return snapshotModule;
+    public CollectorModule getCollectorModule() {
+        return collectorModule;
     }
 
     @OnlyUsedByTests
@@ -119,9 +120,10 @@ public class InformantModule {
 
     @OnlyUsedByTests
     public void close() {
-        logger.debug("shutdown()");
+        logger.debug("close()");
         uiModule.close();
         traceModule.close();
+        collectorModule.close();
         storageModule.close();
         scheduledExecutor.shutdownNow();
     }

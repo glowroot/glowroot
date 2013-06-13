@@ -39,16 +39,16 @@ class TraceUniqueId {
 
     private static final long MAX_ID = (long) Math.pow(16, 6); // at most 6 bytes in hex form
 
-    private final long traceStart;
+    private final long traceStartTime;
     private final long id;
 
-    public TraceUniqueId(long traceStart) {
-        this.traceStart = traceStart;
+    public TraceUniqueId(long traceStartTime) {
+        this.traceStartTime = traceStartTime;
         id = idCounter.getAndIncrement();
     }
 
     public String get() {
-        return twelveDigitHex(traceStart) + BigInteger.valueOf(id % MAX_ID).toString(16);
+        return twelveDigitHex(traceStartTime) + BigInteger.valueOf(id % MAX_ID).toString(16);
     }
 
     private static String twelveDigitHex(long x) {
