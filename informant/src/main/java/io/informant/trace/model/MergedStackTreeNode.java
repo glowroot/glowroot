@@ -15,6 +15,7 @@
  */
 package io.informant.trace.model;
 
+import java.lang.Thread.State;
 import java.util.List;
 
 import checkers.igj.quals.ReadOnly;
@@ -41,7 +42,7 @@ public class MergedStackTreeNode {
     private List<String> metricNames;
     private int sampleCount;
     @Nullable
-    private Thread.State leafThreadState;
+    private State leafThreadState;
 
     // this is for creating a single synthetic root node above other root nodes when there are
     // multiple root nodes
@@ -91,7 +92,7 @@ public class MergedStackTreeNode {
         this.metricNames = metricNames;
     }
 
-    void setLeafThreadState(Thread.State leafThreadState) {
+    void setLeafThreadState(State leafThreadState) {
         this.leafThreadState = leafThreadState;
     }
 
@@ -122,7 +123,7 @@ public class MergedStackTreeNode {
     }
 
     @Nullable
-    public Thread.State getLeafThreadState() {
+    public State getLeafThreadState() {
         return leafThreadState;
     }
 

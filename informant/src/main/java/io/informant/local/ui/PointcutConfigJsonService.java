@@ -176,12 +176,10 @@ class PointcutConfigJsonService {
             this.methodName = methodName;
         }
 
-        @Nullable
         private String getTypeName() {
             return typeName;
         }
 
-        @Nullable
         private String getMethodName() {
             return methodName;
         }

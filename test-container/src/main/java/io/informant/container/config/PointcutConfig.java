@@ -17,13 +17,14 @@ package io.informant.container.config;
 
 import java.util.List;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 
 import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -33,15 +34,15 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class PointcutConfig {
 
-    private List<CaptureItem> captureItems;
+    private ImmutableList<CaptureItem> captureItems;
     @Nullable
     private String typeName;
     @Nullable
     private String methodName;
-    private List<String> methodArgTypeNames;
+    private ImmutableList<String> methodArgTypeNames;
     @Nullable
     private String methodReturnTypeName;
-    private List<MethodModifier> methodModifiers;
+    private ImmutableList<MethodModifier> methodModifiers;
     @Nullable
     private String metricName;
     @Nullable
@@ -55,25 +56,25 @@ public class PointcutConfig {
 
     // used to create new PointcutConfig records that haven't been sent to server yet
     public PointcutConfig() {
-        captureItems = Lists.newArrayList();
-        methodArgTypeNames = Lists.newArrayList();
-        methodModifiers = Lists.newArrayList();
+        captureItems = ImmutableList.of();
+        methodArgTypeNames = ImmutableList.of();
+        methodModifiers = ImmutableList.of();
         version = null;
     }
 
     public PointcutConfig(String version) {
-        captureItems = Lists.newArrayList();
-        methodArgTypeNames = Lists.newArrayList();
-        methodModifiers = Lists.newArrayList();
+        captureItems = ImmutableList.of();
+        methodArgTypeNames = ImmutableList.of();
+        methodModifiers = ImmutableList.of();
         this.version = version;
     }
 
-    public List<CaptureItem> getCaptureItems() {
+    public ImmutableList<CaptureItem> getCaptureItems() {
         return captureItems;
     }
 
-    public void setCaptureItems(List<CaptureItem> captureItems) {
-        this.captureItems = captureItems;
+    public void setCaptureItems(@ReadOnly List<CaptureItem> captureItems) {
+        this.captureItems = ImmutableList.copyOf(captureItems);
     }
 
     @Nullable
@@ -94,12 +95,12 @@ public class PointcutConfig {
         this.methodName = methodName;
     }
 
-    public List<String> getMethodArgTypeNames() {
+    public ImmutableList<String> getMethodArgTypeNames() {
         return methodArgTypeNames;
     }
 
-    public void setMethodArgTypeNames(List<String> methodArgTypeNames) {
-        this.methodArgTypeNames = methodArgTypeNames;
+    public void setMethodArgTypeNames(@ReadOnly List<String> methodArgTypeNames) {
+        this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
     }
 
     @Nullable
@@ -111,12 +112,12 @@ public class PointcutConfig {
         this.methodReturnTypeName = methodReturnTypeName;
     }
 
-    public List<MethodModifier> getMethodModifiers() {
+    public ImmutableList<MethodModifier> getMethodModifiers() {
         return methodModifiers;
     }
 
-    public void setMethodModifiers(List<MethodModifier> methodModifiers) {
-        this.methodModifiers = methodModifiers;
+    public void setMethodModifiers(@ReadOnly List<MethodModifier> methodModifiers) {
+        this.methodModifiers = ImmutableList.copyOf(methodModifiers);
     }
 
     @Nullable
@@ -124,7 +125,7 @@ public class PointcutConfig {
         return metricName;
     }
 
-    public void setMetricName(String metricName) {
+    public void setMetricName(@Nullable String metricName) {
         this.metricName = metricName;
     }
 

@@ -53,7 +53,7 @@ public class JdbcPluginTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create(PLUGIN_ID);
+        container = Container.create();
     }
 
     @AfterClass
@@ -95,7 +95,7 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBindParameters() throws Exception {
         // given
-        container.setPluginProperty("captureBindParameters", true);
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
@@ -110,7 +110,7 @@ public class JdbcPluginTest {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
-        container.setPluginProperty("captureBindParameters", true);
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
@@ -146,7 +146,7 @@ public class JdbcPluginTest {
     @Test
     public void testResultSetValueMetric() throws Exception {
         // given
-        container.setPluginProperty("captureResultSetGet", true);
+        container.setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -164,7 +164,7 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricDisabledSpan() throws Exception {
         // given
-        container.setPluginProperty("captureDatabaseMetaDataSpans", false);
+        container.setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", false);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
@@ -178,7 +178,7 @@ public class JdbcPluginTest {
     @Test
     public void testMetadataMetricEnabledSpan() throws Exception {
         // given
-        container.setPluginProperty("captureDatabaseMetaDataSpans", true);
+        container.setPluginProperty(PLUGIN_ID, "captureDatabaseMetaDataSpans", true);
         // when
         container.executeAppUnderTest(AccessMetaData.class);
         // then
@@ -194,7 +194,7 @@ public class JdbcPluginTest {
     @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
-        container.setPluginProperty("captureBindParameters", true);
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then

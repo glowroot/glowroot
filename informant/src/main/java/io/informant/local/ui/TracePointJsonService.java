@@ -45,7 +45,7 @@ import io.informant.markers.Singleton;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static io.informant.common.Nullness.assertNonNull;
 
 /**
  * Json service to read trace data.
@@ -187,7 +187,7 @@ class TracePointJsonService {
             Collections.sort(activeTraces,
                     Ordering.natural().onResultOf(new Function<Trace, Comparable>() {
                         public Long apply(@Nullable Trace trace) {
-                            checkNotNull(trace, "Ordering of non-null elements only");
+                            assertNonNull(trace, "Ordering of non-null elements only");
                             return trace.getStartTick();
                         }
                     }));

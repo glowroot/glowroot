@@ -123,8 +123,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public MetricName getMetricName(Class<?> adviceClass) {
         if (adviceClass == null) {
             logger.error("getMetricName(): argument 'adviceClass' must be non-null");
-            // all methods that take MetricName check for null, so ok to return null under duress
-            return null;
+            return metricCache.getUnknownMetricName();
         }
         return metricCache.getMetricName(adviceClass);
     }

@@ -17,27 +17,39 @@ package io.informant.container.trace;
 
 import java.util.Map;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
+
+import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class Message {
 
     @Nullable
-    private String text;
-    @Nullable
-    private Map<String, Object> detail;
+    private final String text;
+    private final ImmutableMap<String, Object> detail;
+
+    protected Message(@Nullable String text, @ReadOnly Map<String, Object> detail) {
+        this.text = text;
+        this.detail = ImmutableMap.copyOf(detail);
+    }
 
     @Nullable
     public String getText() {
         return text;
     }
 
-    @Nullable
-    public Map<String, Object> getDetail() {
+    public ImmutableMap<String, Object> getDetail() {
         return detail;
     }
 
@@ -47,5 +59,13 @@ public class Message {
                 .add("text", text)
                 .add("detail", detail)
                 .toString();
+    }
+
+    @JsonCreator
+    static Message readValue(
+            @JsonProperty("text") @Nullable String text,
+            @JsonProperty("detail") @Nullable Map<String, Object> detail)
+            throws JsonMappingException {
+        return new Message(text, nullToEmpty(detail));
     }
 }

@@ -80,6 +80,7 @@ public class ObjectArrays {
 public class Ordering<T> {
     public <E extends T> List<E> sortedCopy(@ReadOnly Iterable<E> iterable) @ReadOnly;
     public <E extends T> E max(@ReadOnly Iterable<E> iterable) @ReadOnly;
+    public <S extends T> Ordering<S> reverse() @ReadOnly;
 }
 
 public class Queues {
@@ -87,6 +88,7 @@ public class Queues {
 }
 
 public class Sets {
+    public static <E> HashSet<E> newHashSet(@ReadOnly Iterable<? extends E> elements);
     public static <E> SetView<E> difference(@ReadOnly Set<E> set1, @ReadOnly Set<?> set2);
 }
 

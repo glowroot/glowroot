@@ -15,6 +15,7 @@
  */
 package io.informant.container;
 
+import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class Threads {
     public static List<Thread> currentThreads() {
         List<Thread> threads = Lists.newArrayList();
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getState() != Thread.State.TERMINATED) {
+            if (thread.getState() != State.TERMINATED) {
                 threads.add(thread);
             }
         }

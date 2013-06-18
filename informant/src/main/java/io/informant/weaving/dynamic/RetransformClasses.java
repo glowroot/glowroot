@@ -25,6 +25,8 @@ import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -59,7 +61,9 @@ public class RetransformClasses {
         try {
             Method retransformClassesMethod = Instrumentation.class.getMethod(
                     "isRetransformClassesSupported");
-            return (Boolean) retransformClassesMethod.invoke(instrumentation);
+            Boolean value = (Boolean) retransformClassesMethod.invoke(instrumentation);
+            assertNonNull(value, "Instrumentation.isRetransformClassesSupported() returned null");
+            return value;
         } catch (SecurityException e) {
             logger.warn(e.getMessage(), e);
         } catch (NoSuchMethodException e) {

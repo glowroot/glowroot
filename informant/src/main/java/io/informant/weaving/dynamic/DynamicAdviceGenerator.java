@@ -31,6 +31,8 @@ import org.objectweb.asm.Type;
 import io.informant.config.PointcutConfig;
 import io.informant.config.PointcutConfig.CaptureItem;
 
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -80,7 +82,12 @@ public class DynamicAdviceGenerator implements Opcodes {
             argVisitor.visit(null, methodArgTypeName);
         }
         argVisitor.visitEnd();
-        annotationVisitor.visit("metricName", pointcutConfig.getMetricName());
+        String metricName = pointcutConfig.getMetricName();
+        if (metricName == null) {
+            annotationVisitor.visit("metricName", "<no metric name provided>");
+        } else {
+            annotationVisitor.visit("metricName", metricName);
+        }
         // all pointcut config advice is set to captureNested=false
         annotationVisitor.visit("captureNested", false);
         annotationVisitor.visitEnd();
@@ -106,8 +113,8 @@ public class DynamicAdviceGenerator implements Opcodes {
     }
 
     private void addStaticInitializer(ClassVisitor cv) {
-        MethodVisitor mv;
-        mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitCode();
         mv.visitLdcInsn("io.informant:dynamic-pointcuts");
         mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/PluginServices", "get",
@@ -121,7 +128,12 @@ public class DynamicAdviceGenerator implements Opcodes {
                 "(Ljava/lang/Class;)Lio/informant/api/MetricName;");
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "metric", "Lio/informant/api/MetricName;");
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
-            mv.visitLdcInsn(pointcutConfig.getSpanTemplate());
+            String spanTemplate = pointcutConfig.getSpanTemplate();
+            if (spanTemplate == null) {
+                mv.visitLdcInsn("<no span text provided>");
+            } else {
+                mv.visitLdcInsn(spanTemplate);
+            }
             mv.visitMethodInsn(INVOKESTATIC,
                     "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",
                     "(Ljava/lang/String;)"
@@ -131,7 +143,7 @@ public class DynamicAdviceGenerator implements Opcodes {
         }
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
             if (Strings.isNullOrEmpty(pointcutConfig.getTraceGrouping())) {
-                mv.visitLdcInsn("<no grouping provided>");
+                mv.visitLdcInsn("<no trace grouping provided>");
             } else {
                 mv.visitLdcInsn(pointcutConfig.getTraceGrouping());
             }
@@ -149,6 +161,7 @@ public class DynamicAdviceGenerator implements Opcodes {
 
     private void addIsEnabledMethod(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", "()Z", null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitAnnotation("Lio/informant/api/weaving/IsEnabled;", true)
                 .visitEnd();
         mv.visitCode();
@@ -164,6 +177,7 @@ public class DynamicAdviceGenerator implements Opcodes {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)Lio/informant/api/Span;",
                 null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitAnnotation("Lio/informant/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lio/informant/api/weaving/BindTarget;", true)
@@ -218,6 +232,7 @@ public class DynamicAdviceGenerator implements Opcodes {
     private void addOnBeforeMethodMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
                 "()Lio/informant/api/MetricTimer;", null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitAnnotation("Lio/informant/api/weaving/OnBefore;", true)
                 .visitEnd();
         mv.visitCode();
@@ -234,6 +249,7 @@ public class DynamicAdviceGenerator implements Opcodes {
     private void addOnAfterMethodMetricOnly(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
                 "(Lio/informant/api/MetricTimer;)V", null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitAnnotation("Lio/informant/api/weaving/OnAfter;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lio/informant/api/weaving/BindTraveler;", true)
@@ -251,6 +267,7 @@ public class DynamicAdviceGenerator implements Opcodes {
         if (pointcutConfig.getMethodReturnTypeName().equals("")) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lio/informant/api/OptionalReturn;Lio/informant/api/Span;)V", null, null);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
             mv.visitParameterAnnotation(0, "Lio/informant/api/weaving/BindOptionalReturn;", true)
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lio/informant/api/weaving/BindTraveler;", true)
@@ -258,11 +275,13 @@ public class DynamicAdviceGenerator implements Opcodes {
         } else if (pointcutConfig.getMethodReturnTypeName().equals("void")) {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Lio/informant/api/Span;)V", null, null);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
             mv.visitParameterAnnotation(0, "Lio/informant/api/weaving/BindTraveler;", true)
                     .visitEnd();
         } else {
             mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                     "(Ljava/lang/Object;Lio/informant/api/Span;)V", null, null);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
             mv.visitParameterAnnotation(0, "Lio/informant/api/weaving/BindReturn;", true)
                     .visitEnd();
             mv.visitParameterAnnotation(1, "Lio/informant/api/weaving/BindTraveler;", true)
@@ -309,6 +328,7 @@ public class DynamicAdviceGenerator implements Opcodes {
     private static void addOnThrowMethod(ClassVisitor cv) {
         MethodVisitor mv = cv.visitMethod(ACC_PUBLIC + ACC_STATIC, "onThrow",
                 "(Ljava/lang/Throwable;Lio/informant/api/Span;)V", null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitAnnotation("Lio/informant/api/weaving/OnThrow;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lio/informant/api/weaving/BindThrowable;", true)
@@ -325,6 +345,7 @@ public class DynamicAdviceGenerator implements Opcodes {
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
+
     }
 
     private static Class<?> defineClass(String name, byte[] bytes) throws NoSuchMethodException,
@@ -332,7 +353,9 @@ public class DynamicAdviceGenerator implements Opcodes {
         Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
                 byte[].class, int.class, int.class);
         defineClassMethod.setAccessible(true);
-        return (Class<?>) defineClassMethod.invoke(DynamicAdviceGenerator.class.getClassLoader(),
-                name, bytes, 0, bytes.length);
+        Class<?> definedClass = (Class<?>) defineClassMethod.invoke(
+                DynamicAdviceGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
+        assertNonNull(definedClass, "ClassLoader.defineClass() returned null");
+        return definedClass;
     }
 }

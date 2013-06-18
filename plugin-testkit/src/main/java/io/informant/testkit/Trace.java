@@ -15,47 +15,72 @@
  */
 package io.informant.testkit;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import io.informant.container.trace.JvmInfo;
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
+import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 @JsonIgnoreProperties({"coarseMergedStackTree", "fineMergedStackTree"})
 public class Trace {
 
+    private final String id;
+    private final boolean active;
+    private final boolean stuck;
+    private final long startTime;
+    private final long captureTime;
+    private final long duration;
+    private final boolean background;
+    private final String grouping;
+    private final ImmutableMap<String, String> attributes;
     @Nullable
-    private String id;
-    private boolean active;
-    private boolean stuck;
-    private long startTime;
-    private long captureTime;
-    private long duration;
-    private boolean background;
+    private final String userId;
     @Nullable
-    private String grouping;
-    @Nullable
-    private Map<String, String> attributes;
-    @Nullable
-    private String userId;
-    @Nullable
-    private TraceError error;
-    @Nullable
-    private List<Metric> metrics;
-    @Nullable
-    private JvmInfo jvmInfo;
-    @Nullable
-    private List<Span> spans;
+    private final TraceError error;
+    private final ImmutableList<Metric> metrics;
+    private final JvmInfo jvmInfo;
+    private final ImmutableList<Span> spans;
 
-    @Nullable
+    private Trace(String id, boolean active, boolean stuck, long startTime, long captureTime,
+            long duration, boolean background, String grouping,
+            @ReadOnly Map<String, String> attributes, @Nullable String userId,
+            @Nullable TraceError error, @ReadOnly List<Metric> metrics, JvmInfo jvmInfo,
+            @ReadOnly List<Span> spans) {
+        this.id = id;
+        this.active = active;
+        this.stuck = stuck;
+        this.startTime = startTime;
+        this.captureTime = captureTime;
+        this.duration = duration;
+        this.background = background;
+        this.grouping = grouping;
+        this.attributes = ImmutableMap.copyOf(attributes);
+        this.userId = userId;
+        this.error = error;
+        this.metrics = ImmutableList.copyOf(metrics);
+        this.jvmInfo = jvmInfo;
+        this.spans = ImmutableList.copyOf(spans);
+    }
+
     public String getId() {
         return id;
     }
@@ -84,13 +109,11 @@ public class Trace {
         return background;
     }
 
-    @Nullable
     public String getGrouping() {
         return grouping;
     }
 
-    @Nullable
-    public Map<String, String> getAttributes() {
+    public ImmutableMap<String, String> getAttributes() {
         return attributes;
     }
 
@@ -104,35 +127,39 @@ public class Trace {
         return error;
     }
 
-    @Nullable
-    public List<Metric> getMetrics() {
-        return metrics;
+    public ImmutableList<Metric> getMetrics() {
+        return getStableAndOrderedMetrics();
     }
 
-    @Nullable
-    public List<String> getMetricNames() {
-        if (metrics == null) {
-            return null;
+    @JsonIgnore
+    public ImmutableList<String> getMetricNames() {
+        ImmutableList.Builder<String> stableMetricNames = ImmutableList.builder();
+        for (Metric stableMetric : getStableAndOrderedMetrics()) {
+            stableMetricNames.add(stableMetric.getName());
         }
-        List<String> metricNames = Lists.newArrayList();
-        for (Metric metric : metrics) {
-            String name = metric.getName();
-            if (name == null) {
-                throw new IllegalStateException("Found metric with null name");
-            }
-            metricNames.add(name);
-        }
-        return metricNames;
+        return stableMetricNames.build();
     }
 
-    @Nullable
     public JvmInfo getJvmInfo() {
         return jvmInfo;
     }
 
-    @Nullable
-    public List<Span> getSpans() {
+    public ImmutableList<Span> getSpans() {
         return spans;
+    }
+
+    // the informant weaving metric is a bit unpredictable since tests are often run inside the
+    // same InformantContainer for test speed, so test order affects whether any classes are
+    // woven during the test or not
+    // it's easiest to just ignore this metric completely
+    private ImmutableList<Metric> getStableAndOrderedMetrics() {
+        List<Metric> stableMetrics = Lists.newArrayList(metrics);
+        for (Iterator<Metric> i = stableMetrics.iterator(); i.hasNext();) {
+            if ("informant weaving".equals(i.next().getName())) {
+                i.remove();
+            }
+        }
+        return ImmutableList.copyOf(Metric.orderingByTotal.reverse().sortedCopy(stableMetrics));
     }
 
     @Override
@@ -153,5 +180,37 @@ public class Trace {
                 .add("jvmInfo", jvmInfo)
                 .add("spans", spans)
                 .toString();
+    }
+
+    @JsonCreator
+    static Trace readValue(
+            @JsonProperty("id") @Nullable String id,
+            @JsonProperty("active") @Nullable Boolean active,
+            @JsonProperty("stuck") @Nullable Boolean stuck,
+            @JsonProperty("startTime") @Nullable Long startTime,
+            @JsonProperty("captureTime") @Nullable Long captureTime,
+            @JsonProperty("duration") @Nullable Long duration,
+            @JsonProperty("background") @Nullable Boolean background,
+            @JsonProperty("grouping") @Nullable String grouping,
+            @JsonProperty("attributes") @Nullable Map<String, String> attributes,
+            @JsonProperty("userId") @Nullable String userId,
+            @JsonProperty("error") @Nullable TraceError error,
+            @JsonProperty("metrics") @Nullable List<Metric> metrics,
+            @JsonProperty("jvmInfo") @Nullable JvmInfo jvmInfo,
+            @JsonProperty("spans") @Nullable List<Span> spans)
+            throws JsonMappingException {
+        checkRequiredProperty(id, "id");
+        checkRequiredProperty(active, "active");
+        checkRequiredProperty(stuck, "stuck");
+        checkRequiredProperty(startTime, "startTime");
+        checkRequiredProperty(captureTime, "captureTime");
+        checkRequiredProperty(duration, "duration");
+        checkRequiredProperty(background, "background");
+        checkRequiredProperty(grouping, "grouping");
+        checkRequiredProperty(metrics, "metrics");
+        checkRequiredProperty(jvmInfo, "jvmInfo");
+        checkRequiredProperty(spans, "spans");
+        return new Trace(id, active, stuck, startTime, captureTime, duration, background, grouping,
+                nullToEmpty(attributes), userId, error, metrics, jvmInfo, spans);
     }
 }

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import com.google.common.io.CharSource;
 import org.junit.Test;
 
-import io.informant.collector.SnapshotCreator;
 import io.informant.trace.model.MergedStackTree;
 import io.informant.trace.model.Trace;
 

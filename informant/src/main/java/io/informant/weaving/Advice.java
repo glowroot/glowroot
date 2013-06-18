@@ -26,8 +26,8 @@ import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -59,27 +59,25 @@ public class Advice {
     @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(Advice.class);
 
-    private static final ImmutableList<ParameterKind> isEnabledValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME);
-    private static final ImmutableList<ParameterKind> onBeforeValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME);
-    private static final ImmutableList<ParameterKind> onReturnValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
-                    ParameterKind.RETURN, ParameterKind.OPTIONAL_RETURN, ParameterKind.TRAVELER);
-    private static final ImmutableList<ParameterKind> onThrowValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
-                    ParameterKind.THROWABLE, ParameterKind.TRAVELER);
-    private static final ImmutableList<ParameterKind> onAfterValidParameterKinds =
-            ImmutableList.of(ParameterKind.TARGET, ParameterKind.METHOD_ARG,
-                    ParameterKind.METHOD_ARG_ARRAY, ParameterKind.METHOD_NAME,
-                    ParameterKind.TRAVELER);
+    private static final ImmutableList<Class<? extends Annotation>> isEnabledBindAnnotationTypes =
+            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+                    BindMethodName.class);
+    private static final ImmutableList<Class<? extends Annotation>> onBeforeBindAnnotationTypes =
+            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+                    BindMethodName.class);
+    private static final ImmutableList<Class<? extends Annotation>> onReturnBindAnnotationTypes =
+            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+                    BindMethodName.class, BindReturn.class, BindOptionalReturn.class,
+                    BindTraveler.class);
+    private static final ImmutableList<Class<? extends Annotation>> onThrowBindAnnotationTypes =
+            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+                    BindMethodName.class, BindThrowable.class, BindTraveler.class);
+    private static final ImmutableList<Class<? extends Annotation>> onAfterBindAnnotationTypes =
+            ImmutableList.of(BindTarget.class, BindMethodArg.class, BindMethodArgArray.class,
+                    BindMethodName.class, BindTraveler.class);
 
-    private static final ImmutableBiMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
-            new ImmutableBiMap.Builder<Class<? extends Annotation>, ParameterKind>()
+    private static final ImmutableMap<Class<? extends Annotation>, ParameterKind> parameterKindMap =
+            new ImmutableMap.Builder<Class<? extends Annotation>, ParameterKind>()
                     .put(BindTarget.class, ParameterKind.TARGET)
                     .put(BindMethodArg.class, ParameterKind.METHOD_ARG)
                     .put(BindMethodArgArray.class, ParameterKind.METHOD_ARG_ARRAY)
@@ -87,7 +85,8 @@ public class Advice {
                     .put(BindReturn.class, ParameterKind.RETURN)
                     .put(BindOptionalReturn.class, ParameterKind.OPTIONAL_RETURN)
                     .put(BindThrowable.class, ParameterKind.THROWABLE)
-                    .put(BindTraveler.class, ParameterKind.TRAVELER).build();
+                    .put(BindTraveler.class, ParameterKind.TRAVELER)
+                    .build();
 
     private final Pointcut pointcut;
     private final Type adviceType;
@@ -258,7 +257,7 @@ public class Advice {
 
     @SuppressWarnings("serial")
     public static class AdviceConstructionException extends Exception {
-        private AdviceConstructionException(String message) {
+        private AdviceConstructionException(@Nullable String message) {
             super(message);
         }
     }
@@ -297,21 +296,6 @@ public class Advice {
                 throws AdviceConstructionException {
             this.pointcut = pointcut;
             adviceType = Type.getType(adviceClass);
-            pointcutTypePattern = buildPattern(pointcut.typeName());
-            pointcutMethodPattern = buildPattern(pointcut.methodName());
-            for (java.lang.reflect.Method method : adviceClass.getMethods()) {
-                if (method.isAnnotationPresent(IsEnabled.class)) {
-                    initIsEnabledAdvice(adviceClass, method);
-                } else if (method.isAnnotationPresent(OnBefore.class)) {
-                    initOnBeforeAdvice(adviceClass, method);
-                } else if (method.isAnnotationPresent(OnReturn.class)) {
-                    initOnReturnAdvice(adviceClass, method);
-                } else if (method.isAnnotationPresent(OnThrow.class)) {
-                    initOnThrowAdvice(adviceClass, method);
-                } else if (method.isAnnotationPresent(OnAfter.class)) {
-                    initOnAfterAdvice(adviceClass, method);
-                }
-            }
             try {
                 generatedAdviceFlowClass = AdviceFlowGenerator.generate();
             } catch (SecurityException e) {
@@ -331,34 +315,22 @@ public class Advice {
                 throw new AdviceConstructionException(e.getMessage());
             }
             this.dynamic = dynamic;
-        }
 
-        @Nullable
-        private Pattern buildPattern(String maybePattern) {
-            if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
-                // full regex power
-                return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));
-            }
-            // limited regex, | and *, should be used whenever possible over full regex since
-            // . and $ are common in class names
-            if (maybePattern.contains("|")) {
-                String[] parts = maybePattern.split("\\|");
-                for (int i = 0; i < parts.length; i++) {
-                    parts[i] = buildPatternPart(parts[i]);
+            pointcutTypePattern = buildPattern(pointcut.typeName());
+            pointcutMethodPattern = buildPattern(pointcut.methodName());
+            for (java.lang.reflect.Method method : adviceClass.getMethods()) {
+                if (method.isAnnotationPresent(IsEnabled.class)) {
+                    initIsEnabledAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnBefore.class)) {
+                    initOnBeforeAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnReturn.class)) {
+                    initOnReturnAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnThrow.class)) {
+                    initOnThrowAdvice(adviceClass, method);
+                } else if (method.isAnnotationPresent(OnAfter.class)) {
+                    initOnAfterAdvice(adviceClass, method);
                 }
-                return Pattern.compile(Joiner.on('|').join(parts));
             }
-            if (maybePattern.contains("*")) {
-                return Pattern.compile(buildPatternPart(maybePattern));
-            }
-            return null;
-        }
-
-        private String buildPatternPart(String part) {
-            // convert * into .* and quote the rest of the text using \Q...\E
-            String pattern = "\\Q" + part.replace("*", "\\E.*\\Q") + "\\E";
-            // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
-            return pattern.replace("\\Q\\E", "");
         }
 
         private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
@@ -372,7 +344,7 @@ public class Advice {
             if (asmMethod.getReturnType().getSort() == Type.BOOLEAN) {
                 this.isEnabledAdvice = asmMethod;
                 this.isEnabledParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                        method.getParameterTypes(), isEnabledValidParameterKinds, IsEnabled.class);
+                        method.getParameterTypes(), isEnabledBindAnnotationTypes, IsEnabled.class);
             } else {
                 logger.warn("@IsEnabled method must return boolean");
             }
@@ -387,7 +359,7 @@ public class Advice {
             }
             onBeforeAdvice = Method.getMethod(method);
             onBeforeParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                    method.getParameterTypes(), onBeforeValidParameterKinds, OnBefore.class);
+                    method.getParameterTypes(), onBeforeBindAnnotationTypes, OnBefore.class);
             if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
                 travelerType = onBeforeAdvice.getReturnType();
             }
@@ -402,7 +374,7 @@ public class Advice {
             }
             ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
                     method.getParameterAnnotations(), method.getParameterTypes(),
-                    onReturnValidParameterKinds, OnReturn.class);
+                    onReturnBindAnnotationTypes, OnReturn.class);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.RETURN) {
                     logger.warn("@BindReturn must be the first argument to @OnReturn");
@@ -426,7 +398,7 @@ public class Advice {
             }
             ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
                     method.getParameterAnnotations(), method.getParameterTypes(),
-                    onThrowValidParameterKinds, OnThrow.class);
+                    onThrowBindAnnotationTypes, OnThrow.class);
             for (int i = 1; i < parameterKinds.size(); i++) {
                 if (parameterKinds.get(i) == ParameterKind.THROWABLE) {
                     logger.warn("@BindThrowable must be the first argument to @OnThrow");
@@ -458,7 +430,7 @@ public class Advice {
             }
             this.onAfterAdvice = asmMethod;
             this.onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),
-                    method.getParameterTypes(), onAfterValidParameterKinds, OnAfter.class);
+                    method.getParameterTypes(), onAfterBindAnnotationTypes, OnAfter.class);
         }
 
         private Advice build() {
@@ -469,62 +441,96 @@ public class Advice {
                     generatedAdviceFlowClass, dynamic);
         }
 
+        @Nullable
+        private static Pattern buildPattern(String maybePattern) {
+            if (maybePattern.startsWith("/") && maybePattern.endsWith("/")) {
+                // full regex power
+                return Pattern.compile(maybePattern.substring(1, maybePattern.length() - 1));
+            }
+            // limited regex, | and *, should be used whenever possible over full regex since
+            // . and $ are common in class names
+            if (maybePattern.contains("|")) {
+                String[] parts = maybePattern.split("\\|");
+                for (int i = 0; i < parts.length; i++) {
+                    parts[i] = buildPatternPart(parts[i]);
+                }
+                return Pattern.compile(Joiner.on('|').join(parts));
+            }
+            if (maybePattern.contains("*")) {
+                return Pattern.compile(buildPatternPart(maybePattern));
+            }
+            return null;
+        }
+
+        private static String buildPatternPart(String part) {
+            // convert * into .* and quote the rest of the text using \Q...\E
+            String pattern = "\\Q" + part.replace("*", "\\E.*\\Q") + "\\E";
+            // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
+            return pattern.replace("\\Q\\E", "");
+        }
+
         private static ImmutableList<ParameterKind> getParameterKinds(
                 Annotation[][] parameterAnnotations, Class<?>[] parameterTypes,
-                @ReadOnly List<ParameterKind> validParameterKinds,
+                @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes,
                 Class<? extends Annotation> adviceAnnotationType)
                 throws AdviceConstructionException {
 
             ImmutableList.Builder<ParameterKind> parameterKinds = ImmutableList.builder();
             for (int i = 0; i < parameterAnnotations.length; i++) {
-                ParameterKind parameterKind = findParam(parameterAnnotations[i],
-                        validParameterKinds);
-                if (parameterKind == null) {
-                    // no applicable annotations found, provide a good error message
-                    List<String> validAnnotations = Lists.newArrayList();
-                    for (ParameterKind validParameterKind : validParameterKinds) {
-                        validAnnotations.add("@" + parameterKindMap.inverse()
-                                .get(validParameterKind).getSimpleName());
+                Class<? extends Annotation> validBindAnnotationType = getValidBindAnnotationType(
+                        parameterAnnotations[i], validBindAnnotationTypes);
+                if (validBindAnnotationType == null) {
+                    // no valid bind annotations found, provide a good error message
+                    List<String> validBindAnnotationNames = Lists.newArrayList();
+                    for (Class<? extends Annotation> annotationType : validBindAnnotationTypes) {
+                        validBindAnnotationNames.add("@" + annotationType.getSimpleName());
                     }
                     throw new AdviceConstructionException("All parameters to @"
                             + adviceAnnotationType.getSimpleName() + " must be annotated with one"
-                            + " of " + Joiner.on(", ").join(validAnnotations));
+                            + " of " + Joiner.on(", ").join(validBindAnnotationNames));
                 }
-                if (parameterKind == ParameterKind.METHOD_ARG
-                        && parameterTypes[i].isPrimitive()) {
-                    // special case to track primitive method args for possible autoboxing
-                    parameterKind = ParameterKind.PRIMITIVE_METHOD_ARG;
-                }
-                if (parameterKind == ParameterKind.RETURN && parameterTypes[i].isPrimitive()) {
-                    // special case to track primitive return values for possible autoboxing
-                    parameterKind = ParameterKind.PRIMITIVE_RETURN;
-                }
-                parameterKinds.add(parameterKind);
+                parameterKinds.add(getParameterKind(validBindAnnotationType, parameterTypes[i]));
             }
             return parameterKinds.build();
         }
 
         @Nullable
-        private static ParameterKind findParam(Annotation[] parameterAnnotations,
-                @ReadOnly List<ParameterKind> validArgTypes) {
-            ParameterKind foundParameterKind = null;
+        private static Class<? extends Annotation> getValidBindAnnotationType(
+                Annotation[] parameterAnnotations,
+                @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes) {
+            Class<? extends Annotation> foundBindAnnotationType = null;
             for (Annotation annotation : parameterAnnotations) {
-                ParameterKind parameterKind = parameterKindMap.get(annotation.annotationType());
-                if (parameterKind == null) {
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+                if (!parameterKindMap.containsKey(annotationType)) {
                     continue;
                 }
-                if (foundParameterKind != null) {
+                if (foundBindAnnotationType != null) {
                     logger.warn("multiple annotations found on a single parameter");
                     break;
                 }
-                if (validArgTypes.contains(parameterKind)) {
-                    foundParameterKind = parameterKind;
+                if (validBindAnnotationTypes.contains(annotationType)) {
+                    foundBindAnnotationType = annotationType;
                 } else {
-                    logger.warn("annotation '" + annotation.annotationType().getName()
+                    logger.warn("annotation '" + annotationType.getName()
                             + "' found in an invalid location");
                 }
             }
-            return foundParameterKind;
+            return foundBindAnnotationType;
+        }
+
+        private static ParameterKind getParameterKind(
+                Class<? extends Annotation> validBindAnnotationType, Class<?> parameterType) {
+            if (validBindAnnotationType == BindMethodArg.class
+                    && parameterType.isPrimitive()) {
+                // special case to track primitive method args for possible autoboxing
+                return ParameterKind.PRIMITIVE_METHOD_ARG;
+            } else if (validBindAnnotationType == BindReturn.class
+                    && parameterType.isPrimitive()) {
+                // special case to track primitive return values for possible autoboxing
+                return ParameterKind.PRIMITIVE_RETURN;
+            } else {
+                return parameterKindMap.get(validBindAnnotationType);
+            }
         }
     }
 }

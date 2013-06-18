@@ -34,7 +34,7 @@ import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Static;
 import io.informant.markers.UsedByReflection;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static io.informant.common.Nullness.assertNonNull;
 
 /**
  * This class is registered as the Premain-Class in the MANIFEST.MF of informant.jar:
@@ -89,7 +89,7 @@ public class MainEntryPoint {
     // called via reflection from io.informant.api.PluginServices
     @UsedByReflection
     public static PluginServices getPluginServices(String pluginId) {
-        checkNotNull(informantModule, "Informant has not been started");
+        assertNonNull(informantModule, "Informant has not been started");
         return informantModule.getPluginServices(pluginId);
     }
 

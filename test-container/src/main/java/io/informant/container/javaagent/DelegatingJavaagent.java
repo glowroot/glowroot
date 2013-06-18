@@ -29,6 +29,8 @@ import com.google.common.io.Resources;
 
 import io.informant.markers.Static;
 
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -42,6 +44,8 @@ public class DelegatingJavaagent {
 
     public static void premain(String agentArgs, Instrumentation instrumentation) throws Exception {
         String delegateJavaagent = System.getProperty(DELEGATE_JAVA_AGENT_PROPERTY);
+        assertNonNull(delegateJavaagent, "System property '" + DELEGATE_JAVA_AGENT_PROPERTY
+                + "' is not set");
         Class<?> delegateClass = Class.forName(delegateJavaagent);
         Method delegateMethod = delegateClass.getMethod("premain", String.class,
                 Instrumentation.class);

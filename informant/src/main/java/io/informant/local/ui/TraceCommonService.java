@@ -61,7 +61,7 @@ class TraceCommonService {
             if (active.getId().equals(id)) {
                 Snapshot snapshot = SnapshotCreator.createActiveSnapshot(active,
                         clock.currentTimeMillis(), ticker.read(), summary);
-                return SnapshotWriter.toCharSource(snapshot, true);
+                return SnapshotWriter.toCharSource(snapshot, true, summary);
             }
         }
         Snapshot snapshot;
@@ -73,7 +73,7 @@ class TraceCommonService {
         if (snapshot == null) {
             return null;
         } else {
-            return SnapshotWriter.toCharSource(snapshot, false);
+            return SnapshotWriter.toCharSource(snapshot, false, summary);
         }
     }
 }

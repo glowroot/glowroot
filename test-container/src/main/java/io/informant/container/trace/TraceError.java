@@ -17,29 +17,43 @@ package io.informant.container.trace;
 
 import java.util.Map;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
+
+import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class TraceError {
 
     @Nullable
-    private String text;
+    private final String text;
+    private final ImmutableMap<String, Object> detail;
     @Nullable
-    private Map<String, Object> detail;
-    @Nullable
-    private ExceptionInfo exception;
+    private final ExceptionInfo exception;
+
+    private TraceError(@Nullable String text, @ReadOnly Map<String, Object> detail,
+            @Nullable ExceptionInfo exception) {
+        this.text = text;
+        this.detail = ImmutableMap.copyOf(detail);
+        this.exception = exception;
+    }
 
     @Nullable
     public String getText() {
         return text;
     }
 
-    @Nullable
-    public Map<String, Object> getDetail() {
+    public ImmutableMap<String, Object> getDetail() {
         return detail;
     }
 
@@ -55,5 +69,14 @@ public class TraceError {
                 .add("detail", detail)
                 .add("exception", exception)
                 .toString();
+    }
+
+    @JsonCreator
+    static TraceError readValue(
+            @JsonProperty("text") @Nullable String text,
+            @JsonProperty("detail") @Nullable Map<String, Object> detail,
+            @JsonProperty("exception") @Nullable ExceptionInfo exception)
+            throws JsonMappingException {
+        return new TraceError(text, nullToEmpty(detail), exception);
     }
 }

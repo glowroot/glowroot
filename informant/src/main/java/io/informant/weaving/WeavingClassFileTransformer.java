@@ -19,6 +19,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.List;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
@@ -70,7 +71,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // calculation in the test class io.informant.core.weaving.preinit.GlobalCollector, and
     // hard-coded results in io.informant.core.weaving.PreInitializeClasses)
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
-    public WeavingClassFileTransformer(List<MixinType> mixinTypes,
+    public WeavingClassFileTransformer(@ReadOnly List<MixinType> mixinTypes,
             Supplier<ImmutableList<Advice>> advisors, ParsedTypeCache parsedTypeCache,
             WeavingMetric weavingMetric) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);

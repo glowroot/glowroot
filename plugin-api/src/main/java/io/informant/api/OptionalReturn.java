@@ -93,10 +93,10 @@ public abstract class OptionalReturn {
         @Override
         public boolean equals(@Nullable Object o) {
             if (o instanceof NonVoidReturn) {
-                return ((NonVoidReturn) o).getValue().equals(returnValue);
-            } else {
-                return false;
+                NonVoidReturn that = (NonVoidReturn) o;
+                return Objects.equal(returnValue, that.returnValue);
             }
+            return false;
         }
         @Override
         public int hashCode() {

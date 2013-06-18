@@ -1,0 +1,8 @@
+import checkers.nullness.quals.*;
+
+/* ========================================================================== */
+package ch.qos.logback.classic.spi;
+
+public interface ILoggingEvent {
+    public @Nullable String getMessage();
+}

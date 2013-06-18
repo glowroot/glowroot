@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -421,13 +422,13 @@ public class SnapshotCreator {
                 }
             }
             jg.writeNumberField("sampleCount", currNode.getSampleCount());
-            Thread.State leafThreadState = currNode.getLeafThreadState();
+            State leafThreadState = currNode.getLeafThreadState();
             if (leafThreadState != null) {
                 writeLeaf(leafThreadState);
             }
         }
 
-        private void writeLeaf(Thread.State leafThreadState) throws IOException {
+        private void writeLeaf(State leafThreadState) throws IOException {
             jg.writeStringField("leafThreadState", leafThreadState.name());
             jg.writeArrayFieldStart("metricNames");
             for (String metricName : metricNameStack) {

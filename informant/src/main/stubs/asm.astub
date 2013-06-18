@@ -5,6 +5,7 @@ import checkers.nullness.quals.*;
 package org.objectweb.asm;
 
 public class ClassVisitor {
+    @Nullable protected ClassVisitor cv;
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String @Nullable [] interfaces);
     public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
@@ -14,8 +15,12 @@ public class ClassVisitor {
 }
 
 public class ClassWriter {
-    public MethodVisitor visitMethod(int access, String name, String desc,
-            @Nullable String signature, String @Nullable [] exceptions);
+    public void visit(int version, int access, String name, @Nullable String signature,
+            @Nullable String superName, String @Nullable [] interfaces);
+}
+
+public class AnnotationVisitor {
+    public void visit(@Nullable String name, Object value);
 }
 
 @Immutable
@@ -39,4 +44,9 @@ public class LocalVariablesSorter {
 @Immutable
 public class Method {
     public static Method getMethod(java.lang.reflect.Method m);
+}
+
+public class JSRInlinerAdapter {
+    public JSRInlinerAdapter(@Nullable MethodVisitor mv, int access, String name, String desc,
+            @Nullable String signature, String @Nullable [] exceptions);
 }

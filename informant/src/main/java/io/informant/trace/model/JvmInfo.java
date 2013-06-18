@@ -23,7 +23,6 @@ import java.lang.management.ThreadMXBean;
 import java.util.List;
 import java.util.Set;
 
-import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.lock.quals.GuardedBy;
 import checkers.nullness.quals.Nullable;
@@ -37,11 +36,12 @@ import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
 class JvmInfo {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmInfo.class);
@@ -66,6 +66,7 @@ class JvmInfo {
         threadId = Thread.currentThread().getId();
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         ThreadInfo threadInfo = threadBean.getThreadInfo(threadId, 0);
+        assertNonNull(threadInfo, "Thread info for current thread is null");
         threadCpuTimeStart = threadBean.getCurrentThreadCpuTime();
         threadBlockedTimeStart = threadInfo.getBlockedTime();
         threadWaitedTimeStart = threadInfo.getWaitedTime();

@@ -130,10 +130,8 @@ class LocalTraceService implements TraceService {
         if (snapshot == null) {
             return null;
         }
-        Trace trace = ObjectMappers.readRequiredValue(mapper,
-                SnapshotWriter.toString(snapshot, false), Trace.class);
-        trace.setSummary(summary);
-        return trace;
+        return ObjectMappers.readRequiredValue(mapper,
+                SnapshotWriter.toString(snapshot, false, summary), Trace.class);
     }
 
     @Nullable
@@ -163,10 +161,8 @@ class LocalTraceService implements TraceService {
         } else {
             Snapshot snapshot = SnapshotCreator.createActiveSnapshot(traces.get(0),
                     traces.get(0).getEndTick(), ticker.read(), summary);
-            Trace trace = ObjectMappers.readRequiredValue(mapper,
-                    SnapshotWriter.toString(snapshot, true), Trace.class);
-            trace.setSummary(summary);
-            return trace;
+            return ObjectMappers.readRequiredValue(mapper,
+                    SnapshotWriter.toString(snapshot, true, summary), Trace.class);
         }
     }
 }

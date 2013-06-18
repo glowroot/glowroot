@@ -31,26 +31,23 @@ public class Container {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final GenericLocalContainer<AppUnderTest> container;
-    private final String pluginId;
 
     public static Container create() throws Exception {
-        return new Container(null);
+        return new Container();
     }
 
-    public static Container create(String pluginId) throws Exception {
-        return new Container(pluginId);
-    }
-
-    public Container(String pluginId) throws Exception {
+    private Container() throws Exception {
         container = new GenericLocalContainer<AppUnderTest>(null, 0, false, false,
                 AppUnderTest.class, AppUnderTestExecutor.INSTANCE);
-        this.pluginId = pluginId;
         container.getConfigService().setStoreThresholdMillis(0);
     }
 
-    public void setPluginProperty(String propertyName, @Nullable Object propertyValue)
-            throws Exception {
+    public void setPluginProperty(String pluginId, String propertyName,
+            @Nullable Object propertyValue) throws Exception {
         PluginConfig config = container.getConfigService().getPluginConfig(pluginId);
+        if (config == null) {
+            throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
+        }
         config.setProperty(propertyName, propertyValue);
         container.getConfigService().updatePluginConfig(pluginId, config);
     }

@@ -17,24 +17,42 @@ package io.informant.container.trace;
 
 import java.util.List;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
+import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class MergedStackTreeNode {
 
     @Nullable
-    private String stackTraceElement;
+    private final String stackTraceElement;
+    private final ImmutableList<MergedStackTreeNode> childNodes;
+    private final ImmutableList<String> metricNames;
+    private final int sampleCount;
     @Nullable
-    private List<MergedStackTreeNode> childNodes;
-    @Nullable
-    private List<String> metricNames;
-    private int sampleCount;
-    @Nullable
-    private String leafThreadState;
+    private final String leafThreadState;
+
+    public MergedStackTreeNode(@Nullable String stackTraceElement,
+            @ReadOnly List<MergedStackTreeNode> childNodes, @ReadOnly List<String> metricNames,
+            int sampleCount, @Nullable String leafThreadState) {
+        this.stackTraceElement = stackTraceElement;
+        this.childNodes = ImmutableList.copyOf(childNodes);
+        this.metricNames = ImmutableList.copyOf(metricNames);
+        this.sampleCount = sampleCount;
+        this.leafThreadState = leafThreadState;
+    }
 
     // null for synthetic root only
     @Nullable
@@ -42,13 +60,11 @@ public class MergedStackTreeNode {
         return stackTraceElement;
     }
 
-    @Nullable
-    public List<MergedStackTreeNode> getChildNodes() {
+    public ImmutableList<MergedStackTreeNode> getChildNodes() {
         return childNodes;
     }
 
-    @Nullable
-    public List<String> getMetricNames() {
+    public ImmutableList<String> getMetricNames() {
         return metricNames;
     }
 
@@ -70,5 +86,18 @@ public class MergedStackTreeNode {
                 .add("sampleCount", sampleCount)
                 .add("leafThreadState", leafThreadState)
                 .toString();
+    }
+
+    @JsonCreator
+    static MergedStackTreeNode readValue(
+            @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
+            @JsonProperty("childNodes") @Nullable List<MergedStackTreeNode> childNodes,
+            @JsonProperty("metricNames") @Nullable List<String> metricNames,
+            @JsonProperty("sampleCount") @Nullable Integer sampleCount,
+            @JsonProperty("leafThreadState") @Nullable String leafThreadState)
+            throws JsonMappingException {
+        checkRequiredProperty(sampleCount, "sampleCount");
+        return new MergedStackTreeNode(stackTraceElement, nullToEmpty(childNodes),
+                nullToEmpty(metricNames), sampleCount, leafThreadState);
     }
 }

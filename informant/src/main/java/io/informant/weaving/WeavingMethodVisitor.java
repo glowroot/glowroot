@@ -45,7 +45,7 @@ import io.informant.markers.UsedByGeneratedBytecode;
 import io.informant.weaving.Advice.ParameterKind;
 import io.informant.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static io.informant.common.Nullness.assertNonNull;
 
 /**
  * @author Trask Stalnaker
@@ -121,7 +121,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
-        checkNotNull(methodStartLabel, "Call to onMethodEnter() is required");
+        assertNonNull(methodStartLabel, "Call to onMethodEnter() is required");
         // the JSRInlinerAdapter writes the local variable "this" across different label ranges
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
@@ -180,7 +180,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
         if (needsTryCatch) {
-            checkNotNull(catchStartLabel, "Call to onMethodEnter() is required");
+            assertNonNull(catchStartLabel, "Call to onMethodEnter() is required");
             Label catchEndLabel = newLabel();
             Label catchHandlerLabel2 = newLabel();
             visitTryCatchBlock(catchStartLabel, catchEndLabel, catchEndLabel,

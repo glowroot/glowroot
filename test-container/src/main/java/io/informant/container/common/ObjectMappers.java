@@ -16,7 +16,9 @@
 package io.informant.container.common;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.AssertNonNullAfter;
@@ -35,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +85,28 @@ public class ObjectMappers {
         if (reference == null) {
             throw new JsonMappingException("Null value not allowed for field: " + fieldName);
         }
+    }
+
+    @ReadOnly
+    public static <T> List<T> nullToEmpty(@ReadOnly @Nullable List<T> list) {
+        if (list == null) {
+            return ImmutableList.of();
+        } else {
+            return list;
+        }
+    }
+
+    @ReadOnly
+    public static <K, V> Map<K, V> nullToEmpty(@ReadOnly @Nullable Map<K, V> map) {
+        if (map == null) {
+            return ImmutableMap.of();
+        } else {
+            return map;
+        }
+    }
+
+    public static boolean nullToFalse(@Nullable Boolean value) {
+        return value == null ? false : value;
     }
 
     @SuppressWarnings("serial")

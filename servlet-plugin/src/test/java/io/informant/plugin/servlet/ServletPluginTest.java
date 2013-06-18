@@ -61,7 +61,7 @@ public class ServletPluginTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create(PLUGIN_ID);
+        container = Container.create();
     }
 
     @AfterClass
@@ -113,7 +113,7 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameters() throws Exception {
         // given
-        container.setPluginProperty("captureRequestParameters", true);
+        container.setPluginProperty(PLUGIN_ID, "captureRequestParameters", true);
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
@@ -135,7 +135,7 @@ public class ServletPluginTest {
         Trace trace = container.getLastTrace();
         assertThat(trace.getSpans()).hasSize(1);
         Span span = trace.getSpans().get(0);
-        assertThat(span.getMessage().getDetail()).isNull();
+        assertThat(span.getMessage().getDetail()).isEmpty();
     }
 
     @Test
@@ -150,7 +150,7 @@ public class ServletPluginTest {
     @Test
     public void testSessionInvalidate() throws Exception {
         // given
-        container.setPluginProperty("captureSessionId", true);
+        container.setPluginProperty(PLUGIN_ID, "captureSessionId", true);
         // when
         container.executeAppUnderTest(InvalidateSession.class);
         // then
@@ -168,7 +168,7 @@ public class ServletPluginTest {
     @Test
     public void testServletContextInitialized() throws Exception {
         // given
-        container.setPluginProperty("captureStartup", true);
+        container.setPluginProperty(PLUGIN_ID, "captureStartup", true);
         // when
         container.executeAppUnderTest(TestServletContextListener.class);
         // then
@@ -181,7 +181,7 @@ public class ServletPluginTest {
     @Test
     public void testServletInit() throws Exception {
         // given
-        container.setPluginProperty("captureStartup", true);
+        container.setPluginProperty(PLUGIN_ID, "captureStartup", true);
         // when
         container.executeAppUnderTest(TestServletInit.class);
         // then
@@ -196,7 +196,7 @@ public class ServletPluginTest {
     @Test
     public void testFilterInit() throws Exception {
         // given
-        container.setPluginProperty("captureStartup", true);
+        container.setPluginProperty(PLUGIN_ID, "captureStartup", true);
         // when
         container.executeAppUnderTest(TestFilterInit.class);
         // then

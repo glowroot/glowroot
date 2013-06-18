@@ -289,8 +289,7 @@ public class Packager {
             String overridePrompt = override.getPrompt();
             String overrideDescription = override.getDescription();
             if (overrideDefault != null) {
-                overlay.setDefault(getDefaultFromText(overrideDefault,
-                        property.getType()));
+                overlay.setDefault(getDefaultFromText(overrideDefault, property.getType()));
             }
             if (overrideHidden != null) {
                 overlay.setHidden(Boolean.valueOf(overrideHidden));
@@ -306,7 +305,6 @@ public class Packager {
         return properties;
     }
 
-    @Nullable
     private Object getDefaultFromText(String text, PropertyType type)
             throws MojoExecutionException {
         switch (type) {

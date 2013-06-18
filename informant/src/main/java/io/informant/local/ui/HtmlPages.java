@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -50,8 +51,9 @@ class HtmlPages {
         return render(resourcePath, ImmutableMap.<String, CharSource>of(), devMode);
     }
 
-    static CharSource render(String resourcePath, Map<String, CharSource> extraMappedContent,
-            boolean devMode) throws IOException {
+    static CharSource render(String resourcePath,
+            @ReadOnly Map<String, CharSource> extraMappedContent, boolean devMode)
+            throws IOException {
         URL url = Resources.getResource(resourcePath);
         // process server side includes
         String templateContent = Resources.toString(url, Charsets.UTF_8);

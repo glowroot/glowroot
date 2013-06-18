@@ -159,10 +159,10 @@ public abstract class Optional<T> {
         @Override
         public boolean equals(@Nullable Object o) {
             if (o instanceof Present) {
-                return ((Present<?>) o).get().equals(reference);
-            } else {
-                return false;
+                Present<?> that = (Present<?>) o;
+                return Objects.equal(reference, that.reference);
             }
+            return false;
         }
         @Override
         public int hashCode() {

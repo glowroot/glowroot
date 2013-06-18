@@ -15,26 +15,55 @@
  */
 package io.informant.testkit;
 
+import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Longs;
+
+import static io.informant.common.Nullness.assertNonNull;
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class Metric {
 
-    @Nullable
-    private String name;
-    private long total;
-    private long min;
-    private long max;
-    private long count;
-    private boolean active;
-    private boolean minActive;
-    private boolean maxActive;
+    static final Ordering<Metric> orderingByTotal = new Ordering<Metric>() {
+        @Override
+        public int compare(@Nullable Metric left, @Nullable Metric right) {
+            assertNonNull(left, "Ordering of non-null elements only");
+            assertNonNull(right, "Ordering of non-null elements only");
+            return Longs.compare(left.total, right.total);
+        }
+    };
 
-    @Nullable
+    private final String name;
+    private final long total;
+    private final long min;
+    private final long max;
+    private final long count;
+    private final boolean active;
+    private final boolean minActive;
+    private final boolean maxActive;
+
+    public Metric(String name, long total, long min, long max, long count, boolean active,
+            boolean minActive, boolean maxActive) {
+        this.name = name;
+        this.total = total;
+        this.min = min;
+        this.max = max;
+        this.count = count;
+        this.active = active;
+        this.minActive = minActive;
+        this.maxActive = maxActive;
+    }
+
     public String getName() {
         return name;
     }
@@ -75,9 +104,31 @@ public class Metric {
                 .add("min", min)
                 .add("max", max)
                 .add("count", count)
-                .add("isActive", active)
+                .add("active", active)
                 .add("minActive", minActive)
                 .add("maxActive", maxActive)
                 .toString();
+    }
+
+    @JsonCreator
+    static Metric readValue(
+            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("total") @Nullable Long total,
+            @JsonProperty("min") @Nullable Long min,
+            @JsonProperty("max") @Nullable Long max,
+            @JsonProperty("count") @Nullable Long count,
+            @JsonProperty("active") @Nullable Boolean active,
+            @JsonProperty("minActive") @Nullable Boolean minActive,
+            @JsonProperty("maxActive") @Nullable Boolean maxActive)
+            throws JsonMappingException {
+        checkRequiredProperty(name, "name");
+        checkRequiredProperty(total, "total");
+        checkRequiredProperty(min, "min");
+        checkRequiredProperty(max, "max");
+        checkRequiredProperty(count, "count");
+        checkRequiredProperty(active, "active");
+        checkRequiredProperty(minActive, "minActive");
+        checkRequiredProperty(maxActive, "maxActive");
+        return new Metric(name, total, min, max, count, active, minActive, maxActive);
     }
 }

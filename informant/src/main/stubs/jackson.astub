@@ -9,6 +9,10 @@ public class JsonGenerator {
     public void writeStringField(String fieldName, @Nullable String value);
 }
 
+public class JsonFactory {
+    public JsonGenerator createGenerator(Writer out) @ReadOnly;
+}
+
 /* ========================================================================== */
 package com.fasterxml.jackson.databind;
 
@@ -26,6 +30,7 @@ public class ObjectMapper {
     public ObjectNode createObjectNode() @ReadOnly;
     public ObjectNode createArrayNode() @ReadOnly;
     public ObjectReader readerForUpdating(Object valueToUpdate) @ReadOnly;
+    public <T> T convertValue(@Nullable Object fromValue, Class<T> toValueType) @ReadOnly;
 }
 
 /* ========================================================================== */

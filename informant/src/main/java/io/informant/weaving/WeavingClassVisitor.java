@@ -45,9 +45,10 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.weaving.ParsedType.Builder;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static io.informant.common.Nullness.assertNonNull;
 
 /**
  * @author Trask Stalnaker
@@ -56,6 +57,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
+
+    // this field is just a @NonNull version of the field with the same name in the super class to
+    // help with null flow analysis
+    private final ClassVisitor cv;
 
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
@@ -73,12 +78,15 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     private boolean nothingAtAllToWeave = false;
     @LazyNonNull
-    private ParsedType.Builder parsedType;
+    // can't use ParsedType.Builder for now, as that leads to error when running checker framework
+    // "nested type cannot be annotated"
+    private Builder parsedType;
 
-    public WeavingClassVisitor(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> advisors,
-            @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
-            @Nullable CodeSource codeSource, ClassVisitor cv) {
+    public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
+            ImmutableList<Advice> advisors, @Nullable ClassLoader loader,
+            ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource) {
         super(ASM4, cv);
+        this.cv = cv;
         this.mixinTypes = mixinTypes;
         this.advisors = advisors;
         this.loader = loader;
@@ -118,7 +126,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     public MethodVisitor visitMethod(int access, String name, String desc,
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
 
-        checkNotNull(parsedType, "Call to visit() is required");
+        assertNonNull(parsedType, "Call to visit() is required");
         ParsedMethod parsedMethod = ParsedMethod.from(name,
                 ImmutableList.copyOf(Type.getArgumentTypes(desc)),
                 Type.getReturnType(desc), access);
@@ -128,7 +136,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             return null;
         }
         // type can be null, but not if nothingAtAllToWeave is false
-        checkNotNull(type, "Call to visit() is required");
+        assertNonNull(type, "Call to visit() is required");
         if ((access & ACC_ABSTRACT) != 0) {
             // abstract methods never get woven
             return cv.visitMethod(access, name, desc, signature, exceptions);
@@ -136,14 +144,15 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         MethodVisitor mv = null;
         if (name.equals("<init>") && !matchedMixinTypes.isEmpty()) {
             mv = cv.visitMethod(access, name, desc, signature, exceptions);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
             mv = new InitMixins(mv, access, name, desc, matchedMixinTypes, type);
         }
         if ((access & ACC_SYNTHETIC) != 0) {
-            return visitMethod(mv, access, name, desc, signature, exceptions);
+            return mv != null ? mv : cv.visitMethod(access, name, desc, signature, exceptions);
         }
         List<Advice> matchingAdvisors = getMatchingAdvisors(access, parsedMethod);
         if (matchingAdvisors.isEmpty()) {
-            return visitMethod(mv, access, name, desc, signature, exceptions);
+            return mv != null ? mv : cv.visitMethod(access, name, desc, signature, exceptions);
         } else if (mv == null) {
             String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
                     signature, exceptions, matchingAdvisors);
@@ -154,6 +163,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 methodAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (access & ACC_STATIC);
             }
             mv = cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
+            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
             return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
                     matchingAdvisors);
         } else {
@@ -164,13 +174,13 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
 
     @Override
     public void visitEnd() {
-        checkNotNull(parsedType, "Call to visit() is required");
+        assertNonNull(parsedType, "Call to visit() is required");
         parsedTypeCache.add(parsedType.build(), loader);
         if (nothingAtAllToWeave) {
             return;
         }
         // type can be null, but not if nothingAtAllToWeave is false
-        checkNotNull(type, "Call to visit() is required");
+        assertNonNull(type, "Call to visit() is required");
         for (MixinType mixinType : matchedMixinTypes) {
             ClassReader cr;
             try {
@@ -200,11 +210,13 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                 String[] exceptions = Iterables.toArray(mn.exceptions, String.class);
                 MethodVisitor mv = cv.visitMethod(mn.access, mn.name, mn.desc, mn.signature,
                         exceptions);
+                assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
                 mn.accept(new RemappingMethodAdapter(mn.access, mn.desc, mv,
                         new SimpleRemapper(cn.name, type.getInternalName())));
             }
         }
     }
+
     boolean isNothingAtAllToWeave() {
         return nothingAtAllToWeave;
     }
@@ -213,7 +225,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
     private List<ParsedType> getSuperTypes(@Nullable String superName, String[] interfaceNames) {
-        checkNotNull(type, "Call to visit() is required");
+        assertNonNull(type, "Call to visit() is required");
         List<ParsedType> superTypes = Lists.newArrayList();
         ParseContext parseContext = new ParseContext(type.getClassName(), codeSource);
         superTypes.addAll(parsedTypeCache.getTypeHierarchy(
@@ -261,7 +273,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     }
 
     private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod) {
-        checkNotNull(parsedType, "Call to visit() is required");
+        assertNonNull(parsedType, "Call to visit() is required");
         List<Advice> matchingAdvisors = Lists.newArrayList();
         for (AdviceMatcher adviceMatcher : adviceMatchers) {
             if (adviceMatcher.isMethodLevelMatch(access, parsedMethod)) {
@@ -274,22 +286,13 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return matchingAdvisors;
     }
 
-    private MethodVisitor visitMethod(@Nullable MethodVisitor mv, int access, String name,
-            String desc, @Nullable String signature, String/*@Nullable*/[] exceptions) {
-        if (mv == null) {
-            return cv.visitMethod(access, name, desc, signature, exceptions);
-        } else {
-            return mv;
-        }
-    }
-
     // returns null if no synthetic metric marker methods were needed
     @Nullable
     private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
             String desc, @Nullable String signature, String/*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
 
-        checkNotNull(type, "Call to visit() is required");
+        assertNonNull(type, "Call to visit() is required");
         int innerAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (outerAccess & ACC_STATIC);
         boolean first = true;
         String currMethodName = outerName;
@@ -302,6 +305,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
                     + '$' + innerMethodCounter++;
             int access = first ? outerAccess : innerAccess;
             MethodVisitor mv2 = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
+            assertNonNull(mv2, "ClassVisitor.visitMethod() returned null");
             GeneratorAdapter mg = new GeneratorAdapter(mv2, access, nextMethodName, desc);
             if ((outerAccess & ACC_STATIC) == 0) {
                 mg.loadThis();

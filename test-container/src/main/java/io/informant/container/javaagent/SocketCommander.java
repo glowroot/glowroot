@@ -89,7 +89,7 @@ class SocketCommander {
 
     void sendKillCommand() throws IOException, InterruptedException {
         CommandWrapper commandWrapper = new CommandWrapper(commandCounter.getAndIncrement(),
-                SocketCommandProcessor.KILL_COMMAND);
+                SocketCommandProcessor.KILL);
         synchronized (lock) {
             objectOut.writeObject(commandWrapper);
         }

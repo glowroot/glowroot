@@ -58,9 +58,13 @@ class MetricCache {
         } else if (pointcut.metricName().equals("")) {
             logger.warn("@Pointcut on advice class '{}' has no metricName() attribute",
                     adviceClass.getName());
-            return metricNames.getUnchecked("unknown");
+            return getUnknownMetricName();
         } else {
             return metricNames.getUnchecked(pointcut.metricName());
         }
+    }
+
+    MetricName getUnknownMetricName() {
+        return metricNames.getUnchecked("unknown");
     }
 }

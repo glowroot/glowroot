@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
@@ -106,7 +107,7 @@ class ServletMessageSupplier extends MessageSupplier {
         return requestParameterMap != null;
     }
 
-    void captureRequestParameterMap(Map<?, ?> requestParameterMap) {
+    void captureRequestParameterMap(@ReadOnly Map<?, ?> requestParameterMap) {
         // shallow copy is necessary because request may not be thread safe
         // shallow copy is also necessary because of the note about tomcat above
         ImmutableMap.Builder<String, String[]> map = ImmutableMap.builder();

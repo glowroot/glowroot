@@ -34,16 +34,19 @@ import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
 import io.informant.common.ObjectMappers;
 import io.informant.markers.OnlyUsedByTests;
+import io.informant.markers.ThreadSafe;
 import io.informant.weaving.Advice;
 import io.informant.weaving.Advice.AdviceConstructionException;
 import io.informant.weaving.MixinType;
 import io.informant.weaving.dynamic.DynamicAdviceGenerator;
 
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-@Immutable
+@ThreadSafe
 public class AdviceCache {
 
     @ReadOnly
@@ -138,6 +141,7 @@ public class AdviceCache {
             try {
                 Class<?> dynamicAdviceClass = new DynamicAdviceGenerator(pointcutConfig).generate();
                 Pointcut pointcut = dynamicAdviceClass.getAnnotation(Pointcut.class);
+                assertNonNull(pointcut, "Class was generated without @Pointcut annotation");
                 Advice advice = Advice.from(pointcut, dynamicAdviceClass, true);
                 dynamicAdvisors.add(advice);
             } catch (SecurityException e) {

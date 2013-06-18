@@ -43,7 +43,7 @@ public class SessionAttributeTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create(PLUGIN_ID);
+        container = Container.create();
     }
 
     @AfterClass
@@ -59,7 +59,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttribute() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "testattr");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "testattr");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -73,7 +73,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeWithoutTrimmedAttributeName() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", " testattr , other");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", " testattr , other");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -87,7 +87,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -101,7 +101,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeUsingWildcardPlusOther() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "*,other");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*,other");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -115,7 +115,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -128,7 +128,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttribute() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "testattr");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "testattr");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -142,7 +142,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -156,7 +156,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeUsingWildcardAndOther() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "*,other");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*,other");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -170,7 +170,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -183,7 +183,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeNull() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
         // when
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
@@ -197,7 +197,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "one.two");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.two");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -211,7 +211,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "one.two");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.two");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -225,7 +225,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "missingtestattr");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "missingtestattr");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -238,7 +238,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "one.missingtwo");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.missingtwo");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -251,7 +251,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "one.*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -267,7 +267,7 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "one.*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.*");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -283,7 +283,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "missingtestattr.*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "missingtestattr.*");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -296,7 +296,7 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath2() throws Exception {
         // given
-        container.setPluginProperty("captureSessionAttributes", "one.missingtwo.*");
+        container.setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.missingtwo.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then

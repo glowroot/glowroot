@@ -45,14 +45,14 @@ import io.informant.container.javaagent.SocketCommander.ResponseWrapper;
  */
 class SocketCommandProcessor implements Runnable {
 
-    public static final String EXECUTE_APP_COMMAND = "EXECUTE_APP";
-    public static final String GET_PORT_COMMAND = "GET_PORT";
+    public static final String EXECUTE_APP = "EXECUTE_APP";
+    public static final String GET_PORT = "GET_PORT";
     public static final String ADD_EXPECTED_LOG_MESSAGE = "ADD_EXPECTED_LOG_MESSAGE";
-    public static final String CLEAR_LOG_MESSAGES = "CLEAR_EXPECTED_LOG_MESSAGES";
+    public static final String CLEAR_LOG_MESSAGES = "CLEAR_LOG_MESSAGES";
     public static final String EXCEPTION_RESPONSE = "EXCEPTION";
-    public static final String SHUTDOWN_COMMAND = "SHUTDOWN";
+    public static final String SHUTDOWN = "SHUTDOWN";
     public static final String SHUTDOWN_RESPONSE = "SHUTDOWN";
-    public static final String KILL_COMMAND = "KILL";
+    public static final String KILL = "KILL";
     public static final String INTERRUPT = "INTERRUPT";
     public static final int NO_PORT = -1;
 
@@ -110,7 +110,7 @@ class SocketCommandProcessor implements Runnable {
         Object command = commandWrapper.getCommand();
         int commandNum = commandWrapper.getCommandNum();
         if (command instanceof String) {
-            if (command.equals(GET_PORT_COMMAND)) {
+            if (command.equals(GET_PORT)) {
                 InformantModule informantModule = MainEntryPoint.getInformantModule();
                 if (informantModule == null) {
                     // informant failed to start
@@ -120,9 +120,9 @@ class SocketCommandProcessor implements Runnable {
                 }
             } else if (command.equals(CLEAR_LOG_MESSAGES)) {
                 respond(SpyingLogFilter.clearMessages(), commandNum);
-            } else if (command.equals(KILL_COMMAND)) {
+            } else if (command.equals(KILL)) {
                 System.exit(0);
-            } else if (command.equals(SHUTDOWN_COMMAND)) {
+            } else if (command.equals(SHUTDOWN)) {
                 shutdown(commandNum);
                 System.exit(0);
             } else if (command.equals(INTERRUPT)) {
@@ -138,7 +138,7 @@ class SocketCommandProcessor implements Runnable {
                 respond(EXCEPTION_RESPONSE, commandNum);
             } else {
                 Object commandName = argList.get(0);
-                if (commandName.equals(EXECUTE_APP_COMMAND)) {
+                if (commandName.equals(EXECUTE_APP)) {
                     String appClassName = (String) argList.get(1);
                     executeAppAndRespond(commandNum, appClassName);
                 } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {

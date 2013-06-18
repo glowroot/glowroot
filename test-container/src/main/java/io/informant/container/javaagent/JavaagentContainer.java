@@ -59,6 +59,7 @@ import io.informant.container.config.ConfigService;
 import io.informant.container.trace.TraceService;
 import io.informant.markers.ThreadSafe;
 
+import static io.informant.common.Nullness.assertNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -133,10 +134,11 @@ public class JavaagentContainer implements Container {
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
         socketCommander = new SocketCommander(objectOut, objectIn);
-        int actualUiPort = (Integer) socketCommander
-                .sendCommand(SocketCommandProcessor.GET_PORT_COMMAND);
+        Integer actualUiPort = (Integer) socketCommander
+                .sendCommand(SocketCommandProcessor.GET_PORT);
+        assertNonNull(actualUiPort, "Get Port returned null port");
         if (actualUiPort == SocketCommandProcessor.NO_PORT) {
-            socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN_COMMAND);
+            socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
             socketCommander.close();
             process.waitFor();
             serverSocket.close();
@@ -181,7 +183,7 @@ public class JavaagentContainer implements Container {
 
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
-        socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP_COMMAND,
+        socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP,
                 appUnderTestClass.getName()));
         // wait for all traces to be stored
         Stopwatch stopwatch = new Stopwatch().start();
@@ -206,6 +208,7 @@ public class JavaagentContainer implements Container {
         if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
             MessageCount logMessageCount = (MessageCount) socketCommander
                     .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
+            assertNonNull(logMessageCount, "Clear Log Messages returned null MessageCount");
             if (logMessageCount.getExpectedCount() > 0) {
                 throw new AssertionError("One or more expected messages were not logged");
             }
@@ -220,7 +223,7 @@ public class JavaagentContainer implements Container {
             // this is the shared container and will be closed at the end of the run
             return;
         }
-        socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN_COMMAND);
+        socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
         socketCommander.close();
         process.waitFor();
         serverSocket.close();

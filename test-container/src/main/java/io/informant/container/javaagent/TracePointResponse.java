@@ -21,29 +21,31 @@ import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 class TracePointResponse {
 
-    private final List<RawPoint> normalPoints;
-    private final List<RawPoint> errorPoints;
-    private final List<RawPoint> activePoints;
+    private final ImmutableList<RawPoint> normalPoints;
+    private final ImmutableList<RawPoint> errorPoints;
+    private final ImmutableList<RawPoint> activePoints;
 
-    @JsonCreator
-    TracePointResponse(@JsonProperty("normalPoints") List<RawPoint> normalPoints,
-            @JsonProperty("errorPoints") List<RawPoint> errorPoints,
-            @JsonProperty("activePoints") List<RawPoint> activePoints) {
-        this.normalPoints = normalPoints;
-        this.errorPoints = errorPoints;
-        this.activePoints = activePoints;
+    private TracePointResponse(List<RawPoint> normalPoints, List<RawPoint> errorPoints,
+            List<RawPoint> activePoints) {
+        this.normalPoints = ImmutableList.copyOf(normalPoints);
+        this.errorPoints = ImmutableList.copyOf(errorPoints);
+        this.activePoints = ImmutableList.copyOf(activePoints);
     }
 
     List<RawPoint> getNormalPoints() {
@@ -56,6 +58,18 @@ class TracePointResponse {
 
     List<RawPoint> getActivePoints() {
         return activePoints;
+    }
+
+    @JsonCreator
+    static TracePointResponse readValue(
+            @JsonProperty("normalPoints") @Nullable List<RawPoint> normalPoints,
+            @JsonProperty("errorPoints") @Nullable List<RawPoint> errorPoints,
+            @JsonProperty("activePoints") @Nullable List<RawPoint> activePoints)
+            throws JsonMappingException {
+        checkRequiredProperty(normalPoints, "normalPoints");
+        checkRequiredProperty(errorPoints, "errorPoints");
+        checkRequiredProperty(activePoints, "activePoints");
+        return new TracePointResponse(normalPoints, errorPoints, activePoints);
     }
 
     @Immutable
@@ -74,11 +88,10 @@ class TracePointResponse {
         private final double durationSeconds;
         private final String id;
 
-        @JsonCreator
-        RawPoint(ArrayNode point) {
-            captureTime = point.get(0).asLong();
-            durationSeconds = point.get(1).asDouble();
-            id = point.get(2).asText();
+        private RawPoint(long captureTime, double durationSeconds, String id) {
+            this.captureTime = captureTime;
+            this.durationSeconds = durationSeconds;
+            this.id = id;
         }
 
         long getCaptureTime() {
@@ -91,6 +104,14 @@ class TracePointResponse {
 
         String getId() {
             return id;
+        }
+
+        @JsonCreator
+        static RawPoint readValue(ArrayNode point) {
+            long captureTime = point.get(0).asLong();
+            double durationSeconds = point.get(1).asDouble();
+            String id = point.get(2).asText();
+            return new RawPoint(captureTime, durationSeconds, id);
         }
     }
 }

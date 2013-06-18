@@ -37,6 +37,8 @@ import io.informant.container.config.UserConfig;
 import io.informant.local.store.DataSource;
 import io.informant.markers.ThreadSafe;
 
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -253,9 +255,14 @@ class LocalConfigService implements ConfigService {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
                     .name()));
         }
-        return new io.informant.config.PointcutConfig(captureItems, config.getTypeName(),
-                config.getMethodName(), config.getMethodArgTypeNames(),
-                config.getMethodReturnTypeName(), methodModifiers, config.getMetricName(),
-                config.getSpanTemplate(), config.getTraceGrouping());
+        String typeName = config.getTypeName();
+        String methodName = config.getMethodName();
+        String methodReturnTypeName = config.getMethodReturnTypeName();
+        assertNonNull(typeName, "Config typeName is null");
+        assertNonNull(methodName, "Config methodName is null");
+        assertNonNull(methodReturnTypeName, "Config methodReturnTypeName is null");
+        return new io.informant.config.PointcutConfig(captureItems, typeName, methodName,
+                config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
+                config.getMetricName(), config.getSpanTemplate(), config.getTraceGrouping());
     }
 }

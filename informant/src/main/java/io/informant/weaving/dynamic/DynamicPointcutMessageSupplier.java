@@ -35,8 +35,7 @@ public class DynamicPointcutMessageSupplier extends MessageSupplier {
     private final DynamicPointcutMessageTemplate template;
     private final String[] resolvedThisPathParts;
     private final String[] resolvedArgPathParts;
-    @Nullable
-    private volatile String[] resolvedReturnValuePathParts;
+    private volatile String/*@Nullable*/[] resolvedReturnValuePathParts;
     private final String methodName;
 
     @UsedByGeneratedBytecode

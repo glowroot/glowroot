@@ -136,18 +136,9 @@ class JavaagentTraceService implements TraceService {
             return null;
         }
         RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
-        if (summary) {
-            String traceContent =
-                    httpClient.get("/trace/summary/" + mostRecentCapturedPoint.getId());
-            Trace trace =
-                    ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
-            trace.setSummary(true);
-            return trace;
-        } else {
-            String traceContent =
-                    httpClient.get("/trace/detail/" + mostRecentCapturedPoint.getId());
-            return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
-        }
+        String path = summary ? "/trace/summary/" : "/trace/detail/";
+        String traceContent = httpClient.get(path + mostRecentCapturedPoint.getId());
+        return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
     }
 
     @Nullable
@@ -162,16 +153,9 @@ class JavaagentTraceService implements TraceService {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
             RawPoint point = response.getActivePoints().get(0);
-            if (summary) {
-                String traceContent = httpClient.get("/trace/summary/" + point.getId());
-                Trace trace = ObjectMappers.readRequiredValue(mapper, traceContent,
-                        Trace.class);
-                trace.setSummary(true);
-                return trace;
-            } else {
-                String traceContent = httpClient.get("/trace/detail/" + point.getId());
-                return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
-            }
+            String path = summary ? "/trace/summary/" : "/trace/detail/";
+            String traceContent = httpClient.get(path + point.getId());
+            return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
         }
     }
 }

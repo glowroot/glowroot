@@ -112,6 +112,7 @@ public class DatabaseMetaDataAspect {
         return currentlyExecutingMethodName.get() != null;
     }
 
+    @Nullable
     static String getCurrentlyExecutingMethodName() {
         return currentlyExecutingMethodName.get();
     }

@@ -40,7 +40,7 @@ public class UserIdTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Container.create(PLUGIN_ID);
+        container = Container.create();
     }
 
     @AfterClass
@@ -56,7 +56,7 @@ public class UserIdTest {
     @Test
     public void testHasSessionUserIdAttribute() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "useridattr");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
         // when
         container.executeAppUnderTest(HasSessionUserIdAttribute.class);
         // then
@@ -67,7 +67,7 @@ public class UserIdTest {
     @Test
     public void testSetSessionUserIdAttribute() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "useridattr");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
         // when
         container.executeAppUnderTest(SetSessionUserIdAttribute.class);
         // then
@@ -78,7 +78,7 @@ public class UserIdTest {
     @Test
     public void testSetSessionUserIdAttributeNull() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "useridattr");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridattr");
         // when
         container.executeAppUnderTest(SetSessionUserIdAttributeNull.class);
         // then
@@ -91,7 +91,7 @@ public class UserIdTest {
     @Test
     public void testHasNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "useridone.two");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
         // when
         container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
         // then
@@ -102,7 +102,7 @@ public class UserIdTest {
     @Test
     public void testSetNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "useridone.two");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.two");
         // when
         container.executeAppUnderTest(SetNestedSessionUserIdAttribute.class);
         // then
@@ -113,7 +113,7 @@ public class UserIdTest {
     @Test
     public void testHasMissingSessionUserIdAttribute() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "missinguseridattr");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "missinguseridattr");
         // when
         container.executeAppUnderTest(HasSessionUserIdAttribute.class);
         // then
@@ -124,7 +124,7 @@ public class UserIdTest {
     @Test
     public void testHasMissingNestedSessionUserIdAttributePath() throws Exception {
         // given
-        container.setPluginProperty("sessionUserIdAttribute", "useridone.missingtwo");
+        container.setPluginProperty(PLUGIN_ID, "sessionUserIdAttribute", "useridone.missingtwo");
         // when
         container.executeAppUnderTest(HasNestedSessionUserIdAttribute.class);
         // then

@@ -17,56 +17,53 @@ package io.informant.testkit;
 
 import java.util.List;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class ExceptionInfo {
 
+    private final String display;
+    private final ImmutableList<String> stackTrace;
+    private final int framesInCommonWithCaused;
     @Nullable
-    private String display;
-    @Nullable
-    private List<String> stackTrace;
-    private int framesInCommonWithCaused;
-    @Nullable
-    private ExceptionInfo cause;
+    private final ExceptionInfo cause;
 
-    @Nullable
+    private ExceptionInfo(String display, @ReadOnly List<String> stackTrace,
+            int framesInCommonWithCaused, @Nullable ExceptionInfo cause) {
+        this.display = display;
+        this.stackTrace = ImmutableList.copyOf(stackTrace);
+        this.framesInCommonWithCaused = framesInCommonWithCaused;
+        this.cause = cause;
+    }
+
     public String getDisplay() {
         return display;
     }
 
-    public void setDisplay(String display) {
-        this.display = display;
-    }
-
-    @Nullable
-    public List<String> getStackTrace() {
+    public ImmutableList<String> getStackTrace() {
         return stackTrace;
-    }
-
-    public void setStackTrace(List<String> stackTrace) {
-        this.stackTrace = stackTrace;
     }
 
     public int getFramesInCommonWithCaused() {
         return framesInCommonWithCaused;
     }
 
-    public void setFramesInCommonWithCaused(int framesInCommonWithCaused) {
-        this.framesInCommonWithCaused = framesInCommonWithCaused;
-    }
-
     @Nullable
     public ExceptionInfo getCause() {
         return cause;
-    }
-
-    public void setCause(@Nullable ExceptionInfo cause) {
-        this.cause = cause;
     }
 
     @Override
@@ -77,5 +74,18 @@ public class ExceptionInfo {
                 .add("framesInCommonWithCaused", framesInCommonWithCaused)
                 .add("cause", cause)
                 .toString();
+    }
+
+    @JsonCreator
+    static ExceptionInfo readValue(
+            @JsonProperty("display") @Nullable String display,
+            @JsonProperty("stackTrace") @Nullable List<String> stackTrace,
+            @JsonProperty("framesInCommonWithCaused") @Nullable Integer framesInCommonWithCaused,
+            @JsonProperty("cause") @Nullable ExceptionInfo cause)
+            throws JsonMappingException {
+        checkRequiredProperty(display, "display");
+        checkRequiredProperty(stackTrace, "stackTrace");
+        checkRequiredProperty(framesInCommonWithCaused, "framesInCommonWithCaused");
+        return new ExceptionInfo(display, stackTrace, framesInCommonWithCaused, cause);
     }
 }

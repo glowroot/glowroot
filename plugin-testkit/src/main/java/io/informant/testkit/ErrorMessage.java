@@ -15,17 +15,33 @@
  */
 package io.informant.testkit;
 
+import java.util.Map;
+
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+
+import static io.informant.container.common.ObjectMappers.nullToEmpty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class ErrorMessage extends Message {
 
     @Nullable
-    private ExceptionInfo exception;
+    private final ExceptionInfo exception;
+
+    private ErrorMessage(@Nullable String text, @ReadOnly Map<String, Object> detail,
+            @Nullable ExceptionInfo exception) {
+        super(text, detail);
+        this.exception = exception;
+    }
 
     @Nullable
     public ExceptionInfo getException() {
@@ -39,5 +55,14 @@ public class ErrorMessage extends Message {
                 .add("detail", getDetail())
                 .add("exception", exception)
                 .toString();
+    }
+
+    @JsonCreator
+    static ErrorMessage readValue(
+            @JsonProperty("text") @Nullable String text,
+            @JsonProperty("detail") @Nullable Map<String, Object> detail,
+            @JsonProperty("exception") @Nullable ExceptionInfo exception)
+            throws JsonMappingException {
+        return new ErrorMessage(text, nullToEmpty(detail), exception);
     }
 }

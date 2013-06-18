@@ -17,18 +17,36 @@ package io.informant.container.trace;
 
 import java.util.List;
 
+import checkers.igj.quals.Immutable;
+import checkers.igj.quals.ReadOnly;
+import checkers.nullness.quals.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+
+import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
+@Immutable
 public class JvmInfo {
 
-    private long threadCpuTime;
-    private long threadBlockedTime;
-    private long threadWaitedTime;
-    private List<GarbageCollectorInfo> garbageCollectorInfos;
+    private final long threadCpuTime;
+    private final long threadBlockedTime;
+    private final long threadWaitedTime;
+    private final ImmutableList<GarbageCollectorInfo> garbageCollectorInfos;
+
+    private JvmInfo(long threadCpuTime, long threadBlockedTime, long threadWaitedTime,
+            @ReadOnly List<GarbageCollectorInfo> garbageCollectorInfos) {
+        this.threadCpuTime = threadCpuTime;
+        this.threadBlockedTime = threadBlockedTime;
+        this.threadWaitedTime = threadWaitedTime;
+        this.garbageCollectorInfos = ImmutableList.copyOf(garbageCollectorInfos);
+    }
 
     public long getThreadCpuTime() {
         return threadCpuTime;
@@ -42,7 +60,7 @@ public class JvmInfo {
         return threadWaitedTime;
     }
 
-    public List<GarbageCollectorInfo> getGarbageCollectorInfos() {
+    public ImmutableList<GarbageCollectorInfo> getGarbageCollectorInfos() {
         return garbageCollectorInfos;
     }
 
@@ -56,11 +74,32 @@ public class JvmInfo {
                 .toString();
     }
 
+    @JsonCreator
+    static JvmInfo readValue(
+            @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
+            @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
+            @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
+            @JsonProperty("garbageCollectorInfos") @Nullable List<GarbageCollectorInfo> infos)
+            throws JsonMappingException {
+        checkRequiredProperty(threadCpuTime, "threadCpuTime");
+        checkRequiredProperty(threadBlockedTime, "threadBlockedTime");
+        checkRequiredProperty(threadWaitedTime, "threadWaitedTime");
+        checkRequiredProperty(infos, "garbageCollectorInfos");
+        return new JvmInfo(threadCpuTime, threadBlockedTime, threadWaitedTime, infos);
+    }
+
+    @Immutable
     public static class GarbageCollectorInfo {
 
-        private String name;
-        private long collectionCount;
-        private long collectionTime;
+        private final String name;
+        private final long collectionCount;
+        private final long collectionTime;
+
+        private GarbageCollectorInfo(String name, long collectionCount, long collectionTime) {
+            this.name = name;
+            this.collectionCount = collectionCount;
+            this.collectionTime = collectionTime;
+        }
 
         public String getName() {
             return name;
@@ -81,6 +120,18 @@ public class JvmInfo {
                     .add("collectionCount", collectionCount)
                     .add("collectionTime", collectionTime)
                     .toString();
+        }
+
+        @JsonCreator
+        static GarbageCollectorInfo readValue(
+                @JsonProperty("name") @Nullable String name,
+                @JsonProperty("collectionCount") @Nullable Long collectionCount,
+                @JsonProperty("collectionTime") @Nullable Long collectionTime)
+                throws JsonMappingException {
+            checkRequiredProperty(name, "name");
+            checkRequiredProperty(collectionCount, "collectionCount");
+            checkRequiredProperty(collectionTime, "collectionTime");
+            return new GarbageCollectorInfo(name, collectionCount, collectionTime);
         }
     }
 }

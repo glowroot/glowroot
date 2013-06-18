@@ -100,8 +100,8 @@ class Weaver implements Opcodes {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES, parsedTypeCache, loader,
                     codeSource, className);
-            WeavingClassVisitor cv = new WeavingClassVisitor(mixinTypes, advisors.get(), loader,
-                    parsedTypeCache, codeSource, cw);
+            WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors.get(),
+                    loader, parsedTypeCache, codeSource);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
@@ -152,8 +152,9 @@ class Weaver implements Opcodes {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc, String signature,
-                String[] exceptions) {
+        @Nullable
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                @Nullable String signature, String/*@Nullable*/[] exceptions) {
             if (cv != null) {
                 MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
                 return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);

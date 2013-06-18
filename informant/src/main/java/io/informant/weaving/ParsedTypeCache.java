@@ -30,6 +30,7 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import checkers.igj.quals.Immutable;
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Objects;
@@ -53,7 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.markers.Singleton;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static io.informant.common.Nullness.assertNonNull;
 
 /**
  * @author Trask Stalnaker
@@ -444,7 +445,7 @@ public class ParsedTypeCache {
         private final String className;
         @Nullable
         private final CodeSource codeSource;
-        ParseContext(String className, CodeSource codeSource) {
+        ParseContext(String className, @Nullable CodeSource codeSource) {
             this.codeSource = codeSource;
             this.className = className;
         }
@@ -459,12 +460,15 @@ public class ParsedTypeCache {
         }
     }
 
+    @Immutable
     private static class ParsedMethodOrdering extends Ordering<ParsedMethod> {
 
         private static final ParsedMethodOrdering INSTANCE = new ParsedMethodOrdering();
 
         @Override
         public int compare(@Nullable ParsedMethod left, @Nullable ParsedMethod right) {
+            assertNonNull(left, "Comparing of non-null elements only");
+            assertNonNull(right, "Comparing of non-null elements only");
             return ComparisonChain.start()
                     .compare(getAccessibility(left), getAccessibility(right))
                     .compare(left.getName(), right.getName())
@@ -525,7 +529,7 @@ public class ParsedTypeCache {
         }
 
         private ParsedType build() {
-            checkNotNull(name, "Call to visit() is required");
+            assertNonNull(name, "Call to visit() is required");
             return ParsedType.from(iface, TypeNames.fromInternal(name),
                     TypeNames.fromInternal(superName), TypeNames.fromInternal(interfaceNames),
                     methods.build());

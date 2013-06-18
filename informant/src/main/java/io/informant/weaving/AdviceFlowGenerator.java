@@ -25,6 +25,10 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import io.informant.weaving.dynamic.DynamicAdviceGenerator;
+
+import static io.informant.common.Nullness.assertNonNull;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -46,12 +50,7 @@ public class AdviceFlowGenerator implements Opcodes {
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, generatedTypeName, null, "java/lang/Object", null);
         writeThreadLocalFields(cw);
         writeThreadLocalInitialization(cw, generatedTypeName);
-        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
-                byte[].class, int.class, int.class);
-        byte[] bytes = cw.toByteArray();
-        defineClassMethod.setAccessible(true);
-        return (Class<?>) defineClassMethod.invoke(AdviceFlowGenerator.class.getClassLoader(),
-                generatedTypeName.replace('/', '.'), bytes, 0, bytes.length);
+        return defineClass(generatedTypeName.replace('/', '.'), cw.toByteArray());
     }
 
     private static void writeThreadLocalFields(ClassVisitor cv) {
@@ -59,8 +58,9 @@ public class AdviceFlowGenerator implements Opcodes {
                 adviceFlowOuterHolderType.getDescriptor(), null, null);
     }
 
-    private static void writeThreadLocalInitialization(ClassWriter cw, String adviceFlowTypeName) {
-        MethodVisitor mv = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+    private static void writeThreadLocalInitialization(ClassVisitor cv, String adviceFlowTypeName) {
+        MethodVisitor mv = cv.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
         mv.visitCode();
         String adviceFlowInternalName = adviceFlowOuterHolderType.getInternalName();
         mv.visitMethodInsn(INVOKESTATIC, adviceFlowInternalName, "create",
@@ -70,6 +70,17 @@ public class AdviceFlowGenerator implements Opcodes {
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
-        cw.visitEnd();
+        cv.visitEnd();
+    }
+
+    private static Class<?> defineClass(String name, byte[] bytes) throws NoSuchMethodException,
+            IllegalAccessException, InvocationTargetException {
+        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
+                byte[].class, int.class, int.class);
+        defineClassMethod.setAccessible(true);
+        Class<?> definedClass = (Class<?>) defineClassMethod.invoke(
+                DynamicAdviceGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
+        assertNonNull(definedClass, "ClassLoader.defineClass() returned null");
+        return definedClass;
     }
 }
