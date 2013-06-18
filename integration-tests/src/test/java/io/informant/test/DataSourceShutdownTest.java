@@ -80,6 +80,12 @@ public class DataSourceShutdownTest {
         // so can't query it and (2) any error or warning messages due to database shutdown wouldn't
         // be stored in the database log_message table, so have to resort to screen scraping
         assertThat(container.getNumConsoleBytes()).isEqualTo(0);
+
+        // 17:00:03.898 [pool-4-thread-1] WARN i.i.collector.TraceCollectorImpl - not storing a
+        // trace because of an excessive backlog of 100 traces already waiting to be stored (this
+        // warning will appear at most once a minute, there were 0 additional traces not stored
+        // since the last warning)
+
         // cleanup
         executorService.shutdown();
     }

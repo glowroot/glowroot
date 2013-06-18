@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -222,7 +221,7 @@
             <!-- running checker framework check requires jdk7 -->
             <groupId>edu.washington.cs.types.checker</groupId>
             <artifactId>checker-maven-plugin</artifactId>
-            <version>1.6.1</version>
+            <version>1.6.4</version>
             <executions>
               <execution>
                 <phase>process-classes</phase>
@@ -242,7 +241,9 @@
               <javaParams>
                 -Djsr308_imports=checkers.nullness.quals.*${path.separator}checkers.igj.quals.*
               </javaParams>
-              <javacParams>-Astubs=${basedir}/../core/src/main/stubs -Alint=nulltest</javacParams>
+              <javacParams>
+                -Astubs=${basedir}/../informant/src/main/stubs -Alint=nulltest
+              </javacParams>
             </configuration>
           </plugin>
         </plugins>

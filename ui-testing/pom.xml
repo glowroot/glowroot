@@ -34,7 +34,7 @@
     <dependency>
       <groupId>edu.washington.cs.types.checker</groupId>
       <artifactId>checker-quals-jdk5</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.4</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
