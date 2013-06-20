@@ -56,7 +56,8 @@ public class MainEntryPoint {
     private MainEntryPoint() {}
 
     // javaagent entry point
-    public static void premain(@Nullable String agentArgs, Instrumentation instrumentation) {
+    public static void premain(@SuppressWarnings("unused") @Nullable String agentArgs,
+            Instrumentation instrumentation) {
         logger.debug("premain()");
         ImmutableMap<String, String> properties = getInformantProperties();
         // ...WithNoWarning since warning is displayed during start so no need for it twice

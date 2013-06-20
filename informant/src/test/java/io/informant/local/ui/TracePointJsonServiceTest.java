@@ -178,7 +178,7 @@ public class TracePointJsonServiceTest {
             long currentTick) {
 
         Ordering<TracePoint> durationDescOrdering = Ordering.natural().reverse()
-                .onResultOf(new Function<TracePoint, Comparable>() {
+                .onResultOf(new Function<TracePoint, Double>() {
                     public Double apply(TracePoint trace) {
                         return trace.getDuration();
                     }

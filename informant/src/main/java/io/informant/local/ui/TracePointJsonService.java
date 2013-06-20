@@ -185,7 +185,7 @@ class TracePointJsonService {
                 }
             }
             Collections.sort(activeTraces,
-                    Ordering.natural().onResultOf(new Function<Trace, Comparable>() {
+                    Ordering.natural().onResultOf(new Function<Trace, Long>() {
                         public Long apply(@Nullable Trace trace) {
                             assertNonNull(trace, "Ordering of non-null elements only");
                             return trace.getStartTick();

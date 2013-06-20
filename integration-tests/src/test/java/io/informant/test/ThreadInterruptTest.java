@@ -25,7 +25,6 @@ import io.informant.container.AppUnderTest;
 import io.informant.container.Container;
 import io.informant.container.TraceMarker;
 import io.informant.container.config.FineProfilingConfig;
-import io.informant.container.trace.Trace;
 
 /**
  * @author Trask Stalnaker
@@ -63,7 +62,7 @@ public class ThreadInterruptTest {
         // when
         container.executeAppUnderTest(ShouldInterrupt.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        container.getTraceService().getLastTrace();
     }
 
     public static class ShouldInterrupt implements AppUnderTest, TraceMarker {

@@ -28,7 +28,7 @@ public class BasicMisc implements Misc, Misc2, Misc3 {
         this(null);
     }
 
-    public BasicMisc(Object dummy) {}
+    public BasicMisc(@SuppressWarnings("unused") Object dummy) {}
 
     // Misc implementation
     public void execute1() {

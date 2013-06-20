@@ -244,6 +244,7 @@ public class JdbcPluginTest {
         return connection;
     }
 
+    @SuppressWarnings("unused")
     private static Connection createCommonsDbcpWrappedConnection() throws SQLException {
         // set up database
         BasicDataSource ds = new BasicDataSource();
@@ -261,6 +262,7 @@ public class JdbcPluginTest {
     }
 
     // NOTE tomcat jdbc pool requires JDK 6
+    @SuppressWarnings("unused")
     private static Connection createTomcatJdbcPoolWrappedConnection() throws SQLException {
         // set up database
         DataSource ds = new DataSource();
@@ -292,6 +294,7 @@ public class JdbcPluginTest {
     // <version>11.2.0.3</version>
     // <scope>test</scope>
     // </dependency>
+    @SuppressWarnings("unused")
     private static Connection createOracleConnection() throws SQLException {
         // set up database
         Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@//localhost/orcl",
