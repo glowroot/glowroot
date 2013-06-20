@@ -231,7 +231,7 @@ public class ConfigTest {
         config.setMethodModifiers(Lists
                 .newArrayList(MethodModifier.PUBLIC, MethodModifier.STATIC));
         config.setMetricName("yako");
-        config.setSpanTemplate("yak(): {{0}}, {{1}} => {{?}}");
+        config.setSpanText("yak(): {{0}}, {{1}} => {{?}}");
         return config;
     }
 
@@ -257,6 +257,6 @@ public class ConfigTest {
                     .of(MethodModifier.PUBLIC, MethodModifier.STATIC));
         }
         config.setMetricName(config.getMetricName() + "e");
-        config.setSpanTemplate(config.getSpanTemplate() + "f");
+        config.setSpanText(config.getSpanText() + "f");
     }
 }

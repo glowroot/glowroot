@@ -239,7 +239,7 @@ class LocalConfigService implements ConfigService {
         config.setMethodReturnTypeName(coreConfig.getMethodReturnTypeName());
         config.setMethodModifiers(methodModifiers);
         config.setMetricName(coreConfig.getMetricName());
-        config.setSpanTemplate(coreConfig.getSpanTemplate());
+        config.setSpanText(coreConfig.getSpanText());
         return config;
     }
 
@@ -263,6 +263,6 @@ class LocalConfigService implements ConfigService {
         assertNonNull(methodReturnTypeName, "Config methodReturnTypeName is null");
         return new io.informant.config.PointcutConfig(captureItems, typeName, methodName,
                 config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
-                config.getMetricName(), config.getSpanTemplate(), config.getTraceGrouping());
+                config.getMetricName(), config.getSpanText(), config.getTraceGrouping());
     }
 }

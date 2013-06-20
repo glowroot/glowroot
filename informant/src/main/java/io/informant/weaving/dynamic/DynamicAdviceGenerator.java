@@ -128,11 +128,11 @@ public class DynamicAdviceGenerator implements Opcodes {
                 "(Ljava/lang/Class;)Lio/informant/api/MetricName;");
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "metric", "Lio/informant/api/MetricName;");
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
-            String spanTemplate = pointcutConfig.getSpanTemplate();
-            if (spanTemplate == null) {
+            String spanText = pointcutConfig.getSpanText();
+            if (spanText == null) {
                 mv.visitLdcInsn("<no span text provided>");
             } else {
-                mv.visitLdcInsn(spanTemplate);
+                mv.visitLdcInsn(spanText);
             }
             mv.visitMethodInsn(INVOKESTATIC,
                     "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",

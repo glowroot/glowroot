@@ -93,7 +93,7 @@ define(function (require) {
       return text;
     }
 
-    function updateSpanTemplate() {
+    function updateSpanText() {
       var signature = getSignature();
       if (!signature) {
         // no radio button selected
@@ -108,7 +108,7 @@ define(function (require) {
       if (signature.all) {
         // 'all matching' is selected
         template += '{{methodName}}()';
-        $('#pointcutSpanTemplate_' + pointcutNum).val(template);
+        $('#pointcutSpanText_' + pointcutNum).val(template);
         return;
       }
       template += signature.name + '()';
@@ -123,7 +123,7 @@ define(function (require) {
       if (signature.returnTypeName !== 'void') {
         template += ' => {{ret}}';
       }
-      $('#pointcutSpanTemplate_' + pointcutNum).val(template);
+      $('#pointcutSpanText_' + pointcutNum).val(template);
     }
 
     function updateTraceGrouping() {
@@ -148,7 +148,7 @@ define(function (require) {
       $.getJSON(url, function (signatures) {
         var $pointcutMethodSignatures = $('#pointcutMethodSignatures_' + pointcutNum);
         $pointcutMethodSignatures.html('');
-        $('#pointcutSpanTemplate_' + pointcutNum).val('');
+        $('#pointcutSpanText_' + pointcutNum).val('');
         var html = '';
         var i;
         for (i = 0; i < signatures.length; i++) {
@@ -169,7 +169,7 @@ define(function (require) {
           var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked');
           var trace = $('#pointcutCaptureTrace_' + pointcutNum).is(':checked');
           if (span || trace) {
-            updateSpanTemplate();
+            updateSpanText();
           }
           if (trace) {
             updateTraceGrouping();
@@ -209,7 +209,7 @@ define(function (require) {
           var span = $('#pointcutCaptureSpan_' + pointcutNum).is(':checked');
           var trace = $('#pointcutCaptureTrace_' + pointcutNum).is(':checked');
           if (span || trace) {
-            updateSpanTemplate();
+            updateSpanText();
           }
           if (trace) {
             updateTraceGrouping();
@@ -243,14 +243,14 @@ define(function (require) {
       } else {
         $pointcutTraceSection.addClass('hide');
       }
-      var $pointcutSpanTemplate = $('#pointcutSpanTemplate_' + pointcutNum);
-      if ((span || trace) && $pointcutSpanTemplate.val() === '') {
+      var $pointcutSpanText = $('#pointcutSpanText_' + pointcutNum);
+      if ((span || trace) && $pointcutSpanText.val() === '') {
         // populate default template value on selecting span/trace
-        updateSpanTemplate();
+        updateSpanText();
       }
       if (!span && !trace) {
         // clear template value on de-selecting span/trace
-        $pointcutSpanTemplate.val('');
+        $pointcutSpanText.val('');
       }
       var $pointcutTraceGrouping = $('#pointcutTraceGrouping_' + pointcutNum);
       if (trace && $pointcutTraceGrouping.val() === '') {
@@ -309,7 +309,7 @@ define(function (require) {
         'methodReturnTypeName': signature.returnTypeName,
         'methodModifiers': signature.modifiers,
         'metricName': $('#pointcutMetricName_' + pointcutNum).val(),
-        'spanTemplate': $('#pointcutSpanTemplate_' + pointcutNum).val(),
+        'spanText': $('#pointcutSpanText_' + pointcutNum).val(),
         'traceGrouping': $('#pointcutTraceGrouping_' + pointcutNum).val()
       };
       var url;
@@ -369,7 +369,7 @@ define(function (require) {
           $this.data('value', $this.val());
           $pointcutMethodName.val('');
           $('#pointcutMethodSignatures_' + pointcutNum).html('');
-          $('#pointcutSpanTemplate_' + pointcutNum).val('');
+          $('#pointcutSpanText_' + pointcutNum).val('');
         }
       });
       $pointcutMethodName.change(function () {
@@ -440,7 +440,7 @@ define(function (require) {
         $('#pointcutCaptureTrace_' + pointcutNum).attr('checked', true);
       }
       $('#pointcutMetricName_' + pointcutNum).val(pointcut.metricName);
-      $('#pointcutSpanTemplate_' + pointcutNum).val(pointcut.spanTemplate);
+      $('#pointcutSpanText_' + pointcutNum).val(pointcut.spanText);
       $('#pointcutTraceGrouping_' + pointcutNum).val(pointcut.traceGrouping);
       updateSectionHiding();
     }

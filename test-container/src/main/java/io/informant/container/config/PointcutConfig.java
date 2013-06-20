@@ -46,7 +46,7 @@ public class PointcutConfig {
     @Nullable
     private String metricName;
     @Nullable
-    private String spanTemplate;
+    private String spanText;
     @Nullable
     private String traceGrouping;
 
@@ -130,12 +130,12 @@ public class PointcutConfig {
     }
 
     @Nullable
-    public String getSpanTemplate() {
-        return spanTemplate;
+    public String getSpanText() {
+        return spanText;
     }
 
-    public void setSpanTemplate(@Nullable String spanTemplate) {
-        this.spanTemplate = spanTemplate;
+    public void setSpanText(@Nullable String spanText) {
+        this.spanText = spanText;
     }
 
     @Nullable
@@ -168,7 +168,7 @@ public class PointcutConfig {
                     && Objects.equal(methodReturnTypeName, that.methodReturnTypeName)
                     && Objects.equal(methodModifiers, that.methodModifiers)
                     && Objects.equal(metricName, that.metricName)
-                    && Objects.equal(spanTemplate, that.spanTemplate)
+                    && Objects.equal(spanText, that.spanText)
                     && Objects.equal(traceGrouping, that.traceGrouping);
         }
         return false;
@@ -180,7 +180,7 @@ public class PointcutConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(captureItems, typeName, methodName, methodArgTypeNames,
-                methodReturnTypeName, methodModifiers, metricName, spanTemplate, traceGrouping);
+                methodReturnTypeName, methodModifiers, metricName, spanText, traceGrouping);
     }
 
     @Override
@@ -193,7 +193,7 @@ public class PointcutConfig {
                 .add("methodReturnTypeName", methodReturnTypeName)
                 .add("methodModifiers", methodModifiers)
                 .add("metricName", metricName)
-                .add("spanTemplate", spanTemplate)
+                .add("spanText", spanText)
                 .add("traceGrouping", traceGrouping)
                 .add("version", version)
                 .toString();
@@ -208,7 +208,7 @@ public class PointcutConfig {
             @JsonProperty("methodReturnTypeName") @Nullable String methodReturnTypeName,
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
             @JsonProperty("metricName") @Nullable String metricName,
-            @JsonProperty("spanTemplate") @Nullable String spanTemplate,
+            @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(captureItems, "captureItems");
@@ -227,7 +227,7 @@ public class PointcutConfig {
         config.setMethodReturnTypeName(methodReturnTypeName);
         config.setMethodModifiers(methodModifiers);
         config.setMetricName(metricName);
-        config.setSpanTemplate(spanTemplate);
+        config.setSpanText(spanText);
         config.setTraceGrouping(traceGrouping);
         return config;
     }

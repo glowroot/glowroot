@@ -125,7 +125,7 @@ public class DynamicAdviceTest {
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute one");
-        config.setSpanTemplate("execute1() => {{ret}}");
+        config.setSpanText("execute1() => {{ret}}");
         container.getConfigService().addPointcutConfig(config);
     }
 
@@ -150,7 +150,7 @@ public class DynamicAdviceTest {
         config.setMethodReturnTypeName("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute with return");
-        config.setSpanTemplate("executeWithReturn() => {{ret}}");
+        config.setSpanText("executeWithReturn() => {{ret}}");
         container.getConfigService().addPointcutConfig(config);
     }
 
@@ -164,7 +164,7 @@ public class DynamicAdviceTest {
         config.setMethodReturnTypeName("void");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setMetricName("execute with args");
-        config.setSpanTemplate("executeWithArgs(): {{0}}, {{1}}");
+        config.setSpanText("executeWithArgs(): {{0}}, {{1}}");
         config.setTraceGrouping("Misc / {{methodName}}");
         container.getConfigService().addPointcutConfig(config);
     }
