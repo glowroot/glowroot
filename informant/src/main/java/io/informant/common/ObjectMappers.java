@@ -47,7 +47,7 @@ import io.informant.markers.Static;
  */
 // unfortunately this class cannot be used by test-container since sometimes this class exposes
 // unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build),
-// therefore there is an exact duplicate of this class under test-container
+// therefore there is a mostly duplicate class under test-container
 @Static
 public class ObjectMappers {
 

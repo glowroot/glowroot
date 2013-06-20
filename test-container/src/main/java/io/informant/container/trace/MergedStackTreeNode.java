@@ -44,7 +44,7 @@ public class MergedStackTreeNode {
     @Nullable
     private final String leafThreadState;
 
-    public MergedStackTreeNode(@Nullable String stackTraceElement,
+    private MergedStackTreeNode(@Nullable String stackTraceElement,
             @ReadOnly List<MergedStackTreeNode> childNodes, @ReadOnly List<String> metricNames,
             int sampleCount, @Nullable String leafThreadState) {
         this.stackTraceElement = stackTraceElement;

@@ -37,20 +37,20 @@ import static io.informant.common.Nullness.assertNonNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class DynamicAdviceGenerator implements Opcodes {
+class DynamicAdviceGenerator implements Opcodes {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final PointcutConfig pointcutConfig;
     private final String adviceTypeName;
 
-    public DynamicAdviceGenerator(PointcutConfig pointcutConfig) {
+    DynamicAdviceGenerator(PointcutConfig pointcutConfig) {
         this.pointcutConfig = pointcutConfig;
         adviceTypeName = "io/informant/dynamicadvice/GeneratedAdvice"
                 + counter.incrementAndGet();
     }
 
-    public Class<?> generate() throws SecurityException, NoSuchMethodException,
+    Class<?> generate() throws SecurityException, NoSuchMethodException,
             IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, adviceTypeName, null, "java/lang/Object", null);

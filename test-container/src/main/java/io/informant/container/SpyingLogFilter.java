@@ -31,15 +31,13 @@ import com.google.common.collect.Lists;
  */
 public class SpyingLogFilter extends Filter<ILoggingEvent> {
 
-    public static final String NAME = "SPYING";
-
     private static final List<ExpectedMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
 
     private static final AtomicInteger unexpectedMessageCount = new AtomicInteger();
 
     @Override
     public String getName() {
-        return NAME;
+        return "SPYING";
     }
 
     @Override
@@ -89,7 +87,7 @@ public class SpyingLogFilter extends Filter<ILoggingEvent> {
     public static class MessageCount implements Serializable {
         private final int expectedCount;
         private final int unexpectedCount;
-        public MessageCount(int expectedCount, int unexpectedCount) {
+        private MessageCount(int expectedCount, int unexpectedCount) {
             this.expectedCount = expectedCount;
             this.unexpectedCount = unexpectedCount;
         }

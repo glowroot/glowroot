@@ -31,7 +31,7 @@ import static io.informant.common.Nullness.assertNonNull;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class AdviceFlowGenerator implements Opcodes {
+class AdviceFlowGenerator implements Opcodes {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
@@ -39,7 +39,7 @@ public class AdviceFlowGenerator implements Opcodes {
 
     private AdviceFlowGenerator() {}
 
-    public static Class<?> generate() throws SecurityException, NoSuchMethodException,
+    static Class<?> generate() throws SecurityException, NoSuchMethodException,
             IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 
         String generatedTypeName = "io/informant/weaving/GeneratedAdviceFlow"

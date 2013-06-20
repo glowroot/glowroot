@@ -152,7 +152,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     @Nullable
-    HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
+    private HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();

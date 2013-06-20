@@ -16,6 +16,7 @@
 package io.informant.collector;
 
 import io.informant.markers.NotThreadSafe;
+import io.informant.markers.OnlyUsedByTests;
 
 /**
  * @author Trask Stalnaker
@@ -28,12 +29,13 @@ public class Aggregate {
     private long durationTotal;
     private long traceCount;
 
+    Aggregate() {}
+
+    @OnlyUsedByTests
     public Aggregate(long durationTotal, long traceCount) {
         this.durationTotal = durationTotal;
         this.traceCount = traceCount;
     }
-
-    Aggregate() {}
 
     public long getDurationTotal() {
         return durationTotal;

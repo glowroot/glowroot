@@ -26,7 +26,6 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -46,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// unfortunately this is an exact duplicate of a class from the informant module
+// unfortunately this is mostly a duplicate of a class from the informant module
 // test-container cannot use the class from the informant module since sometimes that class exposes
 // unshaded jackson types (in IDE) and sometimes it exposes shaded jackson types (in maven build)
 public class ObjectMappers {
@@ -65,16 +64,6 @@ public class ObjectMappers {
         T value = mapper.readValue(content, type);
         if (value == null) {
             throw new JsonMappingException("Content is json null");
-        }
-        return value;
-    }
-
-    public static <T> T treeToRequiredValue(@ReadOnly ObjectMapper mapper, TreeNode n,
-            Class<T> type) throws JsonProcessingException {
-        /*@Nullable*/
-        T value = mapper.treeToValue(n, type);
-        if (value == null) {
-            throw new JsonMappingException("Node is json null");
         }
         return value;
     }
@@ -125,7 +114,7 @@ public class ObjectMappers {
                     return new EnumDeserializer(type);
                 }
             });
-        };
+        }
     }
 
     private static class EnumSerializer extends JsonSerializer<Object> {

@@ -52,7 +52,7 @@ public class DelegatingJavaagent {
         delegateMethod.invoke(null, agentArgs, instrumentation);
     }
 
-    public static File createDelegatingJavaagentJarFile(File dir) throws IOException {
+    static File createDelegatingJavaagentJarFile(File dir) throws IOException {
         File jarFile = File.createTempFile("informant-", ".jar", dir);
         Manifest manifest = new Manifest();
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");

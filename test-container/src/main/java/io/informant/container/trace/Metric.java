@@ -52,7 +52,7 @@ public class Metric {
     private final boolean minActive;
     private final boolean maxActive;
 
-    public Metric(String name, long total, long min, long max, long count, boolean active,
+    private Metric(String name, long total, long min, long max, long count, boolean active,
             boolean minActive, boolean maxActive) {
         this.name = name;
         this.total = total;

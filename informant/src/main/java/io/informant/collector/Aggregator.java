@@ -82,7 +82,7 @@ class Aggregator {
         }
     }
 
-    void flush() {
+    private void flush() {
         Aggregates completedAggregates = null;
         // this synchronized block is to ensure atomicity between updates and flushes
         synchronized (lock) {

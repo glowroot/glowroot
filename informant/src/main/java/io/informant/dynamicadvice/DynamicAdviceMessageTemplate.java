@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.markers.UsedByGeneratedBytecode;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -39,6 +41,7 @@ public class DynamicAdviceMessageTemplate {
     private final ImmutableList<ArgPathPart> argPathParts;
     private final ImmutableList<ValuePathPart> returnPathParts;
 
+    @UsedByGeneratedBytecode
     public static DynamicAdviceMessageTemplate create(String template) {
         ImmutableList.Builder<Part> allParts = ImmutableList.builder();
         ImmutableList.Builder<ValuePathPart> thisPathParts = ImmutableList.builder();
@@ -119,7 +122,7 @@ public class DynamicAdviceMessageTemplate {
 
         private final PartType type;
 
-        Part(PartType type) {
+        private Part(PartType type) {
             this.type = type;
         }
 
@@ -132,7 +135,7 @@ public class DynamicAdviceMessageTemplate {
 
         private final String constant;
 
-        ConstantPart(String constant) {
+        private ConstantPart(String constant) {
             super(PartType.CONSTANT);
             this.constant = constant;
         }
@@ -147,7 +150,7 @@ public class DynamicAdviceMessageTemplate {
         private final int argNumber;
         private final String[] propertyPath;
 
-        ArgPathPart(int argNumber, String[] propertyPath) {
+        private ArgPathPart(int argNumber, String[] propertyPath) {
             super(PartType.ARG_PATH);
             this.argNumber = argNumber;
             this.propertyPath = propertyPath;
@@ -166,7 +169,7 @@ public class DynamicAdviceMessageTemplate {
 
         private final String[] propertyPath;
 
-        ValuePathPart(PartType partType, String[] propertyPath) {
+        private ValuePathPart(PartType partType, String[] propertyPath) {
             super(partType);
             this.propertyPath = propertyPath;
         }
