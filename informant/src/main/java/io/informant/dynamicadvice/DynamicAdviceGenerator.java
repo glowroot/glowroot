@@ -293,7 +293,7 @@ class DynamicAdviceGenerator implements Opcodes {
         if (pointcutConfig.getMethodReturnTypeName().equals("")) {
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/OptionalReturn", "isVoid", "()Z");
+            mv.visitMethodInsn(INVOKEINTERFACE, "io/informant/api/OptionalReturn", "isVoid", "()Z");
             Label notVoidLabel = new Label();
             Label endIfLabel = new Label();
             mv.visitJumpInsn(IFEQ, notVoidLabel);
@@ -301,7 +301,7 @@ class DynamicAdviceGenerator implements Opcodes {
             mv.visitJumpInsn(GOTO, endIfLabel);
             mv.visitLabel(notVoidLabel);
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/OptionalReturn", "getValue",
+            mv.visitMethodInsn(INVOKEINTERFACE, "io/informant/api/OptionalReturn", "getValue",
                     "()Ljava/lang/Object;");
             mv.visitLabel(endIfLabel);
             mv.visitMethodInsn(INVOKESTATIC,

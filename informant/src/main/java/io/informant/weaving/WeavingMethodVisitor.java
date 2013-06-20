@@ -374,12 +374,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 // @BindOptionalReturn must be the first argument to @OnReturn (if present)
                 if (opcode == RETURN) {
                     // void
-                    mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/OptionalReturn",
-                            "fromVoid", "()Lio/informant/api/OptionalReturn;");
+                    mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/internal/VoidReturn",
+                            "getInstance", "()Lio/informant/api/OptionalReturn;");
                 } else {
                     loadReturnValue(opcode, false);
-                    mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/OptionalReturn",
-                            "fromValue", "(Ljava/lang/Object;)Lio/informant/api/OptionalReturn;");
+                    mv.visitMethodInsn(INVOKESTATIC, "io/informant/api/internal/NonVoidReturn",
+                            "create", "(Ljava/lang/Object;)Lio/informant/api/OptionalReturn;");
                 }
                 startIndex = 1;
             }
