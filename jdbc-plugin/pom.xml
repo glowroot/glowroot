@@ -34,7 +34,7 @@
         already provided in the informant jar -->
       <groupId>io.informant.shaded</groupId>
       <artifactId>shaded-guava</artifactId>
-      <version>14.0.1-rc1-SNAPSHOT</version>
+      <version>14.0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -80,13 +80,13 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-jdbc</artifactId>
-      <version>7.0.40</version>
+      <version>7.0.41</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava-jdk5</artifactId>
-      <version>14.0.1-rc1</version>
+      <version>14.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>

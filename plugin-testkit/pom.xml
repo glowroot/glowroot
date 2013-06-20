@@ -24,7 +24,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava-jdk5</artifactId>
-      <version>14.0.1-rc1</version>
+      <version>14.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

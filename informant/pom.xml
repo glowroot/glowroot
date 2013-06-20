@@ -53,7 +53,7 @@
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
       <!-- netty 4.x requires jdk 6 -->
-      <version>3.6.4.Final</version>
+      <version>3.6.6.Final</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava-jdk5</artifactId>
-      <version>14.0.1-rc1</version>
+      <version>14.0.1</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -202,7 +202,7 @@
       <plugin>
         <groupId>com.github.skwakman.nodejs-maven-plugin</groupId>
         <artifactId>nodejs-maven-plugin</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
         <executions>
           <execution>
             <phase>initialize</phase>
@@ -542,7 +542,7 @@
               <dependency>
                 <groupId>net.sf.proguard</groupId>
                 <artifactId>proguard-base</artifactId>
-                <version>4.8</version>
+                <version>4.9</version>
               </dependency>
             </dependencies>
           </plugin>

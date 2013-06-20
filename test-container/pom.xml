@@ -24,7 +24,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava-jdk5</artifactId>
-      <version>14.0.1-rc1</version>
+      <version>14.0.1</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
@@ -35,7 +35,7 @@
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
       <!-- netty 4.x requires jdk 6 -->
-      <version>3.6.4.Final</version>
+      <version>3.6.6.Final</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
