@@ -63,7 +63,8 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private final ClassVisitor cv;
 
     private final ImmutableList<MixinType> mixinTypes;
-    private final ImmutableList<Advice> advisors;
+    @ReadOnly
+    private final Iterable<Advice> advisors;
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
@@ -83,7 +84,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
     private Builder parsedType;
 
     public WeavingClassVisitor(ClassVisitor cv, ImmutableList<MixinType> mixinTypes,
-            ImmutableList<Advice> advisors, @Nullable ClassLoader loader,
+            @ReadOnly Iterable<Advice> advisors, @Nullable ClassLoader loader,
             ParsedTypeCache parsedTypeCache, @Nullable CodeSource codeSource) {
         super(ASM4, cv);
         this.cv = cv;

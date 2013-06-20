@@ -23,12 +23,13 @@ import java.util.Map;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
-import io.informant.config.AdviceCache;
+import io.informant.config.PluginDescriptorCache;
 import io.informant.container.SpyingLogFilter;
 import io.informant.container.SpyingLogFilter.MessageCount;
 import io.informant.container.SpyingLogFilterCheck;
@@ -36,6 +37,7 @@ import io.informant.container.TempDirs;
 import io.informant.container.Threads;
 import io.informant.container.config.ConfigService;
 import io.informant.container.trace.TraceService;
+import io.informant.dynamicadvice.DynamicAdviceCache;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.IsolatedWeavingClassLoader;
 
@@ -80,13 +82,18 @@ public class GenericLocalContainer<T> {
         }
         informantModule = MainEntryPoint.start(properties);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        AdviceCache adviceCache = informantModule.getTraceModule().getAdviceCache();
-        loader.setMixinTypes(adviceCache.getMixinTypes());
-        loader.setAdvisors(adviceCache.getAdvisors());
+        PluginDescriptorCache pluginDescriptorCache =
+                informantModule.getConfigModule().getPluginDescriptorCache();
+        DynamicAdviceCache dynamicAdviceCache =
+                informantModule.getTraceModule().getDynamicAdviceCache();
+        loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
+        loader.setAdvisors(Iterables.concat(pluginDescriptorCache.getAdvisors(),
+                dynamicAdviceCache.getDynamicAdvisorsSupplier().get()));
         loader.addBridgeClasses(appInterface);
         loader.addExcludePackages("io.informant.api", "io.informant.collector",
-                "io.informant.common", "io.informant.config", "io.informant.local",
-                "io.informant.trace", "io.informant.weaving", "io.informant.shaded");
+                "io.informant.common", "io.informant.config", "io.informant.dynamicadvice",
+                "io.informant.local", "io.informant.trace", "io.informant.weaving",
+                "io.informant.shaded");
         loader.weavingMetric(informantModule.getTraceModule().getWeavingMetricName());
         isolatedWeavingClassLoader = loader.build();
         this.appInterface = appInterface;
@@ -94,7 +101,6 @@ public class GenericLocalContainer<T> {
         configService = new LocalConfigService(informantModule);
         traceService = new LocalTraceService(informantModule);
     }
-
     public ConfigService getConfigService() {
         return configService;
     }

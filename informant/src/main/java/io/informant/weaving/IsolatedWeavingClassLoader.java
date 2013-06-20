@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import checkers.igj.quals.ReadOnly;
-import com.google.common.base.Suppliers;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
@@ -48,6 +48,13 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(IsolatedWeavingClassLoader.class);
 
+    private static final Supplier<ImmutableList<Advice>> SUPPLIER_OF_NONE =
+            new Supplier<ImmutableList<Advice>>() {
+                public ImmutableList<Advice> get() {
+                    return ImmutableList.of();
+                }
+            };
+
     private final Weaver weaver;
     // bridge classes can be either interfaces or base classes
     private final ImmutableList<Class<?>> bridgeClasses;
@@ -70,8 +77,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             ImmutableList<Advice> advisors, ImmutableList<Class<?>> bridgeClasses,
             ImmutableList<String> excludePackages, WeavingMetric weavingMetric) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
-        weaver = new Weaver(mixinTypes, Suppliers.ofInstance(advisors), this,
-                new ParsedTypeCache(), weavingMetric);
+        weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this, new ParsedTypeCache(),
+                weavingMetric);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
     }
@@ -197,7 +204,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         }
 
-        public void setAdvisors(@ReadOnly List<Advice> advisors) {
+        public void setAdvisors(@ReadOnly Iterable<Advice> advisors) {
             this.advisors = ImmutableList.copyOf(advisors);
         }
 

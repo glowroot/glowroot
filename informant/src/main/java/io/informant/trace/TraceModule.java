@@ -25,9 +25,9 @@ import com.google.common.cache.LoadingCache;
 
 import io.informant.api.PluginServices;
 import io.informant.common.Clock;
-import io.informant.config.AdviceCache;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
+import io.informant.dynamicadvice.DynamicAdviceCache;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.trace.model.WeavingMetricNameImpl;
@@ -50,7 +50,7 @@ public class TraceModule {
     private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
     private final MetricCache metricCache;
-    private final AdviceCache adviceCache;
+    private final DynamicAdviceCache dynamicAdviceCache;
 
     private final StuckTraceCollector stuckTraceCollector;
     private final CoarseProfiler coarseProfiler;
@@ -79,8 +79,7 @@ public class TraceModule {
         weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
         metricCache = new MetricCache(ticker);
-        adviceCache = new AdviceCache(configModule.getPluginDescriptorCache(),
-                configService.getPointcutConfigs());
+        dynamicAdviceCache = new DynamicAdviceCache(configService.getPointcutConfigs());
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
                 new Random());
         stuckTraceCollector = new StuckTraceCollector(scheduledExecutor, traceRegistry,
@@ -93,8 +92,11 @@ public class TraceModule {
     }
 
     public WeavingClassFileTransformer createWeavingClassFileTransformer() {
-        return new WeavingClassFileTransformer(adviceCache.getMixinTypes(),
-                adviceCache.getAdvisorsSupplier(), parsedTypeCache, weavingMetricName);
+        return new WeavingClassFileTransformer(
+                configModule.getPluginDescriptorCache().getMixinTypes(),
+                configModule.getPluginDescriptorCache().getAdvisors(),
+                dynamicAdviceCache.getDynamicAdvisorsSupplier(), parsedTypeCache,
+                weavingMetricName);
     }
 
     public PluginServices getPluginServices(String pluginId) {
@@ -109,8 +111,8 @@ public class TraceModule {
         return traceRegistry;
     }
 
-    public AdviceCache getAdviceCache() {
-        return adviceCache;
+    public DynamicAdviceCache getDynamicAdviceCache() {
+        return dynamicAdviceCache;
     }
 
     @OnlyUsedByTests

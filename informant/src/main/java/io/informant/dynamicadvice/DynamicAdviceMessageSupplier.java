@@ -13,33 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.weaving.dynamic;
-
-import checkers.nullness.quals.Nullable;
+package io.informant.dynamicadvice;
 
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Span;
+import io.informant.dynamicadvice.DynamicAdviceMessageTemplate.ArgPathPart;
+import io.informant.dynamicadvice.DynamicAdviceMessageTemplate.ConstantPart;
+import io.informant.dynamicadvice.DynamicAdviceMessageTemplate.Part;
+import io.informant.dynamicadvice.DynamicAdviceMessageTemplate.ValuePathPart;
 import io.informant.markers.UsedByGeneratedBytecode;
-import io.informant.weaving.dynamic.DynamicPointcutMessageTemplate.ArgPathPart;
-import io.informant.weaving.dynamic.DynamicPointcutMessageTemplate.ConstantPart;
-import io.informant.weaving.dynamic.DynamicPointcutMessageTemplate.Part;
-import io.informant.weaving.dynamic.DynamicPointcutMessageTemplate.ValuePathPart;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class DynamicPointcutMessageSupplier extends MessageSupplier {
+public class DynamicAdviceMessageSupplier extends MessageSupplier {
 
-    private final DynamicPointcutMessageTemplate template;
+    private final DynamicAdviceMessageTemplate template;
     private final String[] resolvedThisPathParts;
     private final String[] resolvedArgPathParts;
     private volatile String/*@Nullable*/[] resolvedReturnValuePathParts;
     private final String methodName;
 
     @UsedByGeneratedBytecode
-    public static DynamicPointcutMessageSupplier create(DynamicPointcutMessageTemplate template,
+    public static DynamicAdviceMessageSupplier create(DynamicAdviceMessageTemplate template,
             Object target, String methodName, Object... args) {
         // render paths to strings immediately in case the objects are mutable
         String[] resolvedThisPathParts = new String[template.getThisPathParts().size()];
@@ -54,11 +52,11 @@ public class DynamicPointcutMessageSupplier extends MessageSupplier {
             resolvedArgPathParts[i++] =
                     String.valueOf(Beans.value(args[part.getArgNumber()], part.getPropertyPath()));
         }
-        return new DynamicPointcutMessageSupplier(template, resolvedThisPathParts,
+        return new DynamicAdviceMessageSupplier(template, resolvedThisPathParts,
                 resolvedArgPathParts, methodName);
     }
 
-    private DynamicPointcutMessageSupplier(DynamicPointcutMessageTemplate template,
+    private DynamicAdviceMessageSupplier(DynamicAdviceMessageTemplate template,
             String[] resolvedThisPathParts, String[] resolvedArgPathParts, String methodName) {
         this.template = template;
         this.resolvedThisPathParts = resolvedThisPathParts;
@@ -115,7 +113,7 @@ public class DynamicPointcutMessageSupplier extends MessageSupplier {
 
     @UsedByGeneratedBytecode
     public static void updateWithReturnValue(Span span, Object returnValue) {
-        ((DynamicPointcutMessageSupplier) span.getMessageSupplier()).setReturnValue(String
+        ((DynamicAdviceMessageSupplier) span.getMessageSupplier()).setReturnValue(String
                 .valueOf(returnValue));
     }
 }

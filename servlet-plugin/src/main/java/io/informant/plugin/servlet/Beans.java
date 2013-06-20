@@ -35,7 +35,7 @@ import io.informant.shaded.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO address duplication between this and the Beans class in io.informant.weaving.dynamic
+// TODO address duplication between this and the Beans class in io.informant.dynamicadvice
 class Beans {
 
     private static final Logger logger = LoggerFactory.getLogger(Beans.class);

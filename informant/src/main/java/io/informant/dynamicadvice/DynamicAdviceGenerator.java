@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.weaving.dynamic;
+package io.informant.dynamicadvice;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -46,7 +46,7 @@ public class DynamicAdviceGenerator implements Opcodes {
 
     public DynamicAdviceGenerator(PointcutConfig pointcutConfig) {
         this.pointcutConfig = pointcutConfig;
-        adviceTypeName = "io/informant/weaving/dynamic/GeneratedAdvice"
+        adviceTypeName = "io/informant/dynamicadvice/GeneratedAdvice"
                 + counter.incrementAndGet();
     }
 
@@ -102,12 +102,12 @@ public class DynamicAdviceGenerator implements Opcodes {
                 .visitEnd();
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "spanText",
-                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;", null, null)
+                    "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                     .visitEnd();
         }
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceGrouping",
-                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;", null, null)
+                    "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                     .visitEnd();
         }
     }
@@ -135,11 +135,11 @@ public class DynamicAdviceGenerator implements Opcodes {
                 mv.visitLdcInsn(spanText);
             }
             mv.visitMethodInsn(INVOKESTATIC,
-                    "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",
+                    "io/informant/dynamicadvice/DynamicAdviceMessageTemplate", "create",
                     "(Ljava/lang/String;)"
-                            + "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+                            + "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
             mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "spanText",
-                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+                    "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
         }
         if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
             if (Strings.isNullOrEmpty(pointcutConfig.getTraceGrouping())) {
@@ -148,11 +148,11 @@ public class DynamicAdviceGenerator implements Opcodes {
                 mv.visitLdcInsn(pointcutConfig.getTraceGrouping());
             }
             mv.visitMethodInsn(INVOKESTATIC,
-                    "io/informant/weaving/dynamic/DynamicPointcutMessageTemplate", "create",
+                    "io/informant/dynamicadvice/DynamicAdviceMessageTemplate", "create",
                     "(Ljava/lang/String;)"
-                            + "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+                            + "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
             mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "traceGrouping",
-                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+                    "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
         }
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
@@ -191,29 +191,29 @@ public class DynamicAdviceGenerator implements Opcodes {
                 "Lio/informant/api/PluginServices;");
         if (startTrace) {
             mv.visitFieldInsn(GETSTATIC, adviceTypeName, "traceGrouping",
-                    "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+                    "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
             mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);
             mv.visitMethodInsn(INVOKESTATIC,
-                    "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier", "create",
-                    "(Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;"
+                    "io/informant/dynamicadvice/DynamicAdviceMessageSupplier", "create",
+                    "(Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;"
                             + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
-                            + "Lio/informant/weaving/dynamic/DynamicPointcutMessageSupplier;");
+                            + "Lio/informant/dynamicadvice/DynamicAdviceMessageSupplier;");
             mv.visitMethodInsn(INVOKEVIRTUAL,
-                    "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier",
+                    "io/informant/dynamicadvice/DynamicAdviceMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;");
         }
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "spanText",
-                "Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;");
+                "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
         mv.visitVarInsn(ALOAD, 0);
         mv.visitVarInsn(ALOAD, 1);
         mv.visitVarInsn(ALOAD, 2);
         mv.visitMethodInsn(INVOKESTATIC,
-                "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier", "create",
-                "(Lio/informant/weaving/dynamic/DynamicPointcutMessageTemplate;"
+                "io/informant/dynamicadvice/DynamicAdviceMessageSupplier", "create",
+                "(Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;"
                         + "Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;)"
-                        + "Lio/informant/weaving/dynamic/DynamicPointcutMessageSupplier;");
+                        + "Lio/informant/dynamicadvice/DynamicAdviceMessageSupplier;");
         mv.visitFieldInsn(GETSTATIC, adviceTypeName, "metric", "Lio/informant/api/MetricName;");
         if (startTrace) {
             mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/PluginServices", "startTrace",
@@ -305,7 +305,7 @@ public class DynamicAdviceGenerator implements Opcodes {
                     "()Ljava/lang/Object;");
             mv.visitLabel(endIfLabel);
             mv.visitMethodInsn(INVOKESTATIC,
-                    "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier",
+                    "io/informant/dynamicadvice/DynamicAdviceMessageSupplier",
                     "updateWithReturnValue", "(Lio/informant/api/Span;Ljava/lang/Object;)V");
             mv.visitVarInsn(ALOAD, 1);
         } else if (pointcutConfig.getMethodReturnTypeName().equals("void")) {
@@ -314,7 +314,7 @@ public class DynamicAdviceGenerator implements Opcodes {
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 0);
             mv.visitMethodInsn(INVOKESTATIC,
-                    "io/informant/weaving/dynamic/DynamicPointcutMessageSupplier",
+                    "io/informant/dynamicadvice/DynamicAdviceMessageSupplier",
                     "updateWithReturnValue", "(Lio/informant/api/Span;Ljava/lang/Object;)V");
             mv.visitVarInsn(ALOAD, 1);
         }

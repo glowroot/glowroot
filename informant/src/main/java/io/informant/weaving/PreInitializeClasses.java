@@ -565,12 +565,15 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.ImmutableMapValues$1");
         types.add("com.google.common.collect.ImmutableSet");
         types.add("com.google.common.collect.Iterables");
+        types.add("com.google.common.collect.Iterables$2");
+        types.add("com.google.common.collect.Iterables$3");
         types.add("com.google.common.collect.Iterables$8");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
         types.add("com.google.common.collect.Iterators$12");
         types.add("com.google.common.collect.Iterators$13");
         types.add("com.google.common.collect.Iterators$2");
+        types.add("com.google.common.collect.Iterators$5");
         types.add("com.google.common.collect.Iterators$8");
         types.add("com.google.common.collect.Lists");
         types.add("com.google.common.collect.Lists$RandomAccessReverseList");

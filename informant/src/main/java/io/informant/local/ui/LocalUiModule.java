@@ -98,14 +98,15 @@ public class LocalUiModule {
         // port is just displayed on config page for its documentation value anyways, and more
         // useful to know it was set to 0 than to display its value (which is needed to view the
         // page anyways)
-        ConfigJsonService configJsonService = new ConfigJsonService(configService, rollingFile,
-                pluginDescriptorCache, dataDir, traceModule.getAdviceCache(), instrumentation);
-        PointcutConfigJsonService pointcutConfigJsonService = new PointcutConfigJsonService(
-                parsedTypeCache);
+        ConfigJsonService configJsonService =
+                new ConfigJsonService(configService, rollingFile, pluginDescriptorCache, dataDir,
+                        traceModule.getDynamicAdviceCache(), instrumentation);
+        PointcutConfigJsonService pointcutConfigJsonService =
+                new PointcutConfigJsonService(parsedTypeCache);
         ThreadDumpJsonService threadDumpJsonService = new ThreadDumpJsonService();
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao,
-                configService, traceModule.getAdviceCache(), parsedTypeCache, instrumentation,
-                traceCollector, dataSource, traceRegistry);
+                configService, traceModule.getDynamicAdviceCache(), parsedTypeCache,
+                instrumentation, traceCollector, dataSource, traceRegistry);
 
         // for now only a single http worker thread to keep # of threads down
         final int numWorkerThreads = 1;

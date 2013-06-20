@@ -42,7 +42,7 @@ public class PreInitializeClassesTest {
         // structure
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/weaving/WeavingClassFileTransformer", "<init>",
-                "(Ljava/util/List;Lcom/google/common/base/Supplier;"
+                "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
                         + "Lio/informant/weaving/ParsedTypeCache;"
                         + "Lio/informant/weaving/WeavingMetric;)V"));
         // "call" WeavingClassFileTransformer.transform()

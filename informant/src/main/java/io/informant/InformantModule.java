@@ -35,12 +35,12 @@ import io.informant.api.PluginServices;
 import io.informant.collector.CollectorModule;
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
+import io.informant.dynamicadvice.RetransformClasses;
 import io.informant.local.store.StorageModule;
 import io.informant.local.ui.LocalUiModule;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.trace.TraceModule;
-import io.informant.weaving.dynamic.RetransformClasses;
 
 /**
  * @author Trask Stalnaker

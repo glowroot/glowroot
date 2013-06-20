@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.common.ObjectMappers;
-import io.informant.config.AdviceCache;
 import io.informant.config.CoarseProfilingConfig;
 import io.informant.config.ConfigService;
 import io.informant.config.ConfigService.OptimisticLockException;
@@ -47,9 +46,10 @@ import io.informant.config.PointcutConfig;
 import io.informant.config.StorageConfig;
 import io.informant.config.UserConfig;
 import io.informant.config.WithVersionJsonView;
+import io.informant.dynamicadvice.DynamicAdviceCache;
+import io.informant.dynamicadvice.RetransformClasses;
 import io.informant.local.store.RollingFile;
 import io.informant.markers.Singleton;
-import io.informant.weaving.dynamic.RetransformClasses;
 
 /**
  * Json service to read config data.
@@ -68,18 +68,18 @@ class ConfigJsonService {
     private final RollingFile rollingFile;
     private final PluginDescriptorCache pluginDescriptorCache;
     private final File dataDir;
-    private final AdviceCache adviceCache;
+    private final DynamicAdviceCache dynamicAdviceCache;
     @Nullable
     private final Instrumentation instrumentation;
 
     ConfigJsonService(ConfigService configService, RollingFile rollingFile,
-            PluginDescriptorCache pluginDescriptorCache, File dataDir, AdviceCache adviceCache,
-            @Nullable Instrumentation instrumentation) {
+            PluginDescriptorCache pluginDescriptorCache, File dataDir,
+            DynamicAdviceCache dynamicAdviceCache, @Nullable Instrumentation instrumentation) {
         this.configService = configService;
         this.rollingFile = rollingFile;
         this.pluginDescriptorCache = pluginDescriptorCache;
         this.dataDir = dataDir;
-        this.adviceCache = adviceCache;
+        this.dynamicAdviceCache = dynamicAdviceCache;
         this.instrumentation = instrumentation;
     }
 
@@ -108,7 +108,7 @@ class ConfigJsonService {
         jg.writeFieldName("pointcutConfigs");
         writer.writeValue(jg, configService.getPointcutConfigs());
         jg.writeBooleanField("pointcutConfigsOutOfSync",
-                adviceCache.isPointcutConfigsOutOfSync(configService.getPointcutConfigs()));
+                dynamicAdviceCache.isPointcutConfigsOutOfSync(configService.getPointcutConfigs()));
         if (instrumentation == null) {
             // debugging with IsolatedWeavingClassLoader instead of javaagent
             jg.writeBooleanField("retransformClassesSupported", false);

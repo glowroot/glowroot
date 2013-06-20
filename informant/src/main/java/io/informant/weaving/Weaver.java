@@ -19,12 +19,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -54,18 +56,21 @@ class Weaver implements Opcodes {
             Boolean.valueOf(System.getProperty("informant.internal.weaving.verify"));
 
     private final ImmutableList<MixinType> mixinTypes;
-    private final Supplier<ImmutableList<Advice>> advisors;
+    private final ImmutableList<Advice> pluginAdvisors;
+    private final Supplier<ImmutableList<Advice>> dynamicAdvisors;
     @Nullable
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
 
     private final WeavingMetric weavingMetric;
 
-    Weaver(ImmutableList<MixinType> mixinTypes, Supplier<ImmutableList<Advice>> advisors,
+    Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
+            Supplier<ImmutableList<Advice>> dynamicAdvisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
             WeavingMetric weavingMetric) {
         this.mixinTypes = mixinTypes;
-        this.advisors = advisors;
+        this.pluginAdvisors = pluginAdvisors;
+        this.dynamicAdvisors = dynamicAdvisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
         this.weavingMetric = weavingMetric;
@@ -100,8 +105,13 @@ class Weaver implements Opcodes {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES, parsedTypeCache, loader,
                     codeSource, className);
-            WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors.get(),
-                    loader, parsedTypeCache, codeSource);
+            List<Advice> suppliedDynamicAdvisors = dynamicAdvisors.get();
+            if (suppliedDynamicAdvisors.isEmpty()) {
+
+            }
+            Iterable<Advice> advisors = Iterables.concat(pluginAdvisors, dynamicAdvisors.get());
+            WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
+                    parsedTypeCache, codeSource);
             ClassReader cr = new ClassReader(classBytes);
             try {
                 cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.SKIP_FRAMES);
@@ -128,7 +138,8 @@ class Weaver implements Opcodes {
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("mixinTypes", mixinTypes)
-                .add("advisors", advisors)
+                .add("pluginAdvisors", pluginAdvisors)
+                .add("dynamicAdvisors", dynamicAdvisors)
                 .add("loader", loader)
                 .add("parsedTypeCache", parsedTypeCache)
                 .toString();

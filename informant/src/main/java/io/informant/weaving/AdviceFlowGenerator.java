@@ -25,8 +25,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import io.informant.weaving.dynamic.DynamicAdviceGenerator;
-
 import static io.informant.common.Nullness.assertNonNull;
 
 /**
@@ -79,7 +77,7 @@ public class AdviceFlowGenerator implements Opcodes {
                 byte[].class, int.class, int.class);
         defineClassMethod.setAccessible(true);
         Class<?> definedClass = (Class<?>) defineClassMethod.invoke(
-                DynamicAdviceGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
+                AdviceFlowGenerator.class.getClassLoader(), name, bytes, 0, bytes.length);
         assertNonNull(definedClass, "ClassLoader.defineClass() returned null");
         return definedClass;
     }

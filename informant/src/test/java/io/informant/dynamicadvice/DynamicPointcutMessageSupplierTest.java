@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.weaving.dynamic;
+package io.informant.dynamicadvice;
 
 import org.junit.Test;
 
 import io.informant.api.Message;
 import io.informant.api.internal.ReadableMessage;
+import io.informant.dynamicadvice.DynamicAdviceMessageSupplier;
+import io.informant.dynamicadvice.DynamicAdviceMessageTemplate;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -30,8 +32,8 @@ public class DynamicPointcutMessageSupplierTest {
 
     @Test
     public void shouldRenderConstant() {
-        DynamicPointcutMessageTemplate template = DynamicPointcutMessageTemplate.create("abc");
-        Message message = DynamicPointcutMessageSupplier.create(template, new HasName(),
+        DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate.create("abc");
+        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo("abc");
@@ -39,9 +41,9 @@ public class DynamicPointcutMessageSupplierTest {
 
     @Test
     public void shouldRenderNormal() {
-        DynamicPointcutMessageTemplate template = DynamicPointcutMessageTemplate
+        DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
                 .create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{ret}}");
-        Message message = DynamicPointcutMessageSupplier.create(template, new HasName(),
+        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(HasName.class.getName() + ".execute(): the name => ");
@@ -49,9 +51,9 @@ public class DynamicPointcutMessageSupplierTest {
 
     @Test
     public void shouldRenderTrailingText() {
-        DynamicPointcutMessageTemplate template = DynamicPointcutMessageTemplate
+        DynamicAdviceMessageTemplate template = DynamicAdviceMessageTemplate
                 .create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing");
-        Message message = DynamicPointcutMessageSupplier.create(template, new HasName(),
+        Message message = DynamicAdviceMessageSupplier.create(template, new HasName(),
                 "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(HasName.class.getName() + ".execute(): the name trailing");

@@ -29,16 +29,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.collector.TraceCollectorImpl;
-import io.informant.config.AdviceCache;
 import io.informant.config.ConfigService;
 import io.informant.config.PointcutConfig;
+import io.informant.dynamicadvice.DynamicAdviceCache;
+import io.informant.dynamicadvice.RetransformClasses;
 import io.informant.local.store.DataSource;
 import io.informant.local.store.SnapshotDao;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 import io.informant.trace.TraceRegistry;
 import io.informant.weaving.ParsedTypeCache;
-import io.informant.weaving.dynamic.RetransformClasses;
 
 /**
  * Json service for various admin tasks.
@@ -54,7 +54,7 @@ class AdminJsonService {
 
     private final SnapshotDao snapshotDao;
     private final ConfigService configService;
-    private final AdviceCache adviceCache;
+    private final DynamicAdviceCache dynamicAdviceCache;
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
@@ -63,12 +63,12 @@ class AdminJsonService {
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
-            AdviceCache adviceCache, ParsedTypeCache parsedTypeCache,
+            DynamicAdviceCache dynamicAdviceCache, ParsedTypeCache parsedTypeCache,
             @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
             DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
-        this.adviceCache = adviceCache;
+        this.dynamicAdviceCache = dynamicAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
         this.traceCollector = traceCollector;
@@ -93,7 +93,7 @@ class AdminJsonService {
             return;
         }
         List<PointcutConfig> pointcutConfigs = configService.getPointcutConfigs();
-        adviceCache.updateAdvisors(pointcutConfigs);
+        dynamicAdviceCache.updateAdvisors(pointcutConfigs);
         Set<String> typeNames = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
             typeNames.add(pointcutConfig.getTypeName());

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.weaving.dynamic;
+package io.informant.dynamicadvice;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,10 +27,10 @@ import org.slf4j.LoggerFactory;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class DynamicPointcutMessageTemplate {
+public class DynamicAdviceMessageTemplate {
 
     private static final Logger logger =
-            LoggerFactory.getLogger(DynamicPointcutMessageTemplate.class);
+            LoggerFactory.getLogger(DynamicAdviceMessageTemplate.class);
 
     private static final Pattern pattern = Pattern.compile("\\{\\{([^}]*)}}");
 
@@ -39,7 +39,7 @@ public class DynamicPointcutMessageTemplate {
     private final ImmutableList<ArgPathPart> argPathParts;
     private final ImmutableList<ValuePathPart> returnPathParts;
 
-    public static DynamicPointcutMessageTemplate create(String template) {
+    public static DynamicAdviceMessageTemplate create(String template) {
         ImmutableList.Builder<Part> allParts = ImmutableList.builder();
         ImmutableList.Builder<ValuePathPart> thisPathParts = ImmutableList.builder();
         ImmutableList.Builder<ArgPathPart> argPathParts = ImmutableList.builder();
@@ -82,11 +82,11 @@ public class DynamicPointcutMessageTemplate {
         if (curr < template.length()) {
             allParts.add(new ConstantPart(template.substring(curr)));
         }
-        return new DynamicPointcutMessageTemplate(allParts.build(), thisPathParts.build(),
+        return new DynamicAdviceMessageTemplate(allParts.build(), thisPathParts.build(),
                 argPathParts.build(), returnPathParts.build());
     }
 
-    private DynamicPointcutMessageTemplate(ImmutableList<Part> allParts,
+    private DynamicAdviceMessageTemplate(ImmutableList<Part> allParts,
             ImmutableList<ValuePathPart> thisPathParts, ImmutableList<ArgPathPart> argPathParts,
             ImmutableList<ValuePathPart> returnPathParts) {
         this.allParts = allParts;
