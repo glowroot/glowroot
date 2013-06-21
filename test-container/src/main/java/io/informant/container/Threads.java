@@ -46,7 +46,9 @@ public class Threads {
     public static List<Thread> currentThreads() {
         List<Thread> threads = Lists.newArrayList();
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getState() != State.TERMINATED) {
+            // DestroyJavaVM thread seems a bit unpredictable, easier to just filter it out
+            if (thread.getState() != State.TERMINATED
+                    && !thread.getName().equals("DestroyJavaVM")) {
                 threads.add(thread);
             }
         }

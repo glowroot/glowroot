@@ -20,13 +20,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,16 +63,17 @@ class SocketCommandProcessor implements Runnable {
     private final ExecutorService executorService;
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
 
-    @LazyNonNull
-    private ImmutableList<Thread> preExistingThreads;
+    private final Set<Thread> preExistingThreads;
 
     SocketCommandProcessor(ObjectInputStream objectIn, ObjectOutputStream objectOut) {
         this.objectIn = objectIn;
         this.objectOut = objectOut;
         executorService = Executors.newCachedThreadPool();
+        preExistingThreads = Sets.newHashSet(Threads.currentThreads());
     }
 
     public void run() {
+        preExistingThreads.add(Thread.currentThread());
         try {
             while (true) {
                 readCommandAndSpawnHandlerThread();
@@ -92,6 +93,7 @@ class SocketCommandProcessor implements Runnable {
         logger.debug("command received by external jvm: {}", commandWrapper);
         executorService.submit(new Runnable() {
             public void run() {
+                preExistingThreads.add(Thread.currentThread());
                 try {
                     runCommandAndRespond(commandWrapper);
                 } catch (EOFException e) {
@@ -163,9 +165,6 @@ class SocketCommandProcessor implements Runnable {
         if (informantModule == null) {
             // informant failed to start
             respond(SHUTDOWN_RESPONSE, commandNum);
-        } else if (preExistingThreads == null) {
-            // EXECUTE_APP was never run
-            respond(SHUTDOWN_RESPONSE, commandNum);
         } else {
             try {
                 Threads.preShutdownCheck(preExistingThreads);
@@ -180,11 +179,6 @@ class SocketCommandProcessor implements Runnable {
     }
 
     private void executeAppAndRespond(int commandNum, String appClassName) throws Exception {
-        if (preExistingThreads == null) {
-            // wait until the first execute app command to capture pre-existing
-            // threads, otherwise may pick up DestroyJavaVM thread
-            preExistingThreads = ImmutableList.copyOf(Threads.currentThreads());
-        }
         Class<?> appClass = Class.forName(appClassName);
         try {
             executingAppThreads.add(Thread.currentThread());

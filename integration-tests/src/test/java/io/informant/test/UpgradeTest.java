@@ -65,6 +65,7 @@ public class UpgradeTest {
             // cleanup
             container.checkAndReset();
             container.close();
+            TempDirs.deleteRecursively(dataDir);
         }
     }
 

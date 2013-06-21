@@ -101,6 +101,7 @@ public class GenericLocalContainer<T> {
         configService = new LocalConfigService(informantModule);
         traceService = new LocalTraceService(informantModule);
     }
+
     public ConfigService getConfigService() {
         return configService;
     }
@@ -160,7 +161,11 @@ public class GenericLocalContainer<T> {
     }
 
     public void close() throws Exception {
-        if (shared) {
+        close(false);
+    }
+
+    public void close(boolean evenIfShared) throws Exception {
+        if (shared && !evenIfShared) {
             // this is the shared container and will be closed at the end of the run
             return;
         }

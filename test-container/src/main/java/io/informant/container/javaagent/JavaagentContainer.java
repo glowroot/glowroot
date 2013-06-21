@@ -219,11 +219,28 @@ public class JavaagentContainer implements Container {
     }
 
     public void close() throws Exception {
-        if (shared) {
+        close(false);
+    }
+
+    public void close(boolean evenIfShared) throws Exception {
+        if (shared && !evenIfShared) {
             // this is the shared container and will be closed at the end of the run
             return;
         }
         socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
+        cleanup();
+    }
+
+    public void kill() throws IOException, InterruptedException {
+        socketCommander.sendKillCommand();
+        cleanup();
+    }
+
+    public long getNumConsoleBytes() {
+        return numConsoleBytes;
+    }
+
+    private void cleanup() throws IOException, InterruptedException {
         socketCommander.close();
         process.waitFor();
         serverSocket.close();
@@ -235,26 +252,14 @@ public class JavaagentContainer implements Container {
         }
     }
 
-    public void kill() throws IOException, InterruptedException {
-        socketCommander.sendKillCommand();
-        socketCommander.close();
-        process.waitFor();
-        consolePipeExecutorService.shutdownNow();
-        Runtime.getRuntime().removeShutdownHook(shutdownHook);
-    }
-
-    public long getNumConsoleBytes() {
-        return numConsoleBytes;
-    }
-
     public static void main(String[] args) throws Exception {
         try {
             int port = Integer.parseInt(args[0]);
             Socket socket = new Socket((String) null, port);
             ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
             ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
-            new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
             new Thread(new SocketHeartbeat(objectOut)).start();
+            new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
         } catch (Throwable t) {
             // log error and exit gracefully
             logger.error(t.getMessage(), t);

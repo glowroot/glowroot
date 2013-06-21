@@ -51,7 +51,7 @@ public class SharedContainerRunListener extends RunListener {
     @Override
     public void testRunFinished(Result result) throws Exception {
         if (sharedContainer != null) {
-            sharedContainer.close();
+            sharedContainer.close(true);
             sharedContainer = null;
         }
     }
