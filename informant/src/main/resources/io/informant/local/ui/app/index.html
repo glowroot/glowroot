@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  Copyright 2012-2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html ng-app="informant" ng-controller="MainCtrl">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title ng-bind-template="{{title}} | Informant">Informant</title>
+<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon"/>
+
+<!-- build:css styles/app.components.css -->
+<link rel="stylesheet" type="text/css" href="components/qtip/jquery.qtip.css"/>
+<link rel="stylesheet" type="text/css" href="components/bootstrap-datepicker/css/datepicker.css"/>
+<!-- endbuild -->
+
+<link rel="stylesheet" type="text/css" href="styles/app.css"/>
+
+<!-- jquery and angular are replaced by google cdn links during grunt build -->
+<!-- jquery needs to come before angular so that angular will wrap elements with real jquery
+     instead of with jquery lite -->
+<script src="components/jquery/jquery.js"></script>
+<script src="components/angular/angular.js"></script>
+
+<!-- build:js scripts/app.components.js -->
+<script src="components/handlebars/handlebars.runtime.js"></script>
+<script src="components/sass-bootstrap/js/bootstrap-transition.js"></script>
+<script src="components/sass-bootstrap/js/bootstrap-collapse.js"></script>
+<script src="components/sass-bootstrap/js/bootstrap-modal.js"></script>
+<script src="components/sass-bootstrap/js/bootstrap-typeahead.js"></script>
+<script src="components/angular/angular-ui-bootstrap-tpls.js"></script>
+<script src="components/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script src="components/flot/jquery.flot.js"></script>
+<script src="components/flot/jquery.flot.navigate.js"></script>
+<script src="components/flot/jquery.flot.selection.js"></script>
+<script src="components/flot/jquery.flot.time.js"></script>
+<!-- jquery-migrate is needed by qtip2 until its next release -->
+<script src="components/jquery/jquery-migrate.js"></script>
+<script src="components/qtip/jquery.qtip.js"></script>
+<script src="components/jquery/jquery.color.js"></script>
+<script src="components/moment/moment.js"></script>
+<script src="components/spin/spin.js"></script>
+<!-- endbuild -->
+
+<!-- strange syntax to pick up generated *-templates.js
+     see https://github.com/yeoman/grunt-usemin/issues/133 -->
+<!-- build:js({src/main/resources/io/informant/local/ui/app,.tmp}) scripts/app.js -->
+<script src="scripts/app.js"></script>
+<script src="scripts/trace-renderer.js"></script>
+<script src="scripts/services/trace-modal.js"></script>
+<script src="scripts/controllers/home.js"></script>
+<script src="scripts/controllers/search.js"></script>
+<script src="scripts/controllers/config.js"></script>
+<script src="scripts/controllers/pointcuts.js"></script>
+<script src="scripts/controllers/threaddump.js"></script>
+<script src="scripts/angular-templates.js"></script>
+<script src="scripts/handlebars-templates.js"></script>
+<!-- endbuild -->
+
+<!--[if lt IE 9]>
+<script src="components/flashcanvas/flashcanvas.js"></script>
+<![endif]-->
+
+</head>
+<body class="container pin-vertical-scrollbar">
+  <div class="header">
+    <!-- lack of spaces on this line is important -->
+    <a class="header-logo" href="..">Informant</a><span class="header-page-name ng-cloak">{{title}}</span>
+    <div class="header-see-also dropdown pull-right">
+      <!-- role is needed for keyboard nav to work (tab to link, then arrow key down) -->
+      <a href="#" class="dropdown-toggle informant-red" role="button" data-toggle="dropdown">
+        see also:
+      </a>
+      <ul class="dropdown-menu" role="menu" style="margin: 0;">
+        <li role="menuitem"><a tabindex="-1" href="search.html">search</a></li>
+        <li role="menuitem"><a tabindex="-1" href="config.html">configuration</a></li>
+        <li role="menuitem"><a tabindex="-1" href="pointcuts.html">pointcuts</a></li>
+      </ul>
+    </div>
+  </div>
+  <br>
+  <div class="container" ng-view></div>
+</body>
+</html>

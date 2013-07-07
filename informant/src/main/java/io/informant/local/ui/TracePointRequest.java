@@ -28,8 +28,8 @@ class TracePointRequest {
 
     private long from;
     private long to;
-    private double low; // milliseconds, with nanosecond precision
-    private double high; // milliseconds, with nanosecond precision
+    private double low; // seconds, with millisecond precision
+    private double high; // seconds, with millisecond precision
     private boolean errorOnly;
     private boolean fineOnly;
     @Nullable

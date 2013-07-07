@@ -30,7 +30,6 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
-import io.informant.container.config.PointcutConfig.CaptureItem;
 import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
@@ -220,11 +219,6 @@ class LocalConfigService implements ConfigService {
 
     private static PointcutConfig convertToCore(
             io.informant.config.PointcutConfig coreConfig) {
-        List<CaptureItem> captureItems = Lists.newArrayList();
-        for (io.informant.config.PointcutConfig.CaptureItem captureItem : coreConfig
-                .getCaptureItems()) {
-            captureItems.add(CaptureItem.valueOf(captureItem.name()));
-        }
         List<MethodModifier> methodModifiers = Lists.newArrayList();
         for (io.informant.api.weaving.MethodModifier methodModifier : coreConfig
                 .getMethodModifiers()) {
@@ -232,7 +226,9 @@ class LocalConfigService implements ConfigService {
         }
 
         PointcutConfig config = new PointcutConfig(coreConfig.getVersion());
-        config.setCaptureItems(captureItems);
+        config.setMetric(coreConfig.isMetric());
+        config.setSpan(coreConfig.isSpan());
+        config.setTrace(coreConfig.isTrace());
         config.setTypeName(coreConfig.getTypeName());
         config.setMethodName(coreConfig.getMethodName());
         config.setMethodArgTypeNames(coreConfig.getMethodArgTypeNames());
@@ -244,12 +240,6 @@ class LocalConfigService implements ConfigService {
     }
 
     private static io.informant.config.PointcutConfig convertToCore(PointcutConfig config) {
-        List<io.informant.config.PointcutConfig.CaptureItem> captureItems =
-                Lists.newArrayList();
-        for (CaptureItem captureItem : config.getCaptureItems()) {
-            captureItems.add(io.informant.config.PointcutConfig.CaptureItem
-                    .valueOf(captureItem.name()));
-        }
         List<io.informant.api.weaving.MethodModifier> methodModifiers = Lists.newArrayList();
         for (MethodModifier methodModifier : config.getMethodModifiers()) {
             methodModifiers.add(io.informant.api.weaving.MethodModifier.valueOf(methodModifier
@@ -261,8 +251,9 @@ class LocalConfigService implements ConfigService {
         assertNonNull(typeName, "Config typeName is null");
         assertNonNull(methodName, "Config methodName is null");
         assertNonNull(methodReturnTypeName, "Config methodReturnTypeName is null");
-        return new io.informant.config.PointcutConfig(captureItems, typeName, methodName,
-                config.getMethodArgTypeNames(), methodReturnTypeName, methodModifiers,
-                config.getMetricName(), config.getSpanText(), config.getTraceGrouping());
+        return new io.informant.config.PointcutConfig(config.isMetric(), config.isSpan(),
+                config.isTrace(), typeName, methodName, config.getMethodArgTypeNames(),
+                methodReturnTypeName, methodModifiers, config.getMetricName(),
+                config.getSpanText(), config.getTraceGrouping());
     }
 }

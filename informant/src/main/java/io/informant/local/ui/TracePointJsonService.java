@@ -60,7 +60,7 @@ class TracePointJsonService {
     private static final Logger logger = LoggerFactory.getLogger(TracePointJsonService.class);
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
-    private static final int NANOSECONDS_PER_MILLISECOND = 1000000;
+    private static final int NANOSECONDS_PER_SECOND = 1000000000;
 
     private final SnapshotDao snapshotDao;
     private final TraceRegistry traceRegistry;
@@ -105,9 +105,9 @@ class TracePointJsonService {
             if (request.getFrom() < 0) {
                 request.setFrom(requestAt + request.getFrom());
             }
-            low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_MILLISECOND);
+            low = (long) Math.ceil(request.getLow() * NANOSECONDS_PER_SECOND);
             high = request.getHigh() == 0 ? Long.MAX_VALUE : (long) Math.floor(request.getHigh()
-                    * NANOSECONDS_PER_MILLISECOND);
+                    * NANOSECONDS_PER_SECOND);
             String grouping = request.getGroupingComparator();
             if (grouping != null) {
                 groupingComparator = StringComparator.valueOf(grouping.toUpperCase(Locale.ENGLISH));
@@ -233,20 +233,20 @@ class TracePointJsonService {
             }
             String traceGrouping = trace.getGrouping();
             switch (groupingComparator) {
-                case BEGINS:
-                    return traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .startsWith(grouping.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceGrouping.equalsIgnoreCase(grouping);
-                case ENDS:
-                    return traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .endsWith(grouping.toUpperCase(Locale.ENGLISH));
-                case CONTAINS:
-                    return traceGrouping.toUpperCase(Locale.ENGLISH)
-                            .contains(grouping.toUpperCase(Locale.ENGLISH));
-                default:
-                    throw new IllegalStateException("Unexpected grouping comparator: "
-                            + groupingComparator);
+            case BEGINS:
+                return traceGrouping.toUpperCase(Locale.ENGLISH)
+                        .startsWith(grouping.toUpperCase(Locale.ENGLISH));
+            case EQUALS:
+                return traceGrouping.equalsIgnoreCase(grouping);
+            case ENDS:
+                return traceGrouping.toUpperCase(Locale.ENGLISH)
+                        .endsWith(grouping.toUpperCase(Locale.ENGLISH));
+            case CONTAINS:
+                return traceGrouping.toUpperCase(Locale.ENGLISH)
+                        .contains(grouping.toUpperCase(Locale.ENGLISH));
+            default:
+                throw new IllegalStateException("Unexpected grouping comparator: "
+                        + groupingComparator);
             }
         }
 
@@ -260,20 +260,20 @@ class TracePointJsonService {
                 return false;
             }
             switch (userIdComparator) {
-                case BEGINS:
-                    return traceUserId.toUpperCase(Locale.ENGLISH)
-                            .startsWith(userId.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceUserId.equalsIgnoreCase(userId);
-                case ENDS:
-                    return traceUserId.toUpperCase(Locale.ENGLISH)
-                            .endsWith(userId.toUpperCase(Locale.ENGLISH));
-                case CONTAINS:
-                    return traceUserId.toUpperCase(Locale.ENGLISH)
-                            .contains(userId.toUpperCase(Locale.ENGLISH));
-                default:
-                    throw new IllegalStateException("Unexpected user id comparator: "
-                            + userIdComparator);
+            case BEGINS:
+                return traceUserId.toUpperCase(Locale.ENGLISH)
+                        .startsWith(userId.toUpperCase(Locale.ENGLISH));
+            case EQUALS:
+                return traceUserId.equalsIgnoreCase(userId);
+            case ENDS:
+                return traceUserId.toUpperCase(Locale.ENGLISH)
+                        .endsWith(userId.toUpperCase(Locale.ENGLISH));
+            case CONTAINS:
+                return traceUserId.toUpperCase(Locale.ENGLISH)
+                        .contains(userId.toUpperCase(Locale.ENGLISH));
+            default:
+                throw new IllegalStateException("Unexpected user id comparator: "
+                        + userIdComparator);
             }
         }
 

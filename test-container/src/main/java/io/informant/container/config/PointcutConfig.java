@@ -34,7 +34,9 @@ import static io.informant.container.common.ObjectMappers.checkRequiredProperty;
  */
 public class PointcutConfig {
 
-    private ImmutableList<CaptureItem> captureItems;
+    private boolean metric;
+    private boolean span;
+    private boolean trace;
     @Nullable
     private String typeName;
     @Nullable
@@ -56,25 +58,39 @@ public class PointcutConfig {
 
     // used to create new PointcutConfig records that haven't been sent to server yet
     public PointcutConfig() {
-        captureItems = ImmutableList.of();
         methodArgTypeNames = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         version = null;
     }
 
     public PointcutConfig(String version) {
-        captureItems = ImmutableList.of();
         methodArgTypeNames = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         this.version = version;
     }
 
-    public ImmutableList<CaptureItem> getCaptureItems() {
-        return captureItems;
+    public boolean isMetric() {
+        return metric;
     }
 
-    public void setCaptureItems(@ReadOnly List<CaptureItem> captureItems) {
-        this.captureItems = ImmutableList.copyOf(captureItems);
+    public void setMetric(boolean metric) {
+        this.metric = metric;
+    }
+
+    public boolean isSpan() {
+        return span;
+    }
+
+    public void setSpan(boolean span) {
+        this.span = span;
+    }
+
+    public boolean isTrace() {
+        return trace;
+    }
+
+    public void setTrace(boolean trace) {
+        this.trace = trace;
     }
 
     @Nullable
@@ -161,7 +177,9 @@ public class PointcutConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(captureItems, that.captureItems)
+            return Objects.equal(metric, that.metric)
+                    && Objects.equal(span, that.span)
+                    && Objects.equal(trace, that.trace)
                     && Objects.equal(typeName, that.typeName)
                     && Objects.equal(methodName, that.methodName)
                     && Objects.equal(methodArgTypeNames, that.methodArgTypeNames)
@@ -179,14 +197,16 @@ public class PointcutConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(captureItems, typeName, methodName, methodArgTypeNames,
+        return Objects.hashCode(metric, span, trace, typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanText, traceGrouping);
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("captureItems", captureItems)
+                .add("metric", metric)
+                .add("span", span)
+                .add("trace", trace)
                 .add("typeName", typeName)
                 .add("methodName", methodName)
                 .add("methodArgTypeNames", methodArgTypeNames)
@@ -201,7 +221,9 @@ public class PointcutConfig {
 
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("captureItems") @Nullable List<CaptureItem> captureItems,
+            @JsonProperty("metric") @Nullable Boolean metric,
+            @JsonProperty("span") @Nullable Boolean span,
+            @JsonProperty("trace") @Nullable Boolean trace,
             @JsonProperty("typeName") @Nullable String typeName,
             @JsonProperty("methodName") @Nullable String methodName,
             @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
@@ -211,7 +233,9 @@ public class PointcutConfig {
             @JsonProperty("spanText") @Nullable String spanText,
             @JsonProperty("traceGrouping") @Nullable String traceGrouping,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(captureItems, "captureItems");
+        checkRequiredProperty(metric, "metric");
+        checkRequiredProperty(span, "span");
+        checkRequiredProperty(trace, "trace");
         checkRequiredProperty(typeName, "typeName");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodArgTypeNames, "methodArgTypeNames");
@@ -220,7 +244,9 @@ public class PointcutConfig {
         checkRequiredProperty(metricName, "metricName");
         checkRequiredProperty(version, "version");
         PointcutConfig config = new PointcutConfig(version);
-        config.setCaptureItems(captureItems);
+        config.setMetric(metric);
+        config.setSpan(span);
+        config.setTrace(trace);
         config.setTypeName(typeName);
         config.setMethodName(methodName);
         config.setMethodArgTypeNames(methodArgTypeNames);
@@ -230,10 +256,6 @@ public class PointcutConfig {
         config.setSpanText(spanText);
         config.setTraceGrouping(traceGrouping);
         return config;
-    }
-
-    public enum CaptureItem {
-        METRIC, SPAN, TRACE;
     }
 
     public enum MethodModifier {

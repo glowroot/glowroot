@@ -1,0 +1,7 @@
+{{#each .}}
+"{{name}}"
+java.lang.Thread.State: {{state}}
+{{#ifBlocked state}} - blocked on {{lockName}}
+{{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}} - waiting on {{lockName}}
+{{/if}}{{/ifWaiting}}{{#each stackTrace}} {{.}}
+{{/each}}{{/each}}

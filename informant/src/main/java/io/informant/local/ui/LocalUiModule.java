@@ -57,12 +57,6 @@ public class LocalUiModule {
 
     private static final int DEFAULT_UI_PORT = 4000;
 
-    private static final boolean devMode;
-
-    static {
-        devMode = Boolean.getBoolean("informant.internal.ui.devMode");
-    }
-
     private final TraceExportHttpService traceExportHttpService;
     @Nullable
     private final HttpServer httpServer;
@@ -93,7 +87,7 @@ public class LocalUiModule {
         TraceSummaryJsonService traceSummaryJsonService =
                 new TraceSummaryJsonService(traceCommonService);
         SnapshotHttpService snapshotHttpService = new SnapshotHttpService(traceCommonService);
-        traceExportHttpService = new TraceExportHttpService(traceCommonService, devMode);
+        traceExportHttpService = new TraceExportHttpService(traceCommonService);
         // when port is 0, intentionally passing it as 0 instead of its resolved value since the
         // port is just displayed on config page for its documentation value anyways, and more
         // useful to know it was set to 0 than to display its value (which is needed to view the
@@ -114,7 +108,7 @@ public class LocalUiModule {
         httpServer = buildHttpServer(port, numWorkerThreads, aggregateJsonService,
                 tracePointJsonService, traceSummaryJsonService, snapshotHttpService,
                 traceExportHttpService, configJsonService, pointcutConfigJsonService,
-                threadDumpJsonService, adminJsonService, devMode);
+                threadDumpJsonService, adminJsonService);
     }
 
     @OnlyUsedByTests
@@ -161,102 +155,85 @@ public class LocalUiModule {
             SnapshotHttpService snapshotHttpService,
             TraceExportHttpService traceExportHttpService, ConfigJsonService configJsonService,
             PointcutConfigJsonService pointcutConfigJsonService,
-            ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService,
-            boolean devMode) {
+            ThreadDumpJsonService threadDumpJsonService, AdminJsonService adminJsonService) {
 
-        String resourceBase = devMode ? "io/informant/local/ui" : "io/informant/local/ui-build";
+        String resourceBase = "io/informant/local/ui/app-dist";
 
         ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
         // pages
-        uriMappings.put(Pattern.compile("^/$"), resourceBase + "/home.html");
-        uriMappings.put(Pattern.compile("^/search.html$"), resourceBase + "/search.html");
-        uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/config.html");
-        uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/pointcuts.html");
-        uriMappings.put(Pattern.compile("^/threaddump.html$"), resourceBase + "/threaddump.html");
+        uriMappings.put(Pattern.compile("^/$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/search.html$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/config.html$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/pointcuts.html$"), resourceBase + "/index.html");
+        uriMappings.put(Pattern.compile("^/threaddump.html$"), resourceBase + "/index.html");
         // internal resources
-        uriMappings.put(Pattern.compile("^/img/(.*)$"), resourceBase + "/img/$1");
-        uriMappings.put(Pattern.compile("^/js/(.*)$"), resourceBase + "/js/$1");
-        if (devMode) {
-            uriMappings.put(Pattern.compile("^/less/(.*)$"), resourceBase + "/less/$1");
-            uriMappings.put(Pattern.compile("^/template/(.*)$"), resourceBase + "/template/$1");
-            uriMappings.put(Pattern.compile("^/lib/(.*)$"), resourceBase + "/lib/$1");
-        } else {
-            uriMappings.put(Pattern.compile("^/css/(.*)$"), resourceBase + "/css/$1");
-            uriMappings.put(Pattern.compile("^/lib/requirejs/require.js$"),
-                    resourceBase + "/lib/requirejs/require.js");
-            uriMappings.put(Pattern.compile("^/lib/bootstrap/img/(.*)$"),
-                    resourceBase + "/lib/bootstrap/img/$1");
-            uriMappings.put(Pattern.compile("^/lib/specialelite/(.*)$"),
-                    resourceBase + "/lib/specialelite/$1");
-            uriMappings.put(Pattern.compile("^/lib/flashcanvas/flashcanvas.swf$"),
-                    resourceBase + "/lib/flashcanvas/flashcanvas.swf");
-            // TODO after upgrading to less 1.4.0, this css file can be bundled during the less
-            // process, see http://stackoverflow.com/a/16830938/295416
-            // (also see search.less and informant/pom.xml)
-            uriMappings.put(Pattern.compile("^/lib/qtip/jquery.qtip.css"),
-                    resourceBase + "/lib/qtip/jquery.qtip.css");
-        }
+        uriMappings.put(Pattern.compile("^/images/(.*)$"), resourceBase + "/images/$1");
+        uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
+        uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
+        uriMappings.put(Pattern.compile("^/components/(.*)$"), resourceBase + "/components/$1");
         // services
-        uriMappings.put(Pattern.compile("^/trace/export/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/trace/detail/.*$"), snapshotHttpService);
+        uriMappings.put(Pattern.compile("^/export/.*$"), traceExportHttpService);
+        uriMappings.put(Pattern.compile("^/backend/trace/detail/.*$"), snapshotHttpService);
 
         // the parentheses define the part of the match that is used to construct the args for
-        // calling the method in json service, e.g. /trace/summary/abc123 below calls the method
-        // getSummary("abc123") in TraceSummaryJsonService
+        // calling the method in json service, e.g. /backend/trace/summary/abc123 below calls the
+        // method getSummary("abc123") in TraceSummaryJsonService
         ImmutableList.Builder<JsonServiceMapping> jsonServiceMappings = ImmutableList.builder();
-        jsonServiceMappings.add(new JsonServiceMapping("^/aggregate/points$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/aggregate/points$",
                 aggregateJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/aggregate/groupings",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/aggregate/groupings",
                 aggregateJsonService, "getGroupings"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/trace/points$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/trace/points$",
                 tracePointJsonService, "getPoints"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/trace/summary/(.+)$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/trace/summary/(.+)$",
                 traceSummaryJsonService, "getSummary"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config$",
                 configJsonService, "getConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/general$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/general$",
                 configJsonService, "updateGeneralConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/coarse-profiling$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/coarse-profiling$",
                 configJsonService, "updateCoarseProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/fine-profiling$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/fine-profiling$",
                 configJsonService, "updateFineProfilingConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/user",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/user",
                 configJsonService, "updateUserConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/storage",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/storage",
                 configJsonService, "updateStorageConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/plugin/(.+)$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/plugin/(.+)$",
                 configJsonService, "updatePluginConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/\\+$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/pointcut/\\+$",
                 configJsonService, "addPointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/([0-9a-f]+)$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/pointcut/([0-9a-f]+)$",
                 configJsonService, "updatePointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/config/pointcut/-$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/config/pointcut/-$",
                 configJsonService, "removePointcutConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/pointcut/matching-type-names",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-type-names",
                 pointcutConfigJsonService, "getMatchingTypeNames"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/pointcut/matching-method-names",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-method-names",
                 pointcutConfigJsonService, "getMatchingMethodNames"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/pointcut/matching-methods",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/pointcut/matching-methods",
                 pointcutConfigJsonService, "getMatchingMethods"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/threads/dump$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/threads/dump$",
                 threadDumpJsonService, "getThreadDump"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/delete-all$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/delete-all$",
                 adminJsonService, "deleteAllData"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/pointcut/retransform-classes$",
+        jsonServiceMappings.add(new JsonServiceMapping(
+                "^/backend/admin/pointcut/retransform-classes$",
                 adminJsonService, "retransformClasses"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/data/compact$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/data/compact$",
                 adminJsonService, "compactData"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/config/reset-all$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/config/reset-all$",
                 adminJsonService, "resetAllConfig"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-pending-complete-traces$",
+        jsonServiceMappings.add(new JsonServiceMapping(
+                "^/backend/admin/num-pending-complete-traces$",
                 adminJsonService, "getNumPendingCompleteTraces"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-stored-snapshots$",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/num-stored-snapshots$",
                 adminJsonService, "getNumStoredSnapshots"));
-        jsonServiceMappings.add(new JsonServiceMapping("^/admin/num-active-traces",
+        jsonServiceMappings.add(new JsonServiceMapping("^/backend/admin/num-active-traces",
                 adminJsonService, "getNumActiveTraces"));
         try {
             return new HttpServer(port, numWorkerThreads, uriMappings.build(),
-                    jsonServiceMappings.build(), devMode);
+                    jsonServiceMappings.build());
         } catch (ChannelException e) {
             // don't rethrow, allow everything else to proceed normally, but informant ui will not
             // be available

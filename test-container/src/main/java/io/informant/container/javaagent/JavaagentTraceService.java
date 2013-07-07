@@ -76,17 +76,18 @@ class JavaagentTraceService implements TraceService {
     }
 
     public int getNumPendingCompleteTraces() throws Exception {
-        String numPendingCompleteTraces = httpClient.get("/admin/num-pending-complete-traces");
+        String numPendingCompleteTraces =
+                httpClient.get("/backend/admin/num-pending-complete-traces");
         return Integer.parseInt(numPendingCompleteTraces);
     }
 
     public long getNumStoredSnapshots() throws Exception {
-        String numStoredSnapshots = httpClient.get("/admin/num-stored-snapshots");
+        String numStoredSnapshots = httpClient.get("/backend/admin/num-stored-snapshots");
         return Long.parseLong(numStoredSnapshots);
     }
 
     public InputStream getTraceExport(String traceId) throws Exception {
-        return httpClient.getAsStream("/trace/export/" + traceId);
+        return httpClient.getAsStream("/export/" + traceId);
     }
 
     void assertNoActiveTraces() throws Exception {
@@ -94,7 +95,8 @@ class JavaagentTraceService implements TraceService {
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
         // milliseconds to interrupt the thread and end the active trace
         while (stopwatch.elapsed(SECONDS) < 2) {
-            int numActiveTraces = Integer.parseInt(httpClient.get("/admin/num-active-traces"));
+            int numActiveTraces = Integer.parseInt(httpClient
+                    .get("/backend/admin/num-active-traces"));
             if (numActiveTraces == 0) {
                 return;
             }
@@ -103,7 +105,7 @@ class JavaagentTraceService implements TraceService {
     }
 
     void deleteAllSnapshots() throws Exception {
-        httpClient.post("/admin/data/delete-all", "");
+        httpClient.post("/backend/admin/data/delete-all", "");
     }
 
     @Nullable
@@ -125,7 +127,7 @@ class JavaagentTraceService implements TraceService {
 
     @Nullable
     private Trace getLastTrace(boolean summary) throws Exception {
-        String content = httpClient.get("/trace/points?from=0&to=" + Long.MAX_VALUE
+        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
@@ -136,14 +138,14 @@ class JavaagentTraceService implements TraceService {
             return null;
         }
         RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
-        String path = summary ? "/trace/summary/" : "/trace/detail/";
+        String path = summary ? "/backend/trace/summary/" : "/backend/trace/detail/";
         String traceContent = httpClient.get(path + mostRecentCapturedPoint.getId());
         return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
     }
 
     @Nullable
     private Trace getActiveTrace(boolean summary) throws Exception {
-        String content = httpClient.get("/trace/points?from=0&to=" + Long.MAX_VALUE
+        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&low=0&high=" + Long.MAX_VALUE + "&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
@@ -153,7 +155,7 @@ class JavaagentTraceService implements TraceService {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
             RawPoint point = response.getActivePoints().get(0);
-            String path = summary ? "/trace/summary/" : "/trace/detail/";
+            String path = summary ? "/backend/trace/summary/" : "/backend/trace/detail/";
             String traceContent = httpClient.get(path + point.getId());
             return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
         }

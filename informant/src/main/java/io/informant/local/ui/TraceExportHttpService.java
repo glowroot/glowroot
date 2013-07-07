@@ -21,13 +21,20 @@ import java.io.OutputStreamWriter;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URL;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -40,6 +47,7 @@ import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.informant.common.CharStreams2;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 
@@ -61,11 +69,8 @@ public class TraceExportHttpService implements HttpService {
 
     private final TraceCommonService traceCommonService;
 
-    private final boolean devMode;
-
-    TraceExportHttpService(TraceCommonService traceCommonService, boolean devMode) {
+    TraceExportHttpService(TraceCommonService traceCommonService) {
         this.traceCommonService = traceCommonService;
-        this.devMode = devMode;
     }
 
     @Nullable
@@ -97,10 +102,7 @@ public class TraceExportHttpService implements HttpService {
         if (traceCharSource == null) {
             return null;
         }
-        String exportHtml = devMode ? "io/informant/local/ui/export.html" :
-                "io/informant/local/ui-build/export.html";
-        CharSource charSource = HtmlPages.render(exportHtml,
-                ImmutableMap.of("trace/detail", traceCharSource), devMode);
+        CharSource charSource = render(traceCharSource);
         return new ExportChunkedInput(charSource.openStream(), getFilename(id));
     }
 
@@ -126,6 +128,54 @@ public class TraceExportHttpService implements HttpService {
 
     private static String getFilename(String id) {
         return "trace-" + id;
+    }
+
+    private static CharSource render(CharSource traceCharSource) throws IOException {
+        final String exportCss =
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"styles/export.css\">";
+        final String exportComponentsJs = "<script src=\"scripts/export.components.js\"></script>";
+        final String exportJs = "<script src=\"scripts/export.js\"></script>";
+        final String detailTrace = "<script type=\"text/json\" id=\"detailTraceJson\"></script>";
+
+        String templateContent = asCharSource("export.html").read();
+        Pattern pattern = Pattern.compile("(" + exportCss + "|" + exportComponentsJs + "|"
+                + exportJs + "|" + detailTrace + ")");
+        Matcher matcher = pattern.matcher(templateContent);
+        int curr = 0;
+        List<CharSource> charSources = Lists.newArrayList();
+        while (matcher.find()) {
+            charSources.add(CharStreams.asCharSource(
+                    templateContent.substring(curr, matcher.start())));
+            curr = matcher.end();
+            String match = matcher.group();
+            if (match.equals(exportCss)) {
+                charSources.add(CharStreams.asCharSource("<style>"));
+                charSources.add(asCharSource("styles/export.css"));
+                charSources.add(CharStreams.asCharSource("</style>"));
+            } else if (match.equals(exportComponentsJs)) {
+                charSources.add(CharStreams.asCharSource("<script>"));
+                charSources.add(asCharSource("scripts/export.components.js"));
+                charSources.add(CharStreams.asCharSource("</script>"));
+            } else if (match.equals(exportJs)) {
+                charSources.add(CharStreams.asCharSource("<script>"));
+                charSources.add(asCharSource("scripts/export.js"));
+                charSources.add(CharStreams.asCharSource("</script>"));
+            } else if (match.equals(detailTrace)) {
+                charSources.add(CharStreams.asCharSource(
+                        "<script type=\"text/json\" id=\"detailTraceJson\">"));
+                charSources.add(traceCharSource);
+                charSources.add(CharStreams.asCharSource("</script>"));
+            } else {
+                logger.error("unexpected match: {}", match);
+            }
+        }
+        charSources.add(CharStreams.asCharSource(templateContent.substring(curr)));
+        return CharStreams2.join(charSources);
+    }
+
+    private static CharSource asCharSource(String exportResourceName) {
+        URL url = Resources.getResource("io/informant/local/ui/export-dist/" + exportResourceName);
+        return Resources.asCharSource(url, Charsets.UTF_8);
     }
 
     private static class ExportChunkedInput implements ChunkedInput {

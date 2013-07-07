@@ -86,13 +86,10 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     private final ImmutableMap<Pattern, Object> uriMappings;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
 
-    private final boolean devMode;
-
     HttpServerHandler(ImmutableMap<Pattern, Object> uriMappings,
-            ImmutableList<JsonServiceMapping> jsonServiceMappings, boolean devMode) {
+            ImmutableList<JsonServiceMapping> jsonServiceMappings) {
         this.uriMappings = uriMappings;
         this.jsonServiceMappings = jsonServiceMappings;
-        this.devMode = devMode;
         allChannels = new DefaultChannelGroup();
     }
 
@@ -156,7 +153,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         logger.debug("handleRequest(): request.uri={}", request.getUri());
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
-        boolean fingerprinted = decoder.getParameters().containsKey("fingerprint");
         logger.debug("handleRequest(): path={}", path);
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
@@ -167,12 +163,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 } else {
                     // only other value type is String
                     String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
-                    if (resourcePath.matches("io/informant/local/(ui|ui-build)/[^/]*\\.html")) {
-                        handleStaticHtmlPage(resourcePath, channel);
-                        // return null to indicate streaming
-                        return null;
-                    }
-                    return handleStaticResource(resourcePath, fingerprinted);
+                    return handleStaticResource(resourcePath);
                 }
             }
         }
@@ -192,20 +183,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
     }
 
-    private void handleStaticHtmlPage(String resourcePath, Channel channel) throws IOException {
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.setHeader(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
-        if (!devMode) {
-            // cache for a few minutes
-            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
-        }
-        response.setChunked(true);
-        channel.write(response);
-        channel.write(new ReaderChunkedInput(HtmlPages.render(resourcePath, devMode).openStream()));
-    }
-
-    private HttpResponse handleStaticResource(String path, boolean fingerprinted)
-            throws IOException {
+    private HttpResponse handleStaticResource(String path) throws IOException {
         int extensionStartIndex = path.lastIndexOf('.');
         if (extensionStartIndex == -1) {
             logger.warn("missing extension '{}'", path);
@@ -224,16 +202,15 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             logger.warn("unexpected path '{}'", path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        if (extension.equals("html")) {
-        }
         byte[] staticContent = Resources.toByteArray(url);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.setContent(ChannelBuffers.copiedBuffer(staticContent));
         response.setHeader(Names.CONTENT_TYPE, mimeType);
         response.setHeader(Names.CONTENT_LENGTH, staticContent.length);
-        if (path.matches("^io/informant/local/(ui|ui-build)/lib/.*$") || fingerprinted) {
-            // these are all third-party versioned resources or fingerprinted resources and can be
-            // safely cached forever
+        if (path.endsWith("/ui/app-dist/index.html")) {
+            response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + FIVE_MINUTES));
+        } else {
+            // all other static resources are versioned and can be safely cached forever
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
         }
         return response;

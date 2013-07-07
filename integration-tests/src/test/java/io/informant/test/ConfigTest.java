@@ -31,7 +31,6 @@ import io.informant.container.config.FineProfilingConfig;
 import io.informant.container.config.GeneralConfig;
 import io.informant.container.config.PluginConfig;
 import io.informant.container.config.PointcutConfig;
-import io.informant.container.config.PointcutConfig.CaptureItem;
 import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.config.StorageConfig;
 import io.informant.container.config.UserConfig;
@@ -223,7 +222,8 @@ public class ConfigTest {
 
     private static PointcutConfig createPointcutConfig() {
         PointcutConfig config = new PointcutConfig();
-        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
+        config.setMetric(true);
+        config.setSpan(true);
         config.setTypeName("java.util.Collections");
         config.setMethodName("yak");
         config.setMethodArgTypeNames(Lists.newArrayList("java.lang.String", "java.util.List"));
@@ -236,11 +236,9 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(PointcutConfig config) {
-        if (config.getCaptureItems().contains(CaptureItem.TRACE)) {
-            config.setCaptureItems(ImmutableList.of(CaptureItem.METRIC, CaptureItem.SPAN));
-        } else {
-            config.setCaptureItems(ImmutableList.of(CaptureItem.TRACE));
-        }
+        config.setMetric(!config.isMetric());
+        config.setSpan(!config.isSpan());
+        config.setTrace(!config.isTrace());
         config.setTypeName(config.getTypeName() + "a");
         config.setMethodName(config.getMethodName() + "b");
         if (config.getMethodArgTypeNames().size() == 0) {

@@ -1,0 +1,74 @@
+/*
+ * Copyright 2012-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// override bootstrap sprite paths
+$iconSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings.png";
+$iconWhiteSpritePath: "../components/sass-bootstrap/img/glyphicons-halflings-white.png";
+
+@import "../components/sass-bootstrap/lib/_variables.scss";
+@import "../components/sass-bootstrap/lib/_mixins.scss";
+
+@import "../components/sass-bootstrap/lib/_accordion.scss";
+@import "../components/sass-bootstrap/lib/_buttons.scss";
+@import "../components/sass-bootstrap/lib/_close.scss";
+@import "../components/sass-bootstrap/lib/_component-animations.scss";
+@import "../components/sass-bootstrap/lib/_dropdowns.scss";
+@import "../components/sass-bootstrap/lib/_forms.scss";
+@import "../components/sass-bootstrap/lib/_grid.scss";
+@import "../components/sass-bootstrap/lib/_layouts.scss";
+@import "../components/sass-bootstrap/lib/_modals.scss";
+@import "../components/sass-bootstrap/lib/_reset.scss";
+@import "../components/sass-bootstrap/lib/_scaffolding.scss";
+@import "../components/sass-bootstrap/lib/_sprites.scss";
+@import "../components/sass-bootstrap/lib/_utilities.scss";
+
+@import "_bootstrap-form-overrides.scss";
+@import "_bootstrap-datepicker-overrides.scss";
+@import "_common-trace.scss";
+@import "_chart.scss";
+@import "_home.scss";
+@import "_config.scss";
+@import "_pointcuts.scss";
+@import "_threaddump.scss";
+@import "_common.scss";
+
+.header-logo {
+  font-family: SpecialElite-Regular;
+  font-size: 38px;
+  padding: 8px 20px 1px 20px;
+  vertical-align: 1px;
+  color: $informantRed;
+  background-color: #eee;
+  @include border-radius(8px);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.header-logo:hover {
+  background-color: #ddd;
+  color: $informantRed;
+  text-decoration: none;
+}
+
+@font-face {
+  font-family: SpecialElite-Regular;
+  src: url(../components/specialelite/specialelite.eot);
+  src: url(../components/specialelite/specialelite.eot?#iefix) format("embedded-opentype"),
+       url(../components/specialelite/specialelite.woff) format("woff"),
+       url(../components/specialelite/specialelite.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}

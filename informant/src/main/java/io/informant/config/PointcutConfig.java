@@ -41,7 +41,9 @@ import static io.informant.common.ObjectMappers.checkRequiredProperty;
 @Immutable
 public class PointcutConfig {
 
-    private final ImmutableList<CaptureItem> captureItems;
+    private final boolean metric;
+    private final boolean span;
+    private final boolean trace;
     private final String typeName;
     private final String methodName;
     private final ImmutableList<String> methodArgTypeNames;
@@ -56,12 +58,14 @@ public class PointcutConfig {
     private final String version;
 
     @VisibleForTesting
-    public PointcutConfig(@ReadOnly List<CaptureItem> captureItems, String typeName,
+    public PointcutConfig(boolean metric, boolean span, boolean trace, String typeName,
             String methodName, @ReadOnly List<String> methodArgTypeNames,
             String methodReturnTypeName, @ReadOnly List<MethodModifier> methodModifiers,
             @Nullable String metricName, @Nullable String spanText,
             @Nullable String traceGrouping) {
-        this.captureItems = ImmutableList.copyOf(captureItems);
+        this.metric = metric;
+        this.span = span;
+        this.trace = trace;
         this.typeName = typeName;
         this.methodName = methodName;
         this.methodArgTypeNames = ImmutableList.copyOf(methodArgTypeNames);
@@ -70,13 +74,20 @@ public class PointcutConfig {
         this.metricName = metricName;
         this.spanText = spanText;
         this.traceGrouping = traceGrouping;
-        version = VersionHashes.sha1(captureItems, typeName, methodName, methodArgTypeNames,
+        version = VersionHashes.sha1(metric, span, trace, typeName, methodName, methodArgTypeNames,
                 methodReturnTypeName, methodModifiers, metricName, spanText, traceGrouping);
     }
 
-    @Immutable
-    public List<CaptureItem> getCaptureItems() {
-        return captureItems;
+    public boolean isMetric() {
+        return metric;
+    }
+
+    public boolean isSpan() {
+        return span;
+    }
+
+    public boolean isTrace() {
+        return trace;
     }
 
     public String getTypeName() {
@@ -123,7 +134,9 @@ public class PointcutConfig {
 
     @JsonCreator
     static PointcutConfig readValue(
-            @JsonProperty("captureItems") @Nullable List<CaptureItem> captureItems,
+            @JsonProperty("metric") @Nullable Boolean metric,
+            @JsonProperty("span") @Nullable Boolean span,
+            @JsonProperty("trace") @Nullable Boolean trace,
             @JsonProperty("typeName") @Nullable String typeName,
             @JsonProperty("methodName") @Nullable String methodName,
             @JsonProperty("methodArgTypeNames") @Nullable List<String> methodArgTypeNames,
@@ -131,14 +144,21 @@ public class PointcutConfig {
             @JsonProperty("methodModifiers") @Nullable List<MethodModifier> methodModifiers,
             @JsonProperty("metricName") @Nullable String metricName,
             @JsonProperty("spanText") @Nullable String spanText,
-            @JsonProperty("traceGrouping") @Nullable String traceGrouping)
+            @JsonProperty("traceGrouping") @Nullable String traceGrouping,
+            // without including a parameter for version, jackson will use direct field access after
+            // this method in order to set the version field if it is included in the json being
+            // deserialized (overwriting the hashed version that is calculated in the constructor)
+            @JsonProperty("version") @Nullable String version)
             throws JsonMappingException {
         checkRequiredProperty(typeName, "typeName");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnTypeName, "methodReturnTypeName");
-        return new PointcutConfig(orEmpty(captureItems), typeName, methodName,
-                orEmpty(methodArgTypeNames), methodReturnTypeName, orEmpty(methodModifiers),
-                metricName, spanText, traceGrouping);
+        if (version != null) {
+            throw new JsonMappingException("Version field is not allowed for deserialization");
+        }
+        return new PointcutConfig(orFalse(metric), orFalse(span), orFalse(trace), typeName,
+                methodName, orEmpty(methodArgTypeNames), methodReturnTypeName,
+                orEmpty(methodModifiers), metricName, spanText, traceGrouping);
     }
 
     @ReadOnly
@@ -149,10 +169,16 @@ public class PointcutConfig {
         return list;
     }
 
+    private static boolean orFalse(@ReadOnly @Nullable Boolean value) {
+        return value == null || value;
+    }
+
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("captureItems", captureItems)
+                .add("metric", metric)
+                .add("span", span)
+                .add("trace", trace)
                 .add("typeName", typeName)
                 .add("methodName", methodName)
                 .add("methodArgTypeNames", methodArgTypeNames)
@@ -163,10 +189,5 @@ public class PointcutConfig {
                 .add("traceGrouping", traceGrouping)
                 .add("version", version)
                 .toString();
-    }
-
-    @Immutable
-    public enum CaptureItem {
-        METRIC, SPAN, TRACE
     }
 }

@@ -90,7 +90,7 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     public void store(Snapshot snapshot) {
-        logger.debug("storeSnapshot(): snapshot={}", snapshot);
+        logger.debug("store(): snapshot={}", snapshot);
         String spansBlockId = null;
         CharSource spans = snapshot.getSpans();
         if (spans != null) {

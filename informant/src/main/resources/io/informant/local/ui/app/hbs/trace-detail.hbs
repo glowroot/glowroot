@@ -1,0 +1,54 @@
+{{#if spans}}
+  {{#ifRolledOver spans}}
+    <div>spans <em>rolled over</em></div>
+    {{^}}
+    <button class="flat-btn pad1aligned sps-toggle">
+      <span class="informant-red">spans</span> ({{spans.length}})
+    </button>
+    <br>
+    <div id="sps"></div>
+  {{/ifRolledOver}}
+{{/if}}
+{{! TODO combine merged stack tree into template and share code between coarse and fine mst }}
+{{#if coarseMergedStackTree}}
+  {{#ifRolledOver coarseMergedStackTree}}
+    <div>coarse-grained profile <em>rolled over</em></div>
+  {{^}}
+    <button class="flat-btn pad1aligned mst-coarse-toggle">
+      <span class="informant-red">coarse-grained profile</span> ({{coarseMergedStackTree.sampleCount}})
+    </button>
+    <br>
+    <div class="nowrap hide" id="mstCoarseOuter">
+      <select class="mst-filter input-large" onchange="this.blur()" style="margin: 4px;"></select>
+      <br>
+      <div class="mst-common hide">
+        <span class="inline-block unexpanded-content informant-red">common base</span>
+        {{! standard expanded-content bottom margin is not needed since nothing can be expanded
+            directly below using span so background will stretch beyond page border if needed }}
+        <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
+      </div>
+      <div class="mst-interesting indent1"></div>
+    </div>
+  {{/ifRolledOver}}
+{{/if}}
+{{#if fineMergedStackTree}}
+  {{#ifRolledOver fineMergedStackTree}}
+    <div>fine-grained profile <em>rolled over</em></div>
+  {{^}}
+    <button class="flat-btn pad1aligned mst-fine-toggle">
+      <span class="informant-red">fine-grained profile</span> ({{fineMergedStackTree.sampleCount}})
+    </button>
+    <br>
+    <div class="nowrap hide" id="mstFineOuter">
+      <select class="mst-filter input-large" onchange="this.blur()" style="margin: 4px;"></select>
+      <br>
+      <div class="mst-common hide">
+        <span class="inline-block unexpanded-content informant-red">common base</span>
+        {{! standard expanded-content bottom margin is not needed since nothing can be expanded
+            directly below using span so background will stretch beyond page border if needed }}
+        <span class="inline-block expanded-content hide" style="margin-bottom: 0;"></span>
+      </div>
+      <div class="mst-interesting indent1"></div>
+    </div>
+  {{/ifRolledOver}}
+{{/if}}

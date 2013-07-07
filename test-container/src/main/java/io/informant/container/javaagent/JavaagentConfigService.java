@@ -60,8 +60,7 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String updateGeneralConfig(GeneralConfig config) throws Exception {
-        String content = httpClient.post("/config/general", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/general", mapper.writeValueAsString(config));
     }
 
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
@@ -70,9 +69,8 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
-        String content =
-                httpClient.post("/config/coarse-profiling", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/coarse-profiling",
+                mapper.writeValueAsString(config));
     }
 
     public FineProfilingConfig getFineProfilingConfig() throws Exception {
@@ -81,9 +79,7 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
-        String content =
-                httpClient.post("/config/fine-profiling", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/fine-profiling", mapper.writeValueAsString(config));
     }
 
     public UserConfig getUserConfig() throws Exception {
@@ -92,8 +88,7 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String updateUserConfig(UserConfig config) throws Exception {
-        String content = httpClient.post("/config/user", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/user", mapper.writeValueAsString(config));
     }
 
     public StorageConfig getStorageConfig() throws Exception {
@@ -102,8 +97,7 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String updateStorageConfig(StorageConfig config) throws Exception {
-        String content = httpClient.post("/config/storage", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/storage", mapper.writeValueAsString(config));
     }
 
     @Nullable
@@ -113,9 +107,8 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
-        String content =
-                httpClient.post("/config/plugin/" + pluginId, mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/plugin/" + pluginId,
+                mapper.writeValueAsString(config));
     }
 
     public List<PointcutConfig> getPointcutConfigs() throws Exception {
@@ -124,37 +117,35 @@ class JavaagentConfigService implements ConfigService {
 
     // returns new version
     public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
-        String content =
-                httpClient.post("/config/pointcut/+", mapper.writeValueAsString(pointcutConfig));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
+        return httpClient.post("/backend/config/pointcut/+",
+                mapper.writeValueAsString(pointcutConfig));
     }
 
     // returns new version
     public String updatePointcutConfig(String version, PointcutConfig pointcutConfig)
             throws Exception {
-        String content = httpClient.post("/config/pointcut/" + version,
+        return httpClient.post("/backend/config/pointcut/" + version,
                 mapper.writeValueAsString(pointcutConfig));
-        return ObjectMappers.readRequiredValue(mapper, content, String.class);
     }
 
     public void removePointcutConfig(String version) throws Exception {
-        httpClient.post("/config/pointcut/-", mapper.writeValueAsString(version));
+        httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
     public void retransformClasses() throws Exception {
-        httpClient.post("/admin/pointcut/retransform-classes", "");
+        httpClient.post("/backend/admin/pointcut/retransform-classes", "");
     }
 
     public void compactData() throws Exception {
-        httpClient.post("/admin/data/compact", "");
+        httpClient.post("/backend/admin/data/compact", "");
     }
 
     void resetAllConfig() throws Exception {
-        httpClient.post("/admin/config/reset-all", "");
+        httpClient.post("/backend/admin/config/reset-all", "");
     }
 
     private Config getConfig() throws Exception {
-        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/config"),
+        return ObjectMappers.readRequiredValue(mapper, httpClient.get("/backend/config"),
                 Config.class);
     }
 }

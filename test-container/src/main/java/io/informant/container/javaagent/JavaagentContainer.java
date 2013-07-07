@@ -80,7 +80,6 @@ public class JavaagentContainer implements Container {
     private final Process process;
     private final ExecutorService consolePipeExecutorService;
     private final AsyncHttpClient asyncHttpClient;
-    private final JavaagentHttpClient httpClient;
     private final JavaagentConfigService configService;
     private final JavaagentTraceService traceService;
     private final Thread shutdownHook;
@@ -146,7 +145,7 @@ public class JavaagentContainer implements Container {
             throw new StartupFailedException();
         }
         asyncHttpClient = createAsyncHttpClient();
-        httpClient = new JavaagentHttpClient(actualUiPort, asyncHttpClient);
+        JavaagentHttpClient httpClient = new JavaagentHttpClient(actualUiPort, asyncHttpClient);
         configService = new JavaagentConfigService(httpClient);
         traceService = new JavaagentTraceService(httpClient);
         shutdownHook = new Thread() {
@@ -297,8 +296,10 @@ public class JavaagentContainer implements Container {
         if (!useFileDb) {
             command.add("-Dinformant.internal.h2.memdb=true");
         }
-        if (Boolean.getBoolean("informant.internal.ui.devMode")) {
-            command.add("-Dinformant.internal.ui.devMode=true");
+        Integer aggregateInterval =
+                Integer.getInteger("informant.internal.collector.aggregateInterval");
+        if (aggregateInterval != null) {
+            command.add("-Dinformant.internal.collector.aggregateInterval=" + aggregateInterval);
         }
         command.add(JavaagentContainer.class.getName());
         command.add(Integer.toString(containerPort));

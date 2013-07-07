@@ -38,17 +38,12 @@ public class UiTestingMain {
     // need to use javaagent when testing pointcuts.html, otherwise class/method auto completion
     // won't be available
     private static final boolean useJavaagent = false;
-    // r.js optimization and less compilation steps aren't needed in ui dev mode
-    private static final boolean useUiDevMode = true;
-    private static final int UI_PORT = 4000;
+    private static final int UI_PORT = 4001;
 
     private static final Logger logger = LoggerFactory.getLogger(UiTestingMain.class);
 
     static {
         System.setProperty("informant.internal.collector.aggregateInterval", "15");
-        if (useUiDevMode) {
-            System.setProperty("informant.internal.ui.devMode", "true");
-        }
     }
 
     private UiTestingMain() {}

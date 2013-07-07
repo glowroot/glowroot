@@ -1,0 +1,120 @@
+<!--
+  Copyright 2013 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div accordion-group
+     heading="{{pointcut.heading}}"
+     is-open="pointcut.isOpen">
+  <form class="form-horizontal">
+    <fieldset>
+      <div class="accordion-form-padding">
+        <div class="control-group">
+          <label class="control-label" for="__typeName{{$id}}">Type name</label>
+          <div class="controls">
+            <input type="text"
+                   ng-model="pointcut.config.typeName"
+                   typeahead="suggestion for suggestion in typeNames($viewValue)"
+                   typeahead-on-select="onSelectTypeName()"
+                   id="__typeName{{$id}}"
+                   ix-set-focus="pointcut.isFocus"
+                   style="width: 40em">
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" for="__methodName{{$id}}">Method name</label>
+          <div class="controls">
+            <input type="text"
+                   ng-model="pointcut.config.methodName"
+                   typeahead="suggestion for suggestion in methodNames($viewValue)"
+                   typeahead-on-select="onSelectMethodName()"
+                   ix-blur="onSelectMethodName()"
+                   id="__methodName{{$id}}"
+                   style="width: 40em">
+          </div>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Signature</span>
+          <div class="controls">
+            <div ng-repeat="signature in pointcut.signatures">
+              <label class="radio inline">
+                <input type="radio" ng-model="pointcut.selectedSignature" ng-value="signature">
+                {{signatureText(signature)}}
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Capture</span>
+          <div class="controls">
+            <label class="checkbox">
+              <input type="checkbox" ng-model="pointcut.config.metric">
+              Metric
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" ng-model="pointcut.config.span" ng-disabled="!pointcut.config.metric">
+              <span ng-class="{disabled: !pointcut.config.metric}">Span</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" ng-model="pointcut.config.trace" ng-disabled="!pointcut.config.span">
+              <span ng-class="{disabled: !pointcut.config.span}">Trace</span>
+            </label>
+          </div>
+        </div>
+        <div class="control-group" ng-show="pointcut.config.metric">
+          <label class="control-label" for="__metricName{{$id}}">Metric name</label>
+          <div class="controls">
+            <input type="text"
+                   ng-model="pointcut.config.metricName"
+                   id="__metricName{{$id}}"
+                   style="width: 10em;">
+          </div>
+        </div>
+        <div ng-show="pointcut.config.span">
+          <div class="control-group">
+            <label class="control-label" for="__spanText{{$id}}">
+              Span text
+            </label>
+            <div class="controls">
+              <textarea ng-model="pointcut.config.spanText"
+                        id="__spanText{{$id}}"
+                        rows="2"
+                        style="width: 40em;">
+              </textarea>
+            </div>
+          </div>
+        </div>
+        <div ng-show="pointcut.config.trace">
+          <div class="control-group">
+            <label class="control-label" for="__traceGrouping{{$id}}">
+              Trace grouping
+            </label>
+            <div class="controls">
+              <textarea ng-model="pointcut.config.traceGrouping"
+                        id="__traceGrouping{{$id}}"
+                        rows="2"
+                        style="width: 40em;">
+              </textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <div ix-button-group>
+          <span ix-button ix-label="{{saveButtonText(pointcut)}}" ix-click="pointcutSave(deferred)"></span>
+          <span ix-button ix-label="Delete" ix-click="pointcutDelete(deferred)" style="margin-left: 5px;"></span>
+        </div>
+      </div>
+    </fieldset>
+  </form>
+</div>

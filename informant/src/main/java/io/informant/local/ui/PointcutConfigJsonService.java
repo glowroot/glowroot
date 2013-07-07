@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,9 @@ class PointcutConfigJsonService {
             matchingMethod.put("argTypeNames", argTypeNames);
             matchingMethod.put("returnTypeName", parsedMethod.getReturnTypeName());
             ArrayNode modifiers = mapper.createArrayNode();
-            for (String modifier : Modifier.toString(parsedMethod.getModifiers()).split(" ")) {
+            String modifierNames = Modifier.toString(parsedMethod.getModifiers());
+            Splitter splitter = Splitter.on(' ').omitEmptyStrings();
+            for (String modifier : splitter.split(modifierNames)) {
                 // TODO push modifier filtering into ParsedMethod, no need to track these
                 if (modifier.equals("synchronized") || modifier.equals("final")) {
                     continue;

@@ -31,7 +31,6 @@ import io.informant.container.Container;
 import io.informant.container.TempDirs;
 import io.informant.container.TraceMarker;
 import io.informant.container.config.PointcutConfig;
-import io.informant.container.config.PointcutConfig.CaptureItem;
 import io.informant.container.config.PointcutConfig.MethodModifier;
 import io.informant.container.trace.Trace;
 
@@ -118,7 +117,8 @@ public class DynamicAdviceTest {
 
     protected static void addSpanPointcutForExecute1() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
+        config.setMetric(true);
+        config.setSpan(true);
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
@@ -131,7 +131,7 @@ public class DynamicAdviceTest {
 
     protected static void addSpanPointcutForExecute1MetricOnly() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC));
+        config.setMetric(true);
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
         config.setMethodName("execute1");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
@@ -143,7 +143,8 @@ public class DynamicAdviceTest {
 
     protected static void addSpanPointcutForExecuteWithReturn() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN));
+        config.setMetric(true);
+        config.setSpan(true);
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
         config.setMethodName("executeWithReturn");
         config.setMethodArgTypeNames(ImmutableList.<String>of());
@@ -156,8 +157,9 @@ public class DynamicAdviceTest {
 
     protected static void addTracePointcutForExecuteWithArgs() throws Exception {
         PointcutConfig config = new PointcutConfig();
-        config.setCaptureItems(Lists.newArrayList(CaptureItem.METRIC, CaptureItem.SPAN,
-                CaptureItem.TRACE));
+        config.setMetric(true);
+        config.setSpan(true);
+        config.setTrace(true);
         config.setTypeName("io.informant.test.DynamicAdviceTest$Misc");
         config.setMethodName("executeWithArgs");
         config.setMethodArgTypeNames(ImmutableList.of("java.lang.String", "int"));

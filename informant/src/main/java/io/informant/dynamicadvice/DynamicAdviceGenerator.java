@@ -29,7 +29,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.informant.config.PointcutConfig;
-import io.informant.config.PointcutConfig.CaptureItem;
 
 import static io.informant.common.Nullness.assertNonNull;
 
@@ -59,8 +58,8 @@ class DynamicAdviceGenerator implements Opcodes {
         addStaticInitializer(cw);
         // addConstructor(cw);
         addIsEnabledMethod(cw);
-        if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
-            addOnBeforeMethod(cw, pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE));
+        if (pointcutConfig.isSpan()) {
+            addOnBeforeMethod(cw, pointcutConfig.isTrace());
             addOnThrowMethod(cw);
             addOnReturnMethod(cw);
         } else {
@@ -100,12 +99,12 @@ class DynamicAdviceGenerator implements Opcodes {
         cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "metric",
                 "Lio/informant/api/MetricName;", null, null)
                 .visitEnd();
-        if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
+        if (pointcutConfig.isSpan()) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "spanText",
                     "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                     .visitEnd();
         }
-        if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
+        if (pointcutConfig.isTrace()) {
             cv.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "traceGrouping",
                     "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;", null, null)
                     .visitEnd();
@@ -127,7 +126,7 @@ class DynamicAdviceGenerator implements Opcodes {
         mv.visitMethodInsn(INVOKEVIRTUAL, "io/informant/api/PluginServices", "getMetricName",
                 "(Ljava/lang/Class;)Lio/informant/api/MetricName;");
         mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "metric", "Lio/informant/api/MetricName;");
-        if (pointcutConfig.getCaptureItems().contains(CaptureItem.SPAN)) {
+        if (pointcutConfig.isSpan()) {
             String spanText = pointcutConfig.getSpanText();
             if (spanText == null) {
                 mv.visitLdcInsn("<no span text provided>");
@@ -141,7 +140,7 @@ class DynamicAdviceGenerator implements Opcodes {
             mv.visitFieldInsn(PUTSTATIC, adviceTypeName, "spanText",
                     "Lio/informant/dynamicadvice/DynamicAdviceMessageTemplate;");
         }
-        if (pointcutConfig.getCaptureItems().contains(CaptureItem.TRACE)) {
+        if (pointcutConfig.isTrace()) {
             if (Strings.isNullOrEmpty(pointcutConfig.getTraceGrouping())) {
                 mv.visitLdcInsn("<no trace grouping provided>");
             } else {

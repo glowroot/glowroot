@@ -63,9 +63,9 @@ class HttpServer {
     private final int port;
 
     HttpServer(int port, int numWorkerThreads, ImmutableMap<Pattern, Object> uriMappings,
-            ImmutableList<JsonServiceMapping> jsonServiceMappings, boolean devMode) {
+            ImmutableList<JsonServiceMapping> jsonServiceMappings) {
         setThreadNameDeterminer();
-        handler = new HttpServerHandler(uriMappings, jsonServiceMappings, devMode);
+        handler = new HttpServerHandler(uriMappings, jsonServiceMappings);
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
         ExecutorService workerExecutor = Executors.newCachedThreadPool(threadFactory);

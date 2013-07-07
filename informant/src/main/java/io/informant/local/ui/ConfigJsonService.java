@@ -135,8 +135,7 @@ class ConfigJsonService {
         GeneralConfig config = configService.getGeneralConfig();
         GeneralConfig.Overlay builder = GeneralConfig.overlay(config);
         mapper.readerForUpdating(builder).readValue(configNode);
-        String updatedVersion = configService.updateGeneralConfig(builder.build(), priorVersion);
-        return "\"" + updatedVersion + "\"";
+        return configService.updateGeneralConfig(builder.build(), priorVersion);
     }
 
     @JsonServiceMethod
@@ -155,9 +154,7 @@ class ConfigJsonService {
                 CoarseProfilingConfig.overlay(configService.getCoarseProfilingConfig());
         mapper.readerForUpdating(overlay).readValue(configNode);
 
-        String updatedVersion = configService.updateCoarseProfilingConfig(overlay.build(),
-                priorVersion);
-        return "\"" + updatedVersion + "\"";
+        return configService.updateCoarseProfilingConfig(overlay.build(), priorVersion);
     }
 
     @JsonServiceMethod
@@ -176,9 +173,7 @@ class ConfigJsonService {
                 FineProfilingConfig.overlay(configService.getFineProfilingConfig());
         mapper.readerForUpdating(overlay).readValue(configNode);
 
-        String updatedVersion = configService.updateFineProfilingConfig(overlay.build(),
-                priorVersion);
-        return "\"" + updatedVersion + "\"";
+        return configService.updateFineProfilingConfig(overlay.build(), priorVersion);
     }
 
     @JsonServiceMethod
@@ -195,8 +190,7 @@ class ConfigJsonService {
         UserConfig.Overlay overlay = UserConfig.overlay(configService.getUserConfig());
         mapper.readerForUpdating(overlay).readValue(configNode);
 
-        String updatedVersion = configService.updateUserConfig(overlay.build(), priorVersion);
-        return "\"" + updatedVersion + "\"";
+        return configService.updateUserConfig(overlay.build(), priorVersion);
     }
 
     @JsonServiceMethod
@@ -216,7 +210,7 @@ class ConfigJsonService {
         String updatedVersion = configService.updateStorageConfig(builder.build(), priorVersion);
         // resize() doesn't do anything if the new and old value are the same
         rollingFile.resize(configService.getStorageConfig().getRollingSizeMb() * 1024);
-        return "\"" + updatedVersion + "\"";
+        return updatedVersion;
     }
 
     @JsonServiceMethod
@@ -235,8 +229,7 @@ class ConfigJsonService {
         }
         PluginConfig.Builder builder = PluginConfig.builder(config);
         builder.overlay(configNode);
-        String updatedVersion = configService.updatePluginConfig(builder.build(), priorVersion);
-        return "\"" + updatedVersion + "\"";
+        return configService.updatePluginConfig(builder.build(), priorVersion);
     }
 
     @JsonServiceMethod
@@ -244,8 +237,7 @@ class ConfigJsonService {
         logger.debug("addPointcutConfig(): content={}", content);
         PointcutConfig pointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        String version = configService.insertPointcutConfig(pointcutConfig);
-        return "\"" + version + "\"";
+        return configService.insertPointcutConfig(pointcutConfig);
     }
 
     @JsonServiceMethod
@@ -255,8 +247,7 @@ class ConfigJsonService {
                 content);
         PointcutConfig pointcutConfig =
                 ObjectMappers.readRequiredValue(mapper, content, PointcutConfig.class);
-        String updatedVersion = configService.updatePointcutConfig(priorVersion, pointcutConfig);
-        return "\"" + updatedVersion + "\"";
+        return configService.updatePointcutConfig(priorVersion, pointcutConfig);
     }
 
     @JsonServiceMethod

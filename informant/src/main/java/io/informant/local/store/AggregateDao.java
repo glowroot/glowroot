@@ -67,6 +67,8 @@ public class AggregateDao implements AggregateRepository {
 
     public void store(final long captureTime, Aggregate aggregate,
             final Map<String, Aggregate> groupingAggregates) {
+        logger.debug("store(): captureTime={}, aggregate={}, groupingAggregates={}", captureTime,
+                aggregate, groupingAggregates);
         try {
             dataSource.update("insert into aggregate (capture_time, duration_total, trace_count)"
                     + " values (?, ?, ?)", captureTime, aggregate.getDurationTotal(),
@@ -92,6 +94,8 @@ public class AggregateDao implements AggregateRepository {
 
     @ReadOnly
     public List<AggregatePoint> readAggregates(long captureTimeFrom, long captureTimeTo) {
+        logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}", captureTimeFrom,
+                captureTimeTo);
         try {
             return dataSource.query("select capture_time, duration_total, trace_count from"
                     + " aggregate where capture_time >= ? and capture_time <= ?",
@@ -107,6 +111,8 @@ public class AggregateDao implements AggregateRepository {
     @ReadOnly
     public List<GroupingAggregate> readGroupingAggregates(long captureTimeFrom, long captureTimeTo,
             int limit) {
+        logger.debug("readAggregates(): captureTimeFrom={}, captureTimeTo={}, limit={}",
+                captureTimeFrom, captureTimeTo, limit);
         try {
             return dataSource.query("select grouping, sum(duration_total), sum(trace_count) from"
                     + " grouping_aggregate where capture_time >= ? and capture_time <= ? group by"
