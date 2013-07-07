@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ class LocalConfigService implements ConfigService {
         localUiModule = glowrootModule.getUiModule();
     }
 
+    @Override
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
         org.glowroot.config.GeneralConfig config = configService.getGeneralConfig();
         org.glowroot.config.GeneralConfig.Overlay overlay =
@@ -65,6 +66,7 @@ class LocalConfigService implements ConfigService {
         configService.updateGeneralConfig(overlay.build(), config.getVersion());
     }
 
+    @Override
     public GeneralConfig getGeneralConfig() {
         org.glowroot.config.GeneralConfig coreConfig = configService.getGeneralConfig();
         GeneralConfig config = new GeneralConfig(coreConfig.getVersion());
@@ -75,6 +77,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateGeneralConfig(GeneralConfig config) throws Exception {
         org.glowroot.config.GeneralConfig updatedConfig =
                 new org.glowroot.config.GeneralConfig(config.isEnabled(),
@@ -84,6 +87,7 @@ class LocalConfigService implements ConfigService {
         configService.updateGeneralConfig(updatedConfig, config.getVersion());
     }
 
+    @Override
     public CoarseProfilingConfig getCoarseProfilingConfig() {
         org.glowroot.config.CoarseProfilingConfig coreConfig =
                 configService.getCoarseProfilingConfig();
@@ -95,6 +99,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
         org.glowroot.config.CoarseProfilingConfig updatedConfig =
                 new org.glowroot.config.CoarseProfilingConfig(config.isEnabled(),
@@ -103,6 +108,7 @@ class LocalConfigService implements ConfigService {
         configService.updateCoarseProfilingConfig(updatedConfig, config.getVersion());
     }
 
+    @Override
     public FineProfilingConfig getFineProfilingConfig() {
         org.glowroot.config.FineProfilingConfig coreConfig =
                 configService.getFineProfilingConfig();
@@ -114,6 +120,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         org.glowroot.config.FineProfilingConfig updatedConfig =
                 new org.glowroot.config.FineProfilingConfig(config.getTracePercentage(),
@@ -122,6 +129,7 @@ class LocalConfigService implements ConfigService {
         configService.updateFineProfilingConfig(updatedConfig, config.getVersion());
     }
 
+    @Override
     public UserOverridesConfig getUserOverridesConfig() {
         org.glowroot.config.UserOverridesConfig coreConfig = configService.getUserOverridesConfig();
         UserOverridesConfig config = new UserOverridesConfig(coreConfig.getVersion());
@@ -131,6 +139,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
         org.glowroot.config.UserOverridesConfig updatedConfig =
                 new org.glowroot.config.UserOverridesConfig(config.getUserId(),
@@ -138,6 +147,7 @@ class LocalConfigService implements ConfigService {
         configService.updateUserOverridesConfig(updatedConfig, config.getVersion());
     }
 
+    @Override
     public StorageConfig getStorageConfig() {
         org.glowroot.config.StorageConfig coreConfig = configService.getStorageConfig();
         StorageConfig config = new StorageConfig(coreConfig.getVersion());
@@ -146,6 +156,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateStorageConfig(StorageConfig config) throws Exception {
         org.glowroot.config.StorageConfig updatedConfig =
                 new org.glowroot.config.StorageConfig(config.getSnapshotExpirationHours(),
@@ -153,6 +164,7 @@ class LocalConfigService implements ConfigService {
         configService.updateStorageConfig(updatedConfig, config.getVersion());
     }
 
+    @Override
     public UserInterfaceConfig getUserInterfaceConfig() {
         org.glowroot.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
         UserInterfaceConfig config =
@@ -162,6 +174,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
         // need to use overlay in order to preserve existing passwordHash
         org.glowroot.config.UserInterfaceConfig coreConfig = configService.getUserInterfaceConfig();
@@ -187,6 +200,7 @@ class LocalConfigService implements ConfigService {
         configService.updateUserInterfaceConfig(updatedCoreConfig, config.getVersion());
     }
 
+    @Override
     public AdvancedConfig getAdvancedConfig() {
         org.glowroot.config.AdvancedConfig coreConfig = configService.getAdvancedConfig();
         AdvancedConfig config = new AdvancedConfig(coreConfig.getVersion());
@@ -196,6 +210,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         org.glowroot.config.AdvancedConfig updatedConfig =
                 new org.glowroot.config.AdvancedConfig(config.isGenerateMetricNameWrapperMethods(),
@@ -204,6 +219,7 @@ class LocalConfigService implements ConfigService {
         configService.updateAdvancedConfig(updatedConfig, config.getVersion());
     }
 
+    @Override
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) {
         org.glowroot.config.PluginConfig coreConfig = configService.getPluginConfig(pluginId);
@@ -218,6 +234,7 @@ class LocalConfigService implements ConfigService {
         return config;
     }
 
+    @Override
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         org.glowroot.config.PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
@@ -232,6 +249,7 @@ class LocalConfigService implements ConfigService {
         configService.updatePluginConfig(updatedConfig.build(), config.getVersion());
     }
 
+    @Override
     public List<PointcutConfig> getPointcutConfigs() {
         List<PointcutConfig> configs = Lists.newArrayList();
         for (org.glowroot.config.PointcutConfig coreConfig : configService
@@ -241,24 +259,29 @@ class LocalConfigService implements ConfigService {
         return configs;
     }
 
+    @Override
     public String addPointcutConfig(PointcutConfig config) throws Exception {
         return configService.insertPointcutConfig(convertToCore(config));
     }
 
+    @Override
     public void updatePointcutConfig(String version, PointcutConfig config)
             throws Exception {
         configService.updatePointcutConfig(version, convertToCore(config));
     }
 
+    @Override
     public void removePointcutConfig(String version) throws Exception {
         configService.deletePointcutConfig(version);
     }
 
+    @Override
     public void reweavePointcutConfigs() throws Exception {
         throw new UnsupportedOperationException("Retransforming classes only works inside"
                 + " javaagent container");
     }
 
+    @Override
     public void compactData() throws Exception {
         dataSource.compact();
     }

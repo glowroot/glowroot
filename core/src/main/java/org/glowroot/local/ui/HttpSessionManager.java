@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.Singleton;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
 import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -165,7 +166,8 @@ class HttpSessionManager {
         if (timeoutMinutes == 0) {
             sessionExpirations.put(sessionId, Long.MAX_VALUE);
         } else {
-            sessionExpirations.put(sessionId, clock.currentTimeMillis() + timeoutMinutes * 60000L);
+            sessionExpirations.put(sessionId,
+                    clock.currentTimeMillis() + MINUTES.toMillis(timeoutMinutes));
         }
     }
 }

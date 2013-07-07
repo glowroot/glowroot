@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,28 @@ import checkers.nullness.quals.Nullable;
  */
 public class AccessibilityMisc implements Misc {
 
+    @Override
     public void execute1() {
         new PrivateMisc();
     }
 
+    @Override
     public String executeWithReturn() {
         return "xyz";
     }
 
+    @Override
     public void executeWithArgs(String one, int two) {}
 
     private static class PrivateMisc implements Misc {
+        @Override
         public void execute1() {}
+        @Override
         @Nullable
         public String executeWithReturn() {
             return null;
         }
+        @Override
         public void executeWithArgs(String one, int two) {}
     }
 }

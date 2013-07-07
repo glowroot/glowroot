@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,15 @@ import org.junit.runners.model.Statement;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class IgnoreOnJdk5 extends BlockJUnit4ClassRunner {
+public class IgnoreOnJdk6 extends BlockJUnit4ClassRunner {
 
-    public IgnoreOnJdk5(Class<?> type) throws InitializationError {
+    public IgnoreOnJdk6(Class<?> type) throws InitializationError {
         super(type);
     }
 
     @Override
     protected void runChild(FrameworkMethod method, RunNotifier notifier) {
-        if (isJdk5()) {
+        if (isJdk6()) {
             // mark all tests as ignored
             Description description = describeChild(method);
             notifier.fireTestIgnored(description);
@@ -45,7 +45,7 @@ public class IgnoreOnJdk5 extends BlockJUnit4ClassRunner {
 
     @Override
     protected Statement classBlock(RunNotifier notifier) {
-        if (isJdk5()) {
+        if (isJdk6()) {
             // remove @BeforeClass / @AfterClass so they are not fired
             return childrenInvoker(notifier);
         } else {
@@ -53,7 +53,7 @@ public class IgnoreOnJdk5 extends BlockJUnit4ClassRunner {
         }
     }
 
-    private static boolean isJdk5() {
-        return System.getProperty("java.version").startsWith("1.5");
+    private static boolean isJdk6() {
+        return System.getProperty("java.version").startsWith("1.6");
     }
 }

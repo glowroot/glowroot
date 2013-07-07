@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,15 +260,19 @@ public class ServletPluginTest {
     }
 
     public static class TestServletContextListener implements AppUnderTest, ServletContextListener {
+        @Override
         public void executeApp() {
             contextInitialized(null);
         }
+        @Override
         public void contextInitialized(ServletContextEvent sce) {}
+        @Override
         public void contextDestroyed(ServletContextEvent sce) {}
     }
 
     @SuppressWarnings("serial")
     public static class TestServletInit extends HttpServlet implements AppUnderTest {
+        @Override
         public void executeApp() throws ServletException {
             init(new MockServletConfig());
         }
@@ -281,12 +285,16 @@ public class ServletPluginTest {
     }
 
     public static class TestFilterInit implements AppUnderTest, Filter {
+        @Override
         public void executeApp() {
             init(new MockFilterConfig());
         }
+        @Override
         public void init(FilterConfig filterConfig) {}
+        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {}
+        @Override
         public void destroy() {}
     }
 

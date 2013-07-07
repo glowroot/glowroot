@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
-import com.google.common.io.CharStreams;
+import com.google.common.io.CharSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,10 +90,10 @@ public class RollingFileResizeTest {
         // when
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharSource.wrap(text));
+        rollingFile.write(CharSource.wrap(text));
+        rollingFile.write(CharSource.wrap(text));
+        FileBlock block = rollingFile.write(CharSource.wrap(text));
         rollingFile.resize(newRollingSizeKb);
         // then
         String text2 = rollingFile.read(block, "").read();
@@ -114,10 +114,10 @@ public class RollingFileResizeTest {
         rollingFile.resize(newRollingSizeKb);
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharSource.wrap(text));
+        rollingFile.write(CharSource.wrap(text));
+        rollingFile.write(CharSource.wrap(text));
+        FileBlock block = rollingFile.write(CharSource.wrap(text));
         // then
         String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);

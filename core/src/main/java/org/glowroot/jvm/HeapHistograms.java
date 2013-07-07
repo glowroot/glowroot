@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,9 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
+import javax.tools.ToolProvider;
+
 import checkers.igj.quals.Immutable;
-import checkers.nullness.quals.Nullable;
 import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,16 +151,9 @@ public class HeapHistograms {
     }
 
     static class Factory implements OptionalServiceFactory<HeapHistograms> {
-        @Nullable
-        private final Jdk6 jdk6;
-        Factory(@Nullable Jdk6 jdk6) {
-            this.jdk6 = jdk6;
-        }
+        @Override
         public HeapHistograms create() throws OptionalServiceFactoryException {
-            if (jdk6 == null) {
-                throw new OptionalServiceFactoryException("Oracle Java SE 6 or higher is required");
-            }
-            ClassLoader systemToolClassLoader = jdk6.getSystemToolClassLoader();
+            ClassLoader systemToolClassLoader = ToolProvider.getSystemToolClassLoader();
             Class<?> virtualMachineClass = OptionalServiceFactoryHelper.classForName(
                     "com.sun.tools.attach.VirtualMachine", systemToolClassLoader);
             Class<?> hotSpotVirtualMachineClass = OptionalServiceFactoryHelper.classForName(

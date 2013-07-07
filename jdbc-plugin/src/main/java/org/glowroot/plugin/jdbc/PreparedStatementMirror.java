@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import dataflow.quals.Pure;
 import org.glowroot.shaded.google.common.collect.ImmutableList;
 import org.glowroot.shaded.google.common.collect.Lists;
 import org.glowroot.shaded.google.common.collect.Queues;
-import org.glowroot.shaded.google.common.hash.HashCodes;
+import org.glowroot.shaded.google.common.hash.HashCode;
 
 /**
  * Used to capture and mirror the state of prepared statements since the underlying
@@ -131,7 +131,7 @@ class PreparedStatementMirror extends StatementMirror {
         @Pure
         public String toString() {
             if (bytes != null) {
-                return "0x" + HashCodes.fromBytes(bytes).toString();
+                return "0x" + HashCode.fromBytes(bytes).toString();
             } else {
                 return "{" + length + " bytes}";
             }

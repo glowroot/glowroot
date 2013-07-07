@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,12 +116,12 @@ public class LocalUiModule {
         ClasspathCache classpathCache = new ClasspathCache(parsedTypeCache);
         PointcutConfigJsonService pointcutConfigJsonService =
                 new PointcutConfigJsonService(parsedTypeCache, classpathCache);
-        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getJdk6(),
-                jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapHistograms(),
-                jvmModule.getHotSpotDiagnostics(), jvmModule.getFlags());
+        JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getThreadAllocatedBytes(),
+                jvmModule.getHeapHistograms(), jvmModule.getHotSpotDiagnostics(),
+                jvmModule.getFlags());
         AdminJsonService adminJsonService = new AdminJsonService(snapshotDao, configService,
                 traceModule.getPointcutConfigAdviceCache(), parsedTypeCache, instrumentation,
-                jvmModule.getJdk6(), traceCollector, dataSource, traceRegistry);
+                traceCollector, dataSource, traceRegistry);
 
         ImmutableList.Builder<Object> jsonServices = ImmutableList.builder();
         jsonServices.add(layoutJsonService);

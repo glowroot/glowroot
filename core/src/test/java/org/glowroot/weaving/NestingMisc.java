@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,15 +38,18 @@ public class NestingMisc implements Misc {
         this.stopNesting = stopNesting;
     }
 
+    @Override
     public void execute1() {
         if (!stopNesting) {
             new NestingMisc(true).execute1();
         }
     }
 
+    @Override
     public String executeWithReturn() {
         return yes;
     }
 
+    @Override
     public void executeWithArgs(String one, int two) {}
 }

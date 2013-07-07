@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,9 +105,10 @@ public class UiTestingMain {
     }
 
     public static class GenerateTraces implements AppUnderTest {
+        @Override
         public void executeApp() throws InterruptedException {
             while (true) {
-                Stopwatch stopwatch = new Stopwatch().start();
+                Stopwatch stopwatch = Stopwatch.createStarted();
                 while (stopwatch.elapsed(SECONDS) < 30) {
                     // a very short trace that will have an empty merged stack tree
                     new NestableCall(1, 10, 100).execute();

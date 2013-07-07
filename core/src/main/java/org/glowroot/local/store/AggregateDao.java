@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ public class AggregateDao implements AggregateRepository {
         dataSource.syncTable("grouping_aggregate", groupingAggregateColumns);
     }
 
+    @Override
     public void store(final long captureTime, Aggregate aggregate,
             final Map<String, Aggregate> groupingAggregates) {
         logger.debug("store(): captureTime={}, aggregate={}, groupingAggregates={}", captureTime,
@@ -72,6 +73,7 @@ public class AggregateDao implements AggregateRepository {
                     aggregate.getTraceCount());
             dataSource.batchUpdate("insert into grouping_aggregate (grouping, capture_time,"
                     + " duration_total, trace_count) values (?, ?, ?, ?)", new BatchAdder() {
+                @Override
                 public void addBatches(PreparedStatement preparedStatement)
                         throws SQLException {
                     for (Entry<String, Aggregate> entry : groupingAggregates.entrySet()) {
@@ -123,6 +125,7 @@ public class AggregateDao implements AggregateRepository {
     @ThreadSafe
     private static class AggregateIntervalRowMapper implements RowMapper<AggregatePoint> {
 
+        @Override
         public AggregatePoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             long durationTotal = resultSet.getLong(2);
@@ -134,6 +137,7 @@ public class AggregateDao implements AggregateRepository {
     @ThreadSafe
     private static class GroupingAggregateRowMapper implements RowMapper<GroupingAggregate> {
 
+        @Override
         public GroupingAggregate mapRow(ResultSet resultSet) throws SQLException {
             String grouping = resultSet.getString(1);
             long durationTotal = resultSet.getLong(2);

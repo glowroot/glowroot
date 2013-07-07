@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * @author Trask Stalnaker
@@ -70,9 +70,8 @@ public class StorageModule {
         snapshotDao = new SnapshotDao(dataSource, rollingFile);
         reaperScheduledRunnable =
                 new ReaperScheduledRunnable(configService, snapshotDao, clock);
-        // MINUTES is not available in jdk5
         reaperScheduledRunnable.scheduleAtFixedRate(scheduledExecutor, 0,
-                SNAPSHOT_REAPER_PERIOD_MINUTES * 60, SECONDS);
+                SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         aggregateDao = new AggregateDao(dataSource);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
-import com.google.common.io.CharStreams;
+import com.google.common.io.CharSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class RollingFileTest {
         // given
         String text = "0123456789";
         // when
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        FileBlock block = rollingFile.write(CharSource.wrap(text));
         // then
         String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);
@@ -74,9 +74,9 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharSource.wrap(text));
         // when
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        FileBlock block = rollingFile.write(CharSource.wrap(text));
         // then
         String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);
@@ -92,10 +92,10 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharSource.wrap(text));
+        rollingFile.write(CharSource.wrap(text));
         // when
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
+        FileBlock block = rollingFile.write(CharSource.wrap(text));
         // then
         String text2 = rollingFile.read(block, "").read();
         assertThat(text2).isEqualTo(text);
@@ -111,10 +111,10 @@ public class RollingFileTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        FileBlock block = rollingFile.write(CharStreams.asCharSource(text));
-        rollingFile.write(CharStreams.asCharSource(text));
+        FileBlock block = rollingFile.write(CharSource.wrap(text));
+        rollingFile.write(CharSource.wrap(text));
         // when
-        rollingFile.write(CharStreams.asCharSource(text));
+        rollingFile.write(CharSource.wrap(text));
         // then
         // for now, overwritten blocks return empty byte array when read
         String text2 = rollingFile.read(block, "").read();

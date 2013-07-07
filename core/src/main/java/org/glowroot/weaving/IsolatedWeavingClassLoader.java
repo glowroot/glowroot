@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private static final Supplier<ImmutableList<Advice>> SUPPLIER_OF_NONE =
             new Supplier<ImmutableList<Advice>>() {
+                @Override
                 public ImmutableList<Advice> get() {
                     return ImmutableList.of();
                 }
@@ -278,6 +279,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         public IsolatedWeavingClassLoader build() {
             return AccessController.doPrivileged(
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
+                        @Override
                         public IsolatedWeavingClassLoader run() {
                             // metricTimerService is non-null when outer method is called, and it is
                             // @MonotonicNonNull, so it must be non-null here

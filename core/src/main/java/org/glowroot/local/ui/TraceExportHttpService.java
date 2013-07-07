@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -40,7 +39,6 @@ import org.jboss.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.CharStreams2;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.Singleton;
 
@@ -68,6 +66,7 @@ public class TraceExportHttpService implements HttpService {
         this.traceCommonService = traceCommonService;
     }
 
+    @Override
     @Nullable
     public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
         String uri = request.getUri();
@@ -139,33 +138,33 @@ public class TraceExportHttpService implements HttpService {
         int curr = 0;
         List<CharSource> charSources = Lists.newArrayList();
         while (matcher.find()) {
-            charSources.add(CharStreams.asCharSource(
+            charSources.add(CharSource.wrap(
                     templateContent.substring(curr, matcher.start())));
             curr = matcher.end();
             String match = matcher.group();
             if (match.equals(exportCss)) {
-                charSources.add(CharStreams.asCharSource("<style>"));
+                charSources.add(CharSource.wrap("<style>"));
                 charSources.add(asCharSource("styles/export.css"));
-                charSources.add(CharStreams.asCharSource("</style>"));
+                charSources.add(CharSource.wrap("</style>"));
             } else if (match.equals(exportComponentsJs)) {
-                charSources.add(CharStreams.asCharSource("<script>"));
+                charSources.add(CharSource.wrap("<script>"));
                 charSources.add(asCharSource("scripts/export.components.js"));
-                charSources.add(CharStreams.asCharSource("</script>"));
+                charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(exportJs)) {
-                charSources.add(CharStreams.asCharSource("<script>"));
+                charSources.add(CharSource.wrap("<script>"));
                 charSources.add(asCharSource("scripts/export.js"));
-                charSources.add(CharStreams.asCharSource("</script>"));
+                charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(detailTrace)) {
-                charSources.add(CharStreams.asCharSource(
+                charSources.add(CharSource.wrap(
                         "<script type=\"text/json\" id=\"detailTraceJson\">"));
                 charSources.add(traceCharSource);
-                charSources.add(CharStreams.asCharSource("</script>"));
+                charSources.add(CharSource.wrap("</script>"));
             } else {
                 logger.error("unexpected match: {}", match);
             }
         }
-        charSources.add(CharStreams.asCharSource(templateContent.substring(curr)));
-        return CharStreams2.join(charSources);
+        charSources.add(CharSource.wrap(templateContent.substring(curr)));
+        return CharSource.concat(charSources);
     }
 
     private static CharSource asCharSource(String exportResourceName) {

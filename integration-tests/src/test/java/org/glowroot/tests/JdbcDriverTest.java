@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,11 @@ public class JdbcDriverTest {
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             PluginServices pluginServices =
                     PluginServices.get("glowroot-integration-tests");

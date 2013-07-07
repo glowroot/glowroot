@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,9 +116,11 @@ public class JvmInfoTest {
     }
 
     public static class ShouldUseCpu implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             long start = threadBean.getCurrentThreadCpuTime();
@@ -131,9 +133,11 @@ public class JvmInfoTest {
     }
 
     public static class ShouldWait implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             Object object = new Object();
             synchronized (object) {
@@ -143,9 +147,11 @@ public class JvmInfoTest {
     }
 
     public static class ShouldBlock implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             Object lock = new Object();
             Object notify = new Object();
@@ -163,9 +169,11 @@ public class JvmInfoTest {
     }
 
     public static class ShouldGenerateGarbage implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             long collectionCountStart = collectionCount();
             long collectionTimeStart = collectionTime();
@@ -206,6 +214,7 @@ public class JvmInfoTest {
             this.lock = lock;
             this.notify = notify;
         }
+        @Override
         public Void call() throws InterruptedException {
             synchronized (lock) {
                 synchronized (notify) {

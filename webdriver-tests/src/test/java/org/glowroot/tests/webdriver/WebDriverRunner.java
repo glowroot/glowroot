@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.io.File;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
+import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
@@ -27,13 +28,11 @@ import org.openqa.selenium.remote.ScreenshotException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.container.IgnoreOnJdk5;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-public class WebDriverRunner extends IgnoreOnJdk5 {
+public class WebDriverRunner extends BlockJUnit4ClassRunner {
 
     private static Logger logger = LoggerFactory.getLogger(ScreenshotCapturingStatement.class);
 

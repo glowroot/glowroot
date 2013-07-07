@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,7 @@ public class MixinType {
 
     public static MixinType from(Mixin mixin, Class<?> implementation) {
         ImmutableList<String> targets = ImmutableList.copyOf(mixin.target());
-        // Class.getInterfaces() returns Class[] in jdk 5 so must be casted to Class<?>[]
-        // (this method was corrected in jdk 6 to return Class<?>[])
-        ImmutableList<Class<?>> interfaces =
-                ImmutableList.copyOf((Class<?>[]) implementation.getInterfaces());
+        ImmutableList<Class<?>> interfaces = ImmutableList.copyOf(implementation.getInterfaces());
         String initMethodName = null;
         for (Method method : implementation.getDeclaredMethods()) {
             if (method.getAnnotation(MixinInit.class) != null) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.markers.Singleton;
 
+import static java.util.concurrent.TimeUnit.HOURS;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @Singleton
 class ReaperScheduledRunnable extends ScheduledRunnable {
-
-    private static final long MILLISECONDS_PER_HOUR = 60L * 60L * 1000L;
 
     private final ConfigService configService;
     private final SnapshotDao snapshotDao;
@@ -46,7 +46,7 @@ class ReaperScheduledRunnable extends ScheduledRunnable {
                 .getSnapshotExpirationHours();
         if (snapshotExpirationHours != GeneralConfig.SNAPSHOT_EXPIRATION_DISABLED) {
             snapshotDao.deleteSnapshotsBefore(clock.currentTimeMillis()
-                    - snapshotExpirationHours * MILLISECONDS_PER_HOUR);
+                    - HOURS.toMillis(snapshotExpirationHours));
         }
     }
 }

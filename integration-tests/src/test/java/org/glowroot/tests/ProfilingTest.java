@@ -187,6 +187,7 @@ public class ProfilingTest {
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
+            @Override
             @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ShouldGenerateTraceWithMergedStackTree.class);
@@ -237,9 +238,11 @@ public class ProfilingTest {
 
     public static class ShouldGenerateTraceWithMergedStackTree implements AppUnderTest,
             TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             Threads.moreAccurateSleep(105);
         }
@@ -249,9 +252,11 @@ public class ProfilingTest {
             TraceMarker {
         private static final PluginServices pluginServices =
                 PluginServices.get("glowroot-integration-tests");
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             // normally the plugin/aspect should set the user id, this is just a shortcut for test
             pluginServices.setUserId("able");

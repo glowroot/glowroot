@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,12 @@ package org.glowroot.weaving;
  */
 public class NativeMisc implements Misc {
 
+    @Override
     public native void execute1();
 
+    @Override
     public native String executeWithReturn();
 
+    @Override
     public native void executeWithArgs(String one, int two);
 }

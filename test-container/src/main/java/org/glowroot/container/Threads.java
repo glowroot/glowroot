@@ -59,7 +59,7 @@ public class Threads {
             throws InterruptedException {
         // give the test 5 seconds to shutdown any threads they may have created, e.g. give tomcat
         // time to shutdown when testing tomcat plugin
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         List<Thread> nonPreExistingThreads;
         List<Thread> rogueThreads;
         do {
@@ -100,7 +100,7 @@ public class Threads {
     public static void postShutdownCheck(@ReadOnly Collection<Thread> preExistingThreads)
             throws InterruptedException {
         // give it 5 seconds to shutdown threads
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         List<Thread> rogueThreads;
         do {
             rogueThreads = getNonPreExistingThreads(preExistingThreads);
@@ -124,7 +124,7 @@ public class Threads {
 
     // try to handle under- and over- sleeping for tests that depend on more accurate sleep timing
     public static void moreAccurateSleep(int millis) throws InterruptedException {
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         if (millis > 10) {
             Thread.sleep(millis - 10);
         }

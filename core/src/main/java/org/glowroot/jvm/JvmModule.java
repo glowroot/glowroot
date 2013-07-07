@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,25 +24,18 @@ import org.glowroot.markers.ThreadSafe;
 @ThreadSafe
 public class JvmModule {
 
-    private final OptionalService<Jdk6> jdk6;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<Flags> flags;
     private final OptionalService<HotSpotDiagnostics> hotSpotDiagnostics;
 
     public JvmModule() {
-        jdk6 = new OptionalService<Jdk6>(new Jdk6.Factory());
         threadAllocatedBytes = new OptionalService<ThreadAllocatedBytes>(
                 new ThreadAllocatedBytes.Factory());
-        heapHistograms = new OptionalService<HeapHistograms>(new HeapHistograms.Factory(
-                jdk6.getService()));
+        heapHistograms = new OptionalService<HeapHistograms>(new HeapHistograms.Factory());
         flags = new OptionalService<Flags>(new Flags.Factory());
         hotSpotDiagnostics = new OptionalService<HotSpotDiagnostics>(
                 new HotSpotDiagnostics.Factory());
-    }
-
-    public OptionalService<Jdk6> getJdk6() {
-        return jdk6;
     }
 
     public OptionalService<ThreadAllocatedBytes> getThreadAllocatedBytes() {

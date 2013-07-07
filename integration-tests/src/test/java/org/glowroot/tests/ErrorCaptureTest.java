@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,6 +149,7 @@ public class ErrorCaptureTest {
     }
 
     public static class ShouldCaptureError implements AppUnderTest {
+        @Override
         public void executeApp() throws Exception {
             RuntimeException expected = new RuntimeException();
             try {
@@ -163,18 +164,22 @@ public class ErrorCaptureTest {
     }
 
     public static class ShouldCaptureErrorWithSpanStackTrace implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             new LogError().log("abc");
         }
     }
 
     public static class ShouldCaptureErrorWithCausalChain implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws Exception {
             new LogCause().log("abc");
         }

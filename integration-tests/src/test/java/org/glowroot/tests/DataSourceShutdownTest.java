@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,14 @@ public class DataSourceShutdownTest {
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {
+            @Override
             @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ForceShutdownWhileStoringTraces.class);
                 return null;
             }
         });
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         boolean startedWritingToDb = false;
         while (stopwatch.elapsed(SECONDS) < 5) {
             if (container.getTraceService().getNumStoredSnapshots() > 0) {
@@ -78,9 +79,11 @@ public class DataSourceShutdownTest {
     }
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             ThreadFactory daemonThreadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
             Executors.newSingleThreadExecutor(daemonThreadFactory).execute(new Runnable() {
+                @Override
                 public void run() {
                     // generate traces during the shutdown process to test there are no errors
                     // caused by trying to write a trace to the database during/after shutdown
@@ -100,6 +103,7 @@ public class DataSourceShutdownTest {
                 }
             });
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
         }

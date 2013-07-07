@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ class LocalTraceService extends TraceService {
     }
 
     void assertNoActiveTraces() throws Exception {
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         // if interruptAppUnderTest() was used to terminate an active trace, it may take a few
         // milliseconds to interrupt the thread and end the active trace
         while (stopwatch.elapsed(SECONDS) < 2) {

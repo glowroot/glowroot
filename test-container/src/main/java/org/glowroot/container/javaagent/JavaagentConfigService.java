@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,56 +55,69 @@ class JavaagentConfigService implements ConfigService {
         this.getUiPortCommand = getUiPortCommand;
     }
 
+    @Override
     public void setStoreThresholdMillis(int storeThresholdMillis) throws Exception {
         GeneralConfig generalConfig = getGeneralConfig();
         generalConfig.setStoreThresholdMillis(storeThresholdMillis);
         updateGeneralConfig(generalConfig);
     }
 
+    @Override
     public GeneralConfig getGeneralConfig() throws Exception {
         return getConfig("/backend/config/general", GeneralConfig.class);
     }
 
+    @Override
     public void updateGeneralConfig(GeneralConfig config) throws Exception {
         httpClient.post("/backend/config/general", mapper.writeValueAsString(config));
     }
 
+    @Override
     public CoarseProfilingConfig getCoarseProfilingConfig() throws Exception {
         return getConfig("/backend/config/coarse-profiling", CoarseProfilingConfig.class);
     }
 
+    @Override
     public void updateCoarseProfilingConfig(CoarseProfilingConfig config) throws Exception {
         httpClient.post("/backend/config/coarse-profiling", mapper.writeValueAsString(config));
     }
 
+    @Override
     public FineProfilingConfig getFineProfilingConfig() throws Exception {
         return getConfig("/backend/config/fine-profiling", FineProfilingConfig.class);
     }
 
+    @Override
     public void updateFineProfilingConfig(FineProfilingConfig config) throws Exception {
         httpClient.post("/backend/config/fine-profiling", mapper.writeValueAsString(config));
     }
 
+    @Override
     public UserOverridesConfig getUserOverridesConfig() throws Exception {
         return getConfig("/backend/config/user-overrides", UserOverridesConfig.class);
     }
 
+    @Override
     public void updateUserOverridesConfig(UserOverridesConfig config) throws Exception {
         httpClient.post("/backend/config/user-overrides", mapper.writeValueAsString(config));
     }
 
+    @Override
     public StorageConfig getStorageConfig() throws Exception {
         return getConfig("/backend/config/storage", StorageConfig.class);
     }
 
+    @Override
     public void updateStorageConfig(StorageConfig config) throws Exception {
         httpClient.post("/backend/config/storage", mapper.writeValueAsString(config));
     }
 
+    @Override
     public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
         return getConfig("/backend/config/user-interface", UserInterfaceConfig.class);
     }
 
+    @Override
     public void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
         String response = httpClient.post("/backend/config/user-interface",
                 mapper.writeValueAsString(config));
@@ -120,23 +133,28 @@ class JavaagentConfigService implements ConfigService {
         httpClient.updateUiPort(getUiPortCommand.getUiPort());
     }
 
+    @Override
     public AdvancedConfig getAdvancedConfig() throws Exception {
         return getConfig("/backend/config/advanced", AdvancedConfig.class);
     }
 
+    @Override
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
         httpClient.post("/backend/config/advanced", mapper.writeValueAsString(config));
     }
 
+    @Override
     @Nullable
     public PluginConfig getPluginConfig(String pluginId) throws Exception {
         return getConfig("/backend/config/plugin/" + pluginId, PluginConfig.class);
     }
 
+    @Override
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
     }
 
+    @Override
     public List<PointcutConfig> getPointcutConfigs() throws Exception {
         String response = httpClient.get("/backend/config/pointcut");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
@@ -146,6 +164,7 @@ class JavaagentConfigService implements ConfigService {
     }
 
     // returns new version
+    @Override
     public String addPointcutConfig(PointcutConfig pointcutConfig) throws Exception {
         String response = httpClient.post("/backend/config/pointcut/+",
                 mapper.writeValueAsString(pointcutConfig));
@@ -154,20 +173,24 @@ class JavaagentConfigService implements ConfigService {
         return versionNode.asText();
     }
 
+    @Override
     public void updatePointcutConfig(String version, PointcutConfig pointcutConfig)
             throws Exception {
         httpClient.post("/backend/config/pointcut/" + version,
                 mapper.writeValueAsString(pointcutConfig));
     }
 
+    @Override
     public void removePointcutConfig(String version) throws Exception {
         httpClient.post("/backend/config/pointcut/-", mapper.writeValueAsString(version));
     }
 
+    @Override
     public void reweavePointcutConfigs() throws Exception {
         httpClient.post("/backend/admin/pointcuts/reweave", "");
     }
 
+    @Override
     public void compactData() throws Exception {
         httpClient.post("/backend/admin/data/compact", "");
     }

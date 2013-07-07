@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -335,6 +335,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
+    @Override
     public void onChange() {
         GeneralConfig generalConfig = configService.getGeneralConfig();
         if (pluginId == null) {
@@ -394,9 +395,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.span = span;
             this.trace = trace;
         }
+        @Override
         public CompletedSpan end() {
             return endInternal(ticker.read(), null);
         }
+        @Override
         public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
             if (endTick - span.getStartTick() >= unit.toNanos(threshold)) {
@@ -404,6 +407,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             return endInternal(endTick, null);
         }
+        @Override
         public CompletedSpan endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
                 logger.error("endWithError(): argument 'errorMessage' must be non-null");
@@ -413,6 +417,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 return endInternal(ticker.read(), errorMessage);
             }
         }
+        @Override
         public MessageSupplier getMessageSupplier() {
             MessageSupplier messageSupplier = span.getMessageSupplier();
             if (messageSupplier == null) {
@@ -460,10 +465,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.trace = trace;
             this.messageSupplier = messageSupplier;
         }
+        @Override
         public CompletedSpan end() {
             metric.stop();
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
         public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
             metric.end(endTick);
@@ -479,6 +486,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
         public CompletedSpan endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
                 logger.error("endWithError(): argument 'errorMessage' must be non-null");
@@ -495,6 +503,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
         public MessageSupplier getMessageSupplier() {
             return messageSupplier;
         }
@@ -505,6 +514,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         private CompletedSpanImpl(org.glowroot.trace.model.Span span) {
             this.span = span;
         }
+        @Override
         public void captureSpanStackTrace() {
             span.setStackTrace(PluginServicesImpl.captureSpanStackTrace());
         }
@@ -513,15 +523,19 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private static class NopSpan implements Span {
         private static final NopSpan INSTANCE = new NopSpan();
         private NopSpan() {}
+        @Override
         public CompletedSpan end() {
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
         public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
         public CompletedSpan endWithError(ErrorMessage errorMessage) {
             return NopCompletedSpan.INSTANCE;
         }
+        @Override
         @Nullable
         public MessageSupplier getMessageSupplier() {
             return null;
@@ -531,11 +545,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @ThreadSafe
     private static class NopMetricTimer implements MetricTimer {
         private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        @Override
         public void stop() {}
     }
 
     private static class NopCompletedSpan implements CompletedSpan {
         private static final NopCompletedSpan INSTANCE = new NopCompletedSpan();
+        @Override
         public void captureSpanStackTrace() {}
     }
 }

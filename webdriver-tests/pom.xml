@@ -21,10 +21,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- selenium already depends on jdk6, so no point in using guava-jdk5 in this module -->
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>16.0-rc1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -81,13 +79,6 @@
       <artifactId>glowroot-test-container</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <!-- selenium includes guava 15.0 -->
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava-jdk5</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

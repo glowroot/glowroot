@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ package org.glowroot.weaving;
  */
 public abstract class AbstractMisc implements Misc {
 
+    @Override
     public abstract void execute1();
 
+    @Override
     public abstract String executeWithReturn();
 
+    @Override
     public abstract void executeWithArgs(String one, int two);
 
     public static class ExtendsAbstractMisc extends AbstractMisc {

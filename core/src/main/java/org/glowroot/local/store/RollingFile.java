@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import checkers.lock.quals.GuardedBy;
 import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
-import com.google.common.io.CharStreams;
 import com.google.common.primitives.Longs;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
@@ -131,7 +130,7 @@ public class RollingFile {
         @Override
         public Reader openStream() throws IOException {
             if (out.isRolledOver(block)) {
-                return CharStreams.asCharSource(rolledOverResponse).openStream();
+                return CharSource.wrap(rolledOverResponse).openStream();
             }
             // it's important to wrap FileBlockInputStream in a BufferedInputStream to prevent lots
             // of small reads from the underlying RandomAccessFile

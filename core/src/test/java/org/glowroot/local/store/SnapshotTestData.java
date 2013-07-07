@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.glowroot.local.store;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.io.CharStreams;
+import com.google.common.io.CharSource;
 
 import org.glowroot.collector.Snapshot;
 
@@ -41,7 +41,7 @@ class SnapshotTestData {
                 .background(false)
                 .grouping("test grouping")
                 .userId("j")
-                .spans(CharStreams.asCharSource("[{\"offset\":0,\"duration\":0,\"index\":0,"
+                .spans(CharSource.wrap("[{\"offset\":0,\"duration\":0,\"index\":0,"
                         + "\"level\":0,\"message\":{\"text\":\"Level One\","
                         + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","
                         + "\"nested1\":{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\","

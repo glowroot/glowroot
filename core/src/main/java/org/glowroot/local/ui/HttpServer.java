@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ public class HttpServer {
         final HttpServerHandler handler = new HttpServerHandler(indexHtmlService, uriMappings,
                 httpSessionManager, jsonServices);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            @Override
             public ChannelPipeline getPipeline() {
                 ChannelPipeline pipeline = Channels.pipeline();
                 pipeline.addLast("decoder", new HttpRequestDecoder());
@@ -149,6 +150,7 @@ public class HttpServer {
             this.newPort = newPort;
         }
 
+        @Override
         public void run() {
             InetSocketAddress localAddress = new InetSocketAddress(newPort);
             HttpServer.this.serverChannel = bootstrap.bind(localAddress);
@@ -168,6 +170,7 @@ public class HttpServer {
 
         private final AtomicInteger workerCount = new AtomicInteger();
 
+        @Override
         public String determineThreadName(String currentThreadName, String proposedThreadName) {
             if (proposedThreadName.matches("New I/O server boss #[0-9]+")) {
                 // leave off the # since there is always a single boss thread

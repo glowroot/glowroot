@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,8 @@ import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.common.Reflections.ReflectiveTargetException;
 import org.glowroot.markers.Singleton;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.glowroot.common.Nullness.castNonNull;
 import static org.glowroot.local.ui.HttpServerHandler.HttpMethod.GET;
 import static org.glowroot.local.ui.HttpServerHandler.HttpMethod.POST;
@@ -81,9 +83,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServerHandler.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
-    private static final long TEN_YEARS = 10 * 365 * 24 * 60 * 60 * 1000L;
-    private static final long ONE_DAY = 24 * 60 * 60 * 1000L;
-    private static final long FIVE_MINUTES = 5 * 60 * 1000L;
+    private static final long TEN_YEARS = DAYS.toMillis(365 * 10);
+    private static final long ONE_DAY = DAYS.toMillis(1);
+    private static final long FIVE_MINUTES = MINUTES.toMillis(5);
 
     private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
             "An existing connection was forcibly closed by the remote host",

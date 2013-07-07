@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,10 +148,12 @@ public class JavaagentContainer implements Container {
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
+    @Override
     public ConfigService getConfigService() {
         return configService;
     }
 
+    @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
         if (SpyingLogFilterCheck.isSpyingLogFilterEnabled()) {
             socketCommander.sendCommand(ImmutableList.of(
@@ -161,29 +163,34 @@ public class JavaagentContainer implements Container {
         }
     }
 
+    @Override
     public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
             throws Exception {
         socketCommander.sendCommand(ImmutableList.of(SocketCommandProcessor.EXECUTE_APP,
                 appUnderTestClass.getName()));
         // wait for all traces to be stored
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         while (traceService.getNumPendingCompleteTraces() > 0 && stopwatch.elapsed(SECONDS) < 5) {
             Thread.sleep(10);
         }
     }
 
+    @Override
     public void interruptAppUnderTest() throws Exception {
         socketCommander.sendCommand(SocketCommandProcessor.INTERRUPT);
     }
 
+    @Override
     public TraceService getTraceService() {
         return traceService;
     }
 
+    @Override
     public int getUiPort() throws Exception {
         return getUiPort(socketCommander);
     }
 
+    @Override
     public void checkAndReset() throws Exception {
         traceService.assertNoActiveTraces();
         traceService.deleteAllSnapshots();
@@ -205,10 +212,12 @@ public class JavaagentContainer implements Container {
         }
     }
 
+    @Override
     public void close() throws Exception {
         close(false);
     }
 
+    @Override
     public void close(boolean evenIfShared) throws Exception {
         if (shared && !evenIfShared) {
             // this is the shared container and will be closed at the end of the run
@@ -347,6 +356,7 @@ public class JavaagentContainer implements Container {
             this.socketCommander = socketCommander;
         }
 
+        @Override
         public int getUiPort() throws Exception {
             return JavaagentContainer.getUiPort(socketCommander);
         }
@@ -389,6 +399,7 @@ public class JavaagentContainer implements Container {
             }
         }
 
+        @Override
         public void run() {
             byte[] buffer = new byte[100];
             try {

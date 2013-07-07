@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
+import java.lang.instrument.UnmodifiableClassException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
@@ -31,8 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.TraceCollectorImpl;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PointcutConfig;
-import org.glowroot.jvm.Jdk6;
-import org.glowroot.jvm.OptionalService;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.SnapshotDao;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -59,21 +58,19 @@ class AdminJsonService {
     private final ParsedTypeCache parsedTypeCache;
     @Nullable
     private final Instrumentation instrumentation;
-    private final OptionalService<Jdk6> jdk6;
     private final TraceCollectorImpl traceCollector;
     private final DataSource dataSource;
     private final TraceRegistry traceRegistry;
 
     AdminJsonService(SnapshotDao snapshotDao, ConfigService configService,
             PointcutConfigAdviceCache pointcutConfigAdviceCache, ParsedTypeCache parsedTypeCache,
-            @Nullable Instrumentation instrumentation, OptionalService<Jdk6> jdk6,
-            TraceCollectorImpl traceCollector, DataSource dataSource, TraceRegistry traceRegistry) {
+            @Nullable Instrumentation instrumentation, TraceCollectorImpl traceCollector,
+            DataSource dataSource, TraceRegistry traceRegistry) {
         this.snapshotDao = snapshotDao;
         this.configService = configService;
         this.pointcutConfigAdviceCache = pointcutConfigAdviceCache;
         this.parsedTypeCache = parsedTypeCache;
         this.instrumentation = instrumentation;
-        this.jdk6 = jdk6;
         this.traceCollector = traceCollector;
         this.dataSource = dataSource;
         this.traceRegistry = traceRegistry;
@@ -86,13 +83,12 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/pointcuts/reweave")
-    void reweavePointcutConfigs() {
+    void reweavePointcutConfigs() throws UnmodifiableClassException {
         if (instrumentation == null) {
             logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
             return;
         }
-        Jdk6 service = OptionalJsonServices.validateAvailability(jdk6);
-        if (!service.isRetransformClassesSupported(instrumentation)) {
+        if (!instrumentation.isRetransformClassesSupported()) {
             logger.warn("retransformClasses is not supported");
             return;
         }
@@ -108,7 +104,7 @@ class AdminJsonService {
         if (classes.isEmpty()) {
             return;
         }
-        service.retransformClasses(instrumentation, classes);
+        instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
     }
 
     @POST("/backend/admin/data/compact")

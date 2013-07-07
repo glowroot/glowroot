@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ class SocketCommandProcessor implements Runnable {
         preExistingThreads = Sets.newHashSet(Threads.currentThreads());
     }
 
+    @Override
     public void run() {
         preExistingThreads.add(Thread.currentThread());
         try {
@@ -91,6 +92,7 @@ class SocketCommandProcessor implements Runnable {
         final CommandWrapper commandWrapper = (CommandWrapper) objectIn.readObject();
         logger.debug("command received by external jvm: {}", commandWrapper);
         executorService.submit(new Runnable() {
+            @Override
             public void run() {
                 preExistingThreads.add(Thread.currentThread());
                 try {

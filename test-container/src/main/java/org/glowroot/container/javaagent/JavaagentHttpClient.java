@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,6 +192,7 @@ class JavaagentHttpClient {
                 .ofType(ClientBootstrap.class).in(asyncHttpClient.getProvider()).get();
         final ChannelPipelineFactory pipelineFactory = plainBootstrap.getPipelineFactory();
         plainBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            @Override
             public ChannelPipeline getPipeline() throws Exception {
                 ChannelPipeline pipeline = pipelineFactory.getPipeline();
                 pipeline.addBefore("inflater", "saveTheEncoding", new SaveTheEncodingHandler());

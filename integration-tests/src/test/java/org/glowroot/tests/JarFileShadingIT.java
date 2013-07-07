@@ -81,6 +81,7 @@ public class JarFileShadingIT {
         // guessing this is target/classes
         File targetDir = new File(classesDir).getParentFile();
         File[] possibleMatches = targetDir.listFiles(new FilenameFilter() {
+            @Override
             public boolean accept(File dir, String name) {
                 return name.matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar");
             }

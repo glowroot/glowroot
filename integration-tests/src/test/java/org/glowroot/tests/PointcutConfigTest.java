@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,32 +179,40 @@ public class PointcutConfigTest {
     }
 
     public static class BasicMisc implements Misc {
+        @Override
         public void execute1() {}
+        @Override
         public String executeWithReturn() {
             return "xyz";
         }
+        @Override
         public void executeWithArgs(String one, int two) {}
     }
 
     public static class ShouldExecute1 implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() {
             traceMarker();
         }
+        @Override
         public void traceMarker() {
             new BasicMisc().execute1();
         }
     }
 
     public static class ShouldExecuteWithReturn implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() {
             traceMarker();
         }
+        @Override
         public void traceMarker() {
             new BasicMisc().executeWithReturn();
         }
     }
 
     public static class ShouldExecuteWithArgs implements AppUnderTest {
+        @Override
         public void executeApp() {
             new BasicMisc().executeWithArgs("abc", 123);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,7 @@ public class MetricTest {
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
+            @Override
             @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ShouldGenerateActiveTraceWithMetrics.class);
@@ -111,9 +112,11 @@ public class MetricTest {
     }
 
     public static class ShouldGenerateTraceWithMetrics implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
         }
@@ -122,9 +125,11 @@ public class MetricTest {
     public static class ShouldGenerateTraceWithRootAndSameNestedMetric implements AppUnderTest,
             TraceMarker {
         private int nestingLevel = 0;
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
             if (nestingLevel < 10) {
@@ -136,9 +141,11 @@ public class MetricTest {
 
     public static class ShouldGenerateActiveTraceWithMetrics implements AppUnderTest,
             TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             // need to sleep long enough for active trace request to find this trace
             Thread.sleep(100);

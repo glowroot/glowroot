@@ -47,6 +47,7 @@ public class Flags {
 
     static class Factory implements OptionalServiceFactory<Flags> {
 
+        @Override
         public Flags create() throws OptionalServiceFactoryException {
             Class<?> flagClass = OptionalServiceFactoryHelper.classForName("sun.management.Flag");
             Method getAllFlagsMethod =

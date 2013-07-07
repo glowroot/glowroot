@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -407,7 +407,6 @@ public class JdbcPluginTest {
         return connection;
     }
 
-    // NOTE tomcat jdbc pool requires JDK 6
     @SuppressWarnings("unused")
     private static Connection createTomcatJdbcPoolWrappedConnection() throws SQLException {
         // set up database
@@ -497,6 +496,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -505,6 +505,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
@@ -521,6 +522,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteStatementAndUsePrevious implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -529,6 +531,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
@@ -547,6 +550,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteStatementAndUseRelativeForward implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -555,6 +559,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
@@ -577,6 +582,7 @@ public class JdbcPluginTest {
     public static class ExecuteStatementAndUseRelativeBackward implements AppUnderTest,
             TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -585,6 +591,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
@@ -607,6 +614,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteStatementAndUseAbsolute implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -615,6 +623,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
@@ -630,6 +639,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteStatementAndUseFirst implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -638,6 +648,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
@@ -653,6 +664,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteStatementAndUseLast implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -661,6 +673,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
@@ -677,6 +690,7 @@ public class JdbcPluginTest {
     public static class ExecutePreparedStatementAndIterateOverResults implements AppUnderTest,
             TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -685,6 +699,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");
@@ -703,6 +718,7 @@ public class JdbcPluginTest {
 
     public static class ExecutePreparedStatementWithSetNull implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -711,6 +727,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee values (?, ?)");
@@ -730,6 +747,7 @@ public class JdbcPluginTest {
                     "insert into employee values (?, ?)", 2);
         }
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -738,6 +756,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee values (?, ?)");
@@ -757,6 +776,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteCallableStatement implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -765,6 +785,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             CallableStatement callableStatement =
                     connection.prepareCall("insert into employee values (?, ?)");
@@ -780,6 +801,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteJdbcCommit implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
@@ -789,6 +811,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
@@ -802,6 +825,7 @@ public class JdbcPluginTest {
 
     public static class AccessMetaData implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
@@ -811,6 +835,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             connection.getMetaData().getTables(null, null, null, null);
         }
@@ -818,6 +843,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteBatchPreparedStatement implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
@@ -827,6 +853,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name) values (?)");
@@ -851,6 +878,7 @@ public class JdbcPluginTest {
     public static class ExecuteBatchPreparedStatementWithoutClear implements AppUnderTest,
             TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
@@ -860,6 +888,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name) values (?)");
@@ -883,6 +912,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteBatchStatement implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
@@ -892,6 +922,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
@@ -910,6 +941,7 @@ public class JdbcPluginTest {
 
     public static class ExecuteBatchStatementWithoutClear implements AppUnderTest, TraceMarker {
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             connection.setAutoCommit(false);
@@ -919,6 +951,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
@@ -939,6 +972,7 @@ public class JdbcPluginTest {
             TraceMarker {
         private static final AppUnderTestServices services = AppUnderTestServices.get();
         private Connection connection;
+        @Override
         public void executeApp() throws Exception {
             connection = createConnection();
             try {
@@ -947,6 +981,7 @@ public class JdbcPluginTest {
                 closeConnection(connection);
             }
         }
+        @Override
         public void traceMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");

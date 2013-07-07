@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ public class StuckTraceTest {
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
+            @Override
             @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(ShouldGenerateStuckTrace.class);
@@ -82,7 +83,7 @@ public class StuckTraceTest {
         });
         // then
         // wait for trace to be marked stuck
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
         while (stopwatch.elapsed(SECONDS) < 5) {
             trace = container.getTraceService().getActiveTraceSummary(0, MILLISECONDS);
@@ -106,9 +107,11 @@ public class StuckTraceTest {
     }
 
     public static class ShouldGenerateStuckTrace implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             while (true) {
                 try {
@@ -121,9 +124,11 @@ public class StuckTraceTest {
     }
 
     public static class WarmupTrace implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
         }

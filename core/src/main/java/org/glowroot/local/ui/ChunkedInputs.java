@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,10 +54,12 @@ class ChunkedInputs {
 
         private boolean hasSentTerminatingChunk;
 
+        @Override
         public boolean hasNextChunk() {
             return !hasSentTerminatingChunk;
         }
 
+        @Override
         @Nullable
         public Object nextChunk() throws IOException {
             if (hasMoreBytes()) {
@@ -71,6 +73,7 @@ class ChunkedInputs {
             }
         }
 
+        @Override
         public boolean isEndOfInput() {
             return hasSentTerminatingChunk;
         }
@@ -116,6 +119,7 @@ class ChunkedInputs {
             this.reader = new PushbackReader(reader);
         }
 
+        @Override
         public void close() throws IOException {
             reader.close();
         }
@@ -152,6 +156,7 @@ class ChunkedInputs {
             zipWriter = new OutputStreamWriter(zipOut, Charsets.UTF_8);
         }
 
+        @Override
         public void close() throws IOException {
             reader.close();
         }

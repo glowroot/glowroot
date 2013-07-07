@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public class ResultSetAspect {
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
+                @Override
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
                     metricEnabled = pluginEnabled
@@ -124,6 +125,7 @@ public class ResultSetAspect {
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
+                @Override
                 public void onChange() {
                     metricEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
@@ -156,6 +158,7 @@ public class ResultSetAspect {
         private static volatile boolean metricEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
+                @Override
                 public void onChange() {
                     metricEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");

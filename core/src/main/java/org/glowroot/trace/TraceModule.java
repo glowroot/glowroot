@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
-import org.glowroot.jvm.Jdk6;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.ThreadSafe;
@@ -80,6 +79,7 @@ public class TraceModule {
 
     private final Supplier<PluginServices> pluginServicesWithoutPlugin =
             Suppliers.memoize(new Supplier<PluginServices>() {
+                @Override
                 public PluginServices get() {
                     return create(null);
                 }
@@ -87,8 +87,7 @@ public class TraceModule {
 
     public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule,
             TraceCollector traceCollector, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            @Nullable Instrumentation instrumentation, @Nullable Jdk6 jdk6,
-            ScheduledExecutorService scheduledExecutor) {
+            @Nullable Instrumentation instrumentation, ScheduledExecutorService scheduledExecutor) {
         this.ticker = ticker;
         this.clock = clock;
         this.configModule = configModule;
@@ -123,8 +122,8 @@ public class TraceModule {
                     configModule.getPluginDescriptorCache().getAdvisors(),
                     pointcutConfigAdviceCache.getAdvisorsSupplier(), parsedTypeCache,
                     metricTimerService, generateMetricNameWrapperMethods);
-            if (jdk6 != null && jdk6.isRetransformClassesSupported(instrumentation)) {
-                jdk6.addRetransformingTransformer(instrumentation, transformer);
+            if (instrumentation.isRetransformClassesSupported()) {
+                instrumentation.addTransformer(transformer, true);
                 jvmRetransformClassesSupported = true;
             } else {
                 instrumentation.addTransformer(transformer);

@@ -83,21 +83,8 @@ class PreInitializeClasses {
     }
 
     private static List<String> getGuavaUsedTypes() {
-        // webdriver tests include later guava version on the path via selenium dependency
-        // overriding the guava version used by glowroot (when running against unshaded glowroot)
-        //
-        // running webdriver tests against unshaded glowroot occurs during 'mvn clean test', and
-        // during 'mvn clean test -Djacoco' (jacoco code coverage must be run against unshaded
-        // glowroot, see comment in glowroot-parent pom.xml)
-        boolean guava14;
-        try {
-            // this class is only present in guava 15 and later
-            Class.forName("com.google.common.base.StandardSystemProperty");
-            guava14 = false;
-        } catch (ClassNotFoundException e) {
-            guava14 = true;
-        }
         List<String> types = Lists.newArrayList();
+
         types.add("com.google.common.base.Ascii");
         types.add("com.google.common.base.Equivalence");
         types.add("com.google.common.base.Equivalence$Equals");
@@ -113,6 +100,15 @@ class PreInitializeClasses {
         types.add("com.google.common.base.Platform");
         types.add("com.google.common.base.Platform$1");
         types.add("com.google.common.base.Preconditions");
+        types.add("com.google.common.base.Predicate");
+        types.add("com.google.common.base.Predicates");
+        types.add("com.google.common.base.Predicates$1");
+        types.add("com.google.common.base.Predicates$IsEqualToPredicate");
+        types.add("com.google.common.base.Predicates$ObjectPredicate");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$1");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$2");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$3");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$4");
         types.add("com.google.common.base.Stopwatch");
         types.add("com.google.common.base.Stopwatch$1");
         types.add("com.google.common.base.Strings");
@@ -158,6 +154,7 @@ class PreInitializeClasses {
         types.add("com.google.common.cache.LocalCache$KeyIterator");
         types.add("com.google.common.cache.LocalCache$KeySet");
         types.add("com.google.common.cache.LocalCache$LoadingValueReference");
+        types.add("com.google.common.cache.LocalCache$LoadingValueReference$1");
         types.add("com.google.common.cache.LocalCache$LocalLoadingCache");
         types.add("com.google.common.cache.LocalCache$LocalManualCache");
         types.add("com.google.common.cache.LocalCache$NullEntry");
@@ -206,9 +203,6 @@ class PreInitializeClasses {
         types.add("com.google.common.cache.Striped64");
         types.add("com.google.common.cache.Striped64$1");
         types.add("com.google.common.cache.Striped64$Cell");
-        if (guava14) {
-            types.add("com.google.common.cache.Striped64$Cell$1");
-        }
         types.add("com.google.common.cache.Striped64$HashCode");
         types.add("com.google.common.cache.Striped64$ThreadHashCode");
         types.add("com.google.common.cache.Weigher");
@@ -217,32 +211,27 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.AbstractSequentialIterator");
         types.add("com.google.common.collect.BiMap");
         types.add("com.google.common.collect.ByFunctionOrdering");
+        types.add("com.google.common.collect.CollectPreconditions");
         types.add("com.google.common.collect.Collections2");
-        types.add("com.google.common.collect.Collections2$1");
         types.add("com.google.common.collect.EmptyImmutableBiMap");
-        if (guava14) {
-            types.add("com.google.common.collect.EmptyImmutableList");
-        }
         types.add("com.google.common.collect.EmptyImmutableSet");
         types.add("com.google.common.collect.FluentIterable");
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableBiMap");
         types.add("com.google.common.collect.ImmutableCollection");
-        if (guava14) {
-            types.add("com.google.common.collect.ImmutableCollection$1");
-        }
+        types.add("com.google.common.collect.ImmutableCollection$ArrayBasedBuilder");
         types.add("com.google.common.collect.ImmutableCollection$Builder");
-        if (guava14) {
-            types.add("com.google.common.collect.ImmutableCollection$EmptyImmutableCollection");
-        }
         types.add("com.google.common.collect.ImmutableEntry");
         types.add("com.google.common.collect.ImmutableList");
         types.add("com.google.common.collect.ImmutableList$1");
         types.add("com.google.common.collect.ImmutableList$Builder");
+        types.add("com.google.common.collect.ImmutableList$ReverseImmutableList");
         types.add("com.google.common.collect.ImmutableList$SubList");
         types.add("com.google.common.collect.ImmutableMap");
         types.add("com.google.common.collect.ImmutableMap$Builder");
+        types.add("com.google.common.collect.ImmutableMapEntry");
+        types.add("com.google.common.collect.ImmutableMapEntry$TerminalEntry");
         types.add("com.google.common.collect.ImmutableMapEntrySet");
         types.add("com.google.common.collect.ImmutableMapKeySet");
         types.add("com.google.common.collect.ImmutableMapKeySet$1");
@@ -252,21 +241,18 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterables$2");
         types.add("com.google.common.collect.Iterables$3");
-        types.add("com.google.common.collect.Iterables$8");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
+        types.add("com.google.common.collect.Iterators$11");
         types.add("com.google.common.collect.Iterators$12");
-        types.add("com.google.common.collect.Iterators$13");
         types.add("com.google.common.collect.Iterators$2");
         types.add("com.google.common.collect.Iterators$5");
-        types.add("com.google.common.collect.Iterators$8");
         types.add("com.google.common.collect.Lists");
         types.add("com.google.common.collect.Lists$RandomAccessReverseList");
         types.add("com.google.common.collect.Lists$ReverseList");
         types.add("com.google.common.collect.Lists$ReverseList$1");
         types.add("com.google.common.collect.Maps");
-        types.add("com.google.common.collect.Maps$7");
-        types.add("com.google.common.collect.Maps$8");
+        types.add("com.google.common.collect.Maps$1");
         types.add("com.google.common.collect.NaturalOrdering");
         types.add("com.google.common.collect.ObjectArrays");
         types.add("com.google.common.collect.Ordering");
@@ -277,11 +263,7 @@ class PreInitializeClasses {
         types.add("com.google.common.collect.RegularImmutableMap");
         types.add("com.google.common.collect.RegularImmutableMap$1");
         types.add("com.google.common.collect.RegularImmutableMap$EntrySet");
-        if (guava14) {
-            types.add("com.google.common.collect.RegularImmutableMap$LinkedEntry");
-            types.add("com.google.common.collect.RegularImmutableMap$NonTerminalEntry");
-            types.add("com.google.common.collect.RegularImmutableMap$TerminalEntry");
-        }
+        types.add("com.google.common.collect.RegularImmutableMap$NonTerminalMapEntry");
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
         types.add("com.google.common.collect.Sets");
@@ -299,6 +281,8 @@ class PreInitializeClasses {
         types.add("com.google.common.io.Closer$LoggingSuppressor");
         types.add("com.google.common.io.Closer$SuppressingSuppressor");
         types.add("com.google.common.io.Closer$Suppressor");
+        types.add("com.google.common.io.InputSupplier");
+        types.add("com.google.common.io.LineProcessor");
         types.add("com.google.common.io.Resources");
         types.add("com.google.common.io.Resources$1");
         types.add("com.google.common.io.Resources$UrlByteSource");
@@ -314,6 +298,9 @@ class PreInitializeClasses {
         types.add("com.google.common.util.concurrent.Futures$1");
         types.add("com.google.common.util.concurrent.Futures$3");
         types.add("com.google.common.util.concurrent.Futures$5");
+        types.add("com.google.common.util.concurrent.Futures$ChainingListenableFuture");
+        types.add("com.google.common.util.concurrent.Futures$ChainingListenableFuture$1");
+        types.add("com.google.common.util.concurrent.Futures$ImmediateFailedFuture");
         types.add("com.google.common.util.concurrent.Futures$ImmediateFuture");
         types.add("com.google.common.util.concurrent.Futures$ImmediateSuccessfulFuture");
         types.add("com.google.common.util.concurrent.ListenableFuture");
@@ -337,6 +324,7 @@ class PreInitializeClasses {
         types.add("com.fasterxml.jackson.core.ObjectCodec");
         types.add("com.fasterxml.jackson.core.PrettyPrinter");
         types.add("com.fasterxml.jackson.core.SerializableString");
+        types.add("com.fasterxml.jackson.core.TreeCodec");
         // com.fasterxml.jackson.core.Versioned interface is stripped by proguard
         if (exists("com.fasterxml.jackson.core.Versioned")) {
             types.add("com.fasterxml.jackson.core.Versioned");
@@ -352,6 +340,7 @@ class PreInitializeClasses {
         types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$FixedSpaceIndenter");
         types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$Indenter");
         types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$Lf2SpacesIndenter");
+        types.add("com.fasterxml.jackson.core.util.DefaultPrettyPrinter$NopIndenter");
         types.add("com.fasterxml.jackson.core.util.Instantiatable");
         return types;
     }

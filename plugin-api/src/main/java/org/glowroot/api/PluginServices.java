@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -426,15 +426,19 @@ public abstract class PluginServices {
         private static class NopSpan implements Span {
             private static final NopSpan INSTANCE = new NopSpan();
             private NopSpan() {}
+            @Override
             public CompletedSpan end() {
                 return NopCompletedSpan.INSTANCE;
             }
+            @Override
             public CompletedSpan endWithStackTrace(long threshold, TimeUnit unit) {
                 return NopCompletedSpan.INSTANCE;
             }
+            @Override
             public CompletedSpan endWithError(ErrorMessage errorMessage) {
                 return NopCompletedSpan.INSTANCE;
             }
+            @Override
             @Nullable
             public MessageSupplier getMessageSupplier() {
                 return null;
@@ -443,11 +447,13 @@ public abstract class PluginServices {
 
         private static class NopMetricTimer implements MetricTimer {
             private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+            @Override
             public void stop() {}
         }
 
         private static class NopCompletedSpan implements CompletedSpan {
             private static final NopCompletedSpan INSTANCE = new NopCompletedSpan();
+            @Override
             public void captureSpanStackTrace() {}
         }
     }

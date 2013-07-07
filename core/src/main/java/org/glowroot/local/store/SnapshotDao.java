@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ public class SnapshotDao implements SnapshotRepository {
         dataSource.syncIndexes("snapshot", indexes);
     }
 
+    @Override
     public void store(Snapshot snapshot) {
         logger.debug("store(): snapshot={}", snapshot);
         String spansBlockId = null;
@@ -200,6 +201,7 @@ public class SnapshotDao implements SnapshotRepository {
     public Snapshot getLastSnapshot(boolean summary) throws SQLException {
         List<String> ids = dataSource.query("select id from snapshot order by capture_time desc"
                 + " limit 1", ImmutableList.of(), new RowMapper<String>() {
+            @Override
             public String mapRow(ResultSet resultSet) throws SQLException {
                 return resultSet.getString(1);
             }
@@ -259,6 +261,7 @@ public class SnapshotDao implements SnapshotRepository {
     @ThreadSafe
     private class TraceRowMapper implements RowMapper<PartiallyHydratedTrace> {
 
+        @Override
         public PartiallyHydratedTrace mapRow(ResultSet resultSet) throws SQLException {
             Snapshot.Builder builder = createBuilder(resultSet);
             // wait and read from rolling file outside of the jdbc connection
@@ -328,6 +331,7 @@ public class SnapshotDao implements SnapshotRepository {
     @ThreadSafe
     private static class PointRowMapper implements RowMapper<TracePoint> {
 
+        @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
             return TracePoint.from(resultSet.getString(1), resultSet.getLong(2),
                     resultSet.getLong(3), resultSet.getBoolean(4));
@@ -337,6 +341,7 @@ public class SnapshotDao implements SnapshotRepository {
     @ThreadSafe
     private static class SnapshotRowMapper implements RowMapper<Snapshot> {
 
+        @Override
         public Snapshot mapRow(ResultSet resultSet) throws SQLException {
             return createBuilder(resultSet).build();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class SnapshotDaoDeletePerformanceMain {
         File dbFile = new File("glowroot.h2.db");
         long dbSize = dbFile.length();
         logger.info("glowroot.h2.db: {} bytes", dbSize);
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         container.checkAndReset();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
         logger.info("glowroot.h2.db: {} bytes", dbFile.length());
@@ -67,6 +67,7 @@ public class SnapshotDaoDeletePerformanceMain {
     }
 
     private static class GenerateTraces implements AppUnderTest {
+        @Override
         public void executeApp() throws InterruptedException {
             File rollingFile = new File("glowroot.rolling.db");
             while (rollingFile.length() < 100 * 1024 * 1024) {

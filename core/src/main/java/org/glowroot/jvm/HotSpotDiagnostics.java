@@ -108,6 +108,7 @@ public class HotSpotDiagnostics {
     }
 
     static class Factory implements OptionalServiceFactory<HotSpotDiagnostics> {
+        @Override
         public HotSpotDiagnostics create() throws OptionalServiceFactoryException {
             ObjectName objectName;
             try {

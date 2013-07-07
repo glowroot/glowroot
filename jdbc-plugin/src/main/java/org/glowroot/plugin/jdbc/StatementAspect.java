@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ public class StatementAspect {
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
+            @Override
             public void onChange() {
                 Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis");
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
@@ -86,10 +87,12 @@ public class StatementAspect {
     public static class HasStatementMirrorImpl implements HasStatementMirror {
         @Nullable
         private volatile StatementMirror statementMirror;
+        @Override
         @Nullable
         public StatementMirror getGlowrootStatementMirror() {
             return statementMirror;
         }
+        @Override
         public void setGlowrootStatementMirror(StatementMirror statementMirror) {
             this.statementMirror = statementMirror;
         }

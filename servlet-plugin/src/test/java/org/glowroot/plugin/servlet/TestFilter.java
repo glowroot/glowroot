@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,16 +35,20 @@ import org.glowroot.testkit.AppUnderTest;
  */
 class TestFilter implements Filter, AppUnderTest {
 
+    @Override
     public void executeApp() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/testfilter");
         MockHttpServletResponse response = new MockHttpServletResponse();
         doFilter(request, response, null);
     }
 
+    @Override
     public void init(FilterConfig filterConfig) throws ServletException {}
 
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {}
 
+    @Override
     public void destroy() {}
 }

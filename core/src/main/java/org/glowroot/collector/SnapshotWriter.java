@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,7 @@ import checkers.nullness.quals.Nullable;
 import com.fasterxml.jackson.core.io.JsonStringEncoder;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
-import com.google.common.io.CharStreams;
 
-import org.glowroot.common.CharStreams2;
 import org.glowroot.markers.OnlyUsedByTests;
 
 /**
@@ -80,7 +78,7 @@ public class SnapshotWriter {
         }
         sb.append("}");
         flushStringBuilder();
-        return CharStreams2.join(charSources);
+        return CharSource.concat(charSources);
     }
 
     private void writeAttributes(Snapshot snapshot) {
@@ -139,7 +137,7 @@ public class SnapshotWriter {
 
     // flush current StringBuilder as its own chunk and reset StringBuilder
     private void flushStringBuilder() throws UnsupportedEncodingException {
-        charSources.add(CharStreams.asCharSource(sb.toString()));
+        charSources.add(CharSource.wrap(sb.toString()));
         sb.setLength(0);
     }
 

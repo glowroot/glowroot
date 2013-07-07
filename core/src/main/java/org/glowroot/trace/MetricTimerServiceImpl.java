@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,12 @@ class MetricTimerServiceImpl implements MetricTimerService {
         this.traceRegistry = traceRegistry;
     }
 
+    @Override
     public MetricName getMetricName(String name) {
         return metricNameCache.getMetricName(name);
     }
 
+    @Override
     public MetricTimer startMetricTimer(MetricName metricName) {
         // don't call MetricImpl.start() in case this method returns NopTimer.INSTANCE below
         Metric metric = ((MetricNameImpl) metricName).get();
@@ -59,6 +61,7 @@ class MetricTimerServiceImpl implements MetricTimerService {
     @ThreadSafe
     private static class NopMetricTimer implements MetricTimer {
         private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        @Override
         public void stop() {}
     }
 }

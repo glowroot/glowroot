@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,7 @@ public class TraceCollectorImpl implements TraceCollector {
         return pendingCompleteTraces;
     }
 
+    @Override
     public void onCompletedTrace(final Trace trace) {
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data points
@@ -123,6 +124,7 @@ public class TraceCollectorImpl implements TraceCollector {
             }
             pendingCompleteTraces.add(trace);
             executorService.execute(new Runnable() {
+                @Override
                 public void run() {
                     try {
                         Snapshot snapshot =
@@ -140,6 +142,7 @@ public class TraceCollectorImpl implements TraceCollector {
 
     // no need to throttle stuck trace storage since throttling is handled upstream by using a
     // single thread executor in StuckTraceCollector
+    @Override
     public void onStuckTrace(Trace trace) {
         try {
             Snapshot snaphsot = SnapshotCreator.createActiveSnapshot(trace,

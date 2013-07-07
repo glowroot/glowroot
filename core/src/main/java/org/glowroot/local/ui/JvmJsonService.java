@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,6 @@ import org.glowroot.jvm.HeapHistograms;
 import org.glowroot.jvm.HeapHistograms.HeapHistogramException;
 import org.glowroot.jvm.HotSpotDiagnostics;
 import org.glowroot.jvm.HotSpotDiagnostics.VMOption;
-import org.glowroot.jvm.Jdk6;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ProcessId;
@@ -90,18 +89,15 @@ class JvmJsonService {
         }
     };
 
-    private final OptionalService<Jdk6> jdk6;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapHistograms> heapHistograms;
     private final OptionalService<HotSpotDiagnostics> hotSpotDiagnostics;
     private final OptionalService<Flags> flags;
 
-    JvmJsonService(OptionalService<Jdk6> jdk6,
-            OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
+    JvmJsonService(OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapHistograms> heapHistograms,
             OptionalService<HotSpotDiagnostics> hotSpotDiagnosticService,
             OptionalService<Flags> flags) {
-        this.jdk6 = jdk6;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapHistograms = heapHistograms;
         this.hotSpotDiagnostics = hotSpotDiagnosticService;
@@ -154,9 +150,6 @@ class JvmJsonService {
     String getSystemProperties() throws IOException {
         logger.debug("getSystemProperties()");
         Properties properties = System.getProperties();
-        // explicit generic signature Maps.<String, String, String>newTreeMap(...) is needed to work
-        // around an OpenJDK 6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, String> sortedProperties =
                 Maps.<String, String, String>newTreeMap(String.CASE_INSENSITIVE_ORDER);
         for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
@@ -308,7 +301,6 @@ class JvmJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeStringField("directory", heapDumpPath);
-        jg.writeBooleanField("checkDiskSpaceSupported", jdk6 != null);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -317,7 +309,6 @@ class JvmJsonService {
     @POST("/backend/jvm/check-disk-space")
     String checkDiskSpace(String content) throws IOException {
         logger.debug("checkDiskSpace(): content={}", content);
-        Jdk6 service = OptionalJsonServices.validateAvailability(jdk6);
         RequestWithDirectory request =
                 ObjectMappers.readRequiredValue(mapper, content, RequestWithDirectory.class);
         File dir = new File(request.getDirectory());
@@ -327,7 +318,7 @@ class JvmJsonService {
         if (!dir.isDirectory()) {
             return "{\"error\": \"Path is not a directory\"}";
         }
-        long diskSpace = service.getFreeSpace(new File(request.getDirectory()));
+        long diskSpace = new File(request.getDirectory()).getFreeSpace();
         return Long.toString(diskSpace);
     }
 

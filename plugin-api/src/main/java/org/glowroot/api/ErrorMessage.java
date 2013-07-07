@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,15 +130,18 @@ public abstract class ErrorMessage {
             this.detail = detail;
         }
 
+        @Override
         public String getText() {
             return Strings.nullToEmpty(text);
         }
 
+        @Override
         @Nullable
         public ExceptionInfo getExceptionInfo() {
             return exceptionInfo;
         }
 
+        @Override
         @ReadOnly
         @Nullable
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {

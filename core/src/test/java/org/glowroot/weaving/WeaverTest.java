@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -978,9 +978,11 @@ public class WeaverTest {
 
     private static class NopMetricTimerService implements MetricTimerService {
         private static final NopMetricTimerService INSTANCE = new NopMetricTimerService();
+        @Override
         public MetricName getMetricName(String name) {
             return NopMetricName.INSTANCE;
         }
+        @Override
         public MetricTimer startMetricTimer(MetricName metricName) {
             return NopMetricTimer.INSTANCE;
         }
@@ -992,6 +994,7 @@ public class WeaverTest {
 
     private static class NopMetricTimer implements MetricTimer {
         private static final NopMetricTimer INSTANCE = new NopMetricTimer();
+        @Override
         public void stop() {}
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2013 the original author or authors.
+ * Copyright 2011-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ public class MaxSpansLimitTest {
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {
+            @Override
             @Nullable
             public Void call() throws Exception {
                 container.executeAppUnderTest(GenerateLotsOfSpans.class);
@@ -81,7 +82,7 @@ public class MaxSpansLimitTest {
         });
         // then
         // test harness needs to kick off test, so may need to wait a little
-        Stopwatch stopwatch = new Stopwatch().start();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
         while (stopwatch.elapsed(SECONDS) < 2) {
             trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
@@ -115,9 +116,11 @@ public class MaxSpansLimitTest {
     }
 
     public static class GenerateLotsOfSpans implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws Exception {
             traceMarker();
         }
+        @Override
         public void traceMarker() {
             while (true) {
                 new LevelOne().call("a", "b");
@@ -129,9 +132,11 @@ public class MaxSpansLimitTest {
     }
 
     public static class WarmupTrace implements AppUnderTest, TraceMarker {
+        @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
+        @Override
         public void traceMarker() throws InterruptedException {
             Thread.sleep(1);
         }

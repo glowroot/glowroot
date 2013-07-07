@@ -62,7 +62,7 @@
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
-      <artifactId>guava-jdk5</artifactId>
+      <artifactId>guava</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -79,8 +79,7 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <!-- 1.3.168 is the last version of h2 that supports jdk 5
-        but that version introduced a change where using h2's native api triggers java.sql.Driver
+      <!-- 1.3.168 introduced a change where using h2's native api triggers java.sql.Driver
         to load, which finds and loads other drivers via META-INF/services/java.sql.Driver
         the problem is that this all happens during Glowroot initialization before it is ready
         for plugins (e.g. jdbc-plugin) -->
@@ -89,8 +88,7 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>compress-lzf</artifactId>
-      <!-- 0.9.6 is the last version of compress-lzf that supports jdk 5 -->
-      <version>0.9.6</version>
+      <version>1.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.glowroot.shaded</groupId>
@@ -147,13 +145,6 @@
       <artifactId>caliper</artifactId>
       <version>1.0-beta-1</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <!-- exclude guava artifact so no conflict with differently named guava-jdk5 artifact -->
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <!-- this is a transitive dependency of caliper, but caliper currently depends on version 2.0
@@ -303,9 +294,15 @@
                   <shadeSourcesContent>true</shadeSourcesContent>
                   <filters>
                     <filter>
+                      <artifact>com.google.guava:guava</artifact>
+                      <excludes>
+                        <exclude>META-INF/beans.xml</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
                       <artifact>com.h2database:h2</artifact>
                       <excludes>
-                        <exclude>META-INF/**</exclude>
+                        <exclude>META-INF/services/java.sql.Driver</exclude>
                       </excludes>
                     </filter>
                     <filter>
@@ -321,12 +318,22 @@
                       <artifact>com.fasterxml.jackson.core:jackson-core</artifact>
                       <excludes>
                         <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
+                        <exclude>META-INF/LICENSE</exclude>
+                        <exclude>META-INF/NOTICE</exclude>
                       </excludes>
                     </filter>
                     <filter>
                       <artifact>com.fasterxml.jackson.core:jackson-databind</artifact>
                       <excludes>
                         <exclude>META-INF/services/com.fasterxml.jackson.core.ObjectCodec</exclude>
+                        <exclude>META-INF/LICENSE</exclude>
+                        <exclude>META-INF/NOTICE</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
+                      <artifact>com.fasterxml.jackson.core:jackson-annotations</artifact>
+                      <excludes>
+                        <exclude>META-INF/LICENSE</exclude>
                       </excludes>
                     </filter>
                     <filter>
@@ -373,6 +380,11 @@
                     <relocation>
                       <pattern>com.google.common</pattern>
                       <shadedPattern>org.glowroot.shaded.google.common</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <!-- a couple of classes in guava are under this package name -->
+                      <pattern>com.google.thirdparty</pattern>
+                      <shadedPattern>org.glowroot.shaded.google.thirdparty</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>com.fasterxml.jackson</pattern>

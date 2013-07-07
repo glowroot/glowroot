@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,26 +30,32 @@ public class MockDriver implements Driver {
         MockDriverState.setLoaded(true);
     }
 
+    @Override
     public Connection connect(String url, Properties info) {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean acceptsURL(String url) {
         return false;
     }
 
+    @Override
     public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public int getMajorVersion() {
         return 0;
     }
 
+    @Override
     public int getMinorVersion() {
         return 0;
     }
 
+    @Override
     public boolean jdbcCompliant() {
         return false;
     }

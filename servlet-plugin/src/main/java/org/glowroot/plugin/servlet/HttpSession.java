@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,9 +153,11 @@ class HttpSession {
     @Immutable
     private static class EmptyEnumeration implements Enumeration<Object> {
         private static final EmptyEnumeration INSTANCE = new EmptyEnumeration();
+        @Override
         public boolean hasMoreElements() {
             return false;
         }
+        @Override
         public Object nextElement() {
             throw new NoSuchElementException();
         }
