@@ -143,6 +143,10 @@ public class GenericLocalContainer<T> {
         return traceService;
     }
 
+    public int getUiPort() {
+        return informantModule.getUiModule().getPort();
+    }
+
     public void checkAndReset() throws Exception {
         traceService.assertNoActiveTraces();
         traceService.deleteAllSnapshots();
@@ -175,10 +179,6 @@ public class GenericLocalContainer<T> {
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);
         }
-    }
-
-    public int getUiPort() {
-        return informantModule.getUiModule().getPort();
     }
 
     public static interface AppExecutor<T> {

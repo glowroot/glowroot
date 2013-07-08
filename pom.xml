@@ -36,6 +36,7 @@
     <module>plugin-testkit</module>
     <module>packager-maven-plugin</module>
     <module>integration-tests</module>
+    <module>webdriver-tests</module>
     <module>ui-testing</module>
     <module>servlet-plugin</module>
     <module>jdbc-plugin</module>

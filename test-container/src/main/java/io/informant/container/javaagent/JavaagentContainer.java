@@ -83,6 +83,7 @@ public class JavaagentContainer implements Container {
     private final JavaagentConfigService configService;
     private final JavaagentTraceService traceService;
     private final Thread shutdownHook;
+    private final int uiPort;
 
     private volatile long numConsoleBytes;
 
@@ -133,10 +134,9 @@ public class JavaagentContainer implements Container {
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
         socketCommander = new SocketCommander(objectOut, objectIn);
-        Integer actualUiPort = (Integer) socketCommander
-                .sendCommand(SocketCommandProcessor.GET_PORT);
-        assertNonNull(actualUiPort, "Get Port returned null port");
-        if (actualUiPort == SocketCommandProcessor.NO_PORT) {
+        this.uiPort = (Integer) socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
+        assertNonNull(this.uiPort, "Get Port returned null port");
+        if (this.uiPort == SocketCommandProcessor.NO_PORT) {
             socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
             socketCommander.close();
             process.waitFor();
@@ -145,7 +145,7 @@ public class JavaagentContainer implements Container {
             throw new StartupFailedException();
         }
         asyncHttpClient = createAsyncHttpClient();
-        JavaagentHttpClient httpClient = new JavaagentHttpClient(actualUiPort, asyncHttpClient);
+        JavaagentHttpClient httpClient = new JavaagentHttpClient(this.uiPort, asyncHttpClient);
         configService = new JavaagentConfigService(httpClient);
         traceService = new JavaagentTraceService(httpClient);
         shutdownHook = new Thread() {
@@ -197,6 +197,10 @@ public class JavaagentContainer implements Container {
 
     public TraceService getTraceService() {
         return traceService;
+    }
+
+    public int getUiPort() {
+        return uiPort;
     }
 
     public void checkAndReset() throws Exception {

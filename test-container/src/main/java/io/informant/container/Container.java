@@ -34,6 +34,8 @@ public interface Container {
 
     TraceService getTraceService();
 
+    int getUiPort();
+
     // checks no unexpected log messages
     // checks no active traces
     // resets Informant back to square one

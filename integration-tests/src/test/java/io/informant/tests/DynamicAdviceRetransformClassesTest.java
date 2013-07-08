@@ -19,22 +19,20 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import io.informant.container.javaagent.JavaagentContainer;
+import io.informant.test.util.IgnoreOnJdk5;
 
 /**
- * These tests only run on jdk6+
- * 
  * @author Trask Stalnaker
  * @since 0.5
  */
+@RunWith(IgnoreOnJdk5.class)
 public class DynamicAdviceRetransformClassesTest extends DynamicAdviceTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        if (jdk5()) {
-            return;
-        }
         container = new JavaagentContainer(null, 0, false, false);
         container.executeAppUnderTest(ShouldExecute1.class);
         addSpanPointcutForExecute1();
@@ -46,51 +44,30 @@ public class DynamicAdviceRetransformClassesTest extends DynamicAdviceTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        if (jdk5()) {
-            return;
-        }
         container.close();
     }
 
     @Override
     @After
     public void afterEachTest() throws Exception {
-        if (jdk5()) {
-            return;
-        }
         container.checkAndReset();
     }
 
     @Override
     @Test
     public void shouldExecute1() throws Exception {
-        if (jdk5()) {
-            return;
-        }
         super.shouldExecute1();
     }
 
     @Override
     @Test
     public void shouldRenderSpanTextWithReturnValue() throws Exception {
-        if (jdk5()) {
-            return;
-        }
         super.shouldRenderSpanTextWithReturnValue();
     }
 
     @Override
     @Test
     public void shouldRenderTraceGrouping() throws Exception {
-        if (jdk5()) {
-            return;
-        }
         super.shouldRenderTraceGrouping();
-    }
-
-    // not using org.junit.Assume which reports the test as ignored, since ignored tests seem like
-    // something that needs to be revisited and 'un-ignored'
-    private static boolean jdk5() {
-        return System.getProperty("java.version").startsWith("1.5");
     }
 }
