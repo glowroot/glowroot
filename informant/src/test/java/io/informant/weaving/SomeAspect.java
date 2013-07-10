@@ -42,7 +42,8 @@ import io.informant.api.weaving.Pointcut;
  */
 public class SomeAspect {
 
-    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1|execute2")
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1|execute2",
+            metricName = "xyz")
     public static class BasicAdvice {
         public static final ThreadLocal<Boolean> enabled = new ThreadLocal<Boolean>() {
             @Override

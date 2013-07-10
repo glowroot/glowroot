@@ -32,7 +32,6 @@ import com.google.common.collect.Sets;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -49,12 +48,20 @@ import io.informant.weaving.ParsedType.Builder;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
 
 import static io.informant.common.Nullness.assertNonNull;
+import static org.objectweb.asm.Opcodes.ACC_ABSTRACT;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
+import static org.objectweb.asm.Opcodes.ACC_NATIVE;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ASM4;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class WeavingClassVisitor extends ClassVisitor implements Opcodes {
+class WeavingClassVisitor extends ClassVisitor {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassVisitor.class);
 
@@ -128,49 +135,27 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             @Nullable String signature, String/*@Nullable*/[] exceptions) {
 
         assertNonNull(parsedType, "Call to visit() is required");
-        ParsedMethod parsedMethod = ParsedMethod.from(name,
-                ImmutableList.copyOf(Type.getArgumentTypes(desc)),
-                Type.getReturnType(desc), access);
-        parsedType.addMethod(parsedMethod);
+        ParsedMethod parsedMethod = null;
+        if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
+            // don't add native or synthetic methods to the parsed type model
+            parsedMethod = addParsedMethod(access, name, desc);
+        }
         if (nothingAtAllToWeave) {
             // no need to pass method on to class writer
             return null;
         }
-        // type can be null, but not if nothingAtAllToWeave is false
-        assertNonNull(type, "Call to visit() is required");
-        if ((access & ACC_ABSTRACT) != 0) {
-            // abstract methods never get woven
+        if (parsedMethod == null || (access & (ACC_ABSTRACT)) != 0) {
+            // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
-        MethodVisitor mv = null;
-        if (name.equals("<init>") && !matchedMixinTypes.isEmpty()) {
-            mv = cv.visitMethod(access, name, desc, signature, exceptions);
-            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
-            mv = new InitMixins(mv, access, name, desc, matchedMixinTypes, type);
-        }
-        if ((access & ACC_SYNTHETIC) != 0) {
-            return mv != null ? mv : cv.visitMethod(access, name, desc, signature, exceptions);
-        }
         List<Advice> matchingAdvisors = getMatchingAdvisors(access, parsedMethod);
-        if (matchingAdvisors.isEmpty()) {
-            return mv != null ? mv : cv.visitMethod(access, name, desc, signature, exceptions);
-        } else if (mv == null) {
-            String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
-                    signature, exceptions, matchingAdvisors);
-            String methodName = name;
-            int methodAccess = access;
-            if (innerWrappedName != null) {
-                methodName = innerWrappedName;
-                methodAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (access & ACC_STATIC);
-            }
-            mv = cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
-            assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
-            return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type,
-                    matchingAdvisors);
-        } else {
-            logger.warn("cannot add metrics to <clinit> or <init> methods at this time");
-            return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
+        if (name.equals("<init>") && !matchedMixinTypes.isEmpty()) {
+            return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
         }
+        if (matchingAdvisors.isEmpty()) {
+            return cv.visitMethod(access, name, desc, signature, exceptions);
+        }
+        return visitMethodWithAdvice(access, name, desc, signature, exceptions, matchingAdvisors);
     }
 
     @Override
@@ -273,6 +258,14 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return Iterables.toArray(interfacesIncludingMixins, String.class);
     }
 
+    private ParsedMethod addParsedMethod(int access, String name, String desc) {
+        ParsedMethod parsedMethod =
+                ParsedMethod.from(name, ImmutableList.copyOf(Type.getArgumentTypes(desc)),
+                        Type.getReturnType(desc), access);
+        parsedType.addMethod(parsedMethod);
+        return parsedMethod;
+    }
+
     private List<Advice> getMatchingAdvisors(int access, ParsedMethod parsedMethod) {
         assertNonNull(parsedType, "Call to visit() is required");
         List<Advice> matchingAdvisors = Lists.newArrayList();
@@ -287,6 +280,36 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
         return matchingAdvisors;
     }
 
+    private MethodVisitor visitInitWithMixin(int access, String name, String desc,
+            String signature, String[] exceptions, List<Advice> matchingAdvisors) {
+        MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
+        mv = new InitMixins(mv, access, name, desc, matchedMixinTypes, type);
+        for (Advice advice : matchingAdvisors) {
+            if (advice.getPointcut().metricName().length() != 0) {
+                logger.warn("cannot add metrics to <clinit> or <init> methods at this time");
+                break;
+            }
+        }
+        return new WeavingMethodVisitor(mv, access, name, desc, type, matchingAdvisors);
+    }
+
+    private MethodVisitor visitMethodWithAdvice(int access, String name, String desc,
+            String signature, String[] exceptions, List<Advice> matchingAdvisors) {
+        assertNonNull(type, "Call to visit() is required");
+        String innerWrappedName = wrapWithSyntheticMetricMarkerMethods(access, name, desc,
+                signature, exceptions, matchingAdvisors);
+        String methodName = name;
+        int methodAccess = access;
+        if (innerWrappedName != null) {
+            methodName = innerWrappedName;
+            methodAccess = ACC_PRIVATE + ACC_FINAL + (access & ACC_STATIC);
+        }
+        MethodVisitor mv = cv.visitMethod(methodAccess, methodName, desc, signature, exceptions);
+        assertNonNull(mv, "ClassVisitor.visitMethod() returned null");
+        return new WeavingMethodVisitor(mv, methodAccess, methodName, desc, type, matchingAdvisors);
+    }
+
     // returns null if no synthetic metric marker methods were needed
     @Nullable
     private String wrapWithSyntheticMetricMarkerMethods(int outerAccess, String outerName,
@@ -294,7 +317,7 @@ class WeavingClassVisitor extends ClassVisitor implements Opcodes {
             List<Advice> matchingAdvisors) {
 
         assertNonNull(type, "Call to visit() is required");
-        int innerAccess = Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL + (outerAccess & ACC_STATIC);
+        int innerAccess = ACC_PRIVATE + ACC_FINAL + (outerAccess & ACC_STATIC);
         boolean first = true;
         String currMethodName = outerName;
         for (Advice advice : matchingAdvisors) {

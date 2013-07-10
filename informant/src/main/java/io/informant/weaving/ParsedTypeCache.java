@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
 import io.informant.markers.Singleton;
 
 import static io.informant.common.Nullness.assertNonNull;
+import static org.objectweb.asm.Opcodes.ACC_NATIVE;
+import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 
 /**
  * @author Trask Stalnaker
@@ -407,6 +409,10 @@ public class ParsedTypeCache {
     private ParsedType createParsedTypePlanC(String typeName, Class<?> type) {
         ImmutableList.Builder<ParsedMethod> parsedMethods = ImmutableList.builder();
         for (Method method : type.getDeclaredMethods()) {
+            if (Modifier.isNative(method.getModifiers()) || method.isSynthetic()) {
+                // don't add native or synthetic methods to the parsed type model
+                continue;
+            }
             ImmutableList.Builder<Type> argTypes = ImmutableList.builder();
             for (Class<?> parameterType : method.getParameterTypes()) {
                 argTypes.add(Type.getType(parameterType));
@@ -523,8 +529,12 @@ public class ParsedTypeCache {
         @Nullable
         public MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String/*@Nullable*/[] exceptions) {
-            methods.add(ParsedMethod.from(name, ImmutableList.copyOf(Type.getArgumentTypes(desc)),
-                    Type.getReturnType(desc), access));
+            if ((access & (ACC_NATIVE | ACC_SYNTHETIC)) == 0) {
+                // don't add native or synthetic methods to the parsed type model
+                methods.add(ParsedMethod.from(name,
+                        ImmutableList.copyOf(Type.getArgumentTypes(desc)),
+                        Type.getReturnType(desc), access));
+            }
             return null;
         }
 

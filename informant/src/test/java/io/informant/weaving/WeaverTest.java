@@ -21,6 +21,7 @@ import org.junit.Test;
 import io.informant.api.OptionalReturn;
 import io.informant.api.weaving.Mixin;
 import io.informant.api.weaving.Pointcut;
+import io.informant.weaving.AbstractMisc.ExtendsAbstractMisc;
 import io.informant.weaving.SomeAspect.BasicAdvice;
 import io.informant.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import io.informant.weaving.SomeAspect.BasicWithInnerClassAdvice;
@@ -816,6 +817,23 @@ public class WeaverTest {
         assertThat(MultipleMethodsAdvice.onReturnCount.get()).isEqualTo(2);
         assertThat(MultipleMethodsAdvice.onThrowCount.get()).isEqualTo(0);
         assertThat(MultipleMethodsAdvice.onAfterCount.get()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldNotTryToWeaveNativeMethods() throws Exception {
+        // given
+        // when
+        newWovenObject(NativeMisc.class, Misc.class, BasicAdvice.class);
+        // then should not bomb
+    }
+
+    @Test
+    public void shouldNotTryToWeaveAbstractMethods() throws Exception {
+        // given
+        Misc test = newWovenObject(ExtendsAbstractMisc.class, Misc.class, BasicAdvice.class);
+        // when
+        test.execute1();
+        // then should not bomb
     }
 
     @Test
