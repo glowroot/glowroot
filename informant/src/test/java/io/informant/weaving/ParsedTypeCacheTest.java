@@ -37,11 +37,27 @@ public class ParsedTypeCacheTest {
         // when
         List<String> names = parsedTypeCache.getMatchingMethodNames(Dummy.class.getName(), "do", 5);
         // then
-        assertThat(names).containsExactly("doAbstract");
+        assertThat(names).containsOnly("doAbstract", "doSomething");
+    }
+
+    @Test
+    public void shouldNotIncludeSynchronizedOrFinalMethodModifiers() throws ClassNotFoundException,
+            IOException {
+        // given
+        ParsedTypeCache parsedTypeCache = new ParsedTypeCache();
+        parsedTypeCache.getParsedType(Dummy.class.getName(),
+                ParsedTypeCacheTest.class.getClassLoader());
+        // when
+        List<ParsedMethod> parsedMethods =
+                parsedTypeCache.getMatchingParsedMethods(Dummy.class.getName(), "doSomething");
+        // then
+        assertThat(parsedMethods).hasSize(1);
+        assertThat(parsedMethods.get(0).getModifiers()).isZero();
     }
 
     private abstract static class Dummy {
         native void doNative();
         abstract void doAbstract();
+        final synchronized void doSomething() {}
     }
 }

@@ -21,6 +21,9 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.Type;
 
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -48,7 +51,8 @@ public class ParsedMethod {
         this.name = name;
         this.argTypeNames = argTypeNames;
         this.returnTypeName = returnTypeName;
-        this.modifiers = modifiers;
+        // remove final and synchronized modifiers from the parsed method model
+        this.modifiers = modifiers & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
     }
 
     public String getName() {

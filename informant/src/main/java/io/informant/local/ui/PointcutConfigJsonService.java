@@ -100,10 +100,6 @@ class PointcutConfigJsonService {
             String modifierNames = Modifier.toString(parsedMethod.getModifiers());
             Splitter splitter = Splitter.on(' ').omitEmptyStrings();
             for (String modifier : splitter.split(modifierNames)) {
-                // TODO push modifier filtering into ParsedMethod, no need to track these
-                if (modifier.equals("synchronized") || modifier.equals("final")) {
-                    continue;
-                }
                 modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
             }
             matchingMethod.put("modifiers", modifiers);
