@@ -24,12 +24,13 @@ import checkers.igj.quals.ReadOnly;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.api.weaving.MethodModifier;
+
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 /**
  * @author Trask Stalnaker
@@ -65,7 +66,7 @@ class AdviceMatcher {
             return true;
         }
         // non-static methods must be tested against matching super types
-        if ((access & Opcodes.ACC_STATIC) == 0) {
+        if ((access & ACC_STATIC) == 0) {
             // need to test return match and modifiers match against overridden method
             for (ParsedType type : preMatchedSuperTypes) {
                 ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);

@@ -19,7 +19,8 @@ import checkers.nullness.quals.Nullable;
 import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+
+import static org.objectweb.asm.Opcodes.ASM4;
 
 /**
  * @author Trask Stalnaker
@@ -33,7 +34,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
     private String typeName;
 
     MyRemappingClassAdapter(TypeCollector remapper) {
-        super(Opcodes.ASM4);
+        super(ASM4);
         this.typeCollector = remapper;
     }
 

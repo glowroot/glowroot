@@ -31,7 +31,6 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.slf4j.Logger;
@@ -41,12 +40,14 @@ import io.informant.api.MetricTimer;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
 
+import static org.objectweb.asm.Opcodes.ASM4;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
 @ThreadSafe
-class Weaver implements Opcodes {
+class Weaver {
 
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 

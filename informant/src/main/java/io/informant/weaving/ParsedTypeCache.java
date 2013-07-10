@@ -47,7 +47,6 @@ import com.google.common.io.Resources;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,8 +54,10 @@ import org.slf4j.LoggerFactory;
 import io.informant.markers.Singleton;
 
 import static io.informant.common.Nullness.assertNonNull;
+import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ASM4;
 
 /**
  * @author Trask Stalnaker
@@ -509,13 +510,13 @@ public class ParsedTypeCache {
         private final ImmutableList.Builder<ParsedMethod> methods = ImmutableList.builder();
 
         private ParsedTypeClassVisitor() {
-            super(Opcodes.ASM4);
+            super(ASM4);
         }
 
         @Override
         public void visit(int version, int access, String name, @Nullable String signature,
                 @Nullable String superName, String/*@Nullable*/[] interfaceNames) {
-            this.iface = (access & Opcodes.ACC_INTERFACE) != 0;
+            this.iface = (access & ACC_INTERFACE) != 0;
             this.name = name;
             if (superName == null || superName.equals("java/lang/Object")) {
                 this.superName = null;

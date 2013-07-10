@@ -22,16 +22,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import static io.informant.common.Nullness.assertNonNull;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
+import static org.objectweb.asm.Opcodes.RETURN;
+import static org.objectweb.asm.Opcodes.V1_5;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-class AdviceFlowGenerator implements Opcodes {
+class AdviceFlowGenerator {
 
     private static final AtomicInteger counter = new AtomicInteger();
 

@@ -19,8 +19,9 @@ import checkers.nullness.quals.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.LocalVariablesSorter;
+
+import static org.objectweb.asm.Opcodes.ASM4;
 
 /**
  * @author Trask Stalnaker
@@ -32,7 +33,7 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     private final MethodCollector remapper;
 
     MyRemappingMethodAdapter(int access, String desc, MethodCollector remapper) {
-        super(Opcodes.ASM4, access, desc, new MethodVisitor(Opcodes.ASM4) {});
+        super(ASM4, access, desc, new MethodVisitor(ASM4) {});
         this.remapper = remapper;
     }
 
