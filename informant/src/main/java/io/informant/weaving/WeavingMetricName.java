@@ -21,6 +21,6 @@ import io.informant.api.MetricTimer;
  * @author Trask Stalnaker
  * @since 0.5
  */
-public interface WeavingMetric {
+public interface WeavingMetricName {
     MetricTimer start();
 }

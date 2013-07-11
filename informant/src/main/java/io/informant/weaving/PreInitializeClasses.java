@@ -694,7 +694,7 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.WeavingClassVisitor$InitMixins");
         types.add("io.informant.weaving.WeavingMethodVisitor");
         types.add("io.informant.weaving.WeavingMethodVisitor$MarkerException");
-        types.add("io.informant.weaving.WeavingMetric");
+        types.add("io.informant.weaving.WeavingMetricName");
         return types;
     }
 

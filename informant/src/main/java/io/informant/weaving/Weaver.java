@@ -63,18 +63,18 @@ class Weaver {
     private final ClassLoader loader;
     private final ParsedTypeCache parsedTypeCache;
 
-    private final WeavingMetric weavingMetric;
+    private final WeavingMetricName weavingMetricName;
 
     Weaver(ImmutableList<MixinType> mixinTypes, ImmutableList<Advice> pluginAdvisors,
             Supplier<ImmutableList<Advice>> dynamicAdvisors,
             @Nullable ClassLoader loader, ParsedTypeCache parsedTypeCache,
-            WeavingMetric weavingMetric) {
+            WeavingMetricName weavingMetricName) {
         this.mixinTypes = mixinTypes;
         this.pluginAdvisors = pluginAdvisors;
         this.dynamicAdvisors = dynamicAdvisors;
         this.loader = loader;
         this.parsedTypeCache = parsedTypeCache;
-        this.weavingMetric = weavingMetric;
+        this.weavingMetricName = weavingMetricName;
     }
 
     byte[] weave(byte[] classBytes, String className) {
@@ -89,7 +89,7 @@ class Weaver {
     // weird method name is following "metric marker" method naming
     private byte[] weave$informant$metric$informant$weaving$0(byte[] classBytes,
             @Nullable CodeSource codeSource, String className) {
-        MetricTimer metricTimer = weavingMetric.start();
+        MetricTimer metricTimer = weavingMetricName.start();
         try {
             // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
             //

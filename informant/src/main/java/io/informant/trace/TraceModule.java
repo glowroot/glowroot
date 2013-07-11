@@ -49,7 +49,7 @@ public class TraceModule {
     private final ParsedTypeCache parsedTypeCache;
     private final WeavingMetricNameImpl weavingMetricName;
     private final TraceRegistry traceRegistry;
-    private final MetricCache metricCache;
+    private final MetricNameCache metricNameCache;
     private final DynamicAdviceCache dynamicAdviceCache;
 
     private final StuckTraceCollector stuckTraceCollector;
@@ -61,7 +61,7 @@ public class TraceModule {
                 @Override
                 public PluginServices load(String pluginId) {
                     return new PluginServicesImpl(traceRegistry, traceCollector,
-                            configModule.getConfigService(), metricCache, fineProfileScheduler,
+                            configModule.getConfigService(), metricNameCache, fineProfileScheduler,
                             ticker, clock, weavingMetricName,
                             configModule.getPluginDescriptorCache(), pluginId);
                 }
@@ -78,7 +78,7 @@ public class TraceModule {
         parsedTypeCache = new ParsedTypeCache();
         weavingMetricName = new WeavingMetricNameImpl(ticker);
         traceRegistry = new TraceRegistry();
-        metricCache = new MetricCache(ticker);
+        metricNameCache = new MetricNameCache(ticker);
         dynamicAdviceCache = new DynamicAdviceCache(configService.getPointcutConfigs());
         fineProfileScheduler = new FineProfileScheduler(scheduledExecutor, configService, ticker,
                 new Random());

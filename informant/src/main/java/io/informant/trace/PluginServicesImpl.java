@@ -69,7 +69,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TraceRegistry traceRegistry;
     private final TraceCollector traceCollector;
     private final ConfigService configService;
-    private final MetricCache metricCache;
+    private final MetricNameCache metricNameCache;
     private final FineProfileScheduler fineProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
@@ -86,14 +86,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private volatile PluginConfig pluginConfig;
 
     PluginServicesImpl(TraceRegistry traceRegistry, TraceCollector traceCollector,
-            ConfigService configService, MetricCache metricCache,
+            ConfigService configService, MetricNameCache metricNameCache,
             FineProfileScheduler fineProfileScheduler, Ticker ticker, Clock clock,
             WeavingMetricNameImpl weavingMetricName, PluginDescriptorCache pluginDescriptorCache,
             String pluginId) {
         this.traceRegistry = traceRegistry;
         this.traceCollector = traceCollector;
         this.configService = configService;
-        this.metricCache = metricCache;
+        this.metricNameCache = metricNameCache;
         this.fineProfileScheduler = fineProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
@@ -123,9 +123,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public MetricName getMetricName(Class<?> adviceClass) {
         if (adviceClass == null) {
             logger.error("getMetricName(): argument 'adviceClass' must be non-null");
-            return metricCache.getUnknownMetricName();
+            return metricNameCache.getUnknownMetricName();
         }
-        return metricCache.getMetricName(adviceClass);
+        return metricNameCache.getMetricName(adviceClass);
     }
 
     @Override

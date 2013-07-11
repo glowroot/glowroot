@@ -32,21 +32,21 @@ import io.informant.trace.model.MetricNameImpl;
  * @since 0.5
  */
 @Singleton
-class MetricCache {
+class MetricNameCache {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(MetricNameCache.class);
 
     private final Ticker ticker;
 
-    private final LoadingCache<String, MetricNameImpl> metricNames =
-            CacheBuilder.newBuilder().build(new CacheLoader<String, MetricNameImpl>() {
+    private final LoadingCache<String, MetricName> metricNames =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, MetricName>() {
                 @Override
-                public MetricNameImpl load(String name) {
+                public MetricName load(String name) {
                     return new MetricNameImpl(name, ticker);
                 }
             });
 
-    MetricCache(Ticker ticker) {
+    MetricNameCache(Ticker ticker) {
         this.ticker = ticker;
     }
 

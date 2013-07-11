@@ -43,7 +43,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> pluginAdvisors;
     private final Supplier<ImmutableList<Advice>> dynamicAdvisors;
-    private final WeavingMetric weavingMetric;
+    private final WeavingMetricName weavingMetricName;
 
     private final ParsedTypeCache parsedTypeCache;
 
@@ -58,7 +58,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                         @Override
                         public Weaver load(ClassLoader loader) {
                             return new Weaver(mixinTypes, pluginAdvisors, dynamicAdvisors, loader,
-                                    parsedTypeCache, weavingMetric);
+                                    parsedTypeCache, weavingMetricName);
                         }
                     });
     // the weaver for the bootstrap class loader (null) has to be stored separately since
@@ -74,14 +74,14 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // note: an exception is made for WeavingMetric, see PreInitializeClassesTest for explanation
     public WeavingClassFileTransformer(@ReadOnly List<MixinType> mixinTypes,
             @ReadOnly List<Advice> pluginAdvisors, Supplier<ImmutableList<Advice>> dynamicAdvisors,
-            ParsedTypeCache parsedTypeCache, WeavingMetric weavingMetric) {
+            ParsedTypeCache parsedTypeCache, WeavingMetricName weavingMetricName) {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
         this.dynamicAdvisors = dynamicAdvisors;
         this.parsedTypeCache = parsedTypeCache;
-        this.weavingMetric = weavingMetric;
+        this.weavingMetricName = weavingMetricName;
         bootLoaderWeaver = new Weaver(this.mixinTypes, this.pluginAdvisors, this.dynamicAdvisors,
-                null, parsedTypeCache, weavingMetric);
+                null, parsedTypeCache, weavingMetricName);
         PreInitializeClasses.preInitializeClasses(WeavingClassFileTransformer.class
                 .getClassLoader());
     }

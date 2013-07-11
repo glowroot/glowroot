@@ -20,7 +20,7 @@ import com.google.common.base.Ticker;
 import io.informant.api.MetricTimer;
 import io.informant.markers.Singleton;
 import io.informant.markers.ThreadSafe;
-import io.informant.weaving.WeavingMetric;
+import io.informant.weaving.WeavingMetricName;
 
 /**
  * Weaving metric is a very special case because it is measuring timing inside of
@@ -32,7 +32,7 @@ import io.informant.weaving.WeavingMetric;
  * @since 0.5
  */
 @Singleton
-public class WeavingMetricNameImpl implements WeavingMetric {
+public class WeavingMetricNameImpl implements WeavingMetricName {
 
     private final MetricNameImpl metricName;
 

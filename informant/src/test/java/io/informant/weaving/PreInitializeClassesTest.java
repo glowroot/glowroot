@@ -36,7 +36,7 @@ public class PreInitializeClassesTest {
     public void shouldCheckHardcodedListAgainstReality() throws IOException {
         GlobalCollector globalCollector = new GlobalCollector();
         // register WeavingMetricImpl since the WeavingClassFileTransformer constructor accepts the
-        // WeavingMetric interface and so WeavingMetricImpl would otherwise co unseen
+        // WeavingMetricName interface and so WeavingMetricNameImpl would otherwise co unseen
         globalCollector.registerType("io/informant/trace/model/WeavingMetricNameImpl");
         // "call" WeavingClassFileTransformer constructor to capture its lazy loading weavers
         // structure
@@ -44,7 +44,7 @@ public class PreInitializeClassesTest {
                 "io/informant/weaving/WeavingClassFileTransformer", "<init>",
                 "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
                         + "Lio/informant/weaving/ParsedTypeCache;"
-                        + "Lio/informant/weaving/WeavingMetric;)V"));
+                        + "Lio/informant/weaving/WeavingMetricName;)V"));
         // "call" WeavingClassFileTransformer.transform()
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "io/informant/weaving/WeavingClassFileTransformer", "transform",

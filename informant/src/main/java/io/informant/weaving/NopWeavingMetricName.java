@@ -21,9 +21,9 @@ import io.informant.api.MetricTimer;
  * @author Trask Stalnaker
  * @since 0.5
  */
-class NopWeavingMetric implements WeavingMetric {
+class NopWeavingMetricName implements WeavingMetricName {
 
-    static final NopWeavingMetric INSTANCE = new NopWeavingMetric();
+    static final NopWeavingMetricName INSTANCE = new NopWeavingMetricName();
 
     public MetricTimer start() {
         return NopMetricTimer.INSTANCE;

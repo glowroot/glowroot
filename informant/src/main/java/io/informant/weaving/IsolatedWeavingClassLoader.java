@@ -75,10 +75,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     private IsolatedWeavingClassLoader(ImmutableList<MixinType> mixinTypes,
             ImmutableList<Advice> advisors, ImmutableList<Class<?>> bridgeClasses,
-            ImmutableList<String> excludePackages, WeavingMetric weavingMetric) {
+            ImmutableList<String> excludePackages, WeavingMetricName weavingMetricName) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         weaver = new Weaver(mixinTypes, advisors, SUPPLIER_OF_NONE, this, new ParsedTypeCache(),
-                weavingMetric);
+                weavingMetricName);
         this.bridgeClasses = bridgeClasses;
         this.excludePackages = excludePackages;
     }
@@ -196,7 +196,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private ImmutableList<Advice> advisors = ImmutableList.of();
         private final ImmutableList.Builder<Class<?>> bridgeClasses = ImmutableList.builder();
         private final ImmutableList.Builder<String> excludePackages = ImmutableList.builder();
-        private WeavingMetric weavingMetric = NopWeavingMetric.INSTANCE;
+        private WeavingMetricName weavingMetricName = NopWeavingMetricName.INSTANCE;
 
         private Builder() {}
 
@@ -216,8 +216,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.excludePackages.add(excludePackages);
         }
 
-        public void weavingMetric(WeavingMetric weavingMetric) {
-            this.weavingMetric = weavingMetric;
+        public void weavingMetric(WeavingMetricName weavingMetricName) {
+            this.weavingMetricName = weavingMetricName;
         }
 
         public IsolatedWeavingClassLoader build() {
@@ -225,7 +225,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                     new PrivilegedAction<IsolatedWeavingClassLoader>() {
                         public IsolatedWeavingClassLoader run() {
                             return new IsolatedWeavingClassLoader(mixinTypes, advisors,
-                                    bridgeClasses.build(), excludePackages.build(), weavingMetric);
+                                    bridgeClasses.build(), excludePackages.build(),
+                                    weavingMetricName);
                         }
                     });
         }
