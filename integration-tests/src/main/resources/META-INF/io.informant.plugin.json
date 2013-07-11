@@ -27,12 +27,12 @@
     }
   ],
   "aspects": [
-    "io.informant.test.plugin.LevelOneAspect",
-    "io.informant.test.plugin.LevelTwoAspect",
-    "io.informant.test.plugin.LevelThreeAspect",
-    "io.informant.test.plugin.LogErrorAspect",
-    "io.informant.test.plugin.LogCauseAspect",
-    "io.informant.test.plugin.PauseAspect",
-    "io.informant.test.plugin.MatchAllTypesAspect"
+    "io.informant.tests.plugin.LevelOneAspect",
+    "io.informant.tests.plugin.LevelTwoAspect",
+    "io.informant.tests.plugin.LevelThreeAspect",
+    "io.informant.tests.plugin.LogErrorAspect",
+    "io.informant.tests.plugin.LogCauseAspect",
+    "io.informant.tests.plugin.PauseAspect",
+    "io.informant.tests.plugin.MatchAllTypesAspect"
   ]
 }
