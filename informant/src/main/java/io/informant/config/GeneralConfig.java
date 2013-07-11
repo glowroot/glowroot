@@ -62,7 +62,7 @@ public class GeneralConfig {
         final boolean enabled = true;
         final int storeThresholdMillis = 3000;
         final int stuckThresholdSeconds = 180;
-        final int maxSpans = 5000;
+        final int maxSpans = 2000;
         final boolean warnOnSpanOutsideTrace = false;
         return new GeneralConfig(enabled, storeThresholdMillis, stuckThresholdSeconds, maxSpans,
                 warnOnSpanOutsideTrace);
