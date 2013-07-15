@@ -46,5 +46,10 @@ public interface Container {
     void close(boolean evenIfShared) throws Exception;
 
     @SuppressWarnings("serial")
-    public static class StartupFailedException extends Exception {}
+    public static class StartupFailedException extends Exception {
+        public StartupFailedException(Throwable cause) {
+            super(cause);
+        }
+        public StartupFailedException() {}
+    }
 }

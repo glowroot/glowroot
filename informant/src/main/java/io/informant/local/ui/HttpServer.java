@@ -30,14 +30,15 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.socket.nio.NioServerBossPool;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioWorkerPool;
 import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
 import org.jboss.netty.handler.codec.http.HttpContentCompressor;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,13 +65,14 @@ class HttpServer {
 
     HttpServer(int port, int numWorkerThreads, ImmutableMap<Pattern, Object> uriMappings,
             ImmutableList<JsonServiceMapping> jsonServiceMappings) {
-        setThreadNameDeterminer();
         handler = new HttpServerHandler(uriMappings, jsonServiceMappings);
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
         ExecutorService bossExecutor = Executors.newCachedThreadPool(threadFactory);
         ExecutorService workerExecutor = Executors.newCachedThreadPool(threadFactory);
-        bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(bossExecutor, 1,
-                workerExecutor, numWorkerThreads));
+        PrefixingThreadNameDeterminer determiner = new PrefixingThreadNameDeterminer();
+        bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
+                new NioServerBossPool(bossExecutor, 1, determiner),
+                new NioWorkerPool(workerExecutor, numWorkerThreads, determiner)));
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
                 ChannelPipeline pipeline = Channels.pipeline();
@@ -103,23 +105,21 @@ class HttpServer {
         return port;
     }
 
-    private static void setThreadNameDeterminer() {
-        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
-            private final AtomicInteger workerCount = new AtomicInteger();
-            public String determineThreadName(String currentThreadName, String proposedThreadName) {
-                if (proposedThreadName.matches("New I/O server boss #[0-9]+")) {
-                    // leave off the # since there is always a single boss thread
-                    return "Informant-Http-Boss";
-                }
-                if (proposedThreadName.matches("New I/O worker #[0-9]+")) {
-                    // use separate worker specific counter since netty # is shared between bosses
-                    // and workers (and netty # starts at 1 while other informant thread pools start
-                    // numbering at 0)
-                    return "Informant-Http-Worker-" + workerCount.getAndIncrement();
-                }
-                logger.warn("unexpected thread name: '{}'", proposedThreadName);
-                return proposedThreadName;
+    private static class PrefixingThreadNameDeterminer implements ThreadNameDeterminer {
+        private final AtomicInteger workerCount = new AtomicInteger();
+        public String determineThreadName(String currentThreadName, String proposedThreadName) {
+            if (proposedThreadName.matches("New I/O server boss #[0-9]+")) {
+                // leave off the # since there is always a single boss thread
+                return "Informant-Http-Boss";
             }
-        });
+            if (proposedThreadName.matches("New I/O worker #[0-9]+")) {
+                // use separate worker specific counter since netty # is shared between bosses
+                // and workers (and netty # starts at 1 while other informant thread pools start
+                // numbering at 0)
+                return "Informant-Http-Worker-" + workerCount.getAndIncrement();
+            }
+            logger.warn("unexpected thread name: '{}'", proposedThreadName);
+            return proposedThreadName;
+        }
     }
 }

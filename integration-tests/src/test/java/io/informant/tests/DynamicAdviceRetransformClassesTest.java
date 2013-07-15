@@ -33,7 +33,7 @@ public class DynamicAdviceRetransformClassesTest extends DynamicAdviceTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = new JavaagentContainer(null, 0, false, false);
+        container = JavaagentContainer.create();
         container.executeAppUnderTest(ShouldExecute1.class);
         addSpanPointcutForExecute1();
         addSpanPointcutForExecute1MetricOnly();

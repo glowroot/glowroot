@@ -39,7 +39,7 @@ public class AggregateDaoTest {
     private AggregateDao aggregateDao;
 
     @Before
-    public void before() throws SQLException, IOException {
+    public void beforeEachTest() throws SQLException, IOException {
         dataSource = new DataSource();
         if (dataSource.tableExists("snapshot")) {
             dataSource.execute("drop table snapshot");
@@ -48,7 +48,7 @@ public class AggregateDaoTest {
     }
 
     @After
-    public void after() throws Exception {
+    public void afterEachTest() throws Exception {
         dataSource.close();
     }
 

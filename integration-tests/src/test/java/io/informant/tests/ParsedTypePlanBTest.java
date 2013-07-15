@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.Enumeration;
 
 import com.google.common.io.Resources;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,14 +34,14 @@ import io.informant.weaving.ParsedTypeCache;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// this cannot be tested using IsolatedWeavingClassLoader
 public class ParsedTypePlanBTest {
 
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.create();
+        // this cannot be tested using IsolatedWeavingClassLoader
+        container = Containers.createJavaagentContainer();
     }
 
     @AfterClass
@@ -48,15 +49,13 @@ public class ParsedTypePlanBTest {
         container.close();
     }
 
+    @After
+    public void afterEachTest() throws Exception {
+        container.checkAndReset();
+    }
+
     @Test
     public void shouldNotLogWarningInParsedTypeCachePlanB() throws Exception {
-        if (!Containers.isJavaagent()) {
-            // this test is only relevant under javaagent
-            // (tests are run under javaagent during mvn integration-test but not during mvn test)
-            // not using org.junit.Assume which reports the test as ignored, since ignored tests
-            // seem like something that needs to be revisited and 'un-ignored'
-            return;
-        }
         // given
         // when
         container.executeAppUnderTest(ShouldNotLogWarningInParsedTypeCachePlanB.class);
@@ -66,13 +65,6 @@ public class ParsedTypePlanBTest {
 
     @Test
     public void shouldLogWarningInParsedTypeCachePlanB() throws Exception {
-        if (!Containers.isJavaagent()) {
-            // this test is only relevant under javaagent
-            // (tests are run under javaagent during mvn integration-test but not during mvn test)
-            // not using org.junit.Assume which reports the test as ignored, since ignored tests
-            // seem like something that needs to be revisited and 'un-ignored'
-            return;
-        }
         // given
         container.addExpectedLogMessage(ParsedTypeCache.class.getName(),
                 "could not find resource '" + Y.class.getName().replace('.', '/') + ".class'");

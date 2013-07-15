@@ -44,7 +44,7 @@ public class SnapshotDaoTest {
     private SnapshotDao snapshotDao;
 
     @Before
-    public void before() throws SQLException, IOException {
+    public void beforeEachTest() throws SQLException, IOException {
         dataSource = new DataSource();
         if (dataSource.tableExists("snapshot")) {
             dataSource.execute("drop table snapshot");
@@ -57,7 +57,7 @@ public class SnapshotDaoTest {
     }
 
     @After
-    public void after() throws Exception {
+    public void afterEachTest() throws Exception {
         scheduledExecutor.shutdownNow();
         dataSource.close();
         rollingFile.close();

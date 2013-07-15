@@ -73,13 +73,17 @@ public class Containers {
         return create(dataDir, uiPort, useFileDb, false);
     }
 
-    public static boolean isJavaagent() {
-        return javaagent;
+    public static Container createJavaagentContainer() throws Exception {
+        if (javaagent) {
+            // use (possibly) shared container
+            return create();
+        }
+        return JavaagentContainer.create();
     }
 
     private static Container create(@Nullable File dataDir, int uiPort, boolean useFileDb,
             boolean shared) throws Exception {
-        if (isJavaagent()) {
+        if (javaagent) {
             // this is the most realistic way to run tests because it launches an external JVM
             // process using -javaagent:informant.jar
             logger.debug("create(): using javaagent container");

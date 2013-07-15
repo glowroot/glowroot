@@ -30,6 +30,7 @@ import com.google.common.collect.Maps;
 import io.informant.InformantModule;
 import io.informant.MainEntryPoint;
 import io.informant.config.PluginDescriptorCache;
+import io.informant.container.Container.StartupFailedException;
 import io.informant.container.SpyingLogFilter;
 import io.informant.container.SpyingLogFilter.MessageCount;
 import io.informant.container.SpyingLogFilterCheck;
@@ -80,7 +81,11 @@ public class GenericLocalContainer<T> {
         if (!useFileDb) {
             properties.put("internal.h2.memdb", "true");
         }
-        informantModule = MainEntryPoint.start(properties);
+        try {
+            informantModule = MainEntryPoint.start(properties);
+        } catch (Throwable t) {
+            throw new StartupFailedException(t);
+        }
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         PluginDescriptorCache pluginDescriptorCache =
                 informantModule.getConfigModule().getPluginDescriptorCache();

@@ -87,6 +87,10 @@ public class JavaagentContainer implements Container {
 
     private volatile long numConsoleBytes;
 
+    public static JavaagentContainer create() throws Exception {
+        return new JavaagentContainer(null, 0, false, false);
+    }
+
     public static JavaagentContainer createWithFileDb() throws Exception {
         return new JavaagentContainer(null, 0, true, false);
     }
@@ -95,8 +99,12 @@ public class JavaagentContainer implements Container {
         return new JavaagentContainer(null, uiPort, true, false);
     }
 
-    public JavaagentContainer(@Nullable File dataDir, int uiPort, boolean useFileDb, boolean shared)
-            throws Exception {
+    public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
+        return new JavaagentContainer(dataDir, 0, true, false);
+    }
+
+    public JavaagentContainer(@Nullable File dataDir, int uiPort, boolean useFileDb,
+            boolean shared) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("informant-test-datadir");
             deleteDataDirOnClose = true;

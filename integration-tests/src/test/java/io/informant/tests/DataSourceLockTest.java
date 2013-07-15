@@ -23,6 +23,7 @@ import io.informant.Containers;
 import io.informant.container.Container;
 import io.informant.container.Container.StartupFailedException;
 import io.informant.container.TempDirs;
+import io.informant.container.javaagent.JavaagentContainer;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -34,23 +35,20 @@ public class DataSourceLockTest {
 
     @Test
     public void shouldShutdown() throws Exception {
-        if (!Containers.isJavaagent()) {
-            // this test is only relevant in external jvm since H2 transparently handles two
-            // connections to the same file inside the same jvm with no problem
-            // (tests are run in external jvm during mvn integration-test but not during mvn test)
-            // not using org.junit.Assume which reports the test as ignored, since ignored tests
-            // seem like something that needs to be revisited and 'un-ignored'
-            return;
-        }
         // given
         File dataDir = TempDirs.createTempDir("informant-test-datadir");
-        Container container = Containers.createWithFileDb(dataDir);
+        // this test is only relevant using an external jvm for one of containers since H2
+        // transparently handles two connections to the same file inside the same jvm with no
+        // problem
+        Container container = JavaagentContainer.createWithFileDb(dataDir);
+        // when
         boolean exception = false;
         try {
             Containers.createWithFileDb(dataDir);
         } catch (StartupFailedException e) {
             exception = true;
         }
+        // then
         assertThat(exception).isTrue();
         // cleanup
         container.close();

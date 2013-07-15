@@ -25,9 +25,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.junit.Test;
 
-import io.informant.Containers;
 import io.informant.container.AppUnderTest;
-import io.informant.container.Container;
 import io.informant.container.TraceMarker;
 import io.informant.container.javaagent.JavaagentContainer;
 
@@ -45,14 +43,9 @@ public class DataSourceShutdownTest {
 
     @Test
     public void shouldShutdown() throws Exception {
-        if (!Containers.isJavaagent()) {
-            // this test is only relevant under javaagent
-            // (tests are run under javaagent during mvn integration-test but not during mvn test)
-            // not using org.junit.Assume which reports the test as ignored, since ignored tests
-            // seem like something that needs to be revisited and 'un-ignored'
-            return;
-        }
         // given
+        // this test is only relevant in external jvm so that the process can be killed and the jvm
+        // shutdown hook can be tested
         final JavaagentContainer container = JavaagentContainer.createWithFileDb();
         container.getConfigService().setStoreThresholdMillis(0);
         // when
@@ -65,34 +58,23 @@ public class DataSourceShutdownTest {
             }
         });
         Stopwatch stopwatch = new Stopwatch().start();
-        boolean foundEnoughTraces = false;
+        boolean startedWritingToDb = false;
         while (stopwatch.elapsed(SECONDS) < 5) {
-            if (getNumCompletedTraces(container) > 10) {
-                foundEnoughTraces = true;
+            if (container.getTraceService().getNumStoredSnapshots() > 0) {
+                startedWritingToDb = true;
                 break;
             }
             Thread.sleep(1);
         }
         container.kill();
         // then
-        assertThat(foundEnoughTraces).isTrue();
+        assertThat(startedWritingToDb).isTrue();
         // check that no error messages were logged, problem is (1) the external jvm is terminated
         // so can't query it and (2) any error or warning messages due to database shutdown wouldn't
         // be stored in the database log_message table, so have to resort to screen scraping
         assertThat(container.getNumConsoleBytes()).isEqualTo(0);
-
-        // 17:00:03.898 [pool-4-thread-1] WARN i.i.collector.TraceCollectorImpl - not storing a
-        // trace because of an excessive backlog of 100 traces already waiting to be stored (this
-        // warning will appear at most once a minute, there were 0 additional traces not stored
-        // since the last warning)
-
         // cleanup
         executorService.shutdown();
-    }
-
-    private long getNumCompletedTraces(Container container) throws Exception {
-        return container.getTraceService().getNumStoredSnapshots()
-                + container.getTraceService().getNumPendingCompleteTraces();
     }
 
     public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
@@ -100,10 +82,16 @@ public class DataSourceShutdownTest {
             ThreadFactory daemonThreadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
             Executors.newSingleThreadExecutor(daemonThreadFactory).execute(new Runnable() {
                 public void run() {
-                    // generate traces during the shutdown process to test there are no
-                    // error caused
-                    // by trying to write a trace to the database during/after shutdown
-                    while (true) {
+                    // generate traces during the shutdown process to test there are no errors
+                    // caused by trying to write a trace to the database during/after shutdown
+                    //
+                    // only generate 100 to ensure backlog is not hit so that warning message does
+                    // not occur (see TraceCollectorImpl), as this would fail test since screen
+                    // scraping is used (see above)
+                    // this seems to be enough, as even just 10 generally causes failure if
+                    // DataSource.ShutdownHookThread is not created and db_close_on_exit=false is
+                    // removed in order to put back the H2 jvm shutdown hook
+                    for (int i = 0; i < 100; i++) {
                         try {
                             traceMarker();
                         } catch (InterruptedException e) {
