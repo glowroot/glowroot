@@ -17,6 +17,8 @@ package io.informant.api;
 
 import java.util.concurrent.TimeUnit;
 
+import checkers.nullness.quals.Nullable;
+
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.OnReturn;
 import io.informant.api.weaving.OnThrow;
@@ -79,7 +81,10 @@ public interface Span {
      * This returns the {@code MessageSupplier} even if the trace has accumulated {@code maxSpans}
      * spans and this is a dummy span.
      * 
+     * Under some error conditions this can return {@code null}.
+     * 
      * @return the {@code MessageSupplier} that was supplied when the {@code Span} was created
      */
+    @Nullable
     MessageSupplier getMessageSupplier();
 }

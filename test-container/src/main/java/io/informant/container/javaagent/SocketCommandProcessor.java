@@ -16,7 +16,6 @@
 package io.informant.container.javaagent;
 
 import java.io.EOFException;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
@@ -88,7 +87,7 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void readCommandAndSpawnHandlerThread() throws IOException, ClassNotFoundException {
+    private void readCommandAndSpawnHandlerThread() throws Exception {
         final CommandWrapper commandWrapper = (CommandWrapper) objectIn.readObject();
         logger.debug("command received by external jvm: {}", commandWrapper);
         executorService.submit(new Runnable() {
@@ -113,13 +112,7 @@ class SocketCommandProcessor implements Runnable {
         int commandNum = commandWrapper.getCommandNum();
         if (command instanceof String) {
             if (command.equals(GET_PORT)) {
-                InformantModule informantModule = MainEntryPoint.getInformantModule();
-                if (informantModule == null) {
-                    // informant failed to start
-                    respond(NO_PORT, commandNum);
-                } else {
-                    respond(informantModule.getUiModule().getPort(), commandNum);
-                }
+                respondWithPort(commandNum);
             } else if (command.equals(CLEAR_LOG_MESSAGES)) {
                 respond(SpyingLogFilter.clearMessages(), commandNum);
             } else if (command.equals(KILL)) {
@@ -140,14 +133,11 @@ class SocketCommandProcessor implements Runnable {
                 respond(EXCEPTION_RESPONSE, commandNum);
             } else {
                 Object commandName = argList.get(0);
+                List<?> args = argList.subList(1, argList.size());
                 if (commandName.equals(EXECUTE_APP)) {
-                    String appClassName = (String) argList.get(1);
-                    executeAppAndRespond(commandNum, appClassName);
+                    executeAppAndRespond(commandNum, args);
                 } else if (commandName.equals(ADD_EXPECTED_LOG_MESSAGE)) {
-                    String loggerName = (String) argList.get(1);
-                    String partialMessage = (String) argList.get(2);
-                    SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
-                    respond(null, commandNum);
+                    addExpectedMessageAndRespond(commandNum, args);
                 } else {
                     logger.error("unexpected command '" + commandName + "'");
                     respond(EXCEPTION_RESPONSE, commandNum);
@@ -159,7 +149,17 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void shutdown(int commandNum) throws IOException, InterruptedException {
+    private void respondWithPort(int commandNum) throws Exception {
+        InformantModule informantModule = MainEntryPoint.getInformantModule();
+        if (informantModule == null) {
+            // informant failed to start
+            respond(NO_PORT, commandNum);
+        } else {
+            respond(informantModule.getUiModule().getPort(), commandNum);
+        }
+    }
+
+    private void shutdown(int commandNum) throws Exception {
         executorService.shutdown();
         InformantModule informantModule = MainEntryPoint.getInformantModule();
         if (informantModule == null) {
@@ -178,7 +178,22 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void executeAppAndRespond(int commandNum, String appClassName) throws Exception {
+    private void interruptAppAndRespond(int commandNum) throws Exception {
+        try {
+            for (Thread thread : executingAppThreads) {
+                thread.interrupt();
+            }
+            respond(null, commandNum);
+        } catch (Throwable t) {
+            // catch Throwable so response can (hopefully) be sent even under extreme
+            // circumstances like OutOfMemoryError
+            logger.error(t.getMessage(), t);
+            respond(EXCEPTION_RESPONSE, commandNum);
+        }
+    }
+
+    private void executeAppAndRespond(int commandNum, List<?> args) throws Exception {
+        String appClassName = (String) args.get(0);
         Class<?> appClass = Class.forName(appClassName);
         try {
             executingAppThreads.add(Thread.currentThread());
@@ -195,21 +210,14 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void interruptAppAndRespond(int commandNum) throws Exception {
-        try {
-            for (Thread thread : executingAppThreads) {
-                thread.interrupt();
-            }
-            respond(null, commandNum);
-        } catch (Throwable t) {
-            // catch Throwable so response can (hopefully) be sent even under extreme
-            // circumstances like OutOfMemoryError
-            logger.error(t.getMessage(), t);
-            respond(EXCEPTION_RESPONSE, commandNum);
-        }
+    private void addExpectedMessageAndRespond(int commandNum, List<?> args) throws Exception {
+        String loggerName = (String) args.get(0);
+        String partialMessage = (String) args.get(1);
+        SpyingLogFilter.addExpectedMessage(loggerName, partialMessage);
+        respond(null, commandNum);
     }
 
-    private void respond(@Nullable Object response, int commandNum) throws IOException {
+    private void respond(@Nullable Object response, int commandNum) throws Exception {
         ResponseWrapper responseWrapper = new ResponseWrapper(commandNum, response);
         logger.debug("sending response to unit test jvm: {}", responseWrapper);
         // sychronizing with SocketHeartbeat

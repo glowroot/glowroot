@@ -15,8 +15,6 @@
  */
 package io.informant.container.local;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -209,11 +207,11 @@ class LocalConfigService implements ConfigService {
                 "Retransforming classes only works inside javaagent container");
     }
 
-    public void compactData() throws SQLException {
+    public void compactData() throws Exception {
         dataSource.compact();
     }
 
-    public void resetAllConfig() throws IOException {
+    public void resetAllConfig() throws Exception {
         configService.resetAllConfig();
     }
 

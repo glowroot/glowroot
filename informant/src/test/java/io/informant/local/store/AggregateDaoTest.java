@@ -15,8 +15,6 @@
  */
 package io.informant.local.store;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +37,7 @@ public class AggregateDaoTest {
     private AggregateDao aggregateDao;
 
     @Before
-    public void beforeEachTest() throws SQLException, IOException {
+    public void beforeEachTest() throws Exception {
         dataSource = new DataSource();
         if (dataSource.tableExists("snapshot")) {
             dataSource.execute("drop table snapshot");

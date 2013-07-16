@@ -68,8 +68,7 @@ public class TraceModule {
             });
 
     public TraceModule(Ticker ticker, Clock clock, ConfigModule configModule,
-            TraceCollector traceCollector, ScheduledExecutorService scheduledExecutor)
-            throws Exception {
+            TraceCollector traceCollector, ScheduledExecutorService scheduledExecutor) {
         this.ticker = ticker;
         this.clock = clock;
         this.configModule = configModule;

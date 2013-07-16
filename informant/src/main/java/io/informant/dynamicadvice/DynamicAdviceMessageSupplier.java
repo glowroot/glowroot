@@ -66,14 +66,12 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
 
     public void setReturnValue(Object returnValue) {
         // render the return value to strings immediately in case it is mutable
-        String[] resolvedReturnValuePathParts =
-                new String[template.getReturnPathParts().size()];
+        String[] parts = new String[template.getReturnPathParts().size()];
         int i = 0;
         for (ValuePathPart part : template.getReturnPathParts()) {
-            resolvedReturnValuePathParts[i++] =
-                    String.valueOf(Beans.value(returnValue, part.getPropertyPath()));
+            parts[i++] = String.valueOf(Beans.value(returnValue, part.getPropertyPath()));
         }
-        this.resolvedReturnValuePathParts = resolvedReturnValuePathParts;
+        this.resolvedReturnValuePathParts = parts;
     }
 
     @Override
@@ -113,7 +111,10 @@ public class DynamicAdviceMessageSupplier extends MessageSupplier {
 
     @UsedByGeneratedBytecode
     public static void updateWithReturnValue(Span span, Object returnValue) {
-        ((DynamicAdviceMessageSupplier) span.getMessageSupplier()).setReturnValue(String
-                .valueOf(returnValue));
+        DynamicAdviceMessageSupplier messageSupplier =
+                (DynamicAdviceMessageSupplier) span.getMessageSupplier();
+        if (messageSupplier != null) {
+            messageSupplier.setReturnValue(String.valueOf(returnValue));
+        }
     }
 }

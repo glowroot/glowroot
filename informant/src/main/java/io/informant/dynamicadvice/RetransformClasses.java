@@ -35,6 +35,8 @@ public class RetransformClasses {
 
     private static final Logger logger = LoggerFactory.getLogger(RetransformClasses.class);
 
+    private RetransformClasses() {}
+
     public static void addRetransformingTransformer(Instrumentation instrumentation,
             ClassFileTransformer transformer) {
         try {

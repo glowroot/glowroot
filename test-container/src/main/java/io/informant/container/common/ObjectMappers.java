@@ -139,19 +139,19 @@ public class ObjectMappers {
         public EnumDeserializer(Class<?> enumClass) {
             this.enumClass = enumClass;
             if (enumClass.isEnum()) {
-                ImmutableMap.Builder<String, Enum<?>> enumMap = ImmutableMap.builder();
+                ImmutableMap.Builder<String, Enum<?>> theEnumMap = ImmutableMap.builder();
                 Object[] enumConstants = enumClass.getEnumConstants();
                 if (enumConstants != null) {
                     for (Object enumConstant : enumConstants) {
                         if (enumConstant instanceof Enum) {
                             Enum<?> constant = (Enum<?>) enumConstant;
-                            enumMap.put(constant.name().toLowerCase(Locale.ENGLISH), constant);
+                            theEnumMap.put(constant.name().toLowerCase(Locale.ENGLISH), constant);
                         } else {
                             logger.error("unexpected constant class: {}", enumConstant.getClass());
                         }
                     }
                 }
-                this.enumMap = enumMap.build();
+                this.enumMap = theEnumMap.build();
             } else {
                 logger.error("unexpected class: {}" + enumClass);
                 this.enumMap = ImmutableMap.of();

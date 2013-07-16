@@ -16,8 +16,10 @@
 package io.informant;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -60,7 +62,7 @@ public class InformantModule {
     private final LocalUiModule uiModule;
 
     InformantModule(@ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation) throws Exception {
+            @Nullable Instrumentation instrumentation) throws SQLException, IOException {
         Ticker ticker = Ticker.systemTicker();
         Clock clock = Clock.systemClock();
         File dataDir = DataDir.getDataDir(properties);
@@ -123,7 +125,6 @@ public class InformantModule {
         logger.debug("close()");
         uiModule.close();
         traceModule.close();
-        collectorModule.close();
         storageModule.close();
         scheduledExecutor.shutdownNow();
     }

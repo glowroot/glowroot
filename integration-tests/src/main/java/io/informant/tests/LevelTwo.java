@@ -24,18 +24,18 @@ import checkers.nullness.quals.Nullable;
 class LevelTwo {
 
     @Nullable
-    private final Exception exception;
+    private final RuntimeException exception;
 
     LevelTwo() {
         this(null);
     }
 
-    LevelTwo(@Nullable Exception e) {
+    LevelTwo(@Nullable RuntimeException e) {
         exception = e;
     }
 
     // this method corresponds to LevelTwoAspect
-    void call(String arg1, String arg2) throws Exception {
+    void call(String arg1, String arg2) {
         new LevelThree(exception).call(arg1 + "y", arg2 + "y");
     }
 }

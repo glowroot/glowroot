@@ -194,11 +194,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             MetricName metricName, boolean background) {
         if (messageSupplier == null) {
             logger.error("startTrace(): argument 'messageSupplier' must be non-null");
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         if (metricName == null) {
             logger.error("startTrace(): argument 'metricName' must be non-null");
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
@@ -216,15 +216,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
         if (messageSupplier == null) {
             logger.error("startSpan(): argument 'messageSupplier' must be non-null");
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         if (metricName == null) {
             logger.error("startSpan(): argument 'metricName' must be non-null");
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         Trace trace = traceRegistry.getCurrentTrace();
         if (trace == null) {
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         } else {
             return startSpan(trace, (MetricNameImpl) metricName, messageSupplier);
         }
@@ -503,10 +503,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     private static class NopSpan implements Span {
-        private final MessageSupplier messageSupplier;
-        private NopSpan(MessageSupplier messageSupplier) {
-            this.messageSupplier = messageSupplier;
-        }
+        private static final NopSpan INSTANCE = new NopSpan();
+        private NopSpan() {}
         public CompletedSpan end() {
             return NopCompletedSpan.INSTANCE;
         }
@@ -516,8 +514,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public CompletedSpan endWithError(ErrorMessage errorMessage) {
             return NopCompletedSpan.INSTANCE;
         }
+        @Nullable
         public MessageSupplier getMessageSupplier() {
-            return messageSupplier;
+            return null;
         }
     }
 

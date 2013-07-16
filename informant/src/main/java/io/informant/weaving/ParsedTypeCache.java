@@ -54,7 +54,6 @@ import org.slf4j.LoggerFactory;
 import io.informant.markers.Singleton;
 
 import static io.informant.common.Nullness.assertNonNull;
-import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM4;
@@ -423,8 +422,8 @@ public class ParsedTypeCache {
                     method.getModifiers()));
         }
         ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
-        for (Class<?> iface : type.getInterfaces()) {
-            interfaceNames.add(iface.getName());
+        for (Class<?> interfaceClass : type.getInterfaces()) {
+            interfaceNames.add(interfaceClass.getName());
         }
         Class<?> superclass = type.getSuperclass();
         String superName = superclass == null ? null : superclass.getName();
@@ -516,7 +515,7 @@ public class ParsedTypeCache {
         @Override
         public void visit(int version, int access, String name, @Nullable String signature,
                 @Nullable String superName, String/*@Nullable*/[] interfaceNames) {
-            this.iface = (access & ACC_INTERFACE) != 0;
+            this.iface = Modifier.isInterface(access);
             this.name = name;
             if (superName == null || superName.equals("java/lang/Object")) {
                 this.superName = null;

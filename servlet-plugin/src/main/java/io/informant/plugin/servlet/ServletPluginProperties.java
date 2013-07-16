@@ -98,15 +98,15 @@ class ServletPluginProperties {
     }
 
     private static ImmutableSet<String> buildCaptureSessionAttributeNames() {
-        ImmutableSet.Builder<String> captureSessionAttributeNames = ImmutableSet.builder();
+        ImmutableSet.Builder<String> names = ImmutableSet.builder();
         for (String captureSessionAttributePath : captureSessionAttributePaths) {
             int index = captureSessionAttributePath.indexOf('.');
             if (index == -1) {
-                captureSessionAttributeNames.add(captureSessionAttributePath);
+                names.add(captureSessionAttributePath);
             } else {
-                captureSessionAttributeNames.add(captureSessionAttributePath.substring(0, index));
+                names.add(captureSessionAttributePath.substring(0, index));
             }
         }
-        return captureSessionAttributeNames.build();
+        return names.build();
     }
 }

@@ -130,10 +130,10 @@ public class Trace {
         Metric metric = metricName.create();
         metric.start(startTick);
         rootSpan = new RootSpan(messageSupplier, metric, startTick, ticker);
-        List<Metric> metrics = Lists.newArrayListWithCapacity(METRICS_LIST_INITIAL_CAPACITY);
-        metrics.add(metric);
+        List<Metric> theMetrics = Lists.newArrayListWithCapacity(METRICS_LIST_INITIAL_CAPACITY);
+        theMetrics.add(metric);
         // safe publish of metrics to avoid synchronization
-        this.metrics = metrics;
+        this.metrics = theMetrics;
         metricNames.add(metricName);
         // the weaving metric thread local is initialized so that it can be cached in this class
         // (otherwise it is painful to synchronize properly between clearThreadLocalMetrics()
@@ -192,15 +192,15 @@ public class Trace {
         if (attributes == null) {
             return ImmutableList.of();
         }
-        List<TraceAttribute> attributes;
+        List<TraceAttribute> theAttributes;
         synchronized (this.attributes) {
-            attributes = ImmutableList.copyOf(this.attributes);
+            theAttributes = ImmutableList.copyOf(this.attributes);
         }
         // filter out duplicates (last one wins) and order so that each plugin's attributes are
         // together (and the plugins are ordered by the order they added their first attribute to
         // this trace)
         Map<String, Map<String, TraceAttribute>> attributeMap = Maps.newLinkedHashMap();
-        for (TraceAttribute attribute : attributes) {
+        for (TraceAttribute attribute : theAttributes) {
             Map<String, TraceAttribute> pluginAttributeMap =
                     attributeMap.get(attribute.getPluginId());
             if (pluginAttributeMap == null) {

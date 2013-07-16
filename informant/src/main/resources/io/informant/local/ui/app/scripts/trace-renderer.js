@@ -35,7 +35,9 @@ var TraceRenderer = (function () {
 
   Handlebars.registerHelper('eachMetricOrdered', function (metrics, options) {
     // mutating original list seems fine here
-    metrics.sort(function (a, b) { return b.total - a.total; });
+    metrics.sort(function (a, b) {
+      return b.total - a.total;
+    });
     var buffer = '';
     $.each(metrics, function (index, metric) {
       buffer += options.fn(metric);
@@ -45,7 +47,9 @@ var TraceRenderer = (function () {
 
   Handlebars.registerHelper('eachGarbageCollectorInfoOrdered', function (gcInfos, options) {
     // mutating original list seems fine here
-    gcInfos.sort(function (a, b) { return b.collectionTime - a.collectionTime; });
+    gcInfos.sort(function (a, b) {
+      return b.collectionTime - a.collectionTime;
+    });
     var buffer = '';
     $.each(gcInfos, function (index, gcInfo) {
       buffer += options.fn(gcInfo);
@@ -147,7 +151,7 @@ var TraceRenderer = (function () {
       }
       exception = exception.cause;
       if (exception) {
-        html += "<strong>Caused by: ";
+        html += '<strong>Caused by: ';
       }
     }
     return html;
@@ -230,7 +234,9 @@ var TraceRenderer = (function () {
     html += '</div>';
     $('#sps').append(html);
     if (start + 100 < spans.length) {
-      setTimeout(function () { renderNext(spans, start + batchSize); }, 10);
+      setTimeout(function () {
+        renderNext(spans, start + batchSize);
+      }, 10);
     }
   }
 

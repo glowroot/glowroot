@@ -24,15 +24,13 @@ import checkers.nullness.quals.Nullable;
 class LevelThree {
 
     @Nullable
-    private final Exception exception;
+    private final RuntimeException exception;
 
-    LevelThree(@Nullable Exception e) {
+    LevelThree(@Nullable RuntimeException e) {
         this.exception = e;
     }
 
-    void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2)
-            throws Exception {
-
+    void call(@SuppressWarnings("unused") String arg1, @SuppressWarnings("unused") String arg2) {
         // this method corresponds to LevelThreeAspect
         if (exception != null) {
             throw exception;

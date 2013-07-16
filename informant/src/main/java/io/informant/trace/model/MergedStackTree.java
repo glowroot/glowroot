@@ -116,9 +116,8 @@ public class MergedStackTree {
                     // the metric names for a given stack element should always match, unless
                     // the line numbers aren't available and overloaded methods are matched up, or
                     // the stack trace was captured while one of the synthetic $metric$ methods was
-                    // executing in which case one of the metric names may be a subset of the other
-                    // TODO handle the first case better? (overloaded methods with no line numbers)
-                    // for the second case, the superset wins:
+                    // executing in which case one of the metric names may be a subset of the other,
+                    // in which case, the superset wins:
                     List<String> metricNames = element.getMetricNames();
                     if (metricNames != null
                             && metricNames.size() > childNode.getMetricNames().size()) {

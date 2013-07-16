@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.informant.local.store;
 
 import java.sql.PreparedStatement;
@@ -126,7 +125,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @ThreadSafe
-    private class AggregateIntervalRowMapper implements RowMapper<AggregatePoint> {
+    private static class AggregateIntervalRowMapper implements RowMapper<AggregatePoint> {
 
         public AggregatePoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
@@ -137,7 +136,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @ThreadSafe
-    private class GroupingAggregateRowMapper implements RowMapper<GroupingAggregate> {
+    private static class GroupingAggregateRowMapper implements RowMapper<GroupingAggregate> {
 
         public GroupingAggregate mapRow(ResultSet resultSet) throws SQLException {
             String grouping = resultSet.getString(1);

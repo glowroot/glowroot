@@ -63,8 +63,7 @@ public class LocalUiModule {
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, ConfigModule configModule,
             StorageModule storageModule, CollectorModule collectorModule, TraceModule traceModule,
-            @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties)
-            throws Exception {
+            @Nullable Instrumentation instrumentation, @ReadOnly Map<String, String> properties) {
 
         ConfigService configService = configModule.getConfigService();
         PluginDescriptorCache pluginDescriptorCache = configModule.getPluginDescriptorCache();

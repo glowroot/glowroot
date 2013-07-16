@@ -481,12 +481,37 @@ public class SomeAspect {
 
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn")
     public static class BindOptionalReturnAdvice {
-        public static final ThreadLocal<Object> returnValue = new ThreadLocal<Object>();
+        public static final ThreadLocal<OptionalReturn> returnValue =
+                new ThreadLocal<OptionalReturn>();
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
-            if (!optionalReturn.isVoid()) {
-                returnValue.set(optionalReturn.getValue());
-            }
+            returnValue.set(optionalReturn);
+        }
+        public static void resetThreadLocals() {
+            returnValue.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
+    public static class BindOptionalVoidReturnAdvice {
+        public static final ThreadLocal<OptionalReturn> returnValue =
+                new ThreadLocal<OptionalReturn>();
+        @OnReturn
+        public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
+            returnValue.set(optionalReturn);
+        }
+        public static void resetThreadLocals() {
+            returnValue.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.weaving.PrimitiveMisc", methodName = "executeWithIntReturn")
+    public static class BindOptionalPrimitiveReturnAdvice {
+        public static final ThreadLocal<OptionalReturn> returnValue =
+                new ThreadLocal<OptionalReturn>();
+        @OnReturn
+        public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
+            returnValue.set(optionalReturn);
         }
         public static void resetThreadLocals() {
             returnValue.remove();

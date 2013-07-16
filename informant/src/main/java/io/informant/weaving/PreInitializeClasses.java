@@ -70,26 +70,6 @@ class PreInitializeClasses {
         }
     }
 
-    // comparing this list to the types that are kept by proguard:
-    //
-    // proguard keeps com.google.common.cache.AbstractCache, -whyareyoukeeping says it's because
-    // io.informant.shaded.google.common.cache.AbstractCache "is extended by"
-    // io.informant.shaded.google.common.cache.AbstractCache$StatsCounter (which is used)
-    // but StatsCounter is an interface (and AbstractCache doesn't implement this interface), so
-    // it's not clear why proguard is keeping it (TODO investigate further)
-    // in any case, running integration-tests with -verbose:class confirms that AbstractCache is
-    // never loaded, so it seems this class is not really used
-    //
-    // proguard keeps ch.qos.logback.classic.gaffer.GafferConfigurator, but this class implements
-    // groovy.lang.GroovyObject which is not available on the classpath (so this class is not really
-    // used)
-    //
-    // proguard does not keep a few interfaces (below), but that's because proguard strips these
-    // (otherwise) unused interfaces off of used types
-    // * org.slf4j.spi.LoggerFactoryBinder
-    // * ch.qos.logback.core.spi.FilterAttachable
-    // * ch.qos.logback.classic.jmx.JMXConfiguratorMBean
-    //
     @VisibleForTesting
     static ImmutableList<String> usedTypes() {
         ImmutableList.Builder<String> types = ImmutableList.builder();
@@ -693,6 +673,7 @@ class PreInitializeClasses {
         types.add("io.informant.weaving.WeavingClassVisitor");
         types.add("io.informant.weaving.WeavingClassVisitor$InitMixins");
         types.add("io.informant.weaving.WeavingMethodVisitor");
+        types.add("io.informant.weaving.WeavingMethodVisitor$1");
         types.add("io.informant.weaving.WeavingMethodVisitor$MarkerException");
         types.add("io.informant.weaving.WeavingMetricName");
         return types;

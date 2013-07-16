@@ -118,7 +118,7 @@ public class MaxSpansLimitTest {
         public void executeApp() throws Exception {
             traceMarker();
         }
-        public void traceMarker() throws Exception {
+        public void traceMarker() {
             while (true) {
                 new LevelOne().call("a", "b");
                 if (Thread.interrupted()) {

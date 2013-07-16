@@ -66,9 +66,16 @@ public class Metric implements MetricTimer {
         if (active) {
             // try to grab a quick, consistent snapshot, but no guarantee on consistency since the
             // trace is active
-            long currentTick = ticker.read();
-            if (count == 0) {
-                long curr = currentTick - startTick;
+            //
+            // grab total before curr, to avoid case where total is updated in between
+            // these two lines and then "total + curr" would overstate the correct value
+            // (it seems better to understate the correct value if there is an update to the metric
+            // values in between these two lines)
+            long theTotal = this.total;
+            // capture startTick before ticker.read() so curr is never < 0
+            long theStartTick = this.startTick;
+            long curr = ticker.read() - theStartTick;
+            if (theTotal == 0) {
                 jg.writeNumberField("total", curr);
                 jg.writeNumberField("min", curr);
                 jg.writeNumberField("max", curr);
@@ -77,17 +84,7 @@ public class Metric implements MetricTimer {
                 jg.writeBooleanField("minActive", true);
                 jg.writeBooleanField("maxActive", true);
             } else {
-                // grab the total before curr, to avoid case where total is updated in between
-                // these two lines and then calculated "total" could overstate the correct value
-                // (better to understate the correct value if there is an update to the metric
-                // values in between these two lines)
-                long total = this.total;
-                long curr = currentTick - startTick;
-                if (curr < 0) {
-                    // startTick was just updated concurrently
-                    curr = 0;
-                }
-                jg.writeNumberField("total", total + curr);
+                jg.writeNumberField("total", theTotal + curr);
                 jg.writeNumberField("min", min);
                 if (curr > max) {
                     jg.writeNumberField("max", curr);

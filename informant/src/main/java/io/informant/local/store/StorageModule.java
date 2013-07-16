@@ -50,7 +50,7 @@ public class StorageModule {
 
     public StorageModule(File dataDir, @ReadOnly Map<String, String> properties, Ticker ticker,
             Clock clock, ConfigModule configModule, ScheduledExecutorService scheduledExecutor)
-            throws Exception {
+            throws SQLException, IOException {
         // mem db is only used for testing (by informant-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         if (Boolean.parseBoolean(h2MemDb)) {

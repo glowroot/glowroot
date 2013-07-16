@@ -84,5 +84,5 @@ class CollectStackCommand implements Runnable {
     }
 
     @SuppressWarnings("serial")
-    class TerminateScheduledActionException extends RuntimeException {}
+    static class TerminateScheduledActionException extends RuntimeException {}
 }

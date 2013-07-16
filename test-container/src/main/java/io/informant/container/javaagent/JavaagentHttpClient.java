@@ -15,17 +15,13 @@
  */
 package io.informant.container.javaagent;
 
-import java.io.IOException;
 import java.io.InputStream;
 
-import checkers.igj.quals.ReadOnly;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import com.ning.http.client.Response;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
-import io.informant.container.common.ObjectMappers;
 import io.informant.markers.ThreadSafe;
 
 /**
@@ -34,9 +30,6 @@ import io.informant.markers.ThreadSafe;
  */
 @ThreadSafe
 class JavaagentHttpClient {
-
-    @ReadOnly
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final int uiPort;
     private final AsyncHttpClient asyncHttpClient;
@@ -68,7 +61,7 @@ class JavaagentHttpClient {
         return validateAndReturnBody(response);
     }
 
-    private static String validateAndReturnBody(Response response) throws IOException {
+    private static String validateAndReturnBody(Response response) throws Exception {
         if (wasUncompressed(response)) {
             throw new IllegalStateException("HTTP response was not compressed");
         }
@@ -80,7 +73,7 @@ class JavaagentHttpClient {
         }
     }
 
-    private static InputStream validateAndReturnBodyAsStream(Response response) throws IOException {
+    private static InputStream validateAndReturnBodyAsStream(Response response) throws Exception {
         if (wasUncompressed(response)) {
             throw new IllegalStateException("HTTP response was not compressed");
         }
@@ -96,7 +89,7 @@ class JavaagentHttpClient {
     // being inserted into the Netty pipeline before the decompression handler (which removes the
     // Content-Encoding header after decompression) so that the original Content-Encoding can be
     // still be retrieved via the alternate http header X-Original-Content-Encoding
-    private static boolean wasUncompressed(Response response) throws AssertionError {
+    private static boolean wasUncompressed(Response response) {
         String contentLength = response.getHeader("Content-Length");
         if ("0".equals(contentLength)) {
             // zero-length responses are never compressed

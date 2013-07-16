@@ -336,12 +336,11 @@ informant.controller('SearchCtrl', function ($scope, $http, $q, traceModal) {
   });
 
   $(document).keyup(function (e) {
-    if (e.keyCode === 27) { // esc key
-      if (summaryItem) {
-        // the tooltips (spinny and summary) have hide events that set summaryItem = undefined
-        // so summaryItem must be checked before calling hideTooltip()
-        hideTooltip();
-      }
+    // esc key
+    if (e.keyCode === 27 && summaryItem) {
+      // the tooltips (spinny and summary) have hide events that set summaryItem = undefined
+      // so summaryItem must be checked before calling hideTooltip()
+      hideTooltip();
     }
   });
 

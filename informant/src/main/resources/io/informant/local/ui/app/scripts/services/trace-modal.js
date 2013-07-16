@@ -137,7 +137,8 @@ informant.factory('traceModal', function ($rootScope, $http) {
   }
 
   $(document).keyup(function (e) {
-    if (e.keyCode === 27 && $('#modal').is(':visible')) { // esc key
+    // esc key
+    if (e.keyCode === 27 && $('#modal').is(':visible')) {
       hideModal();
     }
   });

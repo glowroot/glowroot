@@ -22,7 +22,6 @@ import checkers.lock.quals.GuardedBy;
 import com.google.common.collect.Maps;
 
 import io.informant.common.Clock;
-import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -104,13 +103,6 @@ class Aggregator {
             aggregateRepository.store(aggregates.captureTime, aggregates.aggregate,
                     aggregates.groupingAggregates);
         }
-    }
-
-    @OnlyUsedByTests
-    void close() {
-        // if (future != null) {
-        // future.cancel(true);
-        // }
     }
 
     private class Aggregates {

@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import io.informant.api.weaving.MethodModifier;
 
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
-
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -65,19 +63,19 @@ class AdviceMatcher {
                 && isMethodModifiersMatch(parsedMethod.getModifiers())) {
             return true;
         }
-        // non-static methods must be tested against matching super types
-        if ((access & ACC_STATIC) == 0) {
-            // need to test return match and modifiers match against overridden method
-            for (ParsedType type : preMatchedSuperTypes) {
-                ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
-                if (overriddenParsedMethod != null) {
-                    // found overridden method in a matching super type
-                    if (isMethodReturnMatch(overriddenParsedMethod.getReturnTypeName())
-                            && isMethodModifiersMatch(overriddenParsedMethod.getModifiers())) {
-                        return true;
-                    }
-                    // need to search all matching super types
-                }
+        if (Modifier.isStatic(access)) {
+            // non-static methods do not need to be tested against matching super types
+            return false;
+        }
+        // need to test return match and modifiers match against overridden method
+        for (ParsedType type : preMatchedSuperTypes) {
+            ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
+            if (overriddenParsedMethod != null
+                    && isMethodReturnMatch(overriddenParsedMethod.getReturnTypeName())
+                    && isMethodModifiersMatch(overriddenParsedMethod.getModifiers())) {
+                // found overridden method in a matching super type, and the overridden method
+                // has matching return type and modifiers
+                return true;
             }
         }
         return false;

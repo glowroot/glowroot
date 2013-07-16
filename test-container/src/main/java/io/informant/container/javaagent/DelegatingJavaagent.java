@@ -17,7 +17,6 @@ package io.informant.container.javaagent;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.util.jar.Attributes;
@@ -52,7 +51,7 @@ public class DelegatingJavaagent {
         delegateMethod.invoke(null, agentArgs, instrumentation);
     }
 
-    static File createDelegatingJavaagentJarFile(File dir) throws IOException {
+    static File createDelegatingJavaagentJarFile(File dir) throws Exception {
         File jarFile = File.createTempFile("informant-", ".jar", dir);
         Manifest manifest = new Manifest();
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");

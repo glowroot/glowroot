@@ -51,6 +51,7 @@ public abstract class Message {
         return new MessageImpl(message, new String[0], EMPTY_DETAIL);
     }
 
+    // does not copy args
     public static Message from(String template, @Nullable String... args) {
         return new MessageImpl(template, args, EMPTY_DETAIL);
     }

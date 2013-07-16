@@ -18,13 +18,10 @@ package io.informant.collector;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.informant.common.Clock;
 import io.informant.config.ConfigModule;
 import io.informant.config.ConfigService;
-import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 
 /**
@@ -33,8 +30,6 @@ import io.informant.markers.ThreadSafe;
  */
 @ThreadSafe
 public class CollectorModule {
-
-    private static final Logger logger = LoggerFactory.getLogger(CollectorModule.class);
 
     private static final long fixedAggregateIntervalSeconds;
 
@@ -48,7 +43,7 @@ public class CollectorModule {
 
     public CollectorModule(Clock clock, Ticker ticker, ConfigModule configModule,
             SnapshotRepository snapshotRepository, AggregateRepository aggregateRepository,
-            ScheduledExecutorService scheduledExecutor) throws Exception {
+            ScheduledExecutorService scheduledExecutor) {
         ConfigService configService = configModule.getConfigService();
         aggregator = new Aggregator(scheduledExecutor, aggregateRepository, clock,
                 fixedAggregateIntervalSeconds);
@@ -66,11 +61,5 @@ public class CollectorModule {
 
     public long getFixedAggregateIntervalSeconds() {
         return fixedAggregateIntervalSeconds;
-    }
-
-    @OnlyUsedByTests
-    public void close() {
-        logger.debug("close()");
-        aggregator.close();
     }
 }

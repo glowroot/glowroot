@@ -55,14 +55,14 @@ class SocketCommander {
 
     private volatile boolean closing;
 
-    SocketCommander(ObjectOutputStream objectOut, ObjectInputStream objectIn) throws IOException {
+    SocketCommander(ObjectOutputStream objectOut, ObjectInputStream objectIn) throws Exception {
         this.objectOut = objectOut;
         executorService = Executors.newSingleThreadExecutor();
         executorService.execute(new SocketIn(objectIn));
     }
 
     @Nullable
-    Object sendCommand(Object command) throws IOException, InterruptedException {
+    Object sendCommand(Object command) throws Exception {
         int commandNum = commandCounter.getAndIncrement();
         ResponseHolder responseHolder = new ResponseHolder();
         responseHolders.put(commandNum, responseHolder);
@@ -70,6 +70,7 @@ class SocketCommander {
         // need to acquire lock on responseHolder before sending command to ensure
         // responseHolder.notify() cannot happen before responseHolder.wait()
         // (in case response comes back super quick)
+        Object response;
         synchronized (responseHolder) {
             logger.debug("sendCommand(): sending command to external jvm: {}", commandWrapper);
             synchronized (lock) {
@@ -77,9 +78,11 @@ class SocketCommander {
             }
             logger.debug("sendCommand(): command sent");
             logger.debug("sendCommand(): waiting for response from external jvm");
-            responseHolder.wait();
+            while (!responseHolder.hasResponse) {
+                responseHolder.wait();
+            }
+            response = responseHolder.response;
         }
-        Object response = responseHolder.response;
         logger.debug("sendCommand(): response received: {}", response);
         if (SocketCommandProcessor.EXCEPTION_RESPONSE.equals(response)) {
             throw new IllegalStateException("Exception occurred inside external JVM");
@@ -87,7 +90,7 @@ class SocketCommander {
         return response;
     }
 
-    void sendKillCommand() throws IOException, InterruptedException {
+    void sendKillCommand() throws Exception {
         CommandWrapper commandWrapper = new CommandWrapper(commandCounter.getAndIncrement(),
                 SocketCommandProcessor.KILL);
         synchronized (lock) {
@@ -95,7 +98,7 @@ class SocketCommander {
         }
     }
 
-    void close() throws IOException {
+    void close() throws Exception {
         closing = true;
         executorService.shutdownNow();
     }
@@ -149,8 +152,9 @@ class SocketCommander {
     }
 
     private static class ResponseHolder {
+        private boolean hasResponse;
         @Nullable
-        private volatile Object response;
+        private Object response;
     }
 
     private class SocketIn implements Runnable {
@@ -173,6 +177,7 @@ class SocketCommander {
                             continue;
                         }
                         synchronized (responseHolder) {
+                            responseHolder.hasResponse = true;
                             responseHolder.response = responseWrapper.getResponse();
                             responseHolder.notifyAll();
                         }

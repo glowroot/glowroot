@@ -81,6 +81,19 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             "An existing connection was forcibly closed by the remote host",
             "An established connection was aborted by the software in your host machine");
 
+    private static final ImmutableMap<String, String> mimeTypes =
+            ImmutableMap.<String, String>builder()
+                    .put("html", "text/html; charset=UTF-8")
+                    .put("js", "application/javascript; charset=UTF-8")
+                    .put("css", "text/css; charset=UTF-8")
+                    .put("png", "image/png")
+                    .put("ico", "image/x-icon")
+                    .put("woff", "application/x-font-woff")
+                    .put("eot", "application/vnd.ms-fontobject")
+                    .put("ttf", "application/x-font-ttf")
+                    .put("swf", "application/x-shockwave-flash")
+                    .build();
+
     private final ChannelGroup allChannels;
 
     private final ImmutableMap<Pattern, Object> uriMappings;
@@ -190,7 +203,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         String extension = path.substring(extensionStartIndex + 1);
-        String mimeType = getMimeType(extension);
+        String mimeType = mimeTypes.get(extension);
         if (mimeType == null) {
             logger.warn("unexpected extension '{}' for path '{}'", extension, path);
             return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
@@ -214,33 +227,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             response.setHeader(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
         }
         return response;
-    }
-
-    @Nullable
-    private static String getMimeType(String extension) {
-        if (extension.equals("html")) {
-            return "text/html; charset=UTF-8";
-        } else if (extension.equals("js")) {
-            return "application/javascript; charset=UTF-8";
-        } else if (extension.equals("css")) {
-            return "text/css; charset=UTF-8";
-        } else if (extension.equals("less")) {
-            return "text/css; charset=UTF-8";
-        } else if (extension.equals("png")) {
-            return "image/png";
-        } else if (extension.equals("ico")) {
-            return "image/x-icon";
-        } else if (extension.equals("woff")) {
-            return "application/x-font-woff";
-        } else if (extension.equals("eot")) {
-            return "application/vnd.ms-fontobject";
-        } else if (extension.equals("ttf")) {
-            return "application/x-font-ttf";
-        } else if (extension.equals("swf")) {
-            return "application/x-shockwave-flash";
-        } else {
-            return null;
-        }
     }
 
     private static HttpResponse handleJsonRequest(Object jsonService, String serviceMethodName,

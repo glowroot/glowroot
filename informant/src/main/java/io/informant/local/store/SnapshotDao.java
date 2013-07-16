@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.informant.local.store;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
-import java.util.Locale;
 
 import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.Nullable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +34,7 @@ import io.informant.local.store.FileBlock.InvalidBlockIdFormatException;
 import io.informant.local.store.Schemas.Column;
 import io.informant.local.store.Schemas.Index;
 import io.informant.local.store.Schemas.PrimaryKeyColumn;
+import io.informant.local.store.TracePointQuery.ParameterizedSql;
 import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.Singleton;
 import io.informant.markers.ThreadSafe;
@@ -125,59 +123,14 @@ public class SnapshotDao implements SnapshotRepository {
     }
 
     @ReadOnly
-    public List<TracePoint> readNonStuckPoints(long captureTimeFrom, long captureTimeTo,
-            long durationLow, long durationHigh, @Nullable Boolean background, boolean errorOnly,
-            boolean fineOnly, @Nullable StringComparator groupingComparator,
-            @Nullable String grouping, @Nullable StringComparator userIdComparator,
-            @Nullable String userId, int limit) {
-
+    public List<TracePoint> readNonStuckPoints(TracePointQuery query) {
         if (logger.isDebugEnabled()) {
-            logger.debug("readPoints(): captureTimeFrom={}, captureTimeTo={}, durationLow={},"
-                    + " durationHigh={}, background={}, errorOnly={}, fineOnly={},"
-                    + " groupingComparator={}, grouping={}, userIdComparator={}, userId={}",
-                    captureTimeFrom, captureTimeTo, durationLow, durationHigh, background,
-                    errorOnly, fineOnly, groupingComparator, grouping, userIdComparator, userId);
+            logger.debug("readNonStuckPoints(): query={}", query);
         }
         try {
-            // all of these columns should be in the same index so h2 can return result set directly
-            // from the index without having to reference the table for each row
-            String sql = "select id, capture_time, duration, error from snapshot where stuck = ?"
-                    + " and capture_time >= ? and capture_time <= ?";
-            List<Object> args = Lists.newArrayList();
-            args.add(false);
-            args.add(captureTimeFrom);
-            args.add(captureTimeTo);
-            if (durationLow != 0) {
-                sql += " and duration >= ?";
-                args.add(durationLow);
-            }
-            if (durationHigh != Long.MAX_VALUE) {
-                sql += " and duration <= ?";
-                args.add(durationHigh);
-            }
-            if (background != null) {
-                sql += " and background = ?";
-                args.add(background);
-            }
-            if (errorOnly) {
-                sql += " and error = ?";
-                args.add(true);
-            }
-            if (fineOnly) {
-                sql += " and fine = ?";
-                args.add(true);
-            }
-            if (groupingComparator != null && grouping != null) {
-                sql += " and upper(grouping) " + groupingComparator.getComparator() + " ?";
-                args.add(groupingComparator.formatParameter(grouping.toUpperCase(Locale.ENGLISH)));
-            }
-            if (userIdComparator != null && userId != null) {
-                sql += " and upper(user_id) " + userIdComparator.getComparator() + " ?";
-                args.add(userIdComparator.formatParameter(userId.toUpperCase(Locale.ENGLISH)));
-            }
-            sql += " order by duration desc limit ?";
-            args.add(limit);
-            return dataSource.query(sql, args, new PointRowMapper());
+            ParameterizedSql parameterizedSql = query.getParameterizedSql();
+            return dataSource.query(parameterizedSql.getSql(), parameterizedSql.getArgs(),
+                    new PointRowMapper());
         } catch (SQLException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -373,30 +326,6 @@ public class SnapshotDao implements SnapshotRepository {
                 }
             }
             return builder.build();
-        }
-    }
-
-    public static enum StringComparator {
-
-        BEGINS("like", "%s%%"),
-        EQUALS("=", "%s"),
-        ENDS("like", "%%%s"),
-        CONTAINS("like", "%%%s%%");
-
-        private final String comparator;
-        private final String parameterFormat;
-
-        private StringComparator(String comparator, String parameterTemplate) {
-            this.comparator = comparator;
-            this.parameterFormat = parameterTemplate;
-        }
-
-        public String formatParameter(String parameter) {
-            return String.format(parameterFormat, parameter);
-        }
-
-        public String getComparator() {
-            return comparator;
         }
     }
 

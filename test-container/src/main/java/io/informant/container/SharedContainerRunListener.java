@@ -39,8 +39,8 @@ public class SharedContainerRunListener extends RunListener {
         return sharedContainer;
     }
 
-    public static void setSharedContainer(Container sharedContainer) {
-        SharedContainerRunListener.sharedContainer = sharedContainer;
+    public static void setSharedContainer(Container container) {
+        sharedContainer = container;
     }
 
     @Override

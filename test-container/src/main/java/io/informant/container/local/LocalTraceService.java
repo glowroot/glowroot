@@ -16,7 +16,6 @@
 package io.informant.container.local;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -152,7 +151,7 @@ class LocalTraceService implements TraceService {
     }
 
     @Nullable
-    private Trace getActiveTrace(boolean summary) throws IOException {
+    private Trace getActiveTrace(boolean summary) throws Exception {
         List<io.informant.trace.model.Trace> traces = Lists.newArrayList(traceRegistry.getTraces());
         if (traces.isEmpty()) {
             return null;

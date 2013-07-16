@@ -242,7 +242,8 @@ $(document).ready(function () {
   // bootstrap-dropdown already closes the menu on esc key, this is just adding handling for tab
   // key to close menu also, e.g. user is looking at menu and then tabs away
   var onTabCloseMenu = function (e) {
-    if (e.keyCode === 9) { // tab key
+    // tab key
+    if (e.keyCode === 9) {
       $('.header-see-also').removeClass('open');
     }
   };
@@ -271,7 +272,9 @@ var showAndFadeMessage = function (selector, delay) {
     $this.stop().animate({opacity: '100'});
     $this.removeClass('hide');
     var outerThis = this;
-    $this.data('timeout', setTimeout(function () { fadeOut(outerThis, 1000); }, delay));
+    $this.data('timeout', setTimeout(function () {
+      fadeOut(outerThis, 1000);
+    }, delay));
   });
 };
 

@@ -90,7 +90,7 @@ public class UpgradeTest {
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public void executeApp() throws Exception {
+        public void executeApp() {
             new LevelOne().call("a", "b");
         }
     }

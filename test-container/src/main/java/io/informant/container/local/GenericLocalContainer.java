@@ -16,7 +16,6 @@
 package io.informant.container.local;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +92,7 @@ public class GenericLocalContainer<T> {
                 informantModule.getTraceModule().getDynamicAdviceCache();
         loader.setMixinTypes(pluginDescriptorCache.getMixinTypes());
         loader.setAdvisors(Iterables.concat(pluginDescriptorCache.getAdvisors(),
-                dynamicAdviceCache.getDynamicAdvisorsSupplier().get()));
+                dynamicAdviceCache.getDynamicAdvisors()));
         loader.addBridgeClasses(appInterface);
         loader.addExcludePackages("io.informant.api", "io.informant.collector",
                 "io.informant.common", "io.informant.config", "io.informant.dynamicadvice",
@@ -138,7 +137,7 @@ public class GenericLocalContainer<T> {
         }
     }
 
-    public void interruptAppUnderTest() throws IOException, InterruptedException {
+    public void interruptAppUnderTest() throws Exception {
         for (Thread thread : executingAppThreads) {
             thread.interrupt();
         }
@@ -186,7 +185,7 @@ public class GenericLocalContainer<T> {
         }
     }
 
-    public static interface AppExecutor<T> {
-        public void executeApp(T appUnderTest) throws Exception;
+    public interface AppExecutor<T> {
+        void executeApp(T appUnderTest) throws Exception;
     }
 }

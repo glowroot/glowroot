@@ -156,6 +156,7 @@ public class Packager {
                 jarOut.closeEntry();
             }
         } finally {
+            // this also closes fileOut
             jarOut.close();
         }
     }

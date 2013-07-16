@@ -40,7 +40,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * cached in a static field for the life of the jvm, e.g.
  * 
  * <pre>
- * &#064;Pointcut(typeName = &quot;org.apache.jasper.JspCompilationContext&quot;, methodName = &quot;compile&quot;)
+ * &#064;Pointcut(typeName = &quot;org.apache.jasper.JspCompilationContext&quot;,
+ *         methodName = &quot;compile&quot;)
  * class ServletAdvice {
  * 
  *     private static final UnresolvedMethod getJspFileMethod = UnresolvedMethod

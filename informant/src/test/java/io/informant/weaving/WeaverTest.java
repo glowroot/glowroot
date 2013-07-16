@@ -30,7 +30,9 @@ import io.informant.weaving.SomeAspect.BindAutoboxedReturnAdvice;
 import io.informant.weaving.SomeAspect.BindMethodArgAdvice;
 import io.informant.weaving.SomeAspect.BindMethodArgArrayAdvice;
 import io.informant.weaving.SomeAspect.BindMethodNameAdvice;
+import io.informant.weaving.SomeAspect.BindOptionalPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindOptionalReturnAdvice;
+import io.informant.weaving.SomeAspect.BindOptionalVoidReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
@@ -363,7 +365,34 @@ public class WeaverTest {
         // when
         test.executeWithReturn();
         // then
-        assertThat(BindOptionalReturnAdvice.returnValue.get()).isEqualTo("xyz");
+        assertThat(BindOptionalReturnAdvice.returnValue.get().isVoid()).isFalse();
+        assertThat(BindOptionalReturnAdvice.returnValue.get().getValue()).isEqualTo("xyz");
+    }
+
+    @Test
+    public void shouldBindOptionalVoidReturn() throws Exception {
+        // given
+        BindOptionalVoidReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindOptionalVoidReturnAdvice.class,
+                OptionalReturn.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(BindOptionalVoidReturnAdvice.returnValue.get().isVoid()).isTrue();
+    }
+
+    @Test
+    public void shouldBindOptionalPrimitiveReturn() throws Exception {
+        // given
+        BindOptionalPrimitiveReturnAdvice.resetThreadLocals();
+        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
+                BindOptionalPrimitiveReturnAdvice.class, OptionalReturn.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(BindOptionalPrimitiveReturnAdvice.returnValue.get().isVoid()).isFalse();
+        assertThat(BindOptionalPrimitiveReturnAdvice.returnValue.get().getValue())
+                .isEqualTo(Integer.valueOf(4));
     }
 
     // ===================== @BindThrowable =====================

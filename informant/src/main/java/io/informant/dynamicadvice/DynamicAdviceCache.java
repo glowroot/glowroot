@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 
 import checkers.igj.quals.ReadOnly;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -29,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.informant.api.weaving.Pointcut;
-import io.informant.common.ObjectMappers;
 import io.informant.config.PointcutConfig;
+import io.informant.markers.OnlyUsedByTests;
 import io.informant.markers.ThreadSafe;
 import io.informant.weaving.Advice;
 import io.informant.weaving.Advice.AdviceConstructionException;
@@ -46,8 +45,6 @@ public class DynamicAdviceCache {
 
     @ReadOnly
     private static final Logger logger = LoggerFactory.getLogger(DynamicAdviceCache.class);
-    @ReadOnly
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private volatile ImmutableList<Advice> dynamicAdvisors;
     private volatile ImmutableSet<String> pointcutConfigVersions;
@@ -66,22 +63,22 @@ public class DynamicAdviceCache {
 
     public void updateAdvisors(@ReadOnly List<PointcutConfig> pointcutConfigs) {
         this.dynamicAdvisors = getDynamicAdvisors(pointcutConfigs);
-        ImmutableSet.Builder<String> pointcutConfigVersions = ImmutableSet.builder();
+        ImmutableSet.Builder<String> thePointcutConfigVersions = ImmutableSet.builder();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            pointcutConfigVersions.add(pointcutConfig.getVersion());
+            thePointcutConfigVersions.add(pointcutConfig.getVersion());
         }
-        this.pointcutConfigVersions = pointcutConfigVersions.build();
+        this.pointcutConfigVersions = thePointcutConfigVersions.build();
     }
 
     public boolean isPointcutConfigsOutOfSync(@ReadOnly List<PointcutConfig> pointcutConfigs) {
-        Set<String> pointcutConfigVersions = Sets.newHashSet();
+        Set<String> versions = Sets.newHashSet();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
-            pointcutConfigVersions.add(pointcutConfig.getVersion());
+            versions.add(pointcutConfig.getVersion());
         }
-        return !pointcutConfigVersions.equals(this.pointcutConfigVersions);
+        return !versions.equals(this.pointcutConfigVersions);
     }
 
-    private ImmutableList<Advice> getDynamicAdvisors(
+    private static ImmutableList<Advice> getDynamicAdvisors(
             @ReadOnly List<PointcutConfig> pointcutConfigs) {
         ImmutableList.Builder<Advice> dynamicAdvisors = ImmutableList.builder();
         for (PointcutConfig pointcutConfig : pointcutConfigs) {
@@ -106,5 +103,11 @@ public class DynamicAdviceCache {
             }
         }
         return dynamicAdvisors.build();
+    }
+
+    // this method exists because tests cannot use (sometimes) shaded guava Supplier
+    @OnlyUsedByTests
+    public List<Advice> getDynamicAdvisors() {
+        return getDynamicAdvisorsSupplier().get();
     }
 }

@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.util.List;
 
 import checkers.nullness.quals.Nullable;
 import com.google.common.annotations.VisibleForTesting;
@@ -106,10 +105,6 @@ class Weaver {
             ClassWriter cw = new ComputeFramesClassWriter(
                     ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES, parsedTypeCache, loader,
                     codeSource, className);
-            List<Advice> suppliedDynamicAdvisors = dynamicAdvisors.get();
-            if (suppliedDynamicAdvisors.isEmpty()) {
-
-            }
             Iterable<Advice> advisors = Iterables.concat(pluginAdvisors, dynamicAdvisors.get());
             WeavingClassVisitor cv = new WeavingClassVisitor(cw, mixinTypes, advisors, loader,
                     parsedTypeCache, codeSource);
@@ -157,7 +152,7 @@ class Weaver {
         }
     }
 
-    private class JSRInlinerClassVisitor extends ClassVisitor {
+    private static class JSRInlinerClassVisitor extends ClassVisitor {
 
         private JSRInlinerClassVisitor(ClassVisitor cv) {
             super(ASM4, cv);
@@ -221,6 +216,11 @@ class Weaver {
                 logger.debug("type not found '{}' while parsing: {}", type2, parseContext);
                 return "java/lang/Object";
             }
+            return getCommonSuperClass(parsedType1, parsedType2, type1, type2);
+        }
+
+        private String getCommonSuperClass(ParsedType parsedType1, ParsedType parsedType2,
+                String type1, String type2) {
             if (isAssignableFrom(parsedType1.getName(), parsedType2)) {
                 return type1;
             }

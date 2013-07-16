@@ -332,7 +332,6 @@ public class ConfigService {
             config = new ConfigMapper(pluginDescriptorCache.getPluginDescriptors())
                     .readValue(content);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
             logger.warn("syntax error in file {}: {}", configFile.getAbsolutePath(),
                     e.getMessage());
             config = Config.getDefault(pluginDescriptorCache.getPluginDescriptors());

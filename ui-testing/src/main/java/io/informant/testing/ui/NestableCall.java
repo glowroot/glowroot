@@ -44,7 +44,6 @@ class NestableCall {
 
     NestableCall(NestableCall child, int numExpensiveCalls, int maxTimeMillis,
             int maxSpanTextLength) {
-
         this.child = child;
         this.numExpensiveCalls = numExpensiveCalls;
         this.maxTimeMillis = maxTimeMillis;
@@ -55,51 +54,9 @@ class NestableCall {
         if (child != null) {
             child.execute();
         }
-        // the expensive calls are spread out over different line numbers (as opposed to using a
-        // single loop) so that stack trace captures across the different expensive calls will not
-        // be identical
-        int i = 0;
-        while (true) {
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
-            new ExpensiveCall(maxTimeMillis, maxSpanTextLength).execute();
-            if (++i == numExpensiveCalls) {
-                return;
-            }
+        ExpensiveCall expensiveCall = new ExpensiveCall(maxTimeMillis, maxSpanTextLength);
+        for (int i = 0; i < numExpensiveCalls; i++) {
+            expensiveCall.execute();
         }
     }
 }

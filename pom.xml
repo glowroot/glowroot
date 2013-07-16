@@ -307,7 +307,7 @@
       <properties>
         <source.directory>src/main/resources</source.directory>
         <sonar.branch>Javascript</sonar.branch>
-        <sonar.exclusions>io/informant/local/ui/libs/**</sonar.exclusions>
+        <sonar.exclusions>io/informant/local/ui/app/components/**</sonar.exclusions>
       </properties>
     </profile>
   </profiles>

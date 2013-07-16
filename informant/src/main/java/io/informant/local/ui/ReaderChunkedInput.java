@@ -40,12 +40,12 @@ class ReaderChunkedInput implements ChunkedInput {
         this.reader = new PushbackReader(reader);
     }
 
-    public boolean hasNextChunk() throws Exception {
+    public boolean hasNextChunk() {
         return !hasSentTerminatingChunk;
     }
 
     @Nullable
-    public Object nextChunk() throws Exception {
+    public Object nextChunk() throws IOException {
         if (hasMoreBytes()) {
             return readNextChunk();
         } else if (!hasSentTerminatingChunk) {
@@ -57,11 +57,11 @@ class ReaderChunkedInput implements ChunkedInput {
         }
     }
 
-    public boolean isEndOfInput() throws Exception {
+    public boolean isEndOfInput() {
         return hasSentTerminatingChunk;
     }
 
-    public void close() throws Exception {
+    public void close() throws IOException {
         reader.close();
     }
 

@@ -16,8 +16,10 @@
 package io.informant;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -95,13 +97,12 @@ public class MainEntryPoint {
     }
 
     // used by Viewer
-    static void start() throws Exception {
+    static void start() throws SQLException, IOException {
         start(getInformantProperties(), null);
     }
 
     private static InformantModule start(@ReadOnly Map<String, String> properties,
-            @Nullable Instrumentation instrumentation) throws Exception {
-        // TODO make this configurable
+            @Nullable Instrumentation instrumentation) throws SQLException, IOException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         informantModule = new InformantModule(properties, instrumentation);
@@ -126,7 +127,8 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    public static InformantModule start(@ReadOnly Map<String, String> properties) throws Exception {
+    public static InformantModule start(@ReadOnly Map<String, String> properties)
+            throws SQLException, IOException {
         return start(properties, null);
     }
 

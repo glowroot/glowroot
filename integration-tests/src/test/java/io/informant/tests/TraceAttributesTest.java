@@ -80,7 +80,7 @@ public class TraceAttributesTest {
     }
 
     public static class ShouldGenerateTraceWithNestedSpans implements AppUnderTest {
-        public void executeApp() throws Exception {
+        public void executeApp() {
             new LevelOne().call("ax", "bx");
         }
     }

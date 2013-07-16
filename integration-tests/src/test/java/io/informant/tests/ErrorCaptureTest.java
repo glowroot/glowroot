@@ -138,10 +138,10 @@ public class ErrorCaptureTest {
 
     public static class ShouldCaptureError implements AppUnderTest {
         public void executeApp() throws Exception {
-            Exception expected = new Exception();
+            RuntimeException expected = new RuntimeException();
             try {
                 new LevelOne(expected).call("a", "b");
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 if (e != expected) {
                     // suppress expected exception
                     throw e;

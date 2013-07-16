@@ -40,6 +40,8 @@ public class Containers {
         javaagent = Boolean.valueOf(System.getProperty("informant.container.javaagent"));
     }
 
+    private Containers() {}
+
     public static Container create() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
             return create(0, false);

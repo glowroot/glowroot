@@ -52,6 +52,7 @@ class PointcutConfigJsonService {
     private static final Logger logger = LoggerFactory.getLogger(PointcutConfigJsonService.class);
     @ReadOnly
     private static final ObjectMapper mapper = ObjectMappers.create();
+    private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ParsedTypeCache parsedTypeCache;
 
@@ -98,7 +99,6 @@ class PointcutConfigJsonService {
             matchingMethod.put("returnTypeName", parsedMethod.getReturnTypeName());
             ArrayNode modifiers = mapper.createArrayNode();
             String modifierNames = Modifier.toString(parsedMethod.getModifiers());
-            Splitter splitter = Splitter.on(' ').omitEmptyStrings();
             for (String modifier : splitter.split(modifierNames)) {
                 modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
             }

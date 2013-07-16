@@ -57,17 +57,17 @@ public class PluginDescriptorCache {
     private final ImmutableList<Advice> advisors;
 
     public PluginDescriptorCache() {
-        ImmutableList.Builder<PluginDescriptor> pluginDescriptors = ImmutableList.builder();
+        ImmutableList.Builder<PluginDescriptor> thePluginDescriptors = ImmutableList.builder();
         try {
-            pluginDescriptors.addAll(readPackagedPlugins());
-            pluginDescriptors.addAll(readInstalledPlugins());
+            thePluginDescriptors.addAll(readPackagedPlugins());
+            thePluginDescriptors.addAll(readInstalledPlugins());
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
-        this.pluginDescriptors = pluginDescriptors.build();
+        this.pluginDescriptors = thePluginDescriptors.build();
 
-        ImmutableList.Builder<MixinType> mixinTypes = ImmutableList.builder();
-        ImmutableList.Builder<Advice> advisors = ImmutableList.builder();
+        ImmutableList.Builder<MixinType> theMixinTypes = ImmutableList.builder();
+        ImmutableList.Builder<Advice> theAdvisors = ImmutableList.builder();
         for (PluginDescriptor pluginDescriptor : this.pluginDescriptors) {
             for (String aspect : pluginDescriptor.getAspects()) {
                 try {
@@ -75,15 +75,15 @@ public class PluginDescriptorCache {
                     // will probably call PluginServices.get()
                     Class<?> aspectClass = Class.forName(aspect, false,
                             PluginDescriptor.class.getClassLoader());
-                    advisors.addAll(getAdvisors(aspectClass));
-                    mixinTypes.addAll(getMixinTypes(aspectClass));
+                    theAdvisors.addAll(getAdvisors(aspectClass));
+                    theMixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
                     logger.warn("aspect not found: {}", aspect);
                 }
             }
         }
-        this.mixinTypes = mixinTypes.build();
-        this.advisors = advisors.build();
+        this.mixinTypes = theMixinTypes.build();
+        this.advisors = theAdvisors.build();
     }
 
     // don't return ImmutableList since this method is used by UiTestingMain and when UiTestingMain

@@ -240,12 +240,11 @@ informant.controller('HomeCtrl', function ($scope, $filter, $http, $q, traceModa
   });
 
   $(document).keyup(function (e) {
-    if (e.keyCode === 27) { // esc key
-      if (showingItemId) {
-        // the tooltips have hide events that set showingItemId = undefined
-        // so showingItemId must be checked before calling hideTooltip()
-        hideTooltip();
-      }
+    // esc key
+    if (e.keyCode === 27 && showingItemId) {
+      // the tooltips have hide events that set showingItemId = undefined
+      // so showingItemId must be checked before calling hideTooltip()
+      hideTooltip();
     }
   });
 

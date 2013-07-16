@@ -18,6 +18,9 @@ package io.informant.container.javaagent;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Trask Stalnaker
  * @since 0.5
@@ -25,6 +28,9 @@ import java.io.ObjectOutputStream;
 class SocketHeartbeat implements Runnable {
 
     public static final String PING_COMMAND = "PING";
+
+    private static final Logger logger = LoggerFactory.getLogger(SocketHeartbeat.class);
+
     private final ObjectOutputStream objectOut;
 
     SocketHeartbeat(ObjectOutputStream objectOut) {
@@ -32,22 +38,22 @@ class SocketHeartbeat implements Runnable {
     }
 
     public void run() {
-        try {
-            runInternal();
-        } catch (IOException e) {
-            // the test jvm has been terminated
-            System.exit(0);
-        } catch (InterruptedException e) {
-        }
-    }
-
-    private void runInternal() throws IOException, InterruptedException {
         while (true) {
             // sychronizing with SocketCommandProcessor
             synchronized (objectOut) {
-                objectOut.writeObject(PING_COMMAND);
+                try {
+                    objectOut.writeObject(PING_COMMAND);
+                } catch (IOException e) {
+                    // the test jvm has been terminated
+                    System.exit(0);
+                }
             }
-            Thread.sleep(1000);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage(), e);
+                return;
+            }
         }
     }
 }

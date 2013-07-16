@@ -260,16 +260,22 @@ public class Advice {
         private AdviceConstructionException(@Nullable String message) {
             super(message);
         }
+        private AdviceConstructionException(Throwable cause) {
+            super(cause);
+        }
     }
 
     private static class Builder {
 
         private final Pointcut pointcut;
-        private final Type adviceType;
+        private final Class<?> adviceClass;
+        private final boolean dynamic;
+
+        private Type adviceType;
         @Nullable
-        private final Pattern pointcutTypePattern;
+        private Pattern pointcutTypePattern;
         @Nullable
-        private final Pattern pointcutMethodPattern;
+        private Pattern pointcutMethodPattern;
         @LazyNonNull
         private Method isEnabledAdvice;
         @LazyNonNull
@@ -289,33 +295,16 @@ public class Advice {
         private ImmutableList<ParameterKind> onThrowParameterKinds = ImmutableList.of();
         private ImmutableList<ParameterKind> onAfterParameterKinds = ImmutableList.of();
 
-        private final Class<?> generatedAdviceFlowClass;
-        private final boolean dynamic;
+        private Class<?> generatedAdviceFlowClass;
 
-        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean dynamic)
-                throws AdviceConstructionException {
+        private Builder(Pointcut pointcut, Class<?> adviceClass, boolean dynamic) {
             this.pointcut = pointcut;
-            adviceType = Type.getType(adviceClass);
-            try {
-                generatedAdviceFlowClass = AdviceFlowGenerator.generate();
-            } catch (SecurityException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e.getMessage());
-            } catch (IllegalArgumentException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e.getMessage());
-            } catch (NoSuchMethodException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e.getMessage());
-            } catch (IllegalAccessException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e.getMessage());
-            } catch (InvocationTargetException e) {
-                logger.error(e.getMessage(), e);
-                throw new AdviceConstructionException(e.getMessage());
-            }
+            this.adviceClass = adviceClass;
             this.dynamic = dynamic;
+        }
 
+        private Advice build() throws AdviceConstructionException {
+            adviceType = Type.getType(adviceClass);
             pointcutTypePattern = buildPattern(pointcut.typeName());
             pointcutMethodPattern = buildPattern(pointcut.methodName());
             for (java.lang.reflect.Method method : adviceClass.getMethods()) {
@@ -330,6 +319,33 @@ public class Advice {
                 } else if (method.isAnnotationPresent(OnAfter.class)) {
                     initOnAfterAdvice(adviceClass, method);
                 }
+            }
+            generatedAdviceFlowClass = buildGeneratedAdviceFlowClass();
+            return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
+                    isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
+                    travelerType, isEnabledParameterKinds, onBeforeParameterKinds,
+                    onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds,
+                    generatedAdviceFlowClass, dynamic);
+        }
+
+        private Class<?> buildGeneratedAdviceFlowClass() throws AdviceConstructionException {
+            try {
+                return AdviceFlowGenerator.generate();
+            } catch (SecurityException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e);
+            } catch (IllegalArgumentException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e);
+            } catch (NoSuchMethodException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e);
+            } catch (IllegalAccessException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e);
+            } catch (InvocationTargetException e) {
+                logger.error(e.getMessage(), e);
+                throw new AdviceConstructionException(e);
             }
         }
 
@@ -431,14 +447,6 @@ public class Advice {
             this.onAfterAdvice = asmMethod;
             this.onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),
                     method.getParameterTypes(), onAfterBindAnnotationTypes, OnAfter.class);
-        }
-
-        private Advice build() {
-            return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
-                    isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
-                    travelerType, isEnabledParameterKinds, onBeforeParameterKinds,
-                    onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds,
-                    generatedAdviceFlowClass, dynamic);
         }
 
         @Nullable

@@ -73,13 +73,12 @@ class JvmInfo {
 
         List<GarbageCollectorMXBean> garbageCollectorBeans =
                 ManagementFactory.getGarbageCollectorMXBeans();
-        ImmutableMap.Builder<String, GarbageCollectorInfo> garbageCollectorInfos =
-                ImmutableMap.builder();
+        ImmutableMap.Builder<String, GarbageCollectorInfo> infos = ImmutableMap.builder();
         for (GarbageCollectorMXBean garbageCollectorBean : garbageCollectorBeans) {
-            garbageCollectorInfos.put(garbageCollectorBean.getName(),
+            infos.put(garbageCollectorBean.getName(),
                     new GarbageCollectorInfo(garbageCollectorBean));
         }
-        this.garbageCollectorInfos = garbageCollectorInfos.build();
+        this.garbageCollectorInfos = infos.build();
     }
 
     // must be called from trace thread

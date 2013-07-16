@@ -94,9 +94,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     @Override
-    protected synchronized Class<?> loadClass(String name, boolean resolve)
-            throws ClassNotFoundException {
-
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         if (loadWithParentClassLoader(name)) {
             return super.loadClass(name, resolve);
         }

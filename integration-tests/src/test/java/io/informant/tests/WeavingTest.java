@@ -70,7 +70,7 @@ public class WeavingTest {
             // force the subclass to be loaded first
             LevelTwoSubclass.class.getClass();
         }
-        public void executeApp() throws Exception {
+        public void executeApp() {
             new LevelOne().call("a", "b");
         }
     }

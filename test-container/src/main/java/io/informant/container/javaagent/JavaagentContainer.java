@@ -161,9 +161,7 @@ public class JavaagentContainer implements Container {
             public void run() {
                 try {
                     socketCommander.sendKillCommand();
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
             }
@@ -199,7 +197,7 @@ public class JavaagentContainer implements Container {
         }
     }
 
-    public void interruptAppUnderTest() throws IOException, InterruptedException {
+    public void interruptAppUnderTest() throws Exception {
         socketCommander.sendCommand(SocketCommandProcessor.INTERRUPT);
     }
 
@@ -242,7 +240,7 @@ public class JavaagentContainer implements Container {
         cleanup();
     }
 
-    public void kill() throws IOException, InterruptedException {
+    public void kill() throws Exception {
         socketCommander.sendKillCommand();
         cleanup();
     }
@@ -251,7 +249,7 @@ public class JavaagentContainer implements Container {
         return numConsoleBytes;
     }
 
-    private void cleanup() throws IOException, InterruptedException {
+    private void cleanup() throws Exception {
         socketCommander.close();
         process.waitFor();
         serverSocket.close();
@@ -285,7 +283,7 @@ public class JavaagentContainer implements Container {
     }
 
     private static List<String> buildCommand(int containerPort, File dataDir, int uiPort,
-            boolean useFileDb) throws IOException {
+            boolean useFileDb) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = System.getProperty("java.home") + File.separator + "bin"
                 + File.separator + "java";

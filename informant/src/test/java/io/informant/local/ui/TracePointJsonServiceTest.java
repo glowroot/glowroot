@@ -30,7 +30,7 @@ import io.informant.collector.TraceCollectorImpl;
 import io.informant.common.Clock;
 import io.informant.common.ObjectMappers;
 import io.informant.local.store.SnapshotDao;
-import io.informant.local.store.SnapshotDao.StringComparator;
+import io.informant.local.store.TracePointQuery;
 import io.informant.local.store.TracePoint;
 import io.informant.trace.TraceRegistry;
 import io.informant.trace.model.Trace;
@@ -38,10 +38,6 @@ import io.informant.trace.model.Trace;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -192,9 +188,7 @@ public class TracePointJsonServiceTest {
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
-        when(snapshotDao.readNonStuckPoints(anyLong(), anyLong(), anyLong(), anyLong(),
-                anyBoolean(), anyBoolean(), anyBoolean(), any(StringComparator.class), anyString(),
-                any(StringComparator.class), anyString(), anyInt())).thenReturn(orderedPoints);
+        when(snapshotDao.readNonStuckPoints(any(TracePointQuery.class))).thenReturn(orderedPoints);
         when(traceRegistry.getTraces()).thenReturn(activeTraces);
         // for now, assume all active traces will be stored
         when(traceCollector.shouldStore(any(Trace.class))).thenReturn(true);

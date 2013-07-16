@@ -72,7 +72,6 @@ class DynamicAdviceGenerator {
         addClassAnnotation(cw);
         addStaticFields(cw);
         addStaticInitializer(cw);
-        // addConstructor(cw);
         addIsEnabledMethod(cw);
         if (pointcutConfig.isSpan()) {
             addOnBeforeMethod(cw, pointcutConfig.isTrace());

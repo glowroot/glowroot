@@ -16,6 +16,7 @@
 package io.informant.weaving;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.security.CodeSource;
 import java.util.List;
 import java.util.Set;
@@ -48,9 +49,7 @@ import io.informant.weaving.ParsedType.Builder;
 import io.informant.weaving.ParsedTypeCache.ParseContext;
 
 import static io.informant.common.Nullness.assertNonNull;
-import static org.objectweb.asm.Opcodes.ACC_ABSTRACT;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
@@ -108,10 +107,10 @@ class WeavingClassVisitor extends ClassVisitor {
 
         String[] interfaceNames = interfaceNamesNullable == null ? new String[0]
                 : interfaceNamesNullable;
-        parsedType = ParsedType.builder((access & ACC_INTERFACE) != 0,
+        parsedType = ParsedType.builder(Modifier.isInterface(access),
                 TypeNames.fromInternal(name), TypeNames.fromInternal(superName),
                 TypeNames.fromInternal(interfaceNames));
-        if ((access & ACC_INTERFACE) != 0) {
+        if (Modifier.isInterface(access)) {
             // interfaces never get woven
             nothingAtAllToWeave = true;
             return;
@@ -144,7 +143,7 @@ class WeavingClassVisitor extends ClassVisitor {
             // no need to pass method on to class writer
             return null;
         }
-        if (parsedMethod == null || (access & (ACC_ABSTRACT)) != 0) {
+        if (parsedMethod == null || Modifier.isAbstract(access)) {
             // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
@@ -331,7 +330,7 @@ class WeavingClassVisitor extends ClassVisitor {
             MethodVisitor mv2 = cv.visitMethod(access, currMethodName, desc, signature, exceptions);
             assertNonNull(mv2, "ClassVisitor.visitMethod() returned null");
             GeneratorAdapter mg = new GeneratorAdapter(mv2, access, nextMethodName, desc);
-            if ((outerAccess & ACC_STATIC) == 0) {
+            if (!Modifier.isStatic(outerAccess)) {
                 mg.loadThis();
                 mg.loadArgs();
                 mg.invokeVirtual(type, new Method(nextMethodName, desc));

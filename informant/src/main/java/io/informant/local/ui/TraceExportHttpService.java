@@ -96,7 +96,7 @@ public class TraceExportHttpService implements HttpService {
     }
 
     @Nullable
-    private ChunkedInput getExportChunkedInput(String id) throws IOException {
+    private ExportChunkedInput getExportChunkedInput(String id) throws IOException {
         CharSource traceCharSource =
                 traceCommonService.createCharSourceForSnapshotOrActiveTrace(id, false);
         if (traceCharSource == null) {
@@ -108,8 +108,8 @@ public class TraceExportHttpService implements HttpService {
 
     // this method exists because tests cannot use (sometimes) shaded netty ChunkedInput
     @OnlyUsedByTests
-    public byte[] getExportBytes(String id) throws Exception {
-        ChunkedInput chunkedInput = getExportChunkedInput(id);
+    public byte[] getExportBytes(String id) throws IOException {
+        ExportChunkedInput chunkedInput = getExportChunkedInput(id);
         if (chunkedInput == null) {
             throw new IllegalStateException("No trace found for id '" + id + "'");
         }
@@ -196,15 +196,15 @@ public class TraceExportHttpService implements HttpService {
             baos = new ByteArrayOutputStream(2 * CHUNK_SIZE);
             ZipOutputStream zipOut = new ZipOutputStream(baos);
             zipOut.putNextEntry(new ZipEntry(filename + ".html"));
-            zipWriter = new OutputStreamWriter(zipOut);
+            zipWriter = new OutputStreamWriter(zipOut, Charsets.UTF_8);
         }
 
-        public boolean hasNextChunk() throws Exception {
+        public boolean hasNextChunk() {
             return !hasSentTerminatingChunk;
         }
 
         @Nullable
-        public Object nextChunk() throws Exception {
+        public Object nextChunk() throws IOException {
             if (hasMoreBytes()) {
                 return readNextChunk();
             } else if (!hasSentTerminatingChunk) {
@@ -216,11 +216,11 @@ public class TraceExportHttpService implements HttpService {
             }
         }
 
-        public boolean isEndOfInput() throws Exception {
+        public boolean isEndOfInput() {
             return hasSentTerminatingChunk;
         }
 
-        public void close() throws Exception {}
+        public void close() {}
 
         private boolean hasMoreBytes() throws IOException {
             int b = reader.read();

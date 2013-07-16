@@ -34,22 +34,21 @@ public class SpyingLogFilterCheck {
         spyingLogFilterEnabled = spyingLogFilterEnabled();
     }
 
+    private SpyingLogFilterCheck() {}
+
     public static boolean isSpyingLogFilterEnabled() {
         return spyingLogFilterEnabled;
     }
 
     private static boolean spyingLogFilterEnabled() {
-        try {
-            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
-                    .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-            for (Iterator<Appender<ILoggingEvent>> i = root.iteratorForAppenders(); i.hasNext();) {
-                for (Filter<ILoggingEvent> filter : i.next().getCopyOfAttachedFiltersList()) {
-                    if (filter instanceof SpyingLogFilter) {
-                        return true;
-                    }
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
+                .getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        for (Iterator<Appender<ILoggingEvent>> i = root.iteratorForAppenders(); i.hasNext();) {
+            for (Filter<ILoggingEvent> filter : i.next().getCopyOfAttachedFiltersList()) {
+                if (filter instanceof SpyingLogFilter) {
+                    return true;
                 }
             }
-        } catch (Throwable t) {
         }
         return false;
     }

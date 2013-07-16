@@ -76,7 +76,7 @@ class Beans {
             CacheBuilder.newBuilder().weakKeys()
                     .build(new CacheLoader<Class<?>, ImmutableMap<String, Method>>() {
                         @Override
-                        public ImmutableMap<String, Method> load(Class<?> type) throws Exception {
+                        public ImmutableMap<String, Method> load(Class<?> type) {
                             return getPropertyNames(type);
                         }
                     });

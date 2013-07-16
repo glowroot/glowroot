@@ -137,7 +137,7 @@ public class RollingFile {
             // of small reads from the underlying RandomAccessFile
             final int bufferSize = 32768;
             return new InputStreamReader(new LZFInputStream(new BufferedInputStream(
-                    new FileBlockInputStream(block), bufferSize)));
+                    new FileBlockInputStream(block), bufferSize)), Charsets.UTF_8);
         }
     }
 

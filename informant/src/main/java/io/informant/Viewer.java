@@ -15,6 +15,9 @@
  */
 package io.informant;
 
+import java.io.IOException;
+import java.sql.SQLException;
+
 import io.informant.markers.Static;
 
 /**
@@ -26,7 +29,7 @@ class Viewer {
 
     private Viewer() {}
 
-    public static void main(String... args) throws Exception {
+    public static void main(String... args) throws SQLException, IOException, InterruptedException {
         MainEntryPoint.start();
         // Informant does not create any non-daemon threads, so need to block jvm from exiting
         Thread.sleep(Long.MAX_VALUE);

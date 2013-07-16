@@ -76,11 +76,11 @@ public class MixinType {
         this.targets = targets;
         this.implementation = implementation;
         this.interfaces = interfaces;
-        ImmutableList.Builder<String> interfaceNames = ImmutableList.builder();
+        ImmutableList.Builder<String> theInterfaceNames = ImmutableList.builder();
         for (Class<?> type : interfaces) {
-            interfaceNames.add(type.getName());
+            theInterfaceNames.add(type.getName());
         }
-        this.interfaceNames = interfaceNames.build();
+        this.interfaceNames = theInterfaceNames.build();
         this.initMethodName = initMethodName;
     }
 

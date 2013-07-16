@@ -40,8 +40,9 @@ import io.informant.api.weaving.Pointcut;
  *     private static final PluginServices pluginServices =
  *             PluginServices.get(&quot;io.informant.plugins:spring-plugin&quot;);
  * 
- *     &#064;Pointcut(typeName = &quot;org.springframework.validation.Validator&quot;, methodName = &quot;validate&quot;,
- *             methodArgs = {&quot;..&quot;}, metricName = &quot;spring validator&quot;)
+ *     &#064;Pointcut(typeName = &quot;org.springframework.validation.Validator&quot;,
+ *             methodName = &quot;validate&quot;, methodArgs = {&quot;..&quot;},
+ *             metricName = &quot;spring validator&quot;)
  *     public static class ValidatorAdvice {
  *         private static final Metric metric = pluginServices.getMetric(ValidatorAdvice.class);
  *         &#064;IsEnabled
@@ -50,8 +51,9 @@ import io.informant.api.weaving.Pointcut;
  *         }
  *         &#064;OnBefore
  *         public static Span onBefore(@BindTarget Object validator) {
- *             return pluginServices.startSpan(MessageSupplier.from(&quot;spring validator: {}&quot;,
- *                     validator.getClass().getName()), metric);
+ *             return pluginServices.startSpan(
+ *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
+ *                     metric);
  *         }
  *         &#064;OnAfter
  *         public static void onAfter(@BindTraveler Span span) {
@@ -387,16 +389,16 @@ public abstract class PluginServices {
         @Override
         public Span startTrace(String grouping, MessageSupplier messageSupplier,
                 MetricName metricName) {
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         @Override
         public Span startBackgroundTrace(String grouping, MessageSupplier messageSupplier,
                 MetricName metricName) {
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         @Override
         public Span startSpan(MessageSupplier messageSupplier, MetricName metricName) {
-            return new NopSpan(messageSupplier);
+            return NopSpan.INSTANCE;
         }
         @Override
         public MetricTimer startMetricTimer(MetricName metricName) {
@@ -422,10 +424,8 @@ public abstract class PluginServices {
         }
 
         private static class NopSpan implements Span {
-            private final MessageSupplier messageSupplier;
-            private NopSpan(MessageSupplier messageSupplier) {
-                this.messageSupplier = messageSupplier;
-            }
+            private static final NopSpan INSTANCE = new NopSpan();
+            private NopSpan() {}
             public CompletedSpan end() {
                 return NopCompletedSpan.INSTANCE;
             }
@@ -435,8 +435,9 @@ public abstract class PluginServices {
             public CompletedSpan endWithError(ErrorMessage errorMessage) {
                 return NopCompletedSpan.INSTANCE;
             }
+            @Nullable
             public MessageSupplier getMessageSupplier() {
-                return messageSupplier;
+                return null;
             }
         }
 
