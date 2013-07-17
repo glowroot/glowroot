@@ -34,8 +34,10 @@ import io.informant.weaving.SomeAspect.BindOptionalPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindOptionalReturnAdvice;
 import io.informant.weaving.SomeAspect.BindOptionalVoidReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerAdvice;
+import io.informant.weaving.SomeAspect.BindPrimitiveBooleanTravelerBadAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveReturnAdvice;
 import io.informant.weaving.SomeAspect.BindPrimitiveTravelerAdvice;
+import io.informant.weaving.SomeAspect.BindPrimitiveTravelerBadAdvice;
 import io.informant.weaving.SomeAspect.BindReturnAdvice;
 import io.informant.weaving.SomeAspect.BindTargetAdvice;
 import io.informant.weaving.SomeAspect.BindThrowableAdvice;
@@ -277,8 +279,7 @@ public class WeaverTest {
     public void shouldBindPrimitiveTraveler() throws Exception {
         // given
         BindPrimitiveTravelerAdvice.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                BindPrimitiveTravelerAdvice.class);
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, BindPrimitiveTravelerAdvice.class);
         // when
         test.execute1();
         // then
@@ -299,6 +300,34 @@ public class WeaverTest {
         assertThat(BindPrimitiveBooleanTravelerAdvice.onReturnTraveler.get()).isEqualTo(true);
         assertThat(BindPrimitiveBooleanTravelerAdvice.onThrowTraveler.get()).isNull();
         assertThat(BindPrimitiveBooleanTravelerAdvice.onAfterTraveler.get()).isEqualTo(true);
+    }
+
+    @Test
+    public void shouldHandleVoidPrimitiveTravelerGracefully() throws Exception {
+        // given
+        BindPrimitiveTravelerBadAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                BindPrimitiveTravelerBadAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(BindPrimitiveTravelerBadAdvice.onReturnTraveler.get()).isEqualTo(0);
+        assertThat(BindPrimitiveTravelerBadAdvice.onThrowTraveler.get()).isNull();
+        assertThat(BindPrimitiveTravelerBadAdvice.onAfterTraveler.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldHandleVoidPrimitiveBooleanTravelerGracefully() throws Exception {
+        // given
+        BindPrimitiveBooleanTravelerBadAdvice.resetThreadLocals();
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                BindPrimitiveBooleanTravelerBadAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onReturnTraveler.get()).isEqualTo(false);
+        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onThrowTraveler.get()).isNull();
+        assertThat(BindPrimitiveBooleanTravelerBadAdvice.onAfterTraveler.get()).isEqualTo(false);
     }
 
     @Test

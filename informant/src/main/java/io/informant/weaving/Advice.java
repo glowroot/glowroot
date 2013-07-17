@@ -107,11 +107,11 @@ public class Advice {
     @Nullable
     private final Type travelerType;
 
-    private final ImmutableList<ParameterKind> isEnabledParameterKinds;
-    private final ImmutableList<ParameterKind> onBeforeParameterKinds;
-    private final ImmutableList<ParameterKind> onReturnParameterKinds;
-    private final ImmutableList<ParameterKind> onThrowParameterKinds;
-    private final ImmutableList<ParameterKind> onAfterParameterKinds;
+    private final ImmutableList<AdviceParameter> isEnabledParameters;
+    private final ImmutableList<AdviceParameter> onBeforeParameters;
+    private final ImmutableList<AdviceParameter> onReturnParameters;
+    private final ImmutableList<AdviceParameter> onThrowParameters;
+    private final ImmutableList<AdviceParameter> onAfterParameters;
 
     private final Class<?> generatedAdviceFlowClass;
     private final boolean dynamic;
@@ -125,11 +125,12 @@ public class Advice {
             @Nullable Pattern pointcutMethodPattern, @Nullable Method isEnabledAdvice,
             @Nullable Method onBeforeAdvice, @Nullable Method onReturnAdvice,
             @Nullable Method onThrowAdvice, @Nullable Method onAfterAdvice,
-            @Nullable Type travelerType, ImmutableList<ParameterKind> isEnabledParameterKinds,
-            ImmutableList<ParameterKind> onBeforeParameterKinds,
-            ImmutableList<ParameterKind> onReturnParameterKinds,
-            ImmutableList<ParameterKind> onThrowParameterKinds,
-            ImmutableList<ParameterKind> onAfterParameterKinds, Class<?> generatedAdviceFlowClass,
+            @Nullable Type travelerType, ImmutableList<AdviceParameter> isEnabledParameters,
+            ImmutableList<AdviceParameter> onBeforeParameters,
+            ImmutableList<AdviceParameter> onReturnParameters,
+            ImmutableList<AdviceParameter> onThrowParameterKinds,
+            ImmutableList<AdviceParameter> onAfterParameterKinds,
+            Class<?> generatedAdviceFlowClass,
             boolean dynamic) {
         this.pointcut = pointcut;
         this.adviceType = adviceType;
@@ -141,11 +142,11 @@ public class Advice {
         this.onThrowAdvice = onThrowAdvice;
         this.onAfterAdvice = onAfterAdvice;
         this.travelerType = travelerType;
-        this.isEnabledParameterKinds = isEnabledParameterKinds;
-        this.onBeforeParameterKinds = onBeforeParameterKinds;
-        this.onReturnParameterKinds = onReturnParameterKinds;
-        this.onThrowParameterKinds = onThrowParameterKinds;
-        this.onAfterParameterKinds = onAfterParameterKinds;
+        this.isEnabledParameters = isEnabledParameters;
+        this.onBeforeParameters = onBeforeParameters;
+        this.onReturnParameters = onReturnParameters;
+        this.onThrowParameters = onThrowParameterKinds;
+        this.onAfterParameters = onAfterParameterKinds;
         this.generatedAdviceFlowClass = generatedAdviceFlowClass;
         this.dynamic = dynamic;
     }
@@ -198,24 +199,24 @@ public class Advice {
         return onAfterAdvice;
     }
 
-    ImmutableList<ParameterKind> getIsEnabledParameterKinds() {
-        return isEnabledParameterKinds;
+    ImmutableList<AdviceParameter> getIsEnabledParameters() {
+        return isEnabledParameters;
     }
 
-    ImmutableList<ParameterKind> getOnBeforeParameterKinds() {
-        return onBeforeParameterKinds;
+    ImmutableList<AdviceParameter> getOnBeforeParameters() {
+        return onBeforeParameters;
     }
 
-    ImmutableList<ParameterKind> getOnReturnParameterKinds() {
-        return onReturnParameterKinds;
+    ImmutableList<AdviceParameter> getOnReturnParameters() {
+        return onReturnParameters;
     }
 
-    ImmutableList<ParameterKind> getOnThrowParameterKinds() {
-        return onThrowParameterKinds;
+    ImmutableList<AdviceParameter> getOnThrowParameters() {
+        return onThrowParameters;
     }
 
-    ImmutableList<ParameterKind> getOnAfterParameterKinds() {
-        return onAfterParameterKinds;
+    ImmutableList<AdviceParameter> getOnAfterParameters() {
+        return onAfterParameters;
     }
 
     Class<?> getGeneratedAdviceFlowClass() {
@@ -239,20 +240,35 @@ public class Advice {
                 .add("onThrowAdvice", onThrowAdvice)
                 .add("onAfterAdvice", onAfterAdvice)
                 .add("travelerType", travelerType)
-                .add("isEnabledParameterKinds", isEnabledParameterKinds)
-                .add("onBeforeParameterKinds", onBeforeParameterKinds)
-                .add("onReturnParameterKinds", onReturnParameterKinds)
-                .add("onThrowParameterKinds", onThrowParameterKinds)
-                .add("onAfterParameterKinds", onAfterParameterKinds)
+                .add("isEnabledParameters", isEnabledParameters)
+                .add("onBeforeParameters", onBeforeParameters)
+                .add("onReturnParameters", onReturnParameters)
+                .add("onThrowParameters", onThrowParameters)
+                .add("onAfterParameters", onAfterParameters)
                 .add("generatedAdviceFlowClass", generatedAdviceFlowClass)
                 .add("dynamic", dynamic)
                 .toString();
     }
 
+    static class AdviceParameter {
+        private final ParameterKind kind;
+        private final Class<?> type;
+        AdviceParameter(ParameterKind kind, Class<?> type) {
+            this.kind = kind;
+            this.type = type;
+        }
+        ParameterKind getKind() {
+            return kind;
+        }
+        Class<?> getType() {
+            return type;
+        }
+    }
+
     @Immutable
     enum ParameterKind {
-        TARGET, METHOD_ARG, PRIMITIVE_METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN,
-        OPTIONAL_RETURN, PRIMITIVE_RETURN, THROWABLE, TRAVELER
+        TARGET, METHOD_ARG, METHOD_ARG_ARRAY, METHOD_NAME, RETURN, OPTIONAL_RETURN, THROWABLE,
+        TRAVELER
     }
 
     @SuppressWarnings("serial")
@@ -289,11 +305,11 @@ public class Advice {
         @LazyNonNull
         private Type travelerType;
 
-        private ImmutableList<ParameterKind> isEnabledParameterKinds = ImmutableList.of();
-        private ImmutableList<ParameterKind> onBeforeParameterKinds = ImmutableList.of();
-        private ImmutableList<ParameterKind> onReturnParameterKinds = ImmutableList.of();
-        private ImmutableList<ParameterKind> onThrowParameterKinds = ImmutableList.of();
-        private ImmutableList<ParameterKind> onAfterParameterKinds = ImmutableList.of();
+        private ImmutableList<AdviceParameter> isEnabledParameters = ImmutableList.of();
+        private ImmutableList<AdviceParameter> onBeforeParameters = ImmutableList.of();
+        private ImmutableList<AdviceParameter> onReturnParameters = ImmutableList.of();
+        private ImmutableList<AdviceParameter> onThrowParameters = ImmutableList.of();
+        private ImmutableList<AdviceParameter> onAfterParameters = ImmutableList.of();
 
         private Class<?> generatedAdviceFlowClass;
 
@@ -323,9 +339,8 @@ public class Advice {
             generatedAdviceFlowClass = buildGeneratedAdviceFlowClass();
             return new Advice(pointcut, adviceType, pointcutTypePattern, pointcutMethodPattern,
                     isEnabledAdvice, onBeforeAdvice, onReturnAdvice, onThrowAdvice, onAfterAdvice,
-                    travelerType, isEnabledParameterKinds, onBeforeParameterKinds,
-                    onReturnParameterKinds, onThrowParameterKinds, onAfterParameterKinds,
-                    generatedAdviceFlowClass, dynamic);
+                    travelerType, isEnabledParameters, onBeforeParameters, onReturnParameters,
+                    onThrowParameters, onAfterParameters, generatedAdviceFlowClass, dynamic);
         }
 
         private Class<?> buildGeneratedAdviceFlowClass() throws AdviceConstructionException {
@@ -352,29 +367,27 @@ public class Advice {
         private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
                 throws AdviceConstructionException {
             if (isEnabledAdvice != null) {
-                logger.warn("@Pointcut '{}' has more than one @IsEnabled method",
-                        adviceClass.getName());
-                return;
+                throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
+                        + "' has more than one @IsEnabled method");
             }
             Method asmMethod = Method.getMethod(method);
             if (asmMethod.getReturnType().getSort() == Type.BOOLEAN) {
                 this.isEnabledAdvice = asmMethod;
-                this.isEnabledParameterKinds = getParameterKinds(method.getParameterAnnotations(),
+                this.isEnabledParameters = getAdviceParameters(method.getParameterAnnotations(),
                         method.getParameterTypes(), isEnabledBindAnnotationTypes, IsEnabled.class);
             } else {
-                logger.warn("@IsEnabled method must return boolean");
+                throw new AdviceConstructionException("@IsEnabled method must return boolean");
             }
         }
 
         private void initOnBeforeAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
                 throws AdviceConstructionException {
             if (onBeforeAdvice != null) {
-                logger.warn("@Pointcut '{}' has more than one @OnBefore method",
-                        adviceClass.getName());
-                return;
+                throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
+                        + "' has more than one @OnBefore method");
             }
             onBeforeAdvice = Method.getMethod(method);
-            onBeforeParameterKinds = getParameterKinds(method.getParameterAnnotations(),
+            onBeforeParameters = getAdviceParameters(method.getParameterAnnotations(),
                     method.getParameterTypes(), onBeforeBindAnnotationTypes, OnBefore.class);
             if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
                 travelerType = onBeforeAdvice.getReturnType();
@@ -384,68 +397,61 @@ public class Advice {
         private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
                 throws AdviceConstructionException {
             if (onReturnAdvice != null) {
-                logger.warn("@Pointcut '{}' has more than one @OnReturn method",
-                        adviceClass.getName());
-                return;
+                throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
+                        + "' has more than one @OnReturn method");
             }
-            ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
+            ImmutableList<AdviceParameter> parameters = getAdviceParameters(
                     method.getParameterAnnotations(), method.getParameterTypes(),
                     onReturnBindAnnotationTypes, OnReturn.class);
-            for (int i = 1; i < parameterKinds.size(); i++) {
-                if (parameterKinds.get(i) == ParameterKind.RETURN) {
-                    logger.warn("@BindReturn must be the first argument to @OnReturn");
-                    return;
+            for (int i = 1; i < parameters.size(); i++) {
+                if (parameters.get(i).getKind() == ParameterKind.RETURN) {
+                    throw new AdviceConstructionException(
+                            "@BindReturn must be the first argument to @OnReturn");
                 }
-                if (parameterKinds.get(i) == ParameterKind.OPTIONAL_RETURN) {
-                    logger.warn("@BindOptionalReturn must be the first argument to @OnReturn");
-                    return;
+                if (parameters.get(i).getKind() == ParameterKind.OPTIONAL_RETURN) {
+                    throw new AdviceConstructionException(
+                            "@BindOptionalReturn must be the first argument to @OnReturn");
                 }
             }
             this.onReturnAdvice = Method.getMethod(method);
-            this.onReturnParameterKinds = parameterKinds;
+            this.onReturnParameters = parameters;
         }
 
         private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
                 throws AdviceConstructionException {
             if (onThrowAdvice != null) {
-                logger.warn("@Pointcut '{}' has more than one @OnThrow method",
-                        adviceClass.getName());
-                return;
+                throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
+                        + "' has more than one @OnThrow method");
             }
-            ImmutableList<ParameterKind> parameterKinds = getParameterKinds(
+            ImmutableList<AdviceParameter> parameters = getAdviceParameters(
                     method.getParameterAnnotations(), method.getParameterTypes(),
                     onThrowBindAnnotationTypes, OnThrow.class);
-            for (int i = 1; i < parameterKinds.size(); i++) {
-                if (parameterKinds.get(i) == ParameterKind.THROWABLE) {
-                    logger.warn("@BindThrowable must be the first argument to @OnThrow");
-                    return;
+            for (int i = 1; i < parameters.size(); i++) {
+                if (parameters.get(i).getKind() == ParameterKind.THROWABLE) {
+                    throw new AdviceConstructionException(
+                            "@BindThrowable must be the first argument to @OnThrow");
                 }
             }
             Method asmMethod = Method.getMethod(method);
             if (asmMethod.getReturnType().getSort() != Type.VOID) {
-                // TODO allow @OnThrow methods to suppress the exception or throw a different
-                // exception
-                logger.warn("@OnThrow method must return void (for now)");
-                return;
+                throw new AdviceConstructionException("@OnThrow method must return void (for now)");
             }
             this.onThrowAdvice = asmMethod;
-            this.onThrowParameterKinds = parameterKinds;
+            this.onThrowParameters = parameters;
         }
 
         private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
                 throws AdviceConstructionException {
             if (onAfterAdvice != null) {
-                logger.warn("@Pointcut '{}' has more than one @OnAfter method",
-                        adviceClass.getName());
-                return;
+                throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
+                        + "' has more than one @OnAfter method");
             }
             Method asmMethod = Method.getMethod(method);
             if (asmMethod.getReturnType().getSort() != Type.VOID) {
-                logger.warn("@OnAfter method must return void");
-                return;
+                throw new AdviceConstructionException("@OnAfter method must return void");
             }
             this.onAfterAdvice = asmMethod;
-            this.onAfterParameterKinds = getParameterKinds(method.getParameterAnnotations(),
+            this.onAfterParameters = getAdviceParameters(method.getParameterAnnotations(),
                     method.getParameterTypes(), onAfterBindAnnotationTypes, OnAfter.class);
         }
 
@@ -477,13 +483,13 @@ public class Advice {
             return pattern.replace("\\Q\\E", "");
         }
 
-        private static ImmutableList<ParameterKind> getParameterKinds(
+        private static ImmutableList<AdviceParameter> getAdviceParameters(
                 Annotation[][] parameterAnnotations, Class<?>[] parameterTypes,
                 @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes,
                 Class<? extends Annotation> adviceAnnotationType)
                 throws AdviceConstructionException {
 
-            ImmutableList.Builder<ParameterKind> parameterKinds = ImmutableList.builder();
+            ImmutableList.Builder<AdviceParameter> parameters = ImmutableList.builder();
             for (int i = 0; i < parameterAnnotations.length; i++) {
                 Class<? extends Annotation> validBindAnnotationType = getValidBindAnnotationType(
                         parameterAnnotations[i], validBindAnnotationTypes);
@@ -497,15 +503,17 @@ public class Advice {
                             + adviceAnnotationType.getSimpleName() + " must be annotated with one"
                             + " of " + Joiner.on(", ").join(validBindAnnotationNames));
                 }
-                parameterKinds.add(getParameterKind(validBindAnnotationType, parameterTypes[i]));
+                parameters.add(getAdviceParameter(validBindAnnotationType, parameterTypes[i]));
             }
-            return parameterKinds.build();
+            return parameters.build();
         }
 
         @Nullable
         private static Class<? extends Annotation> getValidBindAnnotationType(
                 Annotation[] parameterAnnotations,
-                @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes) {
+                @ReadOnly List<Class<? extends Annotation>> validBindAnnotationTypes)
+                throws AdviceConstructionException {
+
             Class<? extends Annotation> foundBindAnnotationType = null;
             for (Annotation annotation : parameterAnnotations) {
                 Class<? extends Annotation> annotationType = annotation.annotationType();
@@ -513,32 +521,35 @@ public class Advice {
                     continue;
                 }
                 if (foundBindAnnotationType != null) {
-                    logger.warn("multiple annotations found on a single parameter");
-                    break;
+                    throw new AdviceConstructionException(
+                            "Multiple annotations found on a single parameter");
                 }
                 if (validBindAnnotationTypes.contains(annotationType)) {
                     foundBindAnnotationType = annotationType;
                 } else {
-                    logger.warn("annotation '" + annotationType.getName()
+                    throw new AdviceConstructionException("Annotation '" + annotationType.getName()
                             + "' found in an invalid location");
                 }
             }
             return foundBindAnnotationType;
         }
 
-        private static ParameterKind getParameterKind(
-                Class<? extends Annotation> validBindAnnotationType, Class<?> parameterType) {
-            if (validBindAnnotationType == BindMethodArg.class
-                    && parameterType.isPrimitive()) {
-                // special case to track primitive method args for possible autoboxing
-                return ParameterKind.PRIMITIVE_METHOD_ARG;
-            } else if (validBindAnnotationType == BindReturn.class
-                    && parameterType.isPrimitive()) {
-                // special case to track primitive return values for possible autoboxing
-                return ParameterKind.PRIMITIVE_RETURN;
-            } else {
-                return parameterKindMap.get(validBindAnnotationType);
+        private static AdviceParameter getAdviceParameter(
+                Class<? extends Annotation> validBindAnnotationType, Class<?> parameterType)
+                throws AdviceConstructionException {
+
+            if (validBindAnnotationType == BindMethodName.class
+                    && !parameterType.isAssignableFrom(String.class)) {
+                throw new AdviceConstructionException("@BindMethodName parameter type must be"
+                        + " java.lang.String (or super type of java.lang.String)");
             }
+            if (validBindAnnotationType == BindThrowable.class
+                    && !parameterType.isAssignableFrom(Throwable.class)) {
+                throw new AdviceConstructionException("@BindMethodName parameter type must be"
+                        + " java.lang.Throwable (or super type of java.lang.Throwable)");
+            }
+            ParameterKind parameterKind = parameterKindMap.get(validBindAnnotationType);
+            return new AdviceParameter(parameterKind, parameterType);
         }
     }
 }

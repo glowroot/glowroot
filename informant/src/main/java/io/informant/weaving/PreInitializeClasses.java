@@ -649,6 +649,7 @@ class PreInitializeClasses {
         types.add("io.informant.trace.model.WeavingMetricNameImpl");
         types.add("io.informant.trace.model.WeavingMetricNameImpl$NopMetricTimer");
         types.add("io.informant.weaving.Advice");
+        types.add("io.informant.weaving.Advice$AdviceParameter");
         types.add("io.informant.weaving.Advice$ParameterKind");
         types.add("io.informant.weaving.AdviceFlowOuterHolder");
         types.add("io.informant.weaving.AdviceFlowOuterHolder$1");

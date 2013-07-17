@@ -441,6 +441,58 @@ public class SomeAspect {
         }
     }
 
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
+    public static class BindPrimitiveTravelerBadAdvice {
+        public static final ThreadLocal<Integer> onReturnTraveler = new ThreadLocal<Integer>();
+        public static final ThreadLocal<Integer> onThrowTraveler = new ThreadLocal<Integer>();
+        public static final ThreadLocal<Integer> onAfterTraveler = new ThreadLocal<Integer>();
+        @OnBefore
+        public static void onBefore() {}
+        @OnReturn
+        public static void onReturn(@BindTraveler int traveler) {
+            onReturnTraveler.set(traveler);
+        }
+        @OnThrow
+        public static void onThrow(@BindTraveler int traveler) {
+            onThrowTraveler.set(traveler);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler int traveler) {
+            onAfterTraveler.set(traveler);
+        }
+        public static void resetThreadLocals() {
+            onReturnTraveler.remove();
+            onThrowTraveler.remove();
+            onAfterTraveler.remove();
+        }
+    }
+
+    @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "execute1")
+    public static class BindPrimitiveBooleanTravelerBadAdvice {
+        public static final ThreadLocal<Boolean> onReturnTraveler = new ThreadLocal<Boolean>();
+        public static final ThreadLocal<Boolean> onThrowTraveler = new ThreadLocal<Boolean>();
+        public static final ThreadLocal<Boolean> onAfterTraveler = new ThreadLocal<Boolean>();
+        @OnBefore
+        public static void onBefore() {}
+        @OnReturn
+        public static void onReturn(@BindTraveler boolean traveler) {
+            onReturnTraveler.set(traveler);
+        }
+        @OnThrow
+        public static void onThrow(@BindTraveler boolean traveler) {
+            onThrowTraveler.set(traveler);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler boolean traveler) {
+            onAfterTraveler.set(traveler);
+        }
+        public static void resetThreadLocals() {
+            onReturnTraveler.remove();
+            onThrowTraveler.remove();
+            onAfterTraveler.remove();
+        }
+    }
+
     @Pointcut(typeName = "io.informant.weaving.Misc", methodName = "executeWithReturn")
     public static class BindReturnAdvice {
         public static final ThreadLocal<String> returnValue = new ThreadLocal<String>();
