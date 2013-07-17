@@ -69,6 +69,11 @@ class AdviceMatcher {
         }
         // need to test return match and modifiers match against overridden method
         for (ParsedType type : preMatchedSuperTypes) {
+            if (type.isInterface() && parsedMethod.getName().equals("<init>")
+                    && isMethodModifiersMatch(parsedMethod.getModifiers())) {
+                // pointcut on interface "constructor"
+                return true;
+            }
             ParsedMethod overriddenParsedMethod = type.getMethod(parsedMethod);
             if (overriddenParsedMethod != null
                     && isMethodReturnMatch(overriddenParsedMethod.getReturnTypeName())

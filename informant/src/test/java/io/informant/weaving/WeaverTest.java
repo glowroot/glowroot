@@ -24,6 +24,7 @@ import io.informant.api.weaving.Pointcut;
 import io.informant.weaving.AbstractMisc.ExtendsAbstractMisc;
 import io.informant.weaving.SomeAspect.BasicAdvice;
 import io.informant.weaving.SomeAspect.BasicMiscConstructorAdvice;
+import io.informant.weaving.SomeAspect.BasicMiscConstructorOnInterfaceImplAdvice;
 import io.informant.weaving.SomeAspect.BasicWithInnerClassAdvice;
 import io.informant.weaving.SomeAspect.BasicWithInnerClassArgAdvice;
 import io.informant.weaving.SomeAspect.BindAutoboxedReturnAdvice;
@@ -814,8 +815,7 @@ public class WeaverTest {
     // ===================== constructor =====================
 
     @Test
-    // TODO handle @OnBefore constructor
-    // TODO what about constructing objects that implement a given interface?
+    // note: constructor pointcuts do not currently support @OnBefore
     public void shouldHandleConstructorPointcut() throws Exception {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class, BasicMiscConstructorAdvice.class);
@@ -825,10 +825,26 @@ public class WeaverTest {
         test.execute1();
         // then
         assertThat(BasicMiscConstructorAdvice.enabledCount.get()).isEqualTo(1);
-        // assertThat(BasicConstructorAdvice.onBeforeCount.get()).isEqualTo(1);
         assertThat(BasicMiscConstructorAdvice.onReturnCount.get()).isEqualTo(1);
         assertThat(BasicMiscConstructorAdvice.onThrowCount.get()).isEqualTo(0);
         assertThat(BasicMiscConstructorAdvice.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    // note: constructor pointcuts do not currently support @OnBefore
+    public void shouldHandleConstructorOnInterfaceImplPointcut() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                BasicMiscConstructorOnInterfaceImplAdvice.class);
+        // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
+        BasicMiscConstructorOnInterfaceImplAdvice.resetThreadLocals();
+        // when
+        test.execute1();
+        // then
+        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.enabledCount.get()).isEqualTo(1);
+        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.onReturnCount.get()).isEqualTo(1);
+        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.onThrowCount.get()).isEqualTo(0);
+        assertThat(BasicMiscConstructorOnInterfaceImplAdvice.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test

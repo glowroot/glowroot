@@ -15,12 +15,14 @@
  */
 package io.informant.plugin.jdbc;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 
 import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.tomcat.jdbc.pool.DataSource;
@@ -108,6 +110,20 @@ public class JdbcPluginTest {
     }
 
     @Test
+    public void testPreparedStatementWithSetNull() throws Exception {
+        // given
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // whens
+        container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: insert into employee values (?, ?) [NULL, NULL] [connection: ");
+    }
+
+    @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
         container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
@@ -120,6 +136,20 @@ public class JdbcPluginTest {
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: insert into employee values (?, ?) ['jane',"
                         + " 0x00010203040506070809] [connection: ");
+    }
+
+    @Test
+    public void testCallableStatement() throws Exception {
+        // given
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecuteCallableStatement.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: insert into employee values (?, ?) ['jane', NULL] [connection: ");
     }
 
     @Test
@@ -205,17 +235,6 @@ public class JdbcPluginTest {
         assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['lowly'] ['pig will'] [connection: ");
     }
-
-    // TODO testPreparedStatement
-    // select * from employee where name like ?
-    // [john%]
-
-    // TODO testPreparedStatementWithSetNull
-    // insert into employee (name) values (?)
-
-    // TODO testCallableStatement
-    // select * from employee where name = ?
-    // [john%]
 
     // TODO make a release build profile that runs all tests against
     // Hsqldb, Oracle, SQLServer, MySQL, ...
@@ -362,8 +381,8 @@ public class JdbcPluginTest {
             }
         }
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = connection
-                    .prepareStatement("select * from employee where name like ?");
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("select * from employee where name like ?");
             try {
                 preparedStatement.setString(1, "john%");
                 preparedStatement.execute();
@@ -371,6 +390,30 @@ public class JdbcPluginTest {
                 while (rs.next()) {
                     rs.getString(1);
                 }
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementWithSetNull implements AppUnderTest, TraceMarker {
+
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee values (?, ?)");
+            try {
+                preparedStatement.setNull(1, Types.VARCHAR);
+                preparedStatement.setNull(2, Types.VARCHAR);
+                preparedStatement.execute();
             } finally {
                 preparedStatement.close();
             }
@@ -394,8 +437,8 @@ public class JdbcPluginTest {
             }
         }
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = connection
-                    .prepareStatement("insert into employee values (?, ?)");
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee values (?, ?)");
             try {
                 preparedStatement.setString(1, "jane");
                 byte[] bytes = new byte[10];
@@ -406,6 +449,30 @@ public class JdbcPluginTest {
                 preparedStatement.execute();
             } finally {
                 preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecuteCallableStatement implements AppUnderTest, TraceMarker {
+
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            CallableStatement callableStatement =
+                    connection.prepareCall("insert into employee values (?, ?)");
+            try {
+                callableStatement.setString(1, "jane");
+                callableStatement.setNull(2, Types.VARCHAR);
+                callableStatement.execute();
+            } finally {
+                callableStatement.close();
             }
         }
     }
@@ -460,8 +527,8 @@ public class JdbcPluginTest {
             }
         }
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = connection
-                    .prepareStatement("insert into employee (name) values (?)");
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee (name) values (?)");
             try {
                 preparedStatement.setString(1, "huckle");
                 preparedStatement.addBatch();
