@@ -15,6 +15,7 @@
  */
 package io.informant.dynamicadvice;
 
+import io.informant.api.Beans;
 import io.informant.api.Message;
 import io.informant.api.MessageSupplier;
 import io.informant.api.Span;

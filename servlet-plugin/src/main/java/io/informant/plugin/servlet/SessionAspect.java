@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 
 import checkers.nullness.quals.Nullable;
 
+import io.informant.api.Beans;
 import io.informant.api.PluginServices;
 import io.informant.api.weaving.BindMethodArg;
 import io.informant.api.weaving.BindReturn;

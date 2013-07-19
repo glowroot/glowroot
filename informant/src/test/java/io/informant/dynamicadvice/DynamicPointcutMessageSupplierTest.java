@@ -19,8 +19,6 @@ import org.junit.Test;
 
 import io.informant.api.Message;
 import io.informant.api.internal.ReadableMessage;
-import io.informant.dynamicadvice.DynamicAdviceMessageSupplier;
-import io.informant.dynamicadvice.DynamicAdviceMessageTemplate;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -59,8 +57,7 @@ public class DynamicPointcutMessageSupplierTest {
         assertThat(text).isEqualTo(HasName.class.getName() + ".execute(): the name trailing");
     }
 
-    private static class HasName {
-        @SuppressWarnings("unused")
+    public static class HasName {
         public String getName() {
             return "the name";
         }

@@ -18,7 +18,6 @@ package io.informant.dynamicadvice;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,32 +52,35 @@ public class DynamicAdviceMessageTemplate {
             if (matcher.start() > curr) {
                 allParts.add(new ConstantPart(template.substring(curr, matcher.start())));
             }
-            String[] path = matcher.group(1).trim().split("\\.");
-            if (path[0].equals("this")) {
-                String[] shiftedPath = new String[path.length - 1];
-                System.arraycopy(path, 1, shiftedPath, 0, path.length - 1);
-                ValuePathPart part = new ValuePathPart(PartType.THIS_PATH, shiftedPath);
+            String path = matcher.group(1).trim();
+            int index = path.indexOf('.');
+            String base;
+            String remaining;
+            if (index == -1) {
+                base = path;
+                remaining = "";
+            } else {
+                base = path.substring(0, index);
+                remaining = path.substring(index + 1);
+            }
+            if (base.equals("this")) {
+                ValuePathPart part = new ValuePathPart(PartType.THIS_PATH, remaining);
                 allParts.add(part);
                 thisPathParts.add(part);
-            } else if (path[0].matches("[0-9]+")) {
-                int argNumber = Integer.parseInt(path[0]);
-                String[] shiftedPath = new String[path.length - 1];
-                System.arraycopy(path, 1, shiftedPath, 0, path.length - 1);
-                ArgPathPart part = new ArgPathPart(argNumber, shiftedPath);
+            } else if (base.matches("[0-9]+")) {
+                int argNumber = Integer.parseInt(base);
+                ArgPathPart part = new ArgPathPart(argNumber, remaining);
                 allParts.add(part);
                 argPathParts.add(part);
-            } else if (path[0].equals("ret")) {
-                String[] shiftedPath = new String[path.length - 1];
-                System.arraycopy(path, 1, shiftedPath, 0, path.length - 1);
-                ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, shiftedPath);
+            } else if (base.equals("ret")) {
+                ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, remaining);
                 allParts.add(part);
                 returnPathParts.add(part);
-            } else if (path[0].equals("methodName")) {
+            } else if (base.equals("methodName")) {
                 allParts.add(new Part(PartType.METHOD_NAME));
             } else {
-                String original = Joiner.on('.').join(path);
-                logger.warn("invalid template substitution: {}", original);
-                allParts.add(new ConstantPart("{{" + original + "}}"));
+                logger.warn("invalid template substitution: {}", path);
+                allParts.add(new ConstantPart("{{" + path + "}}"));
             }
             curr = matcher.end();
         }
@@ -148,9 +150,9 @@ public class DynamicAdviceMessageTemplate {
     static class ArgPathPart extends Part {
 
         private final int argNumber;
-        private final String[] propertyPath;
+        private final String propertyPath;
 
-        private ArgPathPart(int argNumber, String[] propertyPath) {
+        private ArgPathPart(int argNumber, String propertyPath) {
             super(PartType.ARG_PATH);
             this.argNumber = argNumber;
             this.propertyPath = propertyPath;
@@ -160,21 +162,21 @@ public class DynamicAdviceMessageTemplate {
             return argNumber;
         }
 
-        String[] getPropertyPath() {
+        String getPropertyPath() {
             return propertyPath;
         }
     }
 
     static class ValuePathPart extends Part {
 
-        private final String[] propertyPath;
+        private final String propertyPath;
 
-        private ValuePathPart(PartType partType, String[] propertyPath) {
+        private ValuePathPart(PartType partType, String propertyPath) {
             super(partType);
             this.propertyPath = propertyPath;
         }
 
-        String[] getPropertyPath() {
+        String getPropertyPath() {
             return propertyPath;
         }
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.plugin.servlet;
+package io.informant.api;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,21 +22,19 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
 import checkers.nullness.quals.Nullable;
-
-import io.informant.shaded.google.common.cache.CacheBuilder;
-import io.informant.shaded.google.common.cache.CacheLoader;
-import io.informant.shaded.google.common.cache.LoadingCache;
-import io.informant.shaded.google.common.collect.ImmutableMap;
-import io.informant.shaded.google.common.collect.MapMaker;
-import io.informant.shaded.slf4j.Logger;
-import io.informant.shaded.slf4j.LoggerFactory;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.MapMaker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO address duplication between this and the Beans class in io.informant.dynamicadvice
-class Beans {
+public class Beans {
 
     private static final Logger logger = LoggerFactory.getLogger(Beans.class);
 
@@ -84,35 +82,47 @@ class Beans {
     private Beans() {}
 
     @Nullable
-    static Object value(@Nullable Object obj, String[] path, int currIndex) {
+    public static Object value(@Nullable Object obj, String path) {
         if (obj == null) {
             return null;
-        } else if (currIndex == path.length) {
+        }
+        if (path.equals("")) {
             return obj;
-        } else if (obj instanceof Map) {
-            return value(((Map<?, ?>) obj).get(path[currIndex]), path, currIndex + 1);
+        }
+        int index = path.indexOf('.');
+        String curr;
+        String remaining;
+        if (index == -1) {
+            curr = path;
+            remaining = "";
         } else {
-            try {
-                Method getter = getGetter(obj.getClass(), path[currIndex]);
-                if (getter.equals(SENTINEL_METHOD)) {
-                    // no appropriate method found, dynamic paths that may or may not resolve
-                    // correctly are ok, just return null
-                    return null;
-                }
-                return value(getter.invoke(obj), path, currIndex + 1);
-            } catch (IllegalAccessException e) {
-                logger.debug(e.getMessage(), e);
-                // this is less ok
-                return "<could not access>";
-            } catch (InvocationTargetException e) {
-                logger.debug(e.getMessage(), e);
-                // this is less ok
-                return "<could not access>";
+            curr = path.substring(0, index);
+            remaining = path.substring(index + 1);
+        }
+        if (obj instanceof Map) {
+            return value(((Map<?, ?>) obj).get(curr), remaining);
+        }
+        try {
+            Method getter = getGetter(obj.getClass(), curr);
+            if (getter.equals(SENTINEL_METHOD)) {
+                // no appropriate method found, dynamic paths that may or may not resolve
+                // correctly are ok, just return null
+                return null;
             }
+            return value(getter.invoke(obj), remaining);
+        } catch (IllegalAccessException e) {
+            logger.debug(e.getMessage(), e);
+            // this is less ok
+            return "<could not access>";
+        } catch (InvocationTargetException e) {
+            logger.debug(e.getMessage(), e);
+            // this is less ok
+            return "<could not access>";
         }
     }
 
-    static ImmutableMap<String, String> propertiesAsText(Object obj) {
+    // don't expose guava ImmutableMap in public api
+    public static Map<String, String> propertiesAsText(Object obj) {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
         ImmutableMap<String, Method> allGettersForObj = wildcardGetters
                 .getUnchecked(obj.getClass());

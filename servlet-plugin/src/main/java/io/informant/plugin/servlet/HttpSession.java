@@ -23,6 +23,7 @@ import java.util.Set;
 import checkers.igj.quals.Immutable;
 import checkers.nullness.quals.Nullable;
 
+import io.informant.api.Beans;
 import io.informant.api.UnresolvedMethod;
 import io.informant.shaded.google.common.base.Strings;
 import io.informant.shaded.google.common.collect.ImmutableMap;
@@ -113,13 +114,13 @@ class HttpSession {
 
     @Nullable
     Object getSessionAttribute(String attributePath) {
-        if (attributePath.indexOf('.') == -1) {
+        int index = attributePath.indexOf('.');
+        if (index == -1) {
             // fast path
             return getAttribute(attributePath);
         } else {
-            String[] path = attributePath.split("\\.");
-            Object curr = getAttribute(path[0]);
-            return Beans.value(curr, path, 1);
+            Object curr = getAttribute(attributePath.substring(0, index));
+            return Beans.value(curr, attributePath.substring(index + 1));
         }
     }
 
