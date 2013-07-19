@@ -26,7 +26,7 @@ import org.openqa.selenium.server.SeleniumServer;
 
 import io.informant.Containers;
 import io.informant.container.Container;
-import io.informant.tests.util.IgnoreOnJdk5;
+import io.informant.container.IgnoreOnJdk5;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 

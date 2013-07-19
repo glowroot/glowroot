@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.informant.test.util;
+package io.informant.container;
 
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
@@ -26,7 +26,6 @@ import org.junit.runners.model.Statement;
  * @author Trask Stalnaker
  * @since 0.5
  */
-// TODO this class is duplicated in webdriver-tests
 public class IgnoreOnJdk5 extends BlockJUnit4ClassRunner {
 
     public IgnoreOnJdk5(Class<?> type) throws InitializationError {

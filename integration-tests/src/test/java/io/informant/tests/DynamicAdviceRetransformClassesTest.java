@@ -21,8 +21,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import io.informant.container.IgnoreOnJdk5;
 import io.informant.container.javaagent.JavaagentContainer;
-import io.informant.test.util.IgnoreOnJdk5;
 
 /**
  * @author Trask Stalnaker
