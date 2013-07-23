@@ -33,6 +33,12 @@
 <script src="components/jquery/jquery.js"></script>
 <script src="components/angular/angular.js"></script>
 
+<!-- cdn fallbacks for jquery and angular -->
+<script>
+  window.jQuery || document.write('<script src="components/jquery/jquery.min.js"><\/script>');
+  window.angular || document.write('<script src="components/angular/angular.min.js"><\/script>');
+</script>
+
 <!-- build:js scripts/app.components.js -->
 <script src="components/handlebars/handlebars.runtime.js"></script>
 <script src="components/sass-bootstrap/js/bootstrap-transition.js"></script>

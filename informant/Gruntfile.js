@@ -242,6 +242,9 @@ module.exports = function (grunt) {
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.dist %>',
             src: [
+              // jquery.min.js and angular.min.js are used for cdn fallback
+              'components/jquery/jquery.min.js',
+              'components/angular/angular.min.js',
               'components/sass-bootstrap/img/*.png',
               'components/flashcanvas/flashcanvas.*',
               'components/specialelite/*',
@@ -270,6 +273,9 @@ module.exports = function (grunt) {
       dist: {
         files: {
           src: [
+            // jquery.min.js and angular.min.js are used for cdn fallback
+            '<%= yeoman.dist %>/components/jquery/jquery.min.js',
+            '<%= yeoman.dist %>/components/angular/angular.min.js',
             '<%= yeoman.dist %>/components/sass-bootstrap/img/*.png',
             '<%= yeoman.dist %>/components/specialelite/*',
             '<%= yeoman.dist %>/images/favicon.ico',
