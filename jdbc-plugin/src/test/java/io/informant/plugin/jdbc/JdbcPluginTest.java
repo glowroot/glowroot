@@ -79,7 +79,85 @@ public class JdbcPluginTest {
         assertThat(trace.getSpans()).hasSize(2);
         Span jdbcSpan = trace.getSpans().get(1);
         assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee => 3 rows [connection: ");
+    }
+
+    @Test
+    public void testStatementUsingPrevious() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndUsePrevious.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee => 3 rows [connection: ");
+    }
+
+    @Test
+    public void testStatementUsingRelativeForward() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndUseRelativeForward.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee => 3 rows [connection: ");
+    }
+
+    @Test
+    public void testStatementUsingRelativeBackward() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndUseRelativeBackward.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee => 3 rows [connection: ");
+    }
+
+    @Test
+    public void testStatementUsingAbsolute() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndUseAbsolute.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee => 2 rows [connection: ");
+    }
+
+    @Test
+    public void testStatementUsingFirst() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndUseFirst.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
                 "jdbc execution: select * from employee => 1 row [connection: ");
+    }
+
+    @Test
+    public void testStatementUsingLast() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndUseLast.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        Span jdbcSpan = trace.getSpans().get(1);
+        assertThat(jdbcSpan.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee => 3 rows [connection: ");
     }
 
     @Test
@@ -269,13 +347,7 @@ public class JdbcPluginTest {
     private static Connection createHsqldbConnection() throws SQLException {
         // set up database
         Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
-        Statement statement = connection.createStatement();
-        try {
-            statement.execute("create table employee (name varchar(100), misc binary(100))");
-            statement.execute("insert into employee (name) values ('john doe')");
-        } finally {
-            statement.close();
-        }
+        insertRecords(connection);
         return connection;
     }
 
@@ -286,13 +358,7 @@ public class JdbcPluginTest {
         ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         ds.setUrl("jdbc:hsqldb:mem:test");
         Connection connection = ds.getConnection();
-        Statement statement = connection.createStatement();
-        try {
-            statement.execute("create table employee (name varchar(100), misc binary(100))");
-            statement.execute("insert into employee (name) values ('john doe')");
-        } finally {
-            statement.close();
-        }
+        insertRecords(connection);
         return connection;
     }
 
@@ -306,14 +372,20 @@ public class JdbcPluginTest {
         ds.setJdbcInterceptors(
                 "org.apache.tomcat.jdbc.pool.interceptor.StatementDecoratorInterceptor");
         Connection connection = ds.getConnection();
+        insertRecords(connection);
+        return connection;
+    }
+
+    private static void insertRecords(Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         try {
             statement.execute("create table employee (name varchar(100), misc binary(100))");
             statement.execute("insert into employee (name) values ('john doe')");
+            statement.execute("insert into employee (name) values ('jane doe')");
+            statement.execute("insert into employee (name) values ('sally doe')");
         } finally {
             statement.close();
         }
-        return connection;
     }
 
     // need to add the oracle driver to the path in order to use this, e.g. install into local repo:
@@ -360,7 +432,6 @@ public class JdbcPluginTest {
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
-
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
@@ -384,9 +455,155 @@ public class JdbcPluginTest {
         }
     }
 
+    public static class ExecuteStatementAndUsePrevious implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                rs.afterLast();
+                while (rs.previous()) {
+                    rs.getString(1);
+                }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndUseRelativeForward implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                while (rs.relative(1)) {
+                    rs.getString(1);
+                }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndUseRelativeBackward implements AppUnderTest,
+            TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                rs.afterLast();
+                while (rs.relative(-1)) {
+                    rs.getString(1);
+                }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndUseAbsolute implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                rs.absolute(2);
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndUseFirst implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                rs.first();
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndUseLast implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                rs.last();
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
     public static class ExecutePreparedStatementAndIterateOverResults implements AppUnderTest,
             TraceMarker {
-
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
@@ -413,7 +630,6 @@ public class JdbcPluginTest {
     }
 
     public static class ExecutePreparedStatementWithSetNull implements AppUnderTest, TraceMarker {
-
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
@@ -437,12 +653,10 @@ public class JdbcPluginTest {
     }
 
     public static class ExecutePreparedStatementWithBinary implements AppUnderTest, TraceMarker {
-
         static {
             JdbcPluginProperties.setDisplayBinaryParameterAsHex(
                     "insert into employee values (?, ?)", 2);
         }
-
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
@@ -470,7 +684,6 @@ public class JdbcPluginTest {
     }
 
     public static class ExecuteCallableStatement implements AppUnderTest, TraceMarker {
-
         private Connection connection;
         public void executeApp() throws Exception {
             connection = createConnection();
@@ -592,6 +805,8 @@ public class JdbcPluginTest {
                 // not attributed to the previous execution
                 services.setPluginEnabled(PLUGIN_ID, true);
                 rs = preparedStatement.getResultSet();
+                rs.next();
+                rs.next();
                 rs.next();
                 rs.next();
             } finally {

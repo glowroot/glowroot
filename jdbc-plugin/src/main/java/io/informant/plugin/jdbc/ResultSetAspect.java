@@ -48,12 +48,12 @@ public class ResultSetAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("io.informant.plugins:jdbc-plugin");
 
-    // capture the row number any time the cursor is moved through the result set
-    // TODO support ResultSet.relative(), absolute() and last()
-    @Pointcut(typeName = "java.sql.ResultSet", methodName = "next", captureNested = false,
-            metricName = "jdbc resultset next")
-    public static class NextAdvice {
-        private static final MetricName metricName = pluginServices.getMetricName(NextAdvice.class);
+    @Pointcut(typeName = "java.sql.ResultSet",
+            methodName = "next|previous|relative|absolute|first|last", methodArgs = "..",
+            captureNested = false, metricName = "jdbc resultset navigate")
+    public static class NavigateAdvice {
+        private static final MetricName metricName = pluginServices
+                .getMetricName(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNext is cached to limit map lookups
         private static volatile boolean metricEnabled;
@@ -100,10 +100,9 @@ public class ResultSetAspect {
                     return;
                 }
                 if (currentRowValid) {
-                    lastJdbcMessageSupplier.setNumRows(resultSet.getRow());
-                    // TODO also record time spent in next() into JdbcMessageSupplier
+                    lastJdbcMessageSupplier.updateNumRows(resultSet.getRow());
                 } else {
-                    lastJdbcMessageSupplier.setHasPerformedNext();
+                    lastJdbcMessageSupplier.setHasPerformedNavigation();
                 }
             } catch (SQLException e) {
                 logger.warn(e.getMessage(), e);

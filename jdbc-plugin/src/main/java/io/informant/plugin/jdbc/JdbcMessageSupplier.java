@@ -138,14 +138,14 @@ class JdbcMessageSupplier extends MessageSupplier {
         return Message.from(sb.toString(), args);
     }
 
-    void setHasPerformedNext() {
+    void setHasPerformedNavigation() {
         if (numRows == NEXT_HAS_NOT_BEEN_CALLED) {
             numRows = 0;
         }
     }
 
-    void setNumRows(int numRows) {
-        this.numRows = numRows;
+    void updateNumRows(int currentRow) {
+        this.numRows = Math.max(this.numRows, currentRow);
     }
 
     @AssertNonNullIfTrue("parameters")
