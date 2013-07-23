@@ -231,12 +231,8 @@ public class StatementAspect {
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
-                // if the plugin is re-enabled in the middle of iterating over a different
-                // result set
-                //
-                // TODO implement test, same statement, execute multiple queries,
-                // disable/re-enable informant in between two of them, check row counts
+                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
+                // is re-enabled in the middle of iterating over a different result set
                 mirror.setLastJdbcMessageSupplier(null);
                 return null;
             }
@@ -284,12 +280,8 @@ public class StatementAspect {
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startSpan(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly updated
-                // if the plugin is re-enabled in the middle of iterating over a different
-                // result set
-                //
-                // TODO implement test, same prepared statement, execute multiple queries,
-                // disable/re-enable informant in between two of them, check row counts
+                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
+                // is re-enabled in the middle of iterating over a different result set
                 mirror.setLastJdbcMessageSupplier(null);
                 return null;
             }
@@ -337,12 +329,8 @@ public class StatementAspect {
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
-                    // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
-                    // updated if the plugin is re-enabled in the middle of iterating over a
-                    // different result set
-                    //
-                    // TODO implement test, same prepared statement, execute multiple queries,
-                    // disable/re-enable informant in between two of them, check row counts
+                    // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
+                    // plugin is re-enabled in the middle of iterating over a different result set
                     mirror.setLastJdbcMessageSupplier(null);
                     return null;
                 }
@@ -354,12 +342,8 @@ public class StatementAspect {
                     mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                     return pluginServices.startSpan(jdbcMessageSupplier, metricName);
                 } else {
-                    // clear lastJdbcMessageSupplier so that its numRows won't get incorrectly
-                    // updated if the plugin is re-enabled in the middle of iterating over a
-                    // different result set
-                    //
-                    // TODO implement test, same prepared statement, execute multiple queries,
-                    // disable/re-enable informant in between two of them, check row counts
+                    // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
+                    // plugin is re-enabled in the middle of iterating over a different result set
                     mirror.setLastJdbcMessageSupplier(null);
                     return null;
                 }

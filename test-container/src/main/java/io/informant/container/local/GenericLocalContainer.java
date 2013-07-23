@@ -97,7 +97,7 @@ public class GenericLocalContainer<T> {
         loader.addExcludePackages("io.informant.api", "io.informant.collector",
                 "io.informant.common", "io.informant.config", "io.informant.dynamicadvice",
                 "io.informant.local", "io.informant.trace", "io.informant.weaving",
-                "io.informant.shaded");
+                "io.informant.shaded", "io.informant.testkit");
         loader.weavingMetric(informantModule.getTraceModule().getWeavingMetricName());
         isolatedWeavingClassLoader = loader.build();
         this.appInterface = appInterface;

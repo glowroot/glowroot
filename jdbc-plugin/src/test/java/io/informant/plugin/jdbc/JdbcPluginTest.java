@@ -33,6 +33,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.informant.testkit.AppUnderTest;
+import io.informant.testkit.AppUnderTestServices;
 import io.informant.testkit.Container;
 import io.informant.testkit.Metric;
 import io.informant.testkit.Span;
@@ -234,6 +235,21 @@ public class JdbcPluginTest {
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
         assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['lowly'] ['pig will'] [connection: ");
+    }
+
+    // this test validates that lastJdbcMessageSupplier is cleared so that its numRows won't be
+    // updated if the plugin is re-enabled in the middle of iterating over a different result set
+    // (see related comments in StatementAspect)
+    @Test
+    public void testDisableReEnableMidIterating() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementDisableReEnableMidIterating.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(2);
+        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee where name like ? => 0 rows [connection: ");
     }
 
     // TODO make a release build profile that runs all tests against
@@ -541,6 +557,43 @@ public class JdbcPluginTest {
                 preparedStatement.setString(1, "pig will");
                 preparedStatement.addBatch();
                 preparedStatement.executeBatch();
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementDisableReEnableMidIterating implements AppUnderTest,
+            TraceMarker {
+        private static final AppUnderTestServices services = AppUnderTestServices.get();
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("select * from employee where name like ?");
+            try {
+                // pull back 0 records
+                preparedStatement.setString(1, "nomatch%");
+                preparedStatement.execute();
+                ResultSet rs = preparedStatement.getResultSet();
+                rs.next();
+                // disable plugin and re-execute same prepared statement
+                services.setPluginEnabled(PLUGIN_ID, false);
+                preparedStatement.setString(1, "john%");
+                preparedStatement.execute();
+                // re-enable plugin and iterate over 1 record to make sure that these records are
+                // not attributed to the previous execution
+                services.setPluginEnabled(PLUGIN_ID, true);
+                rs = preparedStatement.getResultSet();
+                rs.next();
+                rs.next();
             } finally {
                 preparedStatement.close();
             }
