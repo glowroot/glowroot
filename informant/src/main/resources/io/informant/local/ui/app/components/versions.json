@@ -11,5 +11,6 @@
   'moment': '2.0.0',
   'qtip2': '2.0.1',
   'sass-bootstrap': '2.3.2',
-  'spin': '1.3.0'
+  'spin': '1.3.0',
+  'swfobject': '2.2'
 }

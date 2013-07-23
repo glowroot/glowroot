@@ -245,8 +245,10 @@ module.exports = function (grunt) {
               // jquery.min.js and angular.min.js are used for cdn fallback
               'components/jquery/jquery.min.js',
               'components/angular/angular.min.js',
-              'components/sass-bootstrap/img/*.png',
+              'components/swfobject/swfobject.js',
               'components/flashcanvas/flashcanvas.*',
+              'components/flot/excanvas.js',
+              'components/sass-bootstrap/img/*.png',
               'components/specialelite/*',
               'images/favicon.ico',
               'index.html'
@@ -276,6 +278,11 @@ module.exports = function (grunt) {
             // jquery.min.js and angular.min.js are used for cdn fallback
             '<%= yeoman.dist %>/components/jquery/jquery.min.js',
             '<%= yeoman.dist %>/components/angular/angular.min.js',
+            '<%= yeoman.dist %>/components/swfobject/swfobject.js',
+            '<%= yeoman.dist %>/components/flashcanvas/flashcanvas.js',
+            // flashcanvas.swf is not revved at this time as it would
+            // require updating its url inside of flashcanvas.js
+            '<%= yeoman.dist %>/components/flot/excanvas.js',
             '<%= yeoman.dist %>/components/sass-bootstrap/img/*.png',
             '<%= yeoman.dist %>/components/specialelite/*',
             '<%= yeoman.dist %>/images/favicon.ico',
