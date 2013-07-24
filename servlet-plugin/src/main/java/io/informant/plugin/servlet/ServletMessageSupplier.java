@@ -15,12 +15,10 @@
  */
 package io.informant.plugin.servlet;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
-import checkers.igj.quals.ReadOnly;
 import checkers.nullness.quals.LazyNonNull;
 import checkers.nullness.quals.Nullable;
 
@@ -107,28 +105,8 @@ class ServletMessageSupplier extends MessageSupplier {
         return requestParameterMap != null;
     }
 
-    void captureRequestParameterMap(@ReadOnly Map<?, ?> requestParameterMap) {
-        // shallow copy is necessary because request may not be thread safe
-        // shallow copy is also necessary because of the note about tomcat above
-        ImmutableMap.Builder<String, String[]> map = ImmutableMap.builder();
-        for (Entry<?, ?> entry : requestParameterMap.entrySet()) {
-            String key = (String) entry.getKey();
-            if (key.toLowerCase(Locale.ENGLISH).contains("password")) {
-                // TODO implement configuration options for white listing and/or black listing
-                // certain request parameters and sql bind variables
-                map.put(key, new String[] {"****"});
-                continue;
-            }
-            String/*@Nullable*/[] value = (String/*@Nullable*/[]) entry.getValue();
-            if (value == null) {
-                // just to be safe since ImmutableMap won't accept nulls
-                map.put(key, new String[0]);
-            } else {
-                // the clone() is just to be safe to ensure immutability
-                map.put(key, value.clone());
-            }
-        }
-        this.requestParameterMap = map.build();
+    void captureRequestParameterMap(ImmutableMap<String, String[]> requestParameterMap) {
+        this.requestParameterMap = requestParameterMap;
     }
 
     void setSessionIdUpdatedValue(String sessionId) {

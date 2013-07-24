@@ -91,8 +91,8 @@ public class ServletAspect {
             topLevel.set(messageSupplier);
             Span span = pluginServices.startTrace(requestUri, messageSupplier, metricName);
             if (session != null) {
-                String sessionUserIdAttributePath = ServletPluginProperties
-                        .sessionUserIdAttributePath();
+                String sessionUserIdAttributePath =
+                        ServletPluginProperties.sessionUserIdAttributePath();
                 if (!sessionUserIdAttributePath.equals("")) {
                     // capture user id now, don't use a lazy supplier
                     String userId =

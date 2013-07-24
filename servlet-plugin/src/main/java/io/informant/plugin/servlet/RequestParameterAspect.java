@@ -15,12 +15,21 @@
  */
 package io.informant.plugin.servlet;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
+import checkers.igj.quals.ReadOnly;
+
 import io.informant.api.PluginServices;
-import io.informant.api.PluginServices.ConfigListener;
 import io.informant.api.weaving.BindTarget;
 import io.informant.api.weaving.IsEnabled;
 import io.informant.api.weaving.OnAfter;
 import io.informant.api.weaving.Pointcut;
+import io.informant.shaded.google.common.collect.ImmutableList;
+import io.informant.shaded.google.common.collect.ImmutableMap;
 
 /**
  * @author Trask Stalnaker
@@ -31,24 +40,12 @@ public class RequestParameterAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("io.informant.plugins:servlet-plugin");
 
-    private static volatile boolean captureRequestParameters;
-
-    static {
-        pluginServices.registerConfigListener(new ConfigListener() {
-            public void onChange() {
-                captureRequestParameters =
-                        pluginServices.getBooleanProperty("captureRequestParameters");
-            }
-        });
-        captureRequestParameters = pluginServices.getBooleanProperty("captureRequestParameters");
-    }
-
     @Pointcut(typeName = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodArgs = {".."}, captureNested = false)
     public static class GetParameterAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && captureRequestParameters;
+            return pluginServices.isEnabled();
         }
         @OnAfter
         public static void onAfter(@BindTarget Object realRequest) {
@@ -59,8 +56,53 @@ public class RequestParameterAspect {
             if (messageSupplier != null && !messageSupplier.isRequestParameterMapCaptured()) {
                 // the request is being traced and the parameter map hasn't been captured yet
                 HttpServletRequest request = HttpServletRequest.from(realRequest);
-                messageSupplier.captureRequestParameterMap(request.getParameterMap());
+                messageSupplier.captureRequestParameterMap(build(request.getParameterMap()));
             }
         }
+    }
+
+    private static ImmutableMap<String, String[]> build(@ReadOnly Map<?, ?> requestParameterMap) {
+        // shallow copy is necessary because request may not be thread safe
+        // shallow copy is also necessary because of the note about tomcat above
+        //
+        // so may as well filter here
+        ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
+        ImmutableList<Pattern> maskPatterns = ServletPluginProperties.maskRequestParameters();
+
+        ImmutableMap.Builder<String, String[]> map = ImmutableMap.builder();
+        for (Entry<?, ?> entry : requestParameterMap.entrySet()) {
+            String key = (String) entry.getKey();
+            if (key == null) {
+                // null check just to be safe in case this is a very strange servlet container
+                continue;
+            }
+            // converted to lower case for case-insensitive matching (patterns are lower case)
+            key = key.toLowerCase(Locale.ENGLISH);
+            if (!matchesOneOf(key, capturePatterns)) {
+                continue;
+            }
+            if (matchesOneOf(key, maskPatterns)) {
+                map.put(key, new String[] {"****"});
+                continue;
+            }
+            String/*@Nullable*/[] value = (String/*@Nullable*/[]) entry.getValue();
+            if (value == null) {
+                // just to be safe since ImmutableMap won't accept nulls
+                map.put(key, new String[0]);
+            } else {
+                // the clone() is just to be safe to ensure immutability
+                map.put(key, value.clone());
+            }
+        }
+        return map.build();
+    }
+
+    private static boolean matchesOneOf(String key, @ReadOnly List<Pattern> patterns) {
+        for (Pattern pattern : patterns) {
+            if (pattern.matcher(key).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -15,9 +15,13 @@
  */
 package io.informant.plugin.servlet;
 
+import java.util.Locale;
+import java.util.regex.Pattern;
+
 import io.informant.api.PluginServices;
 import io.informant.api.PluginServices.ConfigListener;
 import io.informant.shaded.google.common.base.Splitter;
+import io.informant.shaded.google.common.collect.ImmutableList;
 import io.informant.shaded.google.common.collect.ImmutableSet;
 
 /**
@@ -28,21 +32,21 @@ import io.informant.shaded.google.common.collect.ImmutableSet;
  */
 class ServletPluginProperties {
 
-    private static final String SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME =
-            "sessionUserIdAttribute";
-
-    // a special single value of "*" means capture all session attributes
-    // this can be useful for finding the session attribute that represents the user id
-    // TODO support "*.*", "*.*.*", etc
-    // TODO support partial wildcards, e.g. "context*"
+    private static final String CAPTURE_REQUEST_PARAMS_PROPERTY_NAME = "captureRequestParameters";
+    private static final String MASK_REQUEST_PARAMS_PROPERTY_NAME = "maskRequestParameters";
+    private static final String SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME = "sessionUserIdAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
-
     private static final String CAPTURE_SESSION_ID_PROPERTY_NAME = "captureSessionId";
     private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
 
     private static final PluginServices pluginServices =
             PluginServices.get("io.informant.plugins:servlet-plugin");
+
+    private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
+
+    private static volatile ImmutableList<Pattern> captureRequestParameters = ImmutableList.of();
+    private static volatile ImmutableList<Pattern> maskRequestParameters = ImmutableList.of();
 
     private static volatile String sessionUserIdAttributePath;
     private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
@@ -60,6 +64,14 @@ class ServletPluginProperties {
     }
 
     private ServletPluginProperties() {}
+
+    static ImmutableList<Pattern> captureRequestParameters() {
+        return captureRequestParameters;
+    }
+
+    static ImmutableList<Pattern> maskRequestParameters() {
+        return maskRequestParameters;
+    }
 
     static String sessionUserIdAttributePath() {
         return sessionUserIdAttributePath;
@@ -84,14 +96,30 @@ class ServletPluginProperties {
     }
 
     private static void updateCache() {
-        sessionUserIdAttributePath = pluginServices
-                .getStringProperty(SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME);
-        String captureSessionAttributesText = pluginServices
-                .getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME);
-        // update cached first so that another thread cannot come into this method and get a
-        // positive match for text but then get the old cached attributes
-        captureSessionAttributePaths = ImmutableSet.copyOf(Splitter.on(',').trimResults()
-                .omitEmptyStrings().split(captureSessionAttributesText));
+        String captureRequestParametersText =
+                pluginServices.getStringProperty(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
+        ImmutableList.Builder<Pattern> captureParameters = ImmutableList.builder();
+        for (String parameter : splitter.split(captureRequestParametersText)) {
+            // converted to lower case for case-insensitive matching
+            captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
+        }
+        captureRequestParameters = captureParameters.build();
+
+        String maskRequestParametersText =
+                pluginServices.getStringProperty(MASK_REQUEST_PARAMS_PROPERTY_NAME);
+        ImmutableList.Builder<Pattern> maskParameters = ImmutableList.builder();
+        for (String parameter : splitter.split(maskRequestParametersText)) {
+            // converted to lower case for case-insensitive matching
+            maskParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
+        }
+        maskRequestParameters = maskParameters.build();
+
+        sessionUserIdAttributePath =
+                pluginServices.getStringProperty(SESSION_USER_ID_ATTRIBUTE_PROPERTY_NAME);
+        String captureSessionAttributesText =
+                pluginServices.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME);
+        captureSessionAttributePaths = ImmutableSet.copyOf(splitter
+                .split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
         captureSessionId = pluginServices.getBooleanProperty(CAPTURE_SESSION_ID_PROPERTY_NAME);
         captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
@@ -108,5 +136,13 @@ class ServletPluginProperties {
             }
         }
         return names.build();
+    }
+
+    private static Pattern buildRegexPattern(String wildcardPattern) {
+        // convert * into .* and quote the rest of the text using \Q...\E
+        String regex = "\\Q" + wildcardPattern.replace("*", "\\E.*\\Q") + "\\E";
+        // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part
+        regex = regex.replace("\\Q\\E", "");
+        return Pattern.compile(regex);
     }
 }

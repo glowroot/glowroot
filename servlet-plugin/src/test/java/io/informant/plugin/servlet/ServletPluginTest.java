@@ -113,7 +113,6 @@ public class ServletPluginTest {
     @Test
     public void testRequestParameters() throws Exception {
         // given
-        container.setPluginProperty(PLUGIN_ID, "captureRequestParameters", true);
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
@@ -124,11 +123,13 @@ public class ServletPluginTest {
         Map<String, String> requestParameters =
                 (Map<String, String>) span.getMessage().getDetail().get("request parameters");
         assertThat(requestParameters.get("xy")).isEqualTo("abc");
+        assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
     }
 
     @Test
     public void testWithoutCaptureRequestParameters() throws Exception {
         // given
+        container.setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
@@ -294,6 +295,7 @@ public class ServletPluginTest {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             ((MockHttpServletRequest) request).setParameter("xy", "abc");
+            ((MockHttpServletRequest) request).setParameter("jpassword1", "mask me");
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
