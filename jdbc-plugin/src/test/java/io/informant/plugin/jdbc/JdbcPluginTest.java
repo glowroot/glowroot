@@ -315,6 +315,58 @@ public class JdbcPluginTest {
                 + " insert into employee (name) values (?) ['lowly'] ['pig will'] [connection: ");
     }
 
+    @Test
+    public void testBatchPreparedStatementWithoutClear() throws Exception {
+        // given
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['huckle'] ['sally'] [connection: ");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution: 4 x"
+                + " insert into employee (name) values (?) ['huckle'] ['sally'] ['lowly']"
+                + " ['pig will'] [connection: ");
+    }
+
+    @Test
+    public void testBatchStatement() throws Exception {
+        // given
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecuteBatchStatement.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution:"
+                + " insert into employee (name) values ('huckle'),"
+                + " insert into employee (name) values ('sally') [connection: ");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution:"
+                + " insert into employee (name) values ('lowly'),"
+                + " insert into employee (name) values ('pig will') [connection: ");
+    }
+
+    @Test
+    public void testBatchStatementWithoutClear() throws Exception {
+        // given
+        container.setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
+        // then
+        Trace trace = container.getLastTrace();
+        assertThat(trace.getSpans()).hasSize(3);
+        assertThat(trace.getSpans().get(1).getMessage().getText()).startsWith("jdbc execution:"
+                + " insert into employee (name) values ('huckle'),"
+                + " insert into employee (name) values ('sally') [connection: ");
+        assertThat(trace.getSpans().get(2).getMessage().getText()).startsWith("jdbc execution:"
+                + " insert into employee (name) values ('huckle'),"
+                + " insert into employee (name) values ('sally'),"
+                + " insert into employee (name) values ('lowly'),"
+                + " insert into employee (name) values ('pig will') [connection: ");
+    }
+
     // this test validates that lastJdbcMessageSupplier is cleared so that its numRows won't be
     // updated if the plugin is re-enabled in the middle of iterating over a different result set
     // (see related comments in StatementAspect)
@@ -772,6 +824,93 @@ public class JdbcPluginTest {
                 preparedStatement.executeBatch();
             } finally {
                 preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecuteBatchPreparedStatementWithoutClear implements AppUnderTest,
+            TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            connection.setAutoCommit(false);
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee (name) values (?)");
+            try {
+                preparedStatement.setString(1, "huckle");
+                preparedStatement.addBatch();
+                preparedStatement.setString(1, "sally");
+                preparedStatement.addBatch();
+                preparedStatement.executeBatch();
+                // intentionally not calling preparedStatement.clearBatch()
+                preparedStatement.setString(1, "lowly");
+                preparedStatement.addBatch();
+                preparedStatement.setString(1, "pig will");
+                preparedStatement.addBatch();
+                preparedStatement.executeBatch();
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecuteBatchStatement implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            connection.setAutoCommit(false);
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                statement.addBatch("insert into employee (name) values ('huckle')");
+                statement.addBatch("insert into employee (name) values ('sally')");
+                statement.executeBatch();
+                statement.clearBatch();
+                statement.addBatch("insert into employee (name) values ('lowly')");
+                statement.addBatch("insert into employee (name) values ('pig will')");
+                statement.executeBatch();
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteBatchStatementWithoutClear implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            connection.setAutoCommit(false);
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                statement.addBatch("insert into employee (name) values ('huckle')");
+                statement.addBatch("insert into employee (name) values ('sally')");
+                statement.executeBatch();
+                // intentionally not calling statement.clearBatch()
+                statement.addBatch("insert into employee (name) values ('lowly')");
+                statement.addBatch("insert into employee (name) values ('pig will')");
+                statement.executeBatch();
+            } finally {
+                statement.close();
             }
         }
     }

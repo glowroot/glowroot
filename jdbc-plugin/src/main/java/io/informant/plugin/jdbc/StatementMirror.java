@@ -17,12 +17,12 @@ package io.informant.plugin.jdbc;
 
 import java.lang.ref.WeakReference;
 import java.sql.Statement;
-import java.util.Collection;
+import java.util.List;
 
 import checkers.nullness.quals.Nullable;
+import com.google.common.collect.Lists;
 
 import io.informant.shaded.google.common.collect.ImmutableList;
-import io.informant.shaded.google.common.collect.Queues;
 
 /**
  * Used by JdbcAspect to capture and mirror the state of statements since the underlying
@@ -39,7 +39,7 @@ class StatementMirror {
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
     @Nullable
-    private Collection<String> batchedSql;
+    private List<String> batchedSql;
 
     // the lastJdbcMessageSupplier is stored so that its numRows field can be incremented inside the
     // advice for ResultSet.next()
@@ -61,13 +61,11 @@ class StatementMirror {
         // synchronization isn't an issue here as this method is called only by
         // the monitored thread
         if (batchedSql == null) {
-            batchedSql = Queues.newConcurrentLinkedQueue();
+            batchedSql = Lists.newArrayList();
         }
         batchedSql.add(sql);
     }
 
-    // just in case someone executes a batch statement and then adds more batches (on top of
-    // previous ones) and re-executes (is this possible? TODO write a test case for this)
     ImmutableList<String> getBatchedSqlCopy() {
         if (batchedSql == null) {
             return ImmutableList.of();

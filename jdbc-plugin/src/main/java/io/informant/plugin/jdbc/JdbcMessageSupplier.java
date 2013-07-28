@@ -59,6 +59,8 @@ class JdbcMessageSupplier extends MessageSupplier {
     private final String sql;
 
     // parameters and batchedParameters cannot both be non-null
+
+    // cannot use ImmutableList for parameters since it can contain null elements
     @Nullable
     private final List</*@Nullable*/Object> parameters;
     @Nullable
@@ -117,6 +119,7 @@ class JdbcMessageSupplier extends MessageSupplier {
         sb.append("jdbc execution: ");
         if (batchedSqls != null) {
             appendBatchedSqls(sb, batchedSqls);
+            appendConnectionHashCode(sb);
             return Message.from(sb.toString());
         }
         if (sql == null) {
