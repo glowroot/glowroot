@@ -437,7 +437,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>license-maven-plugin</artifactId>
-            <version>1.2</version>
+            <version>1.5</version>
             <executions>
               <execution>
                 <id>add-third-party</id>
@@ -447,15 +447,19 @@
               </execution>
             </executions>
             <configuration>
-              <thirdPartyFilename>META-INF/THIRD-PARTY.txt</thirdPartyFilename>
+              <thirdPartyFilename>META-INF/THIRD-PARTY-JAVA-LIBRARIES.txt</thirdPartyFilename>
               <useMissingFile>true</useMissingFile>
               <excludedGroups>io.informant</excludedGroups>
               <excludedScopes>test,provided</excludedScopes>
               <licenseMerges>
                 <licenseMerge>
-                  The Apache Software License, Version 2.0
-                  |Apache License, Version 2.0
+                  Apache License, Version 2.0
+                  |The Apache Software License, Version 2.0
                   |Apache License 2.0
+                </licenseMerge>
+                <licenseMerge>
+                  BSD License
+                  |BSD
                 </licenseMerge>
               </licenseMerges>
             </configuration>

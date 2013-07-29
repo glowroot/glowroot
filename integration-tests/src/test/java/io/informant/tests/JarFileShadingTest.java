@@ -60,8 +60,8 @@ public class JarFileShadingTest {
         acceptableEntries.add("META-INF/maven/.*");
         acceptableEntries.add("META-INF/io.informant\\..*");
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
-        acceptableEntries.add("META-INF/THIRD-PARTY\\.txt");
-        acceptableEntries.add("META-INF/THIRD-PARTY-RESOURCES\\.txt");
+        acceptableEntries.add("META-INF/THIRD-PARTY-JAVA-LIBRARIES\\.txt");
+        acceptableEntries.add("META-INF/THIRD-PARTY-WEB-LIBRARIES\\.txt");
         JarFile jarFile = new JarFile(informantJarFile);
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
