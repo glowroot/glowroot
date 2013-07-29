@@ -385,13 +385,6 @@ public class JdbcPluginTest {
     // TODO make a release build profile that runs all tests against
     // Hsqldb, Oracle, SQLServer, MySQL, ...
 
-    // TODO testSqlServerIssue
-    // exploit issue with SQLServer PreparedStatement.getParameterMetaData(), result being that
-    // getParameterMetaData() cannot be used in the jdbc plugin, this test (if it can be run
-    // against SQLServer) ensures that getParameterMetaData() doesn't sneak back in the future
-    // select * from employee where (name like ?)
-    // [john%]
-
     private static Connection createConnection() throws SQLException {
         return createHsqldbConnection();
     }
@@ -431,6 +424,11 @@ public class JdbcPluginTest {
     private static void insertRecords(Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         try {
+            try {
+                // in case of previous failure mid-test
+                statement.execute("drop table employee");
+            } catch (SQLException e) {
+            }
             statement.execute("create table employee (name varchar(100), misc binary(100))");
             statement.execute("insert into employee (name) values ('john doe')");
             statement.execute("insert into employee (name) values ('jane doe')");
@@ -458,18 +456,32 @@ public class JdbcPluginTest {
         // set up database
         Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@//localhost/orcl",
                 "informant", "informant");
-        Statement statement = connection.createStatement();
-        try {
-            try {
-                // in case of previous failure mid-test
-                statement.execute("drop table employee");
-            } catch (SQLException e) {
-            }
-            statement.execute("create table employee (name varchar(100), misc raw(100))");
-            statement.execute("insert into employee (name) values ('john doe')");
-        } finally {
-            statement.close();
-        }
+        insertRecords(connection);
+        return connection;
+    }
+
+    // need to add the sqlserver driver to the path in order to use this, e.g. install into local
+    // repo:
+    //
+    // mvn install:install-file -Dfile=sqljdbc.jar -DgroupId=com.microsoft -DartifactId=sqljdbc
+    // -Dversion=4.0 -Dpackaging=jar -DgeneratePom=true
+    //
+    // then add to pom.xml
+    //
+    // <dependency>
+    // <groupId>com.microsoft</groupId>
+    // <artifactId>sqljdbc</artifactId>
+    // <version>4.0</version>
+    // <scope>test</scope>
+    // </dependency>
+    @SuppressWarnings("unused")
+    private static Connection createSqlServerConnection() throws ClassNotFoundException,
+            SQLException {
+        // set up database
+        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        Connection connection = DriverManager.getConnection("jdbc:sqlserver://localhost",
+                "sa", "Datac3rt");
+        insertRecords(connection);
         return connection;
     }
 
@@ -549,6 +561,10 @@ public class JdbcPluginTest {
             try {
                 statement.execute("select * from employee");
                 ResultSet rs = statement.getResultSet();
+                // need to position cursor on a valid row before calling relative(), at least for
+                // sqlserver jdbc driver
+                rs.next();
+                rs.getString(1);
                 while (rs.relative(1)) {
                     rs.getString(1);
                 }
@@ -576,6 +592,10 @@ public class JdbcPluginTest {
                 statement.execute("select * from employee");
                 ResultSet rs = statement.getResultSet();
                 rs.afterLast();
+                // need to position cursor on a valid row before calling relative(), at least for
+                // sqlserver jdbc driver
+                rs.previous();
+                rs.getString(1);
                 while (rs.relative(-1)) {
                     rs.getString(1);
                 }
@@ -696,7 +716,7 @@ public class JdbcPluginTest {
                     connection.prepareStatement("insert into employee values (?, ?)");
             try {
                 preparedStatement.setNull(1, Types.VARCHAR);
-                preparedStatement.setNull(2, Types.VARCHAR);
+                preparedStatement.setNull(2, Types.BINARY);
                 preparedStatement.execute();
             } finally {
                 preparedStatement.close();
@@ -750,7 +770,7 @@ public class JdbcPluginTest {
                     connection.prepareCall("insert into employee values (?, ?)");
             try {
                 callableStatement.setString(1, "jane");
-                callableStatement.setNull(2, Types.VARCHAR);
+                callableStatement.setNull(2, Types.BINARY);
                 callableStatement.execute();
             } finally {
                 callableStatement.close();
